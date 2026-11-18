@@ -1,0 +1,1035 @@
+{
+  "schema": "duranki.researched_catalogue_seed.v1",
+  "status": "RESEARCHED_DATA_FOR_CODEX_IMPORT_NOT_APPLIED",
+  "checked_on": "2026-10-21",
+  "scope": "Twelve representative publicly documented models across four vendors; not an exhaustive model inventory.",
+  "integration_notice": "This is a data handoff, not the inspected application schema or a runnable migration. Adapt through the existing validated registry APIs.",
+  "authorization_notice": "Catalogue metadata and display-name work only. No provider activation, credential provisioning, new identity binding, or model grants.",
+  "global_defaults": {
+    "execution_approved": false,
+    "runtime_ready": false,
+    "new_grants": [],
+    "price_basis": "Published direct-provider API rates; not subscription fees or customer-specific invoices.",
+    "source_timestamp_meaning": "Research observation date, not an invented publisher price-effective date.",
+    "unsupported_rate_conditions": "Retain as visible reference data; do not flatten into an unconditional billable schedule.",
+    "missing_value_policy": "Unknown, not zero.",
+    "capability_policy": "Publisher capabilities remain distinct from supported/enabled Duranki capabilities."
+  },
+  "sources": [
+    {
+      "id": "anthropic-pricing",
+      "title": "Anthropic Claude API pricing",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "anthropic-models",
+      "title": "Anthropic Claude models overview",
+      "url": "https://platform.claude.com/docs/en/models/overview",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "claude-opus",
+      "title": "Claude Opus 5.5",
+      "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "claude-fable",
+      "title": "Claude Fable 5.1",
+      "url": "https://platform.claude.com/docs/en/models/fable-5-1/overview",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "claude-sonnet",
+      "title": "Claude Sonnet 5.5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "claude-haiku",
+      "title": "Claude Haiku 5.5",
+      "url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "openai-pricing",
+      "title": "OpenAI API pricing",
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "openai-sol",
+      "title": "GPT-6.1 Sol",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "openai-luna",
+      "title": "GPT-6 Luna",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "openai-astra",
+      "title": "GPT-6 Astra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "deepseek-pricing",
+      "title": "DeepSeek models and pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "google-pricing",
+      "title": "Gemini Developer API pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "google-argon",
+      "title": "Gemini 4 Argon",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "google-flash",
+      "title": "Gemini 3.8 Flash",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    },
+    {
+      "id": "google-lite",
+      "title": "Gemini 3.5 Flash-Lite",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+      "checked_on": "2026-10-21",
+      "type": "official_provider_documentation"
+    }
+  ],
+  "models": [
+    {
+      "catalogue_key": "anthropic.claude-opus-5-5",
+      "display_name": "Claude Opus 5.5",
+      "short_name": "Opus",
+      "vendor": "Anthropic",
+      "family": "Claude",
+      "published_api_model_id": "claude-opus-5-5",
+      "provider_route_basis": "Anthropic direct Claude API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "128K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "tool_use": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "anthropic.claude-opus-5-5.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard",
+            "conditions": {},
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "4",
+              "output": "20",
+              "input_cached": "0.20",
+              "cache_write_5m": "5",
+              "cache_write_1h": "8"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
+        "Provider capabilities are metadata, not features implemented or enabled in Duranki."
+      ],
+      "source_refs": [
+        "claude-opus",
+        "anthropic-pricing",
+        "anthropic-models"
+      ]
+    },
+    {
+      "catalogue_key": "anthropic.claude-fable-5-1",
+      "display_name": "Claude Fable 5.1",
+      "short_name": "Fable",
+      "vendor": "Anthropic",
+      "family": "Claude",
+      "published_api_model_id": "claude-fable-5-1",
+      "provider_route_basis": "Anthropic direct Claude API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "128K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "tool_use": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "anthropic.claude-fable-5-1.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard",
+            "conditions": {},
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "10",
+              "output": "50",
+              "input_cached": "0.25",
+              "cache_write_5m": "12.50",
+              "cache_write_1h": "20"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
+        "Provider capabilities are metadata, not features implemented or enabled in Duranki.",
+        "Forced tool use is not supported by this published Fable version."
+      ],
+      "source_refs": [
+        "claude-fable",
+        "anthropic-pricing",
+        "anthropic-models"
+      ]
+    },
+    {
+      "catalogue_key": "anthropic.claude-sonnet-5-5",
+      "display_name": "Claude Sonnet 5.5",
+      "short_name": "Sonnet",
+      "vendor": "Anthropic",
+      "family": "Claude",
+      "published_api_model_id": "claude-sonnet-5-5",
+      "provider_route_basis": "Anthropic direct Claude API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "128K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "tool_use": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "anthropic.claude-sonnet-5-5.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard",
+            "conditions": {},
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "2",
+              "output": "10",
+              "input_cached": "0.10",
+              "cache_write_5m": "2.50",
+              "cache_write_1h": "4"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
+        "Provider capabilities are metadata, not features implemented or enabled in Duranki."
+      ],
+      "source_refs": [
+        "claude-sonnet",
+        "anthropic-pricing",
+        "anthropic-models"
+      ]
+    },
+    {
+      "catalogue_key": "anthropic.claude-haiku-5-5",
+      "display_name": "Claude Haiku 5.5",
+      "short_name": "Haiku",
+      "vendor": "Anthropic",
+      "family": "Claude",
+      "published_api_model_id": "claude-haiku-5-5",
+      "provider_route_basis": "Anthropic direct Claude API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "128K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "tool_use": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "anthropic.claude-haiku-5-5.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Prompt up to 100,000 tokens",
+            "conditions": {
+              "prompt_tokens_lte": 100000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.10",
+              "output": "0.50",
+              "input_cached": "0.01",
+              "cache_write_5m": "0.125",
+              "cache_write_1h": "0.20"
+            }
+          },
+          {
+            "label": "Prompt over 100,000 tokens",
+            "conditions": {
+              "prompt_tokens_gt": 100000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.50",
+              "output": "2.50",
+              "input_cached": "0.05",
+              "cache_write_5m": "0.625",
+              "cache_write_1h": "1"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "The low band is not an unconditional price for the full advertised context window."
+      ],
+      "source_refs": [
+        "claude-haiku",
+        "anthropic-pricing",
+        "anthropic-models"
+      ]
+    },
+    {
+      "catalogue_key": "openai.gpt-6.1-sol",
+      "display_name": "GPT-6.1 Sol",
+      "short_name": "Sol",
+      "vendor": "OpenAI",
+      "family": "GPT",
+      "published_api_model_id": "gpt-6.1-sol",
+      "provider_route_basis": "OpenAI direct API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_tokens": 1050000,
+        "max_output_tokens": 128000
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "openai.gpt-6.1-sol.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard; input at most 272,000 tokens",
+            "conditions": {
+              "input_tokens_lte": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "2",
+              "output": "10",
+              "input_cached": "0.10",
+              "cache_write_30m": "2.50",
+              "cache_write_12h": "5"
+            }
+          },
+          {
+            "label": "Standard; input over 272,000 tokens",
+            "conditions": {
+              "input_tokens_gt": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "4",
+              "output": "15.0",
+              "input_cached": "0.20",
+              "cache_write_30m": "5.00",
+              "cache_write_12h": "10"
+            },
+            "calculation_basis": "Derived from the model page multipliers: 2x input/cache and 1.5x output for the whole request."
+          }
+        ]
+      },
+      "notes": [
+        "Function/tool calls require Responses; Chat Completions does not support tool calling for this model.",
+        "Rates shown use Standard/global processing, not Fast/Ultrafast, Batch/Flex, or regional uplifts.",
+        "Extra hosted-tool and other non-token charges are not included."
+      ],
+      "source_refs": [
+        "openai-sol",
+        "openai-pricing"
+      ]
+    },
+    {
+      "catalogue_key": "openai.gpt-6-luna",
+      "display_name": "GPT-6 Luna",
+      "short_name": "Luna",
+      "vendor": "OpenAI",
+      "family": "GPT",
+      "published_api_model_id": "gpt-6-luna",
+      "provider_route_basis": "OpenAI direct API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_tokens": 1050000,
+        "max_output_tokens": 128000
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "openai.gpt-6-luna.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard; input at most 272,000 tokens",
+            "conditions": {
+              "input_tokens_lte": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.10",
+              "output": "0.50",
+              "input_cached": "0.01",
+              "cache_write_30m": "0.125",
+              "cache_write_12h": "0.25"
+            }
+          },
+          {
+            "label": "Standard; input over 272,000 tokens",
+            "conditions": {
+              "input_tokens_gt": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.20",
+              "output": "0.750",
+              "input_cached": "0.02",
+              "cache_write_30m": "0.250",
+              "cache_write_12h": "0.50"
+            },
+            "calculation_basis": "Derived from the model page multipliers: 2x input/cache and 1.5x output for the whole request."
+          }
+        ]
+      },
+      "notes": [
+        "Chat Completions function calling requires reasoning_effort=none; use Responses for the broader tool path.",
+        "Rates shown use Standard/global processing, not Fast/Ultrafast, Batch/Flex, or regional uplifts.",
+        "Extra hosted-tool and other non-token charges are not included."
+      ],
+      "source_refs": [
+        "openai-luna",
+        "openai-pricing"
+      ]
+    },
+    {
+      "catalogue_key": "openai.gpt-6-astra",
+      "display_name": "GPT-6 Astra",
+      "short_name": "Astra",
+      "vendor": "OpenAI",
+      "family": "GPT",
+      "published_api_model_id": "gpt-6-astra",
+      "provider_route_basis": "OpenAI direct API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_tokens": 1050000,
+        "max_output_tokens": 128000
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "openai.gpt-6-astra.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard; input at most 272,000 tokens",
+            "conditions": {
+              "input_tokens_lte": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "10",
+              "output": "50",
+              "input_cached": "1",
+              "cache_write_30m": "12.50",
+              "cache_write_12h": "25"
+            }
+          },
+          {
+            "label": "Standard; input over 272,000 tokens",
+            "conditions": {
+              "input_tokens_gt": 272000
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "20",
+              "output": "75.0",
+              "input_cached": "2",
+              "cache_write_30m": "25.00",
+              "cache_write_12h": "50"
+            },
+            "calculation_basis": "Derived from the model page multipliers: 2x input/cache and 1.5x output for the whole request."
+          }
+        ]
+      },
+      "notes": [
+        "Published function calling does not establish compatibility with the existing Duranki adapter.",
+        "Rates shown use Standard/global processing, not Fast/Ultrafast, Batch/Flex, or regional uplifts.",
+        "Extra hosted-tool and other non-token charges are not included."
+      ],
+      "source_refs": [
+        "openai-astra",
+        "openai-pricing"
+      ]
+    },
+    {
+      "catalogue_key": "deepseek.deepseek-flash",
+      "display_name": "DeepSeek V4.1 Flash",
+      "short_name": "DeepSeek Flash",
+      "vendor": "DeepSeek",
+      "family": "DeepSeek",
+      "published_api_model_id": "deepseek-flash",
+      "provider_route_basis": "DeepSeek direct API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "384K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "text_output": true,
+        "thinking": true,
+        "tool_use": true,
+        "json_output": true,
+        "image_input": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "deepseek.deepseek-flash.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Peak",
+            "conditions": {
+              "rate_period": "peak",
+              "timezone": "UTC",
+              "weekday_intervals": [
+                "01:00–04:00",
+                "06:00–10:00"
+              ],
+              "days": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday"
+              ],
+              "exclude": "Chinese public holidays",
+              "calendar_and_exact_interval_boundary_resolution": "requires provider billing semantics before live calculation"
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.30",
+              "output": "1.20",
+              "input_cached": "0.006"
+            }
+          },
+          {
+            "label": "Off-peak",
+            "conditions": {
+              "rate_period": "off_peak",
+              "definition": "All times outside the published peak periods, including weekends and Chinese public holidays."
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.15",
+              "output": "0.60",
+              "input_cached": "0.003"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "Serving version is recorded separately from the provider API alias; no immutable deployment pin is implied.",
+        "Search/Fetch and any other tool fees are separate from the token rates."
+      ],
+      "source_refs": [
+        "deepseek-pricing"
+      ],
+      "observed_serving_version": "DeepSeek-V4.1-Flash-1017"
+    },
+    {
+      "catalogue_key": "deepseek.deepseek-v4-pro",
+      "display_name": "DeepSeek V4 Pro",
+      "short_name": "DeepSeek Pro",
+      "vendor": "DeepSeek",
+      "family": "DeepSeek",
+      "published_api_model_id": "deepseek-v4-pro",
+      "provider_route_basis": "DeepSeek direct API",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "context_window_advertised": "1M",
+        "max_output_advertised": "384K"
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "text_output": true,
+        "thinking": true,
+        "tool_use": true,
+        "json_output": true,
+        "image_input": false
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "deepseek.deepseek-v4-pro.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Peak",
+            "conditions": {
+              "rate_period": "peak",
+              "timezone": "UTC",
+              "weekday_intervals": [
+                "01:00–04:00",
+                "06:00–10:00"
+              ],
+              "days": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday"
+              ],
+              "exclude": "Chinese public holidays",
+              "calendar_and_exact_interval_boundary_resolution": "requires provider billing semantics before live calculation"
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "1.32",
+              "output": "3.96",
+              "input_cached": "0.044"
+            }
+          },
+          {
+            "label": "Off-peak",
+            "conditions": {
+              "rate_period": "off_peak",
+              "definition": "All times outside the published peak periods, including weekends and Chinese public holidays."
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.66",
+              "output": "1.98",
+              "input_cached": "0.022"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "Serving version is recorded separately from the provider API alias; no immutable deployment pin is implied.",
+        "Search/Fetch and any other tool fees are separate from the token rates."
+      ],
+      "source_refs": [
+        "deepseek-pricing"
+      ],
+      "observed_serving_version": "DeepSeek-V4-Pro-0813"
+    },
+    {
+      "catalogue_key": "google.gemini-4-argon",
+      "display_name": "Gemini 4 Argon",
+      "short_name": "Argon",
+      "vendor": "Google",
+      "family": "Gemini",
+      "published_api_model_id": "gemini-4-argon",
+      "provider_route_basis": "Google Gemini Developer API paid tier",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "combined_input_output_token_limit": 1048576,
+        "default_synchronous_max_output_tokens": 65536,
+        "long_decode_max_output_tokens": 1048576,
+        "long_decode_note": "Special mode; shares the combined context limit."
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "video_input": true,
+        "audio_input": true,
+        "pdf_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "google.gemini-4-argon.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard paid API reference",
+            "conditions": {
+              "publisher_date_through": "2026-11-30",
+              "cutover_timezone": "not_established_from_page"
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "2",
+              "output": "10",
+              "input_cached": "0.10"
+            }
+          }
+        ],
+        "announced_future_reference": {
+          "publisher_date_from": "2026-12-01",
+          "input": "4",
+          "output": "20",
+          "input_cached": "0.20",
+          "units": "USD per 1,000,000 tokens",
+          "activation": "not_scheduled; recheck source before use"
+        }
+      },
+      "notes": [
+        "The output rate includes thinking tokens. Free-tier and negotiated/platform-specific prices are not used.",
+        "Search/grounding and any other tool fees are additional.",
+        "Only implicit caching is supported for this model."
+      ],
+      "source_refs": [
+        "google-argon",
+        "google-pricing"
+      ]
+    },
+    {
+      "catalogue_key": "google.gemini-3.8-flash",
+      "display_name": "Gemini 3.8 Flash",
+      "short_name": "Gemini Flash",
+      "vendor": "Google",
+      "family": "Gemini",
+      "published_api_model_id": "gemini-3.8-flash",
+      "provider_route_basis": "Google Gemini Developer API paid tier",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "input_token_limit": 1048576,
+        "output_token_limit": 65536
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "video_input": true,
+        "audio_input": true,
+        "pdf_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "google.gemini-3.8-flash.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard paid API reference",
+            "conditions": {
+              "publisher_date_through": "2026-12-31",
+              "cutover_timezone": "not_established_from_page"
+            },
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.75",
+              "output": "3.75",
+              "input_cached": "0.075"
+            },
+            "additional_rates": {
+              "context_storage_usd_per_1000000_token_hours": "0.50"
+            }
+          }
+        ],
+        "announced_future_reference": {
+          "publisher_date_from": "2027-01-01",
+          "input": "1.50",
+          "output": "7.50",
+          "input_cached": "0.15",
+          "context_storage_usd_per_1000000_token_hours": "1",
+          "units": "USD per 1,000,000 tokens unless separately stated",
+          "activation": "not_scheduled; recheck source before use"
+        }
+      },
+      "notes": [
+        "The output rate includes thinking tokens. Free-tier and negotiated/platform-specific prices are not used.",
+        "Search/grounding and any other tool fees are additional."
+      ],
+      "source_refs": [
+        "google-flash",
+        "google-pricing"
+      ]
+    },
+    {
+      "catalogue_key": "google.gemini-3.5-flash-lite",
+      "display_name": "Gemini 3.5 Flash-Lite",
+      "short_name": "Gemini Flash-Lite",
+      "vendor": "Google",
+      "family": "Gemini",
+      "published_api_model_id": "gemini-3.5-flash-lite",
+      "provider_route_basis": "Google Gemini Developer API paid tier",
+      "identifier_pin_status": "publisher_identifier_observed; immutable_snapshot_not_independently_established",
+      "provider_published_limits": {
+        "input_token_limit": 1048576,
+        "output_token_limit": 65536
+      },
+      "provider_published_capabilities": {
+        "text_input": true,
+        "image_input": true,
+        "video_input": true,
+        "audio_input": true,
+        "pdf_input": true,
+        "text_output": true,
+        "function_calling": true
+      },
+      "duranki_registration": {
+        "catalogued": true,
+        "execution_approved": false,
+        "runtime_ready": false,
+        "runtime_binding": null,
+        "credential_reference": null,
+        "automatic_grants": [],
+        "ui_status": "Catalogued · Not connected"
+      },
+      "price_reference": {
+        "snapshot_id": "google.gemini-3.5-flash-lite.published.2026-10-21",
+        "verified_on": "2026-10-21",
+        "publisher_effective_from": null,
+        "currency": "USD",
+        "basis": "direct_provider_public_API_reference",
+        "not_customer_invoice_or_negotiated_rate": true,
+        "default_processing_tier": "standard",
+        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "bands": [
+          {
+            "label": "Standard paid API reference",
+            "conditions": {},
+            "rates_usd_per_1000000_tokens": {
+              "input_uncached": "0.30",
+              "output": "2.50",
+              "input_cached": "0.03"
+            },
+            "additional_rates": {
+              "context_storage_usd_per_1000000_token_hours": "1"
+            }
+          }
+        ]
+      },
+      "notes": [
+        "The output rate includes thinking tokens. Free-tier and negotiated/platform-specific prices are not used.",
+        "Search/grounding and any other tool fees are additional."
+      ],
+      "source_refs": [
+        "google-lite",
+        "google-pricing"
+      ]
+    }
+  ],
+  "identity_display_changes": [
+    {
+      "existing_principal_id": "owner.local",
+      "new_display_name": "Larry Mitchell",
+      "kind": "human",
+      "precondition": "Confirm this is the existing owner identity; do not create or bind a new account.",
+      "preserve": [
+        "principal_id",
+        "authentication_binding",
+        "credentials",
+        "role",
+        "grants",
+        "charging_owner",
+        "historical_records"
+      ]
+    }
+  ],
+  "other_human_names": {
+    "state": "No approved Duranki user roster supplied to this research pass.",
+    "action": "Use names from an explicitly approved project identity roster if already available to Codex; otherwise leave unregistered. Do not infer grants or authentication from names."
+  },
+  "fixture_presentation": {
+    "default_visibility": "separate_tests_filter",
+    "preserve_history": true,
+    "never_relabel_synthetic_provider_as_real": true,
+    "count_display": "Show excluded test count and an explicit include-tests toggle; label the filter scope."
+  }
+}

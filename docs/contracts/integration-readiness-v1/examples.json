@@ -1,0 +1,99 @@
+{
+  "dataset": {
+    "dataset_id": "dataset.local.vega.01",
+    "platform_id": "platform.vega.local",
+    "environment_id": "env.synthetic",
+    "owner_id": "owner.local",
+    "ingest_principal_id": "svc.demo",
+    "activated_at": "2026-10-27T00:00:00Z"
+  },
+  "account": {
+    "account_id": "account.synthetic.01",
+    "dataset_id": "dataset.local.vega.01",
+    "provider_id": "provider.synthetic",
+    "credential_ref": "vega.manager.synthetic.01",
+    "allowed_models": ["model.synthetic"],
+    "state": "usable"
+  },
+  "events": [
+    {
+      "integration_version": "1", "event_id": "event.root", "dataset_id": "dataset.local.vega.01",
+      "kind": "activity", "occurred_at": "2026-10-27T00:00:05Z", "activity_kind": "task",
+      "task_id": "task.01", "run_id": "run.root", "root_run_id": "run.root",
+      "actor_kind": "human", "actor_id": "user.synthetic"
+    },
+    {
+      "integration_version": "1", "event_id": "event.child", "dataset_id": "dataset.local.vega.01",
+      "kind": "activity", "occurred_at": "2026-10-27T00:00:06Z", "activity_kind": "delegation",
+      "task_id": "task.01", "run_id": "run.child", "root_run_id": "run.root",
+      "parent_run_id": "run.root", "actor_kind": "agent", "actor_id": "agent.synthetic"
+    },
+    {
+      "integration_version": "1", "event_id": "event.start.1", "dataset_id": "dataset.local.vega.01",
+      "kind": "attempt_started", "occurred_at": "2026-10-27T00:00:10Z",
+      "attempt_id": "attempt.1", "started_at": "2026-10-27T00:00:10Z",
+      "task_id": "task.01", "step_id": "step.01", "run_id": "run.child",
+      "root_run_id": "run.root", "parent_run_id": "run.root",
+      "actor_kind": "agent", "actor_id": "agent.synthetic", "initiating_user_id": "user.synthetic",
+      "provider_account_id": "account.synthetic.01", "model_id": "model.synthetic",
+      "context_ref": "context.synthetic.01"
+    },
+    {
+      "integration_version": "1", "event_id": "event.decision.1", "dataset_id": "dataset.local.vega.01",
+      "kind": "decision", "occurred_at": "2026-10-27T00:00:09Z", "attempt_id": "attempt.1",
+      "decision_ref": "decision.synthetic.01", "selected_account_id": "account.synthetic.01",
+      "selected_model_id": "model.synthetic", "policy_version": "policy.synthetic.01"
+    },
+    {
+      "integration_version": "1", "event_id": "event.usage.1.1", "dataset_id": "dataset.local.vega.01",
+      "kind": "usage", "occurred_at": "2026-10-27T00:00:20Z", "attempt_id": "attempt.1",
+      "usage_revision": 1, "usage_state": "unknown"
+    },
+    {
+      "integration_version": "1", "event_id": "event.result.1", "dataset_id": "dataset.local.vega.01",
+      "kind": "result", "occurred_at": "2026-10-27T00:00:21Z", "attempt_id": "attempt.1",
+      "result_state": "unknown"
+    },
+    {
+      "integration_version": "1", "event_id": "event.usage.1.2", "dataset_id": "dataset.local.vega.01",
+      "kind": "usage", "occurred_at": "2026-10-27T00:01:00Z", "attempt_id": "attempt.1",
+      "usage_revision": 2, "usage_state": "known", "currency": "USD",
+      "amount_decimal": "0.030000000", "cost_basis": "provider_reported",
+      "price_ref": "tariff.synthetic", "price_version": "v1",
+      "native_units": [{"unit": "input_tokens", "quantity_decimal": "100"},
+                       {"unit": "output_tokens", "quantity_decimal": "50"}]
+    },
+    {
+      "integration_version": "1", "event_id": "event.start.2", "dataset_id": "dataset.local.vega.01",
+      "kind": "attempt_started", "occurred_at": "2026-10-27T00:01:10Z",
+      "attempt_id": "attempt.2", "started_at": "2026-10-27T00:01:10Z",
+      "task_id": "task.01", "step_id": "step.01", "run_id": "run.child",
+      "root_run_id": "run.root", "parent_run_id": "run.root",
+      "actor_kind": "agent", "actor_id": "agent.synthetic", "initiating_user_id": "user.synthetic",
+      "provider_account_id": "account.synthetic.01", "model_id": "model.synthetic",
+      "context_ref": "context.synthetic.retry"
+    },
+    {
+      "integration_version": "1", "event_id": "event.usage.2.1", "dataset_id": "dataset.local.vega.01",
+      "kind": "usage", "occurred_at": "2026-10-27T00:01:20Z", "attempt_id": "attempt.2",
+      "usage_revision": 1, "usage_state": "known", "currency": "USD",
+      "amount_decimal": "0.020000000", "cost_basis": "derived",
+      "price_ref": "tariff.synthetic", "price_version": "v1",
+      "native_units": [{"unit": "input_tokens", "quantity_decimal": "80"},
+                       {"unit": "output_tokens", "quantity_decimal": "30"}]
+    },
+    {
+      "integration_version": "1", "event_id": "event.tool", "dataset_id": "dataset.local.vega.01",
+      "kind": "activity", "occurred_at": "2026-10-27T00:01:25Z", "activity_kind": "tool",
+      "task_id": "task.01", "step_id": "step.01", "run_id": "run.child",
+      "root_run_id": "run.root", "parent_run_id": "run.root",
+      "actor_kind": "agent", "actor_id": "agent.synthetic"
+    },
+    {
+      "integration_version": "1", "event_id": "event.outcome", "dataset_id": "dataset.local.vega.01",
+      "kind": "activity", "occurred_at": "2026-10-27T00:02:10Z", "activity_kind": "outcome",
+      "task_id": "task.01", "run_id": "run.root", "root_run_id": "run.root",
+      "actor_kind": "human", "actor_id": "user.synthetic", "outcome": "accepted"
+    }
+  ]
+}

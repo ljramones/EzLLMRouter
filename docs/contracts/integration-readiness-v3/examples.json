@@ -1,0 +1,56 @@
+{
+  "account": {
+    "account_id": "account.synthetic.speech",
+    "dataset_id": "dataset.synthetic.speech",
+    "provider_id": "provider.synthetic.xai",
+    "credential_ref": "credential.synthetic.xai",
+    "allowed_models": [],
+    "allowed_operations": ["speech_input", "speech_output"],
+    "state": "usable"
+  },
+  "selector": {
+    "operation_family": "speech_input",
+    "capability": "transcription",
+    "selection_kind": "provider_selected"
+  },
+  "start": {
+    "integration_version": "3",
+    "event_id": "event.synthetic.speech.start",
+    "dataset_id": "dataset.synthetic.speech",
+    "kind": "attempt_started",
+    "occurred_at": "2099-01-01T00:00:03Z",
+    "started_at": "2099-01-01T00:00:03Z",
+    "attempt_id": "attempt.synthetic.speech",
+    "task_id": "task.synthetic.speech",
+    "step_id": "step.synthetic.speech",
+    "run_id": "run.synthetic.speech",
+    "root_run_id": "run.synthetic.speech",
+    "actor_kind": "service",
+    "actor_id": "service.synthetic.voice",
+    "provider_account_id": "account.synthetic.speech",
+    "context_ref": "snapshot.synthetic.speech.feature",
+    "operation_family_version": "1",
+    "operation_family": "speech_input",
+    "model_identity_state": "unknown",
+    "logical_operation_id": "operation.synthetic.speech",
+    "attempt_role": "initial"
+  },
+  "decision": {
+    "integration_version": "3",
+    "event_id": "event.synthetic.speech.decision",
+    "dataset_id": "dataset.synthetic.speech",
+    "kind": "decision",
+    "occurred_at": "2099-01-01T00:00:03Z",
+    "attempt_id": "attempt.synthetic.speech",
+    "decision_ref": "snapshot.synthetic.speech.decision",
+    "selected_account_id": "account.synthetic.speech",
+    "operation_family": "speech_input",
+    "capability": "transcription",
+    "selection_kind": "provider_selected",
+    "policy_version": "policy.synthetic.v3",
+    "eligibility_evidence": {
+      "status": "verified",
+      "eligibility_id": "eligibility.synthetic.speech"
+    }
+  }
+}

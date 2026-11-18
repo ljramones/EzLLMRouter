@@ -1,0 +1,72 @@
+{
+  "predecessor_package_sha256": "7ef3584b2b2d56490ad1d08eb3ae0b2d03d0f05c72a312e98ee544ac55db33a4",
+  "review04_sha256": "15f3adb8a8063ae0d181aa4046b44b2cd06ce9440e37f8a41470c3e3dfb78cdd",
+  "modified_existing_files": [
+    {
+      "path": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "before_sha256": "7b4816441ebd7d4fd8254efc8999c879d58e0c82a62f1ee200959ea60ad57e26",
+      "after_sha256": "fa0229f2e61dce103557b6f51fa63f1a521cd7261799166225a56e5b99da883c",
+      "before_bytes": 160396,
+      "after_bytes": 162237,
+      "diff": "final-deltas/DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md.diff"
+    },
+    {
+      "path": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.json",
+      "before_sha256": "5828bee325c1bdfad80bb6dc2aabcc74a2b20df07d2483e3835d1dc7680dc4f8",
+      "after_sha256": "ba1cfaeba400723fc779b439b9204fb7c65446d2c7c8f5f86ba367d92d0dae31",
+      "before_bytes": 294177,
+      "after_bytes": 296621,
+      "diff": "final-deltas/DURANKI-v1.2-C01-ASSURANCE-REGISTER.json.diff"
+    },
+    {
+      "path": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "before_sha256": "218e51c5fe9676b12ef50fc3ba6a2601afb8383b8ae8076ddbdbe1e3d2c1019e",
+      "after_sha256": "0eed6276a814686fb98c193580380dcf5828f36551b420ec75c6c8e291318e4d",
+      "before_bytes": 30870,
+      "after_bytes": 31911,
+      "diff": "final-deltas/DURANKI-v1.2-C01-ASSURANCE-REGISTER.md.diff"
+    },
+    {
+      "path": "DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.json",
+      "before_sha256": "1a566d5deeff803c1562d053b0448ca318b5454420699b64bc02a090eda6cb70",
+      "after_sha256": "ea20b5d42fb6e68d067f47f89d3b056b493e53ef1e4d0e76e95ea1f7e633bf66",
+      "before_bytes": 14628,
+      "after_bytes": 14951,
+      "diff": "final-deltas/DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.json.diff"
+    },
+    {
+      "path": "DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md",
+      "before_sha256": "1605f5fcc2bbe5107c01685697ab2849cf4af3da17077c8217d7adb8d51e8129",
+      "after_sha256": "4f4780dc4c7c4904c44a65dfcee640bf46f25d4562dd5a83c592c089f028b63a",
+      "before_bytes": 9411,
+      "after_bytes": 9750,
+      "diff": "final-deltas/DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md.diff"
+    },
+    {
+      "path": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "before_sha256": "7673f80b413a409d8a217d999ed842da28a583e3bee6fdde1882fe8201aef05a",
+      "after_sha256": "f43cff9ec86bbcc9e676aefd712b8e08db4450d9d9bf5fa70ea0f7229a4be71f",
+      "before_bytes": 25865,
+      "after_bytes": 26002,
+      "diff": "final-deltas/DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md.diff"
+    },
+    {
+      "path": "INCORPORATION-MAP.json",
+      "before_sha256": "36a9f627d9c6c5290cbf572eb40718964897bd2580d4312b5ed778634e42df61",
+      "after_sha256": "ca908fcc39891383726f51277a85e1351df9ab99fb282c493c91e76d3ef8ca52",
+      "before_bytes": 25754,
+      "after_bytes": 26681,
+      "diff": "final-deltas/INCORPORATION-MAP.json.diff"
+    },
+    {
+      "path": "START-HERE.md",
+      "before_sha256": "b0985a0d62ce5258246d4dd132982c0d01e91b6ff5f00100569bba415e36f6d1",
+      "after_sha256": "8ade543efa8fcc34afe7a86ef7c2fc00bc1448f0a8b3d4b3b6aafdb586147ee8",
+      "before_bytes": 1993,
+      "after_bytes": 1520,
+      "diff": "final-deltas/START-HERE.md.diff"
+    }
+  ],
+  "new_document": "DURANKI-v1.2-C01-REVIEW04-CLOSEOUT-01.md",
+  "runtime_execution": "NONE"
+}

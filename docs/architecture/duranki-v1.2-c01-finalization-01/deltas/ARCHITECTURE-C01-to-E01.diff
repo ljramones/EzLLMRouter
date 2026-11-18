@@ -1,0 +1,124 @@
+--- C01/DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md
++++ C01-E01/DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md
+@@ -1,12 +1,12 @@
+ # Duranki — Model & AI-Service Routing, Metering and Control — Architecture
+ 
+-**Version:** v1.2 Correction 01  
++**Version:** v1.2 Correction 01 + Erratum 01  
+ **Status:** Corrected normative review draft; not adopted; no implementation or activation authorization  
+ **Date:** 25 October 2026  
+ **Owner:** Larry Mitchell  
+ **Predecessor:** v1.1 adopted baseline; submitted v1.2 and Dispositions 01–02 preserved as source history
+ 
+-**Read with:** [Assurance register](DURANKI-v1.2-C01-ASSURANCE-REGISTER.md) · [Development roadmap](DURANKI-v1.2-C01-ROADMAP.md) · [Review and research map](DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md). Exact input identities and document-only validation are in `DURANKI-v1.2-C01-DOCUMENT-VALIDATION.json` and `MANIFEST.sha256`.
++**Read with:** [Assurance register](DURANKI-v1.2-C01-ASSURANCE-REGISTER.md) · [Development roadmap](DURANKI-v1.2-C01-ROADMAP.md) · [Review and research map](DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md). Erratum 01 is documented in [the delta note](DURANKI-v1.2-C01-ERRATUM-01.md); its document-only checks are in `DURANKI-v1.2-C01-E01-DOCUMENT-VALIDATION.json` and `MANIFEST.sha256`. The reviewed Correction 01 bytes are preserved under `predecessor/`.
+ 
+ Top-level sections 0–20 and test subjects T-01–T-76 are retained. T-77–T-87 cover the reconciled addendum subjects, with **T-84 a retired alias of T-49**, not another scored test. Source keys are defined in §20; all dates and implementation standings belong to their cited evidence, not to an implied current runtime.
+ 
+@@ -367,14 +367,17 @@
+ 
+ Neti's trusted plan authority validates any proposed candidate order and signs admitted work. The isolated worker holds neither the signing secret nor provider credentials. Binding has two levels: server-authoritative canonical work, then independently validated final prepared bytes/transport controls for each allowed candidate.
+ 
++**Plan-signing key custody (G-02).** Production plan-signing keys reside in a managed key service, identified by `key_id` and `key_version`. Only Neti's trusted plan authority may invoke signing, and only for validated admitted plans. Guard and sender roles hold verification material only; the isolated worker, optimization/ranking component and clients have no signing capability. Rotate signing keys on a documented schedule. Compromise revokes the affected key version: FDC check 1 and first-write freshness reject unsent plans under that version, even if their signatures remain mathematically valid. Fresh trusted authorization may issue a replacement plan only while preserving work identity, send ownership and existing exposure. Re-signing never authorizes replay of a possibly sent attempt. Historical signatures remain auditable without making a revoked key eligible for execution. A declared isolated-test profile may use a scoped synthetic key; that is not evidence of production managed-key custody. The successor restates the signer as the **trusted plan authority**, replacing the historical WP-A phrase 'optimization layer'.
++
+ **Successor binding decision (M-06/F-01).** The next operation contract includes the common envelope in §9.4 in the **same** versioned change as operation type/version and native usage. It is not an unscheduled later metadata profile. Exact serialization/schema identifiers and golden vectors are entry work for DEV-12; they cannot be invented by silently extending wire `0.2`.
+ 
+ | Data | Binding location and rule |
+ |---|---|
+ | Authenticated principal, task/step/revision/execution generation, charging owner and validated current actor | Canonical work in their trusted namespace; assertions must match the chosen authentication/binding profile |
+ | Operation `{type, version}`, request schema, ordered payload, purpose, settings, limits, compatibility references | Canonical work; operation-domain-separated digest; exact supported fields only |
+-| Commission reference, its **admission-time** status and absence reason | Canonical shared envelope, even while record-only; mutation conflicts with admitted work |
+-| Delegation chain, its **admission-time** coverage/status and absence reason | Canonical shared envelope, preserving order and asserted-versus-verified provenance; not implicit authority |
++| Caller-asserted commission reference and caller-declared reason, including explicit omission under the schema | Canonical shared envelope; preserve submitted meaning without inserting a lookup-derived value or server judgment; changed assertions under the same WorkKey conflict |
++| Caller-asserted ordered delegation links and caller-declared reasons | Canonical shared envelope as assertions, not implicit authority; existing lifetime-stable trusted endpoint identity remains mandatory under the selected authentication profile |
++| Server-assessed commission status, delegation verification/coverage and server-assigned absence reasons | Immutable signed admission snapshot, bound to the work digest inline or by an immutable content digest in the signed plan; outside canonical work and deduplication identity |
+ | Activation epoch and its absence reason | Signed execution-context envelope in the plan, **not** the logical-work/deduplication key; scoped to the current actor/activation and rechecked when enforcement is enabled |
+ | Logical-effect reference | Derived from the full authenticated work namespace (§8.2), or a separately qualified non-step identity contract; no bare global generation string |
+ | Policy, recovery, registry, source permission, grant/delegation, credential-scope, price/usage contract references | Signed plan/immutable trusted references; the named revision vector and live checks govern first write (§5.4) |
+@@ -382,7 +385,9 @@
+ 
+ **Why activation is separate:** fencing an old activation must not automatically create another logical effect or release old exposure. A new activation context requires fresh trusted authority, and can never replay work whose transmission is possible or unknown. The successor includes this signed field from its first version, so later activation enforcement need not change the work identity. No new execution is authorized merely by reconnecting.
+ 
+-The admitted commission/delegation snapshot is immutable. Later verification is a linked observation with its own time/evidence, not an in-place upgrade of historical authority. Duplicate lookup preserves the original accepted projection; changed bound assertions under the same WorkKey conflict. Any authorized replacement dispatch context must preserve work identity, durable no-repeat ownership and exposure.
++**Stable work; changing assessments (G-01).** Keep server assessments separate from submitted assertions. Commission status, chain coverage and server-assigned reasons such as `unavailable`, `not_yet_issued` and `caller_omitted` do not enter canonical work. Caller-declared reasons remain bound as caller content; they never establish verified authority. Trusted identity values may enter canonical work only when their contract keeps them stable for the authorized work's lifetime. Later verification cannot insert newly resolved endpoints into an existing work identity.
++
++The signed admission snapshot is immutable and tied to the admitted work digest. Later assessments append linked evidence with their own time and source. With the same WorkKey and unchanged canonical assertions, a resubmission resolves to the original submission/attempt despite changed server assessments; it creates no extra attempt, reservation or send. Current authorization and retention still govern access to that result and any unsent work: deduplication is not a stale-authority exception. Changed caller assertions under the same WorkKey remain a conflict. A newly required commission cannot be bypassed by recovering an old work key. Any authorized replacement admission/dispatch context preserves logical identity, original evidence, durable no-repeat ownership and exposure.
+ 
+ **Settings.** Bind applicable reasoning effort/thinking mode, service tier and provider context-management/compaction configuration, with explicit resolved defaults. Record requested and effective values separately; unexpected semantic/tier substitution is rejected or becomes an explicit discrepancy under the selected contract. Explicit cache TTL/key/content-reference controls, when enabled, are signed semantic controls with complete pricing/handling semantics. DEV-11 remains implicit-only.
+ 
+@@ -396,7 +401,7 @@
+ 
+ **Final-dispatch check (FDC).** Before every attempt on every path (first dispatch, retry, fallback, deterministic route, emergency gateway, any future lab gateway replica), in order:
+ 
+-1. Plan signature valid; plan unexpired and not revoked.
++1. Plan signature valid under an execution-eligible key ID/version; plan unexpired and neither plan nor signing-key version revoked.
+ 2. `policy_version`, `recovery_policy_version` and `registry_version` match current, else replan.
+ 3. Candidate prepared request, after all adapters and callbacks, matches canonical work, operation contract, candidate adapter version and the exact endpoint/transport controls; unknown or silently dropped semantic fields reject.
+ 4. **Current** classification and combined handling policy are within the destination's permission.
+@@ -407,9 +412,11 @@
+ 
+ Any failure → replan via the orchestrator, or explicit failure.
+ 
+-**Authorization point and Choice B first-write fence.** Persist the final dispatch commitment after a passing FDC. The selected standalone serialization point is the trusted sender's **Choice B first-write fence**, not an earlier hook or a revision comparison alone. Authority-changing transactions and first application-request release pass through the same trusted local gate. After all resource/readiness waits, the sender enters that gate, checks a coherent current authority view plus deadline, unused send ownership and sufficient reservation, and performs the qualified nonblocking first-write operation without a later unguarded wait. A would-block/no-acceptance result releases the gate, waits outside it and repeats freshness checks. Positive partial acceptance consumes first-send authority; only the unsent suffix of that same attempt may continue under its qualified in-flight semantics. [S3]
+-
+-A local revocation becomes effective when its authority-record and corresponding named-revision changes commit **inside that fence** and the sender's authoritative view is updated. Acknowledge effectiveness only afterwards. Failed/uncertain update or restoration fails closed until consistency is recovered. Connection, response and drain waits do not hold the revocation gate. A crash after a possible send preserves uncertainty and exposure; absence of a later write receipt cannot justify replay.
++**Authorization point and Choice B first-write fence.** Persist the final dispatch commitment after a passing FDC. The selected standalone serialization point is the trusted sender's **Choice B first-write fence**, not an earlier hook or a revision comparison alone. Publication of the sender's authoritative in-memory view and first application-request release pass through the same trusted local gate. Complete durable persistence, signature verification and potentially blocking preparation outside the gate. After all resource/readiness waits, the sender enters it, checks the coherent current in-memory authority/key-status view, deadline, unused send ownership and coverage of the durable reservation, then performs the qualified nonblocking first-write operation without a later unguarded wait. A would-block/no-acceptance result releases the gate, waits outside it and repeats freshness checks. Positive partial acceptance consumes first-send authority; only the unsent suffix of that same attempt may continue under its qualified in-flight semantics. Choice B supplies the local fence precedent; the durable publication ordering below is a successor requirement, not a new historical execution claim. [S3]
++
++**Authority-update ordering (N-01).** First atomically commit the authority change and corresponding named revisions durably, outside the first-write fence. Next publish a coherent, non-regressing authoritative view to the sender under that fence. Only then acknowledge effectiveness. Serialize or order competing publications so an older committed view cannot overwrite a newer one. Local revocation becomes effective at the fence-protected publication, not at receipt of the management request or at an earlier database commit; record these distinct stages. The interval before publication is not reported as effective revocation. No database I/O, key-service call, connection wait, response wait or drain wait runs under the first-write lock.
++
++A failed or uncertain commit/publication withholds success and closes affected admission/release until consistency is recovered. On restart, reload and validate durable authority before enabling any send. A crash between durable commit and publication cannot revive the old authority view; a crash after a possible send preserves uncertainty and exposure. Absence of a later write receipt cannot justify replay. Qualification must exercise the commit-to-publication interval, update failure, out-of-order publication and restart behavior as part of the §5.4/T-24 boundary; historical queue-revocation evidence alone does not prove this full successor protocol.
+ 
+ **Authority revision vector.** This is a coherent snapshot of the existing applicable named revisions—policy, recovery policy, registry/configuration, source permission, principal/grant/delegation, credential authorization/account scope, and price/usage-contract eligibility—not an additional master counter. Qualified commission and activation inputs join when enabled. A vector comparison can identify invalidation, but does not replace the fence, expiry, remaining balance, capacity or single-send ownership checks. Preserve implementation-private legacy counters and current strict checks until their explicit successor is tested. Publication, rotation and effective revocation follow their own contracts; rollback cannot resurrect revoked authority.
+ 
+@@ -811,18 +818,18 @@
+ 
+ | Logical field | Standalone meaning | Later authority / binding |
+ |---|---|---|
+-| Commission reference | No fabricated commission; empty with an allowed reason, or an explicitly asserted/synthetic fixture reference | Value, admission status and reason inside canonical work; verified commission enforcement only after its integration |
+-| Commission status | `absent`, `asserted`, `verified`, with evidence scope; production verification is not inferred from fixture validation | Admission-time snapshot immutable; later validation appends evidence |
+-| Delegation chain | Available authenticated/attributed links; no fabricated person or intermediate agent | Ordered chain and its admission status/reason inside canonical work |
+-| Delegation chain status | Explicit coverage such as partial/complete, separately qualified by link evidence | Complete-looking syntax does not prove trusted links |
++| Commission reference | No fabricated commission; caller omission or an explicitly asserted/synthetic reference | Caller assertion and caller-declared reason are canonical; server-resolved status/reason is a separate signed admission assessment; verified enforcement only after its integration |
++| Commission status | Server-assessed `absent`, `asserted`, `verified`, with evidence scope; fixtures do not prove production verification | Immutable signed admission snapshot outside canonical work; later validation appends evidence without changing deduplication identity |
++| Delegation chain | Ordered caller-asserted links and separately evidenced trusted endpoints; no fabricated person or intermediate agent | Asserted links/reasons and contractually lifetime-stable trusted identity are canonical; server verification and coverage are separately signed |
++| Delegation chain status | Server-assessed coverage such as partial/complete, separately qualified by link evidence | Signed admission snapshot outside canonical work; complete-looking syntax does not prove trusted links |
+ | Activation epoch | Empty with a valid reason or a tagged fixture value until the activation authority exists | Signed execution context in §5.3; current activation check at admission/first write when enabled |
+-| Absence reasons | Per-field closed reasons: `not_yet_issued`, `not_applicable`, `caller_omitted`, `unavailable` | Bind with the relevant field; reasons explain absence, never waive mandatory authority |
++| Absence reasons | Per-field closed reasons: `not_yet_issued`, `not_applicable`, `caller_omitted`, `unavailable`; record who asserted or assessed the reason | Caller-declared reasons bind as caller content; server-assigned reasons belong in the signed admission snapshot; identical omitted caller input stays omitted for deduplication; reasons never waive mandatory authority |
+ 
+ The contract defines valid combinations, size/depth/length bounds, source attribution and event applicability. Direct humans, delegated agents and autonomous principals have distinct fixtures. An autonomous request has a service principal and charging owner, not an invented human. Before commission enforcement, asserted references are record-only; valid assertions neither grant nor deny execution by commission authority, while syntax/handling rules still apply.
+ 
+ **Three independent axes:** metadata absence reason; commission/link assertion or verification evidence; provider-field evidence (`absent`, `null`, `known`, `invalid`). A missing usage counter must never be explained away as `not_yet_issued` commission metadata. These axes cannot substitute for each other.
+ 
+-**Ledger change in the same tranche:** add logical columns/typed storage for the envelope version, commission reference/status/reason, delegation chain/status/reason, activation value/reason, admitted-envelope binding and linked later verification evidence. Storage normalization is resolved in the bounded schema delta; there must be a lossless queryable representation in standalone SQLite as well as a migration contract for PostgreSQL. Preserve strict legacy records without invented backfill. Pre-admission rejection rows can be recorded without fabricated attempts or complete identities; applicability is part of the event schema. Later verifications are append-only linked records with evidence/time.
++**Ledger change in the same tranche:** add logical columns/typed storage that distinguish the canonical assertion envelope from the signed admission assessment: envelope version, asserted commission reference/delegation links/caller reasons, server-assessed status/coverage/reasons, activation context, work digest, admission-snapshot digest/signature linkage and linked later verification evidence. Storage normalization is resolved in the bounded schema delta; there must be a lossless queryable representation in standalone SQLite as well as a migration contract for PostgreSQL. Preserve strict legacy records without invented backfill. Pre-admission rejection rows can be recorded without fabricated attempts or complete identities; applicability is part of the event schema. Later verifications are append-only linked records with evidence/time.
+ 
+ ### 9.5 Integration relationships and measurement extensions
+ 
+@@ -1152,7 +1159,7 @@
+ 4. Ledger primary unavailable → WAL path; WAL unavailable → fail closed
+ 5. Prohibited content (incl. a sensitive derived feature) presented to telemetry → blocked by allowlist/redaction
+ 6. Forged, unsigned, expired or wrong-session office-origin attribute → rejected
+-7. Plan with invalid signature or stale policy version → rejected
++7. Plan with invalid signature, revoked signing-key version or stale policy version → rejected; T-07.a covers key-version revocation and preserves no-repeat ownership on re-signing.
+ 8. Plan reused after payload mutation or revocation → rejected or replanned
+ 9. Changed adapter output under an existing plan → detected at FDC
+ 
+@@ -1170,7 +1177,7 @@
+ 11. Concurrent budget exhaustion → no overspend
+ 12. Budget state rebuilt from ledger → outstanding exposure counted before admission resumes
+ 13. Replica fails after dispatch; original and replacement both return → single winner, both billed
+-14. Duplicate submission of the same execution generation → deduplicated; authorized escalation (new generation) → not deduplicated
++14. Duplicate submission of the same execution generation → deduplicated; authorized escalation (new generation) → not deduplicated. T-14.a covers identical assertions across changing server assessments, with current access controls and no additional attempt, reservation or send.
+ 15. Delayed cancellation acknowledgement → exposure and capacity held until confirmed
+ 16. Outcome-unknown timeout → explicit signal to orchestrator
+ 17. Partial-stream failure → no splicing; usage unknown
+@@ -1215,7 +1222,7 @@
+ 43. Saving a credential, browsing, local refresh or route preview → no provider action; explicit access/discovery actions are separately scoped and recorded.
+ 44. Partial/paginated/failed discovery → honest completeness state; no automatic allow/grant/rate publication or revival of archived records.
+ 45. Permissions are source/account/operation scoped; source disallow, grant/delegation revoke, credential-scope change and required revision mismatch block queued unsent work at the Choice B boundary. Rotation behavior follows the explicitly qualified contract, never an assumed exception.
+-46. Operation, ordered input, compatibility reference, bound commission/delegation snapshot, price, financial owner or signed activation context mutation after admission → detected by trusted binding/current checks.
++46. Operation, ordered input, compatibility reference, canonical commission/delegation assertions, signed admission assessment, price, financial owner or signed activation context mutation after admission → detected by the appropriate canonical binding, signature and current checks; a later linked assessment is not mutation of the original snapshot.
+ 47. Python/JavaScript successor-envelope parity, domain-separated binding and legacy compatibility → preserved adopted semantics and historical digests, strict unknown-field/version rejection, no automatic plain-text relabelling of tool-cycle history.
+ 48. Native-unit pricing → independently recomputed exact-decimal totals and conservative bounds across the full synthetic domain, including minimums, unit ceilings, a tier boundary, currency precision/half-even settlement and upward-rounded reservation; fixtures and subcases in the roadmap/register.
+ 49. Missing/null/zero/invalid quantities → distinct retained evidence; unknown required usage never becomes free, ordinary input or invented complete cost.

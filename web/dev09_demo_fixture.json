@@ -1,0 +1,68 @@
+{
+  "identity": "dev09-scripted-cost-demo-v1",
+  "rates": {
+    "demo.provider.arc": {"model": "demo.arc.text", "input_per_1000_usd": "0.01", "output_per_1000_usd": "0.02"},
+    "demo.provider.beacon": {"model": "demo.beacon.text", "input_per_1000_usd": "0.02", "output_per_1000_usd": "0.04"}
+  },
+  "actors": [
+    {"id": "demo.user.larry", "name": "Larry Mitchell (demo)", "kind": "scripted user", "coverage": "Scripted activity"},
+    {"id": "demo.user.maya", "name": "Maya Chen (fictional demo user)", "kind": "scripted user", "coverage": "Scripted activity"},
+    {"id": "demo.agent.patton", "name": "Patton (scripted)", "kind": "scripted agent", "coverage": "Scripted activity"},
+    {"id": "demo.agent.vega", "name": "Vega (scripted)", "kind": "scripted agent", "coverage": "Scripted activity"},
+    {"id": "demo.agent.newton", "name": "Newton (scripted)", "kind": "scripted agent", "coverage": "Scripted activity"},
+    {"id": "demo.agent.idle", "name": "Idle demo agent", "kind": "scripted agent", "coverage": "No activity recorded"},
+    {"id": "demo.agent.uninstrumented", "name": "Uninstrumented demo agent", "kind": "scripted agent", "coverage": "Not measured"}
+  ],
+  "stories": [
+    {"id": "main", "name": "Larry asks Patton for a briefing", "end": 90, "outcome": "Scripted acceptance", "task_class": "demo.briefing", "root_run": "demo.run.main.patton"},
+    {"id": "maya_direct", "name": "Maya calls a model directly", "end": 20, "outcome": "Scripted completion", "task_class": "demo.direct", "root_run": "demo.run.maya.direct"},
+    {"id": "vega_scheduled", "name": "Vega performs scheduled work", "end": 25, "outcome": "Scripted completion", "task_class": "demo.scheduled", "root_run": "demo.run.vega.scheduled"},
+    {"id": "maya_patton", "name": "Maya asks Patton for a summary", "end": 25, "outcome": "Scripted completion", "task_class": "demo.summary", "root_run": "demo.run.maya.patton"}
+  ],
+  "runs": [
+    {"run_id": "demo.run.main.patton", "parent_run_id": null, "agent_id": "demo.agent.patton"},
+    {"run_id": "demo.run.main.vega", "parent_run_id": "demo.run.main.patton", "agent_id": "demo.agent.vega"},
+    {"run_id": "demo.run.main.newton", "parent_run_id": "demo.run.main.patton", "agent_id": "demo.agent.newton"},
+    {"run_id": "demo.run.maya.direct", "parent_run_id": null, "agent_id": null},
+    {"run_id": "demo.run.vega.scheduled", "parent_run_id": null, "agent_id": "demo.agent.vega"},
+    {"run_id": "demo.run.maya.patton", "parent_run_id": null, "agent_id": "demo.agent.patton"}
+  ],
+  "attempts": [
+    {"id": "demo.attempt.plan", "story": "main", "at": 5, "start": 1, "actor": "demo.agent.patton", "run": "demo.run.main.patton", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.arc", "input": 1000, "output": 1000, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.research", "story": "main", "at": 20, "start": 8, "actor": "demo.agent.vega", "run": "demo.run.main.vega", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.beacon", "input": 2000, "output": 2000, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.review", "story": "main", "at": 30, "start": 24, "actor": "demo.agent.newton", "run": "demo.run.main.newton", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.arc", "input": 2000, "output": 1000, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.revision", "story": "main", "at": 45, "start": 34, "actor": "demo.agent.vega", "run": "demo.run.main.vega", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.beacon", "input": 500, "output": 1000, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.briefing", "story": "main", "at": 60, "start": 48, "actor": "demo.agent.patton", "run": "demo.run.main.patton", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.arc", "input": 2000, "output": 2000, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.followup", "story": "main", "at": 80, "start": 72, "actor": "demo.agent.patton", "run": "demo.run.main.patton", "user": "demo.user.larry", "owner": "demo.user.larry", "provider": "demo.provider.arc", "input": 1000, "output": 500, "task": "demo.task.briefing"},
+    {"id": "demo.attempt.maya.direct", "story": "maya_direct", "at": 12, "start": 2, "actor": "demo.user.maya", "run": "demo.run.maya.direct", "user": "demo.user.maya", "owner": "demo.user.maya", "provider": "demo.provider.arc", "input": 1000, "output": 500, "task": "demo.task.maya.direct"},
+    {"id": "demo.attempt.vega.scheduled", "story": "vega_scheduled", "at": 18, "start": 4, "actor": "demo.agent.vega", "run": "demo.run.vega.scheduled", "user": null, "owner": "demo.team.mach33", "provider": "demo.provider.beacon", "input": 2000, "output": 1000, "task": "demo.task.vega.scheduled"},
+    {"id": "demo.attempt.maya.patton", "story": "maya_patton", "at": 20, "start": 3, "actor": "demo.agent.patton", "run": "demo.run.maya.patton", "user": "demo.user.maya", "owner": "demo.user.maya", "provider": "demo.provider.arc", "input": 2000, "output": 1000, "task": "demo.task.maya.summary"}
+  ],
+  "events": [
+    {"id": "demo.event.ask", "story": "main", "at": 0, "actor": "demo.user.larry", "kind": "Request", "label": "Larry asks Patton for a briefing"},
+    {"id": "demo.event.plan.start", "story": "main", "at": 1, "actor": "demo.agent.patton", "kind": "Model call start", "label": "Patton begins planning", "attempt": "demo.attempt.plan"},
+    {"id": "demo.event.plan.done", "story": "main", "at": 5, "actor": "demo.agent.patton", "kind": "Model call complete", "label": "Patton finishes planning", "attempt": "demo.attempt.plan"},
+    {"id": "demo.event.delegate", "story": "main", "at": 7, "actor": "demo.agent.patton", "kind": "Delegation", "label": "Patton delegates research to Vega"},
+    {"id": "demo.event.research.start", "story": "main", "at": 8, "actor": "demo.agent.vega", "kind": "Model call start", "label": "Vega begins research", "attempt": "demo.attempt.research"},
+    {"id": "demo.event.research.done", "story": "main", "at": 20, "actor": "demo.agent.vega", "kind": "Model call complete", "label": "Vega finishes delegated research", "attempt": "demo.attempt.research"},
+    {"id": "demo.event.review.start", "story": "main", "at": 24, "actor": "demo.agent.newton", "kind": "Model call start", "label": "Newton begins review", "attempt": "demo.attempt.review"},
+    {"id": "demo.event.review.done", "story": "main", "at": 30, "actor": "demo.agent.newton", "kind": "Review feedback", "label": "Newton requests substantive clarification", "attempt": "demo.attempt.review"},
+    {"id": "demo.event.revision.start", "story": "main", "at": 34, "actor": "demo.agent.vega", "kind": "Revision", "label": "Vega begins revision", "attempt": "demo.attempt.revision"},
+    {"id": "demo.event.revision.done", "story": "main", "at": 45, "actor": "demo.agent.vega", "kind": "Model call complete", "label": "Vega provides revision", "attempt": "demo.attempt.revision"},
+    {"id": "demo.event.briefing.start", "story": "main", "at": 48, "actor": "demo.agent.patton", "kind": "Model call start", "label": "Patton begins briefing", "attempt": "demo.attempt.briefing"},
+    {"id": "demo.event.briefing.done", "story": "main", "at": 60, "actor": "demo.agent.patton", "kind": "Model call complete", "label": "Patton produces briefing", "attempt": "demo.attempt.briefing"},
+    {"id": "demo.event.followup.ask", "story": "main", "at": 70, "actor": "demo.user.larry", "kind": "Follow-up", "label": "Larry asks a follow-up question"},
+    {"id": "demo.event.followup.start", "story": "main", "at": 72, "actor": "demo.agent.patton", "kind": "Model call start", "label": "Patton begins follow-up", "attempt": "demo.attempt.followup"},
+    {"id": "demo.event.followup.done", "story": "main", "at": 80, "actor": "demo.agent.patton", "kind": "Model call complete", "label": "Patton answers follow-up", "attempt": "demo.attempt.followup"},
+    {"id": "demo.event.accept", "story": "main", "at": 90, "actor": "demo.user.larry", "kind": "Acceptance", "label": "Larry accepts the scripted result"},
+    {"id": "demo.event.maya.ask", "story": "maya_direct", "at": 0, "actor": "demo.user.maya", "kind": "Request", "label": "Maya makes a direct model request"},
+    {"id": "demo.event.maya.done", "story": "maya_direct", "at": 12, "actor": "demo.user.maya", "kind": "Model call complete", "label": "Direct model response", "attempt": "demo.attempt.maya.direct"},
+    {"id": "demo.event.maya.complete", "story": "maya_direct", "at": 20, "actor": "demo.user.maya", "kind": "Outcome", "label": "Scripted direct task completed"},
+    {"id": "demo.event.scheduled", "story": "vega_scheduled", "at": 0, "actor": "demo.agent.vega", "kind": "Scheduled start", "label": "Vega begins scheduled work"},
+    {"id": "demo.event.scheduled.done", "story": "vega_scheduled", "at": 18, "actor": "demo.agent.vega", "kind": "Model call complete", "label": "Vega finishes scheduled work", "attempt": "demo.attempt.vega.scheduled"},
+    {"id": "demo.event.scheduled.complete", "story": "vega_scheduled", "at": 25, "actor": "demo.agent.vega", "kind": "Outcome", "label": "Scripted scheduled task completed"},
+    {"id": "demo.event.summary.ask", "story": "maya_patton", "at": 0, "actor": "demo.user.maya", "kind": "Request", "label": "Maya asks Patton for a summary"},
+    {"id": "demo.event.summary.done", "story": "maya_patton", "at": 20, "actor": "demo.agent.patton", "kind": "Model call complete", "label": "Patton delivers separate summary", "attempt": "demo.attempt.maya.patton"},
+    {"id": "demo.event.summary.complete", "story": "maya_patton", "at": 25, "actor": "demo.user.maya", "kind": "Outcome", "label": "Scripted summary task completed"}
+  ]
+}

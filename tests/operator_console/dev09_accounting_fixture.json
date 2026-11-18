@@ -1,0 +1,499 @@
+{
+  "schema": "duranki.dev09.accounting_example.v1",
+  "classification": "SYNTHETIC_DATA_ONLY_NOT_PRODUCT_SCHEMA_NOT_RUNTIME_EVIDENCE",
+  "notice": "Do not import into the owner store. Costs and actors are invented test values, not provider prices or actual employee/agent measurements. Explicit nulls below are fixture notation, not changes to the strict public contract.",
+  "agents": [
+    {
+      "id": "agent.coordinator",
+      "name": "Fixture Coordinator",
+      "version": "v1",
+      "instrumentation": "instrumented"
+    },
+    {
+      "id": "agent.researcher",
+      "name": "Fixture Researcher",
+      "version": "v1",
+      "instrumentation": "instrumented"
+    },
+    {
+      "id": "agent.reviewer",
+      "name": "Fixture Reviewer",
+      "version": "v1",
+      "instrumentation": "instrumented"
+    },
+    {
+      "id": "agent.idle",
+      "name": "Fixture Idle Agent",
+      "version": "v1",
+      "instrumentation": "instrumented"
+    },
+    {
+      "id": "agent.external",
+      "name": "Fixture Uninstrumented Agent",
+      "version": "v1",
+      "instrumentation": "not_instrumented"
+    }
+  ],
+  "users": [
+    {
+      "id": "user.alpha",
+      "name": "Fixture User A"
+    },
+    {
+      "id": "user.beta",
+      "name": "Fixture User B"
+    }
+  ],
+  "runs": [
+    {
+      "id": "run.root",
+      "agent_id": "agent.coordinator",
+      "task_id": "task.workflow1",
+      "initiating_user_id": "user.alpha",
+      "charging_owner_id": "team.alpha",
+      "parent_run_id": null,
+      "initiation_mode": "on_behalf_of_user"
+    },
+    {
+      "id": "run.child1",
+      "agent_id": "agent.researcher",
+      "task_id": "task.workflow1",
+      "initiating_user_id": "user.alpha",
+      "charging_owner_id": "team.alpha",
+      "parent_run_id": "run.root",
+      "initiation_mode": "on_behalf_of_user"
+    },
+    {
+      "id": "run.child2",
+      "agent_id": "agent.reviewer",
+      "task_id": "task.workflow1",
+      "initiating_user_id": "user.alpha",
+      "charging_owner_id": "team.alpha",
+      "parent_run_id": "run.root",
+      "initiation_mode": "on_behalf_of_user"
+    },
+    {
+      "id": "run.human",
+      "agent_id": null,
+      "task_id": "task.human",
+      "initiating_user_id": "user.alpha",
+      "charging_owner_id": "team.alpha",
+      "parent_run_id": null,
+      "initiation_mode": "human_direct"
+    },
+    {
+      "id": "run.background",
+      "agent_id": "agent.researcher",
+      "task_id": "task.background",
+      "initiating_user_id": null,
+      "charging_owner_id": "team.research",
+      "parent_run_id": null,
+      "initiation_mode": "scheduled"
+    },
+    {
+      "id": "run.otheruser",
+      "agent_id": "agent.coordinator",
+      "task_id": "task.workflow2",
+      "initiating_user_id": "user.beta",
+      "charging_owner_id": "team.beta",
+      "parent_run_id": null,
+      "initiation_mode": "on_behalf_of_user"
+    },
+    {
+      "id": "run.unknown",
+      "agent_id": "agent.reviewer",
+      "task_id": "task.unknown",
+      "initiating_user_id": "user.alpha",
+      "charging_owner_id": "team.alpha",
+      "parent_run_id": null,
+      "initiation_mode": "on_behalf_of_user"
+    },
+    {
+      "id": "run.euro",
+      "agent_id": "agent.researcher",
+      "task_id": "task.euro",
+      "initiating_user_id": "user.beta",
+      "charging_owner_id": "team.beta",
+      "parent_run_id": null,
+      "initiation_mode": "on_behalf_of_user"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task.workflow1",
+      "task_class": "fixture.workflow",
+      "root_run_id": "run.root",
+      "outcome": "accepted",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    },
+    {
+      "id": "task.workflow2",
+      "task_class": "fixture.workflow",
+      "root_run_id": "run.otheruser",
+      "outcome": "rejected",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    },
+    {
+      "id": "task.human",
+      "task_class": "fixture.direct",
+      "root_run_id": "run.human",
+      "outcome": "accepted",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    },
+    {
+      "id": "task.background",
+      "task_class": "fixture.background",
+      "root_run_id": "run.background",
+      "outcome": "abandoned",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    },
+    {
+      "id": "task.unknown",
+      "task_class": "fixture.review",
+      "root_run_id": "run.unknown",
+      "outcome": "accepted",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    },
+    {
+      "id": "task.euro",
+      "task_class": "fixture.euro",
+      "root_run_id": "run.euro",
+      "outcome": "accepted",
+      "acceptance_protocol": "fixture.acceptance.v1"
+    }
+  ],
+  "attempts": [
+    {
+      "id": "a01",
+      "run_id": "run.root",
+      "provider_id": "provider.a",
+      "api_setup_id": "setup.provider.a",
+      "model_id": "model.a",
+      "deployment_id": "deployment.model.a",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.a.v1"
+    },
+    {
+      "id": "a02",
+      "run_id": "run.child1",
+      "provider_id": "provider.b",
+      "api_setup_id": "setup.provider.b",
+      "model_id": "model.b",
+      "deployment_id": "deployment.model.b",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.b.v1"
+    },
+    {
+      "id": "a03",
+      "run_id": "run.child2",
+      "provider_id": "provider.a",
+      "api_setup_id": "setup.provider.a",
+      "model_id": "model.a",
+      "deployment_id": "deployment.model.a",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.a.v1"
+    },
+    {
+      "id": "a04",
+      "run_id": "run.human",
+      "provider_id": "provider.b",
+      "api_setup_id": "setup.provider.b",
+      "model_id": "model.b",
+      "deployment_id": "deployment.model.b",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.b.v1"
+    },
+    {
+      "id": "a05",
+      "run_id": "run.background",
+      "provider_id": "provider.b",
+      "api_setup_id": "setup.provider.b",
+      "model_id": "model.b",
+      "deployment_id": "deployment.model.b",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.b.v1"
+    },
+    {
+      "id": "a06",
+      "run_id": "run.otheruser",
+      "provider_id": "provider.a",
+      "api_setup_id": "setup.provider.a",
+      "model_id": "model.a",
+      "deployment_id": "deployment.model.a",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.a.v1"
+    },
+    {
+      "id": "a07",
+      "run_id": "run.otheruser",
+      "provider_id": "provider.b",
+      "api_setup_id": "setup.provider.b",
+      "model_id": "model.b",
+      "deployment_id": "deployment.model.b",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.b.v1"
+    },
+    {
+      "id": "a08",
+      "run_id": "run.unknown",
+      "provider_id": "provider.a",
+      "api_setup_id": "setup.provider.a",
+      "model_id": "model.a",
+      "deployment_id": "deployment.model.a",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.a.v1"
+    },
+    {
+      "id": "a09",
+      "run_id": "run.euro",
+      "provider_id": "provider.b",
+      "api_setup_id": "setup.provider.b",
+      "model_id": "model.euro",
+      "deployment_id": "deployment.model.euro",
+      "first_write_observation": "observed",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.euro.v1"
+    },
+    {
+      "id": "a10",
+      "run_id": "run.otheruser",
+      "provider_id": "provider.a",
+      "api_setup_id": "setup.provider.a",
+      "model_id": "model.a",
+      "deployment_id": "deployment.model.a",
+      "first_write_observation": "explicit_no_first_write",
+      "usage_semantics_version": "fixture.usage.v1",
+      "price_version": "fixture.price.model.a.v1"
+    }
+  ],
+  "cost_revision_observations": [
+    {
+      "event_id": "cost.a01.1",
+      "attempt_id": "a01",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 1,
+      "amount": "10"
+    },
+    {
+      "event_id": "cost.a02.1",
+      "attempt_id": "a02",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 2,
+      "amount": "6"
+    },
+    {
+      "event_id": "cost.a03.1",
+      "attempt_id": "a03",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 3,
+      "amount": "4"
+    },
+    {
+      "event_id": "cost.a04.1",
+      "attempt_id": "a04",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 4,
+      "amount": "2"
+    },
+    {
+      "event_id": "cost.a05.1",
+      "attempt_id": "a05",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 5,
+      "amount": "3"
+    },
+    {
+      "event_id": "cost.a06.1",
+      "attempt_id": "a06",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 6,
+      "amount": "7"
+    },
+    {
+      "event_id": "cost.a07.1",
+      "attempt_id": "a07",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 7,
+      "amount": "1"
+    },
+    {
+      "event_id": "cost.a08.1",
+      "attempt_id": "a08",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "unknown",
+      "sequence": 8
+    },
+    {
+      "event_id": "cost.a09.1",
+      "attempt_id": "a09",
+      "revision": 1,
+      "currency": "EUR",
+      "cost_status": "calculated",
+      "sequence": 9,
+      "amount": "4"
+    },
+    {
+      "event_id": "cost.a10.1",
+      "attempt_id": "a10",
+      "revision": 1,
+      "currency": "USD",
+      "cost_status": "calculated",
+      "sequence": 10,
+      "amount": "0",
+      "zero_basis": "fixture_durable_no_send_and_nonbillable_adapter_semantics"
+    },
+    {
+      "event_id": "cost.a06.2",
+      "attempt_id": "a06",
+      "revision": 2,
+      "supersedes": "cost.a06.1",
+      "currency": "USD",
+      "cost_status": "reconciled",
+      "amount": "6",
+      "sequence": 11
+    },
+    {
+      "event_id": "cost.a06.2",
+      "attempt_id": "a06",
+      "revision": 2,
+      "supersedes": "cost.a06.1",
+      "currency": "USD",
+      "cost_status": "reconciled",
+      "amount": "6",
+      "sequence": 11
+    }
+  ],
+  "expected": {
+    "unique_attempts": 10,
+    "unique_cost_events": 11,
+    "exact_duplicate_observations": 1,
+    "final": {
+      "USD": {
+        "known_subtotal": "32",
+        "unknown_cost_attempts": 1,
+        "attempts": 9
+      },
+      "EUR": {
+        "known_subtotal": "4",
+        "unknown_cost_attempts": 0,
+        "attempts": 1
+      }
+    },
+    "before_replacement": {
+      "USD": {
+        "known_subtotal": "33",
+        "unknown_cost_attempts": 1,
+        "attempts": 9
+      }
+    },
+    "usd_by_provider": {
+      "provider.a": {
+        "known_subtotal": "20",
+        "unknown_cost_attempts": 1
+      },
+      "provider.b": {
+        "known_subtotal": "12",
+        "unknown_cost_attempts": 0
+      }
+    },
+    "usd_by_direct_actor": {
+      "agent.coordinator": {
+        "known_subtotal": "17",
+        "unknown_cost_attempts": 0
+      },
+      "agent.researcher": {
+        "known_subtotal": "9",
+        "unknown_cost_attempts": 0
+      },
+      "agent.reviewer": {
+        "known_subtotal": "4",
+        "unknown_cost_attempts": 1
+      },
+      "direct_human": {
+        "known_subtotal": "2",
+        "unknown_cost_attempts": 0
+      }
+    },
+    "usd_by_initiator": {
+      "user.alpha": {
+        "known_subtotal": "22",
+        "unknown_cost_attempts": 1
+      },
+      "user.beta": {
+        "known_subtotal": "7",
+        "unknown_cost_attempts": 0
+      },
+      "autonomous": {
+        "known_subtotal": "3",
+        "unknown_cost_attempts": 0
+      }
+    },
+    "usd_by_charging_owner": {
+      "team.alpha": {
+        "known_subtotal": "22",
+        "unknown_cost_attempts": 1
+      },
+      "team.beta": {
+        "known_subtotal": "7",
+        "unknown_cost_attempts": 0
+      },
+      "team.research": {
+        "known_subtotal": "3",
+        "unknown_cost_attempts": 0
+      }
+    },
+    "root_workflow": {
+      "direct": "10",
+      "delegated": "10",
+      "inclusive": "20"
+    },
+    "workflow_cohort": {
+      "tasks": 2,
+      "accepted": 1,
+      "known_cost": "27",
+      "cost_per_accepted_task": "27"
+    },
+    "background_cohort": {
+      "tasks": 1,
+      "accepted": 0,
+      "known_cost": "3",
+      "cost_per_accepted_task": null
+    },
+    "unknown_cost_cohort": {
+      "tasks": 1,
+      "accepted": 1,
+      "unknown_cost_attempts": 1,
+      "complete_cost_per_accepted_task": null
+    },
+    "first_write_categories": {
+      "observed": 9,
+      "explicit_no_first_write": 1,
+      "unknown": 0
+    },
+    "no_activity_agent": "agent.idle",
+    "not_instrumented_agent": "agent.external"
+  }
+}

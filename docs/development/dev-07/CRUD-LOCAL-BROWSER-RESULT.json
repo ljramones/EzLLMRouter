@@ -1,0 +1,54 @@
+{
+  "confirmed_dialogs": [
+    "unsaved cancellation",
+    "model archive",
+    "identity revocation"
+  ],
+  "crud_source_sha256": "68beb760263d1526a75a4337e407a61a07c992f491343578c8e00fab25bc0af1",
+  "grant_status_after_reopen": "removed",
+  "keyboard_tab": "passed",
+  "model": "catalogue.operator.crud-local-proof",
+  "model_status_after_reopen": "archived",
+  "price_snapshots": [
+    "test.reference.v1",
+    "test.reference.v2"
+  ],
+  "registry_source_sha256": "5647c6bcbf10b8e6944bbc08ebebf348a1c055b26fe307aa9f206296fee6e792",
+  "scope": "temporary SQLite and actual local headless Chrome; target profile pending",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-model-created.png",
+      "sha256": "b11f6df9d6f861949cdcfa3d16372d4853fa240e5cbe99925eeb5dfbe9baae40"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-model-edited-and-repriced.png",
+      "sha256": "27cbadc595e46c46b266b49d632ec6d41e433195046def8d59649434c526f682"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-model-archived.png",
+      "sha256": "e927d1d188686801a92200bd9458e35b0f136b3601a2715073cb92088e3e5ed2"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-user-created.png",
+      "sha256": "f25c4e20376566c71641774ebbbc874ce5e65b973753b610c9e23356bdb16594"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-user-granted.png",
+      "sha256": "938f180cbe23f388f98d9fdec17bc96905404b6ac787e6166e78fd7f9e7631ed"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-user-revoked.png",
+      "sha256": "1d289283a172471ac387bdd2c6efadb6ca7a908c6ef2a71b3cd85d2b21f97323"
+    }
+  ],
+  "sign_out_http": 401,
+  "status": "PASS",
+  "traffic_before_after": {
+    "caller_lookups": 0,
+    "guard_dispatches": 0,
+    "intents": 0,
+    "submissions": 0
+  },
+  "user": "user.crud-local-proof",
+  "user_status_after_reopen": "revoked"
+}

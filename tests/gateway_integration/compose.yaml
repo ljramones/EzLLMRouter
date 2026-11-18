@@ -1,0 +1,224 @@
+services:
+  netns:
+    image: ${DURANKI_DEV04_PYTHON_BASE:?}
+    pull_policy: never
+    network_mode: none
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["python", "-c", "import time; time.sleep(3600)"]
+  receiver:
+    image: ${DURANKI_DEV04_RECEIVER_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["receiver_data:/data"]
+    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl}
+    depends_on: [netns]
+  service:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["service_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+    depends_on: [netns, receiver]
+  service_fault:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["fault_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_FAIL_GUARD_COMMIT: "1"
+      PORT: "8768"
+    depends_on: [netns, receiver]
+  service_tool_mutation:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["tool_mutation_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_PROXY_MUTATION: tool
+      PORT: "8769"
+    depends_on: [netns, receiver]
+  service_destination_mutation:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["destination_mutation_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_PROVIDER_BASE_OVERRIDE: http://127.0.0.1:8779/v1
+      PORT: "8770"
+    depends_on: [netns, receiver]
+  service_wait:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["wait_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_POOL_PROBE: "1"
+      DURANKI_DEV04_LOWER_TRACE: /data/lower-trace.jsonl
+      DURANKI_DEV04_AUTHORITY_TOGGLE: /data/authority-state
+      DURANKI_DEV04_SECOND_CONTEXT: "1"
+      DURANKI_DEV04_CONTEXT_SWAP: "1"
+      PORT: "8771"
+    depends_on: [netns, receiver]
+  service_probe:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["probe_data:/data"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_BYPASS_PROBE: "1"
+      PORT: "8772"
+    depends_on: [netns, receiver]
+  worker_choice_b:
+    image: ${DURANKI_DEV04_WORKER_IMAGE:?}
+    pull_policy: never
+    network_mode: none
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["choice_b_link:/link"]
+    environment: {DURANKI_DEV04_B_PROBE: "1"}
+  service_choice_b:
+    image: ${DURANKI_DEV04_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["choice_b_data:/data", "choice_b_link:/link"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_DEV04_PROVIDER_KEY: ${DURANKI_DEV04_PROVIDER_KEY:?}
+      DURANKI_DEV04_POOL_PROBE: "1"
+      DURANKI_DEV04_SEND_EVENTS: /data/send-events.jsonl
+      DURANKI_DEV05_TEST_TOOL_MUTATION: ${DURANKI_DEV05_TEST_TOOL_MUTATION:-0}
+      PORT: "8773"
+    command: ["python", "/app/gateway/choice_b_service.py"]
+    depends_on: [netns, receiver, worker_choice_b]
+  python_choice_b:
+    image: ${DURANKI_DEV04_PYCLIENT_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SERVICE_URL: http://127.0.0.1:8773
+      DURANKI_RECEIVER_URL: http://127.0.0.1:8766
+    depends_on: [netns, receiver, service_choice_b]
+  js_choice_b:
+    image: ${DURANKI_DEV04_JSCLIENT_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: node
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SERVICE_URL: http://127.0.0.1:8773
+      DURANKI_RECEIVER_URL: http://127.0.0.1:8766
+    depends_on: [netns, receiver, service_choice_b]
+  python_consumer:
+    image: ${DURANKI_DEV04_PYCLIENT_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SERVICE_URL: http://127.0.0.1:8765
+      DURANKI_RECEIVER_URL: http://127.0.0.1:8766
+    depends_on: [netns, receiver, service]
+  js_consumer:
+    image: ${DURANKI_DEV04_JSCLIENT_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: node
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SERVICE_URL: http://127.0.0.1:8765
+      DURANKI_RECEIVER_URL: http://127.0.0.1:8766
+    depends_on: [netns, receiver, service]
+volumes:
+  receiver_data:
+  service_data:
+  fault_data:
+  tool_mutation_data:
+  destination_mutation_data:
+  wait_data:
+  probe_data:
+  choice_b_link:
+  choice_b_data:

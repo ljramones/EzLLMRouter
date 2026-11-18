@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "scope": "WP-FND R03 existing-evidence supplement only",
+  "member_count": 15,
+  "members": [
+    {
+      "archive_path": "SUPPLEMENT-INDEX.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/SUPPLEMENT-INDEX.json",
+      "bytes": 38088,
+      "sha256": "45a1f3d80f9222ba5416b00b774bf8b6b2c26c9b33b4722b90e14d3009db4b4f",
+      "source_kind": "DERIVED_INDEX"
+    },
+    {
+      "archive_path": "original-session-events/build-a-server-sdist.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/build-a-server-sdist.jsonl",
+      "bytes": 3125,
+      "sha256": "08e45f16f3ea0d4d073bd9ab01568c933618e2b54ca55f8c51cf740920f92c69",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "original-session-events/build-a-server-wheel.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/build-a-server-wheel.jsonl",
+      "bytes": 3421,
+      "sha256": "8cd5fa21a819a500195789be42e469f16dd3c5de53fd2db9834132476c9b50a4",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "original-session-events/failed-direct-sdist-wheel.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/failed-direct-sdist-wheel.jsonl",
+      "bytes": 3706,
+      "sha256": "122df424035c94037ea8f6a37a97ef9366361f813932cd377fab7f8d2ea0e8df",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "original-session-events/failed-first-extraction-attempt.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/failed-first-extraction-attempt.jsonl",
+      "bytes": 2142,
+      "sha256": "a70ca10c35be4e115a6215d006f237cfa336d3d71fcd4f1aa77611f40fb1ba8d",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "original-session-events/original-ab-driver.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/original-ab-driver.jsonl",
+      "bytes": 8399,
+      "sha256": "9c365a018dd103875ac71504a74841b3598a9f72f4b0d2fb4e25ed9db1ffa1c0",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "original-session-events/successful-server-sdist-extraction.jsonl",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/original-session-events/successful-server-sdist-extraction.jsonl",
+      "bytes": 2656,
+      "sha256": "779eb79186ccc917b75e0fa81dd1ecce90c3b905e72c9d81992d4b456089d965",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-a-client-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-a-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "81d9fba542c6bc33030175cf880b4610d1e4964f443479817862e427a00d3083",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-a-client-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-a-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "81acd52e944a9b6f05db689ffa970cd642ce6d63445220718cb1537485e59b82",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-a-js-pack.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-a-js-pack.json",
+      "bytes": 1234,
+      "sha256": "01e85a71b20bca085f0b5800e6080677c505a01b4f04bd530a3a5e75e6ce51d0",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-b-client-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-b-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "9147f5a436f5115fbb7b29ddeead49f260d28e2acd24564e295186b09c767429",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-b-client-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-b-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "19b1e493fa18b3de1dd898f92a2baf3c76eff18a712a8a3152f3eabb90d2825d",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-b-js-pack.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-b-js-pack.json",
+      "bytes": 1234,
+      "sha256": "e54542322b16d46987078320814c8e50e2dbde85b8995fea4d414184ba328018",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-b-server-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-b-server-sdist.json",
+      "bytes": 1671,
+      "sha256": "1ccab7c496d2fb761bff6966110ecb3eb4ac640005455d606dff120c9a150bcc",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    },
+    {
+      "archive_path": "prior-run-logs/build-b-server-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-review-03/supplement-20261016-01/prior-run-logs/build-b-server-wheel.json",
+      "bytes": 1914,
+      "sha256": "fe020af175ed2ae7914c49ea1c042c545d863bf4375e1ca7c781f0ec18e64c64",
+      "source_kind": "BYTE_IDENTICAL_ORIGINAL_RECORD_COPY"
+    }
+  ]
+}

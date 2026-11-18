@@ -1,0 +1,105 @@
+{
+  "reviewed_baseline": "d3d533a47c3addcc503c2d6b6ba0c06bb0340b9d",
+  "tested_product_source": "6fc9434f7aa0a120b04c94931f28c3112bc333c7",
+  "branch": "dev12/operation-contract",
+  "contract_version": "2",
+  "package_version": "0.2.2",
+  "toolchain": {
+    "python": "CPython 3.12.16",
+    "node": "v24.22.1",
+    "uv": "0.13.6"
+  },
+  "checks": [
+    {
+      "command": "/opt/homebrew/bin/python3.12 -I -B tests/operator_console/test_integration_accounting.py -q",
+      "exit": 0,
+      "result": "14 authenticated HTTP tests OK"
+    },
+    {
+      "command": "/opt/homebrew/bin/python3.12 -I -B docs/contracts/integration-readiness-v1/check.py",
+      "exit": 0,
+      "result": "11 positive, 6 negative; USD 0.050000000 example"
+    },
+    {
+      "command": "/opt/homebrew/bin/python3.12 -I -B docs/contracts/integration-readiness-v2/check.py",
+      "exit": 0,
+      "result": "5 events, 2 snapshots, 6 negative, 6 response states; USD 0.030000000 example"
+    },
+    {
+      "command": "uv build --offline --wheel for service and Python client; Node 24 npm pack . --offline --ignore-scripts",
+      "exit": 0,
+      "result": "0.2.2 wheels and tarball built without package acquisition"
+    },
+    {
+      "command": "pip --no-index --no-deps old service wheel; pip --no-index --require-hashes new client lock; pip --no-index new service wheel; npm install --offline exact tarball",
+      "exit": 0,
+      "result": "clean 0.2.0 predecessor and 0.2.2 service/Python/Node installations"
+    },
+    {
+      "command": "correction03_release.py ROOT http://127.0.0.1:48780 seed_old",
+      "exit": 0,
+      "result": "installed 0.2.0 normal authenticated HTTP accepted 4 synthetic events, 2 attempts, known USD 0.010000000",
+      "evidence": "candidate1/evidence/old-seed-summary.json"
+    },
+    {
+      "command": "correction03_release.py ROOT http://127.0.0.1:48782 seed_corrected",
+      "exit": 0,
+      "result": "installed 0.2.2 Python/Node normal HTTP; same historical dataset accepts unrelated work, rejects touched conflict; mixed orders and pure v2 pass",
+      "evidence": "candidate1/evidence/seed_corrected-summary.json"
+    },
+    {
+      "command": "correction03_release.py ROOT http://127.0.0.1:48782 verify_corrected after service restart",
+      "exit": 0,
+      "result": "read-only receipt, report, export, historical hash and cost preserved",
+      "evidence": "candidate1/evidence/verify_corrected-summary.json"
+    },
+    {
+      "command": "correction03_release.py ROOT http://127.0.0.1:48782 probe_conflicts",
+      "exit": 0,
+      "result": "three exact 409 EVENT_CONFLICT/never responses; zero newly accepted events",
+      "evidence": "candidate1/evidence/probe-conflicts-summary.json"
+    },
+    {
+      "command": "package_correction03_release.py; unzip -t; shasum -a 256 -c MANIFEST.sha256",
+      "exit": 0,
+      "result": "exact release ZIP set/hashes and all 37 payloads passed"
+    }
+  ],
+  "historical_copy": {
+    "source_service_version": "0.2.0",
+    "source_service_wheel_sha256": "23f10e0da68badc264207a5f609a2d0787ebb956f92b521ebe023a61ed2554ed",
+    "old_records_sha256_before_and_after": "0447936f45c8698c21e18bd9e9fe7d041ad074dd9f44fd57d577d17ad095b82b",
+    "old_records_unchanged": true,
+    "before": {"events": 4, "attempts": 2, "known_usd": "0.010000000"},
+    "after": {"events": 5, "attempts": 3, "known_usd": "0.010000000", "unknown_cost_attempts": 2},
+    "reports": [
+      "candidate1/evidence/old-report.json",
+      "candidate1/evidence/corrected-report.json",
+      "candidate1/evidence/corrected-report.csv",
+      "candidate1/evidence/corrected-export.json"
+    ]
+  },
+  "private_root": "/Users/larrymitchell/Mach33/Duranki-artifacts/integration-correction03-20261028-01/",
+  "release": {
+    "path": "candidate1/duranki-integration-service-0.2.2.zip",
+    "bytes": 863363,
+    "sha256": "2ebfe4a380f43523f604a3233b897fca59cc370c8a4b50597d1ca0a7da12db22",
+    "manifest_sha256": "a6b42c9852346e8f4b3bc561030a7171052d1431978df5d39063247538264009",
+    "service_wheel_sha256": "070b0f536f3e59f647f88bba04bd820febb5424adffcd8ef4e75b611f58c237e",
+    "python_wheel_sha256": "eddff93e8f17bd6b472293774898c40f0cec20062050b26856d045a6ca11d600",
+    "npm_tarball_sha256": "8a3329e1017bca2c976b3fba0bfa21b8006f8199927134a9b005026b95222665"
+  },
+  "retained_evidence_reused": [
+    "Correction 02 independent closures IC02-02 through IC02-05",
+    "0.2.1 restart and separate backup-restore result for the unchanged persistence path"
+  ],
+  "evidence_note": "The initial Node seed output reported a boolean rejection. After the seed, the script was refined to assert and emit exact 409/never fields and to label read-only verification accurately. The separate retained probe used that final script and made no accepted writes; the original seed output was not rewritten.",
+  "diagnostic_failure": "The first npm pack invocation treated clients/js as a package spec and attempted a Git lookup; it produced no release tarball. The corrected npm pack . --offline invocation succeeded.",
+  "not_performed": [
+    "real Vega dataset activation or instrumentation",
+    "owner profile deployment",
+    "real provider call or commercial spend",
+    "new DEV-12 controlled sender campaign",
+    "new broad backup restoration matrix"
+  ]
+}

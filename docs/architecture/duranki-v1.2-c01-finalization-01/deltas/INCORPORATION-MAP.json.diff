@@ -1,0 +1,59 @@
+--- C01/INCORPORATION-MAP.json
++++ C01-E01/INCORPORATION-MAP.json
+@@ -196,7 +196,7 @@
+     {
+       "id": "F-01",
+       "subject": "Shared envelope required before DEV-12",
+-      "disposition": "Accepted and incorporated. Canonical commission/delegation snapshots; activation context signed separately to preserve deduplication; matching ledger fields; T-77/T-79 plus synthetic T-78 in the map. Binding placement is an explicit AUTHOR DESIGN RESOLUTION, not a claim that Claude prescribed these exact locations.",
++      "disposition": "Accepted and incorporated. Canonical caller commission/delegation assertions; server assessments and activation context signed separately to preserve deduplication (Erratum 01 G-01); matching ledger fields; T-77/T-79 plus synthetic T-78 in the map. Binding placement is an explicit AUTHOR DESIGN RESOLUTION, not a claim that Claude prescribed these exact locations.",
+       "target": "Architecture §§5.3, 9.4, 15.3; roadmap §§3–4"
+     },
+     {
+@@ -415,5 +415,47 @@
+       "rationale": "Use comparable outcomes and attempt identities, explicit fan-out scope and unique exposure. Task completion returns only proven unused/unencumbered balance; unknown liabilities remain.",
+       "destination": "Architecture §§10.4/10.8, 11.5, 12.1; roadmap §7"
+     }
++  ],
++  "review03_erratum": [
++    {
++      "id": "G-01",
++      "disposition": "Authored: assertion/assessment split, stable duplicate identity, signed immutable admission evidence.",
++      "targets": [
++        "5.3",
++        "9.4",
++        "T-14.a",
++        "T-46.b",
++        "T-79.c"
++      ]
++    },
++    {
++      "id": "G-02",
++      "disposition": "Authored: managed production plan keys, restricted signer, verification-only guard/sender, scheduled rotation and revocation.",
++      "targets": [
++        "5.3",
++        "5.4 FDC 1",
++        "T-07.a"
++      ]
++    },
++    {
++      "id": "N-01",
++      "disposition": "Authored successor ordering: durable commit outside fence, coherent publication under fence, then acknowledge; failure/restart constraints retained. Historical source claims qualified separately.",
++      "targets": [
++        "5.4",
++        "T-24 existing boundary"
++      ]
++    },
++    {
++      "id": "N-02",
++      "disposition": "Partial evidence mapping added for available DEV-05/06/07 records; DEV-08/09/10 primary results not located in searched files. Completion capture instruction included."
++    },
++    {
++      "id": "N-03",
++      "disposition": "Acknowledged; no prose-only rewrite, no new length gate."
++    },
++    {
++      "id": "N-04",
++      "disposition": "Fictional per-attempt rounding pair appended to existing T-48.g and vectors; no product execution."
++    }
+   ]
+ }

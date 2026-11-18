@@ -1,0 +1,314 @@
+{
+  "schema_version": "1.0",
+  "disposition": "READY_FOR_INDEPENDENT_FOUNDATION_REVIEW",
+  "scope": "LM-01 WP-FND Resumption 03, one bounded offline foundation run",
+  "member_count": 51,
+  "members": [
+    {
+      "archive_path": "source/.gitignore",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/.gitignore",
+      "bytes": 89,
+      "sha256": "187458c55d5114a45bf2a0b645c23d0728e6ef35952739a1df535c054ca181ef"
+    },
+    {
+      "archive_path": "source/.nvmrc",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/.nvmrc",
+      "bytes": 9,
+      "sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41"
+    },
+    {
+      "archive_path": "source/.python-version",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/.python-version",
+      "bytes": 5,
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d"
+    },
+    {
+      "archive_path": "source/clients/js/index.cjs",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/js/index.cjs",
+      "bytes": 69,
+      "sha256": "f26b8b24cad41704e977974f0b4ab6339da3e557c157ce613901f7125969fcfb"
+    },
+    {
+      "archive_path": "source/clients/js/package-lock.json",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/js/package-lock.json",
+      "bytes": 262,
+      "sha256": "15fc2da74ff8a53583d3cd180437d2c0de6988feb75da4ab8c4de022051bb9ea"
+    },
+    {
+      "archive_path": "source/clients/js/package.json",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/js/package.json",
+      "bytes": 320,
+      "sha256": "6091bdaebd326710742640885e54e0a0d33fd394874c087fe9a8037b9fdb10f2"
+    },
+    {
+      "archive_path": "source/clients/python/pyproject.toml",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/python/pyproject.toml",
+      "bytes": 349,
+      "sha256": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb"
+    },
+    {
+      "archive_path": "source/clients/python/src/duranki_client/__init__.py",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/python/src/duranki_client/__init__.py",
+      "bytes": 94,
+      "sha256": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8"
+    },
+    {
+      "archive_path": "source/clients/python/uv.lock",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/clients/python/uv.lock",
+      "bytes": 144,
+      "sha256": "1d9c2f0a446a5262d7186a23b7527a39431f81a945e351985330b8ddb34d921b"
+    },
+    {
+      "archive_path": "source/docs/architecture/llm-routing-infra-design-v1.1.md",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/docs/architecture/llm-routing-infra-design-v1.1.md",
+      "bytes": 71744,
+      "sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c"
+    },
+    {
+      "archive_path": "source/docs/architecture/review-tracker.md",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/docs/architecture/review-tracker.md",
+      "bytes": 44912,
+      "sha256": "36be1ae781fb6645fa186881eb967e7118f24dbf585913f2f8e0da9b1e1260ac"
+    },
+    {
+      "archive_path": "source/docs/foundation/WP-FND-RECEIPT-03.md",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/docs/foundation/WP-FND-RECEIPT-03.md",
+      "bytes": 13794,
+      "sha256": "2792795e322bd51e75d79cfec8f2df4e8f13fcb937061ece07613689e838e24b"
+    },
+    {
+      "archive_path": "source/server/pyproject.toml",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/server/pyproject.toml",
+      "bytes": 342,
+      "sha256": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f"
+    },
+    {
+      "archive_path": "source/server/src/duranki_server/__init__.py",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/server/src/duranki_server/__init__.py",
+      "bytes": 95,
+      "sha256": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa"
+    },
+    {
+      "archive_path": "source/server/uv.lock",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/server/uv.lock",
+      "bytes": 144,
+      "sha256": "81103f69b2446fcc0b5bb51a976b75da2d4a8c16534b1e839424e68368f72f15"
+    },
+    {
+      "archive_path": "source/tests/foundation/README.md",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/tests/foundation/README.md",
+      "bytes": 343,
+      "sha256": "d7257851c96d65326a046b07357349306a2e40d34e57394420fbf4e1505a913c"
+    },
+    {
+      "archive_path": "source/tests/foundation/js-consumer/package.json",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/tests/foundation/js-consumer/package.json",
+      "bytes": 110,
+      "sha256": "e95eecf8300839a5579601d612bcfbaee3959e8ddbdcdd12c53b8989f6569637"
+    },
+    {
+      "archive_path": "source/tests/foundation/js-consumer/require.cjs",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/tests/foundation/js-consumer/require.cjs",
+      "bytes": 546,
+      "sha256": "fd4389a64b6a54137f63da57d1d614dec14d08c2ca542166174fe46bfe5e5294"
+    },
+    {
+      "archive_path": "source/tests/foundation/python-consumer/import_client.py",
+      "source_path": "/Users/larrymitchell/Mach33/Duranki/tests/foundation/python-consumer/import_client.py",
+      "bytes": 671,
+      "sha256": "89987156a53faed75e3b35242fdf76c20af8d86a7fc0fbb072dbf933d5960f11"
+    },
+    {
+      "archive_path": "logs/artifact-audit.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/artifact-audit.json",
+      "bytes": 13419,
+      "sha256": "8d6660e07d57745a50f234e069d14d5905f5a2dde915488de088e5038278b3f4"
+    },
+    {
+      "archive_path": "logs/boundary-audit-pre-receipt.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/boundary-audit-pre-receipt.json",
+      "bytes": 2504,
+      "sha256": "9f7643333a91ac56224c8045e870d7c2538b7bd5c8cd028671cf81ec945f0436"
+    },
+    {
+      "archive_path": "logs/build-a-client-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "81d9fba542c6bc33030175cf880b4610d1e4964f443479817862e427a00d3083"
+    },
+    {
+      "archive_path": "logs/build-a-client-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "81acd52e944a9b6f05db689ffa970cd642ce6d63445220718cb1537485e59b82"
+    },
+    {
+      "archive_path": "logs/build-a-js-pack.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-js-pack.json",
+      "bytes": 1234,
+      "sha256": "01e85a71b20bca085f0b5800e6080677c505a01b4f04bd530a3a5e75e6ce51d0"
+    },
+    {
+      "archive_path": "logs/build-b-client-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "9147f5a436f5115fbb7b29ddeead49f260d28e2acd24564e295186b09c767429"
+    },
+    {
+      "archive_path": "logs/build-b-client-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "19b1e493fa18b3de1dd898f92a2baf3c76eff18a712a8a3152f3eabb90d2825d"
+    },
+    {
+      "archive_path": "logs/build-b-js-pack.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-js-pack.json",
+      "bytes": 1234,
+      "sha256": "e54542322b16d46987078320814c8e50e2dbde85b8995fea4d414184ba328018"
+    },
+    {
+      "archive_path": "logs/build-b-server-sdist.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-server-sdist.json",
+      "bytes": 1671,
+      "sha256": "1ccab7c496d2fb761bff6966110ecb3eb4ac640005455d606dff120c9a150bcc"
+    },
+    {
+      "archive_path": "logs/build-b-server-wheel.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-server-wheel.json",
+      "bytes": 1914,
+      "sha256": "fe020af175ed2ae7914c49ea1c042c545d863bf4375e1ca7c781f0ec18e64c64"
+    },
+    {
+      "archive_path": "logs/consumer-evidence.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-evidence.json",
+      "bytes": 2506,
+      "sha256": "32a9bbd0d1f0af758ed463cc040a7a6243e6deffbebba6a068a42083b61b5127"
+    },
+    {
+      "archive_path": "logs/consumer-js-install.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-js-install.json",
+      "bytes": 607,
+      "sha256": "590ada562bf0bee99f49e93de2772383c6b6322f621889e382984876aeb4ba4a"
+    },
+    {
+      "archive_path": "logs/consumer-js-require.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-js-require.json",
+      "bytes": 681,
+      "sha256": "5bfc51a2565f6d54f5265990e7f51155a2c0d62cf45e4083a1921783beab0973"
+    },
+    {
+      "archive_path": "logs/consumer-python-import.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-python-import.json",
+      "bytes": 771,
+      "sha256": "37542900ff25f4b2c4a9d843664c382796fd0b16f63d0445c60afb1378af7cf9"
+    },
+    {
+      "archive_path": "logs/consumer-python-install.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-python-install.json",
+      "bytes": 1790,
+      "sha256": "232522c35c2df2d7e019e22c5ae08f156c46bbac524376b7fa24e4ae1adac55c"
+    },
+    {
+      "archive_path": "logs/consumer-python-venv.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/consumer-python-venv.json",
+      "bytes": 332,
+      "sha256": "4bcf029c35f771a9082484de7d02bbe6092078a4da4c9c1bb0104f8eec8cfadc"
+    },
+    {
+      "archive_path": "logs/final-audit-03.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/final-audit-03.json",
+      "bytes": 2815,
+      "sha256": "135f1e196ed47416cadef94fe480fad3b2bfdf0b70b7daf8a85f88ac31b13b90"
+    },
+    {
+      "archive_path": "logs/git-state-final.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/git-state-final.json",
+      "bytes": 4147,
+      "sha256": "e2c9dbf033621b4835d3d291dcc1566747e0b710c3f9f38ab5067ae383c22678"
+    },
+    {
+      "archive_path": "logs/tool-process-identity.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/tool-process-identity.json",
+      "bytes": 846,
+      "sha256": "20c706a17597b4b589159f0d06562b206e06a31235695681e8e476d6ea8ec77a"
+    },
+    {
+      "archive_path": "artifacts/build-a/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "bytes": 1429,
+      "sha256": "d74ec0941174f000820cf9330a2faa63038bd70e268f257860bf40d3b0c9a1d3"
+    },
+    {
+      "archive_path": "artifacts/build-a/server/mach33_duranki_server-0.0.0.tar.gz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz",
+      "bytes": 794,
+      "sha256": "f1045d5296a103b16845e24338fd7fe3109f6b996bd9e796b3ff8edeb1de7642"
+    },
+    {
+      "archive_path": "artifacts/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "bytes": 1430,
+      "sha256": "e162a706d889cf41d96cdb9e77ebc1a0351d049b4df47e464f1b1c747c7e6f04"
+    },
+    {
+      "archive_path": "artifacts/build-a/client/mach33_duranki_client-0.0.0.tar.gz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0.tar.gz",
+      "bytes": 790,
+      "sha256": "16e2abf65f820f8d499538ceb86ec82952a7303bdd553267b7160b008d96589c"
+    },
+    {
+      "archive_path": "artifacts/build-a/js/mach33-duranki-client-0.0.0.tgz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/js/mach33-duranki-client-0.0.0.tgz",
+      "bytes": 349,
+      "sha256": "231fb69d51b95241558d512ac17a439bdef2cf0bb0488f94236da05ee8e9bb11"
+    },
+    {
+      "archive_path": "artifacts/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "bytes": 1429,
+      "sha256": "d74ec0941174f000820cf9330a2faa63038bd70e268f257860bf40d3b0c9a1d3"
+    },
+    {
+      "archive_path": "artifacts/build-b/server/mach33_duranki_server-0.0.0.tar.gz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0.tar.gz",
+      "bytes": 794,
+      "sha256": "f1045d5296a103b16845e24338fd7fe3109f6b996bd9e796b3ff8edeb1de7642"
+    },
+    {
+      "archive_path": "artifacts/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "bytes": 1430,
+      "sha256": "e162a706d889cf41d96cdb9e77ebc1a0351d049b4df47e464f1b1c747c7e6f04"
+    },
+    {
+      "archive_path": "artifacts/build-b/client/mach33_duranki_client-0.0.0.tar.gz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0.tar.gz",
+      "bytes": 790,
+      "sha256": "16e2abf65f820f8d499538ceb86ec82952a7303bdd553267b7160b008d96589c"
+    },
+    {
+      "archive_path": "artifacts/build-b/js/mach33-duranki-client-0.0.0.tgz",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/js/mach33-duranki-client-0.0.0.tgz",
+      "bytes": 349,
+      "sha256": "231fb69d51b95241558d512ac17a439bdef2cf0bb0488f94236da05ee8e9bb11"
+    },
+    {
+      "archive_path": "installed/consumers/python/venv/lib/python3.12/site-packages/mach33_duranki_client-0.0.0.dist-info/direct_url.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/consumers/python/venv/lib/python3.12/site-packages/mach33_duranki_client-0.0.0.dist-info/direct_url.json",
+      "bytes": 138,
+      "sha256": "cb1d34c9221f634a178beb23cb20d3a487538c7ec563954ed44e6a571b79a2a0"
+    },
+    {
+      "archive_path": "installed/consumers/js/package-lock.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/consumers/js/package-lock.json",
+      "bytes": 671,
+      "sha256": "3d85a3415409177e79a97d72e5dbaabf71b1fc03f1025c1de7cfd5cce9fb23e7"
+    },
+    {
+      "archive_path": "installed/consumers/js/node_modules/@mach33/duranki-client/package.json",
+      "source_path": "/private/tmp/duranki-fnd-01/run-20261016-03/consumers/js/node_modules/@mach33/duranki-client/package.json",
+      "bytes": 320,
+      "sha256": "6091bdaebd326710742640885e54e0a0d33fd394874c087fe9a8037b9fdb10f2"
+    }
+  ]
+}

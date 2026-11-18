@@ -1,0 +1,26 @@
+{
+  "form": {
+    "cap": "16",
+    "checked": false,
+    "required": true,
+    "text": true
+  },
+  "model_traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "scope": "disposable browser/SQLite; synthetic credential; no provider send",
+  "screenshot": {
+    "path": "docs/development/dev-08/screenshots/provider-validation-01-provider-validation-form.png",
+    "sha256": "a72a137264d52b20e9d1ab6aeb15f9b3216c30e608661b29fc55e2e0249fed04"
+  },
+  "status": "PASS"
+}

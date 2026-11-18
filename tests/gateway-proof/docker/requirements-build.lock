@@ -1,0 +1,3 @@
+# INCOMPLETE: NOT INSTALLABLE. Resolver/build metadata and hashes are unavailable.
+# Proposed root build requirement: maturin==1.15.0 (hash and wheel pending).
+# Future validated lock must replace this file with a COMPLETE marker and hashes.

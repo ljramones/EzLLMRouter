@@ -1,0 +1,88 @@
+{
+  "toplevel": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "rev-parse",
+      "--show-toplevel"
+    ],
+    "exit_status": 0,
+    "stdout": "/Users/larrymitchell/Mach33/Duranki\n",
+    "stderr": ""
+  },
+  "gitdir": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "rev-parse",
+      "--absolute-git-dir"
+    ],
+    "exit_status": 0,
+    "stdout": "/Users/larrymitchell/Mach33/Duranki/.git\n",
+    "stderr": ""
+  },
+  "branch": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "symbolic-ref",
+      "HEAD"
+    ],
+    "exit_status": 0,
+    "stdout": "refs/heads/main\n",
+    "stderr": ""
+  },
+  "head": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "rev-parse",
+      "--verify",
+      "HEAD"
+    ],
+    "exit_status": 128,
+    "stdout": "",
+    "stderr": "fatal: Needed a single revision\n"
+  },
+  "staged": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "ls-files",
+      "--stage"
+    ],
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "remotes": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "remote",
+      "-v"
+    ],
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "status": {
+    "argv": [
+      "/opt/homebrew/Cellar/git/2.56.0_1/bin/git",
+      "-C",
+      "/Users/larrymitchell/Mach33/Duranki",
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all"
+    ],
+    "exit_status": 0,
+    "stdout": "?? .DS_Store\n?? .gitignore\n?? .nvmrc\n?? .python-version\n?? AGENTS.md\n?? clients/js/index.cjs\n?? clients/js/package-lock.json\n?? clients/js/package.json\n?? clients/python/pyproject.toml\n?? clients/python/src/duranki_client/__init__.py\n?? clients/python/uv.lock\n?? docs/.DS_Store\n?? docs/architecture/llm-routing-infra-design-v1.1.md\n?? docs/architecture/review-tracker.md\n?? docs/foundation/WP-FND-RECEIPT-01.md\n?? docs/foundation/WP-FND-RECEIPT-02.md\n?? docs/implementation/.DS_Store\n?? docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-DECISIONS-01.md\n?? docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-RETURN-01.json\n?? docs/implementation/foundation-entry-01/DURANKI-PLANNING-02-ERRATUM-01.json\n?? docs/implementation/foundation-entry-02/DURANKI-FOUNDATION-ENTRY-CLOSURE-RETURN-02.json\n?? docs/implementation/foundation-entry-02/DURANKI-WP-FND-COMMISSION-DRAFT-01.md\n?? docs/implementation/planning-01/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.1.json\n?? docs/implementation/planning-01/DURANKI-IMPLEMENTATION-PLAN-v0.1.md\n?? docs/implementation/planning-01/DURANKI-IMPLEMENTATION-REGISTER-v0.1.json\n?? docs/implementation/planning-01/DURANKI-PLANNING-RETURN-01.json\n?? docs/implementation/planning-01/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md\n?? docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json\n?? docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md\n?? docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json\n?? docs/implementation/planning-02/DURANKI-PLANNING-RETURN-02.json\n?? docs/implementation/planning-02/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md\n?? mach-recce/DURANKI-CALL-PATH-INVENTORY.json\n?? mach-recce/DURANKI-CLIENT-CONTRACT-MAPPING.md\n?? mach-recce/DURANKI-FIXTURE-CATALOGUE.json\n?? mach-recce/DURANKI-MACH-PLATFORM-RECONNAISSANCE.md\n?? mach-recce/DURANKI-RECONNAISSANCE-RETURN.json\n?? planning/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md\n?? server/pyproject.toml\n?? server/src/duranki_server/__init__.py\n?? server/uv.lock\n?? tests/foundation/README.md\n?? tests/foundation/js-consumer/package.json\n?? tests/foundation/js-consumer/require.cjs\n?? tests/foundation/python-consumer/import_client.py\n",
+    "stderr": ""
+  }
+}

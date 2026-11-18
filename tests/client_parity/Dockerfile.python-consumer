@@ -1,0 +1,17 @@
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_CONFIG_FILE=/dev/null
+COPY wheels/ /opt/duranki/wheels/
+COPY wheelhouse.sha256 /opt/duranki/wheels/sha256sums
+RUN cd /opt/duranki/wheels && sha256sum -c sha256sums \
+ && python -m pip install --no-index --find-links=/opt/duranki/wheels --only-binary=:all: \
+      anyio==4.15.1 certifi==2026.7.22 h11==0.16.0 httpcore==1.0.9 \
+      httpx==0.28.1 idna==3.20 typing-extensions==4.16.0
+COPY mach33_duranki_client-0.0.2-py3-none-any.whl /opt/duranki/client/
+RUN python -m pip install --no-index --no-deps /opt/duranki/client/mach33_duranki_client-0.0.2-py3-none-any.whl \
+ && python -m pip check \
+ && rm -rf /opt/duranki/wheels /opt/duranki/client
+COPY tests/ /app/client_tests/
+USER 10001:10001
+WORKDIR /app/client_tests
+CMD ["python", "integration_python.py", "capabilities"]

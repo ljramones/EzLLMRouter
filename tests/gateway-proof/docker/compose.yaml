@@ -1,0 +1,111 @@
+services:
+  driver:
+    image: ${DKR_TOOLS_IMAGE:?approved Linux ARM64 tools image required}
+    pull_policy: never
+    platform: linux/arm64
+    command: ["-c", "import sys; sys.path.insert(0, '/app/trusted'); from driver import main; main()"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    restart: "no"
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    environment:
+      GATEWAY_URL: http://gateway:4000/v1/chat/completions
+      EVIDENCE_DIR: /evidence
+    networks: [ingress]
+    volumes:
+      - driver-evidence:/evidence
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.duranki.role: driver
+
+  gateway:
+    image: ${DKR_GATEWAY_IMAGE:?approved local-wheel image required}
+    pull_policy: never
+    platform: linux/arm64
+    command: ["-c", "import sys; sys.path.insert(0, '/app/trusted'); from app_wrapper import main; main()"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: 2.0
+    restart: "no"
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=128m"]
+    environment:
+      RECEIVER_URL: http://receiver:8000/v1/chat/completions
+      INTENT_DIR: /intent
+      GATEWAY_LOG_DIR: /logs
+      DKR_RUN_ID: ${DKR_RUN_ID:?collision-checked run ID required}
+    networks: [ingress, provider]
+    volumes:
+      - gateway-intent:/intent
+      - gateway-logs:/logs
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.duranki.role: gateway
+
+  receiver:
+    image: ${DKR_TOOLS_IMAGE:?approved Linux ARM64 tools image required}
+    pull_policy: never
+    platform: linux/arm64
+    command: ["-c", "import sys; sys.path.insert(0, '/app/trusted'); from receiver import main; main()"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    restart: "no"
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    environment:
+      LISTEN_HOST: 0.0.0.0
+      LISTEN_PORT: "8000"
+      EVIDENCE_DIR: /evidence
+    networks: [provider]
+    volumes:
+      - receiver-evidence:/evidence
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.duranki.role: receiver
+
+networks:
+  ingress:
+    internal: true
+    enable_ipv6: false
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+  provider:
+    internal: true
+    enable_ipv6: false
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+
+volumes:
+  driver-evidence:
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+  gateway-intent:
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+  gateway-logs:
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+  receiver-evidence:
+    labels:
+      org.duranki.proof: wp-b
+      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}

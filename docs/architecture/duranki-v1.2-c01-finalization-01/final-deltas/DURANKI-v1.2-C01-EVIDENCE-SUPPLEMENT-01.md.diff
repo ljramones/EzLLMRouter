@@ -1,0 +1,20 @@
+--- E01/DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md
++++ FINAL/DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md
+@@ -32,7 +32,7 @@
+ | T-14 (E-09, E-12) | Distinct authorized generations are preserved in installed-client tool cycles; checked target work-identity suite rejects replay of the same registered attempt. | Attempt replay is not the complete WorkKey/digest duplicate matrix. E-04 remains the prior controlled duplicate-submission evidence. T-14.a is new and unexecuted. |
+ | T-16 (E-09) | Ambiguous post-send close remains outcome_unknown through cross-client status read, with one arrival and no extra observed send. | Finite 5.203-second quiet interval; no indefinite drain, timeout family or commercial endpoint claim. |
+ | T-18 (E-09) | Controlled 503 and ambiguous close retain not_recorded usage and unknown cost rather than manufacturing zero. | No later reconciliation, native-unit successor, invoice or all cache-shape coverage from this record. |
+-| T-24 (E-11) | DEV-07 reports real pool hold/queued request, acknowledged grant/principal/model revocation, zero queued first-write events and arrivals, and revoked-grant persistence after ordinary restart. | No proof of E01 durable-commit/outside-fence publication sequence; the historical result explicitly describes commit inside the gate. Not crash or replicated proof. |
++| T-24 (E-11) | DEV-07 reports real pool hold/queued request, acknowledged grant/principal/model revocation, zero queued first-write events and arrivals, and revoked-grant persistence after ordinary restart. | DEV-07 commit-inside-gate ordering conforms to the standalone R04-01 invariant within the recorded cases. No crash, new successor/transport, networked publication or replicated-fence proof is inferred; current source correspondence remains to be established. |
+ | T-37 (E-10, E-11) | Positive frozen 117-wheel preparation, staged source and offline image-build correspondence recorded in living results. | Supporting provenance only: these positive observations do not show the required negative refusal of unapproved/mismatched inputs. |
+ | T-38 (E-09, E-10) | Run-16 raw-worker and unregistered-sender probes add no receiver arrival; DEV-06 reports isolated ingress/worker and forged-attempt audit. | Selected local probes only; no production telemetry egress or exhaustive arbitrary-code/IPC/tenant proof. |
+ | T-40 (E-12) | The recorded eight-test guard suite includes rejection of unregistered public model and mismatched final provider model. | Does not establish the built-in-router startup-refusal branch or all alternate handlers. |
+@@ -52,7 +52,7 @@
+ 
+ ## 4. Lock-ordering source distinction
+ 
+-Review 03 N-01 is incorporated as a successor requirement. The DEV-04/05 owned-sender source shows a fence-protected in-memory revocation/epoch update; it does not by itself establish a durable database-commit pipeline. The supplied DEV-07 result explicitly says its registry transaction committed while holding the first-write gate. Preserve that historical description. Do not relabel it as proof of commit-outside-fence ordering. Qualify the new sequence and its failure/restart behavior separately.
++Review 04 R04-01 supersedes the blanket ordering proposed in Review 03 N-01. DEV-04/05 supports the fence-protected in-memory revocation/epoch mechanism. The supplied DEV-07 result describes authority data, audit and revision committing inside the first-write gate and the sender view updating before acknowledgement; this is compatible with the standalone single-process SQLite invariant. Preserve that mechanism and its bounded evidence. The outside-lock commit and later fenced publication sequence belongs to PostgreSQL/replicated profiles with network-bound or unbounded persistence and needs separate interval/failure/ordering/restart qualification. No new product run or current-source correspondence is supplied by this document amendment.
+ 
+ ## 5. Finish the record map without another implementation cycle
+ 

@@ -1,0 +1,382 @@
+{
+  "artifacts": {
+    "build-a_server_sdist": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz",
+      "sha256": "f1045d5296a103b16845e24338fd7fe3109f6b996bd9e796b3ff8edeb1de7642",
+      "size": 794,
+      "members": [
+        {
+          "path": "mach33_duranki_server-0.0.0/PKG-INFO",
+          "type": "file",
+          "size": 184,
+          "sha256": "9c23e4ff236ce1e545386f868ec0ade88efafbd6b5a0c80031bfbd1ac1de2654"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/pyproject.toml",
+          "type": "file",
+          "size": 342,
+          "sha256": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/pyproject.toml.orig",
+          "type": "file",
+          "size": 342,
+          "sha256": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src/duranki_server",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src/duranki_server/__init__.py",
+          "type": "file",
+          "size": 95,
+          "sha256": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa"
+        }
+      ]
+    },
+    "build-a_server_wheel": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "sha256": "d74ec0941174f000820cf9330a2faa63038bd70e268f257860bf40d3b0c9a1d3",
+      "size": 1429,
+      "members": [
+        {
+          "path": "duranki_server/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "duranki_server/__init__.py",
+          "size": 95,
+          "sha256": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/WHEEL",
+          "size": 80,
+          "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/METADATA",
+          "size": 184,
+          "sha256": "9c23e4ff236ce1e545386f868ec0ade88efafbd6b5a0c80031bfbd1ac1de2654"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/RECORD",
+          "size": 328,
+          "sha256": "52c198c7c470bb1d2a71b0fd8782997e5831b95e816e6169c126cd32affadd00"
+        }
+      ]
+    },
+    "build-a_client_sdist": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0.tar.gz",
+      "sha256": "16e2abf65f820f8d499538ceb86ec82952a7303bdd553267b7160b008d96589c",
+      "size": 790,
+      "members": [
+        {
+          "path": "mach33_duranki_client-0.0.0/PKG-INFO",
+          "type": "file",
+          "size": 191,
+          "sha256": "0b2d8b79955262a71042beecbcf91ccc08fd03e196583e1addb6e61470f0f54b"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/pyproject.toml",
+          "type": "file",
+          "size": 349,
+          "sha256": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/pyproject.toml.orig",
+          "type": "file",
+          "size": 349,
+          "sha256": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src/duranki_client",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src/duranki_client/__init__.py",
+          "type": "file",
+          "size": 94,
+          "sha256": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8"
+        }
+      ]
+    },
+    "build-a_client_wheel": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "sha256": "e162a706d889cf41d96cdb9e77ebc1a0351d049b4df47e464f1b1c747c7e6f04",
+      "size": 1430,
+      "members": [
+        {
+          "path": "duranki_client/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "duranki_client/__init__.py",
+          "size": 94,
+          "sha256": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/WHEEL",
+          "size": 80,
+          "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/METADATA",
+          "size": 191,
+          "sha256": "0b2d8b79955262a71042beecbcf91ccc08fd03e196583e1addb6e61470f0f54b"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/RECORD",
+          "size": 328,
+          "sha256": "5af1a250faf0f5865f4f53706126dadc0f69b7cc2406d4e67a3b8c851b93ced6"
+        }
+      ]
+    },
+    "build-a_js_tarball": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/js/mach33-duranki-client-0.0.0.tgz",
+      "sha256": "231fb69d51b95241558d512ac17a439bdef2cf0bb0488f94236da05ee8e9bb11",
+      "size": 349,
+      "members": [
+        {
+          "path": "package/index.cjs",
+          "type": "file",
+          "size": 69,
+          "sha256": "f26b8b24cad41704e977974f0b4ab6339da3e557c157ce613901f7125969fcfb"
+        },
+        {
+          "path": "package/package.json",
+          "type": "file",
+          "size": 320,
+          "sha256": "6091bdaebd326710742640885e54e0a0d33fd394874c087fe9a8037b9fdb10f2"
+        }
+      ]
+    },
+    "build-b_server_sdist": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0.tar.gz",
+      "sha256": "f1045d5296a103b16845e24338fd7fe3109f6b996bd9e796b3ff8edeb1de7642",
+      "size": 794,
+      "members": [
+        {
+          "path": "mach33_duranki_server-0.0.0/PKG-INFO",
+          "type": "file",
+          "size": 184,
+          "sha256": "9c23e4ff236ce1e545386f868ec0ade88efafbd6b5a0c80031bfbd1ac1de2654"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/pyproject.toml",
+          "type": "file",
+          "size": 342,
+          "sha256": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/pyproject.toml.orig",
+          "type": "file",
+          "size": 342,
+          "sha256": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src/duranki_server",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0/src/duranki_server/__init__.py",
+          "type": "file",
+          "size": 95,
+          "sha256": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa"
+        }
+      ]
+    },
+    "build-b_server_wheel": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl",
+      "sha256": "d74ec0941174f000820cf9330a2faa63038bd70e268f257860bf40d3b0c9a1d3",
+      "size": 1429,
+      "members": [
+        {
+          "path": "duranki_server/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "duranki_server/__init__.py",
+          "size": 95,
+          "sha256": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/WHEEL",
+          "size": 80,
+          "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/METADATA",
+          "size": 184,
+          "sha256": "9c23e4ff236ce1e545386f868ec0ade88efafbd6b5a0c80031bfbd1ac1de2654"
+        },
+        {
+          "path": "mach33_duranki_server-0.0.0.dist-info/RECORD",
+          "size": 328,
+          "sha256": "52c198c7c470bb1d2a71b0fd8782997e5831b95e816e6169c126cd32affadd00"
+        }
+      ]
+    },
+    "build-b_client_sdist": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0.tar.gz",
+      "sha256": "16e2abf65f820f8d499538ceb86ec82952a7303bdd553267b7160b008d96589c",
+      "size": 790,
+      "members": [
+        {
+          "path": "mach33_duranki_client-0.0.0/PKG-INFO",
+          "type": "file",
+          "size": 191,
+          "sha256": "0b2d8b79955262a71042beecbcf91ccc08fd03e196583e1addb6e61470f0f54b"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/pyproject.toml",
+          "type": "file",
+          "size": 349,
+          "sha256": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/pyproject.toml.orig",
+          "type": "file",
+          "size": 349,
+          "sha256": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src/duranki_client",
+          "type": "directory",
+          "size": 0
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0/src/duranki_client/__init__.py",
+          "type": "file",
+          "size": 94,
+          "sha256": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8"
+        }
+      ]
+    },
+    "build-b_client_wheel": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl",
+      "sha256": "e162a706d889cf41d96cdb9e77ebc1a0351d049b4df47e464f1b1c747c7e6f04",
+      "size": 1430,
+      "members": [
+        {
+          "path": "duranki_client/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "duranki_client/__init__.py",
+          "size": 94,
+          "sha256": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/WHEEL",
+          "size": 80,
+          "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/METADATA",
+          "size": 191,
+          "sha256": "0b2d8b79955262a71042beecbcf91ccc08fd03e196583e1addb6e61470f0f54b"
+        },
+        {
+          "path": "mach33_duranki_client-0.0.0.dist-info/RECORD",
+          "size": 328,
+          "sha256": "5af1a250faf0f5865f4f53706126dadc0f69b7cc2406d4e67a3b8c851b93ced6"
+        }
+      ]
+    },
+    "build-b_js_tarball": {
+      "path": "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/js/mach33-duranki-client-0.0.0.tgz",
+      "sha256": "231fb69d51b95241558d512ac17a439bdef2cf0bb0488f94236da05ee8e9bb11",
+      "size": 349,
+      "members": [
+        {
+          "path": "package/index.cjs",
+          "type": "file",
+          "size": 69,
+          "sha256": "f26b8b24cad41704e977974f0b4ab6339da3e557c157ce613901f7125969fcfb"
+        },
+        {
+          "path": "package/package.json",
+          "type": "file",
+          "size": 320,
+          "sha256": "6091bdaebd326710742640885e54e0a0d33fd394874c087fe9a8037b9fdb10f2"
+        }
+      ]
+    }
+  },
+  "reproducible": {
+    "server_sdist": true,
+    "server_wheel": true,
+    "client_sdist": true,
+    "client_wheel": true,
+    "js_tarball": true
+  },
+  "unexpected_members": []
+}

@@ -1,0 +1,3100 @@
+{
+  "schema_version": "0.2",
+  "status": "corrected_draft_for_review",
+  "authority": "llm-routing-infra-design-v1.1.md §§15-16; DURANKI-IMPLEMENTATION-PLAN-v0.1-REVIEW-01.md §6",
+  "id_rules": {
+    "work_packages": "WP-*",
+    "obligations": "OB-*",
+    "baseline_tests": "T-01 through T-41; each canonical test defined once"
+  },
+  "work_packages": [
+    {
+      "id": "WP-FND",
+      "phase": "1a-preparation",
+      "title": "Repository/toolchain foundation",
+      "dependencies": [],
+      "responsibility_owner": "repository maintainer",
+      "evidence_required": "Portable architecture/tracker receipt; reproducible clean JS/Python package builds/imports; isolation and provenance for introduced dependencies only; no API round trip.",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [
+        "DEC-01",
+        "DEC-02",
+        "DEC-15"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-FND/F1",
+          "output": "Portable source custody, reproducible package boundaries and clean import proof",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-P0",
+      "phase": "0",
+      "title": "Measurement and representative baseline",
+      "dependencies": [],
+      "responsibility_owner": "measurement lead and orchestrator owner",
+      "evidence_required": "Representative complete cohorts, acceptance protocol and cost per accepted task",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [],
+      "produced_decisions": [
+        "DEC-03B"
+      ],
+      "completion_decisions": [
+        "DEC-03B"
+      ],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-P0/P1",
+          "output": "Measurement protocol and synthetic schema readiness",
+          "evidence_status": "NOT_RUN"
+        },
+        {
+          "id": "WP-P0/P2",
+          "output": "Representative complete-cohort baseline and savings ceiling",
+          "evidence_status": "NOT_RUN"
+        }
+      ],
+      "activity_entry_decisions": {
+        "measurement_protocol_draft": [],
+        "representative_collection": [
+          "DEC-03A",
+          "DEC-12A"
+        ]
+      },
+      "conditional_decision_note": "DEC-12A applies only when affected real data is admitted."
+    },
+    {
+      "id": "WP-A",
+      "phase": "1a-preparation",
+      "title": "Source-informed contract and capability profile",
+      "dependencies": [],
+      "responsibility_owner": "API owner",
+      "evidence_required": "Versioned schemas, vectors, invalid-input and unsupported-capability specification",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [],
+      "produced_decisions": [
+        "DEC-04",
+        "DEC-05",
+        "DEC-06",
+        "DEC-07",
+        "DEC-08"
+      ],
+      "completion_decisions": [
+        "DEC-04",
+        "DEC-05",
+        "DEC-06",
+        "DEC-07",
+        "DEC-08"
+      ],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-A/A1",
+          "output": "Draft contract and capability vectors",
+          "evidence_status": "NOT_RUN"
+        },
+        {
+          "id": "WP-A/A2",
+          "output": "Approved binding/response/capability decisions",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-B",
+      "phase": "1a-preparation",
+      "title": "Pinned gateway integration proof",
+      "dependencies": [
+        "WP-FND"
+      ],
+      "responsibility_owner": "gateway integration owner",
+      "evidence_required": "Pinned candidate receiver/interception proof and recorded limitations; qualification produced by B, not assumed at entry.",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [
+        "DEC-13"
+      ],
+      "produced_decisions": [
+        "DEC-09"
+      ],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-B/B1",
+          "output": "Pinned candidate enabled-path proof with independent receiver",
+          "evidence_status": "NOT_RUN"
+        }
+      ],
+      "activity_entry_decisions": {
+        "experiment_design": [
+          "DEC-13"
+        ],
+        "final_proof": [
+          "DEC-13",
+          "DEC-04"
+        ]
+      },
+      "completion_dependencies": [
+        "WP-A"
+      ],
+      "dependency_note": "B design may run alongside A; accepted proof must use the relevant approved A binding.",
+      "conditional_decision_note": "DEC-04 accepted binding subset is needed for final proof, not initial experiment design."
+    },
+    {
+      "id": "WP-C",
+      "phase": "1a",
+      "title": "Production-intended clients and synthetic orchestrator",
+      "dependencies": [
+        "WP-FND",
+        "WP-A",
+        "WP-B"
+      ],
+      "responsibility_owner": "service, SDK and orchestrator owners",
+      "evidence_required": "C1 actual durable fixed-destination service; C2 installed clients/synthetic participants; C3 integrated request-to-outcome conformance against C1.",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [
+        "DEC-04",
+        "DEC-05",
+        "DEC-06",
+        "DEC-07",
+        "DEC-08",
+        "DEC-14"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-C/C1",
+          "output": "Production-intended fixed-destination Python core",
+          "evidence_status": "NOT_RUN"
+        },
+        {
+          "id": "WP-C/C2",
+          "output": "Installed clients and synthetic participants",
+          "evidence_status": "NOT_RUN"
+        },
+        {
+          "id": "WP-C/C3",
+          "output": "Integrated actual-service request-to-outcome conformance",
+          "evidence_status": "NOT_RUN"
+        }
+      ],
+      "activity_entry_decisions": {
+        "C1": [
+          "DEC-14",
+          "DEC-04",
+          "DEC-05",
+          "DEC-06",
+          "DEC-07",
+          "DEC-08"
+        ],
+        "C2": [
+          "DEC-01",
+          "DEC-02"
+        ],
+        "C3": []
+      },
+      "activity_prerequisites": {
+        "C3": [
+          "WP-C/C1",
+          "WP-C/C2",
+          "WP-B/B1"
+        ]
+      }
+    },
+    {
+      "id": "WP-D",
+      "phase": "1a",
+      "title": "Phase 1a hardening and acceptance",
+      "dependencies": [
+        "WP-A",
+        "WP-B",
+        "WP-C"
+      ],
+      "responsibility_owner": "gateway, policy, accounting, security and operations owners",
+      "evidence_required": "Replicated operational controls and complete Phase 1a evidence; C1 functional controls are already produced by C.",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4",
+      "entry_decisions": [
+        "DEC-09",
+        "DEC-10",
+        "DEC-11"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [
+        "DEC-09",
+        "DEC-10",
+        "DEC-11",
+        "DEC-12A"
+      ],
+      "milestones": [
+        {
+          "id": "WP-D/D1",
+          "output": "Replicated operational Phase 1a qualification",
+          "evidence_status": "NOT_RUN"
+        }
+      ],
+      "conditional_decision_note": "DEC-12A applies only before affected real-data admission."
+    },
+    {
+      "id": "WP-1B",
+      "phase": "1b",
+      "title": "Budgets, recovery and faults",
+      "dependencies": [
+        "WP-D"
+      ],
+      "responsibility_owner": "gateway, accounting and orchestrator owners",
+      "evidence_required": "Full-profile exposure, recovery and tests 10-24",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-1B/1B1",
+          "output": "Full exposure, recovery and single-winner proof",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-2",
+      "phase": "2",
+      "title": "Quick wins",
+      "dependencies": [
+        "WP-1B",
+        "WP-P0"
+      ],
+      "responsibility_owner": "orchestrator and measurement owners",
+      "evidence_required": "Cost and quality gate, full instrumentation and test 25",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [
+        "DEC-03B"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-2/2A",
+          "output": "Quick wins and full instrumentation compliance",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-3",
+      "phase": "3",
+      "title": "Evaluation and bake-off",
+      "dependencies": [
+        "WP-2",
+        "WP-P0"
+      ],
+      "responsibility_owner": "evaluation and registry owners",
+      "evidence_required": "Confirmation-set predictor selection and tests 26-27",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [
+        "DEC-12E"
+      ],
+      "produced_decisions": [
+        "DEC-12D"
+      ],
+      "completion_decisions": [
+        "DEC-12D"
+      ],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-3/3A",
+          "output": "Internal predictor comparison and confirmation-set choice",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-4",
+      "phase": "4",
+      "title": "Rules, cascades and lab live",
+      "dependencies": [
+        "WP-3"
+      ],
+      "responsibility_owner": "routing, orchestrator and lab owners",
+      "evidence_required": "Quality, drain, measured lab savings and tests 28-34",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [
+        "DEC-12B",
+        "DEC-12C"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [
+        "DEC-12A"
+      ],
+      "milestones": [
+        {
+          "id": "WP-4/4A",
+          "output": "Rules, cascades and lab live qualification",
+          "evidence_status": "NOT_RUN"
+        }
+      ],
+      "conditional_decision_note": "DEC-12A applies only before affected real-data admission."
+    },
+    {
+      "id": "WP-5",
+      "phase": "5",
+      "title": "Learned routing",
+      "dependencies": [
+        "WP-4"
+      ],
+      "responsibility_owner": "routing and evaluation owners",
+      "evidence_required": "Task-level value, rollback and test 35",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [
+        "DEC-12D"
+      ],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-5/5A",
+          "output": "Learned routing and rollback qualification",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "WP-6",
+      "phase": "6",
+      "title": "Closed loop",
+      "dependencies": [
+        "WP-5"
+      ],
+      "responsibility_owner": "evaluation and policy owners",
+      "evidence_required": "Quality stability and ongoing fallback exercise",
+      "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §4 Later package summaries",
+      "entry_decisions": [],
+      "produced_decisions": [],
+      "completion_decisions": [],
+      "operational_acceptance_decisions": [],
+      "milestones": [
+        {
+          "id": "WP-6/6A",
+          "output": "Closed-loop change-control qualification",
+          "evidence_status": "NOT_RUN"
+        }
+      ]
+    }
+  ],
+  "obligations": [
+    {
+      "id": "OB-P0-METRIC",
+      "earliest_phase": "0",
+      "owning_component": "measurement and orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§1, 10.7, 11, 15"
+      ],
+      "requirement": "Representative complete-cohort cost per accepted task, acceptance protocol and quadrant spend share",
+      "work_packages": [
+        "WP-P0"
+      ],
+      "evidence_required": "Real representative cohort evidence",
+      "first_functional_milestone": "WP-P0/P1",
+      "implementation_producer": "measurement and orchestrator",
+      "acceptance_owner": "measurement and orchestrator reviewer",
+      "completion_milestone": "WP-P0/P2",
+      "numbered_test_links": [],
+      "unnumbered_checks": [
+        {
+          "id": "U-P0-METRIC",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Real representative cohort evidence",
+          "evidence_level": "P1 synthetic specification then P2 representative cohort",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-TRUST",
+      "earliest_phase": "1a",
+      "owning_component": "admission service and trusted ingress",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 7.1, 9"
+      ],
+      "requirement": "Authenticate principal, ownership, purpose, origin and bounded migration mode",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Negative admission and origin tests; attribution coverage",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "admission service and trusted ingress",
+      "acceptance_owner": "admission service and trusted ingress reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-01",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-06",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-TRUST",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Negative admission and origin tests; attribution coverage",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-SOURCE",
+      "earliest_phase": "1a",
+      "owning_component": "orchestrator and admission service",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 9, 13"
+      ],
+      "requirement": "Monotonic source labels and combined restrictions on every block and derived call",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Label corpus and raw negative tests",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "orchestrator and admission service",
+      "acceptance_owner": "orchestrator and admission service reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-03",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-21",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-23",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-SOURCE",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Label corpus and raw negative tests",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-CLASSIFIER",
+      "earliest_phase": "1a",
+      "owning_component": "policy service",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §5.1"
+      ],
+      "requirement": "Deterministic rules classifier with owner, corpus and error bars",
+      "work_packages": [
+        "WP-A",
+        "WP-D",
+        "WP-C"
+      ],
+      "evidence_required": "Labelled corpus and approved bars",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "policy service",
+      "acceptance_owner": "policy service reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-03",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-CLASSIFIER",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Labelled corpus and approved bars",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-CAPABILITY",
+      "earliest_phase": "1a",
+      "owning_component": "service and SDK",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 5.3"
+      ],
+      "requirement": "Capability compatibility and explicit unsupported rejection",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Cross-language vectors and receiver observation",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "service and SDK",
+      "acceptance_owner": "service and SDK reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-09",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-17",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-40",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-CAPABILITY",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Cross-language vectors and receiver observation",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-FIXED",
+      "earliest_phase": "1a",
+      "owning_component": "admission service",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 5.5"
+      ],
+      "requirement": "Fixed requested approved destination, no substitution, version-controlled approval file",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Negative destination and served-configuration receipts",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "admission service",
+      "acceptance_owner": "admission service reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-02",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-40",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-FIXED",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Negative destination and served-configuration receipts",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-BINDING",
+      "earliest_phase": "1a",
+      "owning_component": "plan signer and FDC",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.3, 5.4"
+      ],
+      "requirement": "Canonical-work and candidate binding, signed plan and post-callback FDC",
+      "work_packages": [
+        "WP-A",
+        "WP-B",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Receiver negative proof on each enabled path",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "plan signer and FDC",
+      "acceptance_owner": "plan signer and FDC reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-07",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-08",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-09",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-24",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-40",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-BINDING",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Receiver negative proof on each enabled path",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-INTENT",
+      "earliest_phase": "1a",
+      "owning_component": "ledger and gateway",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.4, 10.1"
+      ],
+      "requirement": "Durable intent before transmission; WAL fallback fails closed",
+      "work_packages": [
+        "WP-B",
+        "WP-D",
+        "WP-C"
+      ],
+      "evidence_required": "Ordering and primary/WAL failure proof",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "ledger and gateway",
+      "acceptance_owner": "ledger and gateway reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-04",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-24",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-INTENT",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Ordering and primary/WAL failure proof",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-USAGE",
+      "earliest_phase": "1a",
+      "owning_component": "ledger and SDK",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§10.1-10.3"
+      ],
+      "requirement": "Per-attempt raw/normalized usage, unknown status and semantics versions",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Multi-attempt and missing-usage vectors",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "ledger and SDK",
+      "acceptance_owner": "ledger and SDK reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-18",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-22",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-USAGE",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Multi-attempt and missing-usage vectors",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-SPEND",
+      "earliest_phase": "1a",
+      "owning_component": "admission and accounting",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 10.4"
+      ],
+      "requirement": "Per-principal spend limits and alerts without hard concurrent ceiling",
+      "work_packages": [
+        "WP-D",
+        "WP-C"
+      ],
+      "evidence_required": "Limit and alert evidence",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "admission and accounting",
+      "acceptance_owner": "admission and accounting reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-11",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-SPEND",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Limit and alert evidence",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-TELEMETRY",
+      "earliest_phase": "1a",
+      "owning_component": "telemetry and retention",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§10.3, 13.1-13.2"
+      ],
+      "requirement": "Allowlisted redacted telemetry and retention at each persistence boundary",
+      "work_packages": [
+        "WP-D",
+        "WP-C"
+      ],
+      "evidence_required": "Sensitive content blocked before export",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "telemetry and retention",
+      "acceptance_owner": "telemetry and retention reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-05",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-TELEMETRY",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Sensitive content blocked before export",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-SUPPLY",
+      "earliest_phase": "1a",
+      "owning_component": "build, security and operations",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§4.3-4.4"
+      ],
+      "requirement": "Pinned/hash-verified builds, egress, secrets, SBOM, advisories, soak and rollback",
+      "work_packages": [
+        "WP-FND",
+        "WP-B",
+        "WP-D"
+      ],
+      "evidence_required": "Tests 37-41 and verified release/license inventory",
+      "first_functional_milestone": "WP-FND/F1",
+      "implementation_producer": "build, security and operations",
+      "acceptance_owner": "build, security and operations reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-37",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-38",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-39",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-41",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-SUPPLY",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 37-41 and verified release/license inventory",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ],
+      "completion_milestone": "WP-D/D1"
+    },
+    {
+      "id": "OB-GATEWAY",
+      "earliest_phase": "1a",
+      "owning_component": "gateway integration",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§3, 4.3, 5.4"
+      ],
+      "requirement": "Built-in routing disabled; hooks, retries, license and passthrough attribution verified",
+      "work_packages": [
+        "WP-B",
+        "WP-D"
+      ],
+      "evidence_required": "Pinned actual-path proof and test 40",
+      "first_functional_milestone": "WP-B/B1",
+      "implementation_producer": "gateway integration",
+      "acceptance_owner": "gateway integration reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-09",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-20",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-40",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-GATEWAY",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Pinned actual-path proof and test 40",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-RECONCILE",
+      "earliest_phase": "1a",
+      "owning_component": "accounting operations",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§10.1, 10.6, 15"
+      ],
+      "requirement": "Basic 1a reconciliation and full 1b fault reconciliation",
+      "work_packages": [
+        "WP-D",
+        "WP-1B",
+        "WP-C"
+      ],
+      "evidence_required": "Receipt/invoice sample and adjudicated discrepancies",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "accounting operations",
+      "acceptance_owner": "accounting operations reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-18",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-RECONCILE",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Receipt/invoice sample and adjudicated discrepancies",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ],
+      "completion_milestone": "WP-D/D1"
+    },
+    {
+      "id": "OB-EXPOSURE",
+      "earliest_phase": "1b",
+      "owning_component": "accounting and admission",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 8.4, 10.4"
+      ],
+      "requirement": "Atomic maximum exposure, owner-transfer hold and recovered-state safety",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Tests 10-12, 15 and 19",
+      "first_functional_milestone": "WP-1B/1B1",
+      "implementation_producer": "accounting and admission",
+      "acceptance_owner": "accounting and admission reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-10",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-11",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-12",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-15",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-19",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-EXPOSURE",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 10-12, 15 and 19",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-GENERATIONS",
+      "earliest_phase": "1b",
+      "owning_component": "orchestrator and gateway",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§8.2, 8.5"
+      ],
+      "requirement": "Generation deduplication and single-winner acceptance",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Tests 13-14 and changed-work distinction",
+      "first_functional_milestone": "WP-1B/1B1",
+      "implementation_producer": "orchestrator and gateway",
+      "acceptance_owner": "orchestrator and gateway reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-13",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-14",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-GENERATIONS",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 13-14 and changed-work distinction",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-RECOVERY",
+      "earliest_phase": "1b",
+      "owning_component": "gateway and orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§8.1-8.5, 10.2"
+      ],
+      "requirement": "Unknown outcome, cancellation, partial output and semantic recovery",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Tests 16-24 and fault ledger",
+      "first_functional_milestone": "WP-1B/1B1",
+      "implementation_producer": "gateway and orchestrator",
+      "acceptance_owner": "gateway and orchestrator reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-13",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-15",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-16",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-17",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-21",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-22",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-23",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-24",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-RECOVERY",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 16-24 and fault ledger",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-CACHE",
+      "earliest_phase": "2",
+      "owning_component": "admission and gateway",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.6, 15"
+      ],
+      "requirement": "Response cache after admission, security-domain isolation and accounting",
+      "work_packages": [
+        "WP-2"
+      ],
+      "evidence_required": "Test 25 and cache miss rate",
+      "first_functional_milestone": "WP-2/2A",
+      "implementation_producer": "admission and gateway",
+      "acceptance_owner": "admission and gateway reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-25",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-CACHE",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Test 25 and cache miss rate",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-EVAL",
+      "earliest_phase": "3",
+      "owning_component": "evaluation and registry",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.5, 6.5, 11-12, 15"
+      ],
+      "requirement": "Versioned registry, split evidence and internal five-way predictor comparison",
+      "work_packages": [
+        "WP-3"
+      ],
+      "evidence_required": "Tests 26-27 and promotion record",
+      "first_functional_milestone": "WP-3/3A",
+      "implementation_producer": "evaluation and registry",
+      "acceptance_owner": "evaluation and registry reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-26",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-27",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-35",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-EVAL",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 26-27 and promotion record",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-LAB",
+      "earliest_phase": "4",
+      "owning_component": "lab policy and serving",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§6.7, 7, 14-15"
+      ],
+      "requirement": "Presence, capacity, drain, leases and lab production admission",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Tests 28-34 and measured lab savings",
+      "first_functional_milestone": "WP-4/4A",
+      "implementation_producer": "lab policy and serving",
+      "acceptance_owner": "lab policy and serving reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-28",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-29",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-30",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-33",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-34",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-LAB",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Tests 28-34 and measured lab savings",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-LEARN",
+      "earliest_phase": "5",
+      "owning_component": "routing and evaluation",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§6.5, 12.4, 15"
+      ],
+      "requirement": "Gated learned routing, rollback and task-level value after overhead",
+      "work_packages": [
+        "WP-5"
+      ],
+      "evidence_required": "Test 35 and representative cohort comparison",
+      "first_functional_milestone": "WP-5/5A",
+      "implementation_producer": "routing and evaluation",
+      "acceptance_owner": "routing and evaluation reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-35",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-LEARN",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Test 35 and representative cohort comparison",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-CLOSED",
+      "earliest_phase": "6",
+      "owning_component": "evaluation and policy",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§12, 15"
+      ],
+      "requirement": "Controlled exploration, propensities, delayed outcome and drift gates",
+      "work_packages": [
+        "WP-6"
+      ],
+      "evidence_required": "Quality and promotion records",
+      "first_functional_milestone": "WP-6/6A",
+      "implementation_producer": "evaluation and policy",
+      "acceptance_owner": "evaluation and policy reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-35",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-36",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-CLOSED",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Quality and promotion records",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-FALLBACK",
+      "earliest_phase": "ongoing",
+      "owning_component": "gateway and operations",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.4, 16"
+      ],
+      "requirement": "Scheduled exercise of each fallback path with admission and FDC intact",
+      "work_packages": [
+        "WP-D",
+        "WP-1B",
+        "WP-6"
+      ],
+      "evidence_required": "Test 36 schedule and results",
+      "first_functional_milestone": "WP-D/D1",
+      "implementation_producer": "gateway and operations",
+      "acceptance_owner": "gateway and operations reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-20",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        },
+        {
+          "test_id": "T-36",
+          "coverage": "partial",
+          "reason": "Relevant to this broad obligation; full obligation also needs unnumbered evidence"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-FALLBACK",
+          "intervention": "Exercise this obligation at its first functional milestone and operational gate if applicable",
+          "observation": "Test 36 schedule and results",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-APPROVAL",
+      "earliest_phase": "1a",
+      "owning_component": "Nabu and FDC",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.1, 5.4-5.5"
+      ],
+      "requirement": "Nabu approved-configuration file and version/revocation lifecycle",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "File load, approval, revocation increments registry version and outstanding plan fails FDC",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "Nabu and FDC",
+      "acceptance_owner": "Nabu and FDC reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-02",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-07",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-08",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-40",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-APPROVAL",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "File load, approval, revocation increments registry version and outstanding plan fails FDC",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-DECISION-RECORD",
+      "earliest_phase": "1a",
+      "owning_component": "Ninshubur and Nisaba",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.2-5.3, 10.1, 12.2"
+      ],
+      "requirement": "Persist decision record including deterministic propensity 1.0",
+      "work_packages": [
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Inspect signed-plan/ledger decision record and version linkage",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "Ninshubur and Nisaba",
+      "acceptance_owner": "Ninshubur and Nisaba reviewer",
+      "numbered_test_links": [],
+      "unnumbered_checks": [
+        {
+          "id": "U-DECISION-RECORD",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Inspect signed-plan/ledger decision record and version linkage",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-OUTCOMES",
+      "earliest_phase": "1a",
+      "owning_component": "Shamash-facing interface and orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§8.1, 9, 11.1"
+      ],
+      "requirement": "Execution, step correctness and task acceptance are distinct events",
+      "work_packages": [
+        "WP-A",
+        "WP-C",
+        "WP-2"
+      ],
+      "evidence_required": "Reject candidate and verify no task acceptance; late result cannot advance task",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "Shamash-facing interface and orchestrator",
+      "acceptance_owner": "Shamash-facing interface and orchestrator reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-13",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-31",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-OUTCOMES",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Reject candidate and verify no task acceptance; late result cannot advance task",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-INSTRUMENTATION",
+      "earliest_phase": "2",
+      "owning_component": "orchestrator instrumentation owner",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§9, 15"
+      ],
+      "requirement": "Full instrumentation contract compliance after 1a principal attribution",
+      "work_packages": [
+        "WP-P0",
+        "WP-C",
+        "WP-2"
+      ],
+      "evidence_required": "Audit complete fields, lineage and compliance share on representative cohort",
+      "first_functional_milestone": "WP-2/2A",
+      "implementation_producer": "orchestrator instrumentation owner",
+      "acceptance_owner": "orchestrator instrumentation owner reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-22",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-INSTRUMENTATION",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Audit complete fields, lineage and compliance share on representative cohort",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-COST-VIEWS",
+      "earliest_phase": "1a",
+      "owning_component": "Nisaba and measurement owner",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§10.5, 10.7"
+      ],
+      "requirement": "Avoidable incremental, allocated and full operating views timed to first use",
+      "work_packages": [
+        "WP-C",
+        "WP-D",
+        "WP-P0",
+        "WP-4"
+      ],
+      "evidence_required": "Reconcile per-attempt input to three distinct views; routing uses incremental only; reports use allocated",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "Nisaba and measurement owner",
+      "acceptance_owner": "Nisaba and measurement owner reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-18",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-COST-VIEWS",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Reconcile per-attempt input to three distinct views; routing uses incremental only; reports use allocated",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ],
+      "timing": "Allocated/report inputs begin with C1/Phase 1a; avoidable incremental view gates routing decisions when introduced; full operating view gates capacity/procurement reporting when used."
+    },
+    {
+      "id": "OB-ROUTING",
+      "earliest_phase": "4",
+      "owning_component": "Ninshubur and orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§5.2, 6.1-6.8, 8"
+      ],
+      "requirement": "Deterministic routing, two-tier cascade and versioned recovery by approved class",
+      "work_packages": [
+        "WP-3",
+        "WP-4"
+      ],
+      "evidence_required": "Show approved leaf fallback, spine return and substantive acceptance under recovery policy",
+      "first_functional_milestone": "WP-4/4A",
+      "implementation_producer": "Ninshubur and orchestrator",
+      "acceptance_owner": "Ninshubur and orchestrator reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-23",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-27",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-30",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-31",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-32",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-ROUTING",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Show approved leaf fallback, spine return and substantive acceptance under recovery policy",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-LATENCY",
+      "earliest_phase": "5",
+      "owning_component": "Neti and Ninshubur",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §6.5"
+      ],
+      "requirement": "Admission plus rules plus local prediction at most 20 ms p99",
+      "work_packages": [
+        "WP-3",
+        "WP-5"
+      ],
+      "evidence_required": "Synthetic diagnostic first; measured production-like p99 when local prediction path is enabled",
+      "first_functional_milestone": "WP-3/3A",
+      "implementation_producer": "Neti and Ninshubur",
+      "acceptance_owner": "Neti and Ninshubur reviewer",
+      "numbered_test_links": [],
+      "unnumbered_checks": [
+        {
+          "id": "U-LATENCY",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Synthetic diagnostic first; measured production-like p99 when local prediction path is enabled",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ],
+      "timing": "Synthetic local-prediction diagnostic in WP-3; production-like p99 evidence at first enabled synchronous local-predictor path, no later than WP-5 gate."
+    },
+    {
+      "id": "OB-CONTENT-STORE",
+      "earliest_phase": "1a",
+      "owning_component": "content/retention service",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§13.1-13.2"
+      ],
+      "requirement": "Every enabled content store, log, cache, queue and eval store enforces handling and retention",
+      "work_packages": [
+        "WP-C",
+        "WP-D",
+        "WP-2",
+        "WP-3"
+      ],
+      "evidence_required": "Attempt prohibited write at each enabled boundary; deny or redact and audit access",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "content/retention service",
+      "acceptance_owner": "content/retention service reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-05",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-25",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-CONTENT-STORE",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Attempt prohibited write at each enabled boundary; deny or redact and audit access",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ],
+      "timing": "At each enabled persistence boundary; an absent store is not claimed as tested."
+    },
+    {
+      "id": "OB-KEY-SEPARATION",
+      "earliest_phase": "1a",
+      "owning_component": "security and gateway",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §§4.4, 5.3, 7.1"
+      ],
+      "requirement": "Separate plan, origin and provider key authority and lifecycle",
+      "work_packages": [
+        "WP-C",
+        "WP-D"
+      ],
+      "evidence_required": "Synthetic identities cannot mint production authority; D proves managed rotation and runtime access",
+      "first_functional_milestone": "WP-C/C1",
+      "implementation_producer": "security and gateway",
+      "acceptance_owner": "security and gateway reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-06",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-07",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        },
+        {
+          "test_id": "T-39",
+          "coverage": "partial",
+          "reason": "Covers an operative part; other requirements need unnumbered checks"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-KEY-SEPARATION",
+          "intervention": "Exercise the operative requirement at its first enabled milestone",
+          "observation": "Synthetic identities cannot mint production authority; D proves managed rotation and runtime access",
+          "evidence_level": "functional_then_operational_as_applicable",
+          "status": "NOT_RUN"
+        }
+      ]
+    },
+    {
+      "id": "OB-MANIFEST",
+      "earliest_phase": "4",
+      "owning_component": "Neti/gateway validator; orchestrator producer",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §6.1"
+      ],
+      "requirement": "Orchestrator constructs registered leaf manifest; Neti/gateway validates manifest, source labels and payload binding and rejects invalid leaf",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "T-32 invalid manifest rejected by gateway before dispatch; independent receiver remains empty",
+      "first_functional_milestone": "WP-4/4A",
+      "implementation_producer": "orchestrator manifest producer and Neti/gateway validator",
+      "acceptance_owner": "gateway policy reviewer",
+      "numbered_test_links": [
+        {
+          "test_id": "T-32",
+          "coverage": "complete",
+          "reason": "Canonical invalid-manifest intervention and gateway rejection are directly specified; evidence remains NOT_RUN"
+        }
+      ],
+      "unnumbered_checks": [
+        {
+          "id": "U-MANIFEST",
+          "intervention": "Construct registered leaf manifest with lineage/source and payload binding",
+          "observation": "Gateway validates the binding without inferring semantic dependencies from text",
+          "evidence_level": "functional_then_operational",
+          "status": "NOT_RUN"
+        }
+      ]
+    }
+  ],
+  "baseline_tests": [
+    {
+      "id": "T-01",
+      "baseline_test_number": 1,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Invalid or missing identity → rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission service",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Invalid or missing identity",
+      "required_observation": "rejected",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-TRUST",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-02",
+      "baseline_test_number": 2,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Forbidden fixed destination → rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission service",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Forbidden fixed destination",
+      "required_observation": "rejected",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-FIXED",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-APPROVAL",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-03",
+      "baseline_test_number": 3,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Missing source taint on tool result → rejected (migration mode does not bypass)",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission service",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Missing source taint on tool result",
+      "required_observation": "rejected (migration mode does not bypass)",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SOURCE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-CLASSIFIER",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-04",
+      "baseline_test_number": 4,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Ledger primary unavailable → WAL path; WAL unavailable → fail closed",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "ledger and gateway",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Ledger primary unavailable",
+      "required_observation": "WAL path; WAL unavailable → fail closed",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-INTENT",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-05",
+      "baseline_test_number": 5,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Prohibited content (incl. a sensitive derived feature) presented to telemetry → blocked by allowlist/redaction",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "telemetry and retention",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Prohibited content (incl. a sensitive derived feature) presented to telemetry",
+      "required_observation": "blocked by allowlist/redaction",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-TELEMETRY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-CONTENT-STORE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-06",
+      "baseline_test_number": 6,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Forged, unsigned, expired or wrong-session office-origin attribute → rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "trusted ingress and admission",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Forged, unsigned, expired or wrong-session office-origin attribute",
+      "required_observation": "rejected",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-TRUST",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-KEY-SEPARATION",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-07",
+      "baseline_test_number": 7,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Plan with invalid signature or stale policy version → rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "plan signer and FDC",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Submit invalid signature and independently stale policy version",
+      "required_observation": "Each fails before durable intent/transmission",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-BINDING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-APPROVAL",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-KEY-SEPARATION",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-08",
+      "baseline_test_number": 8,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Plan reused after payload mutation or revocation → rejected or replanned",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "FDC and policy service",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Reuse plan after payload mutation and independently after revocation",
+      "required_observation": "Each is rejected or replanned without unauthorized transmission",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-BINDING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-APPROVAL",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-09",
+      "baseline_test_number": 9,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Changed adapter output under an existing plan → detected at FDC",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "adapter and FDC",
+      "work_packages": [
+        "WP-B",
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Mutate prepared request in controlled server callback after binding",
+      "required_observation": "FDC detects mutation; independent receiver sees no provider attempt",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-CAPABILITY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-BINDING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-GATEWAY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-10",
+      "baseline_test_number": 10,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Reservation-owner expiry while the provider request is still running → exposure remains held; no overspend",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "accounting service",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Expire reservation-owner lease while provider request remains active",
+      "required_observation": "Exposure remains held and no overspend occurs",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EXPOSURE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-11",
+      "baseline_test_number": 11,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Concurrent budget exhaustion → no overspend",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "accounting service",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Concurrent budget exhaustion",
+      "required_observation": "no overspend",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SPEND",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-EXPOSURE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-12",
+      "baseline_test_number": 12,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Budget state rebuilt from ledger → outstanding exposure counted before admission resumes",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "accounting and admission",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Rebuild budget state from ledger containing outstanding exposure",
+      "required_observation": "Admission resumes only after exposure is counted",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EXPOSURE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-13",
+      "baseline_test_number": 13,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Replica fails after dispatch; original and replacement both return → single winner, both billed",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway and orchestrator state store",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Fail one gateway replica after dispatch and let original and replacement both return",
+      "required_observation": "One currently authorized generation wins; both attempts billed",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-GENERATIONS",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-OUTCOMES",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-14",
+      "baseline_test_number": 14,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Duplicate submission of the same execution generation → deduplicated; authorized escalation (new generation) → not deduplicated",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "generation authority and orchestrator",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Submit same authorized generation twice, then separately authorize a new escalation generation",
+      "required_observation": "Duplicate adds no attempt; new authorized generation is not deduplicated into old result",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-GENERATIONS",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-15",
+      "baseline_test_number": 15,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Delayed cancellation acknowledgement → exposure and capacity held until confirmed",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "accounting and capacity",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Delayed cancellation acknowledgement",
+      "required_observation": "exposure and capacity held until confirmed",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EXPOSURE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-16",
+      "baseline_test_number": 16,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Outcome-unknown timeout → explicit signal to orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway and orchestrator",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Outcome-unknown timeout",
+      "required_observation": "explicit signal to orchestrator",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-17",
+      "baseline_test_number": 17,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Partial-stream failure → no splicing; usage unknown",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway and orchestrator",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "For an enabled streaming capability: observed partial delivery, no splice, unknown usage and caller outcome; initial rejection is separate.",
+      "applicability_note": "If streaming is disabled initially, explicit rejection is separate; full partial-stream behavior gates first enabled streaming capability.",
+      "planned_intervention": "On an approved streaming path, fail after exposing partial output",
+      "required_observation": "No splice and usage remains unknown; initial unsupported-stream rejection is separate",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-CAPABILITY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-18",
+      "baseline_test_number": 18,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Missing provider usage → estimated, later reconciled by appended revision",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "ledger and reconciliation",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Provider response omits usage; later reconciliation supplies usage",
+      "required_observation": "Estimated record is followed by linked appended reconciliation revision, never overwritten with zero",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-USAGE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECONCILE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-COST-VIEWS",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-19",
+      "baseline_test_number": 19,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Shared-state outage (Redis, policy store) → fail closed",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission service",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Shared-state outage (Redis, policy store)",
+      "required_observation": "fail closed",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EXPOSURE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-20",
+      "baseline_test_number": 20,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "All replicas unhealthy → emergency gateway enforces §5.1 and the FDC",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway operations",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "All replicas unhealthy",
+      "required_observation": "emergency gateway enforces §5.1 and the FDC",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-GATEWAY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-FALLBACK",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-21",
+      "baseline_test_number": 21,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Supporting calls (classifier, verifier, judge) → no recursion; inheritance enforced",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission service",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Supporting calls (classifier, verifier, judge)",
+      "required_observation": "no recursion; inheritance enforced",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SOURCE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-22",
+      "baseline_test_number": 22,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Nested sub-agent roll-up under concurrent retries → correct attribution; atomic retry budget holds",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "ledger and orchestrator",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Nested sub-agent roll-up under concurrent retries",
+      "required_observation": "correct attribution; atomic retry budget holds",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-USAGE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-INSTRUMENTATION",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-23",
+      "baseline_test_number": 23,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Tainted tool result mid-task makes pinned/spine model ineligible → explicit return to orchestrator",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission and orchestrator",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Tainted tool result mid-task makes pinned/spine model ineligible",
+      "required_observation": "explicit return to orchestrator",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SOURCE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-ROUTING",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-24",
+      "baseline_test_number": 24,
+      "earliest_baseline_phase": "1b",
+      "canonical_requirement": "Revocation between FDC and transmission → behaviour per authorization point",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway and ledger",
+      "work_packages": [
+        "WP-1B"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Revoke policy after FDC but before transmission, before and after durable intent in distinct cases",
+      "required_observation": "No transmit without passing FDC and durable intent; authorized-but-untransmitted attempt is rechecked",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-BINDING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-INTENT",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-RECOVERY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-25",
+      "baseline_test_number": 25,
+      "earliest_baseline_phase": "2",
+      "canonical_requirement": "Identical prompt from a different security domain → no cross-domain response-cache hit",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "admission and response cache",
+      "work_packages": [
+        "WP-2"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Identical prompt from a different security domain",
+      "required_observation": "no cross-domain response-cache hit",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-CACHE",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-CONTENT-STORE",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-26",
+      "baseline_test_number": 26,
+      "earliest_baseline_phase": "3",
+      "canonical_requirement": "Confirmation-set isolation → enforced; evaluation-data reuse rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "evaluation service",
+      "work_packages": [
+        "WP-3"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Confirmation-set isolation",
+      "required_observation": "enforced; evaluation-data reuse rejected",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EVAL",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-27",
+      "baseline_test_number": 27,
+      "earliest_baseline_phase": "3",
+      "canonical_requirement": "Verifier or recovery-policy change → treated as new configuration; promotion gate applies",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "registry and evaluation",
+      "work_packages": [
+        "WP-3"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Verifier or recovery-policy change",
+      "required_observation": "treated as new configuration; promotion gate applies",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EVAL",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-ROUTING",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-28",
+      "baseline_test_number": 28,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Stale lab metrics → lab admission stops",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "lab policy",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Stale lab metrics",
+      "required_observation": "lab admission stops",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-LAB",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-29",
+      "baseline_test_number": 29,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Reservation drain during long session; queued requests at T−10; emergency drain",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "lab policy",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Reservation drain during long session; queued requests at T−10; emergency drain",
+      "required_observation": "Scheduled exercise record covers every fallback path.",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-LAB",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-30",
+      "baseline_test_number": 30,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Mid-spine cross-family migration on drain → transcript normalized, no provider errors",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "orchestrator and adapter",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Mid-spine cross-family migration on drain",
+      "required_observation": "transcript normalized, no provider errors",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-LAB",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-ROUTING",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-31",
+      "baseline_test_number": 31,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Schema-valid but substantively wrong leaf → caught at the real acceptance boundary",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "orchestrator",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Schema-valid but substantively wrong leaf",
+      "required_observation": "caught at the real acceptance boundary",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-OUTCOMES",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-ROUTING",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-32",
+      "baseline_test_number": 32,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Leaf with invalid construction manifest → rejected",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "Neti/gateway manifest validator; orchestrator produces manifest",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Orchestrator constructs a leaf with invalid registered construction manifest",
+      "required_observation": "Neti/gateway validates source labels and payload binding and rejects the leaf before dispatch",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-ROUTING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-MANIFEST",
+          "relationship": "direct_canonical_requirement"
+        }
+      ]
+    },
+    {
+      "id": "T-33",
+      "baseline_test_number": 33,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Background preemption under priority burst → KV cache freed; work re-queued idempotently",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "lab policy",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Background preemption under priority burst",
+      "required_observation": "KV cache freed; work re-queued idempotently",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-LAB",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-34",
+      "baseline_test_number": 34,
+      "earliest_baseline_phase": "4",
+      "canonical_requirement": "Lease ownership expiry during a long generation → capacity not reallocated until confirmed",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "capacity service",
+      "work_packages": [
+        "WP-4"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Lease ownership expiry during a long generation",
+      "required_observation": "capacity not reallocated until confirmed",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-LAB",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-35",
+      "baseline_test_number": 35,
+      "earliest_baseline_phase": "5",
+      "canonical_requirement": "Primary or fallback predictor / feature-extractor version change → §12.4 sequence",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "routing and registry",
+      "work_packages": [
+        "WP-5"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Primary or fallback predictor / feature-extractor version change",
+      "required_observation": "§12.4 sequence",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-EVAL",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-LEARN",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-CLOSED",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-36",
+      "baseline_test_number": 36,
+      "earliest_baseline_phase": "ongoing",
+      "canonical_requirement": "Scheduled exercise of every fallback path",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway operations",
+      "work_packages": [
+        "WP-D",
+        "WP-1B",
+        "WP-6"
+      ],
+      "evidence_required": "Observed pass/fail against the baseline condition; independent provider receiver for dispatch negatives",
+      "applicability_note": null,
+      "planned_intervention": "Scheduled exercise of every fallback path",
+      "required_observation": "Scheduled exercise record covers every fallback path.",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-CLOSED",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-FALLBACK",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-37",
+      "baseline_test_number": 37,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Image for the gateway, Redis, Langfuse or the collector not built from pinned, hash-verified sources → deployment refused",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "build and deployment",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Image for the gateway, Redis, Langfuse or the collector not built from pinned, hash-verified sources",
+      "required_observation": "deployment refused",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SUPPLY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-38",
+      "baseline_test_number": 38,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Gateway, Langfuse or collector connects to a host outside its egress allowlist → blocked and alerted",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "network security",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Gateway, Langfuse or collector connects to a host outside its egress allowlist",
+      "required_observation": "blocked and alerted",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SUPPLY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-39",
+      "baseline_test_number": 39,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Provider key read by any identity other than the gateway's runtime identity → denied; scheduled rotation → old key revoked, no request dispatched with it",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "secrets and gateway",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Provider key read by any identity other than the gateway's runtime identity",
+      "required_observation": "denied; scheduled rotation → old key revoked, no request dispatched with it",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SUPPLY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-KEY-SEPARATION",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-40",
+      "baseline_test_number": 40,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "LiteLLM built-in routing enabled, or a dispatch to a deployment the signed plan does not name → startup check fails / rejected at FDC",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "gateway and FDC",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "LiteLLM built-in routing enabled, or a dispatch to a deployment the signed plan does not name",
+      "required_observation": "startup check fails / rejected at FDC",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-CAPABILITY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-FIXED",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-BINDING",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-GATEWAY",
+          "relationship": "operative_requirement_link"
+        },
+        {
+          "obligation_id": "OB-APPROVAL",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    },
+    {
+      "id": "T-41",
+      "baseline_test_number": 41,
+      "earliest_baseline_phase": "1a",
+      "canonical_requirement": "Release adopted before its soak period ends or without a recorded review (no vulnerability exception) → deployment pipeline refuses",
+      "source_clauses": [
+        "llm-routing-infra-design-v1.1.md §16"
+      ],
+      "owning_component": "build and deployment",
+      "work_packages": [
+        "WP-D"
+      ],
+      "evidence_required": "Observed pass/fail plus independent receiver or deployment/security enforcement evidence as applicable; full Phase 1a gate requires operational context.",
+      "applicability_note": null,
+      "planned_intervention": "Release adopted before its soak period ends or without a recorded review (no vulnerability exception)",
+      "required_observation": "deployment pipeline refuses",
+      "evidence_status": "NOT_RUN",
+      "obligation_links": [
+        {
+          "obligation_id": "OB-SUPPLY",
+          "relationship": "operative_requirement_link"
+        }
+      ]
+    }
+  ],
+  "mapping_notes": [
+    "Original WP/OB/T IDs and all canonical test text/phase retained; DEC-03 and DEC-12 crosswalks explicit.",
+    "An obligation link to a numbered test is partial unless the full canonical intervention and observation are explicitly shown; unnumbered checks cover remaining operative requirements.",
+    "All evidence status is NOT_RUN. No fixture assertion or test double closes a numbered test or operational gate."
+  ],
+  "plan_reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+  "decisions": [
+    {
+      "id": "DEC-01",
+      "topic": "foundation runtime/toolchain support",
+      "preparation_owner": "repository/toolchain and SDK owners",
+      "evidence_required": "Compatibility, reproducible install, hash and license evidence for introduced dependencies",
+      "needed_by": "FND entry",
+      "recommendation": "Recommend clean CommonJS and isolated Python/JS package proof; no version selected",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-01"
+    },
+    {
+      "id": "DEC-02",
+      "topic": "foundation package/distribution boundaries",
+      "preparation_owner": "repository maintainer and SDK owners",
+      "evidence_required": "Build and clean-consumer comparison; language/source boundary",
+      "needed_by": "FND entry",
+      "recommendation": "Keep JavaScript source and separate distributions; no format selected",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-02"
+    },
+    {
+      "id": "DEC-03A",
+      "topic": "representative cohort access/sampling",
+      "preparation_owner": "measurement and orchestrator owners",
+      "evidence_required": "Sampling, authority and handling review",
+      "needed_by": "before real P0 collection",
+      "recommendation": "No access authorized here",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-03"
+    },
+    {
+      "id": "DEC-03B",
+      "topic": "acceptance protocol and cohort definitions",
+      "preparation_owner": "WP-P0 measurement and quality owners",
+      "evidence_required": "Representative complete-task evidence and quality methodology",
+      "needed_by": "produced by P0; P0 exit",
+      "recommendation": "Include failed and abandoned tasks",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-03"
+    },
+    {
+      "id": "DEC-04",
+      "topic": "canonical blocks/trust/reference/hash",
+      "preparation_owner": "WP-A API/policy owners",
+      "evidence_required": "Baseline clauses and shared server-interpreted vectors",
+      "needed_by": "produced by A; accepted before C/B final proof",
+      "recommendation": "Use server-authoritative binding",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-04"
+    },
+    {
+      "id": "DEC-05",
+      "topic": "status/cancellation/generation/outcome",
+      "preparation_owner": "WP-A API/orchestrator owners",
+      "evidence_required": "Distinct identity and state examples",
+      "needed_by": "produced by A; accepted before C",
+      "recommendation": "Keep execution/step/task outcomes separate",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-05"
+    },
+    {
+      "id": "DEC-06",
+      "topic": "first capability profile",
+      "preparation_owner": "WP-A capability owner",
+      "evidence_required": "Source shapes, capability tests and explicit rejection cases",
+      "needed_by": "produced by A; accepted before C",
+      "recommendation": "Consider non-streaming fixed-destination slice; not adopted",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-06"
+    },
+    {
+      "id": "DEC-07",
+      "topic": "usage semantics",
+      "preparation_owner": "WP-A accounting owner",
+      "evidence_required": "Raw/normalized usage and unknown-state vectors",
+      "needed_by": "produced by A; accepted before C",
+      "recommendation": "Never map missing usage to zero",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-07"
+    },
+    {
+      "id": "DEC-08",
+      "topic": "adapter semantics and full SDK exports",
+      "preparation_owner": "WP-A adapter/SDK owners",
+      "evidence_required": "Semantic preservation and consumer vectors",
+      "needed_by": "produced by A; accepted before C/B final proof",
+      "recommendation": "Reject unsupported transformations",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-08"
+    },
+    {
+      "id": "DEC-09",
+      "topic": "gateway contingency",
+      "preparation_owner": "gateway/security owners",
+      "evidence_required": "B hook/license and supply-chain findings",
+      "needed_by": "before Phase 1a operation",
+      "recommendation": "Compare thin admission layer and alternative gateway",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-09"
+    },
+    {
+      "id": "DEC-10",
+      "topic": "operational ledger/topology",
+      "preparation_owner": "platform/accounting owners",
+      "evidence_required": "HA/WAL/failure and operational needs",
+      "needed_by": "D operational entry",
+      "recommendation": "No product selected",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-10"
+    },
+    {
+      "id": "DEC-11",
+      "topic": "operational owners/thresholds/process",
+      "preparation_owner": "policy/security/operations owners",
+      "evidence_required": "Corpus bars, cohort, key and supply-chain process evidence",
+      "needed_by": "D operational entry/acceptance",
+      "recommendation": "Assign roles and thresholds through review",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-11"
+    },
+    {
+      "id": "DEC-12A",
+      "topic": "export-control applicability",
+      "preparation_owner": "security/legal data owner",
+      "evidence_required": "Affected-data classification/handling review",
+      "needed_by": "before affected real data admission",
+      "recommendation": "Synthetic-only work can proceed",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-12"
+    },
+    {
+      "id": "DEC-12B",
+      "topic": "serving stack",
+      "preparation_owner": "serving/platform owner",
+      "evidence_required": "Demand, serving and deployment comparison",
+      "needed_by": "before serving deployment",
+      "recommendation": "No product selected",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-12"
+    },
+    {
+      "id": "DEC-12C",
+      "topic": "lab hardware/models",
+      "preparation_owner": "lab/platform owner",
+      "evidence_required": "Capacity and quality evidence",
+      "needed_by": "before lab deployment",
+      "recommendation": "No hardware/model selected",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-12"
+    },
+    {
+      "id": "DEC-12D",
+      "topic": "internal predictor selection",
+      "preparation_owner": "WP-3 evaluation owner",
+      "evidence_required": "Five-way development and confirmation evidence",
+      "needed_by": "produced by WP-3; approved before WP-5",
+      "recommendation": "Do not treat as WP-3 entry",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-12"
+    },
+    {
+      "id": "DEC-12E",
+      "topic": "Phase 3-5 scope",
+      "preparation_owner": "architecture/measurement owners",
+      "evidence_required": "WP-P0 savings ceiling and quadrant spend share",
+      "needed_by": "after P0 exit; before WP-3 scoping",
+      "recommendation": "No P0 start dependency",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": "DEC-12"
+    },
+    {
+      "id": "DEC-13",
+      "topic": "pinned gateway candidate",
+      "preparation_owner": "gateway integration/security owners",
+      "evidence_required": "Pinned source/dependency hashes, feature/license questions and enabled paths",
+      "needed_by": "B experiment entry",
+      "recommendation": "Candidate is not gateway qualification",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": null
+    },
+    {
+      "id": "DEC-14",
+      "topic": "C1 durable persistence/interface",
+      "preparation_owner": "accounting/service owners",
+      "evidence_required": "Append-only intent durability and fail-closed options",
+      "needed_by": "before WP-C/C1",
+      "recommendation": "Compare interface-compatible fallback or product; no selection",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": null
+    },
+    {
+      "id": "DEC-15",
+      "topic": "independent repo entry/custody",
+      "preparation_owner": "repository maintainer and LM-01",
+      "evidence_required": "Confirmed root, Git/branch authority, portable baseline custody and staging policy",
+      "needed_by": "FND entry",
+      "recommendation": "Recommend explicit local Git permission and byte-identical local receipt; no action now",
+      "status": "OPEN_NOT_ADOPTED",
+      "v01_crosswalk": null
+    }
+  ],
+  "decision_crosswalk": {
+    "DEC-03": [
+      "DEC-03A",
+      "DEC-03B"
+    ],
+    "DEC-12": [
+      "DEC-12A",
+      "DEC-12B",
+      "DEC-12C",
+      "DEC-12D",
+      "DEC-12E"
+    ],
+    "unchanged_ids": [
+      "DEC-01",
+      "DEC-02",
+      "DEC-04",
+      "DEC-05",
+      "DEC-06",
+      "DEC-07",
+      "DEC-08",
+      "DEC-09",
+      "DEC-10",
+      "DEC-11"
+    ],
+    "new_ids": [
+      "DEC-13",
+      "DEC-14",
+      "DEC-15"
+    ]
+  }
+}

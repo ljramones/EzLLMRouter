@@ -1,0 +1,37 @@
+{
+  "controlled_management_requests": [
+    "/v1/models"
+  ],
+  "controls": [
+    "Configure allowance",
+    "Activate allowance",
+    "Run one live test shown but not invoked",
+    "Pause allowance",
+    "Close allowance"
+  ],
+  "final_state": "paused",
+  "generation_counts_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "scope": "disposable Chrome, persistent SQLite and controlled loopback TLS",
+  "screenshot": {
+    "path": "docs/development/dev-10/screenshots/dev10-personal-allowance-active-no-send-05.png",
+    "sha256": "577f74a21318748bb9d38b9f3e2192f2c12c5dc987b6b66b733da87d773ac90f"
+  },
+  "source_commit": "27efec55d0c0dcb78c8b3b2f9694f55b1b6e8499",
+  "source_dirty": true,
+  "source_hashes": {
+    "server/src/duranki_server/personal_campaign.py": "49dfb7483240239cf22b955a446ccda1fb40e9a11fc4c89c138987ba0ebf6a18",
+    "web/source_pages.js": "e104f19df2c7c65dbce6f1f0fbd64a160fc13911838824867ccde9c4c4e86b6c"
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,94 @@
+**Verdict: concur with required corrections.** The direction is right. The §4 trust-boundary rewrite is the most important change in v1.2, and it is correct. The typed-operation, native-unit model is the right way to generalize beyond text. I wouldn't adopt v1.2 as a single document yet, though, and there are seven things to fix before the DEV-12 brief is written.
+
+I had only the draft and the change note. I did not have the diff, the validation record, the recce or the DEV-11 artifacts, so nothing below checks claims against those.
+
+## What v1.2 gets right
+
+- **The worker/guard/sender split.** LiteLLM becomes untrusted preparation, and credentials and send authority sit outside it. This fixes v1.1's weakest assumption, that an allowlisted LiteLLM couldn't leak keys.
+- **Unknown is now enforceable as not-zero.** Usage fields have four evidence states (absent, null, known, invalid), and cost evidence has its own separate states.
+- **Discovery, permission, support and qualification are kept separate** (§4.5).
+- **§5.9:** equal dimensions don't make two vector spaces compatible.
+- **§8.6 and test 70:** a successful generation and a successful artifact retrieval are separate events.
+- **The direct versus inclusive roll-up rules (§10.8)** prevent double-counting.
+- **The Phase 2 gate change** is exactly what the 22 October literature review recommended: miss rate becomes a diagnostic, and the gate is cost per accepted task.
+- **Test IDs 1–41 stay stable.**
+
+## Material findings
+
+**M-01: The governing metric can't be measured in the current sequence (§0.1, §15).**
+- Cost per accepted task needs real task cohorts. Phase 0 needs representative traffic. Both wait for Vega, which is deferred with no date and comes last in §15.3.
+- The recorded evidence through DEV-11 is controlled tests with fictional rates and no reconciled spend.
+- DEV-12 picks embeddings and reranking without knowing whether they carry meaningful spend.
+- The Phase 0 rule ("re-scope if trajectory-spine work exceeds 50% of spend") can never fire.
+- Your original first goal was to meter what agents actually spend before routing anything. v1.2 pushes that to the end.
+
+**Fix, without touching Vega code:**
+- Import provider-side usage and cost exports as external observations. §9.2 already has that provenance class.
+- At whatever granularity the accounts expose (key, project, model), this shows which of the 15 operation families carry money, and it should set the §15.3 order.
+- State in §15.2 why embeddings and reranking go first. The real reason is that they are the simplest synchronous non-text shape for proving the abstraction, not that they save money.
+
+**M-02: Progress against the architecture can't be determined (§15.1, §16).**
+- The draft says DEV slices must not be mechanically mapped to phases, but it offers no other mapping.
+- Phase 1a contains items that can't be reached while Duranki is standalone: a replicated gateway, office-origin signing keys and invoice reconciliation. So no phase can close in standalone mode.
+- As a result, "close to v1.1" can't be confirmed or refuted from the document.
+
+**Fix:**
+- Add a test-status register: T-01 to T-76, each with its evidence reference, scope and status (passed, partial, not started or deferred). The stable IDs make this cheap.
+- Either move the signing keys to Phase 4 and reconciliation to the first paid profile, or define a standalone assurance profile with its own exit criteria.
+
+**M-03: The token-efficiency review isn't carried forward.** Neither the change note's basis (§2) nor §20 cites the 22 October report. Apart from the Phase 2 gate, its routing-relevant changes are missing:
+- **Reasoning effort is not part of an approved configuration (§5.5).** Effort changes quality, tool-calling and cost, so one model at two effort levels is two configurations.
+- **There are no compaction classes (§6.3).** An LLM summary of spine history changes state. Deterministic masking is only a transformation.
+- **§6.4 has no switching-cost term,** and nothing feeds cache state into §6.4 or §6.7.
+
+Cache events dominate agent cost, and routing is the thing most likely to break them. Either integrate the report's ranked list with its section mappings, or defer each item explicitly with a reason.
+
+**M-04: Authority freshness needs one mechanism, and rotation is not revocation (§5.3–5.4, §4.4 item 5, tests 39 and 45).**
+- The plan now binds eight inputs that are revised independently: policy, recovery policy, registry, source permission, grant/delegation, credential binding, price and usage semantics. The sender has to recheck all of them, serialized with the first write.
+- **Recommended mechanism:** any change that could revoke authority bumps a per-scope authority epoch. The plan carries the vector of epochs it was admitted under. The first-write check becomes a vector comparison, with full re-evaluation only on a mismatch. Under replication, the epoch store is then the only thing that needs strong consistency.
+- **Rotation problem:** binding the credential *revision* means every scheduled rotation invalidates every queued plan, which is a self-inflicted replan storm.
+- **Fix:** bind the logical credential binding and let the sender resolve the current secret. Bump the epoch only on revocation, suspected compromise or a change of account scope. Split test 39 into a rotation case and a revocation case.
+
+**M-05: Context-ceiling reservations will starve concurrent agent work (§10.8).**
+- The DEV-11 bound reserves the provider's full context ceiling at the highest input rate. That is fine for a personal campaign.
+- Under the full profile with concurrent agents it is very loose. Illustration: a 400K-token ceiling, and a typical 60K-token call that is 90% cache reads at a tenth of the input rate. The input reservation is then about 35 times the input cost that actually settles. Under a hard concurrent ceiling, admission would fail at a few percent of real utilization.
+- **A tighter bound is available,** because the canonical request is already in hand at admission. For byte-level BPE tokenizers, every token covers at least one byte. So the request's byte count, plus a per-contract allowance for templating, tool rendering and hidden tokens, bounds the input tokens. Images and other modalities need their own rule.
+- §10.8 currently rejects byte counts as token bounds outright. Make it a per-contract qualification path instead.
+- **Also:** track the ratio of reserved to settled cost as a first-class metric, and release the excess as soon as usage is reported.
+- **For §8.6:** streams and realtime sessions need rolling reservations. Reserve per increment, extend as the session continues, and have the sender terminate the session when an extension fails. Without this, realtime voice (MS-07) can never be eligible for a hard ceiling.
+
+**M-06: Decide the operation contract's shape before the DEV-12 brief (§5.7, §18 item 11).** DEV-12 depends on this decision, and the draft leaves it entirely open. My recommendation:
+- **A successor wire format:** a common envelope, plus `operation {type, version}`, plus a payload checked against a schema for that operation.
+- **Domain-separated hashing:** canonical work is hashed with the operation type and version in the domain, so two operations can never produce the same binding.
+- **Legacy requests:** wire `0.2` requests are accepted as `text.generate@1` and keep their original v0.2 digests. Nothing is re-hashed, and historical test vectors are untouched.
+- **Usage storage:** the ledger stores usage as rows of (component, native unit, quantity, evidence state) per attempt. New operations then don't need migrations of the attempt table, and §10.8's `C = f(q)` reads directly from those rows.
+- **Naming:** "operation" now means three things: an operation type, an operation contract, and the registry's `operation_id`. §5.3 already has to warn readers not to confuse them. Rename the registry field.
+
+**M-07: DEV-12 doesn't test the native-units claim (§15.2, test 48).**
+- Embeddings and reranking are both typically billed per token, so DEV-12 can pass while the price model stays token-shaped.
+- The rates are fictional anyway, so make one synthetic price non-token. For example, price reranking per search unit (one query plus up to N documents, rounded up) with a per-request minimum.
+- That exercises the rounding, minimums and native units §10.8 claims to support, at almost no extra cost.
+
+## Notes
+
+- **N-01: Document shape.**
+  - v1.2 is really three documents: a normative architecture, a status and evidence register, and a roadmap. The register is §0.2, the status column of §4.1, §19 and §20.1–20.2; the roadmap is §15.2–15.4.
+  - The status parts will go stale every week; the architecture shouldn't. Split them.
+  - Much of v1.2's growth is "X is not proof of Y" sentences, which can't be tested exhaustively. Most of them follow from four state lists already in the draft: attempt evidence (§5.4), usage fields (§10.2), coverage (§9.2) and provider readiness (§4.6). Make those normative state machines with allowed transitions, and most of the negations become redundant.
+- **N-02: Ledger database.** You had settled on Postgres, but §4.1 and §18 item 10 still list the production ledger database as open. Record the decision, or say why it is reopened.
+- **N-03: Stale text.**
+  - §4.2 still describes Ninshubur as the "optimization plugin" choosing "in the plan's order". In v1.2 it ranks candidates before the plan exists.
+  - Nabu's limit sentence in the same table is garbled.
+  - The risk table's "Cache-miss amplification" mitigation cites an exit metric that v1.2 removed.
+  - §14.5 states "Redis for shared state" flatly, while §4.1 marks Redis as a target only.
+- **N-04: Service tier is a cost lever.**
+  - Batch, flex and priority tiers change the price of the same model. Both major vendors' batch APIs have historically been heavily discounted.
+  - Put the service tier into the approved configuration, and treat it as a routing dimension for evaluation, replay and ingestion.
+  - For evaluation volume, which §10.3 lists as a standing cost, this is probably a bigger saving than anything in Phases 3–5.
+- **N-05: Compound tests.** Tests 45, 50, 62 and others each bundle several assertions. Give them sub-IDs so partial passes can be recorded in the M-02 register.
+- **N-06: Agent identity.** §9.1 needs a concrete trusted binding.
+  - The simplest one is a separate principal for each agent.
+  - For an agent acting on behalf of a person, the `act` claim from RFC 8693 (OAuth token exchange) is an existing way to represent delegation chains. That's better than inventing a format.
+- **N-07: Scope.** The non-goals say Duranki is not a general API-management platform. But §4.6 (multi-account setup, price history, policy publishing, accessibility requirements) is heading that way. Name what Duranki will never own.
+
+Do you want this as a review doc, or as tracker entries you can hand to GPT-6.1 along with the draft?

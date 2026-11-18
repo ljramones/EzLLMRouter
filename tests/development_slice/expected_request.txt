@@ -1,0 +1,1 @@
+{"model":"model.demo","messages":[{"role":"system","content":"Answer briefly."},{"role":"user","content":"Hi"}],"max_tokens":32,"temperature":0,"tool_choice":"none","stream":false}

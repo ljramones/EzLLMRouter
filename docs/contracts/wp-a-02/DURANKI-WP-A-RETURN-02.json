@@ -1,0 +1,76 @@
+{
+  "package": "DURANKI_WP_A_A1_V02_CONTRACT_CORRECTION",
+  "status": "WP_A_A1_V02_DRAFT_READY_FOR_REVIEW",
+  "as_of": "2026-10-17",
+  "root": "/Users/larrymitchell/Mach33/Duranki",
+  "authority": {
+    "operative_message": "LM-01 — WP-A/A1 BOUNDED CONTRACT CORRECTION, supplied in active session",
+    "review_path": "/Users/larrymitchell/Downloads/DURANKI-WP-A-v0.1-INDEPENDENT-REVIEW-01.md",
+    "review_sha256": "257bdbd1219d86b56f9e9bfe024c4df322b0986580e68626c001b62c16a13653",
+    "validation_record_path": "/Users/larrymitchell/Downloads/DURANKI-WP-A-v0.1-REVIEW-VALIDATION-01.json",
+    "validation_record_sha256": "a8b387e32de04c87451a99d2a28e706851ba8903fe575585c286a992facc5b5d",
+    "source_commission_sha256": "c37090073012a93651d04675cc23fcded942a19afe759c51aa60d4de7949b69a",
+    "scope": "five-file documentation and inert-data successor only; no A2 adoption or execution"
+  },
+  "preserved_input_receipts": [
+    {"path": "docs/contracts/wp-a-01/DURANKI-WP-A-CONTRACT-v0.1.md", "sha256": "e5135712856a602dcf0ba08cad9fbc072771e386c037e0e0938e6396efa849f6"},
+    {"path": "docs/contracts/wp-a-01/DURANKI-WP-A-SCHEMAS-v0.1.json", "sha256": "13a35e88ee39dec3395c57a8e8fa7a16adbd604dbb264befa08f8b314fc7e14a"},
+    {"path": "docs/contracts/wp-a-01/DURANKI-WP-A-VECTORS-v0.1.json", "sha256": "96fe930ac4e8043dca4ff8f5f2cf44a6f8af4ca9ffa69633a2123f6c82c3d9da"},
+    {"path": "docs/contracts/wp-a-01/DURANKI-WP-A-DECISIONS-v0.1.md", "sha256": "9bf92e979c3b5162ed87944ca582802161ac2b709329e69bf7c542dcf8671aa9"},
+    {"path": "docs/contracts/wp-a-01/DURANKI-WP-A-RETURN-01.json", "sha256": "c0a395f9831397c9a94e60746d1fd114ba86803919cc04e0d477a7b5e3489054"},
+    {"path": "docs/architecture/llm-routing-infra-design-v1.1.md", "sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c"},
+    {"path": "docs/architecture/review-tracker.md", "sha256": "36be1ae781fb6645fa186881eb967e7118f24dbf585913f2f8e0da9b1e1260ac"},
+    {"path": "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md", "sha256": "852d58be6087c1952f8349b429029f23c9235c86236b26dcf3ed69d3758aebab"},
+    {"path": "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json", "sha256": "ea4657b342be60e5bb785d9093130aa980503221d9e3c75ee603adaef8eb4e92"},
+    {"path": "docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json", "sha256": "1242f0f2125b15909e4cfbb0dd4fbc862f84a9064d511c44db3c7085b3273e2e"},
+    {"path": "docs/implementation/foundation-entry-01/DURANKI-PLANNING-02-ERRATUM-01.json", "sha256": "b94d1ef9d534aac33b8b702f808963ba4e3be5d7152a9f8c5a96f5662122ea7e"},
+    {"path": "docs/foundation/WP-FND-ACCEPTANCE-01.md", "sha256": "68426a0d7574c44f9f6b5b2913738b727e4dfab92e01c7595266c9ff218ee5f4"},
+    {"path": "docs/foundation/WP-FND-RECEIPT-03.md", "sha256": "2792795e322bd51e75d79cfec8f2df4e8f13fcb937061ece07613689e838e24b"},
+    {"path": "mach-recce/DURANKI-CALL-PATH-INVENTORY.json", "sha256": "f103ee1d153e2af2538d1e7dfe5b5ef0c65e6192bf219607babdbcff414f33cb"},
+    {"path": "mach-recce/DURANKI-CLIENT-CONTRACT-MAPPING.md", "sha256": "3fc7f87bf63ec1293a0895086c1d4608ea1e4bc7466595b2996d19b1ea59c2a5"},
+    {"path": "mach-recce/DURANKI-FIXTURE-CATALOGUE.json", "sha256": "f487c3de15fd8dd7ee301da5b501308321d771e657ecf356c6c10c4522512ce3"},
+    {"path": "mach-recce/DURANKI-MACH-PLATFORM-RECONNAISSANCE.md", "sha256": "0836150411fda1b3f3fa3f1c0f5b01d7b0ab76e37d1f7010702f34af115bce80"},
+    {"path": "mach-recce/DURANKI-RECONNAISSANCE-RETURN.json", "sha256": "3da889f7d838130a7d74bf9d071a973254b7964a23df6b76fc501ba0eb6e4804"}
+  ],
+  "output_inventory": [
+    {"path": "docs/contracts/wp-a-02/DURANKI-WP-A-CONTRACT-v0.2.md", "sha256": "1f81e490c0825845013ff15269cb0ac32c2eb77e50a3b027d07c3b56d2740e13"},
+    {"path": "docs/contracts/wp-a-02/DURANKI-WP-A-SCHEMAS-v0.2.json", "sha256": "40f3a1decfcb83272e5ac01d2813514dd05eac3588dfb7e606e00a2afe598c63"},
+    {"path": "docs/contracts/wp-a-02/DURANKI-WP-A-VECTORS-v0.2.json", "sha256": "d00e41d8513efac1e4e4ded31123c98cf3215142539bb9f5017bfd36a769c7a4"},
+    {"path": "docs/contracts/wp-a-02/DURANKI-WP-A-DECISIONS-v0.2.md", "sha256": "779d147bf3ec2ab376a9e1c743cb350b74d4414129fe0848e53afc570fbe5c4f"},
+    {"path": "docs/contracts/wp-a-02/DURANKI-WP-A-RETURN-02.json", "sha256": null, "self_hash_omitted": true}
+  ],
+  "finding_dispositions": [
+    {"id": "A01-01", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§1"], "schema_definitions": ["SubmitRequest", "SubmitReply", "SubmissionHandle", "CandidateResult", "StatusQuery", "StatusSnapshot", "CancelRequest", "CancelAck", "ErrorResponse"], "vector_references": ["TR-TEXT", "TR-TOOL", "TR-REJECT", "TR-LOST-ACK", "TR-EXPIRY", "V-DEST-01"]},
+    {"id": "A01-02", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§2.1", "§2.2"], "schema_definitions": ["CanonicalWork", "CanonicalWorkBody", "ResolvedPrompt", "Reference", "ReferenceBlock", "ResolvedReferenceBlock", "Message", "ResolvedMessage", "ToolSchema", "ToolCallBlock", "ToolResultBlock"], "vector_references": ["G-WORK-BASE", "G-WORK-ORDER-NORMAL", "G-WORK-ORDER", "G-WORK-OWNER", "G-WORK-DEADLINE", "G-WORK-EQUIV", "G-WORK-PROMPT", "G-WORK-REFERENCE", "G-WORK-UNICODE-ARGS", "V-PROMPT-01", "V-REF-01", "V-REF-02", "V-TOOL-RAW-DUP", "V-SAFE-COUNT", "V-NULL"]},
+    {"id": "A01-03", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§3"], "schema_definitions": ["TrustedContext", "CanonicalWork", "ExecutionPlan", "SignatureEnvelope", "ClassificationSnapshot", "EffectiveRetention", "SpendLimitAuthorization", "PreparedCandidate", "DispatchIntent"], "vector_references": ["TR-TEXT", "V-TRUST-MISSING", "V-TRUST-OWNER", "V-PLAN-01", "V-PLAN-02", "V-PLAN-RETENTION", "V-PLAN-03", "V-FDC-01", "V-FDC-02", "V-FDC-REVOKE", "F-WP-B-TOOL-CHOICE"]},
+    {"id": "A01-04", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§1", "§4"], "schema_definitions": ["AttemptSnapshot", "StatusSnapshot", "CancelAck", "OutcomeEvent", "OutcomeAck", "OutcomeQuery"], "vector_references": ["TR-OUTCOME-RECOVERY", "TR-CANCEL", "V-OUTCOME-01", "V-OUTCOME-02", "V-OUTCOME-DUP", "V-OUTCOME-CONFLICT", "V-OUTCOME-STALE", "V-CANCEL-01", "V-CANCEL-CONFIRMED", "V-CANCEL-UNRESOLVED", "V-LATE-RESULT", "F-1B-CONSERVATIVE", "F-1B-WINNER"]},
+    {"id": "A01-05", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§5"], "schema_definitions": ["CountKnowledge", "NormalizedUsage", "Cost", "UsageRevision"], "vector_references": ["TR-ACCOUNTING", "V-USAGE-01", "V-USAGE-02", "V-USAGE-ZERO", "V-USAGE-UNKNOWN", "V-USAGE-BAD-ESTIMATE", "V-USAGE-SELF-LINK", "V-USAGE-MISSING-LINK", "V-USAGE-STALE-LINK", "V-USAGE-DUP", "V-USAGE-CORRECTION", "V-USAGE-SCALE", "V-USAGE-CURRENCY", "V-USAGE-ROLLUP", "accounting_examples.rollup", "accounting_examples.round_half_even_to_9_places"]},
+    {"id": "A01-06", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§1", "§2.2", "§6"], "schema_definitions": ["Version", "Profile", "Feature", "SubmitRequest", "InputDateTime", "UtcSecond", "PositiveCount", "Error", "ErrorResponse", "CapabilityResponse"], "vector_references": ["V-VERSION-01", "V-FEATURE-UNKNOWN", "V-CAP-01", "V-CAP-02", "V-CAP-03", "V-DATE-01", "V-SAFE-COUNT", "V-NULL", "V-INTERNAL-FIELD", "V-TOOL-SCHEMA"]},
+    {"id": "A01-07", "disposition": "ADDRESSED_IN_PROPOSED_V02_NOT_ADOPTED", "contract_sections": ["§1", "§2.2", "§3", "§4", "§5", "§6"], "schema_definitions": ["SubmitRequest", "SubmitReply", "CanonicalWork", "ExecutionPlan", "PreparedCandidate", "DispatchIntent", "OutcomeEvent", "UsageRevision"], "vector_references": ["examples", "transcripts", "golden", "cases", "future_scenarios", "fixture_dispositions", "legacy_vector_crosswalk", "handoff"]}
+  ],
+  "decision_status": {"DEC-04": "PROPOSED_NOT_ADOPTED", "DEC-05": "PROPOSED_NOT_ADOPTED", "DEC-06": "PROPOSED_NOT_ADOPTED", "DEC-07": "PROPOSED_NOT_ADOPTED", "DEC-08": "PROPOSED_NOT_ADOPTED"},
+  "validation": {
+    "helper_invocation": "/usr/bin/python3 -I -B",
+    "helper_resolved_path": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+    "helper_version": "3.9.6",
+    "json_syntax_duplicate_keys_and_local_refs": "PASS",
+    "schema_bundle": "Draft 2020-12; 60 definitions, 17 local entrypoints; no remote resolution",
+    "formal_json_schema_metaschema_and_instance_validation": "NOT_RUN: no installed suitable validator in permitted /usr/bin/python3 -I -B environment and no ajv/check-jsonschema/jsonschema command available",
+    "static_subset_shape_check": "PASS: 38 complete positive examples/goldens and 60 materialized case shape expectations matched a data-only subset check; not formal JSON Schema validation",
+    "vector_links": "PASS: 65 unique cases, 4 future scenarios, 8 transcripts, 19 original fixtures once, 25 legacy-vector crosswalk IDs, OB/T/DEC/assertion references; numbered tests relevance only",
+    "golden_data": "PASS: 9 exact JCS-profile canonical JSON/digest pairs recomputed from complete synthetic projections; prompt/work/plan/prepared/intent/event/reference digests and half-even data examples checked",
+    "input_preservation": "PASS: listed preserved input receipts rehashed unchanged; no prior artifact modified",
+    "output_boundary": "PASS: only five successor files under docs/contracts/wp-a-02; no repository temporary script or review file",
+    "runtime_application_sdk_gateway_provider_tests": "NOT_RUN",
+    "cryptographic_signature_validation": "NOT_RUN; synthetic plan signature explicitly SYMBOLIC_NOT_VALIDATED"
+  },
+  "limits_and_open_items": [
+    "A2 owner review/adoption of DEC-04 through DEC-08; all v0.2 choices remain proposed",
+    "Actual trusted issuer, source/prompt/reference/configuration resolvers and current classification/retention enforcement require later implementation proof",
+    "Signed-plan cryptography, pinned adapter deterministic final bytes, FDC, durable intent and independent receiver non-dispatch require WP-B/WP-C proof",
+    "Provider usage partitions, price semantics, real content store policy and operational currency handling require named-owner approval and runtime evidence",
+    "Full 1b hard exposure, cross-replica deduplication, conservative settlement and orchestrator single-winner CAS remain later first-relying guarantees",
+    "No representative Vega compatibility, real workload quality, production cost or operational acceptance is inferred from synthetic vectors"
+  ],
+  "handoff": {"location": "docs/contracts/wp-a-02/ in the independent Duranki workspace, directly accessible for review", "wp_a_a2": "NOT_APPROVED", "wp_b": "NOT_ISSUED", "wp_c": "NOT_ISSUED", "foundation": "CLOSED_AND_PRESERVED", "git": "NO_WRITES", "review_state": "STOP_AFTER_RETURN"}
+}

@@ -1,0 +1,40 @@
+{
+  "access_after_disable": "TRANSPORT_UNAVAILABLE",
+  "access_before_disable": "ALLOWED",
+  "configuration": "cfg.provider.approval-browser",
+  "connection": "conn.approval-browser",
+  "grant": "svc.demo",
+  "model_traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "price_version": "browser.approved.v1",
+  "scope": "disposable browser/SQLite; fake credential; no external call",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-04-provider-configuration-draft.png",
+      "sha256": "a75de56b56b502a8898bcf6ce8af0eb1ca4549a07b80f494e0edde267a3ec187"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-04-provider-configuration-enabled.png",
+      "sha256": "d222e7e2213894f6a3b17ea0145b51ff6323034e1c5cac1d64d04921eec789d0"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-04-provider-grant.png",
+      "sha256": "d577f797a7147847478a33ce09f81b5ddaa3588f2bc438e09ebefda185c931b7"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-04-provider-disabled.png",
+      "sha256": "14908a8e3a1f3e5b4d1f4b116dc9efc0ecb0486da3a97998bf0b7dc9d77786ed"
+    }
+  ],
+  "status": "PASS"
+}

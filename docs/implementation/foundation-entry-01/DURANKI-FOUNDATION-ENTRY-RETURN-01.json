@@ -1,0 +1,314 @@
+{
+  "schema_version": "1.0",
+  "disposition": "RECOMMENDATIONS_READY_WITH_EXPLICIT_PRIMARY_SOURCE_GAPS",
+  "status_scope": "Documentation recommendations only; choices proposed, not adopted; WP-FND NOT_ISSUED",
+  "root_state_before": {
+    "absolute_root": "/Users/larrymitchell/Mach33/Duranki",
+    "physical_root": "/Users/larrymitchell/Mach33/Duranki",
+    "git_metadata": "absent as file or directory",
+    "enclosing_git_repository": "none found by git rev-parse in root or parent directories",
+    "branch_head_tracked_status": "not applicable",
+    "target_collisions": "none at the three requested foundation-entry paths"
+  },
+  "root_state_after": {
+    "absolute_root": "/Users/larrymitchell/Mach33/Duranki",
+    "git_metadata": "still absent",
+    "new_files": [
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-DECISIONS-01.md",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-PLANNING-02-ERRATUM-01.json",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-RETURN-01.json"
+    ],
+    "preserved": "planning-01, planning-02, AGENTS.md, architecture, tracker, readout and mach-recce not intentionally modified"
+  },
+  "source_receipts": [
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/LLM_Routing/llm-routing-infra-design-v1.1.md",
+      "bytes": 71744,
+      "sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/LLM_Routing/review-tracker.md",
+      "bytes": 44912,
+      "sha256": "36be1ae781fb6645fa186881eb967e7118f24dbf585913f2f8e0da9b1e1260ac"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+      "bytes": 33003,
+      "sha256": "852d58be6087c1952f8349b429029f23c9235c86236b26dcf3ed69d3758aebab"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json",
+      "bytes": 114869,
+      "sha256": "ea4657b342be60e5bb785d9093130aa980503221d9e3c75ee603adaef8eb4e92"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json",
+      "bytes": 59976,
+      "sha256": "1242f0f2125b15909e4cfbb0dd4fbc862f84a9064d511c44db3c7085b3273e2e"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-PLANNING-RETURN-02.json",
+      "bytes": 12160,
+      "sha256": "fb510a23467cc7779b1c464beac2c7a96f6d75bcecfe8ec0aaf60ee2e374eb7b"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-IMPLEMENTATION-PLAN-v0.1.md",
+      "bytes": 22621,
+      "sha256": "2714bb5835620bc08628ba71d52b46a5e8ea5beeb54e381b581ac600c031fea8"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-IMPLEMENTATION-REGISTER-v0.1.json",
+      "bytes": 41061,
+      "sha256": "e6edd45617ee6bc2a5ec46bd8b91a2c8b5d2e237318f1a28124b14f2641c1044"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.1.json",
+      "bytes": 39697,
+      "sha256": "155aa419644b1f5b23c1919925b3ad697f7483d219cffc0efbe64701f0b4642a"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-PLANNING-RETURN-01.json",
+      "bytes": 9587,
+      "sha256": "787b9ff75f2c2669347665f841a9c001c906ef0b1cb68917b38ddeb729402889"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/planning/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-CALL-PATH-INVENTORY.json",
+      "bytes": 80201,
+      "sha256": "f103ee1d153e2af2538d1e7dfe5b5ef0c65e6192bf219607babdbcff414f33cb"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-CLIENT-CONTRACT-MAPPING.md",
+      "bytes": 7172,
+      "sha256": "3fc7f87bf63ec1293a0895086c1d4608ea1e4bc7466595b2996d19b1ea59c2a5"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-FIXTURE-CATALOGUE.json",
+      "bytes": 18747,
+      "sha256": "f487c3de15fd8dd7ee301da5b501308321d771e657ecf356c6c10c4522512ce3"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-MACH-PLATFORM-RECONNAISSANCE.md",
+      "bytes": 19510,
+      "sha256": "0836150411fda1b3f3fa3f1c0f5b01d7b0ab76e37d1f7010702f34af115bce80"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-RECONNAISSANCE-RETURN.json",
+      "bytes": 3028,
+      "sha256": "3da889f7d838130a7d74bf9d071a973254b7964a23df6b76fc501ba0eb6e4804"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    },
+    {
+      "role": "unchanged controlling/planning input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    },
+    {
+      "role": "review instruction",
+      "path": "/Users/larrymitchell/Downloads/DURANKI-IMPLEMENTATION-PLAN-v0.2-REVIEW-02.md",
+      "bytes": 20059,
+      "sha256": "3ed98998df0ab88ed8b40ac6707fda8f66a916f63e156874273ad356496faae6"
+    },
+    {
+      "role": "review validation",
+      "path": "/Users/larrymitchell/Downloads/DURANKI-PLANNING-02-REVIEW-VALIDATION.json",
+      "bytes": 16608,
+      "sha256": "6d30c14095fc5f706df1c53e3ec912eb7e450ff5a2bcac52e7569c8fcaf4122c"
+    },
+    {
+      "role": "applicable repository instructions",
+      "path": "/Users/larrymitchell/Mach33/Duranki/AGENTS.md",
+      "bytes": 2648,
+      "sha256": "4d6925db3299ecd09affe2c5ce180880f534ff798393074558fc5535dc9756f8"
+    }
+  ],
+  "local_primary_document_receipts": [
+    {
+      "role": "CPython license",
+      "path": "/opt/homebrew/Cellar/python@3.12/3.12.15/LICENSE",
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+      "publisher_url": "https://www.python.org/downloads/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "Node README",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/README.md",
+      "bytes": 41665,
+      "sha256": "47bdbbc1c1ddef217772bf72aec8e93ffe295e72228b63b988dd1035f1a68626",
+      "publisher_url": "https://nodejs.org/en/download/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "Node license",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/LICENSE",
+      "bytes": 157606,
+      "sha256": "148eacf7863ef4329224a29398623077200a27194aa075569faf4a0a85566ca5",
+      "publisher_url": "https://nodejs.org/en/download/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "npm package metadata",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/lib/node_modules/npm/package.json",
+      "bytes": 6597,
+      "sha256": "a4f04ad50219f82e0e8f262d3e1acbdbd678040198ea36fca10fe7bbb38da726",
+      "publisher_url": "https://docs.npmjs.com/cli/v11/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "npm package-json documentation",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/lib/node_modules/npm/docs/content/configuring-npm/package-json.md",
+      "bytes": 37607,
+      "sha256": "797dbeb530b7fe4192cf5d97d0b31cd3f8fcd1aae3c871539ddfd09db017ad47",
+      "publisher_url": "https://docs.npmjs.com/cli/v11/configuring-npm/package-json",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "npm pack documentation",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/lib/node_modules/npm/docs/content/commands/npm-pack.md",
+      "bytes": 3832,
+      "sha256": "8e9ea80fbc2efc6631bb4290e44aa9b84e1ba56fc38abdc236f498a791568e92",
+      "publisher_url": "https://docs.npmjs.com/cli/v11/commands/npm-pack",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "npm ci documentation",
+      "path": "/Users/larrymitchell/.nvm/versions/node/v24.19.0/lib/node_modules/npm/docs/content/commands/npm-ci.md",
+      "bytes": 13633,
+      "sha256": "f42590051fadb44830b2607266d67a844c6d92b8b1735479ffba8d0cc21e728e",
+      "publisher_url": "https://docs.npmjs.com/cli/v11/commands/npm-ci",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "uv README",
+      "path": "/opt/homebrew/Cellar/uv/0.13.1/README.md",
+      "bytes": 9859,
+      "sha256": "57a84a5a635f30e3a26541ebc16ca690944a7750f05713b1af92d3170b58f704",
+      "publisher_url": "https://docs.astral.sh/uv/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "uv Apache license",
+      "path": "/opt/homebrew/Cellar/uv/0.13.1/LICENSE-APACHE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "publisher_url": "https://docs.astral.sh/uv/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    },
+    {
+      "role": "uv MIT license",
+      "path": "/opt/homebrew/Cellar/uv/0.13.1/LICENSE-MIT",
+      "bytes": 1077,
+      "sha256": "860e3d7a86b84e6a7012c7a635fc64df475cebc6cce34dfeb73a5982ec58176c",
+      "publisher_url": "https://docs.astral.sh/uv/",
+      "retrieval": "local installed publisher bundle read 2026-10-16; public URL not fetched"
+    }
+  ],
+  "output_receipts_excluding_return_self": [
+    {
+      "role": "new recommendation output",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-DECISIONS-01.md",
+      "bytes": 12790,
+      "sha256": "ca17c18d328d7099b98fad7d71890045f9c0984e6be145934455aa60af6e9267"
+    },
+    {
+      "role": "new recommendation output",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-PLANNING-02-ERRATUM-01.json",
+      "bytes": 2416,
+      "sha256": "b94d1ef9d534aac33b8b702f808963ba4e3be5d7152a9f8c5a96f5662122ea7e"
+    }
+  ],
+  "return_path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-FOUNDATION-ENTRY-RETURN-01.json",
+  "return_self_hash": "omitted to avoid self-reference",
+  "decisions": [
+    {
+      "id": "DEC-01",
+      "recommendation": "CPython >=3.12,<3.13 (local 3.12.15), Node >=24,<25 (local 24.19.0/npm 11.17.0), uv 0.13.1 and npm; uv_build backend subject to published metadata verification",
+      "status": "PROPOSED_FOR_LM01_ADOPTION"
+    },
+    {
+      "id": "DEC-02",
+      "recommendation": "Independent Python server/client wheel+sdist roots and plain CommonJS JS tarball with clean installed-consumer proof; provisional internal package names",
+      "status": "PROPOSED_FOR_LM01_ADOPTION"
+    },
+    {
+      "id": "DEC-15",
+      "recommendation": "Confirm independent root, explicitly authorize local unborn main Git initialization for later FND, keep stage/commit/push unauthorized, and copy baseline/tracker byte-identically with receipts",
+      "status": "PROPOSED_FOR_LM01_ADOPTION"
+    }
+  ],
+  "unresolved_before_wp_fnd": [
+    "LM-01 adoption of DEC-01, DEC-02 and DEC-15 recommendations",
+    "Explicit Git init/initial branch and no-stage/no-commit authority in a later commission",
+    "Current upstream patch/security and signed artifact/provenance checks for Python and Node",
+    "Published uv_build version/hash/license/source metadata and approved retrieval path",
+    "Package scope/name ownership and project license/publication policy",
+    "Future Linux target compatibility and later selected LiteLLM release compatibility"
+  ],
+  "erratum": {
+    "id": "E02-01",
+    "status": "PROPOSED_NOT_APPLIED",
+    "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/foundation-entry-01/DURANKI-PLANNING-02-ERRATUM-01.json",
+    "target_sha256": "ea4657b342be60e5bb785d9093130aa980503221d9e3c75ee603adaef8eb4e92",
+    "record": "T-29.required_observation",
+    "planning_02_unchanged": true
+  },
+  "next_work": {
+    "id": "WP-FND",
+    "status": "NOT_ISSUED",
+    "proposed_write_surface_reference": "DURANKI-FOUNDATION-ENTRY-DECISIONS-01.md § Proposed WP-FND write and execution boundary",
+    "no_automatic_transition": true
+  },
+  "validation_results": {
+    "review_hash": "PASS: supplied Review 02 SHA-256 matches local read",
+    "planning_02_hashes": "PASS: four reviewed planning-02 artifact hashes match Review 02 receipts",
+    "controlling_source_preservation": "PASS: baseline, tracker, both planning packages, readout copies and five recce files match recorded hashes",
+    "erratum_target": "PASS: T-29 selector and expected old observation match unchanged v0.2 register",
+    "erratum_replacement": "PASS: proposed replacement exactly matches Review 02 §4 text",
+    "json_parse": "PASS: erratum and return parsed as inert JSON",
+    "exact_write_paths": "PASS: only three requested new files in foundation-entry-01",
+    "primary_evidence_limit": "Local publisher-bundled documents and tool version reports only; public DNS failed and live release/package metadata was not fetched",
+    "application_install_build_test_gateway_vega": "NOT RUN / NOT VERIFIED",
+    "git_mutation": "NONE"
+  },
+  "actions_performed": [
+    "Read review, validation, applicable instructions and controlling/planning sources",
+    "Read-only root/Git context and installed tool version/help inspection",
+    "Read local bundled publisher documentation and license files",
+    "Attempted read-only public Python HEAD request; DNS lookup failed",
+    "Authored one Markdown recommendation, one JSON erratum and this JSON return"
+  ],
+  "actions_not_performed": [
+    "Git init/stage/commit/push or remote creation",
+    "Scaffold, package metadata or lockfile creation",
+    "Package installation/resolution, build or application test",
+    "Gateway experiment, service/provider call, cloud or Vega connection",
+    "Modification of planning-01, planning-02 or controlling sources"
+  ]
+}

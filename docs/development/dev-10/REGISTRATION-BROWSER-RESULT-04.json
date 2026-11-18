@@ -1,0 +1,39 @@
+{
+  "credential_states": [
+    "Not set up",
+    "Key saved\u2014not checked",
+    "API access verified",
+    "Key saved\u2014not checked after rotation",
+    "Not set up after removal"
+  ],
+  "generation_counts_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "provider_requests": [
+    "/v1/models",
+    "/v1/models"
+  ],
+  "scope": "disposable Chrome, SQLite and independent controlled loopback TLS",
+  "screenshot": {
+    "path": "docs/development/dev-10/screenshots/dev10-personal-api-setup-key-saved-04.png",
+    "sha256": "a46317e6870d03d65ba6738c37df8eb819b09d009e2eeba7a88c1079431bd5de"
+  },
+  "source_commit": "27efec55d0c0dcb78c8b3b2f9694f55b1b6e8499",
+  "source_dirty": true,
+  "source_hashes": {
+    "server/src/duranki_server/personal_campaign.py": "6c44812c710c172edd7f3e23cb3221e46ac638ac66ddc4053d3d4636ba29a5b7",
+    "web/crud_view.js": "653f103678cb7a8f6a88a12d165ceb5886357961840855cd6229ed3c96697833",
+    "web/providers_view.js": "1386e08126dd5633b025ab7fe0bedac07e045775847aea6732b8d132866739b3",
+    "web/source_pages.js": "e104f19df2c7c65dbce6f1f0fbd64a160fc13911838824867ccde9c4c4e86b6c"
+  },
+  "status": "PASS"
+}

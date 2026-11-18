@@ -1,0 +1,24 @@
+{
+  "name": "@cognitivedynamics/ezllmrouter-client",
+  "version": "0.3.0",
+  "private": true,
+  "description": "CognitiveDynamics EzLLMRouter CommonJS network client",
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "exports": {
+    ".": "./index.cjs"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "files": [
+    "index.cjs",
+    "successor.cjs",
+    "integration.cjs",
+    "integration_schema.json",
+    "integration_schema_v2.json",
+    "integration_schema_v3.json",
+    "dev12_schemas.json",
+    "dev12_registrations.json"
+  ]
+}

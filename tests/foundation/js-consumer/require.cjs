@@ -1,0 +1,10 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const pkg = require("@mach33/duranki-client");
+const resolved = fs.realpathSync(require.resolve("@mach33/duranki-client"));
+const allowed = fs.realpathSync(path.join(__dirname, "node_modules")) + path.sep;
+assert.ok(resolved.startsWith(allowed), `unexpected import path: ${resolved}`);
+assert.equal(pkg.version, "0.0.0");
+console.log(JSON.stringify({ version: pkg.version, resolved, allowed, node: process.execPath }));

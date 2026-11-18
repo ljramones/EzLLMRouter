@@ -1,0 +1,43 @@
+{
+  "attempts": 10,
+  "exports": [
+    "CSV",
+    "JSON"
+  ],
+  "keyboard_tab": true,
+  "known_subtotals": {
+    "EUR": "4",
+    "USD": "32"
+  },
+  "scope": "disposable Chrome, synthetic arithmetic fixture and local SQLite",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-usage-costs-overview.png",
+      "sha256": "f52f3a2000203c5399c399abc04d8d000e6dd79f3ef217183c92f6aa8bd13acb"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-all-agent-report.png",
+      "sha256": "adf9f7df4f9125863ae03010a613820193baea5f562f6e3b4fcc4322a58c0a1d"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-task-cohorts.png",
+      "sha256": "11d7bca0116effefeaf2c8c3b011eb4f90ebf19f0b7e483a78f32af7e0d80f44"
+    }
+  ],
+  "signed_out": true,
+  "source_commit": "ea1c37e823d60c875b6a6db33855a6c98fa17020",
+  "source_dirty": true,
+  "status": "PASS",
+  "traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    }
+  }
+}

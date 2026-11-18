@@ -1,0 +1,1447 @@
+{
+  "checkpoint": "6a58030e4c8c1c03dfb08cce73e5365b8edd4dc7",
+  "differences": [
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 1.0,
+      "surface": "summary cursor at 0"
+    },
+    {
+      "difference_px": 0.038,
+      "surface": "cost cursor at 0"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -1.0,
+      "surface": "summary cursor at 115"
+    },
+    {
+      "difference_px": -0.038,
+      "surface": "cost cursor at 115"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "participant origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "participant end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "participant cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "participant marker at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expanded versus collapsed event"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expand preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.031,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "collapse preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -0.133,
+      "surface": "summary cursor at 65"
+    },
+    {
+      "difference_px": -0.005,
+      "surface": "cost cursor at 65"
+    },
+    {
+      "difference_px": -0.005,
+      "surface": "65-second selected guide"
+    },
+    {
+      "difference_px": -0.149,
+      "surface": "brant summary usage endpoint"
+    },
+    {
+      "difference_px": -0.149,
+      "surface": "brant participant usage endpoint"
+    },
+    {
+      "difference_px": -0.133,
+      "surface": "delivery summary usage endpoint"
+    },
+    {
+      "difference_px": -0.133,
+      "surface": "delivery participant usage endpoint"
+    },
+    {
+      "difference_px": -0.133,
+      "surface": "direct summary usage endpoint"
+    },
+    {
+      "difference_px": -0.133,
+      "surface": "direct participant usage endpoint"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 1.0,
+      "surface": "summary cursor at 0"
+    },
+    {
+      "difference_px": 0.04,
+      "surface": "cost cursor at 0"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -1.0,
+      "surface": "summary cursor at 115"
+    },
+    {
+      "difference_px": -0.04,
+      "surface": "cost cursor at 115"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "participant origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "participant end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "participant cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "participant marker at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expanded versus collapsed event"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expand preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.817,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.033,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "collapse preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "summary cursor at 65"
+    },
+    {
+      "difference_px": -0.005,
+      "surface": "cost cursor at 65"
+    },
+    {
+      "difference_px": -0.005,
+      "surface": "65-second selected guide"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "brant summary usage endpoint"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "brant participant usage endpoint"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "delivery summary usage endpoint"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "delivery participant usage endpoint"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "direct summary usage endpoint"
+    },
+    {
+      "difference_px": -0.145,
+      "surface": "direct participant usage endpoint"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 1.0,
+      "surface": "summary cursor at 0"
+    },
+    {
+      "difference_px": 0.044,
+      "surface": "cost cursor at 0"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -1.0,
+      "surface": "summary cursor at 115"
+    },
+    {
+      "difference_px": -0.044,
+      "surface": "cost cursor at 115"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 1,
+      "surface": "participant origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "participant end"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "participant cursor at 10"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "participant marker at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expanded versus collapsed event"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "expand preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary cursor at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "cost cursor at 10"
+    },
+    {
+      "difference_px": 0.823,
+      "surface": "summary marker at 10"
+    },
+    {
+      "difference_px": 0.036,
+      "surface": "selected guide at 10"
+    },
+    {
+      "difference_px": 0.0,
+      "surface": "collapse preserves summary event"
+    },
+    {
+      "difference_px": 1,
+      "surface": "summary origin"
+    },
+    {
+      "difference_px": -1,
+      "surface": "summary end"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost origin"
+    },
+    {
+      "difference_px": 0,
+      "surface": "cost end"
+    },
+    {
+      "difference_px": -0.132,
+      "surface": "summary cursor at 65"
+    },
+    {
+      "difference_px": -0.006,
+      "surface": "cost cursor at 65"
+    },
+    {
+      "difference_px": -0.006,
+      "surface": "65-second selected guide"
+    },
+    {
+      "difference_px": -0.132,
+      "surface": "brant summary usage endpoint"
+    },
+    {
+      "difference_px": -0.132,
+      "surface": "brant participant usage endpoint"
+    },
+    {
+      "difference_px": -0.148,
+      "surface": "delivery summary usage endpoint"
+    },
+    {
+      "difference_px": -0.148,
+      "surface": "delivery participant usage endpoint"
+    },
+    {
+      "difference_px": -0.148,
+      "surface": "direct summary usage endpoint"
+    },
+    {
+      "difference_px": -0.148,
+      "surface": "direct participant usage endpoint"
+    }
+  ],
+  "fixture": "dev09-team-scripted-cost-demo-v2",
+  "max_absolute_difference_px": 1,
+  "observations": [
+    {
+      "collapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "summary": 819.546875
+          },
+          "delivery": {
+            "summary": 819.5625
+          },
+          "direct": {
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 554.2921752929688,
+        "end": 115,
+        "guide": 554.2921752929688,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 555.078125,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": 555.078125,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "0.03",
+        "width": 1440
+      },
+      "end": {
+        "at": 115,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "summary": 819.546875
+          },
+          "delivery": {
+            "summary": 819.5625
+          },
+          "direct": {
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 1060.962158203125,
+        "end": 115,
+        "guide": 505.4829406738281,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 1060,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": 555.078125,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "1.25",
+        "width": 1440
+      },
+      "expanded_10": {
+        "at": 10,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "summary": 819.546875
+          },
+          "delivery": {
+            "summary": 819.5625
+          },
+          "direct": {
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 554.2921752929688,
+        "end": 115,
+        "guide": 554.2921752929688,
+        "overflow": 0,
+        "participant": {
+          "cursor": 555.078125,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "participantMarker": 555.078125,
+        "summary": {
+          "cursor": 555.078125,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": 555.078125,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "0.03",
+        "width": 1440
+      },
+      "recollapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "summary": 819.546875
+          },
+          "delivery": {
+            "summary": 819.5625
+          },
+          "direct": {
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 554.2921752929688,
+        "end": 115,
+        "guide": 554.2921752929688,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 555.078125,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": 555.078125,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "0.03",
+        "width": 1440
+      },
+      "simultaneous_65": {
+        "at": 65,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "participant": 819.546875,
+            "summary": 819.546875
+          },
+          "delivery": {
+            "participant": 819.5625,
+            "summary": 819.5625
+          },
+          "direct": {
+            "participant": 819.5625,
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 819.6907348632812,
+        "end": 115,
+        "guide": 819.6907348632812,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 819.5625,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": 555.078125,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "0.84",
+        "width": 1440
+      },
+      "start": {
+        "at": 0,
+        "axis": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "bars": {
+          "brant": {
+            "summary": 819.546875
+          },
+          "delivery": {
+            "summary": 819.5625
+          },
+          "direct": {
+            "summary": 819.5625
+          }
+        },
+        "chartCursor": 506.0378723144531,
+        "end": 115,
+        "guide": 505.4829406738281,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 507,
+          "left": 507,
+          "right": 1060,
+          "width": 553
+        },
+        "summaryMarker": null,
+        "svg": {
+          "left": 506,
+          "right": 1061,
+          "width": 555
+        },
+        "total": "0.00",
+        "width": 1440
+      },
+      "width": 1440
+    },
+    {
+      "collapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "summary": 684.59375
+          },
+          "delivery": {
+            "summary": 684.59375
+          },
+          "direct": {
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 510.6850280761719,
+        "end": 115,
+        "guide": 510.6850280761719,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 511.46875,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": 511.46875,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "0.03",
+        "width": 900
+      },
+      "end": {
+        "at": 115,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "summary": 684.59375
+          },
+          "delivery": {
+            "summary": 684.59375
+          },
+          "direct": {
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 842.960205078125,
+        "end": 115,
+        "guide": 478.67584228515625,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 842,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": 511.46875,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "1.25",
+        "width": 900
+      },
+      "expanded_10": {
+        "at": 10,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "summary": 684.59375
+          },
+          "delivery": {
+            "summary": 684.59375
+          },
+          "direct": {
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 510.6850280761719,
+        "end": 115,
+        "guide": 510.6850280761719,
+        "overflow": 0,
+        "participant": {
+          "cursor": 511.46875,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "participantMarker": 511.46875,
+        "summary": {
+          "cursor": 511.46875,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": 511.46875,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "0.03",
+        "width": 900
+      },
+      "recollapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "summary": 684.59375
+          },
+          "delivery": {
+            "summary": 684.59375
+          },
+          "direct": {
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 510.6850280761719,
+        "end": 115,
+        "guide": 510.6850280761719,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 511.46875,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": 511.46875,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "0.03",
+        "width": 900
+      },
+      "simultaneous_65": {
+        "at": 65,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "participant": 684.59375,
+            "summary": 684.59375
+          },
+          "delivery": {
+            "participant": 684.59375,
+            "summary": 684.59375
+          },
+          "direct": {
+            "participant": 684.59375,
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 684.7339477539062,
+        "end": 115,
+        "guide": 684.7339477539062,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 684.59375,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": 511.46875,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "0.84",
+        "width": 900
+      },
+      "start": {
+        "at": 0,
+        "axis": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "bars": {
+          "brant": {
+            "summary": 684.59375
+          },
+          "delivery": {
+            "summary": 684.59375
+          },
+          "direct": {
+            "summary": 684.59375
+          }
+        },
+        "chartCursor": 479.0397644042969,
+        "end": 115,
+        "guide": 478.67584228515625,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 480,
+          "left": 480,
+          "right": 842,
+          "width": 362
+        },
+        "summaryMarker": null,
+        "svg": {
+          "left": 479,
+          "right": 843,
+          "width": 364
+        },
+        "total": "0.00",
+        "width": 900
+      },
+      "width": 900
+    },
+    {
+      "collapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "summary": 413.171875
+          },
+          "delivery": {
+            "summary": 413.15625
+          },
+          "direct": {
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 194.77511596679688,
+        "end": 115,
+        "guide": 194.77511596679688,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 195.5625,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": 195.5625,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "0.03",
+        "width": 640
+      },
+      "end": {
+        "at": 115,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "summary": 413.171875
+          },
+          "delivery": {
+            "summary": 413.15625
+          },
+          "direct": {
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 611.9564208984375,
+        "end": 115,
+        "guide": 154.58665466308594,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 611,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": 195.5625,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "1.25",
+        "width": 640
+      },
+      "expanded_10": {
+        "at": 10,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "summary": 413.171875
+          },
+          "delivery": {
+            "summary": 413.15625
+          },
+          "direct": {
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 194.77511596679688,
+        "end": 115,
+        "guide": 194.77511596679688,
+        "overflow": 0,
+        "participant": {
+          "cursor": 195.5625,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "participantMarker": 195.5625,
+        "summary": {
+          "cursor": 195.5625,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": 195.5625,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "0.03",
+        "width": 640
+      },
+      "recollapsed_10": {
+        "at": 10,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "summary": 413.171875
+          },
+          "delivery": {
+            "summary": 413.15625
+          },
+          "direct": {
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 194.77511596679688,
+        "end": 115,
+        "guide": 194.77511596679688,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 195.5625,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": 195.5625,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "0.03",
+        "width": 640
+      },
+      "simultaneous_65": {
+        "at": 65,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "participant": 413.171875,
+            "summary": 413.171875
+          },
+          "delivery": {
+            "participant": 413.15625,
+            "summary": 413.15625
+          },
+          "direct": {
+            "participant": 413.15625,
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 413.2986755371094,
+        "end": 115,
+        "guide": 413.2986755371094,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 413.171875,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": 195.5625,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "0.84",
+        "width": 640
+      },
+      "start": {
+        "at": 0,
+        "axis": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "bars": {
+          "brant": {
+            "summary": 413.171875
+          },
+          "delivery": {
+            "summary": 413.15625
+          },
+          "direct": {
+            "summary": 413.15625
+          }
+        },
+        "chartCursor": 155.04356384277344,
+        "end": 115,
+        "guide": 154.58665466308594,
+        "overflow": 0,
+        "participant": null,
+        "participantMarker": null,
+        "summary": {
+          "cursor": 156,
+          "left": 156,
+          "right": 611,
+          "width": 455
+        },
+        "summaryMarker": null,
+        "svg": {
+          "left": 155,
+          "right": 612,
+          "width": 457
+        },
+        "total": "0.00",
+        "width": 640
+      },
+      "width": 640
+    }
+  ],
+  "scope": "disposable authenticated Chrome, temporary SQLite, no model worker",
+  "screenshot": {
+    "path": "docs/development/dev-09/screenshots/dev09-team-alignment-01-selected-oren-request.png",
+    "sha256": "052b757c7f885c5f5750640a6d19ae7cd1b1dade15b97d1e638e0d543b4cf888"
+  },
+  "source_sha256": {
+    "web/app.css": "c0c879f7e745daf5be5f4ccf6707c0210c4e2a950db8e3d707979cd1c7026421",
+    "web/demo_workspace_team_view.js": "4b79a2f307a6f1bd85781200e04f034b4339142407cb49491074f44fcf4cc109",
+    "web/dev09_demo_fixture.json": "eae0c2a655aa8ebd8e30d473b7e2e07ed78bceeb040632d5b145048443d3bb61",
+    "web/dev09_team_demo_fixture.json": "5d47e3f81759c4f8b8a268b76b67e25c12a370855276b49337130991630b5249"
+  },
+  "status": "PASS",
+  "tolerance_px": 2.5,
+  "totals_usd": {
+    "expanded": "1.39",
+    "legacy": "0.46",
+    "team": "1.25",
+    "team_at_65": "0.84"
+  },
+  "traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    }
+  }
+}

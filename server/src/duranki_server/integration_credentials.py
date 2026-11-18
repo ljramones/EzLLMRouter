@@ -1,0 +1,399 @@
+"""Encrypted database credentials for external integration accounts.
+
+The integration account remains the permission record. This store owns only
+the stable credential binding, encrypted versions, and discovery metadata.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone, timedelta
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import secrets
+import threading
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+from .integration_accounting import IntegrationError, _checked, _time
+from .provider_adapters import probe
+from .store import encode
+
+
+PROVIDERS = {
+    "openai": ("openai.responses.v1", "https://api.openai.com"),
+    "anthropic": ("anthropic.messages.2023-06-01", "https://api.anthropic.com"),
+    "xai": ("xai.responses.v1", "https://api.x.ai"),
+}
+OPERATIONS = {"speech_input", "speech_output"}
+
+
+class DatabaseCredentialStore:
+    def __init__(self, registry, key_path, *, discover=None, controlled=False):
+        self.registry = registry
+        self.store = registry.store
+        self.key_path = Path(key_path)
+        self.discover = discover or probe
+        self.controlled = controlled
+        self._gate = threading.RLock()
+        def migrate():
+            db = self.store.db
+            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_bindings "
+                       "(account_id TEXT PRIMARY KEY,dataset_id TEXT NOT NULL,record TEXT NOT NULL)")
+            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_versions "
+                       "(account_id TEXT NOT NULL,version INTEGER NOT NULL,key_id TEXT NOT NULL,"
+                       "nonce BLOB NOT NULL,ciphertext BLOB NOT NULL,PRIMARY KEY(account_id,version))")
+            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_operations "
+                       "(operation_id TEXT PRIMARY KEY,request_hash TEXT NOT NULL,account_id TEXT NOT NULL)")
+            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_meta "
+                       "(key TEXT PRIMARY KEY,value TEXT NOT NULL)")
+        self.store._transaction(migrate)
+        with self.store._lock:
+            has_rows = self.store.db.execute(
+                "SELECT 1 FROM integration_credential_versions LIMIT 1").fetchone() is not None
+            pinned = self.store.db.execute(
+                "SELECT value FROM integration_credential_meta WHERE key='key_id'").fetchone()
+        self.key_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if self.key_path.parent.stat().st_mode & 0o077:
+            raise RuntimeError("CREDENTIAL_KEY_DIRECTORY_PERMISSIONS")
+        if not self.key_path.exists():
+            if has_rows or pinned:
+                raise RuntimeError("CREDENTIAL_BOOTSTRAP_KEY_MISSING")
+            fd = os.open(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(secrets.token_bytes(32))
+                stream.flush()
+                os.fsync(stream.fileno())
+        if self.key_path.is_symlink() or self.key_path.stat().st_mode & 0o077:
+            raise RuntimeError("CREDENTIAL_BOOTSTRAP_KEY_PERMISSIONS")
+        self.key = self.key_path.read_bytes()
+        if len(self.key) != 32:
+            raise RuntimeError("CREDENTIAL_BOOTSTRAP_KEY_INVALID")
+        self.key_id = "key." + hashlib.sha256(self.key).hexdigest()[:20]
+        if pinned and pinned[0] != self.key_id:
+            raise RuntimeError("CREDENTIAL_BOOTSTRAP_KEY_MISMATCH")
+        if not pinned:
+            self.store._transaction(lambda: self.store.db.execute(
+                "INSERT INTO integration_credential_meta VALUES ('key_id',?)", (self.key_id,)))
+        with self.store._lock:
+            known = {row[0] for row in self.store.db.execute(
+                "SELECT DISTINCT key_id FROM integration_credential_versions")}
+        if known and known != {self.key_id}:
+            raise RuntimeError("CREDENTIAL_BOOTSTRAP_KEY_MISMATCH")
+        self._clean_pending()
+
+    def _owner(self, principal, dataset_id):
+        dataset = self.registry.integration._dataset(dataset_id)
+        self.registry.integration._authorize(principal, dataset, "admin")
+        if principal["principal_id"] != "owner.local":
+            raise IntegrationError("POLICY_DENIED", 403)
+        return dataset
+
+    def _binding(self, account_id):
+        with self.store._lock:
+            row = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE account_id=?",
+                                        (account_id,)).fetchone()
+        if not row:
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        return json.loads(row[0])
+
+    def _seal(self, account_id, version, provider, secret):
+        if type(secret) is not str or not 16 <= len(secret) <= 4096 or any(ord(c) < 33 or ord(c) > 126 for c in secret):
+            raise IntegrationError("INVALID_CREDENTIAL")
+        nonce = secrets.token_bytes(12)
+        context = encode({"account_id": account_id, "version": version,
+                          "provider": provider, "key_id": self.key_id}).encode()
+        return nonce, AESGCM(self.key).encrypt(nonce, secret.encode(), context)
+
+    def _resolve(self, binding, version=None):
+        selected = version or binding["selected_version"]
+        with self.store._lock:
+            row = self.store.db.execute("SELECT key_id,nonce,ciphertext FROM integration_credential_versions "
+                                        "WHERE account_id=? AND version=?", (binding["account_id"], selected)).fetchone()
+        if not row or row[0] != self.key_id:
+            raise IntegrationError("CREDENTIAL_KEY_UNAVAILABLE", 503)
+        context = encode({"account_id": binding["account_id"], "version": selected,
+                          "provider": binding["provider"], "key_id": row[0]}).encode()
+        try:
+            return AESGCM(self.key).decrypt(row[1], row[2], context).decode()
+        except Exception as exc:
+            raise IntegrationError("CREDENTIAL_DECRYPT_FAILED", 503) from exc
+
+    def _settings(self, provider):
+        return {"origin": PROVIDERS[provider][1], "location": "commercial", "site": "owner.local"}
+
+    def _discover(self, binding, version=None):
+        result = self.discover(PROVIDERS[binding["provider"]][0], self._settings(binding["provider"]),
+                               self._resolve(binding, version), "inventory", controlled=self.controlled)
+        if result["state"] == "observed" and not result.get("models"):
+            result = {"state": "empty", "reason": "empty_catalogue", "models": []}
+        return {"state": result["state"], "reason": result["reason"],
+                "models": result.get("models", []), "details": result.get("details", []),
+                "has_more": bool(result.get("has_more")),
+                "checked_at": _time(), "credential_version": version or binding["selected_version"],
+                "record_revision": binding["revision"]}
+
+    def _public(self, binding):
+        return {key: value for key, value in binding.items() if key not in ("request_hash",)}
+
+    def _clean_pending(self):
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        def clean():
+            db = self.store.db
+            rows = db.execute("SELECT account_id,record FROM integration_credential_bindings").fetchall()
+            for account_id, raw in rows:
+                item = json.loads(raw)
+                if (item["state"] == "pending" and
+                    item["discovery"]["state"] == "not_checked" and item["created_at"] < cutoff):
+                    db.execute("DELETE FROM integration_credential_versions WHERE account_id=?", (account_id,))
+                    db.execute("DELETE FROM integration_credential_operations WHERE account_id=?", (account_id,))
+                    db.execute("DELETE FROM integration_credential_bindings WHERE account_id=?", (account_id,))
+        self.store._transaction(clean)
+
+    def connect(self, principal, body):
+        if type(body) is not dict or set(body) != {"dataset_id", "provider", "api_key", "friendly_name", "operation_id"}:
+            raise IntegrationError("SCHEMA_INVALID")
+        dataset = self._owner(principal, body["dataset_id"])
+        provider = body["provider"]
+        if provider not in PROVIDERS or type(body["friendly_name"]) is not str or len(body["friendly_name"].strip()) > 120:
+            raise IntegrationError("SCHEMA_INVALID")
+        operation_id = body["operation_id"]
+        if type(operation_id) is not str or not operation_id.startswith("op.") or len(operation_id) > 160:
+            raise IntegrationError("SCHEMA_INVALID")
+        with self._gate:
+            digest = hmac.new(self.key, encode(body).encode(), hashlib.sha256).hexdigest()
+            with self.store._lock:
+                old = self.store.db.execute("SELECT request_hash,account_id FROM integration_credential_operations "
+                                            "WHERE operation_id=?", (operation_id,)).fetchone()
+            if old:
+                if not hmac.compare_digest(old[0], digest):
+                    raise IntegrationError("OPERATION_CONFLICT", 409)
+                return self._public(self._binding(old[1]))
+            account_id = "account.local." + secrets.token_hex(16)
+            reference = "credential.local." + secrets.token_hex(16)
+            nonce, ciphertext = self._seal(account_id, 1, provider, body["api_key"])
+            binding = {"account_id": account_id, "dataset_id": body["dataset_id"],
+                       "environment_id": dataset["environment_id"], "owner_id": dataset["owner_id"],
+                       "provider": provider, "provider_id": "provider." + provider,
+                       "friendly_name": body["friendly_name"].strip() or provider.title(),
+                       "credential_ref": reference, "backend": "encrypted_database",
+                       "selected_version": 0, "pending_version": 1, "state": "pending",
+                       "discovery": {"state": "not_checked", "models": []},
+                       "selected_models": [], "allowed_operations": [], "policy_revision": 0,
+                       "revision": 1, "created_at": _time(), "updated_at": _time()}
+            def create():
+                db = self.store.db
+                db.execute("INSERT INTO integration_credential_bindings VALUES (?,?,?)",
+                           (account_id, body["dataset_id"], encode(binding)))
+                db.execute("INSERT INTO integration_credential_versions VALUES (?,?,?,?,?)",
+                           (account_id, 1, self.key_id, nonce, ciphertext))
+                db.execute("INSERT INTO integration_credential_operations VALUES (?,?,?)",
+                           (operation_id, digest, account_id))
+            self.store._transaction(create)
+            discovery = self._discover(binding, 1)
+            binding["discovery"] = discovery
+            binding["updated_at"] = _time()
+            self.store._transaction(lambda: self.store.db.execute(
+                "UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                (encode(binding), account_id)))
+            return self._public(binding)
+
+    def list(self, principal, dataset_id):
+        self._owner(principal, dataset_id)
+        with self.store._lock:
+            rows = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE dataset_id=? "
+                                         "ORDER BY rowid DESC", (dataset_id,)).fetchall()
+        return {"items": [self._public(json.loads(row[0])) for row in rows]}
+
+    def list_for(self, principal, dataset_id):
+        if principal["principal_id"] != "svc.vega.credential-consumer" or principal["kind"] != "service":
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        dataset = self.registry.integration._dataset(dataset_id)
+        if principal["owner"] != dataset["owner_id"]:
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        with self.store._lock:
+            rows = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE dataset_id=?",
+                                         (dataset_id,)).fetchall()
+        fields = ("account_id", "dataset_id", "environment_id", "provider", "provider_id",
+                  "credential_ref", "selected_version", "policy_revision", "selected_models",
+                  "allowed_operations", "state")
+        return {"integration_version": "3", "items": [
+            {key: item[key] for key in fields} for (raw,) in rows
+            if (item := json.loads(raw))["state"] == "connected"]}
+
+    def save(self, principal, account_id, body):
+        if type(body) is not dict or set(body) != {"dataset_id", "expected_revision", "selected_models", "allowed_operations"}:
+            raise IntegrationError("SCHEMA_INVALID")
+        self._owner(principal, body["dataset_id"])
+        with self._gate:
+            item = self._binding(account_id)
+            models, operations = body["selected_models"], body["allowed_operations"]
+            if (item["dataset_id"] != body["dataset_id"] or item["revision"] != body["expected_revision"] or
+                item["discovery"]["state"] != "observed" or item["discovery"].get("has_more") or
+                type(models) is not list or len(models) != len(set(models)) or len(models) > 128 or
+                any(model not in item["discovery"]["models"] for model in models) or
+                type(operations) is not list or len(operations) != len(set(operations)) or
+                not set(operations) <= OPERATIONS or not (models or operations)):
+                raise IntegrationError("POLICY_OR_REVISION_DENIED", 409)
+            if item["state"] == "pending":
+                record = _checked({"account_id": account_id, "dataset_id": item["dataset_id"],
+                    "provider_id": item["provider_id"], "credential_ref": item["credential_ref"],
+                    "allowed_models": models, "allowed_operations": operations,
+                    "state": "usable"}, "account", "3")
+                dataset = self.registry.integration._dataset(item["dataset_id"])
+                account = {**record, "owner_id": dataset["owner_id"], "revision": 1, "registered_at": _time()}
+                item["selected_version"] = item["pending_version"]
+                item["pending_version"] = None
+                item["state"] = "connected"
+            elif item["state"] in ("connected", "disabled"):
+                account = None
+            else:
+                raise IntegrationError("POLICY_DENIED", 403)
+            item.update(selected_models=models, allowed_operations=operations,
+                        policy_revision=item["policy_revision"] + 1,
+                        revision=item["revision"] + 1, updated_at=_time())
+            def commit():
+                db = self.store.db
+                if account:
+                    db.execute("INSERT INTO integration_accounts VALUES (?,?,?)",
+                               (account_id, item["dataset_id"], encode(account)))
+                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                               (account_id, item["dataset_id"], 1, encode(account)))
+                else:
+                    row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                                     (account_id, item["dataset_id"])).fetchone()
+                    old = json.loads(row[0])
+                    old.update(allowed_models=models, allowed_operations=operations,
+                               revision=old["revision"] + 1, changed_at=_time())
+                    db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+                               (encode(old), account_id, item["dataset_id"]))
+                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                               (account_id, item["dataset_id"], old["revision"], encode(old)))
+                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                           (encode(item), account_id))
+            self.store._transaction(commit)
+            return self._public(item)
+
+    def refresh(self, principal, account_id, body):
+        self._owner(principal, body.get("dataset_id"))
+        with self._gate:
+            item = self._binding(account_id)
+            if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision"):
+                raise IntegrationError("STALE_REVISION", 409)
+            discovery = self._discover(item, item["pending_version"] or item["selected_version"])
+            discovery["record_revision"] = item["revision"] + 1
+            item.update(discovery=discovery, revision=item["revision"] + 1, updated_at=_time())
+            self.store._transaction(lambda: self.store.db.execute(
+                "UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                (encode(item), account_id)))
+            return self._public(item)
+
+    def replace(self, principal, account_id, body):
+        self._owner(principal, body.get("dataset_id"))
+        with self._gate:
+            item = self._binding(account_id)
+            if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision") or item["state"] not in ("connected", "pending"):
+                raise IntegrationError("STALE_REVISION", 409)
+            version = max(item["selected_version"], item["pending_version"] or 0) + 1
+            nonce, ciphertext = self._seal(account_id, version, item["provider"], body.get("api_key"))
+            self.store._transaction(lambda: self.store.db.execute(
+                "INSERT INTO integration_credential_versions VALUES (?,?,?,?,?)",
+                (account_id, version, self.key_id, nonce, ciphertext)))
+            try:
+                result = self._discover(item, version)
+            except Exception:
+                self.store._transaction(lambda: self.store.db.execute(
+                    "DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                    (account_id, version)))
+                raise
+            if item["state"] == "connected" and (result["state"] != "observed" or result.get("has_more")):
+                self.store._transaction(lambda: self.store.db.execute(
+                    "DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                    (account_id, version)))
+                return {**self._public(item), "replacement": result}
+            previous_pending = item["pending_version"]
+            if item["state"] == "pending":
+                item["pending_version"] = version
+            else:
+                item["selected_version"] = version
+            item.update(discovery=result, revision=item["revision"] + 1, updated_at=_time())
+            item["discovery"]["record_revision"] = item["revision"]
+            def commit():
+                db = self.store.db
+                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                           (encode(item), account_id))
+                if previous_pending and previous_pending != version:
+                    db.execute("DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                               (account_id, previous_pending))
+            self.store._transaction(commit)
+            return self._public(item)
+
+    def disable(self, principal, account_id, body):
+        self._owner(principal, body.get("dataset_id"))
+        with self._gate:
+            item = self._binding(account_id)
+            if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision"):
+                raise IntegrationError("STALE_REVISION", 409)
+            if item["state"] == "disabled":
+                return self._public(item)
+            item.update(state="disabled", revision=item["revision"] + 1, updated_at=_time())
+            def commit():
+                db = self.store.db
+                row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                                 (account_id, item["dataset_id"])).fetchone()
+                if row:
+                    account = json.loads(row[0])
+                    account.update(state="disabled", revision=account["revision"] + 1, changed_at=_time())
+                    db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+                               (encode(account), account_id, item["dataset_id"]))
+                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                               (account_id, item["dataset_id"], account["revision"], encode(account)))
+                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                           (encode(item), account_id))
+            self.store._transaction(commit)
+            return self._public(item)
+
+    def retire(self, principal, account_id, body):
+        """Delete a predecessor only after the owner supplies the consumer's acknowledged version."""
+        self._owner(principal, body.get("dataset_id"))
+        with self._gate:
+            item = self._binding(account_id)
+            version = body.get("version")
+            if (item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision") or
+                type(version) is not int or not 1 <= version < item["selected_version"] or
+                body.get("acknowledged_version") != item["selected_version"]):
+                raise IntegrationError("RETIREMENT_NOT_ACKNOWLEDGED", 409)
+            item.update(revision=item["revision"] + 1, updated_at=_time())
+            def commit():
+                self.store.db.execute("DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                                      (account_id, version))
+                self.store.db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                                      (encode(item), account_id))
+            self.store._transaction(commit)
+            return self._public(item)
+
+    def resolve_for(self, principal, dataset_id, account_id, model_id, operation_family, purpose):
+        if principal["principal_id"] != "svc.vega.credential-consumer" or principal["kind"] != "service":
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        dataset = self.registry.integration._dataset(dataset_id)
+        if principal["owner"] != dataset["owner_id"] or purpose != "vega-provider-dispatch":
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        item = self._binding(account_id)
+        if item["dataset_id"] != dataset_id or item["environment_id"] != dataset["environment_id"] or item["state"] != "connected":
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        with self.store._lock:
+            row = self.store.db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                                        (account_id, dataset_id)).fetchone()
+        account = json.loads(row[0]) if row else None
+        allowed = (model_id in account["allowed_models"] if operation_family == "generation" else
+                   model_id is None and operation_family in account["allowed_operations"] and
+                   operation_family in OPERATIONS) if account else False
+        if not account or account["state"] != "usable" or not allowed:
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        return {"account_id": account_id, "dataset_id": dataset_id,
+                "environment_id": dataset["environment_id"], "provider_id": item["provider_id"],
+                "credential_ref": item["credential_ref"], "credential_version": item["selected_version"],
+                "policy_revision": item["policy_revision"], "model_id": model_id,
+                "operation_family": operation_family,
+                "api_key": self._resolve(item)}

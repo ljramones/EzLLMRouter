@@ -1,0 +1,92 @@
+# Operating-system and editor files
+.DS_Store
+.AppleDouble
+._*
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+.jbeval/
+*.swp
+*.swo
+*~
+
+# Python environments, bytecode, and generated package metadata
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+.Python
+pip-wheel-metadata/
+
+# JavaScript dependencies and tool caches; keep package lockfiles in Git
+node_modules/
+.npm/
+.yarn/cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Builds, test output, and language caches
+dist/
+build/
+.uv/
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage/
+coverage.xml
+htmlcov/
+.nyc_output/
+.next/
+.nuxt/
+.svelte-kit/
+
+# Locally held frozen dependencies and generated distribution archives
+# Keep reviewed source, requirements, lockfiles, and artifact manifests in Git.
+/gateway-inputs/
+*.whl
+*.tgz
+*.tar
+*.tar.gz
+*.zip
+
+# Local configuration, private keys, and generated operator credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+operator-password
+
+# Runtime state, databases, diagnostics, and local backups
+/deploy/local/.state/
+/local-instance/
+/backups/
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+*.bak
+*.backup
+*.orig
+*.rej

@@ -1,0 +1,77 @@
+name: duranki-dev06-local
+services:
+  netns:
+    image: ${DURANKI_PYTHON_IMAGE:?}
+    pull_policy: never
+    networks: [local_private]
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["python", "-c", "import time; time.sleep(999999)"]
+  receiver:
+    image: ${DURANKI_RECEIVER_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["receiver_data:/data"]
+    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl}
+    depends_on: [netns]
+  worker:
+    image: ${DURANKI_WORKER_IMAGE:?}
+    pull_policy: never
+    network_mode: none
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["link_data:/link"]
+  service:
+    image: ${DURANKI_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: service:netns
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - service_data:/data
+      - link_data:/link
+      - console_link_data:/console
+      - ./.state/credentials.json:/run/duranki/credentials.json:ro
+      - ./.state/operator-password:/run/duranki/operator-password:ro
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV04_POOL_PROBE: ${DURANKI_DEV07_POOL_PROBE:-0}
+    depends_on: [netns, receiver, worker]
+  ingress:
+    image: ${DURANKI_PYTHON_IMAGE:?}
+    pull_policy: never
+    networks: [console_publish]
+    ports: ["127.0.0.1:8780:8780"]
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - "${DURANKI_INGRESS_SCRIPT:?}:/console_ingress.py:ro"
+      - console_link_data:/console
+    command: ["python", "-B", "/console_ingress.py"]
+    depends_on: [netns, service]
+volumes:
+  receiver_data:
+  service_data:
+  link_data:
+  console_link_data:
+networks:
+  local_private:
+    internal: true
+  console_publish:

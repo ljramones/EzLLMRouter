@@ -1,0 +1,22 @@
+{
+  "cwd": "/Users/larrymitchell/Mach33/Duranki",
+  "argv": [
+    "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+    "build",
+    "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0",
+    "--wheel",
+    "--out-dir",
+    "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client",
+    "--python",
+    "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+    "--no-index",
+    "--offline",
+    "--no-python-downloads",
+    "--no-config",
+    "--no-create-gitignore",
+    "--verbose"
+  ],
+  "exit_status": 0,
+  "stdout": "",
+  "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Adding root workspace member: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0`\nBuilding wheel...\nDEBUG Writing wheel at `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl`\nDEBUG Wheel excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding content files to wheel\nDEBUG Source root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0/src\nDEBUG Module path: duranki_client\nDEBUG Adding to wheel: duranki_client/__init__.py\nDEBUG Adding directory: duranki_client\nDEBUG Visited 2 files for wheel build\nDEBUG Adding metadata files to wheel\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl\n"
+}

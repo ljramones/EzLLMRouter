@@ -1,0 +1,3 @@
+# INCOMPLETE: NOT INSTALLABLE. Linux ARM64 proxy closure and hashes are unavailable.
+# Root litellm wheel is deliberately excluded; build locally from selected sdist.
+# Future validated lock must replace this file with a COMPLETE marker and hashes.

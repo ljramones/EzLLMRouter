@@ -1,0 +1,86 @@
+services:
+  receiver:
+    image: ${DURANKI_RECEIVER_IMAGE:?}
+    pull_policy: never
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_RECEIVER_LOG: /data/arrivals.jsonl
+      DURANKI_RECEIVER_MODE: ${DURANKI_RECEIVER_MODE:-normal}
+    volumes: ["receiver_data:/data"]
+    networks: [dev01]
+  service:
+    image: ${DURANKI_SERVICE_IMAGE:?}
+    pull_policy: never
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+    volumes: ["service_data:/data"]
+    networks: [dev01]
+    depends_on: [receiver]
+  service_mutant:
+    image: ${DURANKI_SERVICE_IMAGE:?}
+    pull_policy: never
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      DURANKI_MUTATE_AFTER_BINDING: "1"
+    volumes: ["mutant_data:/data"]
+    networks: [dev01]
+    depends_on: [receiver]
+  service_failstore:
+    image: ${DURANKI_SERVICE_IMAGE:?}
+    pull_policy: never
+    user: "10001:10001"
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DB_PATH: /data/store.sqlite
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      DURANKI_FAIL_INTENT: "1"
+    volumes: ["failstore_data:/data"]
+    networks: [dev01]
+    depends_on: [receiver]
+  driver:
+    image: ${DURANKI_DRIVER_IMAGE:?}
+    pull_policy: never
+    user: node
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
+      DURANKI_SERVICE_URL: http://service:8765
+      DURANKI_RECEIVER_URL: http://receiver:8766
+      DURANKI_MUTANT_URL: http://service_mutant:8765
+      DURANKI_FAILSTORE_URL: http://service_failstore:8765
+      DURANKI_SUBMISSION_ID: ${DURANKI_SUBMISSION_ID:-}
+    networks: [dev01]
+    depends_on: [service, receiver]
+networks:
+  dev01:
+    internal: true
+volumes:
+  service_data:
+  receiver_data:
+  mutant_data:
+  failstore_data:

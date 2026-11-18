@@ -1,0 +1,151 @@
+{
+  "desktop_layout": {
+    "chartBottom": 911.703125,
+    "chartTop": 750.84375,
+    "overflow": 0,
+    "timelineBottom": 742.84375,
+    "timelineTop": 449.84375,
+    "viewport": 913,
+    "width": 1440
+  },
+  "expanded_attempts": 33,
+  "expanded_usd": "1.39",
+  "fixture": "dev09-team-scripted-cost-demo-v2",
+  "legacy_usd": "0.46",
+  "narrow_layout": {
+    "chart": true,
+    "inspector": true,
+    "overflow": 0,
+    "selectors": 5,
+    "width": 900
+  },
+  "requests_during_demo": [
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.brant"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.brant&actor=demo.agent.patton"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.andrew&actor=demo.agent.patton"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.andrew"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&provider=demo.provider.beacon"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&actor=demo.agent.idle"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&actor=demo.agent.uninstrumented"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=andrew_direct"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=scheduled_intelligence"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=legacy&story=main"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=legacy&story=all"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=expanded&story=expanded_all"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
+    }
+  ],
+  "scope": "disposable authenticated Chrome, temporary SQLite, no model worker",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-03-oren-focused-timeline-cost.png",
+      "sha256": "3a1bebde68513d7c759bc2e194853b45278a6a7d357edd77bd691a1347c0d042"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-03-selected-vega-inspector.png",
+      "sha256": "82454a0b2e7db8d0d4e7edd05e301cd85008b628797c2140e71414a9ad13d6ed"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-03-team-overlap-cost-65s.png",
+      "sha256": "601bbad17537738935d3c4400c9350418ec89a9a9fd7d140f358e879a3d29492"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-03-narrow-layout.png",
+      "sha256": "b5299c1e924afb1058f327b40aa18c768dd5fc8ece82c7ac6782cb30f9e60fd8"
+    }
+  ],
+  "source_sha256": {
+    "server/src/duranki_server/demo_workspace_team.py": "416baa2ba6daf2512190726795699ae4e344813e39cd15ee9df5e8e30c783396",
+    "server/src/duranki_server/operator_web.py": "af4e87d36464360b463eef31941bb822b5c72a88cbed6934fc114be536ee8768",
+    "web/app.css": "4ef2e33deb5ede5b35b0c4cf2ac48e9ff31a6cf41177bf7fb7f4a23e163eff53",
+    "web/demo_workspace_team_view.js": "e8d263bc2f230b3d0ec29fb8a0b50b0d2171ce44eeb186863ac4361ab841a75d",
+    "web/dev09_demo_fixture.json": "eae0c2a655aa8ebd8e30d473b7e2e07ed78bceeb040632d5b145048443d3bb61",
+    "web/dev09_team_demo_fixture.json": "5d47e3f81759c4f8b8a268b76b67e25c12a370855276b49337130991630b5249"
+  },
+  "speed_observation_seconds": {
+    "four_x": {
+      "delta": 3.99639999999106,
+      "elapsed": 0.9990999999977648
+    },
+    "one_x": {
+      "delta": 1.9638000000007452,
+      "elapsed": 1.963800000000745
+    }
+  },
+  "status": "PASS",
+  "team_usd": "1.25",
+  "traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    }
+  }
+}

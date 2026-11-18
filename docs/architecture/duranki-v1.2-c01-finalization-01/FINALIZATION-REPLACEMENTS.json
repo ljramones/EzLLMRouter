@@ -1,0 +1,97 @@
+{
+  "scope": "Exact bounded author replacements; JSON semantic changes independently checked by verifier",
+  "text_replacements": [
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "Document identity",
+      "old": "**Version:** v1.2 Correction 01 + Erratum 01",
+      "new": "**Version:** v1.2 Correction 01 + Erratum 01 — Review 04 finalization 01"
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "Adoption standing",
+      "old": "**Status:** Corrected normative review draft; not adopted; no implementation or activation authorization",
+      "new": "**Status:** Ready for owner adoption after bounded author delta verification; not yet adopted; no implementation or activation authorization"
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "Current versus historical document precedence",
+      "old": "**Read with:** [Assurance register](DURANKI-v1.2-C01-ASSURANCE-REGISTER.md) · [Development roadmap](DURANKI-v1.2-C01-ROADMAP.md) · [Review and research map](DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md). Erratum 01 is documented in [the delta note](DURANKI-v1.2-C01-ERRATUM-01.md); its document-only checks are in `DURANKI-v1.2-C01-E01-DOCUMENT-VALIDATION.json` and `MANIFEST.sha256`. The reviewed Correction 01 bytes are preserved under `predecessor/`.",
+      "new": "**Read with:** [Assurance register](DURANKI-v1.2-C01-ASSURANCE-REGISTER.md) · [Development roadmap](DURANKI-v1.2-C01-ROADMAP.md) · [Review and research map](DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md). [Review 04 closeout](DURANKI-v1.2-C01-REVIEW04-CLOSEOUT-01.md) applies R04-01 and the two key-lifecycle notes and governs the limited changes to historical [Erratum 01](DURANKI-v1.2-C01-ERRATUM-01.md). Current document checks are in `FINALIZATION-VALIDATION.json`; `MANIFEST.sha256` identifies this package. The original Erratum 01 package and its checks are preserved in `history/ERRATUM-01-REVIEW-PACKAGE.zip`; the original Correction 01 bytes remain under `predecessor/`."
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "R04-N1: signing versus verification eligibility",
+      "old": "Rotate signing keys on a documented schedule. Compromise revokes the affected key version:",
+      "new": "Rotate signing keys on a documented schedule. Scheduled rotation ends new signing under the old version but retains its verification eligibility for already-issued plans until those plans expire, unless that version is revoked. An execution-eligible version is trusted for verification of the particular unexpired plan and is not revoked; it need not be the version currently selected for new signing. Rotation alone does not require queued plans to be re-signed or invalidate them; all other current-authority checks still apply. Compromise revokes the affected key version:"
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "R04-01: remove conflicting blanket persistence rule",
+      "old": "**Authorization point and Choice B first-write fence.** Persist the final dispatch commitment after a passing FDC. The selected standalone serialization point is the trusted sender's **Choice B first-write fence**, not an earlier hook or a revision comparison alone. Publication of the sender's authoritative in-memory view and first application-request release pass through the same trusted local gate. Complete durable persistence, signature verification and potentially blocking preparation outside the gate. After all resource/readiness waits, the sender enters it, checks the coherent current in-memory authority/key-status view, deadline, unused send ownership and coverage of the durable reservation, then performs the qualified nonblocking first-write operation without a later unguarded wait. A would-block/no-acceptance result releases the gate, waits outside it and repeats freshness checks. Positive partial acceptance consumes first-send authority; only the unsent suffix of that same attempt may continue under its qualified in-flight semantics. Choice B supplies the local fence precedent; the durable publication ordering below is a successor requirement, not a new historical execution claim. [S3]",
+      "new": "**Authorization point and Choice B first-write fence.** Persist the final dispatch commitment after a passing FDC. The selected standalone serialization point is the trusted sender's **Choice B first-write fence**, not an earlier hook or a revision comparison alone. Publication of the sender's authoritative in-memory view and first application-request release pass through the same trusted local gate. Complete dispatch-record persistence, signature verification and provider-request preparation outside the gate; authority-update persistence follows the profile rule below. After all resource/readiness waits, the sender enters it, checks the coherent current in-memory authority/key-status view, deadline, unused send ownership and coverage of the durable reservation, then performs the qualified nonblocking first-write operation without a later unguarded wait. A would-block/no-acceptance result releases the gate, waits outside it and repeats freshness checks. Positive partial acceptance consumes first-send authority; only the unsent suffix of that same attempt may continue under its qualified in-flight semantics. [S3]"
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "R04-01: common invariant, retain standalone, scope networked ordering",
+      "old": "**Authority-update ordering (N-01).** First atomically commit the authority change and corresponding named revisions durably, outside the first-write fence. Next publish a coherent, non-regressing authoritative view to the sender under that fence. Only then acknowledge effectiveness. Serialize or order competing publications so an older committed view cannot overwrite a newer one. Local revocation becomes effective at the fence-protected publication, not at receipt of the management request or at an earlier database commit; record these distinct stages. The interval before publication is not reported as effective revocation. No database I/O, key-service call, connection wait, response wait or drain wait runs under the first-write lock.",
+      "new": "**Authority-update invariant and profile-specific ordering (R04-01).** Acknowledge effectiveness only after the authority change and corresponding named revisions are durable and the matching authoritative sender view has been published under the applicable first-write fence. First write cannot interleave with a partially applied authority/view update. For the **single-process standalone SQLite profile**, the DEV-07 ordering conforms: commit authority data, audit and named revisions atomically while holding the existing gate, publish the matching sender view/revocation counter before releasing it, then acknowledge. A definitively rolled-back transaction leaves the prior durable state and view in force; a stalled commit blocks sends. Retain the bounded DEV-07 evidence (assurance register E-11); DEV-12 need not replace this mechanism merely to satisfy this architecture. For **PostgreSQL or replicated profiles with network-bound or unbounded persistence**, commit durably outside the local first-write lock, then publish a coherent, non-regressing view through that profile's separately qualified end-to-end fence, then acknowledge effectiveness. Qualify competing publications, the commit-to-publication interval, failure and restart before relying on that sequence; an earlier commit alone is not acknowledged effective revocation. No database I/O runs under the first-write lock in those profiles. Key-service calls and connection, response and drain waits remain outside the first-write lock in every profile."
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "R04-01: scoped failure and recovery without false rollback",
+      "old": "A failed or uncertain commit/publication withholds success and closes affected admission/release until consistency is recovered. On restart, reload and validate durable authority before enabling any send. A crash between durable commit and publication cannot revive the old authority view; a crash after a possible send preserves uncertainty and exposure. Absence of a later write receipt cannot justify replay. Qualification must exercise the commit-to-publication interval, update failure, out-of-order publication and restart behavior as part of the §5.4/T-24 boundary; historical queue-revocation evidence alone does not prove this full successor protocol.",
+      "new": "A definitively failed, rolled-back update receives no success acknowledgement and retains the coherent prior durable state and view. An uncertain commit, or a committed change whose view cannot be published consistently, withholds success and closes affected admission/release until consistency is recovered; it never pretends that a durable revocation was undone. On restart, reload and validate durable authority before enabling any send. A crash after a possible send preserves uncertainty and exposure; absence of a later write receipt cannot justify replay. Qualification follows the profile actually used: DEV-07's bounded queued-revocation and ordinary-restart observations do not establish crash safety or the replicated publication protocol."
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "reason": "R04-N2: bound-key eligibility in the authority view",
+      "old": "credential authorization/account scope, and price/usage-contract eligibility—not an additional master counter.",
+      "new": "credential authorization/account scope, price/usage-contract eligibility, and the bound plan-signing key version's verification/revocation eligibility—not an additional master counter. The key-status dependency is not the active minting-key selector: scheduled rotation alone leaves an already-issued unexpired plan eligible; a change that withdraws its verification authority invalidates it."
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "reason": "R04-N1: synchronize existing T-07.a",
+      "old": "A correctly signed plan under a revoked signing-key version is rejected before first write, including after a lower wait; an eligible-key positive control succeeds. Re-signing preserves the work key and no-repeat ownership and never replays a possibly sent attempt. Production custody/rotation evidence is separately scoped.",
+      "new": "A correctly signed plan under a revoked signing-key version is rejected before first write, including after a lower wait. Positive controls include an eligible current key and a rotated-but-not-revoked old key verifying an already-issued unexpired plan; rotation alone causes no re-signing, new attempt or additional send. Re-signing preserves the work key and no-repeat ownership and never replays a possibly sent attempt. Production custody/rotation evidence is separately scoped."
+    },
+    {
+      "file": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "reason": "R04-01/N2: synchronize current research map",
+      "old": "**Freshness — named mechanism, amended by Erratum 01 N-01:** commit authority records and named revisions durably outside the Choice B first-write fence; publish the coherent, non-regressing sender view under the fence; then acknowledge effectiveness. No database or key-service I/O holds the send lock. Failures close affected release; restart reloads durable authority before sends. The vector is the existing named revisions. This is a successor requirement; it does not rewrite DEV-07’s historical commit-inside-gate description or establish distributed/realtime qualification.",
+      "new": "**Freshness — named mechanism, finalized by Review 04 R04-01:** every profile acknowledges effectiveness only after durable authority and fence-protected publication of the matching sender view. Keep DEV-07's commit-and-view-update inside the gate for single-process SQLite. Only PostgreSQL/replicated profiles with network-bound or unbounded persistence use the outside-lock commit, coherent non-regressing fenced publication, then acknowledgement sequence and its separately qualified failure/restart behavior. An uncertain or partially published update closes affected release. Include the bound plan-key version's verification/revocation eligibility in the authority view; scheduled minting-key rotation alone does not invalidate queued plans. E-11 remains bounded historical evidence, not production or successor execution."
+    },
+    {
+      "file": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "reason": "Current precedence and closure standing",
+      "old": "[Erratum 01](DURANKI-v1.2-C01-ERRATUM-01.md) is the governing author correction to this map's earlier binding and fence wording. G-01 moves only server assessments out of canonical work, retaining caller assertions and stable trusted identity. G-02 restores plan-key custody, rotation and revocation. N-01 replaces commit-inside-fence with durable commit, coherent fence-protected publication, then acknowledgement. N-04 extends T-48.g with per-attempt rounding. N-03 does not trigger another prose cycle. N-02 is partially addressed by [the evidence supplement](DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md) and remains open for final DEV-08–DEV-10/late DEV-07 records. All are author dispositions, not independent closure or owner adoption.\n",
+      "new": "[Review 04 closeout](DURANKI-v1.2-C01-REVIEW04-CLOSEOUT-01.md) is the latest bounded author disposition. Review 04 independently closes G-01 and G-02 in Erratum 01; R04-01 now corrects Review 03 N-01's blanket ordering without reopening those findings. R04-N1 and R04-N2 clarify rotation and the key-status dependency. N-04's rounding pair is unchanged, and no prose-only rewrite is commissioned. N-02 remains open for final DEV-08–DEV-10 and later DEV-07 record mapping, in parallel with adoption and successor-contract drafting. This final delta has an author document check, not a new independent runtime review or owner adoption."
+    },
+    {
+      "file": "DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md",
+      "reason": "R04-01: evidence-limit applicability",
+      "old": "No proof of E01 durable-commit/outside-fence publication sequence; the historical result explicitly describes commit inside the gate. Not crash or replicated proof.",
+      "new": "DEV-07 commit-inside-gate ordering conforms to the standalone R04-01 invariant within the recorded cases. No crash, new successor/transport, networked publication or replicated-fence proof is inferred; current source correspondence remains to be established."
+    },
+    {
+      "file": "DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md",
+      "reason": "R04-01: preserve rather than requalify standalone ordering",
+      "old": "Review 03 N-01 is incorporated as a successor requirement. The DEV-04/05 owned-sender source shows a fence-protected in-memory revocation/epoch update; it does not by itself establish a durable database-commit pipeline. The supplied DEV-07 result explicitly says its registry transaction committed while holding the first-write gate. Preserve that historical description. Do not relabel it as proof of commit-outside-fence ordering. Qualify the new sequence and its failure/restart behavior separately.",
+      "new": "Review 04 R04-01 supersedes the blanket ordering proposed in Review 03 N-01. DEV-04/05 supports the fence-protected in-memory revocation/epoch mechanism. The supplied DEV-07 result describes authority data, audit and revision committing inside the first-write gate and the sender view updating before acknowledgement; this is compatible with the standalone single-process SQLite invariant. Preserve that mechanism and its bounded evidence. The outside-lock commit and later fenced publication sequence belongs to PostgreSQL/replicated profiles with network-bound or unbounded persistence and needs separate interval/failure/ordering/restart qualification. No new product run or current-source correspondence is supplied by this document amendment."
+    }
+  ],
+  "mechanical_parent_text_repairs": [
+    {
+      "id": "T-07",
+      "old": "**Ownership expiry ≠ exposure release.** Money and capacity that may already be committed stay held until settled or proven unused.",
+      "new": "Plan with invalid signature, revoked signing-key version or stale policy version → rejected; T-07.a covers key-version revocation and preserves no-repeat ownership on re-signing.",
+      "basis": "Verbatim copy of unchanged architecture §16; no requirement/status change."
+    },
+    {
+      "id": "T-14",
+      "old": "**Typed operations, native units.** Shared governance does not imply interchangeable request formats, billing units or output semantics.",
+      "new": "Duplicate submission of the same execution generation → deduplicated; authorized escalation (new generation) → not deduplicated. T-14.a covers identical assertions across changing server assessments, with current access controls and no additional attempt, reservation or send.",
+      "basis": "Verbatim copy of unchanged architecture §16; no requirement/status change."
+    }
+  ]
+}

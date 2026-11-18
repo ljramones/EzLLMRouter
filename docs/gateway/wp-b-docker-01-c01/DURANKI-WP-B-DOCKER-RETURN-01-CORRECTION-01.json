@@ -1,0 +1,367 @@
+{
+  "schema": "duranki-wp-b-dkr01-c01-return-1",
+  "status": "CORRECTED_KIT_RETURN_DATA_ONLY_EXECUTION_NOT_ISSUED",
+  "operative_review": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-WP-B-DKR-01-INDEPENDENT-REVIEW-02.md",
+    "sha256": "0d5cbd51019d16a91a2fb7f5dcaa29ff43456135638642898a5ba53267e61b1b"
+  },
+  "owner_observation": {
+    "command": "docker --context desktop-linux info --format 'os={{.OSType}} arch={{.Architecture}} name={{.Name}}'",
+    "stdout": "os=linux arch=aarch64 name=docker-desktop",
+    "classification": "OWNER_OBSERVED_ENGINE_AVAILABLE_LINUX_ARM64",
+    "separate_exit_status": null,
+    "exact_timestamp": null,
+    "executor_previous_socket_result": "EXECUTOR_ACCESS_DENIED; original evidence preserved; no repeat"
+  },
+  "selected_source": {
+    "sdist_sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+    "uv_binary_sha256": "cfe5e5695316639f9820e8e57d0732e8a361311c03f1ea1786f4fc879cebf4c5"
+  },
+  "nine_file_before_after": [
+    {
+      "path": "tests/gateway-proof/docker/compose.yaml",
+      "before_bytes": 3101,
+      "before_sha256": "20137c095ef282dcfe6dcd3c73e36d64307ef06d3031725230c33057e936ee2b",
+      "after_bytes": 3383,
+      "after_sha256": "f794bee695329eab99b37a5899dc60f436306d796d7599caa66b2d4815d503af",
+      "change": "MODIFIED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/Dockerfile.gateway",
+      "before_bytes": 2617,
+      "before_sha256": "9aea2d85388acae9c910f99cf0e76d0b0b3db48bf44bb7c65343ddd8a9ceadfe",
+      "after_bytes": 2900,
+      "after_sha256": "f9a8778e523264e9ef455122a47c656947d485aa28fb6a93e2cf130a99fb3a7f",
+      "change": "MODIFIED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/Dockerfile.tools",
+      "before_bytes": 361,
+      "before_sha256": "d65154ccd84f9e947dea41c7a4dd7ee20d82b57c9a8e0ce21202b96d8327d899",
+      "after_bytes": 413,
+      "after_sha256": "c7973ad93ee1684bcc9977e60097a5db46a74b42668f31bb7c75623b0d0de3df",
+      "change": "MODIFIED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/.dockerignore",
+      "before_bytes": 156,
+      "before_sha256": "74d37b0661558f9c6d02a16ef21f020b443acbeb0f00d6e45d6c06cefacfed3f",
+      "after_bytes": 156,
+      "after_sha256": "74d37b0661558f9c6d02a16ef21f020b443acbeb0f00d6e45d6c06cefacfed3f",
+      "change": "UNCHANGED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/compose.env.example",
+      "before_bytes": 351,
+      "before_sha256": "e076565be226180759c1434c8e9adeb6bbe100bda98606ad4498bde4946bfec0",
+      "after_bytes": 351,
+      "after_sha256": "e076565be226180759c1434c8e9adeb6bbe100bda98606ad4498bde4946bfec0",
+      "change": "UNCHANGED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/requirements-build.lock",
+      "before_bytes": 242,
+      "before_sha256": "c282bc66df9949f88b763b2f41d6b37768f5667e26279be881ad871e7b7bb4fa",
+      "after_bytes": 242,
+      "after_sha256": "c282bc66df9949f88b763b2f41d6b37768f5667e26279be881ad871e7b7bb4fa",
+      "change": "UNCHANGED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/requirements-runtime.lock",
+      "before_bytes": 249,
+      "before_sha256": "10afe03f17e2493995c98de5cdcc522c3ff3ac7df5cd545a8a4a956c5b380d39",
+      "after_bytes": 249,
+      "after_sha256": "10afe03f17e2493995c98de5cdcc522c3ff3ac7df5cd545a8a4a956c5b380d39",
+      "change": "UNCHANGED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/prepare.py",
+      "before_bytes": 15848,
+      "before_sha256": "773c402899c2a8ac8f7a3dee2f139af98925b3373cafd2fd76216785a716c46a",
+      "after_bytes": 45962,
+      "after_sha256": "a2478ebcd60f0397ff30c0ab66380a820aee84ebd8828d98a60a264b7bcd50c4",
+      "change": "MODIFIED"
+    },
+    {
+      "path": "tests/gateway-proof/docker/README.md",
+      "before_bytes": 6146,
+      "before_sha256": "3c56a164bc275669d064403ab6275a9861bd4a6d03259367e9bf43bc256d0f04",
+      "after_bytes": 5206,
+      "after_sha256": "7b52527285a33ae15644c299bb72554ecda73979a74685445b8f47cbf19b9fac",
+      "change": "MODIFIED"
+    }
+  ],
+  "five_successor_receipts": [
+    {
+      "path": "docs/gateway/wp-b-docker-01-c01/DURANKI-WP-B-DOCKER-TARGET-01-CORRECTION-01.md",
+      "bytes": 2733,
+      "sha256": "6419f14205a0a122f861cff34310f9014384e4ca108ecc9aadbd7329e4799f10"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01-c01/DURANKI-WP-B-BUILD-INPUTS-01-CORRECTION-01.json",
+      "bytes": 13443,
+      "sha256": "2b0c904f2bd25b7dd266a5863ad53a933b73e5222e9d4f0bc5eadb9b936bee5a"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01-c01/DURANKI-WP-B-TRANSPORT-CLOSURE-01-CORRECTION-01.md",
+      "bytes": 2095,
+      "sha256": "1840df56f97d4e2cf4a27c82f7600c03d0dc891f70ac845bf9f44084e6c18be1"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01-c01/DURANKI-WP-B-COMPOSE-PROOF-DELTA-01-CORRECTION-01.md",
+      "bytes": 3388,
+      "sha256": "00d05e52e552579b75391367919cbd927c3fef1ed20580cfb350e674eabd2158"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01-c01/DURANKI-WP-B-DOCKER-RETURN-01-CORRECTION-01.json",
+      "sha256": null,
+      "reason": "self hash excluded; exact return bytes receipted by ZIP sidecar"
+    }
+  ],
+  "original_predecessor_documents_unchanged": [
+    {
+      "path": "docs/gateway/wp-b-docker-01/DURANKI-WP-B-DOCKER-TARGET-01.md",
+      "bytes": 5454,
+      "sha256": "970491f3e4e64a930021454adab27674486a974c7f9c33a86874e7969b494563"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01/DURANKI-WP-B-BUILD-INPUTS-01.json",
+      "bytes": 10729,
+      "sha256": "2347709417c31bcdcd26ed867a5d826a904d33f91a5c8437fb796b0c34bda23b"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01/DURANKI-WP-B-TRANSPORT-CLOSURE-01.md",
+      "bytes": 6245,
+      "sha256": "78f4af8f2aab3a09279cd53a50e07c912d8cb011f827e7ed5db432afdef6b713"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01/DURANKI-WP-B-COMPOSE-PROOF-DELTA-01.md",
+      "bytes": 8111,
+      "sha256": "0bd145fa7fb4f7c65f32d57f3fa18d7c08d599ddd8e640544f6df3631d40bd70"
+    },
+    {
+      "path": "docs/gateway/wp-b-docker-01/DURANKI-WP-B-DOCKER-RETURN-01.json",
+      "bytes": 11099,
+      "sha256": "8ef5f432f33cafcdae8a1bb231edb88f8b058cddc1af63c376c4cc19fdb6b97a"
+    }
+  ],
+  "original_packet_unchanged": {
+    "zip": {
+      "path": "docs/gateway/wp-b-docker-01/review-evidence/WP-B-DKR-01-EVIDENCE.zip",
+      "bytes": 77587,
+      "sha256": "c010ec7af821f7d0411d664fb58116850c413bf8eb741a9b59622daf8f7f0b08"
+    },
+    "sidecar": {
+      "path": "docs/gateway/wp-b-docker-01/review-evidence/EVIDENCE-MANIFEST.json",
+      "bytes": 7057,
+      "sha256": "928823ce44f4bfab82309d83622d322a1056d5fd09f4ffcc6cf86077fb9dff7a"
+    }
+  },
+  "finding_dispositions": [
+    {
+      "id": "DKR-R02-01",
+      "status": "CORRECTED_AT_HELPER_AND_MOCK_LEVEL_REAL_ACQUISITION_PENDING",
+      "code": [
+        "prepare.py:fetch_entry",
+        "prepare.py:static_requirements",
+        "prepare.py:uv_argv",
+        "prepare.py:resolve_online",
+        "prepare.py:oci_metadata",
+        "prepare.py:owner"
+      ],
+      "tests": [
+        "mocked connected online no-build uv",
+        "missing metadata stays unresolved",
+        "editable/local resolver output refused",
+        "matching official metadata identity",
+        "wrong package/version metadata refused",
+        "owner incomplete exit classification"
+      ],
+      "remaining": "Official metadata transfer, actual Linux ARM64 graph/artifact closure and owner review not performed"
+    },
+    {
+      "id": "DKR-R02-02",
+      "status": "CORRECTED_AT_HELPER_AND_MOCK_LEVEL_REAL_STAGING_PENDING",
+      "code": [
+        "prepare.py:strict_json",
+        "prepare.py:safe_component_path",
+        "prepare.py:fetch_entry",
+        "prepare.py:stage_phase",
+        "prepare.py:packet"
+      ],
+      "tests": [
+        "all-factor fetch positive",
+        "matching hash but wrong declared size",
+        "HTTP 206 refused",
+        "hash mismatch refused",
+        "symlink downloads refused",
+        "symlink receipts refused",
+        "download collision refused",
+        "protected .git source refused",
+        "wrong staged lock source refused",
+        "postcopy drift refused",
+        "duplicate staged destination refused",
+        "malformed/extra staging field refused",
+        "synthetic exact postcopy context manifest",
+        "wheel tag controls",
+        "off-publisher redirect",
+        "packet symlink",
+        "packet output collision",
+        "tampered closure receipt"
+      ],
+      "remaining": "No real complete closure receipts, artifacts or context were staged"
+    },
+    {
+      "id": "DKR-R02-03",
+      "status": "CORRECTED_RECIPE_STATICALLY_VALIDATED_RUNTIME_NOT_RUN",
+      "code": [
+        "compose.yaml:pull_policy",
+        "Dockerfile.gateway:wheel-only-and-trusted-copy",
+        "Dockerfile.tools:trusted-copy",
+        "prepare.py:stage_phase",
+        "README.md"
+      ],
+      "tests": [
+        "compose_no_pull_trusted_loader",
+        "wheel_only_fixture_copy",
+        "isolated-mode fixed trusted harness load"
+      ],
+      "remaining": "Actual approved local image IDs, future harness behavior and policy/receiver proof untested"
+    }
+  ],
+  "validation": {
+    "mock_cases": 21,
+    "boundary_cases": 4,
+    "wheel_tag_cases": 7,
+    "metadata_cases": 3,
+    "owner_exit_cases": 1,
+    "static_checks": 7,
+    "helper_check": "STATIC_CHECK_PASS; real input INCOMPLETE",
+    "helper_selftest": "SELFTEST_PASS",
+    "compose_config": "PARSE_ONLY_PASS; validation-only image refs; no daemon query",
+    "logs": [
+      {
+        "packet_path": "logs/before-receipts.json",
+        "bytes": 2821,
+        "sha256": "865ecc5a152c041d8714dbac84ecfe3f1e3d49afb409cbc1260e66819171b2bb"
+      },
+      {
+        "packet_path": "logs/mock-test-final5.py",
+        "bytes": 11039,
+        "sha256": "6ecdb4eecf491e690f3a2d2e67d95d214c604fd76b4b91bdc5eb3b9c64d00744"
+      },
+      {
+        "packet_path": "logs/mock-test-results-final5.json",
+        "bytes": 2811,
+        "sha256": "5d46eb1726c4400ca57450b67cd61187a9525e4464b7b752cac0ea620ea220ab"
+      },
+      {
+        "packet_path": "logs/mock-test-summary-final5.json",
+        "bytes": 50,
+        "sha256": "40014ab658b14b521b3a7b53182d166361ad79f8f9e5cd5dd1d863e0f76c86bd"
+      },
+      {
+        "packet_path": "logs/boundary-regressions.py",
+        "bytes": 2790,
+        "sha256": "428462754b6df79013fcca5006cd48ad7fca6475e7ed1bd335c95e1e30571ed6"
+      },
+      {
+        "packet_path": "logs/boundary-regressions.json",
+        "bytes": 861,
+        "sha256": "8b02ca7a2991bf604960748c6758084b6e07c65af1a61050e0a0830764c98ade"
+      },
+      {
+        "packet_path": "logs/static-validation.py",
+        "bytes": 3291,
+        "sha256": "dbcb2cfb67bd3e3f474c5aa8f0b6d17fffc94a78463cfc98c3390a553a17525e"
+      },
+      {
+        "packet_path": "logs/static-validation.json",
+        "bytes": 304,
+        "sha256": "9396f3afe36605b3e6e60ebbb4bb864f8c17c272048c654115a8f717e076af4d"
+      },
+      {
+        "packet_path": "logs/static-check-final.json",
+        "bytes": 181,
+        "sha256": "0c985870b7239de4bcc6c6e73a3cee1d6daa723e505b1aebc82667aa9952d269"
+      },
+      {
+        "packet_path": "logs/selftest-final.json",
+        "bytes": 54,
+        "sha256": "d2dce9e231ed02f201126952b68e9791c883b439c205cdaff5bffb04cc8220e3"
+      },
+      {
+        "packet_path": "logs/compose-rendered.json",
+        "bytes": 4843,
+        "sha256": "7bea356133c2c87be9f49635dbbcd16d12d74c1bedf24b05e07c88e5641bb378"
+      },
+      {
+        "packet_path": "logs/uv-compile-help.txt",
+        "bytes": 12142,
+        "sha256": "1f3d23636550577605ab9e449b9477d582bee26b170d5ebef8312df3701218ed"
+      },
+      {
+        "packet_path": "logs/wheel-tag-check.py",
+        "bytes": 1118,
+        "sha256": "b68006fd8432350ebb226626996c0a52675c865f4cc3566de01296addf382a01"
+      },
+      {
+        "packet_path": "logs/wheel-tag-results.json",
+        "bytes": 1173,
+        "sha256": "cc75c640e07ceb00b4e25b384c0f45c7653cf615a3953b8083c93849535a8592"
+      },
+      {
+        "packet_path": "logs/metadata-check.py",
+        "bytes": 1764,
+        "sha256": "b86999132b4c37b8153052a957240c9301b661cb8cb48661c04aa720b0e51241"
+      },
+      {
+        "packet_path": "logs/metadata-results.json",
+        "bytes": 458,
+        "sha256": "ccf2063ea1b8859dcd462da37f3f220cf2060cdf3b3e155493361515ecabe1c1"
+      },
+      {
+        "packet_path": "logs/owner-exit-classification.json",
+        "bytes": 216,
+        "sha256": "246f9d49e65f5b2664a28841001efb5600daa47ca1cec68269a647e335bf075f"
+      }
+    ]
+  },
+  "input_acquisition_state": {
+    "critical_sdists": "NOT_ACQUIRED",
+    "official_pypi_metadata": "NOT_ACQUIRED",
+    "uv_online_no_build": "NOT_RUN_WITH_NETWORK",
+    "oci_index_child_config": "NOT_ACQUIRED",
+    "oci_layers": "NOT_ACQUIRED",
+    "cargo_native_closure": "NOT_CHECKED",
+    "runtime_lock": "INCOMPLETE",
+    "owner_build_approval": false,
+    "ready_for_build": false,
+    "gateway_proof": "NOT_RUN"
+  },
+  "owner_handoff": {
+    "command": "cd /Users/larrymitchell/Mach33/Duranki && /usr/bin/python3 -I -B tests/gateway-proof/docker/prepare.py owner --new-run run-20261017-40 --handoff-parent /Users/larrymitchell/Downloads",
+    "status": "PROPOSED_FOR_LATER_OWNER_REVIEW_NOT_EXECUTED",
+    "collision_check": "run-20261017-40 absent at correction time; recheck before use",
+    "effects": "Fresh bounded scratch run, official metadata/source transfers, no-build uv metadata resolution, verified INPUTS-EVIDENCE.zip and sidecar in Downloads; exits 2 while incomplete; no install/build/container"
+  },
+  "review_evidence": {
+    "zip": "docs/gateway/wp-b-docker-01-c01/review-evidence/WP-B-DKR-01-CORRECTION-01-EVIDENCE.zip",
+    "sidecar": "docs/gateway/wp-b-docker-01-c01/review-evidence/EVIDENCE-MANIFEST.json",
+    "hashes": "external final receipts; self-reference excluded"
+  },
+  "remaining_gates": [
+    "Approve actual dependency/artifact and OCI layer closure",
+    "Resolve enterprise entitlement and security/change evidence",
+    "Validate exact locally built image identities and Buildx/build permission before any later build",
+    "Issue WP-B/B1 for runtime proof with policy helper and independent receiver",
+    "Issue WP-C separately"
+  ],
+  "prohibitions_observed": [
+    "No install or image pull/build",
+    "No container, gateway, provider, Vega or Git write",
+    "No repeat of denied executor Docker operation"
+  ],
+  "wp_b_b1": "NOT_ISSUED",
+  "wp_c": "NOT_ISSUED"
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "archive": "litellm-1.105.1.tar.gz",
+    "archive_sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+    "files": 4416,
+    "dirs": 0,
+    "links_skipped": [],
+    "bytes_extracted": 77386083
+  },
+  {
+    "archive": "litellm-source-d665dc1a6315847fcad6cc2c1264ceb47c06abce.tar.gz",
+    "archive_sha256": "c8891f518f909a3470ec7fd2722cc31b545375319d5f236bdeffa0538b17fd05",
+    "files": 12994,
+    "dirs": 2596,
+    "links_skipped": [
+      {
+        "path": "litellm-d665dc1a6315847fcad6cc2c1264ceb47c06abce/litellm/proxy/enterprise",
+        "target": "../../enterprise",
+        "resolved": "litellm-d665dc1a6315847fcad6cc2c1264ceb47c06abce/enterprise"
+      }
+    ],
+    "bytes_extracted": 207991941
+  }
+]

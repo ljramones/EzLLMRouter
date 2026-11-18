@@ -1,0 +1,35 @@
+# Build only from a separately staged, manifest-checked context. No default bases.
+ARG DKR_RUST_BASE
+ARG DKR_PYTHON_BUILD_BASE
+ARG DKR_PYTHON_RUNTIME_BASE
+
+FROM ${DKR_RUST_BASE} AS rust-toolchain
+FROM ${DKR_PYTHON_BUILD_BASE} AS wheel-builder
+COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
+COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo RUSTUP_HOME=/usr/local/rustup
+ENV PATH=/usr/local/cargo/bin:$PATH CARGO_NET_OFFLINE=true PIP_NO_INDEX=1
+WORKDIR /build
+COPY requirements-build.lock /build/requirements-build.lock
+COPY artifacts/build-wheels/ /build/wheelhouse/
+COPY artifacts/cargo-vendor/ /build/cargo-vendor/
+COPY artifacts/cargo-config.toml /usr/local/cargo/config.toml
+COPY artifacts/litellm-1.105.1.tar.gz /build/litellm-1.105.1.tar.gz
+RUN --network=none sh -ec 'grep -qx "# COMPLETE: DKR-01 build lock" requirements-build.lock; test -z "$(find /build/wheelhouse -type f ! -name "*.whl" -print -quit)"; echo "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97  /build/litellm-1.105.1.tar.gz" | sha256sum -c -; python -m pip install --no-index --only-binary=:all: --find-links=/build/wheelhouse --require-hashes -r requirements-build.lock; cargo --version; rustc --version; mkdir -p /build/source /wheel-out; tar -xzf /build/litellm-1.105.1.tar.gz -C /build/source --strip-components=1; echo "b259821aaaef0e52fcfa08f2272687c2d221f4c2fa037290e6350fa9ee8b02e1  /build/source/litellm-rust/Cargo.lock" | sha256sum -c -; cd /build/source; maturin build --locked --offline --release --interpreter /usr/local/bin/python3.12 --manifest-path litellm-rust/crates/python-bridge/Cargo.toml --out /wheel-out'
+
+FROM scratch AS wheel-export
+COPY --from=wheel-builder /wheel-out/ /
+
+FROM ${DKR_PYTHON_RUNTIME_BASE} AS gateway-runtime
+ARG DKR_LOCAL_WHEEL_SHA256
+ENV PYTHONDONTWRITEBYTECODE=1 PIP_NO_INDEX=1
+WORKDIR /app
+COPY requirements-runtime.lock /app/requirements-runtime.lock
+COPY artifacts/runtime-wheels/ /wheelhouse/
+COPY artifacts/local-wheel/ /local-wheel/
+RUN --network=none sh -ec 'grep -qx "# COMPLETE: DKR-01 runtime lock" requirements-runtime.lock; test -z "$(find /wheelhouse -type f ! -name "*.whl" -print -quit)"; python -m pip install --no-index --only-binary=:all: --find-links=/wheelhouse --require-hashes -r requirements-runtime.lock; test -n "$DKR_LOCAL_WHEEL_SHA256"; set -- /local-wheel/litellm-1.105.1-*.whl; test "$#" -eq 1; echo "$DKR_LOCAL_WHEEL_SHA256  $1" | sha256sum -c -; python -m pip install --no-index --only-binary=:all: --no-deps "$1"; python -m pip check'
+COPY --chown=0:0 harness/app_wrapper.py harness/transport_guard.py harness/intent_file.py harness/fixtures.json /app/trusted/
+COPY --chown=0:0 harness/route-config.yaml /app/trusted/route-config.yaml
+RUN --network=none sh -ec 'mkdir -p /intent /logs; chown 10001:10001 /intent /logs; chmod 0555 /app; find /app/trusted -type d -exec chmod 0555 {} +; find /app/trusted -type f -exec chmod 0444 {} +'
+USER 10001:10001
+ENTRYPOINT ["python", "-I", "-B"]

@@ -1,0 +1,62 @@
+{
+  "old_count": 27,
+  "old_changed": {},
+  "total_non_git_files": 46,
+  "new_count": 19,
+  "unexpected_new": [],
+  "missing_new": [],
+  "new_files": {
+    ".gitignore": "187458c55d5114a45bf2a0b645c23d0728e6ef35952739a1df535c054ca181ef",
+    ".nvmrc": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41",
+    ".python-version": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
+    "clients/js/index.cjs": "f26b8b24cad41704e977974f0b4ab6339da3e557c157ce613901f7125969fcfb",
+    "clients/js/package-lock.json": "15fc2da74ff8a53583d3cd180437d2c0de6988feb75da4ab8c4de022051bb9ea",
+    "clients/js/package.json": "6091bdaebd326710742640885e54e0a0d33fd394874c087fe9a8037b9fdb10f2",
+    "clients/python/pyproject.toml": "b2d519336421b7e240a2b18c945825071656f6380df6551b74c1f5cbf3f97ceb",
+    "clients/python/src/duranki_client/__init__.py": "64a5e3ea85d8e0e666edcbbdd0b2ca73c78b7d283faef5090e7110ab2290cbf8",
+    "clients/python/uv.lock": "1d9c2f0a446a5262d7186a23b7527a39431f81a945e351985330b8ddb34d921b",
+    "docs/architecture/llm-routing-infra-design-v1.1.md": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c",
+    "docs/architecture/review-tracker.md": "36be1ae781fb6645fa186881eb967e7118f24dbf585913f2f8e0da9b1e1260ac",
+    "docs/foundation/WP-FND-RECEIPT-03.md": "2792795e322bd51e75d79cfec8f2df4e8f13fcb937061ece07613689e838e24b",
+    "server/pyproject.toml": "dfd232b2294773ce9f908352fe4d386d40723aec6f18aa8eb485388ca6d4680f",
+    "server/src/duranki_server/__init__.py": "79806e8cfdb91e7911997a3a7a46f1c35020f3f5bc52e0f0ce737b198fa3f6aa",
+    "server/uv.lock": "81103f69b2446fcc0b5bb51a976b75da2d4a8c16534b1e839424e68368f72f15",
+    "tests/foundation/README.md": "d7257851c96d65326a046b07357349306a2e40d34e57394420fbf4e1505a913c",
+    "tests/foundation/js-consumer/package.json": "e95eecf8300839a5579601d612bcfbaee3959e8ddbdcdd12c53b8989f6569637",
+    "tests/foundation/js-consumer/require.cjs": "fd4389a64b6a54137f63da57d1d614dec14d08c2ca542166174fe46bfe5e5294",
+    "tests/foundation/python-consumer/import_client.py": "89987156a53faed75e3b35242fdf76c20af8d86a7fc0fbb072dbf933d5960f11"
+  },
+  "git": {
+    "root": {
+      "status": 0,
+      "stdout": "/Users/larrymitchell/Mach33/Duranki\n",
+      "stderr": ""
+    },
+    "gitdir": {
+      "status": 0,
+      "stdout": "/Users/larrymitchell/Mach33/Duranki/.git\n",
+      "stderr": ""
+    },
+    "head": {
+      "status": 0,
+      "stdout": "refs/heads/main\n",
+      "stderr": ""
+    },
+    "commit": {
+      "status": 128,
+      "stdout": "",
+      "stderr": "fatal: Needed a single revision\n"
+    },
+    "staged": {
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "remotes": {
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "archive_source_copies_match": true
+}

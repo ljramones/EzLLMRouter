@@ -1,0 +1,80 @@
+{
+  "kind": "DEV-11 final clean-build cache usage and presence matrix",
+  "status": "PASS",
+  "source_commit": "86d1c8cb0d99c31660f8ef7ad7464e1b40e670f4",
+  "source_tree": "2d951bacbf938bec2127d4b1b902426ca3d4bffb",
+  "clean_build_fingerprint": "e3157e9e235d8980d00ba6d264cca528e5beac5d09f981839221f9259b84e981",
+  "frozen_artifact_root": "/Users/larrymitchell/Mach33/Duranki-artifacts/dev09-certifi-20261022-01",
+  "worker_image": "duranki-dev06-worker:e3157e9e235d8980",
+  "service_image": "duranki-dev06-service:e3157e9e235d8980",
+  "one_use_namespace_prefix": "duranki-dev11-final-20261025-01-",
+  "cases": [
+    {
+      "name": "mixed",
+      "input_total": 120,
+      "cached_read": 70,
+      "write_30m": 30,
+      "ordinary_input": 20,
+      "output_total": 20,
+      "cost_status": "calculated",
+      "calculated_usd": "0.000104500",
+      "campaign_state": "active",
+      "outstanding_usd": "0"
+    },
+    {
+      "name": "read",
+      "input_total": 120,
+      "cached_read": 70,
+      "write_30m": 0,
+      "ordinary_input": 50,
+      "output_total": 20,
+      "cost_status": "calculated",
+      "calculated_usd": "0.000097000",
+      "campaign_state": "active",
+      "outstanding_usd": "0"
+    },
+    {
+      "name": "zero",
+      "input_total": 120,
+      "cached_read": 0,
+      "write_30m": 0,
+      "ordinary_input": 120,
+      "output_total": 20,
+      "cost_status": "calculated",
+      "calculated_usd": "0.000160000",
+      "campaign_state": "active",
+      "outstanding_usd": "0"
+    },
+    {
+      "name": "missing",
+      "input_total": 120,
+      "write_counter_state": "absent",
+      "cost_status": "unknown",
+      "calculated_usd": null,
+      "campaign_state": "paused",
+      "outstanding_usd": "0.001314000"
+    },
+    {
+      "name": "null",
+      "input_total": 120,
+      "write_counter_state": "null",
+      "cost_status": "unknown",
+      "calculated_usd": null,
+      "campaign_state": "paused",
+      "outstanding_usd": "0.001314000"
+    }
+  ],
+  "each_case": {
+    "controlled_tls_arrivals": 1,
+    "guard_commits": 1,
+    "first_byte_sends": 1,
+    "duplicate_extra_sends": 0,
+    "read_only_status_extra_sends": 0,
+    "reserved_usd": "0.001314000",
+    "reasoning_subset": 2,
+    "real_provider_calls": 0
+  },
+  "independent_arithmetic": "mixed=(20*1+70*0.1+30*1.25+20*2)/1000000=0.000104500; read=(50*1+70*0.1+20*2)/1000000=0.000097000; zero=(120*1+20*2)/1000000=0.000160000; bound=(1000*1.25+32*2)/1000000=0.001314000",
+  "operational_profile_updated": false,
+  "notes": "Five separate collision-checked one-use disposable stores, workers and local TLS receivers. The exact final clean images ran without source mounts. Each case traversed the installed Python client, Coordinator, worker, guard, sender, usage persistence and campaign. Missing/null returned successful text while keeping unknown cost and full exposure. Temporary containers and link volumes were removed."
+}

@@ -1,0 +1,273 @@
+{
+  "packet": "WP-B/DKR-01-CORRECTION-02",
+  "status": "CODE_RECIPE_AND_MOCK_CORRECTED_REAL_INPUTS_UNRESOLVED",
+  "review_sha256": "447db7e91638801e1780da56df91da8b552860f1f797a9abc9c00a35efd8a79a",
+  "payloads": [
+    {
+      "path": "corrected/tests/gateway-proof/docker/.dockerignore",
+      "bytes": 156,
+      "sha256": "74d37b0661558f9c6d02a16ef21f020b443acbeb0f00d6e45d6c06cefacfed3f",
+      "source": "tests/gateway-proof/docker/.dockerignore"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/Dockerfile.gateway",
+      "bytes": 3012,
+      "sha256": "61553c72fbb5b7abe5493b801822d57b90719ce67ca04942d313441918d5dbd6",
+      "source": "tests/gateway-proof/docker/Dockerfile.gateway"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/Dockerfile.tools",
+      "bytes": 513,
+      "sha256": "ec9f9f6ba0a9960a8a1771726c225b48e3e7507a84c0c8f9011f3d1d8f4233b5",
+      "source": "tests/gateway-proof/docker/Dockerfile.tools"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/README.md",
+      "bytes": 5012,
+      "sha256": "cb05e95c9cb788e96162d5cadc7f80c797f8c5d77e7116b222b405452a08b5ea",
+      "source": "tests/gateway-proof/docker/README.md"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/compose.env.example",
+      "bytes": 351,
+      "sha256": "e076565be226180759c1434c8e9adeb6bbe100bda98606ad4498bde4946bfec0",
+      "source": "tests/gateway-proof/docker/compose.env.example"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/compose.yaml",
+      "bytes": 3383,
+      "sha256": "f794bee695329eab99b37a5899dc60f436306d796d7599caa66b2d4815d503af",
+      "source": "tests/gateway-proof/docker/compose.yaml"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/prepare.py",
+      "bytes": 53207,
+      "sha256": "5c104da395025cfb3088bd7e52e30a9ad343e0390972a5c74841a804c9cd68b2",
+      "source": "tests/gateway-proof/docker/prepare.py"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/requirements-build.lock",
+      "bytes": 242,
+      "sha256": "c282bc66df9949f88b763b2f41d6b37768f5667e26279be881ad871e7b7bb4fa",
+      "source": "tests/gateway-proof/docker/requirements-build.lock"
+    },
+    {
+      "path": "corrected/tests/gateway-proof/docker/requirements-runtime.lock",
+      "bytes": 249,
+      "sha256": "10afe03f17e2493995c98de5cdcc522c3ff3ac7df5cd545a8a4a956c5b380d39",
+      "source": "tests/gateway-proof/docker/requirements-runtime.lock"
+    },
+    {
+      "path": "logs/before-receipts.json",
+      "bytes": 3421,
+      "sha256": "e5b7f00e70727cd7d8b462afb2cd5315e7d7c6de1a0b5b4e326cde84c248db6c",
+      "source": "scratch-log:logs/before-receipts.json"
+    },
+    {
+      "path": "logs/c01-regression-replay-c02.py",
+      "bytes": 11122,
+      "sha256": "67ad635b83356e64b45082c732730cce4d681f3d359742ad6877f0896b6ad2bd",
+      "source": "scratch-log:logs/c01-regression-replay-c02.py"
+    },
+    {
+      "path": "logs/c01-regression-replay-final.py",
+      "bytes": 11126,
+      "sha256": "a58eb92bfeb8aad0a40f2fede4af100254706a5290eee23102d9b8576e1aeac3",
+      "source": "scratch-log:logs/c01-regression-replay-final.py"
+    },
+    {
+      "path": "logs/c01-regression-replay.py",
+      "bytes": 11042,
+      "sha256": "36d80b5d559f9c5eb98e7a0fdef4db35fb46660a9297ddd7ea24c98aa0adbb80",
+      "source": "scratch-log:logs/c01-regression-replay.py"
+    },
+    {
+      "path": "logs/c01-regression-results-c02.json",
+      "bytes": 2827,
+      "sha256": "3c412f35eecfc7da6b13e3cb74d355c06d3934317bd2df13377c21ba8cdc95d6",
+      "source": "scratch-log:logs/c01-regression-results-c02.json"
+    },
+    {
+      "path": "logs/c01-regression-results-final.json",
+      "bytes": 2827,
+      "sha256": "b3156cfdba26d0828764ce46b8f607378ce375a26c6b7034097b346ab570f413",
+      "source": "scratch-log:logs/c01-regression-results-final.json"
+    },
+    {
+      "path": "logs/c01-regression-results.json",
+      "bytes": 2840,
+      "sha256": "305bd51ffd84692717eee78392d47e3ddf3718481b8a206625baa6f4f90b565d",
+      "source": "scratch-log:logs/c01-regression-results.json"
+    },
+    {
+      "path": "logs/c01-regression-summary-c02.json",
+      "bytes": 50,
+      "sha256": "40014ab658b14b521b3a7b53182d166361ad79f8f9e5cd5dd1d863e0f76c86bd",
+      "source": "scratch-log:logs/c01-regression-summary-c02.json"
+    },
+    {
+      "path": "logs/c01-regression-summary-final.json",
+      "bytes": 50,
+      "sha256": "40014ab658b14b521b3a7b53182d166361ad79f8f9e5cd5dd1d863e0f76c86bd",
+      "source": "scratch-log:logs/c01-regression-summary-final.json"
+    },
+    {
+      "path": "logs/c01-regression-summary.json",
+      "bytes": 201,
+      "sha256": "abebf8d114dc10b93f06e21768eb72b63b24ac336304a1263e972f7e697b0933",
+      "source": "scratch-log:logs/c01-regression-summary.json"
+    },
+    {
+      "path": "logs/c02-mock-results-final.json",
+      "bytes": 3041,
+      "sha256": "0c90874fb9f2cbba4b1e54855d030feacfe8c724494f6d8ecf389383875c075f",
+      "source": "scratch-log:logs/c02-mock-results-final.json"
+    },
+    {
+      "path": "logs/c02-mock-results.json",
+      "bytes": 3041,
+      "sha256": "ce399063e238f026a576f331ac5efb50d88a9b7c30a2f11213c1d8c4bc980d76",
+      "source": "scratch-log:logs/c02-mock-results.json"
+    },
+    {
+      "path": "logs/c02-mock-suite-final.py",
+      "bytes": 20281,
+      "sha256": "386f5a94a1d166966cb005e11f866a4a2560851d7c57f81cf707110994282db3",
+      "source": "scratch-log:logs/c02-mock-suite-final.py"
+    },
+    {
+      "path": "logs/c02-mock-suite.py",
+      "bytes": 20269,
+      "sha256": "aed084408f4ca649eadc07f3c2fafb980971ce0d39c2be4affcbd91628da507f",
+      "source": "scratch-log:logs/c02-mock-suite.py"
+    },
+    {
+      "path": "logs/c02-mock-summary-final.json",
+      "bytes": 48,
+      "sha256": "73a95f15e1b4cb4c26051f1d08d80e8f166c5c4d84e4b38c404845fca7a08787",
+      "source": "scratch-log:logs/c02-mock-summary-final.json"
+    },
+    {
+      "path": "logs/c02-mock-summary.json",
+      "bytes": 48,
+      "sha256": "73a95f15e1b4cb4c26051f1d08d80e8f166c5c4d84e4b38c404845fca7a08787",
+      "source": "scratch-log:logs/c02-mock-summary.json"
+    },
+    {
+      "path": "logs/c02-static-check.py",
+      "bytes": 3409,
+      "sha256": "f8e29d124620bfbe93ec9fb87751a7c8d895fb66d8429ab8b85c54e81accd248",
+      "source": "scratch-log:logs/c02-static-check.py"
+    },
+    {
+      "path": "logs/c02-static-results.json",
+      "bytes": 444,
+      "sha256": "25c54cb46a0bd4249bb3689a7276b7dd8ba53ac0b16a6b9525ccf5f0db83f84f",
+      "source": "scratch-log:logs/c02-static-results.json"
+    },
+    {
+      "path": "logs/helper-check.json",
+      "bytes": 181,
+      "sha256": "0c985870b7239de4bcc6c6e73a3cee1d6daa723e505b1aebc82667aa9952d269",
+      "source": "scratch-log:logs/helper-check.json"
+    },
+    {
+      "path": "logs/helper-selftest.json",
+      "bytes": 54,
+      "sha256": "d2dce9e231ed02f201126952b68e9791c883b439c205cdaff5bffb04cc8220e3",
+      "source": "scratch-log:logs/helper-selftest.json"
+    },
+    {
+      "path": "logs/mock-owner-partial/EVIDENCE-MANIFEST.json",
+      "bytes": 4704,
+      "sha256": "2975a59005af1fb28e780eca53e88982e95a17adfa1c0a09f3be7f43cf68dd0a",
+      "source": "scratch-log:logs/mock-owner-partial/EVIDENCE-MANIFEST.json"
+    },
+    {
+      "path": "logs/mock-owner-partial/INPUTS-EVIDENCE.zip",
+      "bytes": 13917,
+      "sha256": "c43b83900e6e932ef143e08f16ccc33849a9d6be9a4d49562ff5ac02fae480ad",
+      "source": "scratch-log:logs/mock-owner-partial/INPUTS-EVIDENCE.zip"
+    },
+    {
+      "path": "logs/mock-owner-positive/EVIDENCE-MANIFEST.json",
+      "bytes": 5361,
+      "sha256": "178d5c0a9414ae3630bd1fa9dc2bd4d7bff16589f10a557271c0e7e34dd4bc46",
+      "source": "scratch-log:logs/mock-owner-positive/EVIDENCE-MANIFEST.json"
+    },
+    {
+      "path": "logs/mock-owner-positive/INPUTS-EVIDENCE.zip",
+      "bytes": 15326,
+      "sha256": "fbf1e3b6bd09a490da63506872ccbd3c74b7524aed2b191ebd4281e2fed97c70",
+      "source": "scratch-log:logs/mock-owner-positive/INPUTS-EVIDENCE.zip"
+    },
+    {
+      "path": "logs/resolver-boundaries-summary.json",
+      "bytes": 34,
+      "sha256": "97e1dc4bea72b4b06c68043a1de960284d9235cacfae350295134083fc13bfe6",
+      "source": "scratch-log:logs/resolver-boundaries-summary.json"
+    },
+    {
+      "path": "logs/resolver-boundaries.json",
+      "bytes": 2144,
+      "sha256": "9beefd3e23c1c16284b67531bae0a5fcc6fe918829d66b77d3a5420b262ca1e5",
+      "source": "scratch-log:logs/resolver-boundaries.json"
+    },
+    {
+      "path": "logs/resolver-boundaries.py",
+      "bytes": 1912,
+      "sha256": "47480271b2f3aa330fc7f22e9875e1bb1aab9aab48cc09e58a635c5f037a8bf6",
+      "source": "scratch-log:logs/resolver-boundaries.py"
+    },
+    {
+      "path": "logs/synthetic-context-runtime/CONTEXT-MANIFEST.json",
+      "bytes": 2118,
+      "sha256": "23b3406aa8b6d44d46676e22841a4b6a0e41bc32dd57da0474e9762d2d3eaba1",
+      "source": "scratch-log:logs/synthetic-context-runtime/CONTEXT-MANIFEST.json"
+    },
+    {
+      "path": "logs/synthetic-context-tools/CONTEXT-MANIFEST.json",
+      "bytes": 1071,
+      "sha256": "b03ccf40888ab2d81e6840d04c8d9d465694a3a78e0bd16ca784d880d24fa18c",
+      "source": "scratch-log:logs/synthetic-context-tools/CONTEXT-MANIFEST.json"
+    },
+    {
+      "path": "logs/uv-help-selected.txt",
+      "bytes": 269,
+      "sha256": "872e7893a3ad10ebeeec629af1d7814232ca54e3ebaecb0b35348ce6800db2eb",
+      "source": "scratch-log:logs/uv-help-selected.txt"
+    },
+    {
+      "path": "successor/docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-BUILD-INPUTS-01-CORRECTION-02.json",
+      "bytes": 13765,
+      "sha256": "5676104a0c7f5a4f77adef8e7896fabb6674bb5851f9a0b8a70a1ac63901abf8",
+      "source": "docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-BUILD-INPUTS-01-CORRECTION-02.json"
+    },
+    {
+      "path": "successor/docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-COMPOSE-PROOF-DELTA-01-CORRECTION-02.md",
+      "bytes": 2998,
+      "sha256": "bfae7e6929877e5118b3b9a748d94916a59261f3ee9a8314c48546e894bcf0b6",
+      "source": "docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-COMPOSE-PROOF-DELTA-01-CORRECTION-02.md"
+    },
+    {
+      "path": "successor/docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-DOCKER-RETURN-01-CORRECTION-02.json",
+      "bytes": 17762,
+      "sha256": "0f091a06b0b4b806dbe5a07f2697678857660aa7e98ec1e1a1c7692c7443c67d",
+      "source": "docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-DOCKER-RETURN-01-CORRECTION-02.json"
+    },
+    {
+      "path": "successor/docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-DOCKER-TARGET-01-CORRECTION-02.md",
+      "bytes": 2921,
+      "sha256": "fe6d0969f5f0c277b64c0ca075f96581726b8fa12b2dfff2e34a507ecccca2a0",
+      "source": "docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-DOCKER-TARGET-01-CORRECTION-02.md"
+    },
+    {
+      "path": "successor/docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-TRANSPORT-CLOSURE-01-CORRECTION-02.md",
+      "bytes": 2308,
+      "sha256": "9d1d5b98a24f5855f580d101331af621c3be5b52681c4338ea91c4fd83aa4f55",
+      "source": "docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-TRANSPORT-CLOSURE-01-CORRECTION-02.md"
+    }
+  ],
+  "manifest_self_excluded": true,
+  "return_self_hash": "provided by this sidecar and external receipt"
+}

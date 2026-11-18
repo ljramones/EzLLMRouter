@@ -1,0 +1,36 @@
+--- C01/FICTIONAL-TARIFF-VECTORS.json
++++ C01-E01/FICTIONAL-TARIFF-VECTORS.json
+@@ -86,7 +86,32 @@
+         "settled": "0.010000012",
+         "request_bound": "0.010000013"
+       }
+-    ]
++    ],
++    "per_attempt_rounding_pair": {
++      "test_subcase": "T-48.g",
++      "rate_per_document": "0.0003000005",
++      "separate_attempts": {
++        "document_counts": [
++          1,
++          1,
++          1
++        ],
++        "raw_per_attempt": "0.0003000005",
++        "settled_per_attempt": "0.000300000",
++        "settled_total": "0.000900000",
++        "upward_request_bound_each": "0.000300001",
++        "summed_request_bounds": "0.000900003"
++      },
++      "batched_attempt": {
++        "document_count": 3,
++        "raw": "0.0009000015",
++        "settled": "0.000900002",
++        "upward_request_bound": "0.000900002"
++      },
++      "same_raw_aggregate": "0.0009000015",
++      "settled_difference": "0.000000002",
++      "meaning": "Three separately authorized attempts, not three retries of one work key. Round each attempt before aggregation; sums are not re-rounded raw usage."
++    }
+   },
+   "negative_inputs": [
+     0,

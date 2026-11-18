@@ -1,0 +1,1106 @@
+--- submitted-v1.2.md
++++ DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md
+@@ -1,132 +1,34 @@
+ # Duranki — Model & AI-Service Routing, Metering and Control — Architecture
+ 
+-**Status:** v1.2 — integrated architecture review draft; not yet adopted  
++**Version:** v1.2 Correction 01  
++**Status:** Corrected normative review draft; not adopted; no implementation or activation authorization  
+ **Date:** 25 October 2026  
+ **Owner:** Larry Mitchell  
+-**Predecessor:** *Duranki — LLM Routing & Metering Infrastructure — Architecture Baseline*, v1.1, 16 October 2026  
+-**History:** v0.1 → v0.2 → v0.3 → v1.0 → v1.1 → v1.2. The earlier external reviews apply to their reviewed versions, not to this revision.  
+-**Scope of this revision:** reconcile the target architecture with the bounded DEV-04–DEV-11 development evidence; incorporate the 25 October model/service reconnaissance, native-unit accounting, provider-centred administration and selected commercial-router patterns; define the next standalone extension before implementation.
+-
+-**Companions and evidence:**
+-- `review-tracker.md` — historical review dispositions; unchanged by this revision.
+-- *Duranki — Components and Legends* — the five architectural roles and their names.
+-- *Duranki — Competitive Landscape* (16 October 2026) — historical context, not current capability evidence.
+-- `MODEL-SERVICE-COVERAGE-REPORT.md`, `MODEL-SERVICE-INVENTORY.json`, `DURANKI-COVERAGE-GAP-MATRIX.csv` — 25 October static source reconnaissance.
+-- `docs/contracts/WP-A-A2-ADOPTION-01.md` — adopted bounded client/work contract.
+-- `docs/development/dev-11/{RESULT.md,CACHE-ACCOUNTING-CONTRACT.md,REVIEW-HANDOFF.md}` — tested cache-aware text contract and its limits.
+-- `DURANKI-ARCHITECTURE-v1.2-CHANGE-NOTE-2026-10-25.md` — section-level change record and review focus accompanying this draft.
+-
+-Companion paths are repository/source locators, not a claim that those files were modified or that all of them accompany this standalone document. Evidence keys and external references are in §20. Existing top-level section numbers 0–20 and acceptance-test identifiers 1–41 are retained; additional requirements have new subsections and test identifiers.
+-
+-**Navigation:**
+-
+-[0. Baseline status](#0-baseline-status) · [1. Purpose and objective](#1-purpose-and-objective) · [2. Summary](#2-summary) · [3. Design principles](#3-design-principles) · [4. Architecture](#4-architecture)
+-
+-[5. Request lifecycle and contracts](#5-request-lifecycle-and-contracts) · [6. Routing policy](#6-routing-policy) · [7. Office lab policy](#7-office-lab-policy) · [8. Retry, recovery and completion contract](#8-retry-recovery-and-completion-contract) · [9. Agent instrumentation contract](#9-agent-instrumentation-contract)
+-
+-[10. Metering and accounting](#10-metering-and-accounting) · [11. Quality and evaluation](#11-quality-and-evaluation) · [12. Learning loop](#12-learning-loop) · [13. Data handling and retention](#13-data-handling-and-retention) · [14. Hosting](#14-hosting)
+-
+-[15. Phased plan](#15-phased-plan) · [16. Fault and acceptance tests](#16-fault-and-acceptance-tests) · [17. Risks](#17-risks) · [18. Open decisions](#18-open-decisions) · [19. Targeted verification](#19-targeted-verification) · [20. Evidence and references](#20-evidence-and-references)
+-
+----
++**Predecessor:** v1.1 adopted baseline; submitted v1.2 and Dispositions 01–02 preserved as source history
++
++**Read with:** [Assurance register](DURANKI-v1.2-C01-ASSURANCE-REGISTER.md) · [Development roadmap](DURANKI-v1.2-C01-ROADMAP.md) · [Review and research map](DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md). Exact input identities and document-only validation are in `DURANKI-v1.2-C01-DOCUMENT-VALIDATION.json` and `MANIFEST.sha256`.
++
++Top-level sections 0–20 and test subjects T-01–T-76 are retained. T-77–T-87 cover the reconciled addendum subjects, with **T-84 a retired alias of T-49**, not another scored test. Source keys are defined in §20; all dates and implementation standings belong to their cited evidence, not to an implied current runtime.
+ 
+ ## 0. Baseline status
+ 
+ ### 0.1 Authority and interpretation
+ 
+-The v1.1 document remains the adopted architectural predecessor until this successor is explicitly adopted. The supplied WP-A/A2 record separately governs wire `0.2`, canonical work `duranki-work-v0.2` and capability profile `initial_1a@1`. This architecture update does not silently alter those identifiers, schemas, canonical bytes or client semantics. A new operation that cannot be expressed by the existing strict contract requires an explicit versioned extension before implementation. [S1, S2]
+-
+-**This is an integrated target design, not a statement that every described component is deployed.** Requirements in the body apply when their capability/profile is introduced. An implementation claim must name its source and test scope; a deployment claim must name its running build; a commercial-billing claim requires provider evidence. An architecture phase is not the same thing as a `DEV-XX` development slice.
+-
+-Authoring or adopting this revision does not itself authorize a new implementation tranche, provider call, credential import, amount of spend, operational migration, repository merge or Vega integration. It does not declare Phase 0, 1a or 1b complete. Existing accepted work remains accepted within its recorded scope; new work must satisfy the applicable gates rather than reopening unrelated completed slices.
+-
+-**Current sequencing decision:** develop Duranki independently first. Vega instrumentation and integration are deferred until Larry's other Vega work is ready. Standalone clients, scripted agent/user demonstrations and controlled receivers are the development basis in the meantime. The eventual instrumentation contract remains in §9, but it is not an instruction to modify Vega now. [S7]
+-
+-### 0.2 Evidence snapshot for this revision
+-
+-| Area | Source-supported position as of the supplied records | Not established by that evidence |
+-|---|---|---|
+-| Trusted execution boundary | DEV-04 Choice B separated the model-transformation worker from the trusted sender; later DEV-10/11 records exercise bounded controlled TLS paths. [S3, S5] | Universal protocol, SDK, streaming, arbitrary-provider or production qualification |
+-| Current selected provider-shaped operation | The recce describes a bounded, nonstreaming OpenAI Responses text path with fixed admitted model, no tools and no automatic retry/fallback. Earlier synthetic tool-cycle work is a separate capability. [S4] | Broad chat, multimodal, hosted-search, realtime or model-substitution support |
+-| DEV-11 accounting | Source `86d1c8cb0d99c31660f8ef7ad7464e1b40e670f4`, fingerprint `e3157e9e235d8980d00ba6d264cca528e5beac5d09f981839221f9259b84e981`, passed five controlled cache cases and a normal authenticated browser journey using fictional rates. [S5] | Real cache reuse, commercial charges, invoice accuracy or an owner-profile deployment of DEV-11 |
+-| Running owner profile | The supplied DEV-11 result last observed the prior DEV-10 image, built from `2bb04ff7dd4c584d09bcbcce3fe3e4c0ce0d1ef9`; it explicitly did not query the current campaign/data state. [S5] | A fresh current-state claim about credentials, allowance or the running application |
+-| Broader platform demand | The 25 October static recce identifies 15 operation families, including adjacent services and local processing. Its platform snapshot is `e69a1fce53917603d110bdd386bde1547a82196d`; its Duranki inspection snapshot is `d990b78ca48b8e673c0cbd0260d3e141e45c7e48`. [S4] | Runtime frequency, current deployed model/account choices, actual spend or complete dynamic-plugin coverage |
+-| Registries, console and demonstration | The supplied development history describes persistent registry/admin surfaces, attribution reporting and isolated scripted demos. [S7] | Every target user journey in §4.6, live agent collaboration or representative production efficiency |
+-
+-These are different evidence coordinates, not competing claims to a single current HEAD. The recce inspected a later repository snapshot than the DEV-11 tested product source. This document does not independently certify repository ancestry or the current remote/profile state.
+-
+-### 0.3 Changes in v1.2
+-
+-1. Broaden the architectural subject from LLM calls to **typed model and selected AI-service operations**, while keeping ordinary local processing outside model routing (§§1, 5.7–5.9).
+-2. Make **one logical gateway** mean Duranki's admission/control boundary, not a requirement to place secrets or final-send authority inside LiteLLM. Preserve the isolated worker and trusted sender (§4).
+-3. Separate provider, account/API setup, credential revision, deployment, operation, source permission, principal grant and quality approval (§§4.5, 5.5).
+-4. Specify guided setup, clear credential/readiness states, useful price provenance/history and scoped access administration (§4.6).
+-5. Add versioned operation contracts, native usage units, conservative reservation functions and immutable price semantics; retain DEV-11 as one narrow profile, not a universal parser (§§5.7, 10.2–10.8).
+-6. Make initiating person, executing agent, authenticated principal, delegation and charging owner distinct; keep direct and inclusive roll-ups from double-counting (§9).
+-7. Select useful router patterns: governed catalogues, scoped credentials, alerts, capability filters, policy drafts/rollback/preview, endpoint health and trace correlation (§§4.7, 6.9–6.10).
+-8. Defer external response caching, automatic model substitution, learned-policy promotion and Vega integration; preserve their separate gates (§§5.6, 12, 15).
+-9. Define a bounded synthetic operation-ledger plus embedding/reranking extension as the first proposed implementation addition (§15.2); add tests without renumbering the original set (§16).
+-
+-### Organizing invariants
+-
+-> An isolated call is not necessarily a safe call. A valid response is not necessarily a correct response. A permitted destination is not necessarily an authorized next attempt.
+->
+-> An expired owner is not a cancelled request, and an expired reservation is not evidence that its financial exposure disappeared.
+-
+-Additional v1.2 invariants:
+-
+-> Discovery is not permission. Permission is not execution support. A saved credential is not proof of access.
+->
+-> A committed request is not proof of transmission; a local first write is not proof of provider receipt. Unknown usage or cost is not zero.
+->
+-> Observing an external service is not controlling it. Changing a route must not silently change an operation's meaning, index compatibility or billing contract.
+-
+-The following version histories describe prior revisions; their original dates, review scope and resolved findings are preserved as history, not new implementation claims.
+-
+-### Changes in v1.1
+-
+-1. **Names.** The system is named **Duranki**, and its five agents are **Neti**, **Ninshubur**, **Nisaba**, **Shamash** and **Nabu** (§4.2). Names are labels only; every contract still refers to the component it names.
+-2. **Off-the-shelf parts made explicit.** §4.1 names each commercial off-the-shelf (COTS) product and marks it decided, candidate or open.
+-3. **Supply-chain protection** for every off-the-shelf part, added to Phase 1a with acceptance tests 37–41 (§4.4, §15, §16).
+-4. **LiteLLM's built-in routing disabled.** LiteLLM now ships its own Auto Router; only Duranki's optimization plugin may choose a route, and only within the signed plan (§4.3).
+-5. **Two new risks**: a compromised release of an off-the-shelf part, and a vendor acquisition or shutdown (§17). The LiteLLM contingency decision now covers both (§18).
+-
+-The Phase 3 bake-off (§6.5) is unchanged: it compares ways of building Duranki's own predictor, not outside products.
+-
+-### Changes in v1.0 (from v0.3)
+-
+-1. **Financial and capacity exposure** survive owner-lease expiry (§6.7, §10.4). This is the most consequential runtime correction.
+-2. **Explicit admission profiles** per phase, including a Phase 1a profile (§5.1).
+-3. **Derived data inherits source handling and retention** unless an approved feature schema says otherwise; retention applies at every persistence boundary (§13).
+-4. **Two-level request binding**: canonical work plus each candidate's prepared request, with signed plans (§5.3).
+-5. **Three identity levels**: logical step, execution generation, provider attempt; idempotency keyed by execution generation (§8.2).
+-6. **Authorization point** defined; the final-dispatch check verifies signature, policy versions and the final prepared request (§5.4).
+-7. **Gateway response cache** placed after admission and salted by security domain (§5.6).
+-8. **Recovery policy** and **approved-configuration registry** defined as artifacts with lifecycles (§6.8, §5.5).
+-9. **Presence attribute** bound to issuer, audience, principal and session, with TTL and key management (§7.1).
+-10. **Leaf validation** by orchestrator construction manifest (§6.1).
+-11. **Statistical corrections**: generalized cascade quality, analysis matched to design, common judging, pooling scope, separately justified latency study (§11).
+-12. **Fault tests** gate the first phase that relies on each guarantee (§16).
+-
+-### v0.3 errors corrected
+-
+-| v0.3 error | Correction |
+-|---|---|
+-| Budget reservation TTLs released exposure of dispatched or outcome-unknown work | Owner expiry ≠ exposure release (§10.4) |
+-| Plan's lease "released on failover" contradicted §6.7 | Capacity released only on confirmed completion or cancellation (§6.7) |
+-| "Mandatory admission in every phase" contradicted the Phase 1a/1b budget split; registry mandatory but scheduled for Phase 3 | Phase admission profiles; 1a approved-configuration file (§5.1, §5.5) |
+-| Derived features (Jev answers, scores) exempted as non-content | Inheritance unless approved feature schema (§13.1) |
+-| `request_hash` covered adapter output while fallbacks use different adapters | Two-level binding (§5.3) |
+-| References treated as content-bound | Versioned or materialized (§5.3) |
+-| Gateway response cache not placed after admission | §5.6 |
+-| Per-step idempotency key would deduplicate an authorized escalation into the rejected result | Execution generation (§8.2) |
+-| Tier 1 "escalate within the plan" conflicted with orchestrator ownership of identity changes | §6.2 |
+-| "p_s ≈ 1 because baseline" | Removed (§6.4) |
+-| Cascade quality equation omitted false rejection | Generalized (§11.1) |
+-| Paired analysis required universally | Analysis matched to design (§11.3) |
+-| Latency study asserted smaller; δ≈0 called mathematically impossible | Corrected (§11.3) |
+-| Fault tests scheduled after the phases relying on them | §16 |
+-| Error table cited the wrong subsection for the budget clause | Corrected in tracker |
++**v1.2 Correction 01 is a corrected review draft, not owner adoption or an implementation commission.** It consolidates the submitted v1.2, Dispositions 01–02, Addendum A and Claude Review 02. Their original files remain unchanged. The finding-to-clause and research maps identify every substantive correction and deliberate departure. [D1, D2, A, H, R2, P1]
++
++The adopted predecessor remains v1.1 together with WP-A/A2's bounded wire `0.2`, canonical projection `duranki-work-v0.2` and profile `initial_1a@1` until an applicable successor is adopted. Preserve their strict parsers, canonical bytes, work keys and historical vectors. The operation-aware successor described here is separately versioned; it does not expand wire `0.2`. [S1, S2]
++
++**Standalone-first:** develop Duranki while Larry finishes his prerequisite Vega work. No Vega/Proto instrumentation or integration is authorized by this document. Standalone contracts, schema design, installed clients and synthetic producers can progress independently. Production topology, provider activation, credentials, paid amounts, owner-profile migration and Git actions require their own scope.
++
++**Production ledger engine: PostgreSQL.** The 23 October owner decision is recovered in the supplied reconciliation handoff. Managed hosting, topology and migration remain separate decisions; standalone SQLite remains supported within its qualified scope. The assurance register records the quotation-based provenance rather than claiming a newly inspected transcript. [H §4]
++
++### 0.2 Document responsibilities
++
++This document defines obligations and applicability. The dated **assurance register** records source, controlled-target, deployment, commercial and integration evidence separately. The **roadmap** defines implementation order and the bounded DEV-12 proposal. A `DEV-XX` slice is not an architecture phase. Requirements become gates at the first profile that relies on them, not merely at the historical phase heading under which they were written.
++
++### 0.3 Organizing invariants
++
++An isolated call need not be safe; a valid response need not be correct; a permitted destination need not authorize the next attempt. Ownership expiry does not release financial or capacity exposure. Discovery, permission, execution support, quality approval and health are separate. Intent, final commitment, first write, provider receipt, usage and settlement are separate facts. Unknown is not zero. Observed external work is not controlled work; attribution views are not additional charges.
+ 
+ ---
+ 
+@@ -141,6 +43,10 @@
+ 
+ LLM text is the first implemented provider-shaped operation, not the universal request or billing schema. Adjacent services may be accounted for without pretending they are language models. Duranki is not intended to become a general enterprise API-management platform.
+ 
++### Three distinct deliverables
++
++**Engineering assurance** establishes the guarantees of a named controlled profile. **Observed spending** records what an authorized account export or provider observation supports at its actual granularity. **Accepted-task efficiency** additionally needs complete comparable task cohorts and acceptance evidence. Neither synthetic arithmetic nor account totals alone provide the latter. The Phase 0 taxonomy trigger remains not evaluable until its required evidence exists; it is not waived.
++
+ ### Governing metric
+ 
+ **Cost per accepted task** for a task class:
+@@ -168,7 +74,8 @@
+ - Rebuilding a general-purpose model server, vendor SDK ecosystem or observability stack. Duranki does own the minimal trusted admission, final guard/sender and accounting controls needed to enforce its contracts; integration code remains separate from off-the-shelf worker code.
+ - Sophisticated routing models before contracts, accounting and evaluation are trustworthy.
+ - A full online contextual-bandit framework at launch.
+-- Training or fine-tuning models.
++- Training or fine-tuning models; operating a model-hosting control product.
++- An arbitrary enterprise API proxy, provider marketplace/reseller, general identity-provider administration, agent planner/tool orchestrator, or replacement for provider invoicing.
+ 
+ - Automatic access to newly discovered models or operations.
+ - Building a generic external response/semantic cache before evidence justifies it.
+@@ -179,15 +86,11 @@
+ 
+ ## 2. Summary
+ 
+-Duranki is the controlled crossing between people/agentic applications and the model or AI-service operations they invoke. Its **single logical gateway** authenticates and attributes requests, resolves source and operation permissions, checks capability and quality eligibility, establishes the admitted financial scope and issues a signed plan bound to the work. Optimization is a replaceable ranking stage, not an alternative authority.
+-
+-The execution boundary consists of Duranki's trusted Coordinator, immutable registry decisions, final-request guard and trusted sender. A model-transformation worker may use a frozen LiteLLM/provider SDK to prepare requests, but it does not possess provider credentials, unrestricted provider egress or authority to select an unapproved destination. The trusted sender rechecks current authority after lower-layer waits and before the first application-request transmission. Durable intent, final-request commitment, local write observation, independent receiver evidence and settlement are distinct facts. [S3, S5]
+-
+-Operation contracts describe request/response shapes, native usage, billing components, compatibility and lifecycle. Text, embedding, reranking, vision, transcription, speech synthesis, image generation, model-hosted search and realtime voice therefore share an enforcement/accounting framework without being flattened into one text interface. Adjacent search and storage/resource observations are separately classified; opaque external execution is not falsely presented as controlled routing. [S4]
+-
+-The orchestrator continues to own task planning, substantive verification, acceptance, semantic recovery and application side effects. Nabu records approvals; Neti enforces them; Ninshubur ranks eligible candidates; Nisaba records usage and financial exposure; Shamash evaluates quality and efficiency. A durable ledger is independent of sampled tracing. Human-facing reports connect direct and delegated work without adding the same charge twice.
+-
+-Development remains standalone. The next proposed slice proves operation-aware accounting with synthetic embedding/reranking workflows. Provider activation, operational deployment, Vega integration and learned routing each require their own scope and evidence. Later integration can gather representative task relationships and outcomes; those observations can inform policies, but observational logs alone do not prove that an alternative route would have been better.
++Duranki is the controlled crossing between people/agentic applications and qualified model or AI-service operations. Its trusted Coordinator authenticates work, establishes permissions and financial scope, and issues a signed plan. An isolated adapter worker prepares a request. The independent final guard checks its actual bytes and controls; the trusted sender owns the first-write fence and provider credentials. Nisaba records durable attempt and financial evidence independently of sampled tracing.
++
++Neti enforces admission and sending; Ninshubur ranks eligible candidates before plan issuance; Nabu records owner-approved configurations; Shamash evaluates quality and efficiency. The caller/orchestrator retains planning, substantive acceptance, checkpoints, semantic recovery and application side effects.
++
++Typed contracts cover text, retrieval, audio, media, search and later sessions without pretending they share a universal token tariff. Standalone engineering assurance, externally observed spending and accepted-task efficiency are distinct deliverables. A future Valhalla relationship adds verified commission and activation authority only after its integration is qualified; the common metadata envelope is designed with the next operation contract, not postponed until integration.
+ 
+ ---
+ 
+@@ -260,50 +163,44 @@
+     X[External observation import - future, no send authority] -. separate provenance .-> LED
+ ```
+ 
+-**Diagram scope.** This depicts responsibilities and target extension points, not a deployment manifest. Replication, Redis, production telemetry, capacity services, external observation ingestion and most non-text adapters remain separately gated. The optional future response cache is deliberately absent from the active path. The isolated worker has no direct edge to a provider or the credential store. Browser-originated management actions pass authenticated server APIs; the console does not directly write registry storage. [S3–S5]
++**Diagram scope.** Responsibilities, not a deployment manifest. The worker has no provider/credential edge; the console uses authenticated APIs. Optional integrations follow their profile gates.
+ 
+ ### 4.1 Components
+ 
+-**Status key:** *Target choice retained* means selected by the predecessor architecture, not installed or qualified here. *Demonstrated bounded slice* means only the source/test scope in §0.2. *Candidate/Open* requires a further decision. *Build* means Duranki-owned code, which may be incomplete. This table reconciles target product choices with actual development rather than replacing those choices silently.
+-
+-| Component | Role / architectural owner | Implementation or target choice | Status and boundary |
+-|---|---|---|---|
+-| First trusted edge and framework ingress | Neti: trusted person-origin/presence assertion | Corporate edge or zero-trust tunnel, identity provider and application ingress | Target integration; products and live integration not established here |
+-| Orchestrator state store | Caller-owned checkpoints, acceptance and side effects | Orchestrators' durable store | External responsibility; Vega changes deferred |
+-| Logical gateway / Coordinator | Neti: authentication, admission, work identity and control | Separate Python Duranki service | Demonstrated bounded slice; not equivalent to a replicated production gateway |
+-| Python and JavaScript clients | Transport, strict public contract, query-first recovery | Separate importable network clients; JavaScript remains plain CommonJS | Existing bounded clients; no credentials for direct provider execution [S2] |
+-| Transformation worker | Provider-specific preparation | Frozen LiteLLM and selected SDKs; future operation-specific adapters | Demonstrated isolated worker; no autonomous retries, routing, provider keys or direct egress |
+-| Plan authority, final guard and sender | Neti: signed binding, durable commitment and final-send control | Duranki-owned modules outside vendor packages | Demonstrated bounded paths; every new protocol/lifecycle needs its own proof |
+-| Provider and access registries | Nabu: source inventory, API setups, credentials metadata, deployments, operations, source permissions, grants, qualification | Durable versioned records with authenticated management APIs | Existing registry foundation; operation extension proposed |
+-| Optimization and policy versions | Ninshubur: rank only eligible candidates; explain selection | Duranki-owned deterministic policy module; later predictor | Target extension; trusted authority issues the signed plan |
+-| Local ledger and allowances | Nisaba: attempts, usage revisions, reservations and exposure | SQLite in the standalone development profile | Demonstrated bounded slice; not proof of multi-replica budget consistency |
+-| Production ledger / shared state | Nisaba and Neti: durable financial authority across replicas | Managed HA database remains open; Redis target choice retained | Target only. Shared caches cannot replace durable attempt/exposure authority |
+-| Operator console and reports | Nabu/Neti management; Nisaba projections | Duranki-owned UI and authenticated API | Existing screens plus target journeys in §4.6; demos remain separate |
+-| Tracing | Shamash evidence; diagnostics | Langfuse and OpenTelemetry Collector | Target choices retained, not a claim of deployed integrations |
+-| Capacity metrics | Ninshubur/Neti eligibility diagnostics | Prometheus and Grafana | Target choices retained |
+-| Model serving | Native serving and prefix caching | vLLM or SGLang | Open; not selected merely by a source catalogue label |
+-| Serving orchestration | Deployment and cache-aware placement | KServe + llm-d, Ray Serve, or GKE Inference Gateway on GCP | Open coherent-stack choice, §18 |
+-| Capacity lease / lab policy | Neti: capacity admission, presence, reservation and drain | Duranki-owned services | Target, §7; not inferred from office network reachability |
+-| Evaluation / predictor | Shamash: datasets, judgements, confirmation and promotion evidence | Offline jobs; Jev remains one bake-off candidate | Target, §§6.5, 11–12; no automatic learned-policy activation |
+-| Credential service | Neti: write-only registration, restricted runtime retrieval and rotation | Local personal-test custody; production secrets-manager product open | Keep local proof separate from production secret-management acceptance |
+-| Frontier and adjacent-service access | Commercial API or marketplace, exact account and protocol | Direct vendor APIs; Bedrock/Vertex where later qualified | Per-operation qualification; no blanket provider support |
+-
+-Duranki-owned policy, signing, ledger and sender modules remain independent of LiteLLM. A selected operation may use another qualified adapter without forking a vendor package or weakening the same control boundary. No new dependency, infrastructure product or provider is selected merely by this table.
++| Component | Responsibility | Architectural choice / boundary |
++|---|---|---|
++| Trusted ingress | Authenticated human/service context; later office-origin evidence | Identity/edge integration independently qualified |
++| Orchestrator | Work identity, checkpoints, substantive acceptance and side effects | Caller-owned durable state; Vega integration deferred |
++| Coordinator and clients | Neti admission, strict API, query-first recovery | Python service; separate Python and plain CommonJS network clients |
++| Preparation worker | Provider-specific request preparation | Isolated frozen SDK/LiteLLM or qualified Duranki adapter; no provider secrets or direct egress |
++| Plan authority, final guard, trusted sender | Neti binding, durable commitment and first-write freshness | Duranki-owned trusted modules; common enforcement contract, protocol-specific qualification |
++| Source/configuration registries | Nabu inventory, API setups, operation permissions, grants and approvals | Durable versioned management records |
++| Route ranking | Ninshubur eligible-candidate ordering and explanations | Deterministic rules first; later qualified predictors |
++| Ledger / financial authority | Nisaba immutable events, usage revisions, reservations and exposure | SQLite standalone; **PostgreSQL production ledger**; mutable operational state separated by privilege |
++| Shared-state coordination | Replicated ownership/authority where introduced | Redis remains a target choice, not the ledger or independent spend authority |
++| Console / reports | Configuration, controls, usage, outcomes and coverage | Authenticated Duranki API/UI; isolated demonstrations |
++| Tracing / metrics | Correlation and diagnostics | Langfuse, OpenTelemetry Collector, Prometheus and Grafana remain target choices |
++| Serving / scheduling | Model serving, cache-aware placement and capacity | vLLM/SGLang and orchestration selection remain open |
++| Lab controls | Capacity leases, presence priority, reservation/drain | Separately qualified capability, §7 |
++| Evaluation | Shamash datasets, outcome checks and promotion evidence | Offline/workbench jobs; Jev remains a candidate |
++| Credential custody | Write-only setup and restricted sender secret resolution | Local test profile distinct from production secrets-system selection |
++| External observations | Offline spending import and later independent observations | No provider-send or budget authority conferred by import |
++
++The two preparation lanes share the same trusted plan/guard/sender obligations. A different protocol may require another qualified sender, not a hook-based bypass. Target product choices do not require installation during a synthetic extension. Dated component evidence is in the assurance register.
+ 
+ ### 4.2 Duranki agents
+ 
+-The names come from one mythology, Mesopotamian, as the naming convention requires. *Duranki — Components and Legends* tells each myth in full.
+-
+-| Agent | Legend | Component(s) | Limit |
+-|---|---|---|---|
+-| **Duranki** | "Bond of heaven and earth": the sacred precinct at Nippur | The whole system | — |
+-| **Neti** | Gatekeeper of the underworld, who admits Inanna through seven gates and takes something at each | Mandatory admission, signed plans, final-dispatch check, presence, leases, lab policy | Admits and checks; does not rank or choose |
+-| **Ninshubur** | Inanna's minister, who follows a pre-agreed list of gods to appeal to until one can help | Optimization plugin, cascades and escalation, feature extraction | Chooses only among destinations Neti admitted, in the plan's order |
+-| **Nisaba** | Goddess of grain, writing and accounting, given the measuring rod and line | Ledger, dispatch intent, cost views, reconciliation | Records; does not decide |
+-| **Shamash** | Sun god of justice who sees everything; gives Hammurabi the laws | Evaluation, acceptance judging, non-inferiority and floors, learning loop | Judges against the standard; does not approve or route |
+-| **Nabu** | Scribe god, keeper of the Tablet of Destinies | Approved-configuration registry | Records approvals Shamash's evidence and an owner support; never self-approves |
+-
+-The five names denote architectural responsibilities, not permission for autonomous LLM agents to alter enforcement or financial records. Neti's deterministic authority validates and signs admitted work; Ninshubur supplies a bounded selection proposal. Nisaba's measurements do not confer authorization, and Shamash's evidence does not self-promote a configuration. The runtime can implement several roles in one trusted service while maintaining these ownership boundaries.
++The five names denote architectural roles, not autonomous permission to alter policy or money. Their Mesopotamian stories remain in *Components and Legends*.
++
++| Role | Function | Limit |
++|---|---|---|
++| **Neti** | Admission, signed authority, final guard, sender freshness and capacity/lab checks | Enforces eligibility; does not optimize by relaxing it |
++| **Ninshubur** | Rank the candidates admitted by Neti; explain rules and qualified recovery choices | Proposes an order **before** trusted plan issuance; cannot mint authority |
++| **Nisaba** | Durable events, dispatch/usage evidence, financial exposure and projections | Accounting evidence does not grant access |
++| **Shamash** | Evaluation, acceptance measurement and non-inferiority evidence | Supplies evidence; does not self-promote configurations |
++| **Nabu** | Source, operation, grant and approved-configuration registries | Records approvals supported by evaluation and the named owner; never self-approves |
++
++Several roles may run in one trusted service; their authority boundaries still apply.
+ 
+ ### 4.3 LiteLLM verification and built-in routing
+ 
+@@ -323,7 +220,7 @@
+ 2. **Controlled builds.** Build Duranki-owned images from reviewed source and explicitly approved frozen distributions, offline where supported. Record source, package, platform and image correspondence; do not describe an installed publisher wheel as a source-rebuilt dependency. Runtime startup does not acquire packages.
+ 3. **Controlled adoption.** Record advisory review, artifact inspection, changes, tests and a soak decision; urgent vulnerability exceptions require a recorded owner decision (test 41). No upgrade is part of this architecture edit.
+ 4. **Separate egress and authority.** The worker cannot open a provider path or read provider keys. The trusted sender permits only contract-bound endpoints and request bytes; telemetry services reach only approved stores. Host allowlisting alone cannot stop misuse of an allowed provider endpoint (test 38).
+-5. **Credential custody.** Production credentials belong in an approved secrets system, readable only by the narrowly authorized trusted credential/sender runtime. Local personal-test custody remains a separately scoped profile. Rotate on an approved schedule and on suspected exposure; revoke old access under explicit lifecycle controls and invalidate dependent queued plans. Where upstream provider revocation is required, record its separate confirmation rather than assuming a local secret replacement revoked the provider key (test 39).
++5. **Credential custody.** Production credentials belong in an approved secrets system, readable only by the trusted credential/sender runtime. Distinguish logical binding, authorization/account-scope revision and secret-material revision actually used. A future qualified same-scope rotation may resolve new secret material at send time only after endpoint/account/project/permission/handling equivalence is established and the used revision is safely recorded. Unknown equivalence, changed scope, compromise or revocation blocks/revalidates queued work. Until qualified, preserve the stricter existing revision checks. Local replacement and upstream revocation have separate evidence (T-39/T-45).
+ 6. **Inventory and response.** Keep component/artifact inventories, security ownership and a tested disable/rollback procedure. On suspected exposure, pause affected paths, preserve evidence and assess reachable secrets; rotate potentially exposed credentials. A clean frozen-input check is not a host-wide forensic audit.
+ 7. **No blind recovery.** Rollback does not re-enable revoked grants, reset unknown exposure, discard usage revisions or authorize a dependency version with an unresolved security disposition. No verified safe build means fail closed or use an independently qualified replacement.
+ 
+@@ -371,19 +268,28 @@
+ 
+ ### 4.7 Selected commercial-router patterns
+ 
+-These are design patterns to adapt, not new product dependencies or declarations of implemented parity. Official documentation supports the examples in §20.3; Duranki's requirements and gates below are our design choices.
+-
+-| Pattern / example source | Duranki adaptation | Gate / limitation |
+-|---|---|---|
+-| Governed provider/model catalogue — Portkey [E2] | Source-centred setup, account scope, credential status, inventory and explicit permissions | Discovery is not approval; no universal-protocol claim |
+-| Capability/provider filters — OpenRouter [E1] | Require operation, parameters, output and handling compatibility before ranking | Preserve-or-reject, never silent parameter removal |
+-| Scoped credentials and limits — LiteLLM [E3]; budget scopes/alerts — Vercel [E5] | Expiring application credentials, visible budget scopes and configurable alerts | Extend existing principals; local atomic exposure semantics are not replaced by soft-cap semantics |
+-| Versioned routes — Cloudflare [E4] | Named policy drafts, preview, reviewed publication, rollback and explanations | Preview does not execute or grant authority; live changes still meet §§11–12 |
+-| Health and cooldowns — LiteLLM [E3] | Per-setup/per-operation availability and circuit-breaker controls | No health bypass of permissions; separately qualified bounded fallback |
+-| Workflow inspection and trace correlation | Build on the existing Duranki timeline; retain the Langfuse/OpenTelemetry target choices | Sampling never removes ledger obligations; content handling unchanged |
+-| Application evaluation for routing — Not Diamond [E6] | Fixed datasets, candidate comparisons and an eventual evidence-driven predictor | No learned production promotion before confirmation and owner approval |
+-
+-External response/semantic caching, an elaborate visual policy language, unrestricted plugin execution and a general prompt-management product are deferred. The named policy interface starts with a readable rule table and explicit versions, not a new programming platform.
++Retain the useful patterns identified in the supplied comparison: governed source catalogues and scoped keys; capability filters; budget scopes and alerts; named versioned policy drafts/preview/rollback; operation-level health/cooldowns; workflow inspection; application-specific evaluation. Their provenance remains in the preserved v1.2 §20.3; this correction does not reverify commercial products.
++
++Duranki's adoption conditions govern each pattern: discovery does not grant access; unsupported parameters are preserved or rejected; alerts do not replace financial reservations; preview does not send; cooldown never widens permissions; trace sampling does not remove ledger obligations; evaluation cannot self-publish a policy. External caching, arbitrary plugins, an elaborate policy programming language and general prompt management remain deferred.
++
++---
++
++### 4.8 Independent state dimensions
++
++Each dimension changes only on its own authorized event/evidence; none is a single “ready” state implying all others.
++
++| Dimension | States / transition rule |
++|---|---|
++| Source/setup lifecycle | Draft → enabled by explicit approved management action; disable/archive through revisioned action. Re-enable requires current checks, not page refresh. |
++| Credential evidence | Saved/unchecked → verified or failed by explicit scoped check; time, material rotation or scope change makes prior evidence stale. Saved is not verified. |
++| Inventory coverage | Not discovered → complete-within-declared-scope, partial or failed by explicit discovery; retain last evidence/time and current completeness separately. |
++| Permission / quality | Explicit allow/revoke and approved/withdrawn configuration are independent versioned authorities. A credential success does not change either. |
++| Attempt observations | Admission/intent → final commitment → possible first write → response/failure/unknown, only as observed. Durable no-send proof must also exclude delayed release. Later receiver evidence is append-only, not invented from a local write. |
++| Cancellation | Requested → confirmed/unresolved only on contract-qualified evidence; local closure cannot imply provider stop. |
++| Usage / settlement | Immutable field evidence and usage revisions (§10.2); sufficient complete evidence permits once-only financial adjustment. Unknown/partial evidence retains relevant exposure. Later correction replaces the effective revision, not the historical row. |
++| Attribution coverage | Registered, source-identified, instrumented and observed-active are independent evidence facts. Period-specific idle requires known coverage; absence of activity without coverage remains not measured/unknown. |
++
++Reclassification, late observations and corrections append facts with their own time and provenance. Read paths select an authorized cutoff without modifying execution or financial state.
+ 
+ ---
+ 
+@@ -412,7 +318,9 @@
+ 
+ Admission is mandatory in every phase. **What each control enforces depends on the phase's admission profile**, which states explicitly which guarantees are active. The inherited phase profiles below are target assurance levels, not a summary of which development slices have run.
+ 
+-**Bounded personal-test profile.** DEV-10/11 demonstrate a narrower, separately gated allowance mechanism: one qualified request recipe, exact rate/usage contract, atomic per-attempt reservation, finite count/expiry/concurrency and unknown-exposure handling in the standalone deployment. That does not establish all Phase 1b obligations, a multi-replica guarantee or an account-wide provider cap. New operation types do not inherit paid eligibility from this text profile. [S5]
++**Standalone assurance profile.** A declared single-authority local deployment with installed supported clients, authenticated service, isolated worker, trusted guard/sender, durable SQLite accounting and explicitly qualified synchronous operations. Its threat boundary includes untrusted callers and arbitrary preparation-worker behavior, but not a compromised trusted host/kernel or a distributed authority service. The profile manifest names operation, schema, adapter, lifecycle, transport and build. Unknown/new operations reject. §15.2 defines its exit; production phase gates remain separate.
++
++**Bounded personal-test extension.** One exact qualified recipe/price/usage contract, finite count/expiry/concurrency and atomic monetary reservations with unknown-exposure handling. Paid eligibility is separately activated and does not cover unrelated account spend. Synthetic retrieval does not inherit commercial eligibility from bounded text. [S5]
+ 
+ | Control | Phase 1a profile | Full profile (1b onward) |
+ |---|---|---|
+@@ -430,7 +338,8 @@
+    - The **orchestrator** performs monotonic taint tracking: every tool result, retrieved document and attachment carries its source's sensitivity and client-specific restrictions; a context's handling policy combines all of them and never weakens.
+    - The **gateway** enforces structural guards: PII and secret scanning, rejection of untagged tool results and content blocks, payload validation.
+    - Classification is a **deterministic, locally evaluable rules engine** (label inheritance, patterns, allowlists) with a named owner, a labelled test corpus, and minimum bars on false negatives (missed sensitive content) and false positives. Model-based signals are auxiliary only.
+-   - **Handling policy is the combination of applicable restrictions**, not only the maximum sensitivity level.
++   - **Handling policy is the combination of applicable restrictions**, not only the maximum sensitivity level. Search queries disclose content and intent. Audio relies on qualified source labels and operation-specific classification; unavailable scanning does not waive a required check.
++   - **Opaque provider-side compaction inherits the union of all input taints and restrictions and the strictest applicable retention.** Loss of inspectable text, encryption or a provider reference does not declassify the content. Unsupported handling fails closed; this is a present handling rule, not a deferred experiment.
+ 4. **Purpose.** Trusted purpose on every request: `execution`, `feature_extraction`, `verification`, `judging`, `evaluation`, `replay`. Supporting purposes follow fixed policies: no recursive optimization, no cascades.
+ 5. **Derived-call inheritance.** Requests derived from another (verifier, judge, feature extraction including Jev, distillation, summarization) inherit the source's handling policy combined with their own. Feature-extraction and judge templates are reviewed as **policy artifacts**.
+ 6. **Destination and operation permission** per source, account/API setup, service endpoint, operation, inference profile, model and processing geography. Explicit source permission and a current principal/delegation grant are both required; neither replaces quality approval. Above public sensitivity, marketplace inference profiles must be region-pinned. Residency, export-control and per-client attributes are part of this record.
+@@ -456,44 +365,32 @@
+ 
+ ### 5.3 Execution plan
+ 
+-The plan is **signed by the trusted plan authority** within Neti's control boundary and authorizes only the admitted work. Ninshubur may propose an eligible ordering but cannot mint new authority, change admitted work or hold the signing secret in the isolated worker. The authority validates the selected policy result and issues the plan even when optimization is skipped. This makes the signing responsibility explicit; it does not change adopted signature/wire formats by itself.
+-
+-**Binding (two levels):**
+-
+-- **Canonical-work binding:** authenticated principal, purpose, `task_id`, `step_id` + revision, `execution_generation`, and the **canonical pre-adapter request** under its explicit schema. The operation-aware successor additionally binds operation type/version, authenticated delegation and charging context, selected account scope, typed payload/ordered inputs, constraints and required compatibility references. Text retains messages, tools, attachments and generation settings; vectors, audio and media use their own typed contracts. Non-semantic trace IDs and diagnostic timestamps are excluded, but safety-relevant expiry, billing-period or pricing conditions must be bound or resolved through signed references.
+-- **Compatibility:** these are architectural field requirements, not permission to add unknown fields to strict wire `0.2` or recompute historical hashes. A successor contract must specify exact projection/domain separation, client validation and migration tests. [S2]
+-- **Candidate preparation:** for each authorized deployment, the adapter version from `prompt_adapter_map`. The prepared request for a candidate is produced deterministically from the canonical work and its adapter, and validated by the final-dispatch check **after all preparation and callbacks**.
+-- **References:** a versioned reference is bound as reference plus content version; an unversioned reference must be materialized and hashed. Mutable provider-managed state requires an immutable version or a controlled resolution rule.
+-
+-| Field | Purpose |
+-|---|---|
+-| `plan_id`, `signature`, `expires_at` | Identity, integrity, validity; policy or permission changes revoke the plan |
+-| Canonical-work binding | As above |
+-| `purpose`, `task_class`, `step_class` | Validated values that cannot drift between admission and dispatch |
+-| `classification_snapshot` | Level, combined restrictions, content hash, rules-engine version — **audit only**; the FDC uses current classification |
+-| `quality_approval_ref` | Approved configuration(s) in effect |
+-| `deployment` | Exact source/API setup and execution endpoint; model/service identity, version, pool and quantization where applicable |
+-| `permitted_fallbacks` | Ordered, each admitted; empty for pinned mode; same-deployment only for spine steps |
+-| `prompt_adapter_map` | Adapter version per candidate deployment |
+-| `capability_profile_version` | |
+-| `policy_version`, `recovery_policy_version`, `registry_version` | Checked at final dispatch |
+-| `predictor_version`, `feature_extractor_version` | If used |
+-| `failure_action_map` | Which failures permit transport retry, permitted fallback, return-to-orchestrator, or termination |
+-| `verifier_spec` | Tier 1 structural check the gateway may run |
+-| `originating_step_id`, `minimum_tier` | For escalation attempts |
+-| `per_attempt_ttft_timeout_ms`, `per_attempt_total_timeout_ms` | Prevent one hung attempt consuming the task deadline |
+-| `deadline` | Remaining task deadline |
+-| `retry_allowance`, `escalation_allowance` | Separate budgets (§8.3) |
+-| `max_output_tokens` / operation-specific limits | Text output cap or the qualified operation's bounded quantities, set before dispatch; no generic token coercion |
+-| `budget_reservation_id`, `financial_scope` | Authorized **total** charge (input, output, reasoning, cache writes and any other enabled billable component) for the attempts covered; when a fresh atomic reservation is required |
+-| `lease_token` | Capacity lease; ownership may expire, capacity released only per §6.7 |
+-| `cancellation_token` | |
+-| `cache_hint` | `session_id` and stable-prefix information for the serving layer |
+-| `retention_class` | What may be persisted for this attempt, at every persistence boundary |
+-| `streaming` / lifecycle profile | False for the current text path and internal cascade steps; any stream/session/async-job profile requires separate qualification |
+-| `decision_record` | Candidate set, scores, propensity, reason (stored in the ledger) |
+-
+-**Additional successor-plan requirements:** operation contract/version; request and response schema identities; usage-semantics and price-function versions; exact source/account and source-permission revision; grant/delegation and credential-binding revisions; unit/resource bounds; index/artifact/session compatibility references; and the financial reservation scope. Names are provisional until the successor contract is reviewed. Do not reuse `attempt_id` as an operation type or treat a registry `operation_id` as a new provider attempt.
++Neti's trusted plan authority validates any proposed candidate order and signs admitted work. The isolated worker holds neither the signing secret nor provider credentials. Binding has two levels: server-authoritative canonical work, then independently validated final prepared bytes/transport controls for each allowed candidate.
++
++**Successor binding decision (M-06/F-01).** The next operation contract includes the common envelope in §9.4 in the **same** versioned change as operation type/version and native usage. It is not an unscheduled later metadata profile. Exact serialization/schema identifiers and golden vectors are entry work for DEV-12; they cannot be invented by silently extending wire `0.2`.
++
++| Data | Binding location and rule |
++|---|---|
++| Authenticated principal, task/step/revision/execution generation, charging owner and validated current actor | Canonical work in their trusted namespace; assertions must match the chosen authentication/binding profile |
++| Operation `{type, version}`, request schema, ordered payload, purpose, settings, limits, compatibility references | Canonical work; operation-domain-separated digest; exact supported fields only |
++| Commission reference, its **admission-time** status and absence reason | Canonical shared envelope, even while record-only; mutation conflicts with admitted work |
++| Delegation chain, its **admission-time** coverage/status and absence reason | Canonical shared envelope, preserving order and asserted-versus-verified provenance; not implicit authority |
++| Activation epoch and its absence reason | Signed execution-context envelope in the plan, **not** the logical-work/deduplication key; scoped to the current actor/activation and rechecked when enforcement is enabled |
++| Logical-effect reference | Derived from the full authenticated work namespace (§8.2), or a separately qualified non-step identity contract; no bare global generation string |
++| Policy, recovery, registry, source permission, grant/delegation, credential-scope, price/usage contract references | Signed plan/immutable trusted references; the named revision vector and live checks govern first write (§5.4) |
++| Trace IDs, diagnostic timestamps, later verification events and actual secret-material revision | Correlated evidence outside canonical work; retained under policy; later events never rewrite the admitted snapshot |
++
++**Why activation is separate:** fencing an old activation must not automatically create another logical effect or release old exposure. A new activation context requires fresh trusted authority, and can never replay work whose transmission is possible or unknown. The successor includes this signed field from its first version, so later activation enforcement need not change the work identity. No new execution is authorized merely by reconnecting.
++
++The admitted commission/delegation snapshot is immutable. Later verification is a linked observation with its own time/evidence, not an in-place upgrade of historical authority. Duplicate lookup preserves the original accepted projection; changed bound assertions under the same WorkKey conflict. Any authorized replacement dispatch context must preserve work identity, durable no-repeat ownership and exposure.
++
++**Settings.** Bind applicable reasoning effort/thinking mode, service tier and provider context-management/compaction configuration, with explicit resolved defaults. Record requested and effective values separately; unexpected semantic/tier substitution is rejected or becomes an explicit discrepancy under the selected contract. Explicit cache TTL/key/content-reference controls, when enabled, are signed semantic controls with complete pricing/handling semantics. DEV-11 remains implicit-only.
++
++**References and preparation.** Immutable references bind identity and content version/digest; mutable references must be materialized or resolved by a qualified versioned rule before binding. The candidate adapter is a versioned transformation of the admitted request. Independent final validation occurs after all callbacks. Silent semantic parameter dropping is prohibited.
++
++The signed plan additionally includes plan ID, signature/expiry, exact source/account/deployment/model or service version and processing geography, candidate adapter map, capability and quality-approval references, failure/retry/escalation policy, deadline and per-attempt timeouts, all operation bounds, budget account/reservation and authorized financial scope, capacity lease where applicable, cancellation linkage, retention class, lifecycle profile and decision record. Pinned work has no model alternatives; spine rules remain §6.6. Classification snapshots are audit evidence; final checks use current restrictions.
++
++Operation type, operation-contract version, execution attempt and administrative command/idempotency identity are distinct. Inspect the existing registry field before selecting an additive management-field rename; no legacy field is repurposed by this architecture.
+ 
+ ### 5.4 Final-dispatch check and authorization point
+ 
+@@ -510,7 +407,13 @@
+ 
+ Any failure → replan via the orchestrator, or explicit failure.
+ 
+-**Authorization point and first-write boundary.** An attempt has durable dispatch authorization when its final commitment is persisted after a passing FDC. That commitment alone is not a send. If the request then waits for a pool, connection, socket or other lower resource, the trusted sender must recheck current authority after those waits and serialize the effective revocation/deadline check with its qualified first application-request write. A new wait or would-block result cannot carry stale permission into a later first write. The bounded Choice B evidence is the precedent for this requirement. [S3]
++**Authorization point and Choice B first-write fence.** Persist the final dispatch commitment after a passing FDC. The selected standalone serialization point is the trusted sender's **Choice B first-write fence**, not an earlier hook or a revision comparison alone. Authority-changing transactions and first application-request release pass through the same trusted local gate. After all resource/readiness waits, the sender enters that gate, checks a coherent current authority view plus deadline, unused send ownership and sufficient reservation, and performs the qualified nonblocking first-write operation without a later unguarded wait. A would-block/no-acceptance result releases the gate, waits outside it and repeats freshness checks. Positive partial acceptance consumes first-send authority; only the unsent suffix of that same attempt may continue under its qualified in-flight semantics. [S3]
++
++A local revocation becomes effective when its authority-record and corresponding named-revision changes commit **inside that fence** and the sender's authoritative view is updated. Acknowledge effectiveness only afterwards. Failed/uncertain update or restoration fails closed until consistency is recovered. Connection, response and drain waits do not hold the revocation gate. A crash after a possible send preserves uncertainty and exposure; absence of a later write receipt cannot justify replay.
++
++**Authority revision vector.** This is a coherent snapshot of the existing applicable named revisions—policy, recovery policy, registry/configuration, source permission, principal/grant/delegation, credential authorization/account scope, and price/usage-contract eligibility—not an additional master counter. Qualified commission and activation inputs join when enabled. A vector comparison can identify invalidation, but does not replace the fence, expiry, remaining balance, capacity or single-send ownership checks. Preserve implementation-private legacy counters and current strict checks until their explicit successor is tested. Publication, rotation and effective revocation follow their own contracts; rollback cannot resurrect revoked authority.
++
++This local Choice B mechanism is the concrete standalone boundary. A PostgreSQL/replicated authority must separately qualify an equivalent end-to-end release fence, coherent revisions, atomic reservations and ownership recovery. A per-process lock or a shared version store alone is not the distributed proof.
+ 
+ An effective revocation before first transmission blocks queued unsent work even when a commitment exists; the qualified sender defines and records the local authority-ordering boundary. A revocation after transmission does not recall bytes already accepted by the transport; cancellation is best-effort under the qualified lifecycle and exposure remains until justified settlement. TLS handshake traffic, local acceptance of application bytes, remote receipt and billed execution must not be conflated. A new protocol needs an equally explicit boundary and evidence; the plaintext/TLS development observations do not automatically qualify HTTP/2, WebSockets, multiplexing or asynchronous jobs.
+ 
+@@ -529,7 +432,7 @@
+ 
+ ### 5.5 Approved-configuration registry
+ 
+-An **approved configuration** = source/API setup + deployment/model/service version + operation contract + applicable quantization/pool + request/output adapter + verifier + recovery policy + consumption/compatibility contract (where applicable), approved for a task class. Price and usage contracts are versioned financial eligibility dependencies; a price update does not itself supply quality approval.
++An **approved configuration** = source/API setup + deployment/model/service version + operation contract + applicable quantization/pool + request/output adapter + reasoning effort/thinking mode + service tier + context-management/compaction configuration + verifier + recovery policy + consumption/compatibility contract, approved for a task class. Inapplicable settings are explicit; applicable defaults are resolved. Requested/effective tier and effort remain distinguishable. A changed model/effort/adapter/compaction combination does not inherit quality approval from its display name. Price and usage references are financial eligibility dependencies; tier also affects the qualified lifecycle and latency.
+ 
+ | Lifecycle step | Rule |
+ |---|---|
+@@ -573,31 +476,13 @@
+ 
+ The reusable core supplies identity, permissions, binding, reservations, ledger revisions and projections. An adapter supplies protocol preparation and normalization under one reviewed contract. It cannot assign authority, make missing measurements zero, create an unrecorded extra request or erase unsupported fields to obtain a response.
+ 
+-**DEV-11 preserved profile.** `openai.responses.implicit-cache.v1` with usage semantics `openai.responses.text.cache.v2` admits only the documented bounded text recipe: exact requested/returned model, one reviewed price tier, provider-enforced context ceiling, bounded output, `temperature:0`, `store:false`, nonstreaming system/user text, implicit/default 30-minute cache assumptions, no enabled 12-hour writes, tools, explicit cache controls, retries or fallbacks. Its four rates and required field-presence checks are not general claims about all OpenAI models or other providers. A commercial model that cannot meet that contract remains ineligible; this revision does not loosen it to make a test run. [S5]
++**Legacy and DEV-11 compatibility.** Retain the strict adopted wire/projection/profile unchanged, including caller-owned tool-cycle semantics; do not map every historical request to plain `text.generate@1`. Preserve the exact DEV-11 implicit-cache contract [S5] as a narrow eligible text recipe, with its four rates, disjointness/completeness rules, highest-input-rate context bound and no enabled explicit cache controls, tools, fallback or retry. A commercial model outside that contract remains ineligible. New operations use the reviewed successor, not a permissive legacy wrapper.
+ 
+ ### 5.8 Operation coverage and extension disposition
+ 
+-The following reflects the **static** 25 October reconnaissance, not a live utilization census. Named vendors/models in source are configuration candidates, not selected execution targets or approved rates. [S4]
+-
+-| Family | Source-observed operation | Architectural treatment / next scope |
+-|---|---|---|
+-| MS-01 | Text/chat, structured tools and LLM-based classifiers/coding | Extend selected nonstreaming adapters separately; streaming/tool cycles need lifecycle qualification. Current bounded Responses text is not full family support |
+-| MS-02 | Voyage document/query embeddings | First synthetic extension; typed batches, role, vector-space/dimension and corpus-version compatibility; native usage |
+-| MS-03 | Voyage reranking | First synthetic extension; separate attempt, candidate identities/order, ranking semantics and independent usage |
+-| MS-04 | Anthropic image understanding / extraction | Multimodal LLM operation; input constraints, source handling and text result; not evidence of a dedicated OCR service |
+-| MS-05 | Batch/chunk transcription via several APIs | Native audio/usage contract, stable chunk identity, duration and billing semantics, independent retries |
+-| MS-06 | Speech synthesis | Native usage and binary-artifact lifecycle; voice/version/format compatibility |
+-| MS-07 | Stateful realtime voice | Session/turn/chunk identity, reconnect, cancellation and partial-usage exposure before controlled execution |
+-| MS-08 | Image generation and media persistence | Separate generation charge and artifact retrieval/persistence outcome; never regenerate implicitly after download failure |
+-| MS-09 | Model-hosted web/X search | Model usage plus any separately charged hosted-tool components; citations and fee completeness |
+-| MS-10 | Academic search APIs | Adjacent service, not invented LLM identity; observation first until billing and exact request control are qualified |
+-| MS-11 | Vector retrieval and precomputed corpus | Local/database work and separate resource/allocation observations; previous ingestion not recharged as a fresh query attempt |
+-| MS-12 | Bud external executable/ACP | Observation-only until trusted upstream transport ownership and accounting are established; no finite-spend enforcement claim |
+-| MS-13 | Local PDF text extraction | No model route; optional local resource record; later model work is a separate operation |
+-| MS-14 | GIF/media search API | Deferred adjacent service pending billability and usage evidence |
+-| MS-15 | Pure local heuristics/scoring | No model route; do not classify as paid inference from its name |
+-
+-The first slice is deliberately not all fifteen families. Dedicated moderation, standalone translation, image editing, video inference and active local model invocations were not found in the inspected scope; that is not proof of universal absence. Dynamic plugins and the external executable remain unresolved.
++The source recce identifies fifteen families, not fifteen enabled adapters. The roadmap retains their individual coverage and priority. The contract framework covers text/tool generation, embeddings, reranking, vision, transcription, synthesis, realtime voice, image generation and hosted search. Adjacent search and opaque external execution require separate observation/control contracts. Local vector retrieval, parsing and heuristic work are not fabricated as paid model calls.
++
++The first synthetic extension is embedding plus reranking because it exercises typed non-text output, independent permissions, index compatibility and shared-ingestion accounting without media/session machinery. This is an engineering sequence, not a measured spend ranking. Discovery of an API or source call does not enable its execution.
+ 
+ ### 5.9 Retrieval compatibility and operation-specific boundaries
+ 
+@@ -650,6 +535,17 @@
+ - Cheap routing of any leaf trajectory step requires an explicit **consumption contract** (independent verification, advisory-only use, retained citations, or approval before consequential action) **and** a passing quality gate for the complete parent–leaf policy. Isolation alone does not establish safety; accepted residual risk is stated.
+ - **Data-readiness threshold:** ~500 labelled outcomes per step type before learned routing is considered. A readiness threshold, not an approval.
+ 
++#### Compaction classes
++
++| Class | Treatment |
++|---|---|
++| Deterministic masking/clearing | Transformation only where required reasoning/actions remain verbatim and the original payload remains retrievable under lineage and access policy; batched/thresholded changes are versioned |
++| Spine-history summary | State-altering; orchestrator-owned with explicit recovery, acceptance and approved configuration |
++| Inter-agent handoff summary | State-altering unless a qualified structured/citation-preserving consumption contract establishes the needed guarantees |
++| Provider context management | Configuration component with supported controls, usage, handling and lifecycle semantics |
++
++All retain source restrictions, especially opaque compaction (§5.1/§13). Record attributable compaction work and whole-task consequences; adding a purpose value requires a versioned contract, never silent wire-0.2 expansion. Prefer original retained evidence over recursively summarizing lossy summaries. **Deliberate departure from P1 item 10:** recursive compaction is prohibited by default, not universally; an exception requires its own reviewed transformation, provenance/retrievability, handling and parent-task quality evidence. No exception is enabled by this correction.
++
+ ### 6.4 Cost decision rule
+ 
+ For a direct choice between a cheaper and a stronger approved configuration, route cheaper when:
+@@ -658,7 +554,11 @@
+ 
+ - `p` is keyed by **deployment**.
+ - This simplified form omits the stronger option's own failure and recovery terms. It is used **only where those terms are empirically immaterial**; otherwise compare the complete expected costs of both approved execution policies.
+-- Costs use the avoidable incremental view, including cache state and switching cost.
++- Costs use the avoidable incremental view, including whole-leaf/whole-session turns, verification/recovery, cache-state and switching/re-warming effects counted **once**. Candidate quantities that already include re-warming must not receive the same surcharge again.
++
++**Prediction inputs** include qualified model/adapter/effort/tier/context-management identity, native rate function, observed cache-domain scope, prefix/version change, elapsed gaps, serving telemetry where available, evidence age and uncertainty. A cache-state estimator is a prediction component, not authority over a provider's physical cache. Unsupported or stale inputs remain uncertain; no guessed cache hit reduces the proven reservation.
++
++Keep three outputs separate: `predicted_cost` for ranking; `maximum_exposure` for admission; and `observed/calculated/reconciled_cost` for settlement/reporting. An expected or percentile cost score is never a hard maximum. Predictions are evaluated against complete comparable tasks before routing promotion.
+ 
+ ### 6.5 Feature extraction and learned predictor
+ 
+@@ -671,8 +571,9 @@
+ | C. Local embedding classifier + head | Whether cheap local semantics suffice |
+ | D. Jev features + head | Whether Jev adds decision value |
+ | E. Jev offline as teacher → distilled local classifier; Jev online only for rare step types | Hybrid; offline labelling cost amortized into per-call cost |
+-
+-**Falsification:** Jev is not adopted online unless it improves cost per accepted task at equal quality and within the latency budget after its own cost and latency. Jev outputs are features or identified teacher signals, **never task-success labels**.
++| F. Simple k-nearest-neighbour baseline | Later comparison candidate; no new dependency or online activation in DEV-12 |
++
++**Selection:** screen all candidates for the required non-inferiority and absolute floor first; then compare cost per accepted task, latency, overhead and stability. Jev is not adopted online without incremental value after its own costs. Its outputs are features or identified teacher signals, never task-success labels. The original five candidates remain, with the simple kNN baseline added for comparison.
+ 
+ **Jev rules:** called only through the gateway with `purpose = feature_extraction`; subject to admission and inheritance; its outputs inherit source retention (§13.1); not in the synchronous path by default; if online, at subtask boundaries, cached while input is unchanged, skipped when deadline is insufficient.
+ 
+@@ -687,6 +588,8 @@
+ - **Eligibility can shrink mid-spine** as tainted content arrives: forced re-route, orchestrator notified, cache loss accepted.
+ - **Cross-family migration** requires transcript normalization in adapters; fault-tested.
+ - **Replica/cache affinity** belongs to the serving layer's prefix-cache-aware scheduler.
++- Define a versioned **cache-domain identity** from the qualified serving provider/account/isolation scope, endpoint/region, model/configuration/adapter, security domain and supported cache-control semantics. Only include attributes whose meaning the selected contract establishes. Affinity is a placement preference, not a promise of residency or cross-domain reuse.
++- Preserve an eligible incumbent deployment/adapter on replanning where possible. Deferring a non-security publication to a subtask boundary requires a qualified version policy; it never defers effective revocation or relaxes current DEV-10/11 checks.
+ 
+ ### 6.7 Capacity, leases and overflow
+ 
+@@ -694,7 +597,7 @@
+ - **Overflow chain:** lab (if eligible) → cloud self-hosted (if headroom) → cheaper frontier → expensive frontier (if approved and permitted).
+ - **Admission by load below a threshold**, estimated from uncached input work, expected output work, active decode load, KV-cache occupancy and TTFT, against a defined per-pool capacity denominator that accounts for long-lived spine sessions. GPU utilization is diagnostic only. Hysteresis initially 80% stop / 60% resume.
+ - **Leases:** acquired at admission and renewed per attempt while server-confirmed work is active. **Lease ownership may expire; capacity is reclaimed only on server-confirmed completion or confirmed cancellation**, never on failover alone.
+-- **Stale telemetry** stops new admission to that pool.
++- **Stale telemetry** stops new admission to that pool. Cache residency estimates carry age and uncertainty; capacity still requires physical resource evidence. CPU-KV tiering and preemption by recompute cost are deferred to a selected serving stack; they do not change T-33 by assumption.
+ 
+ ### 6.8 Recovery policy
+ 
+@@ -739,7 +642,7 @@
+ - If the origin is an office LAN subnet, the agent framework ingress issues a **signed office-origin attribute** bound to issuer, gateway audience, authenticated principal and `session_id`, valid for 8–12 hours. VPN address pools and lab-hosted orchestrator addresses never confer presence.
+ - Where a web backend proxies to the agent framework, the web tier's edge observes and signs origin, and the attribute propagates. Where no trusted edge faces the human, presence is **unavailable** (a stated limitation).
+ - The gateway trusts only valid signed attributes for the session they were issued to. They are never carried in OpenTelemetry baggage.
+-- **Key management:** signing keys held in a managed key service, rotated on a schedule, minting restricted to the ingress; gateway components hold verification keys only. *Phase 1a.*
++- **Key management:** signing keys held in a managed key service, rotated on a schedule, minting restricted to the ingress; gateway components hold verification keys only. *Required at first reliance on office-origin priority; the standalone profile has no such production claim.*
+ 
+ | Class | Who | Admission |
+ |---|---|---|
+@@ -792,20 +695,24 @@
+ 
+ ### 8.2 Identity levels
+ 
+-| Identity | Created by | Meaning |
+-|---|---|---|
+-| `step_id` + revision | Orchestrator | The logical work that may publish exactly one accepted result |
+-| `execution_generation` | Orchestrator | A particular authorized invocation; a new generation for each authorized escalation or orchestrator retry. **The idempotency key.** |
+-| `attempt_id` | Gateway | A particular provider dispatch within a generation |
+-| Provider request ID | Provider | Reconciliation |
+-
+-A repeated submission of the same authenticated work key and execution generation with identical canonical work is deduplicated. Conflicting work under that key is rejected, not substituted. An authorized escalation is a new generation and is never deduplicated into the rejected result. Existing composite-key semantics remain authoritative; a bare generation string is not a cross-principal global key. [S2]
+-
+-Operation type identifies **what** is requested; it is not an execution identity. Session, chunk, batch-item or asynchronous-job IDs are introduced only by the corresponding lifecycle contract and link to the work/generation/attempt hierarchy. Provider request IDs are correlation evidence, not client-supplied authority.
++| Identity | Owner and meaning |
++|---|---|
++| Principal/task/step/revision | Authenticated namespace of logical work and caller-owned acceptance |
++| Execution generation | A particular authorized invocation; escalation creates a new generation |
++| `WorkKey` | `(principal_id, task_id, step_id, step_revision, execution_generation)`; canonical-work equality additionally required for deduplication |
++| Attempt ID | Gateway identity of one permitted provider dispatch; each retry/fallback, when enabled, is separately accounted |
++| Provider request ID | Provider correlation/reconciliation evidence, not caller authority |
++| Activation epoch | Scoped worker/actor activation fence; signed execution context, not a new work key |
++| Authority revision vector | The named authority revisions in §5.4; not another execution identity or standalone master counter |
++| Connection sequence | Session-scoped transport incarnation; no automatic retry, new effect or budget |
++
++Identical submissions under the same authenticated work key deduplicate; conflicting bound work rejects. Authorized escalation is new work, not deduplicated into a rejected result. A future logical-effect ID represents the **full** scoped key or a separately qualified non-step call identity. Speech and search may belong to steps; modality does not determine identity ownership.
++
++Operation type/version, contract identity and administrative-command idempotency are separate from execution identities. Session/turn/chunk/batch/job references link to work and attempts under their lifecycle contracts. One realtime session may contain several attempts and connections; grouping does not erase their liabilities. An activation or connection change alone never authorizes a repeat send.
+ 
+ ### 8.3 Budgets
+ 
+-- **Failure-retry budget** per task, shared across layers, decremented atomically against a single authority (Redis-backed, reconciled from the ledger).
++- **Failure-retry budget** per task, shared across layers, decremented atomically against a single qualified authority; Redis is a target coordination implementation, not current independent financial authority.
+ - **Escalation allowance**, separate and bounded (§6.2).
+ - Cancellation and remaining deadline are propagated.
+ 
+@@ -838,10 +745,12 @@
+ | Hosted-tool operation | Provider-internal tool work is represented as usage/fee components of the owning attempt unless evidence establishes separate requests; no fabricated sends |
+ | Image/TTS media | Generation success versus download, persistence and delivery; failed retrieval may retry only the authorized retrieval, not generation |
+ | Asynchronous job | Submitted job ID, controlled status/cancel actions, terminal evidence and outstanding exposure; status operations may have their own metering semantics |
+-| Realtime session | Explicit session/turn limits, connection epochs, partial usage, cancel/barge-in and reconnect; finite enforced bounds before a hard-ceiling claim |
++| Realtime session | Explicit session/turn limits, connection sequences, partial usage, cancel/barge-in and reconnect; finite enforced bounds before a hard-ceiling claim |
+ | Opaque external execution | Imported observations with original provenance; no invented guard, first-write, authorization or budget-enforcement result |
+ 
+-Every additional outbound action that can incur cost or disclose data belongs to a qualified operation or management contract. An operation whose exposure cannot be bounded remains ineligible for hard-ceiling profiles. A separately approved observation-only path can collect evidence without pretending to enforce that ceiling.
++Every additional outbound action that can incur cost or disclose data belongs to a qualified operation or management contract. Hard-ceiling sessions require either a finite full-session maximum or proof-qualified increments covering all further billable work, already committed/in-flight work, reporting delay and stop/cancellation uncertainty. A local duration limit alone is not a provider billing bound.
++
++Failed extensions or revocation prevent further unauthorized release under the qualified lifecycle and initiate stop handling. Local closure, provider-confirmed stop, observed usage and settlement remain separate. Preserve uncertain liability and confirmed incurred charges. An unbounded operation is ineligible for hard-ceiling admission; approved observation-only collection makes no enforcement claim.
+ 
+ ---
+ 
+@@ -878,13 +787,15 @@
+ 
+ Direct human use has no invented agent. Autonomous work may have no initiating person but must have an authenticated service principal and charging owner. Unknown initiating person is distinct from proven autonomous work. Acting “under a user's account” retains the executing agent as well as the authorized person/delegation context. Changing a name or credential does not rewrite historical lineage.
+ 
+-A supplied agent label, trace span or cost centre is not authority. When attribution or owner selection affects access or budget, it is validated and bound into the admitted work/decision. Metadata-only gaps may use the existing bounded migration treatment; authorization and handling gaps may not.
++A supplied agent label, trace span or cost centre is not authority. Prefer a distinct authenticated service principal per agent, or an explicitly trusted and versioned agent-to-principal binding. Validate issuer, audience, expiry, current actor and scope through the selected profile. An optional delegation-token representation does not make nested historical actor claims authoritative or require new OAuth infrastructure in DEV-12. Validate charging ownership and workflow lineage separately. [D1 N-06]
++
++Where attribution affects access or money it is validated and bound. A reported initiating human need not be the authenticated service principal. Intermediate chain links remain attributed assertions until verified; length, cycle and endpoint checks do not establish missing delegation authority. Metadata-only gaps may use bounded migration treatment; authorization and handling gaps may not.
+ 
+ ### 9.2 Coverage states and external observations
+ 
+ Maintain roster evidence and measurement coverage separately: **registered**, **source-identified**, **instrumented** and **observed active** are not interchangeable. For a report period, distinguish **controlled and measured**, **externally reported**, **no activity recorded within known coverage**, **not instrumented/not measured** and **unknown**. A zero total without coverage is not evidence that an agent did no work.
+ 
+-The static roster differs from the eleven-agent scripted demo: MyAssistant is source-declared; Turing and Orion remain unresolved as traced model consumers in the inspected scope. Preserve these as evidence-qualified records rather than deleting intended agents or silently declaring them active. [S4]
++Source roster evidence and demonstrations remain dated entries in the assurance register; neither creates identities, grants or measured activity in the operational registry.
+ 
+ External observations use their own immutable observation identity, source/issuer, source timestamp and ingestion timestamp, external request/turn IDs, measurement method and correction chain. They must not fabricate a Duranki attempt, grant or send. If later matched to a controlled attempt, record an explicit linkage/reconciliation so the same charge is not counted twice. Importing a label does not authorize a transport or a cost allocation.
+ 
+@@ -894,12 +805,40 @@
+ 
+ ---
+ 
++### 9.4 Shared metadata envelope — required in the DEV-12 successor
++
++The same successor-contract delta that introduces typed operations also defines and persists these fields. They are common to successor work, not postponed to a later integration version. [R2 F-01]
++
++| Logical field | Standalone meaning | Later authority / binding |
++|---|---|---|
++| Commission reference | No fabricated commission; empty with an allowed reason, or an explicitly asserted/synthetic fixture reference | Value, admission status and reason inside canonical work; verified commission enforcement only after its integration |
++| Commission status | `absent`, `asserted`, `verified`, with evidence scope; production verification is not inferred from fixture validation | Admission-time snapshot immutable; later validation appends evidence |
++| Delegation chain | Available authenticated/attributed links; no fabricated person or intermediate agent | Ordered chain and its admission status/reason inside canonical work |
++| Delegation chain status | Explicit coverage such as partial/complete, separately qualified by link evidence | Complete-looking syntax does not prove trusted links |
++| Activation epoch | Empty with a valid reason or a tagged fixture value until the activation authority exists | Signed execution context in §5.3; current activation check at admission/first write when enabled |
++| Absence reasons | Per-field closed reasons: `not_yet_issued`, `not_applicable`, `caller_omitted`, `unavailable` | Bind with the relevant field; reasons explain absence, never waive mandatory authority |
++
++The contract defines valid combinations, size/depth/length bounds, source attribution and event applicability. Direct humans, delegated agents and autonomous principals have distinct fixtures. An autonomous request has a service principal and charging owner, not an invented human. Before commission enforcement, asserted references are record-only; valid assertions neither grant nor deny execution by commission authority, while syntax/handling rules still apply.
++
++**Three independent axes:** metadata absence reason; commission/link assertion or verification evidence; provider-field evidence (`absent`, `null`, `known`, `invalid`). A missing usage counter must never be explained away as `not_yet_issued` commission metadata. These axes cannot substitute for each other.
++
++**Ledger change in the same tranche:** add logical columns/typed storage for the envelope version, commission reference/status/reason, delegation chain/status/reason, activation value/reason, admitted-envelope binding and linked later verification evidence. Storage normalization is resolved in the bounded schema delta; there must be a lossless queryable representation in standalone SQLite as well as a migration contract for PostgreSQL. Preserve strict legacy records without invented backfill. Pre-admission rejection rows can be recorded without fabricated attempts or complete identities; applicability is part of the event schema. Later verifications are append-only linked records with evidence/time.
++
++### 9.5 Integration relationships and measurement extensions
++
++Preserve Addendum A's proposed relationship: Duranki supplies the model/AI-service enforcement and ledger boundary; verified commissions, Trimorphus policy consultation and Norns budget authority are future integration contracts. From qualified activation integration, admission/final write check activation freshness and the orchestrator fences acceptance. The actual Valhalla/Proto clause correspondence remains unverified until their originals are inspected. [A §§2–7, D2 R15–R16]
++
++Caller-owned instrumentation may later record segment categories, UTF-8 bytes, content-version/lineage changes, cache-related usage and compaction/handoff events under an approved retained schema. Distinguish exact provider quantities from estimated per-segment allocations; providers need not expose per-block billing. A metadata-only prompt-layout/prefix-churn lint may report issues but cannot rewrite admitted prompts or weaken retention. Vega producers remain later work.
++
++---
++
+ ## 10. Metering and accounting
+ 
+ ### 10.1 Ledger
+ 
+-- **Append-only**, durable, deduplicated per attempt; settlement and reconciliation append linked revisions. The `decision_record` lives here.
+-- **Dispatch intent is persisted before transmission** (the authorization point, §5.4).
++- **Append-only financial evidence**, durable and deduplicated; usage/settlement/reconciliation append linked revisions. Decision records live here. Production engine is PostgreSQL; standalone uses its qualified SQLite store.
++- Separate immutable event privileges from mutable reservation/registry operational state. Runtime roles have only the operations each store needs; a blanket insert-only rule must not disable required atomic state transitions. Partition retention, hash chaining/anchors, hosting and HA are separately reviewed designs, not consequences of selecting PostgreSQL.
++- **Dispatch intent and final commitment precede transmission** under §5.4; neither alone is a receiver observation.
+ - **Availability:** managed highly available database as primary. During brief primary outages, replicas may persist dispatch intent to a **replica-local write-ahead log on a persistent volume**, for a bounded window, flushed asynchronously. If the WAL is unavailable, dispatch fails closed.
+ - **Phase 1a fallback:** if the full ledger slips, a simpler append-only log with the same interface is acceptable; reconciliation may follow. WAL availability does not create independent replica-local budget authority: a profile requiring atomic reservations still fails closed if its authoritative budget state is unavailable.
+ - Independent of trace sampling.
+@@ -910,7 +849,9 @@
+ - Version normalization by **operation contract**, **usage semantics**, **adapter** and **price function**. Equivalent-looking fields in different APIs are not presumed equivalent.
+ - Normalize chargeable components into disjoint quantities where the contract establishes disjointness. Preserve totals and overlapping diagnostic subsets separately; do not add the same reasoning, cache-write or hosted-tool quantity twice.
+ - Usage field evidence distinguishes `absent`, `null`, `known` (including explicit zero) and `invalid`. Normalized categories also distinguish `unknown` and contract-proven `not_applicable`. Missing required evidence never defaults to zero or another charge category.
+-- Cost evidence is independently `unknown`, provider-`reported`, locally `calculated`, separately `estimated`, or invoice-`reconciled`, with method and revision. Estimates do not settle unknown exposure merely by appearing in a report.
++- Cost evidence has independent facts for provider-reported, locally calculated, separately estimated and invoice-reconciled amounts, each with method and revision. Multiple facts may coexist; a reporting view declares its basis and unknown components. An estimate is not an automatic stage on a path to settlement.
++- Successor usage components are keyed by **attempt and usage revision**, with component identity, native unit, exact quantity where known, field-evidence state, normalization semantics and immutable price reference. Totals and diagnostic subsets are distinct from chargeable components. A report cutoff selects one effective revision per attempt, never sums all revisions as charges. Schema/price functions allowlist units and fees.
++- Raw evidence is immutable: later complete evidence appends a replacement revision; it does not mutate an earlier missing/null/invalid observation. A settlement transition requires the active contract's sufficient evidence and an atomic once-only financial adjustment.
+ - Provider-reported processing region is logged where available; an observed region is not proof that all hidden downstream processing used it.
+ 
+ ### 10.3 Coverage
+@@ -921,9 +862,10 @@
+ 
+ - Atomic concurrent reservation against the **authorized total charge** in `financial_scope`. Request types whose maximum exposure cannot be bounded are excluded from hard-ceiling workloads.
+ - **Reservation owners** hold renewable leases (initial 5 min). **Owner expiry transfers ownership; it does not release exposure.** Exposure for dispatched or outcome-unknown attempts remains counted against budget until settlement, proof of non-execution, or conservative accounting at the authorized maximum.
+-- Undispatched reservations are reclaimed once the absence of dispatch is established from the ledger.
++- Undispatched reservations are reclaimed only after durable proof of no send **and** exclusion of any deferred future send under the old ownership; a missing write observation alone is insufficient.
+ - **Recovered budget state** (e.g. Redis rebuilt from the ledger) includes all outstanding exposure **before admission resumes**.
+ - Fail closed when budget state is unavailable. Loop detection and kill switch.
++- Financial scope names a validated **budget account** as well as all applicable overlapping caps. A future transfer to Norns is a fenced cutover: exactly one authority can authorize against an available balance; outstanding reservations, delayed settlements/corrections, child envelopes and recovery state have explicit ownership. No duplicate parent/child allocation or reset-to-free is permitted. Transfer implementation is not DEV-12 scope.
+ 
+ ### 10.5 Cost views
+ 
+@@ -939,13 +881,19 @@
+ 
+ A provider/account discrepancy is tracked and adjudicated by a named owner, not automatically a stop-the-world event. A particular active contract calculating above its reserved bound, or losing required usage evidence, does pause that affected campaign/scope and preserve exposure. Reconciliation appends a linked correction and applies its delta once; it never resends provider work or overwrites predecessor facts. The development evidence does not establish commercial reconciliation. [S5]
+ 
++#### Offline spending observations
++
++Owner-supplied usage/cost exports can establish an observed spend baseline without Vega changes. Retain source identity/hash, account/project/key scope where provided, currency, covered period, observation/import time, granularity, reported components, correction lineage and overlap/linkage to controlled attempts. Aggregates remain observations, not synthetic individual attempts. Unknown agent, operation, task or charging-owner attribution remains unknown.
++
++Ingesting the same file twice is idempotent. Different overlapping files require explicit replacement/disjointness/linkage semantics; ambiguous overlap is quarantined from additive totals. Never add a provider aggregate to already counted matching controlled charges or infer unsupported request-level attribution. Provider-export, locally calculated and invoice-reconciled totals stay separate. The roadmap places this importer immediately after DEV-12; real source data remains a separate owner input.
++
+ ### 10.7 Reports
+ 
+ Reports support provider, API setup, model/service, operation, agent/version, initiating person, project/team/charging owner, task/workflow, environment and time period. Each displays known subtotal, separately estimated amounts, unknown-cost attempts/components, coverage and outstanding exposure. Different currencies are not silently summed; any reporting conversion names its rate, time and method.
+ 
+ Efficiency reports retain cost per accepted task over complete comparable cohorts, including failed and abandoned work; task class, quality evidence, outcome coverage, retries and latency are visible. Cheap tokens or low total spend do not by themselves identify an efficient agent. Agents with no qualified outcome cohort show **insufficient evidence**, not an efficiency rank.
+ 
+-Diagnostics include spend share by taxonomy quadrant, re-sent context, steps/loops, cache-related billed categories, routing/evaluation overhead, unattributed/non-compliant traffic and native operation quantities. Physical cache hit rate or savings is shown only where supported by appropriate evidence; a billed cached-token share is labelled as such. Technical intent/commit/write counts remain separate from financial and business summaries.
++Diagnostics include spend share by taxonomy quadrant, re-sent context, steps/loops, cache-related billed categories, routing/evaluation overhead, unattributed/non-compliant traffic and native operation quantities. Physical cache hit rate or savings is shown only where supported by appropriate evidence; a billed cached-token share is labelled as such. Technical intent/commit/write counts remain separate from financial and business summaries. Add reservation/settlement ratio (undefined for unknown/zero denominator), held exposure, reservation-caused admission rejections, release latency and age of unknown exposure. Explain the declared reservation bound separately from predictions; low apparent utilization does not authorize weakening the bound.
+ 
+ ### 10.8 Native price functions, reservations and allocation
+ 
+@@ -953,7 +901,9 @@
+ 
+ A cost is `C = f_price_version(q, admitted_conditions)`, evaluated with exact decimal/fixed-point arithmetic. Native quantities may include tokens, provider-defined audio units, characters, images, requests or compute time **only when the selected contract establishes their meaning**. Locally measured duration, output count or returned search hits need not equal billed quantity. Request fees and token fees can coexist; bundled fees must not be charged twice.
+ 
+-**Reservation.** For a bounded admitted domain `D`, reserve a conservatively rounded upper bound `R ≥ sup(q in D) f(q, conditions)`, including every enabled billable component. Unsupported tiers, unbounded session duration, unknown hosted-tool multiplicity or an unproved input ceiling make the operation ineligible for a hard-ceiling profile. A byte cap is a handling restriction, not by itself a token bound. A synthetic bound is qualified for its synthetic contract only.
++**Reservation.** For a bounded admitted domain `D`, reserve a conservatively rounded upper bound `R ≥ sup(q in D) f(q, conditions)`, including every enabled billable component. Unsupported tiers, unbounded session duration, unknown hosted-tool multiplicity or an unproved input ceiling make the operation ineligible for a hard-ceiling profile. A byte cap is a handling restriction, not by itself a token bound. A request-specific successor bound may be qualified only over actual final preparation, transformations, framing/special tokens, repeated inputs/tool rendering, provider additions and enabled modalities. An empirical byte/token ratio, arbitrary hidden margin or untrusted worker estimate is not proof. Where both bounds are independently valid for the **same complete billable domain**, use the smaller of the enforced provider ceiling and the proven request-specific bound. Do not assume a cache hit. Preserve DEV-11 until an alternative is explicitly qualified.
++
++Release proven excess via one atomic, revision-safe adjustment when sufficient evidence establishes remaining liability; partial usage does not make unresolved components zero. Streams use §8.6's full-session or proof-qualified incremental bounds. A synthetic bound qualifies only its own synthetic domain.
+ 
+ DEV-11's preserved special case is:
+ 
+@@ -994,7 +944,7 @@
+   q = p_w · f + (1 − p_w) · d
+   P(correct final) = p_w · (1 − f) + q · r
+ 
+-False rejection matters: an unnecessary escalation can replace a correct answer with an incorrect one.
++False rejection matters: an unnecessary escalation can replace a correct answer with an incorrect one. Here `r` means correctness **conditional on escalation**, with the actual false-rejection/detected-failure mixture. Later evaluation separately records `r_f` and `r_d`, independent false-acceptance audits and generator-dependent verifier qualification; the aggregate equation is valid only with that correctly conditioned mixture.
+ 
+ ### 11.2 Acceptance measurement
+ 
+@@ -1035,7 +985,8 @@
+ 
+ **Overnight counterfactual replay** (evaluation-only pool until Phase 4):
+ 
+-- Only retained inputs replayable without side effects; recorded tool responses valid only where the candidate chooses the same tool actions; otherwise sandboxes, simulators, or exclusion.
++- Valid single-step leaf replay/repricing is the initial scope. Recorded tool responses are valid only where candidate actions and relevant state match; otherwise exclude or use a controlled environment with fresh authorized actions.
++- **Deliberate departure from P1 item 11's single-step-only wording:** separately qualified whole-task/branched experiments are allowed with control forks, versioned common environments, action divergence handling, own cost/usage, non-determinism/quantization noise treatment and task-level acceptance. No such experiment is activated here, and uncontrolled log replay cannot establish a counterfactual.
+ - k ≈ 4 samples per (prompt, candidate).
+ - Labels **deployment-specific**.
+ - **Coverage** measured per step type against live share; low-coverage types stay rules-only.
+@@ -1060,7 +1011,7 @@
+ 
+ ### 12.4 Change control
+ 
+-**Triggers:** any semantic change to model/service version, quantization, operation/request/output contract, embedding profile/corpus compatibility, prompt adapter, feature extractor, primary or fallback predictor, substantive verifier, recovery or escalation rules, routing thresholds, consumption contracts, or acceptance measurement (judge/rubric; these require a measurement review). Price/usage/account/credential changes separately require financial, access and binding review even when no quality recalibration is needed.
++**Triggers:** any semantic change to model/service version, quantization, operation/request/output contract, embedding profile/corpus compatibility, prompt adapter, feature extractor, primary or fallback predictor, substantive verifier, recovery or escalation rules, routing thresholds, reasoning effort/thinking mode, service tier, context-management/compaction settings, consumption contracts, or acceptance measurement (judge/rubric; these require a measurement review). Price/usage/account/credential changes separately require financial, access and binding review even when no quality recalibration is needed.
+ 
+ **Sequence:**
+ 1. Canary under authorized experimental scope, against the incumbent.
+@@ -1113,7 +1064,7 @@
+ 
+ ### 13.5 Operation payloads, media and observation records
+ 
+-Embeddings, audio, images, transcripts, candidate passages, generated media and their derived features are content. Their shape does not exempt them from source restrictions. Hashes, identifiers and metadata also require an approved retained schema; “metadata-only” is not a blanket declassification.
++Embeddings, audio, images, transcripts, candidate passages, generated media and their derived features are content. Their shape does not exempt them from source restrictions. An opaque provider compaction item inherits the union of input taints/restrictions and the strictest applicable retention; a hidden representation or encrypted reference cannot silently weaken handling. Transcripts inherit the source audio's handling. Hashes, identifiers and metadata also require an approved retained schema; “metadata-only” is not a blanket declassification.
+ 
+ The ledger retains permitted bounded accounting and correspondence evidence. Bulk vectors, binary payloads and arbitrary provider envelopes belong outside it, in explicitly authorized content/artifact storage or live-only delivery. Input references are immutable/version-bound or materialized under policy before admission. Generated artifacts have a receipt recording owner, generating attempt, permitted location, type/size/digest where allowed, custody state and expiry; artifact receipt is not an acceptance verdict.
+ 
+@@ -1127,18 +1078,7 @@
+ 
+ ### 14.1 Topology and staging
+ 
+-**Target:** hybrid. Gateway, ledger and telemetry in one cloud; orchestrators in cloud and lab; office lab serving pool as preferred capacity; optional cloud self-hosted pool; frontier endpoints.
+-
+-**Development and deployment staging:**
+-1. Continue the standalone local profile and disposable controlled targets. Extend qualified operations, UI and contracts without modifying Vega or activating real credentials as a side effect.
+-2. Deploy a separately accepted cloud control/ledger/telemetry profile when its operational gates and cloud choice are resolved. A local SQLite result is not a production HA result.
+-3. Integrate a bounded Vega cohort only after explicit owner approval and completion of the prerequisite Vega work; initially characterize coverage and accounting under fixed approved routes.
+-4. Add one office lab serving pool (evaluation-only replay first, then Phase 4 live admission) and private installations under the same operation/permission contracts.
+-5. Add cloud self-hosted inference only when measured demand justifies it.
+-
+-This sequence orders integrations; it does not prohibit standalone implementation of later policy/health/evaluation modules against fixtures.
+-
+-Lab and cloud are independently operable pools under shared policy.
++Target topology remains hybrid: cloud control/ledger/telemetry, cloud/lab orchestrators, office lab serving, optional cloud self-hosted capacity and commercial endpoints. Production ledger engine is PostgreSQL. Replication/HA and shared-state consistency require their own evidence; local SQLite does not establish them. Lab and cloud pools remain independently operable under shared policy. Implementation and integration order is in the roadmap, not implied by the topology.
+ 
+ ### 14.2 Lab-hosted orchestrators
+ 
+@@ -1146,18 +1086,15 @@
+ 
+ ### 14.3 Region and cloud
+ 
+-The predecessor's US-east candidates remain planning options (AWS us-east-1/us-east-2 or GCP us-east4/us-east5). Final selection requires current provider, model, network, cost and handling evidence plus existing commitments/credits. No comparative cloud advantage or current availability is asserted by this update.
++Cloud/region and managed PostgreSQL hosting remain open. Addendum A's GCP/Cloud SQL and planned AWS/RDS move is attributed planning context, not a new infrastructure selection. Evaluate current commitments, operation availability, latency/cost and handling restrictions at the eventual hosting decision.
+ 
+ ### 14.4 Frontier access paths
+ 
+-| Path | Pros | Cons |
+-|---|---|---|
+-| Direct vendor APIs | Newest models and features first | Separate billing; data leaves our cloud account |
+-| Cloud marketplaces (Bedrock, Vertex AI) | Unified IAM and billing; committed spend | Feature lag; cross-region profiles and global endpoints can process data outside the source region, so **region-pinned profiles above public sensitivity** |
++Direct vendor and marketplace paths are separately qualified account/endpoint/operation configurations. Neither is assumed to provide feature, region, handling or price equivalence. Marketplace profiles above public sensitivity must be region-pinned under §5.1. Commercial conditions are verified at qualification, not inferred from the target topology.
+ 
+ ### 14.5 Operational notes
+ 
+-Stateless gateway replicas; Redis for shared state; async telemetry export; spot/preemptible capacity only for idempotent background work; watch hairpinning for large payloads.
++Replicated stateless gateways, Redis coordination, async telemetry and any spot/preemptible inference are **target capabilities**, not deployed-state declarations. Each introduced component needs exact provenance, authority/financial consistency, failure recovery and handling proof. Hairpinning/large-payload placement and voice latency remain selected-operation engineering questions.
+ 
+ ### 14.6 Compatibility, deployment and evidence custody
+ 
+@@ -1173,59 +1110,32 @@
+ 
+ ### 15.1 Assurance phases retained from v1.1
+ 
+-Phases describe guarantees and promotion criteria, not a rigid dependency on immediate platform integration. Standalone implementation may prepare a later capability using synthetic evidence; it does not complete representative baseline, quality, production, integration or learned-routing gates. DEV-01–DEV-11 results are development slices and must not be mechanically mapped to completed phases.
++Phases are guarantees and promotion gates, not `DEV-XX` delivery numbers. Preserve the production gates while allowing a bounded standalone exit. The Phase 0 spend-share trigger is evaluated only with qualified taxonomy/cohort evidence; neither exports lacking that attribution nor synthetic traffic satisfy it.
+ 
+ | Phase | Scope | Exit criteria |
+ |---|---|---|
+ | **0 — Instrument and baseline** | Representative task cohorts; token breakdown; minimal acceptance protocol; baseline cohort; spend share by taxonomy quadrant | Baseline cost per accepted task by class; savings ceiling estimated. **Consequence:** if trajectory-spine exceeds ~50% of spend, Phase 3–5 targets are re-scoped before Phase 3 begins |
+-| **1a — Door and ledger** | Phase 1a admission profile (§5.1); qualified replicated logical gateway; keys confined to trusted credential/sender boundary + network policy; identity, purpose, attribution (bounded migration mode); rules-engine classification with owner, corpus and bars; signed plans; FDC incl. policy-version check; approved-configuration records; supply-chain controls (§4.4) and LiteLLM built-in routing disabled (§4.3); append-only ledger with dispatch intent (or interface-compatible fallback); allowlisted telemetry; origin-attribute signing keys; LiteLLM verification with pre-decided contingency | **Binary:** all traffic in the eligible onboarding cohort authenticated and attributed to a principal; non-compliant share reported; Phase 1a acceptance tests pass; basic reconciliation within tolerance |
++| **1a — Door and ledger** | Phase 1a admission profile (§5.1); qualified replicated logical gateway; keys confined to trusted credential/sender boundary + network policy; identity, purpose, attribution (bounded migration mode); rules-engine classification with owner, corpus and bars; signed plans; FDC incl. policy-version check; approved-configuration records; supply-chain controls (§4.4) and LiteLLM built-in routing disabled (§4.3); append-only ledger with dispatch intent (or interface-compatible fallback); allowlisted telemetry; origin-attribute signing keys where office-origin claims are relied on; LiteLLM verification with pre-decided contingency | **Binary:** all traffic in the eligible onboarding cohort authenticated and attributed to a principal; non-compliant share reported; Phase 1a acceptance tests pass; basic reconciliation within tolerance |
+ | **1b — Budgets, recovery, faults** | Full admission profile; atomic reservations with exposure tracking; recovered-state safety; crash recovery; execution generations and single-winner acceptance; reconciliation under faults | Hard-ceiling workloads onboarded; Phase 1b tests pass |
+ | **2 — Quick wins** | Context discipline and leaf isolation; cache-aware measurement and justified optimizations; optional response cache only under §5.6; loop guards | Cost per accepted task reduced within the quality/latency envelope; cache diagnostics reported, not a substitute gate; **full instrumentation-contract compliance for the integrated cohort** |
+-| **3 — Evaluation and bake-off** | Eval sets with splits; acceptance judging; registry service; overnight replay (evaluation-only); five-way bake-off | Candidates compared on development cohorts, confirmed on confirmation set; predictor selected |
++| **3 — Evaluation and bake-off** | Eval sets with splits; acceptance judging; registry service; overnight replay (evaluation-only); baseline/predictor bake-off | Candidates compared on development cohorts, confirmed on confirmation set; predictor selected |
+ | **4 — Rules, cascades and lab live** | Deterministic rules; two-tier cascades; leaf manifests; lab production admission (presence attribute, classes, leases, reservations, drain) | Non-inferior and above floor; drain and cross-family migration demonstrated; lab savings measured |
+ | **5 — Learned routing** | Selected predictor for ready step types; gradual rollout | Beats rules and simpler predictors on cost per accepted task after overhead and recovery; rollback proven |
+ | **6 — Closed loop** | Approved exploration scope; propensities; delayed outcomes; drift detection; gated promotion | Quality stable or improving across version changes |
+ 
+-### 15.2 Next standalone addition — proposed DEV-12
+-
+-**Title:** Operation-aware accounting foundation and retrieval-operation proof. **Status:** architectural scope proposal; no implementation commission is issued by this draft.
+-
+-The first addition is deliberately bounded: extend the common identity/permission/binding/ledger model and prove two new operation shapes using isolated embedding and reranking endpoints, fictional models/rates and a versioned fake corpus/index. It is not a Voyage integration, a general provider rollout or a new production budget system.
+-
+-| Work item | Required result |
+-|---|---|
+-| Contract/version delta | An explicit compatible successor for operation type/version, typed payload/response and native usage; preserve strict existing wire/profile and historical canonical vectors. Exact field names and version identifiers reviewed before product changes |
+-| Operation permissions | Independent source-operation permission and principal/delegation grant; text permission cannot authorize the new operations; revocation blocks queued unsent work |
+-| Exposure and usage | Exact-decimal synthetic price functions, finite domain bounds, atomic reservations and unknown/presence handling; retain DEV-11 regression behaviour |
+-| Embedding fixture | Document/query role, ordered bounded batches, dimensions/finite-vector validation, exact index compatibility and no silent truncation/drop/reorder |
+-| Rerank fixture | Separate attempt and usage; bound candidate list, validate indices/order, reject malformed outputs; any baseline fallback explicitly reported and not another unrecorded paid request |
+-| Attribution and reporting | Separate ingestion owner, query initiator, executing agents and delegated work; native-unit details, known subtotal/unknown exposure and no repeated ingestion charge |
+-| UI and demonstration | Readable operation/coverage indicators in existing source/model/usage pages; one synthetic retrieval timeline and drill-down; no parallel UI framework or general setup overhaul |
+-| Proof | Installed supported clients → real Coordinator/worker/guard/sender → independent synthetic receivers; correlated attempt IDs and final-request hashes, duplicate/status no-extra-send, persistence/readback and relevant original negative controls |
+-
+-The prototype corpus owner performs the index-side effect; Duranki verifies the contract/reference and records the work. No arbitrary database credentials or index-administration capability is added to the sender.
+-
+-**Excluded:** Vega edits/instrumentation; real provider calls or credentials; commercial model/rate selection; owner-profile upgrades; new gateway/dependency acquisition; external caching; live retries/fallbacks/substitution; speech/image/realtime implementations; broad policy UI and learned routing. A later implementation brief may authorize precise local build/test actions, but this document does not.
+-
+-**Completion boundary:** the tranche is complete only for its reviewed synthetic contract when the selected new tests, both client semantics as applicable, no-send negatives, unknown-exposure persistence and report reconciliation pass. A wire/schema check or mocked arithmetic alone is not a composed-path pass. Existing text/cache tests remain regression requirements. Initial test mapping is T-42, T-45–T-55, T-61, T-65 and T-66, narrowed to the admitted synthetic operations; unchanged source-management tests may reuse prior evidence with explicit correspondence.
+-
+-### 15.3 Subsequent standalone development order
+-
+-| Order | Bounded capability | Kept separate |
+-|---|---|---|
+-| A | Guided provider/account setup completion, scoped credentials/allowance views, permission explanations and useful alerts | No automatic discovery, grants, rates or paid execution |
+-| B | Named deterministic policy drafts, preview and policy-version audit; operation-level health/cooldown scaffolding | No live model substitution merely because a policy can be previewed |
+-| C | Selected additional nonstreaming text adapters and caller-owned tool/stream lifecycle work; one transcription and one vision contract | Each operation admitted/tested independently; no blanket SDK support |
+-| D | Model-hosted search fees and selected adjacent-service observation | Actual native billing scope established before controlled paid use |
+-| E | Qualified alternatives/recovery, image/TTS artifacts and private/lab serving controls | Unknown prior exposure, model/index compatibility and task acceptance preserved |
+-| F | Realtime sessions, opaque-backend observations and evaluation workbench extensions | No finite-spend claim for uncontrolled upstream transport |
+-| Later integration | Bounded Vega cohort, then representative observations and evidence-informed rules | Owner explicitly releases integration hold; measurement precedes learned promotion |
+-
+-This is sequencing guidance, not predetermined tranche numbering, delivery dates or a requirement to finish every future capability before any separately approved personal test. Actual commercial activation still requires a reviewed exact contract and explicit local authorization.
++### 15.2 Standalone assurance exit
++
++The standalone profile is complete only for its explicit supported-operation/transport/threat manifest when evidence establishes: installed Python/CommonJS parity; authenticated service and scoped access; worker egress/credential exclusion; canonical and final-request binding; Choice B first-write freshness and no-repeat ownership; durable usage/financial revisions; finite allowance controls where claimed; unknown exposure surviving restart; preserving migration/readback; and the corresponding usable operator journeys/exports. Each applicable subcase in the assurance register must be evidenced for that subject or explicitly excluded from the declared profile.
++
++This exit does not include production replication/HA, office-origin issuance, representative Vega telemetry, statistical model substitution, physical lab capacity, commercial invoices or Valhalla enforcement. Replication enters production gateway qualification; office-origin proof enters the first profile relying on it; provider billing enters commercial qualification and reconciliation. The stronger production guarantees are not marked complete by a standalone pass.
++
++### 15.3 Next bounded addition
++
++The proposed DEV-12 operation-aware retrieval slice includes the **M-06 common successor plus §9.4 shared envelope and additive standalone ledger fields**, synthetic embedding/rerank contracts, non-token tariffs and applicable T-77/T-78/T-79 cases. Exact entry/exit, tariff boundaries and test mapping are in the roadmap. It does not include Vega edits, PostgreSQL deployment, provider activation, realtime transport, external caching or learned routing.
+ 
+ ### 15.4 Adoption and implementation entry
+ 
+-Review this v1.2 document and its change note first. Resolve the successor contract/version decision for the first operation extension, record adoption of the applicable architecture delta, then issue the bounded implementation brief. Keep broader target/open decisions visible without making cloud procurement, realtime design or Vega instrumentation prerequisites for the embedding/rerank slice. No existing acceptance is expanded by the document merge.
++Independently review this corrected architecture, assurance register, roadmap and incorporation map; record owner adoption of the applicable delta; then settle exact successor schemas/projection identifiers/canonical vectors and issue the bounded implementation brief. The logical envelope and binding location are decided in this draft, not deferred to an unspecified later contract. Exact executable contracts still require review before product changes. Broader cloud or integration decisions need not block that work.
+ 
+ ---
+ 
+@@ -1233,7 +1143,7 @@
+ 
+ **Rule:** each test is an entry or exit requirement for the **first profile/capability that relies on its guarantee**; later phases keep exercising it. The historical phase groupings below do not postpone final-write, duplicate or exposure tests when a bounded standalone capability relies on them earlier.
+ 
+-Identifiers 1–41 retain their prior subjects (also called T-01–T-41 in implementation registers). Wording is clarified where necessary for separated sending and unknown-cost handling; new tests start at 42. This is a requirements list, not a record of execution or a demand to run every future-capability test during DEV-12. Each implementation brief maps tests to its exact scope and records reused, new, deferred and unobserved evidence.
++T-01–T-76 retain their subjects. The separate assurance register defines stable sub-IDs, applicability and evidence. A parent passes only when all subcases applicable to the declared profile pass; a bounded historical result cannot make an unqualified production parent green. T-84 is a non-scored alias of T-49; no historical receipt is renamed. Newly defined successor cases have no runtime pass from authoring.
+ 
+ **Phase 1a**
+ 1. Invalid or missing identity → rejected
+@@ -1250,7 +1160,7 @@
+ 
+ 37. An introduced gateway/worker, Redis, Langfuse or collector image lacks reviewed source/frozen-distribution provenance, exact hashes or approved build correspondence → deployment refused
+ 38. Gateway, Langfuse or collector connects outside its egress allowlist → blocked and alerted; the isolated worker also cannot send directly to an otherwise allowed provider or acquire sender authority
+-39. Provider key read by an identity outside the approved trusted credential/sender runtime → denied; worker/client/log/export reads expose none; scheduled rotation/revocation disables old bindings and invalidates dependent queued authority; required upstream revocation is separately verified
++39. Credential isolation, qualified same-scope rotation, local revocation, compromise/scope change and separate upstream revocation → tested independently; preserve conservative queued-plan invalidation until a successor rotation contract is qualified.
+ 40. LiteLLM built-in routing enabled, or a dispatch to a deployment the signed plan does not name → startup check fails / rejected at FDC
+ 41. Release adopted before its soak period ends or without a recorded review (no vulnerability exception) → deployment pipeline refuses
+ 
+@@ -1304,10 +1214,10 @@
+ 42. Unsupported or mismatched operation/contract/schema → rejected before provider transmission; old text profile never silently accepts a new action.
+ 43. Saving a credential, browsing, local refresh or route preview → no provider action; explicit access/discovery actions are separately scoped and recorded.
+ 44. Partial/paginated/failed discovery → honest completeness state; no automatic allow/grant/rate publication or revival of archived records.
+-45. Permission for one source/account/operation → does not authorize another; source disallow, grant revoke or credential revision blocks queued unsent work.
+-46. Operation, ordered input, compatibility reference, price or financial-owner mutation after admission → detected by trusted binding/current checks.
+-47. Python/JavaScript successor-contract parity and legacy requests → stable adopted semantics; unknown fields/versions reject, historical digests and records unchanged.
+-48. Native-unit pricing → independently recomputed exact-decimal totals and conservative bounds across the complete admitted synthetic domain, including rounding and applicable fees.
++45. Permissions are source/account/operation scoped; source disallow, grant/delegation revoke, credential-scope change and required revision mismatch block queued unsent work at the Choice B boundary. Rotation behavior follows the explicitly qualified contract, never an assumed exception.
++46. Operation, ordered input, compatibility reference, bound commission/delegation snapshot, price, financial owner or signed activation context mutation after admission → detected by trusted binding/current checks.
++47. Python/JavaScript successor-envelope parity, domain-separated binding and legacy compatibility → preserved adopted semantics and historical digests, strict unknown-field/version rejection, no automatic plain-text relabelling of tool-cycle history.
++48. Native-unit pricing → independently recomputed exact-decimal totals and conservative bounds across the full synthetic domain, including minimums, unit ceilings, a tier boundary, currency precision/half-even settlement and upward-rounded reservation; fixtures and subcases in the roadmap/register.
+ 49. Missing/null/zero/invalid quantities → distinct retained evidence; unknown required usage never becomes free, ordinary input or invented complete cost.
+ 50. Concurrent reservations, duplicate submissions, restart and corrections → no extra send, no exposure loss, no double-applied financial delta; over-bound evidence pauses the affected scope.
+ 51. Embedding batches → correct ordered correspondence, document/query role and bounds; wrong count/dimension, non-finite vectors or silent truncation cannot pass.
+@@ -1343,58 +1253,46 @@
+ 75. Budget period reset or scope/credential change with outstanding work → exposure remains within the defined financial scope; no reset-to-free loophole.
+ 76. Trace sampling/export failure → full durable accounting remains; multiple spans do not multiply attempts or charges.
+ 
+-New tests qualify only the operation, protocol, build, lifecycle and environment exercised. Passing a simulated provider does not establish actual billing, caching, capacity or quality.
++### 16.4 Reconciled Addendum A tests
++
++77. Shared metadata fields and closed absence reasons → valid new-profile combinations accepted; malformed/inconsistent shapes rejected; no reason code bypasses required authority; legacy rows remain historical.
++78. Direct-human, delegated-agent and autonomous identities → validate authority-bearing endpoints/bindings, reject forged/cyclic chains, preserve intermediate assertions and actual coverage without invented humans or links.
++79. Record-only commission references → captured with admission-time status and reason, bound against mutation, never used as commission execution authority before its enforcement profile exists; later verification appends evidence.
++80. Integrated non-text egress → authorized positive path works; forbidden direct caller/worker paths fail and alert for the declared onboarded cohort.
++81. Search-query labels and returned provenance → destination handling enforced before sending and inherited on returned external content.
++82. Session reservation-extension failure → no further unauthorized release; stop evidence separate from closure; committed/in-flight unknown exposure retained.
++83. Realtime telemetry → prohibited complete response content never reaches callbacks, logs, buffers or export sinks; permitted accounting remains available.
++84. **Retired alias, not a scored requirement:** A-49's corrected missing-native-usage subject resolves to T-49 (text relationship: T-18). Preserve prior T-84 proposal references as redirects; never renumber T-85–T-87.
++85. Verified-commission revocation before first write → queued unsent work is blocked at the same §5.4 fence; future commission-specific specialization of T-24.
++86. Verified-commission revocation during a session → bounded stop/release behavior, retained liability and separate remote-stop/settlement evidence.
++87. Stale activation at admission/first write and orchestrator acceptance → refused under the qualified activation profile; late usage retained and no new effect/budget from the epoch change alone.
++
++A-42–A-48 map to T-77–T-83; A-49 maps to T-49; A-50–A-52 map to T-85–T-87. T-85 remains a separate future-integration requirement, cross-linked to T-24 rather than counted as another general boundary proof. Evidence applies only to the exercised profile; the assurance register keeps all other dimensions explicit.
+ 
+ ---
+ 
+ ## 17. Risks
+ 
+-| Risk | Impact | Mitigation |
+-|---|---|---|
+-| Exposure released on owner expiry | Budget overspend | Ownership ≠ exposure; recovered-state safety; tests 10–12 |
+-| Constraint bypass on retry/fallback | Data to unpermitted destination | FDC on every path; signed bound plans |
+-| Derived data leakage (calls or retention) | Confidential disclosure via features, scores, telemetry | Inheritance for calls and retention; approved feature schemas; allowlisted telemetry |
+-| Response-cache cross-domain hit | Disclosure; unaccounted use | Cache after admission, salted; test 25 |
+-| Signing-key compromise (plans, origin) | Authorization or priority forgery | Managed keys, rotation, restricted minting |
+-| Orchestrator mislabelling | Cheap routing of spine work | Construction manifests; audits |
+-| Undetected semantic failure | Silent quality loss | Verifiable definition; consumption contracts; task acceptance |
+-| Goodhart on structural signals | Wrong routing | Train on correctness/acceptance |
+-| Duplicate/late completion; escalation deduplication | Task advanced twice or escalation lost | Identity levels; single-winner acceptance |
+-| Ambiguous execution/cancellation | Double effects; premature release | State model; confirmation before release |
+-| Accounting loss or drift | Wrong cost picture | Append-only ledger; dispatch intent; WAL; reconciliation |
+-| Shared-dependency outage | Admission unenforceable | Fail closed; rules-engine classification |
+-| Instrumentation adoption lag | Unattributed or unoptimizable traffic | Bounded migration mode; Phase 2 compliance exit |
+-| LiteLLM capability gaps | Phase 1a stall | Verification + pre-decided contingency |
+-| Compromised release of an off-the-shelf part | Provider keys/prompts stolen or prepared work corrupted | Frozen reviewed artifacts, worker isolation, restricted credentials, exact-send validation and incident response (§4.4); tests 37–41 |
+-| Vendor acquisition, licence change or shutdown | Product direction or maintenance changes under us | Duranki authority/accounting in independent modules; replaceable qualified adapters; licence/security review for upgrades; historical market references are not current evidence |
+-| Built-in gateway routing overriding the plan | Dispatch outside admission | LiteLLM Auto Router disabled; FDC names the deployment (§4.3, test 40) |
+-| Jev vendor risk | Feature loss, latency, exposure | Out of sync path; bake-off; own-head fallback |
+-| Invalid learning evidence | Wrong policy promoted | Action positivity; task-level randomization; splits; separate replay reporting |
+-| Replay label bias | Optimistic labels | Coverage, cache-state model, deployment-specific labels, re-baselining |
+-| Cumulative quality erosion | Gradual degradation | Absolute floor |
+-| Pooled approval masking class harm | Hidden regression | Predeclared grouping; stated approval level |
+-| Judge bias or drift | Mis-measured acceptance | Common cross-family judge; normalization; kappa |
+-| Version drift | Silent calibration/accounting errors | Expanded change triggers; dual usage versioning |
+-| Cross-family transcript failure | Provider errors on migration | Adapter normalization; test 30 |
+-| Quantization differences | Calibration error | Approval per model + quantization |
+-| Cache-miss amplification | Savings erased | Exit metric; affinity design |
+-| Prefill storm on drain | Latency spikes | Staggered, conditional migration |
+-| Gateway SPOF | Outage | Replicas; emergency gateway |
+-| Savings ceiling lower than expected | Under-delivery | Phase 0 quadrant threshold with consequence |
+-| Usage expansion (Jevons) | Spend rises | Cost per accepted task; budgets |
+-| Export-controlled data (if applicable) | Legal exposure | Confirm; classification level |
+-
+-| Risk introduced or exposed by broader coverage | Impact | Mitigation |
+-|---|---|---|
+-| Text-token assumptions applied to every operation | Under-reservation or false cost | Typed native usage and complete price/bound contract; tests 42, 48–50 |
+-| Model discovery treated as execution permission | Unapproved model/service use | Explicit setup/source-operation allow and current principal grant; tests 44–45 |
+-| Same-sized embeddings assumed compatible | Corrupted retrieval and misleading outputs | Full embedding/corpus profile and migration gate; test 52 |
+-| Ingestion, inclusive lineage or observation duplication | Inflated spend and wrong agent ranking | Unique attempt facts, explicit allocations and observation matching; tests 55, 61, 73 |
+-| Missing counter or roster coverage treated as zero | Hidden exposure or false efficiency | Field-presence and coverage states; tests 49, 61, 63 |
+-| Model success confused with artifact delivery | Repeated paid generation or lost content | Separate lifecycle receipts and retrieval authority; tests 70–71 |
+-| Opaque external executable presented as controlled | False assurance of finite spend/security | Observation-only label until transport control qualified; test 73 |
+-| Interface configuration hides authority changes | Operators enable the wrong account/model/operation | Guided setup, source scope, previews and revisioned audit; tests 56–64 |
+-| Local development proof mistaken for production readiness | Unqualified cloud/integration rollout | Evidence/profile matrix, staged deployment and no automatic phase completion |
++| Risk | Governing mitigation |
++|---|---|
++| Stale authority or duplicate send | Signed bindings, named revision vector, Choice B first-write fence, persistent ownership; T-07–T-09/T-14/T-24/T-45–T-47 |
++| Premature release or duplicated financial authority | Outstanding exposure survives cancellation/expiry/reset; atomic reservations and once-only corrections; fenced future budget cutover; T-10–T-19/T-50/T-75 |
++| Worker/dependency compromise | Frozen reviewed inputs, no worker secrets/egress, independent final guard and trusted sender; T-37–T-41 |
++| Derived-content leakage or false declassification | Combined restrictions at every boundary, opaque-compaction inheritance, approved retained schema; T-03/T-05/T-68/T-76/T-83 |
++| Wrong native tariff or missing evidence treated as free | Complete domain/price contract, preserved presence states, exposure on unknown, bound discrepancies visible; T-18/T-48–T-50 |
++| Discovery or health confused with permission | Separate readiness dimensions and source-operation/principal intersection; T-43–T-45/T-56/T-59 |
++| Incompatible retrieval or repeated ingestion charges | Full vector/index compatibility and unique attempt/allocation accounting; T-51–T-55/T-61 |
++| Agent comparisons reward cheap incomplete work | Complete comparable cohorts, outcome/cost coverage, relative and absolute quality gates; T-26–T-27/T-31/T-63 |
++| Cache/switching cost erases apparent savings | Cost/quality/latency gate, explicit cache-state prediction and switching accounting; cache misses remain diagnostics, not an exit metric |
++| Invalid replay, biased judging or self-promoted policy | Task splits, controlled forks, independent/common judging, positivity and confirmation; T-26/T-27/T-35 |
++| Mislabelled spine work / unsafe leaf | Construction manifests, substantive checker and parent–leaf consumption/quality contract; T-23/T-31/T-32 |
++| Lab drain, preemption or stale capacity evidence | Physical resource proof, conditional redispatch and no capacity release on ownership expiry; T-28–T-34 |
++| Media generation mistaken for delivery, or unsafe URL fetch | Separate generation/retrieval/persistence states and destination authority; T-70–T-72 |
++| Imported aggregate/lineage duplication | Observation provenance, overlap handling, linkage and independent views; T-61/T-62/T-73 |
++| UI conceals setup scope, unsafe edits or data exposure | Guided setup, current authorization, usable controls and honest pricing/coverage; T-56–T-66 |
++| Local proof presented as production acceptance | Profile-specific assurance axes; phase gates distinct from development slices |
++| Provider/vendor change or outage | Replaceable qualified adapters, disable/rollback without authority resurrection, explicit no-compliant-route outcome |
++| Savings ceiling below expectations / usage expansion | Measured Phase 0 taxonomy, cost per accepted task and budgets rather than token-price optimism |
+ 
+ ---
+ 
+@@ -1409,9 +1307,9 @@
+ 7. **Gateway/adapter production qualification and replacement:** the bounded development path uses the separated trusted sender. Qualify additional protocols and any production replication; select a replacement preparation adapter/gateway only with preserved final-send and accounting contracts. The old pre-pool-versus-exclusive-sender question is not reopened for already demonstrated paths.
+ 8. **Initial numeric defaults** (thresholds, timeouts, TTLs, drain timings, exploration rates, readiness threshold, retention periods, reconciliation tolerance): starting points to confirm.
+ 9. **Soak period** for new releases of off-the-shelf parts (§4.4) and the vulnerability-exception process.
+-10. **Ledger database product** (managed, high-availability, append-only; §10.1).
+-
+-11. **Successor operation contract/version:** exact public wire/profile/projection version, field spelling, operation-specific payload/response union and legacy compatibility tests before the first extension.
++10. **Ledger engine decided: PostgreSQL** (owner decision recovered from 23 October, H §4). Hosting, HA/roles, partitions/retention, optional tamper evidence and migration remain separately scoped; SQLite standalone is not replaced by this decision.
++
++11. **Successor exact contract identifiers:** the logical common envelope, typed operation union and shared-metadata binding locations are specified in §§5.3/5.7/9.4 and belong to DEV-12. Review exact public wire/profile/projection versions, field spelling, bounded schemas, management-field naming and canonical vectors before implementation; preserve legacy semantics.
+ 12. **Per-operation commercial qualification:** exact provider/account/model, supported request domain, native usage/price function, maximum exposure and independent provider evidence. None is selected by this revision.
+ 13. **Budget-scope authority and alerts:** supported team/project/user/agent scopes, reset-period treatment, thresholds, recipients and production atomicity boundary; no default monetary amount inferred.
+ 14. **Corpus compatibility/allocation:** owner of versioned embedding profiles/index manifests, migration validation and any separately approved shared-cost allocation rule.
+@@ -1425,70 +1323,29 @@
+ 
+ ## 19. Targeted verification
+ 
+-This v1.2 review is a focused architectural delta review, not a new certification of all historical development work. Preserve the original detailed quality, exposure, identity and retention requirements unless an identified clause is expressly amended.
+-
+-| Review question | Sections / decisive check |
+-|---|---|
+-| Does one logical gateway accurately describe the trusted Coordinator/worker/guard/sender split? | §§2–4, 5.4; no secret or egress edge from the worker; no pre-queue freshness shortcut |
+-| Are discovery, API setup, permissions, support, rates, health and quality separate? | §§4.5–4.6, 5.1, 5.5; no implicit execution from catalogue/discovery/credential save |
+-| Can native-operation exposure be bounded without token assumptions or lost uncertainty? | §§5.7, 10.2–10.8; preserve DEV-11 exact contract, absence/null/zero and over-bound behaviour |
+-| Is the new work identity explicit and backward-compatible? | §§5.3, 8.2, 14.6; exact successor schema/projection decision required, no silent wire-0.2 expansion |
+-| Can retrieval substitutions change vector-space or ranking meaning? | §5.9; dimension equality insufficient, index migration/application ownership explicit |
+-| Do actor/user/root/provider reports reconcile without duplicate charges? | §§9, 10.7–10.8; direct versus inclusive and controlled versus external observations |
+-| Are new commercial patterns subordinated to existing authority and quality gates? | §§4.7, 6.9–6.10, 12; preview/health/cooldown cannot enable an unapproved destination |
+-| Is the next addition implementable without Vega, a real API key, cloud procurement or broad provider rollout? | §15.2; synthetic endpoints and narrow client/registry/ledger/UI changes |
+-| Are original tests retained and new requirements scoped? | §16; 1–41 preserved by subject, 42–76 additive, no test declared passed by this draft |
+-
+-**Review outcome sought:** adopt or explicitly amend the architecture delta and record the operation-contract/version decisions needed for the bounded first implementation brief. A successful document review is not permission to activate paid work, merge unrelated code, deploy the owner profile or begin Vega instrumentation.
++Review the correction by its finding-to-clause map, not by re-opening unrelated accepted development. Confirm especially: one trusted sending boundary; preserved legacy bytes/tool semantics; common shared envelope in the first successor; canonical versus signed execution-context fields; named first-write fence and revision vector; record-only versus verified authority; native tariffs including tier/rounding; no exposure release on local stream closure; separate spend/outcome evidence; and no premature Vega integration.
++
++The assurance register must resolve every T-01–T-87 identifier, with T-84 an alias only, and record compound subcases without contradictory duplicate statuses. The roadmap must position the offline importer and make DEV-12's exit executable. The normative architecture must be shorter than the submitted v1.2 under the same stated counting convention, without deleting inherited safety/quality obligations. Documentation checks are not runtime acceptance.
+ 
+ ---
+ 
+ ## 20. Evidence and references
+ 
+-### 20.1 Source basis and interpretation
+-
+-The supplied architecture is the primary structural source. Existing section organization, named roles, task-quality objective, phase identities and original acceptance-test subjects are preserved. New target requirements derive from the owner's recent decisions, the static recce and bounded development evidence. External product documentation is used only for the feature-pattern table; it does not qualify a Duranki adapter or dictate provider pricing.
+-
+-| Key | Source | What it supports / limitation |
+-|---|---|---|
+-| **S1** | `llm-routing-infra-design-v1.1(1).md`, supplied copy of v1.1 dated 16 October 2026 | Predecessor architecture and historical review/decision record; not a deployed-state inventory |
+-| **S2** | `docs/contracts/WP-A-A2-ADOPTION-01.md`, 17 October 2026 | Adopted wire `0.2`, canonical work, capability profile, live-only no-store consequence and version boundaries; specification adoption is not runtime certification |
+-| **S3** | DEV-04 living result, Choice B first-write/queue-revocation handoffs and independent review; supplied later DEV-10 progress receipts | Bounded separated-worker and trusted-sender design, lower-wait revocation and observation vocabulary; no universal transport claim |
+-| **S4** | `MODEL-SERVICE-COVERAGE-REPORT.md`, `MODEL-SERVICE-INVENTORY.json`, `DURANKI-COVERAGE-GAP-MATRIX.csv`, 25 October 2026 | Fifteen operation families, source roster/gaps and synthetic extension proposals at the specified snapshots; no live traffic, current deployed configuration, billing or comprehensive plugin proof |
+-| **S5** | `docs/development/dev-11/CACHE-ACCOUNTING-CONTRACT.md`, `RESULT.md`, `REVIEW-HANDOFF.md`, `TARGET-RESULT-02.json`, `BROWSER-RESULT-02.json` | Exact bounded cache contract and controlled tests; tested source differs from last recorded running owner build; fictional prices, no provider invoice evidence |
+-| **S6** | `docs/research/2026-10-25-cache-accounting-assessment.md` | Assessment's external-cache deferral and earlier defects; DEV-11 supersedes corrected defect descriptions only within its own contract, not historical probe results |
+-| **S7** | Owner instructions and development returns in the accompanying Duranki discussion | Provider-centred UI, permissions, user/agent cost attribution, scripted demonstrations, personal testing, selected feature patterns and explicit Vega-integration deferral; proposals are not freshly audited runtime evidence |
+-| **S8** | `docs/development/HISTORY.md` and `RETIREMENT-2026-10-25.json` | Retained active inputs/governing records/one-use receipts and fixed historical retrieval; not proof of off-machine custody for excluded artifacts |
+-
+-**Input identity:** the supplied v1.1 file is 71,744 bytes, SHA-256 `8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c`. The accompanying document-validation record records the exact new files and additional locally available input hashes. Those checks establish document identity and internal structure, not the correctness of external source repositories or application execution.
+-
+-### 20.2 Evidence vocabulary
+-
+-**Requirement/proposed** is future normative design pending adoption and implementation. **Source-observed** means traced in the static recce. **Controlled-demonstrated** means the named bounded synthetic execution. **Deployed-observed** means the build/profile actually inspected at the recorded time. **Provider-reported** identifies authenticated provider evidence, while **calculated** identifies local arithmetic and **invoice-reconciled** requires billing reconciliation. **Unknown** is retained whenever evidence is absent. None of these categories substitutes for another.
+-
+-Historical results and later corrections remain independently attributable. This revision does not reclassify a failed run, fabricate a provider/model/rate selection, assert current host-wide security, or promote a demo amount to real spend.
+-
+-### 20.3 Official product-pattern references checked for this update
+-
+-Checked on 25 October 2026. These short summaries concern documented product patterns only; product availability, licence entitlement and deployment suitability still require review at adoption. Links are direct publisher references.
+-
+-- **E1 — OpenRouter, [Provider Routing](https://openrouter.ai/docs/guides/routing/provider-selection).** Documents provider selection and required-parameter filtering. Duranki adopts explicit compatibility filtering, not silent unsupported-parameter behaviour.
+-- **E2 — Portkey, [Model Catalog](https://portkey.ai/docs/product/model-catalog).** Documents provider integrations, credentials and scoped catalogue/access controls. Duranki adopts the governed setup pattern, with its own explicit permission and qualification semantics.
+-- **E3 — LiteLLM, [Virtual Keys](https://docs.litellm.ai/docs/proxy/virtual_keys) and [Router — Load Balancing](https://docs.litellm.ai/docs/routing).** Document scoped key controls and per-deployment routing/cooldowns. These references do not authorize enabling those features inside Duranki's frozen worker.
+-- **E4 — Cloudflare, [Dynamic routing](https://developers.cloudflare.com/ai-gateway/features/dynamic-routing/).** Documents named routes, conditions and version/save/deploy/rollback. Duranki borrows versioned policy administration, not a claim of general multi-protocol execution support.
+-- **E5 — Vercel, [Set per-user budgets on AI Gateway](https://vercel.com/changelog/set-per-user-budgets-on-ai-gateway), and the publisher-maintained [spend observability reference](https://github.com/vercel/vercel-plugin/blob/main/skills/ai-gateway/references/spend-observability.md).** Document budget scopes/alerts and soft-cap/BYOK limits. Duranki's bounded reservations and personal-key accounting retain their own semantics. The direct budgets documentation page could not be fetched during this update; these publisher sources supplied the pattern evidence.
+-- **E6 — Not Diamond, [Training a custom router](https://docs.notdiamond.ai/docs/router-training-quickstart).** Describes routing based on application evaluation inputs, responses and scores. No claimed vendor savings are imported into Duranki's objective or evidence.
+-
+-### 20.4 Historical v1.1 reference list (retained, not newly verified)
+-
+-These entries preserve the predecessor's bibliography. Dated vendor/incident assertions have been removed from the operative risk clauses; no current business, advisory or feature-state conclusion rests on these historical entries.
+-
+-- [LiteLLM Auto Router v2](https://docs.litellm.ai/blog/autorouter-v2) — predecessor built-in-routing reference.
+-- [Datadog Security Labs: LiteLLM compromised on PyPI](https://securitylabs.datadoghq.com/articles/litellm-compromised-pypi-teampcp-supply-chain-campaign/) — predecessor incident context.
+-- [Braintrust: Portkey alternatives 2026](https://www.braintrust.dev/articles/portkey-alternatives-2026) — predecessor competitive source, published by a competitor.
+-- [TensorZero shutdown](https://future-stack-reviews.com/tensorzero-shut-down/) — predecessor market reference; no new verification here.
+-- [Langfuse joins ClickHouse](https://langfuse.com/blog/joining-clickhouse) — predecessor product-context reference.
+-
+----
+-
+-**End of v1.2 review draft.** Architecture first; the bounded implementation brief follows review and adoption of the applicable delta.
++| Key | Supplied basis / role |
++|---|---|
++| S1 | v1.1 architecture and historical review record; adopted predecessor |
++| S2 | WP-A/A2 adoption and WP-A v0.3 Correction 01 contract; legacy wire/work/result/usage semantics |
++| S3 | DEV-04 Choice B first-write handoff and Run-11 independent review; concrete bounded sender precedent |
++| S4 | 25 October model/service coverage report, inventory and gap matrix; static source only |
++| S5 | DEV-11 contract, result and final target/browser receipts; exact text profile and controlled accounting |
++| S6–S8 | Caching assessment, owner/development directions and retirement/custody record as identified in submitted v1.2 §20; preserved source references, not newly audited runtime |
++| D1 | Claude review disposition 01; M-01–M-07, N-01–N-07 and research map |
++| D2 | Addendum A reconciliation disposition 02; R1–R18 and corrected crosswalk |
++| A / H | Addendum A draft 0.1 / reconciliation handoff; reconstructed addendum and recovered owner quotation |
++| R2 | Claude review 02; F-01–F-05 and C-1–C-6 |
++| P1 | *Token Efficiency in Agentic LLM Systems*, 22 October 2026, especially §§4–5, 7.2 and 8; supplied research, not independently reverified literature |
++
++The packet retains exact input copies and hashes. The review/research map records qualifications and departures; the assurance register holds dated evidence and unresolved source correspondence. Commercial-router references remain in the preserved v1.2 §20.3 as historical pattern evidence, not refreshed product claims. Valhalla 0.4 and the Proto proposal/evidence report are not included or independently checked; their references remain attributed to A/H. No outside source is substituted for them.
++
++**End of v1.2 Correction 01 review draft.**
++

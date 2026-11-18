@@ -1,0 +1,140 @@
+{
+  "schema_version": "wp-b-entry-return-01",
+  "created_utc_date": "2026-10-17",
+  "status": "WP_B_ENTRY_RETURN_WITH_EXPLICIT_EVIDENCE_GAPS",
+  "evidence_classes_used": [
+    "SOURCE_OBSERVED",
+    "PROPOSED_FOR_EXPERIMENT",
+    "UNVERIFIED"
+  ],
+  "evidence_classes_not_obtained": [
+    "PUBLISHER_DOCUMENTED",
+    "RUNTIME_OBSERVED"
+  ],
+  "decisions": {
+    "wp_a_a2": "WP_A_A2_CONTRACT_ADOPTED_FOR_INITIAL_PROFILE",
+    "dec_13": "OPEN_NOT_ADOPTED",
+    "wp_b_b1_execution": "NOT_ISSUED",
+    "wp_c_execution": "NOT_ISSUED",
+    "gateway_runtime_evidence": "NOT_RUN"
+  },
+  "instruction_receipt": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-DEC13-WP-B-ENTRY-PREPARATION-01.md",
+    "sha256": "4ca790e2ef56b399444f130b1daa99e5fbc477826bf60fe95b7b25d20ba87bd4"
+  },
+  "adoption_receipt": {
+    "path": "docs/contracts/WP-A-A2-ADOPTION-01.md",
+    "sha256": "330b254f0ae7fe07b549260b88ce60fce8c950290d54c6a2db5e0d6e686eb350"
+  },
+  "controlling_source_receipts": [
+    {
+      "path": "docs/architecture/llm-routing-infra-design-v1.1.md",
+      "sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+      "sha256": "852d58be6087c1952f8349b429029f23c9235c86236b26dcf3ed69d3758aebab",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json",
+      "sha256": "ea4657b342be60e5bb785d9093130aa980503221d9e3c75ee603adaef8eb4e92",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/contracts/wp-a-03-c01/DURANKI-WP-A-CONTRACT-v0.3-CORRECTION-01.md",
+      "sha256": "f43c79f8d8bd65085f886fe1bf4b6851192ca241780b0b00d574c088da6f99c1",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/contracts/wp-a-03-c01/DURANKI-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
+      "sha256": "f8d753aa4e11998c483da5dc6dfea6afbf7d482dad34973904e936dcb3b3068b",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+      "sha256": "ea51d2d207d97ace357186ff762c09917c29674666c4307b6fe77ecf65993b38",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/contracts/wp-a-03-c01/DURANKI-WP-A-DECISIONS-v0.3-CORRECTION-01.md",
+      "sha256": "701ccc48a9ea3338a0f5e71c9ff9d1ab728d1fda1c67c1f4b34318e6b0a39b60",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/contracts/wp-a-03-c01/DURANKI-WP-A-RETURN-03-CORRECTION-01.json",
+      "sha256": "9613750b778538af3bf2d889dcd4888af9be9cce11016df6a5ba65694bd0f37a",
+      "classification": "SOURCE_OBSERVED"
+    },
+    {
+      "path": "docs/foundation/WP-FND-ACCEPTANCE-01.md",
+      "sha256": "68426a0d7574c44f9f6b5b2913738b727e4dfab92e01c7595266c9ff218ee5f4",
+      "classification": "SOURCE_OBSERVED"
+    }
+  ],
+  "upstream_retrieval": [
+    {
+      "url": "https://api.github.com/repos/BerriAI/litellm/releases/latest",
+      "argv": ["curl", "-IL", "--max-time", "15", "https://api.github.com/repos/BerriAI/litellm/releases/latest"],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 6,
+      "stderr_terminal_line": "curl: (6) Could not resolve host: api.github.com",
+      "response_obtained": false,
+      "classification": "UNVERIFIED"
+    },
+    {
+      "url": "https://pypi.org/pypi/litellm/json",
+      "argv": ["curl", "-IL", "--max-time", "15", "https://pypi.org/pypi/litellm/json"],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 6,
+      "stderr_terminal_line": "curl: (6) Could not resolve host: pypi.org",
+      "response_obtained": false,
+      "classification": "UNVERIFIED"
+    }
+  ],
+  "inspected_gateway_source_coordinates": [],
+  "candidate": {
+    "release_tag": null,
+    "resolved_commit": null,
+    "source_artifact_sha256": null,
+    "package_artifact_sha256": null,
+    "publisher_checksum": null,
+    "verified_signature_or_attestation": false,
+    "selection_status": "NOT_RECOMMENDED_WITHOUT_SOURCE",
+    "reason": "Official publisher name resolution failed and no authenticated local LiteLLM source was found; a pin or hook claim would be fabricated."
+  },
+  "output_receipts": [
+    {
+      "path": "docs/gateway/wp-b-entry-01/DURANKI-DEC13-GATEWAY-CANDIDATE-01.md",
+      "sha256": "7179ad86a5a83dd629a50ef971da4e7960f8fd6cd8cdd8f65e3ac8405ed314a6"
+    },
+    {
+      "path": "docs/gateway/wp-b-entry-01/DURANKI-WP-B-PROOF-SPEC-01.md",
+      "sha256": "59a91910df0ccdc13bf230cf9a92724b8dd67ac3d54b2c5a4f981b9cb67a09f6"
+    }
+  ],
+  "tool_receipt": {
+    "inert_parser": "/usr/bin/python3 -I -B",
+    "observed_version": "Python 3.9.6",
+    "gateway_or_sdk_imported": false,
+    "scratch_transfer_archive": null
+  },
+  "preservation": {
+    "protected_source_hashes_rechecked": true,
+    "existing_files_modified": false,
+    "repository_new_files": [
+      "docs/gateway/wp-b-entry-01/DURANKI-DEC13-GATEWAY-CANDIDATE-01.md",
+      "docs/gateway/wp-b-entry-01/DURANKI-WP-B-PROOF-SPEC-01.md",
+      "docs/gateway/wp-b-entry-01/DURANKI-WP-B-ENTRY-RETURN-01.json"
+    ],
+    "git_mutation": false
+  },
+  "unresolved_entry_conditions": [
+    "Restore ordinary authorized HTTPS access or supply an authenticated official LiteLLM source/release/metadata bundle; inspect a single exact release, commit and source archive and record its hashes. The two failed attempts captured a date but not a precise wall-clock timestamp.",
+    "Trace the selected source's ingress, transformation, callbacks, adapter, retries and final send with pinned file/symbol/line citations; verify an out-of-tree enforceable FDC extension or report DEC-09 contingency.",
+    "Obtain publisher dependency declarations, applicable license/advisory and release/soak evidence; produce an exact verified dependency closure before executing gateway code.",
+    "Select a candidate-compatible Python runtime, security/provenance acceptance and a separately issued bounded acquisition and disconnected-VM loopback execution scope; VM/socket and HTTPS capability are not established for that run."
+  ],
+  "proposed_next_executable_scope": "Separate owner adoption of DEC-13 and issuance of WP-B/B1 only after exact source and dependency evidence; a Python-only isolated loopback gateway/adapter plus independent receiver proof as specified in DURANKI-WP-B-PROOF-SPEC-01.md. No current execution is authorized."
+}

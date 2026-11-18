@@ -1,0 +1,410 @@
+{
+  "status": "PASS_RUN11_BOUNDED_SEPARATION_AND_QUEUE_REVOCATION_RECORDS",
+  "review_scope": "Data-only independent record/source correspondence; no application or Docker execution.",
+  "runtime": {
+    "filename": "DEV-04-RUNTIME-run-20261020-11.zip",
+    "bytes": 119640,
+    "sha256": "b825d38e300a7f971db827a12696eae7d3c582d4c21dc374cc96983ae24045bb",
+    "payloads_verified": 325,
+    "archive_members": 326,
+    "manifest_sha256": "5c9c752b4ea7a572c81f8237f5a53be5a4431cbfdc62a1e9de7c7ece95caf453",
+    "integrity": "PASS_CRC_PATH_TYPE_PREFIX_ENCRYPTION_SIZE_HASH_CHECKS"
+  },
+  "source": {
+    "filename": "DEV-04-SOURCE-run-20261020-11.zip",
+    "bytes": 126523,
+    "sha256": "9a3a3bda199b5fad6d63ccac6abd7837d534ed0c45cefb496645d89f56834a64",
+    "payloads_verified": 59,
+    "archive_members": 60,
+    "manifest_sha256": "021cc8121f41da98fde541064657c21c833d0b4f9c105597b2b8d055fda8be3b",
+    "integrity": "PASS_CRC_PATH_TYPE_PREFIX_ENCRYPTION_SIZE_HASH_CHECKS"
+  },
+  "preflights": {
+    "DEV-04-SOURCE-source-preflight-20261020-14-timeout-final.zip": {
+      "filename": "DEV-04-SOURCE-source-preflight-20261020-14-timeout-final.zip",
+      "bytes": 126523,
+      "sha256": "22ea6f05bba75b94fc65b76ae2e5d61993c08838301e06bdf0329b26780afb3d",
+      "payloads_verified": 59,
+      "archive_members": 60,
+      "manifest_sha256": "021cc8121f41da98fde541064657c21c833d0b4f9c105597b2b8d055fda8be3b",
+      "integrity": "PASS_CRC_PATH_TYPE_PREFIX_ENCRYPTION_SIZE_HASH_CHECKS",
+      "different_members_from_executed_source": []
+    },
+    "DEV-04-SOURCE-source-preflight-20261020-14-timeout.zip": {
+      "filename": "DEV-04-SOURCE-source-preflight-20261020-14-timeout.zip",
+      "bytes": 126455,
+      "sha256": "cf6034b50b6fff20a74d0f243ef1329657da9d19a12c9b7c2c72a830f588297e",
+      "payloads_verified": 59,
+      "archive_members": 60,
+      "manifest_sha256": "a87a2cb18ec416c76694cde45e6d36fbdacca7b16e24dffef7335c3e947e0e03",
+      "integrity": "PASS_CRC_PATH_TYPE_PREFIX_ENCRYPTION_SIZE_HASH_CHECKS",
+      "different_members_from_executed_source": [
+        "SOURCE-MANIFEST.json",
+        "harness/test_run10_held_timeout.py",
+        "harness/verify_choice_b_freshness.py"
+      ]
+    }
+  },
+  "runtime_source_manifest_correspondence": "PASS",
+  "observations": {
+    "disposition": "CHOICE_B_LOCAL_FIRST_WRITE_QUEUE_REVOCATION_OBSERVED",
+    "recorded_commands": {
+      "complete_sets": 72,
+      "exit_records": 84,
+      "all_zero": true
+    },
+    "held": {
+      "actor": "installed-python",
+      "case": "status",
+      "submission_id": "submission.8b5e8eef2c544a7397163ac1f7a450e3",
+      "submission_state": "completed",
+      "candidate_access": "present",
+      "attempt_id": "attempt.c5785cb9a4694e26a8861851dd0173c4",
+      "dispatch_state": "response_observed",
+      "terminal_error_code": null,
+      "terminal_attempt_id": null
+    },
+    "queued": {
+      "actor": "installed-python",
+      "case": "status",
+      "submission_id": "submission.aa7cacc3b5734a7cb3c765a0f0687be2",
+      "submission_state": "failed_before_transmit",
+      "candidate_access": "unavailable_due_failure",
+      "attempt_id": "attempt.35fb5933afcc4d62a392e4dd14486a5e",
+      "dispatch_state": "failed_before_dispatch",
+      "terminal_error_code": "FDC_REJECTED",
+      "terminal_attempt_id": "attempt.35fb5933afcc4d62a392e4dd14486a5e"
+    },
+    "timeout_extensions": {
+      "held_and_queued_seconds": 30.0,
+      "three_ordinary_positive_seconds": 1.0,
+      "components": [
+        "connect",
+        "read",
+        "write",
+        "pool"
+      ]
+    },
+    "timing": {
+      "queue_observation_ns": 766785848317511,
+      "revocation_ack_ns": 766786145762677,
+      "queued_lower_error_ns": 766786348354094,
+      "queue_to_revocation_ack_ms": 297.445166,
+      "revocation_ack_to_queued_error_ms": 202.591417,
+      "receiver_hold_to_release_ms": 995.912459,
+      "quiet_freshness_ms": 5205,
+      "quiet_separation_ms": 5204,
+      "ordering_basis": "same-process monotonic queue/authority/error records, sequential checked driver commands, inspected receiver hold code; no cross-clock first-write timestamp inference"
+    },
+    "counts": {
+      "submissions": 5,
+      "preparatory_intents": 5,
+      "guard_receipts": 5,
+      "receiver_arrivals": 4,
+      "usage_revisions": 4,
+      "queued_first_acceptance_events": 0
+    },
+    "arrivals": [
+      {
+        "attempt_id": "attempt.5ca1e4957ad74fca94475d2ce6e0ed7a",
+        "body_bytes": 144,
+        "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+        "message_roles": [
+          "system",
+          "user"
+        ],
+        "method": "POST",
+        "model": "model.demo",
+        "path": "/v1/chat/completions",
+        "received_at_ns": 1792492276650098506,
+        "sequence": 1,
+        "tool_call_ids": []
+      },
+      {
+        "attempt_id": "attempt.61d94ddbeab74980b1d2e94a73d439a7",
+        "body_bytes": 144,
+        "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+        "message_roles": [
+          "system",
+          "user"
+        ],
+        "method": "POST",
+        "model": "model.demo",
+        "path": "/v1/chat/completions",
+        "received_at_ns": 1792492282847550426,
+        "sequence": 2,
+        "tool_call_ids": []
+      },
+      {
+        "attempt_id": "attempt.c5785cb9a4694e26a8861851dd0173c4",
+        "body_bytes": 155,
+        "body_sha256": "9332007b34ff507e0c32c8b37ebf3e42499e1f15b81376bbdb595ca5bb54d28b",
+        "message_roles": [
+          "system",
+          "user"
+        ],
+        "method": "POST",
+        "model": "model.demo",
+        "path": "/v1/chat/completions",
+        "received_at_ns": 1792492283749870468,
+        "sequence": 3,
+        "tool_call_ids": []
+      },
+      {
+        "attempt_id": "attempt.509b91c45ba34461bd410b7bcada82d2",
+        "body_bytes": 144,
+        "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+        "message_roles": [
+          "system",
+          "user"
+        ],
+        "method": "POST",
+        "model": "model.demo",
+        "path": "/v1/chat/completions",
+        "received_at_ns": 1792492291251796388,
+        "sequence": 4,
+        "tool_call_ids": []
+      }
+    ],
+    "receipts": [
+      {
+        "attempt_id": "attempt.5ca1e4957ad74fca94475d2ce6e0ed7a",
+        "submission_id": "submission.0f203f1bb33d4b9384ff6de2f826b01c",
+        "receipt": {
+          "attempt_id": "attempt.5ca1e4957ad74fca94475d2ce6e0ed7a",
+          "body_bytes": 144,
+          "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+          "committed_at": "2026-10-20T10:31:16.638423+00:00",
+          "method": "POST",
+          "plan_id": "plan.a30aa1890ce34745a1f5c94f4379d492",
+          "recipe_version": "recipe.dev04.openai-sdk.v2",
+          "timeout_seconds": {
+            "connect": 1.0,
+            "pool": 1.0,
+            "read": 1.0,
+            "write": 1.0
+          },
+          "url": "http://127.0.0.1:8766/v1/chat/completions",
+          "work_digest": "sha256:fb89860e4530df491f064e6cef654de74466b7954892d13a13f46ebf87a56f6c"
+        }
+      },
+      {
+        "attempt_id": "attempt.61d94ddbeab74980b1d2e94a73d439a7",
+        "submission_id": "submission.23434d9827f44609b31863cc2d7d4f1a",
+        "receipt": {
+          "attempt_id": "attempt.61d94ddbeab74980b1d2e94a73d439a7",
+          "body_bytes": 144,
+          "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+          "committed_at": "2026-10-20T10:31:22.844757+00:00",
+          "method": "POST",
+          "plan_id": "plan.43d320e1330146b2bc0b540f08b35c14",
+          "recipe_version": "recipe.dev04.openai-sdk.v2",
+          "timeout_seconds": {
+            "connect": 1.0,
+            "pool": 1.0,
+            "read": 1.0,
+            "write": 1.0
+          },
+          "url": "http://127.0.0.1:8766/v1/chat/completions",
+          "work_digest": "sha256:3ae8d367c9063a2ec835e754d18e7efcba7378b8ed4c5522331d651bf278e5fb"
+        }
+      },
+      {
+        "attempt_id": "attempt.c5785cb9a4694e26a8861851dd0173c4",
+        "submission_id": "submission.8b5e8eef2c544a7397163ac1f7a450e3",
+        "receipt": {
+          "attempt_id": "attempt.c5785cb9a4694e26a8861851dd0173c4",
+          "body_bytes": 155,
+          "body_sha256": "9332007b34ff507e0c32c8b37ebf3e42499e1f15b81376bbdb595ca5bb54d28b",
+          "committed_at": "2026-10-20T10:31:23.747623+00:00",
+          "method": "POST",
+          "plan_id": "plan.f386e7ea2e044a71a182612940328758",
+          "recipe_version": "recipe.dev04.openai-sdk.v2",
+          "timeout_seconds": {
+            "connect": 30.0,
+            "pool": 30.0,
+            "read": 30.0,
+            "write": 30.0
+          },
+          "url": "http://127.0.0.1:8766/v1/chat/completions",
+          "work_digest": "sha256:27868fdb00edd6a08606c7cff8bd9ec7d9de96882697a6bd3b18ce9c6be43439"
+        }
+      },
+      {
+        "attempt_id": "attempt.35fb5933afcc4d62a392e4dd14486a5e",
+        "submission_id": "submission.aa7cacc3b5734a7cb3c765a0f0687be2",
+        "receipt": {
+          "attempt_id": "attempt.35fb5933afcc4d62a392e4dd14486a5e",
+          "body_bytes": 144,
+          "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+          "committed_at": "2026-10-20T10:31:24.246056+00:00",
+          "method": "POST",
+          "plan_id": "plan.aada0b20c2914082b4890ecbfdff34a2",
+          "recipe_version": "recipe.dev04.openai-sdk.v2",
+          "timeout_seconds": {
+            "connect": 30.0,
+            "pool": 30.0,
+            "read": 30.0,
+            "write": 30.0
+          },
+          "url": "http://127.0.0.1:8766/v1/chat/completions",
+          "work_digest": "sha256:4b5678c9fdaa62ee2fb6aade831d64cfb70fd704589865c4a026f4c6198142cb"
+        }
+      },
+      {
+        "attempt_id": "attempt.509b91c45ba34461bd410b7bcada82d2",
+        "submission_id": "submission.7466d1e95b694c1080eb34921376e649",
+        "receipt": {
+          "attempt_id": "attempt.509b91c45ba34461bd410b7bcada82d2",
+          "body_bytes": 144,
+          "body_sha256": "cc46416f8ffefe8add048d3f7a297546175c032b956b4cc6822cfdceca72964d",
+          "committed_at": "2026-10-20T10:31:31.249271+00:00",
+          "method": "POST",
+          "plan_id": "plan.0ac0701be32d40dd88c00277f74f4ed9",
+          "recipe_version": "recipe.dev04.openai-sdk.v2",
+          "timeout_seconds": {
+            "connect": 1.0,
+            "pool": 1.0,
+            "read": 1.0,
+            "write": 1.0
+          },
+          "url": "http://127.0.0.1:8766/v1/chat/completions",
+          "work_digest": "sha256:e5f6e97a49bda9e37f8d04a976337dec491b443ffafcef1795730804deb9d0e9"
+        }
+      }
+    ],
+    "send_summaries": [
+      {
+        "attempt_id": "attempt.5ca1e4957ad74fca94475d2ce6e0ed7a",
+        "first_bytes_accepted_by_local_socket": true,
+        "first_acceptance_events": 1,
+        "lower_error": null,
+        "monotonic_ns": 766778250626590
+      },
+      {
+        "attempt_id": "attempt.61d94ddbeab74980b1d2e94a73d439a7",
+        "first_bytes_accepted_by_local_socket": true,
+        "first_acceptance_events": 1,
+        "lower_error": null,
+        "monotonic_ns": 766784447441552
+      },
+      {
+        "attempt_id": "attempt.c5785cb9a4694e26a8861851dd0173c4",
+        "first_bytes_accepted_by_local_socket": true,
+        "first_acceptance_events": 1,
+        "lower_error": null,
+        "monotonic_ns": 766786347197053
+      },
+      {
+        "attempt_id": "attempt.35fb5933afcc4d62a392e4dd14486a5e",
+        "first_bytes_accepted_by_local_socket": false,
+        "first_acceptance_events": 0,
+        "lower_error": "ContractError",
+        "monotonic_ns": 766786348790928
+      },
+      {
+        "attempt_id": "attempt.509b91c45ba34461bd410b7bcada82d2",
+        "first_bytes_accepted_by_local_socket": true,
+        "first_acceptance_events": 1,
+        "lower_error": null,
+        "monotonic_ns": 766792851766764
+      }
+    ],
+    "worker_probe_result": {
+      "network_mode": "none",
+      "default_route": false,
+      "direct_receiver_connect_errno": 111,
+      "trusted_code_mounted": false,
+      "trusted_credentials_in_environment": false
+    },
+    "recorded_component_tests": {
+      "core-regression": 22,
+      "tool-regression": 24,
+      "bridge-component": 3,
+      "model-identity-regression": 2,
+      "boundary-readiness-regression": 10,
+      "choice-b-component": 11,
+      "choice-b-owned-sender-component": 10,
+      "choice-b-run10-timeout-regression": 15
+    },
+    "recorded_component_total": 97,
+    "cleanup": {
+      "containers": [
+        "duranki-dev04-20261020-11-python_choice_b-1",
+        "duranki-dev04-20261020-11-service_choice_b-1",
+        "duranki-dev04-20261020-11-receiver-1",
+        "duranki-dev04-20261020-11-worker_choice_b-1",
+        "duranki-dev04-20261020-11-netns-1"
+      ],
+      "volumes": [
+        "duranki-dev04-20261020-11_receiver_data",
+        "duranki-dev04-20261020-11_choice_b_link",
+        "duranki-dev04-20261020-11_choice_b_data"
+      ],
+      "image_ids": [
+        "sha256:475ec672fc5c7b9c6eb41ec3a4a13644ffa35090afe8d980d972c0b67aff9f0b",
+        "sha256:0307a21a8f120e0d2dd885ec86cfb620a8204c67cae75d6c29a20e0b4fc5d6e1",
+        "sha256:ea9c59cf74c23ed41c4fb6baa1ab507af87d50515a21ebf08e7b3cb3970f88e7",
+        "sha256:d1ae199523b3a3ea241a49fe3e3caa5f8f7bd93313f3193fe76d87f312d097ec",
+        "sha256:4a366f8fefa0d5742acbeaeac465fd582b82e968b62a26d76543f5480589b694"
+      ],
+      "image_tags": [
+        "duranki-dev04-service:run-20261020-11",
+        "duranki-dev04-receiver:run-20261020-11",
+        "duranki-dev04-pyclient:run-20261020-11",
+        "duranki-dev04-jsclient:run-20261020-11",
+        "duranki-dev04-worker:run-20261020-11"
+      ]
+    },
+    "capture_limits": [
+      "First-byte flag is set at positive local socket.send return, but exported send record is a completion summary, not a first-write timestamp.",
+      "Held/queued 30-second values are per-operation request extensions, not proof of a 30-second end-to-end deadline.",
+      "Queue observation reads selected private httpcore state for observation only; no full task/queue drain census.",
+      "Worker isolation output reflects explicit route/environment/path/connect probes plus supplied Compose configuration; not an independently fetched namespace inventory.",
+      "Image/source correspondence is by source snapshots and recorded build context, not a fresh image-filesystem inspection.",
+      "No raw response/WAL/database image, broad adversarial sender-interface proof, TLS/HTTP2, remote/distributed revocation, production or real-provider result."
+    ]
+  },
+  "verifier_corruption_controls": [
+    {
+      "control": "held outcome_unknown",
+      "result": "REJECTED",
+      "reason": "held positive did not complete"
+    },
+    {
+      "control": "queued accepted bytes",
+      "result": "REJECTED",
+      "reason": "queued emission/error"
+    },
+    {
+      "control": "held timeout regresses",
+      "result": "REJECTED",
+      "reason": "actual timeout mismatch"
+    },
+    {
+      "control": "queue after revocation",
+      "result": "REJECTED",
+      "reason": "queue/revocation/rejection ordering"
+    },
+    {
+      "control": "missing response release",
+      "result": "REJECTED",
+      "reason": "receiver control sequence"
+    },
+    {
+      "control": "wrong public rejection",
+      "result": "REJECTED",
+      "reason": "queued terminal semantics"
+    },
+    {
+      "control": "wrong request hash",
+      "result": "REJECTED",
+      "reason": "receiver/receipt mismatch"
+    },
+    {
+      "control": "cleanup failure",
+      "result": "REJECTED",
+      "reason": "recorded exits"
+    }
+  ]
+}

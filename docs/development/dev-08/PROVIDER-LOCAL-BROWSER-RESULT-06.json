@@ -1,0 +1,50 @@
+{
+  "connection": "conn.browser-test",
+  "connection_status_after_reopen": "archived",
+  "credential_visible_in_browser": false,
+  "deployment": "deployment.browser-test",
+  "execution_approved": false,
+  "model_traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "observations": [
+    "readiness:reachable",
+    "inventory:observed",
+    "access:observed"
+  ],
+  "scope": "disposable SQLite + actual Chrome + controlled TLS endpoint",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-06-connection-created.png",
+      "sha256": "f1a1f8a33215c503328ff76820438e158335588fbc8e6cacffbe729163aa4114"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-06-credential-masked.png",
+      "sha256": "12fda77d5efe45bf03e5367dae47e188a9fe6b220ac86243564aaba49404eb9d"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-06-scoped-observations.png",
+      "sha256": "d2a3387859f5246fb966ca812ec4681cbf323cb1ed6ecf4bc841b6503cbc3ee1"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-06-model-associated.png",
+      "sha256": "5c8882b8f5386a2f16fe578d1ff01a73b135c1e17daa7eab7755d4fdb69fbe89"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/provider-local-06-connection-archived.png",
+      "sha256": "9382f0038c9a8d9a77126aeb941b9b8b0a01e6a11ddad8449ea9ed8cdc79cffd"
+    }
+  ],
+  "signed_out_http": 401,
+  "source_sha256": "bbf0c0dc89f6c7df2f13fc3235fe06926c4148b98b553411e624edb752e53650",
+  "status": "PASS"
+}

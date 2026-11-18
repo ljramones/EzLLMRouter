@@ -1,0 +1,1494 @@
+{
+  "schema_version": "model-service-inventory.v1",
+  "date": "2026-10-25",
+  "method": "Static source inspection only. Evidence hashes are SHA-256 of whole inspected tracked files; ranges are 1-based inclusive.",
+  "checkouts": {
+    "platform": {
+      "root": "/Users/larrymitchell/Mach33/mach33-platform",
+      "branch": "vega/feat/numerics-tier2",
+      "head": "e69a1fce53917603d110bdd386bde1547a82196d",
+      "tree": "8cf4cb469b4638b2a75bb4cb95785514becce098d",
+      "initial_status": [
+        "?? artifacts/"
+      ]
+    },
+    "duranki": {
+      "root": "/Users/larrymitchell/Mach33/Duranki",
+      "branch": "dev11/cache-aware-accounting",
+      "head": "d990b78ca48b8e673c0cbd0260d3e141e45c7e48",
+      "tree": "8534c4f031a1aa185d09a9711e143e7d5bdf65ed",
+      "initial_status": []
+    }
+  },
+  "families": [
+    {
+      "id": "MS-01",
+      "family": "Text/chat and structured tool generation",
+      "class": "model_inference",
+      "agents": [
+        "Vega",
+        "Patton",
+        "Newton",
+        "Relay",
+        "Ironside",
+        "Boole",
+        "Cristi",
+        "Bud",
+        "The Agency",
+        "MyAssistant"
+      ],
+      "entry": "Shared Proto chat, Vega chat/agents, Bud custom chat; per-agent composition and model selection vary",
+      "chain": "agent route -> chat wrapper/SDK -> Anthropic Messages or xAI compatible chat -> text/tool consumer",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/vega-chat/dispatch.js",
+          "symbol": "streaming chat dispatch",
+          "lines": [
+            180,
+            235
+          ],
+          "sha256": "3586a5b946e716dcab921eb5553dbfe761f5402b368bab502544f1d719c8ff50"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-coding/xai-provider.js",
+          "symbol": "xAI chat wrapper",
+          "lines": [
+            34,
+            85
+          ],
+          "sha256": "9fa3c65f6ad729c8b9c0eab84004c5c64178dcb312c59706374293fc1ffb95f2"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-agents/composers/cluster-classifier.js",
+          "symbol": "LLM classifier",
+          "lines": [
+            112,
+            140
+          ],
+          "sha256": "f364f2c30c9edda618f79dc7b56709b5dd911d5e9a1bdaadb52d7878183b5bb3"
+        },
+        {
+          "checkout": "platform",
+          "path": "packages/@agents/my-assistant/body/index.js",
+          "symbol": "email classifier",
+          "lines": [
+            732,
+            745
+          ],
+          "sha256": "d7c66177735d72773662db1eb4b2eb3f232c48c5294e84ccd7b15b2035f4c327"
+        }
+      ],
+      "model": "Anthropic configured tier or xAI grok-code-fast-1; effective deployment/config unknown",
+      "publisher": "Anthropic or xAI by selected path",
+      "provider": "same vendor or configured endpoint; effective account unknown",
+      "protocol": "Messages SDK streaming/nonstreaming; xAI chat HTTP",
+      "io": "text/messages, tool schemas -> text or tool calls/class labels",
+      "lifecycle": "streamed deltas and multi-call tool cycles; SDK maxRetries 4 in coding path",
+      "usage": "Anthropic wrapper captures tokens only when used inside ALS; xAI coding wrapper substitutes zero counts if usage absent",
+      "identity": "agent labels/Proto identity present; exact per-call initiating user, parent run and charging owner inconsistent across paths",
+      "gap": "adapter extension; streaming/tool-cycle lifecycle extension for selected paths",
+      "test": "Synthetic Anthropic-shaped tool cycle plus xAI chat response with missing usage; verify per-attempt lineage and unknown cost",
+      "priority": "P2 — substantial source demand, but choose a bounded cohort after operation-level contract",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Shared Proto composition plus separate named chat/coding source; not proof every listed agent called a model"
+    },
+    {
+      "id": "MS-02",
+      "family": "Voyage document/query embeddings",
+      "class": "model_inference",
+      "agents": [
+        "Vega",
+        "Cristi"
+      ],
+      "entry": "Record indexing, semantic search, Cristi passage indexing",
+      "chain": "index/search -> lib/voyage.embed -> POST /v1/embeddings -> pgvector/in-process cosine consumer",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/voyage.js",
+          "symbol": "embed",
+          "lines": [
+            18,
+            63
+          ],
+          "sha256": "df60f5f03a3e30e73cf95124528e2d020cbcb99e9d1acff8acec6ad2bb1d3391"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/record-index.js",
+          "symbol": "indexRecord/indexMany",
+          "lines": [
+            26,
+            59
+          ],
+          "sha256": "7f6ee020b45eb63c8dc4736ac0796a024f05a592f766b9eacb703f08cc1afafe"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/record-index.js",
+          "symbol": "search",
+          "lines": [
+            73,
+            90
+          ],
+          "sha256": "7f6ee020b45eb63c8dc4736ac0796a024f05a592f766b9eacb703f08cc1afafe"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/cristi-semantic-search.js",
+          "symbol": "indexDocument",
+          "lines": [
+            70,
+            96
+          ],
+          "sha256": "ccd214f85fd75b96ed0cd54c3919ea2da95f2e201d64ef27d447c3ccf9fd2a1b"
+        }
+      ],
+      "model": "VOYAGE_EMBED_MODEL or voyage-3; 1024 dimensions assumed",
+      "publisher": "Voyage AI",
+      "provider": "Voyage API; key env reference VOYAGE_API_KEY",
+      "protocol": "HTTPS JSON POST embeddings",
+      "io": "text batches max 128, document/query input_type -> ordered vectors; 8k-character truncation",
+      "lifecycle": "synchronous batches; indexing upsert side effect; no local retry; missing key skips indexing/search",
+      "usage": "wrapper keeps vectors but drops response usage; model-specific input units/rates unresolved",
+      "identity": "shared key and precomputed corpus rows; ingestion charging owner and later reader allocation undefined",
+      "gap": "contract/accounting extension",
+      "test": "Synthetic document/query batch, 128 boundary, usage absent/present, index-version incompatibility and durable attempt attribution",
+      "priority": "P1 — concrete new inference family and shared ingestion cost",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [
+        "MS-03",
+        "MS-11"
+      ],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-03",
+      "family": "Voyage reranking",
+      "class": "model_inference",
+      "agents": [
+        "Vega"
+      ],
+      "entry": "Record semantic search after vector recall",
+      "chain": "record-index.search -> voyage.rerank -> POST /v1/rerank -> ordered passage hits",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/voyage.js",
+          "symbol": "rerank",
+          "lines": [
+            70,
+            85
+          ],
+          "sha256": "df60f5f03a3e30e73cf95124528e2d020cbcb99e9d1acff8acec6ad2bb1d3391"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/record-index.js",
+          "symbol": "search",
+          "lines": [
+            69,
+            99
+          ],
+          "sha256": "7f6ee020b45eb63c8dc4736ac0796a024f05a592f766b9eacb703f08cc1afafe"
+        }
+      ],
+      "model": "VOYAGE_RERANK_MODEL or rerank-2",
+      "publisher": "Voyage AI",
+      "provider": "Voyage API",
+      "protocol": "HTTPS JSON POST rerank",
+      "io": "query plus candidate documents/top_k -> index and relevance_score",
+      "lifecycle": "synchronous; falls back to cosine on rerank error",
+      "usage": "usage ignored; exact native billing unit and rate unknown",
+      "identity": "same shared credential; query task and candidate set not separately costed",
+      "gap": "contract/accounting extension",
+      "test": "Synthetic rerank with candidate count, score order, failed rerank fallback and unknown-cost state",
+      "priority": "P1 — separate operation and billable attempt from query embedding",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [
+        "MS-02",
+        "MS-11"
+      ],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-04",
+      "family": "Vision understanding and OCR-style image extraction",
+      "class": "multimodal_llm",
+      "agents": [
+        "Vega",
+        "Cristi"
+      ],
+      "entry": "Attachment ingestion and Grok desktop screen reading",
+      "chain": "image extractor -> coordinator attachment-vision -> Anthropic Messages image block -> extracted text/caption; screen frame -> Messages -> transcript",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/ingestion/extractors/image.js",
+          "symbol": "extract",
+          "lines": [
+            11,
+            24
+          ],
+          "sha256": "f5a9185d1ad43f558c1cae0a88b0dec62b3c8e56ad902761d8a377e7cabb6723"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/ingestion/agents.js",
+          "symbol": "runAttachmentVision",
+          "lines": [
+            126,
+            169
+          ],
+          "sha256": "5dfd9d9b618a186699dfdfc3daa16bcd849afd6e69db9eca4070c5b14977caa8"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-grok-view.js",
+          "symbol": "_lookOnce",
+          "lines": [
+            286,
+            308
+          ],
+          "sha256": "b2c06dc70fb57c984d66ddd6c71e1a303c717eae1ed06348342788a73c450e05"
+        }
+      ],
+      "model": "VEGA_TEXT_CONFIG.tiers.standard; effective env selection unknown",
+      "publisher": "Anthropic",
+      "provider": "Anthropic Messages API",
+      "protocol": "SDK Messages with base64 image block",
+      "io": "PNG/JPEG/WebP or screenshot -> text/caption/transcript; image bytes leave app",
+      "lifecycle": "synchronous, on-demand; ingestion writes derived artifact text; screen reader waits for frame",
+      "usage": "token usage possible in Messages response but image-specific accounting/rate not shown in these paths",
+      "identity": "attachment dispatch has audit agent invocation; screen read user/task/charge lineage not established",
+      "gap": "contract/accounting and artifact boundary extension",
+      "test": "Synthetic image block with media-size guard, token observation and no image retention; reject unsupported modality",
+      "priority": "P1 — concrete image input with text result; not a dedicated OCR model",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [
+        "MS-01",
+        "MS-13"
+      ],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-05",
+      "family": "Speech transcription (batch/chunks)",
+      "class": "model_inference",
+      "agents": [
+        "Vega",
+        "Relay",
+        "Bud",
+        "Cristi",
+        "MyAssistant",
+        "The Agency"
+      ],
+      "entry": "Proto voice routes and team call transcript chunks",
+      "chain": "browser audio -> proto/team-chat route -> Deepgram/xAI/OpenAI/Google STT -> transcript DB/chat",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/proto/voice-body.js",
+          "symbol": "transcribe",
+          "lines": [
+            61,
+            111
+          ],
+          "sha256": "a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/team-chat/routes.js",
+          "symbol": "call transcription",
+          "lines": [
+            2248,
+            2285
+          ],
+          "sha256": "cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "checkout": "platform",
+          "path": "packages/@agents/relay/body/routes.js",
+          "symbol": "Google Speech recognize",
+          "lines": [
+            735,
+            782
+          ],
+          "sha256": "0dd157f4a172025d80368cb5c3c6abd31cc8295e54c599090aac22bcfe7795d3"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-voice.js",
+          "symbol": "Vega STT",
+          "lines": [
+            35,
+            71
+          ],
+          "sha256": "5aa3acb7759f23dc3a207b6fc3c8110962393f91fb1adeeb32490847bbb47d68"
+        }
+      ],
+      "model": "Deepgram nova-2; OpenAI whisper-1 or config model; Google latest_long; xAI STT model unspecified",
+      "publisher": "Deepgram/OpenAI/Google/xAI by route",
+      "provider": "corresponding hosted API; keys/service account by route",
+      "protocol": "HTTPS multipart/raw audio or Google Speech SDK recognize",
+      "io": "audio/webm/opus and other media -> transcript; language/hints differ",
+      "lifecycle": "chunked call path but each request synchronous; repeated chunks and transcript writes; no unified send/duplicate guard",
+      "usage": "duration/audio units absent from retained response in traced routes; rates and free quotas unknown",
+      "identity": "call speaker/channel present; provider request attribution to user/agent/task/charging owner incomplete",
+      "gap": "contract/accounting and lifecycle extension",
+      "test": "Synthetic 2-chunk STT with replay-safe chunk identity, duration-based observation and unknown-cost fallback",
+      "priority": "P1 — several concrete routes and non-token units",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-06",
+      "family": "Speech synthesis",
+      "class": "model_inference",
+      "agents": [
+        "Vega",
+        "Bud",
+        "Cristi",
+        "MyAssistant",
+        "The Agency"
+      ],
+      "entry": "Proto and Vega speak routes",
+      "chain": "text/voice settings -> xAI or ElevenLabs TTS -> MP3 bytes -> browser",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/proto/voice-body.js",
+          "symbol": "speak",
+          "lines": [
+            120,
+            231
+          ],
+          "sha256": "a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-voice.js",
+          "symbol": "speak",
+          "lines": [
+            79,
+            110
+          ],
+          "sha256": "5aa3acb7759f23dc3a207b6fc3c8110962393f91fb1adeeb32490847bbb47d68"
+        },
+        {
+          "checkout": "platform",
+          "path": "packages/@agents/my-assistant/body/lib/voice.js",
+          "symbol": "speak",
+          "lines": [
+            41,
+            56
+          ],
+          "sha256": "c2f087ab0820c4373db6e8139b61924952ac6dede4fb64bef29badb1e2ec60b7"
+        }
+      ],
+      "model": "xAI TTS model unspecified; ElevenLabs voice/voice settings selected",
+      "publisher": "xAI or ElevenLabs",
+      "provider": "hosted API by selected route",
+      "protocol": "HTTPS JSON -> audio/mpeg",
+      "io": "text, voice_id, language, expression/stability -> binary audio",
+      "lifecycle": "synchronous byte response; provider selection can fall back to xAI",
+      "usage": "audio/character units not captured; binary output and storage/retention undefined",
+      "identity": "agent voice named; initiating caller and charge lineage not reliably persisted",
+      "gap": "contract/accounting and artifact extension",
+      "test": "Synthetic TTS provider selection, binary artifact receipt, native usage unknown, no repeat send on refresh",
+      "priority": "P2 — distinct output artifact and unit contract",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-07",
+      "family": "Realtime speech-to-speech with transcription",
+      "class": "realtime_multimodal",
+      "agents": [
+        "Vega",
+        "Bud",
+        "Cristi",
+        "The Agency"
+      ],
+      "entry": "Browser realtime WebSocket proxy",
+      "chain": "browser WS -> proto/Vega proxy -> xAI realtime WS -> PCM audio/transcripts/tools -> client/session state",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": "realtime session config",
+          "lines": [
+            36,
+            105
+          ],
+          "sha256": "8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": "WebSocket session events",
+          "lines": [
+            170,
+            258
+          ],
+          "sha256": "8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-realtime.js",
+          "symbol": "Vega realtime transcription",
+          "lines": [
+            848,
+            865
+          ],
+          "sha256": "be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8"
+        }
+      ],
+      "model": "grok-voice-think-fast-1.0 default WS URL; nested whisper-1 transcription setting",
+      "publisher": "xAI realtime; transcription submodel named whisper-1 but charging provenance unresolved",
+      "provider": "xAI WS endpoint or override",
+      "protocol": "bidirectional WebSocket",
+      "io": "PCM16 audio frames + text/events -> audio/text/tool events",
+      "lifecycle": "stateful session, VAD, cancel/barge-in, reconnect and partial transcripts",
+      "usage": "per-session/turn billable units, duplicate suppression and bundled-vs-separate transcription charges unresolved",
+      "identity": "session ID exists; per-turn initiating user/root/agent/owner mapping not established",
+      "gap": "lifecycle extension",
+      "test": "Synthetic WS transcript with reconnect/cancel/partial usage and exposure; no live gateway",
+      "priority": "P3 — high architectural dependency; not a first token adapter",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Shared Proto voice route plus Vega realtime path; per-agent deployment/use unknown"
+    },
+    {
+      "id": "MS-08",
+      "family": "Image generation and persisted media",
+      "class": "model_inference",
+      "agents": [
+        "Vega"
+      ],
+      "entry": "Editorial image specialist",
+      "chain": "editorial-image text prompt -> grok-image.generate -> xAI images/generations -> download -> local/GCS URL",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/vega-agents/editorial/image.js",
+          "symbol": "image specialist",
+          "lines": [
+            60,
+            107
+          ],
+          "sha256": "910db93ae8e44831535528ce42eb95ec5980515a6ed14d214bf393bf4acc33b1"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-grok-image.js",
+          "symbol": "generate",
+          "lines": [
+            130,
+            182
+          ],
+          "sha256": "7c62a7d00957176ce115a4cfb2f5c74a9d1bf041ffdf7cc9ffd62e9f6f1d863e"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-grok-image.js",
+          "symbol": "media persist",
+          "lines": [
+            100,
+            127
+          ],
+          "sha256": "7c62a7d00957176ce115a4cfb2f5c74a9d1bf041ffdf7cc9ffd62e9f6f1d863e"
+        }
+      ],
+      "model": "VEGA_GROK_IMAGE_MODEL or grok-imagine-image-quality, optional call override",
+      "publisher": "xAI",
+      "provider": "xAI hosted image API; image download URL separate",
+      "protocol": "HTTPS JSON then binary GET/store",
+      "io": "prompt and n -> image URL, revised prompt, image bytes",
+      "lifecycle": "retry wrapper; post-generation download may fail and temporary URL be returned",
+      "usage": "image count/size/quality billing and download/storage liability not captured; do not infer zero cost",
+      "identity": "editorial workflow gives agent context, no per-image charging owner/attempt guard in source",
+      "gap": "contract/accounting and artifact lifecycle extension",
+      "test": "Synthetic generation then failed media persist, unknown image cost and first-byte uncertainty; no duplicate generation",
+      "priority": "P2 — clear separate operation and artifact liability",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-09",
+      "family": "Model-enabled web and X search",
+      "class": "model_with_adjacent_tool",
+      "agents": [
+        "Vega",
+        "Bud"
+      ],
+      "entry": "Vega search_web, Bud MCP image/web search, Agent X and numerics tier2",
+      "chain": "agent tool -> xAI Responses web_search -> citation/result consumer; Bud MCP forwards to local route",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/vega-chat.js",
+          "symbol": "searchWeb",
+          "lines": [
+            6340,
+            6407
+          ],
+          "sha256": "44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/numerics-tier2/providers/xai-web-search-adapter.js",
+          "symbol": "xAI search adapter",
+          "lines": [
+            30,
+            68
+          ],
+          "sha256": "a5e1aac63e6bfdf8d33ad55f5703d236465fedfc02db392b820788f591a02dc7"
+        },
+        {
+          "checkout": "platform",
+          "path": "apps/bud/mcp/image-search-server.js",
+          "symbol": "image search MCP",
+          "lines": [
+            3,
+            16
+          ],
+          "sha256": "6ef3928a13e99965d059f4990c3fa6683e21ede4badb6eeaf673af5aceecbf26"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/agent-x/x-source-live.js",
+          "symbol": "X source",
+          "lines": [
+            20,
+            35
+          ],
+          "sha256": "587c6d9d7b8505e25c37447f3678dbb3dd5555c2ee667930ebd47cef82ec3c24"
+        }
+      ],
+      "model": "grok-4.3 or AGENTX_XAI_MODEL override; exact served version unknown",
+      "publisher": "xAI",
+      "provider": "xAI Responses with hosted web_search",
+      "protocol": "HTTPS Responses tool call; MCP stdio indirection in Bud",
+      "io": "query -> text/citations/URLs; URLs are observations, not owned image generation",
+      "lifecycle": "single HTTP attempt in numerics adapter; tool service may have separate fee; no Duranki approved route",
+      "usage": "response usage/tool fees not represented by numerics observation envelope or Duranki text cache contract",
+      "identity": "numerics searchRunId captured; task/root/charge lineage across MCP/agent not established",
+      "gap": "adapter plus contract/accounting extension",
+      "test": "Synthetic Responses web_search output with model tokens and separate tool unit, explicit unknown fee and citation provenance",
+      "priority": "P1 — implemented paid search adapter; Duranki explicitly disables responses_web_search",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [
+        "MS-10"
+      ],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-10",
+      "family": "Academic search APIs",
+      "class": "adjacent_service",
+      "agents": [
+        "Vega"
+      ],
+      "entry": "Evidence collector and numerics tier2 provider adapters",
+      "chain": "searchAcademic -> SerpAPI Google Scholar + Semantic Scholar + arXiv -> merged/deduped papers",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/epistemic/academic-search.js",
+          "symbol": "searchAcademic",
+          "lines": [
+            341,
+            418
+          ],
+          "sha256": "b0d4fbecaf91744f9f068ba70bf3563def7f0ee6ad829e2e65b191c02d893fbc"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/numerics-tier2/providers/serpapi-google-scholar-adapter.js",
+          "symbol": "SerpAPI adapter",
+          "lines": [
+            6,
+            54
+          ],
+          "sha256": "3f668d5d7603438aca661dfec092596aabee39fb0d5fb8182b6ce9873be80941"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/numerics-tier2/providers/semantic-scholar-adapter.js",
+          "symbol": "Semantic Scholar adapter",
+          "lines": [
+            6,
+            55
+          ],
+          "sha256": "c91285c2d74a8dea99c6118d5d30c0dd839caa8ed3752ff89a9346e75a9873e8"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/numerics-tier2/providers/arxiv-adapter.js",
+          "symbol": "arXiv adapter",
+          "lines": [
+            6,
+            50
+          ],
+          "sha256": "15d47b4392144c727934e17919bff91e3ae9d0fa3f80a26a73d63e4116daa8eb"
+        }
+      ],
+      "model": "No inference model established; adapter requestedModelAlias values denote service identities",
+      "publisher": "not applicable for search APIs",
+      "provider": "SerpAPI/Semantic Scholar/arXiv",
+      "protocol": "HTTPS GET JSON or Atom",
+      "io": "query/year/limit -> paper metadata and URLs",
+      "lifecycle": "parallel fan-out/dedupe; Semantic Scholar 429 retry max two in numerics adapter",
+      "usage": "SerpAPI search-request quota potential; native price/charge records absent; other service cost unknown",
+      "identity": "searchRunId in numerics adapter, but owner/task charge attribution not evidenced",
+      "gap": "external-observation-only candidate; paid SerpAPI needs separate allowance if enforced",
+      "test": "Synthetic mixed paid/free search invocations with per-request unit and dedupe without double counting",
+      "priority": "P2 — paid adjacent service, not model inference",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Vega academic-search tool traced; Newton/Bud relationship plausible but not traced to this adapter",
+      "candidate_agents": [
+        "Newton",
+        "Bud"
+      ]
+    },
+    {
+      "id": "MS-11",
+      "family": "Vector retrieval and precomputed corpus",
+      "class": "adjacent_service",
+      "agents": [
+        "Vega",
+        "Cristi"
+      ],
+      "entry": "Record semantic search and Cristi passage search",
+      "chain": "embedding -> PostgreSQL pgvector HNSW or in-process matrix -> cosine matches -> optional rerank",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/record-index.js",
+          "symbol": "pgvector search",
+          "lines": [
+            69,
+            99
+          ],
+          "sha256": "7f6ee020b45eb63c8dc4736ac0796a024f05a592f766b9eacb703f08cc1afafe"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/cristi-semantic-search.js",
+          "symbol": "in-process matrix",
+          "lines": [
+            110,
+            125
+          ],
+          "sha256": "ccd214f85fd75b96ed0cd54c3919ea2da95f2e201d64ef27d447c3ccf9fd2a1b"
+        }
+      ],
+      "model": "Voyage vector version required for compatible index; local cosine is not model inference",
+      "publisher": "Voyage only for upstream embedding",
+      "provider": "PostgreSQL/local memory for retrieval",
+      "protocol": "SQL vector operator or in-process math",
+      "io": "query vector -> matching rows/scores",
+      "lifecycle": "precomputed index persists; reindex/delete and index drift affect output",
+      "usage": "DB storage/query/resource usage not measured; never allocate old ingestion cost to every query by default",
+      "identity": "app/channel scoping exists; shared ingestion charge allocation unresolved",
+      "gap": "external-observation-only candidate",
+      "test": "Synthetic corpus/index version and shared-ingestion allocation ledger separate from per-query model cost",
+      "priority": "P2 — needed for true task total and routing compatibility",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-12",
+      "family": "Bud Grok Build subprocess and ACP turns",
+      "class": "external_execution_boundary",
+      "agents": [
+        "Bud"
+      ],
+      "entry": "User-selectable Grok backend",
+      "chain": "Bud route -> spawn external xai-grok-pager -> ACP session/prompt -> streamed turn_completed -> UI",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "apps/bud/index.js",
+          "symbol": "backend selection",
+          "lines": [
+            89,
+            120
+          ],
+          "sha256": "d360c89e39498ca603467a4cbb2bed704b92113ad7b7156c60ceaf24c608b6f8"
+        },
+        {
+          "checkout": "platform",
+          "path": "apps/bud/grok-backend.js",
+          "symbol": "subprocess startup",
+          "lines": [
+            735,
+            750
+          ],
+          "sha256": "b9261f8c7a105c7bc50b6377d8346e02d48b9c594fd2f6ef09826017566c4078"
+        },
+        {
+          "checkout": "platform",
+          "path": "apps/bud/grok-backend.js",
+          "symbol": "turn usage",
+          "lines": [
+            1718,
+            1735
+          ],
+          "sha256": "b9261f8c7a105c7bc50b6377d8346e02d48b9c594fd2f6ef09826017566c4078"
+        },
+        {
+          "checkout": "platform",
+          "path": "apps/bud/grok-backend.js",
+          "symbol": "ACP prompt",
+          "lines": [
+            1788,
+            1801
+          ],
+          "sha256": "b9261f8c7a105c7bc50b6377d8346e02d48b9c594fd2f6ef09826017566c4078"
+        }
+      ],
+      "model": "External Grok config/persona selection; effective model unknown without external binary/config",
+      "publisher": "xAI candidate; exact per-turn model unresolved",
+      "provider": "external subprocess may use xAI account; custody unresolved",
+      "protocol": "local WebSocket ACP JSON-RPC to subprocess, then opaque external transport",
+      "io": "text prompt/streamed text, tool calls and turn usage",
+      "lifecycle": "persistent sessions, interrupt, lazy rotation, backend switching",
+      "usage": "input/output/cached-read tokens logged for rotation; no demonstrated exact price or durable attempt settlement",
+      "identity": "uid and crewKey in process; cross-agent delegated run/charging owner linkage unresolved",
+      "gap": "external-observation-only candidate",
+      "test": "Synthetic ACP turn event capture into immutable observation ledger; enforce only after trusted transport ownership is designed",
+      "priority": "P3 — external binary outside inspected checkout, passive accounting first",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [
+        "MS-09"
+      ],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-13",
+      "family": "Local PDF text extraction",
+      "class": "non_model_processing",
+      "agents": [
+        "Vega",
+        "Cristi"
+      ],
+      "entry": "Ingestion extractor for PDFs",
+      "chain": "PDF bytes -> pdf-parse -> text/pages -> decomposer",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/ingestion/extractors/pdf.js",
+          "symbol": "extract",
+          "lines": [
+            3,
+            19
+          ],
+          "sha256": "1e3ac0ddcd93a21734494e5a4e004e326c9b1a9843dfcd3d5171d22f17ab2c50"
+        }
+      ],
+      "model": null,
+      "publisher": null,
+      "provider": "in-process pdf-parse",
+      "protocol": "local library call",
+      "io": "PDF -> text and page count; scanned-only PDF may yield empty text",
+      "lifecycle": "synchronous processing, no OCR model",
+      "usage": "no external API charge; CPU/storage cost unmeasured",
+      "identity": "downstream decomposer may create a separate model attempt",
+      "gap": "deferred/out of scope for model routing; optional resource accounting",
+      "test": "Synthetic scanned PDF yields no text and no model charge; separate downstream model attempt",
+      "priority": "P3 — avoid false OCR classification",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-14",
+      "family": "Klipy GIF/media search",
+      "class": "adjacent_service",
+      "agents": [
+        "Relay"
+      ],
+      "entry": "Team-chat GIF picker",
+      "chain": "composer -> gif-search -> Klipy HTTPS GET -> attachment URL",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/team-chat/gif-search.js",
+          "symbol": "fetch GIF",
+          "lines": [
+            36,
+            83
+          ],
+          "sha256": "af10b3a8a68a794ed5afde96831c6db6c129eeb9967275b68c01ceb9a7b888fd"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/team-chat/gif-search.js",
+          "symbol": "search",
+          "lines": [
+            120,
+            139
+          ],
+          "sha256": "af10b3a8a68a794ed5afde96831c6db6c129eeb9967275b68c01ceb9a7b888fd"
+        }
+      ],
+      "model": null,
+      "publisher": null,
+      "provider": "Klipy API",
+      "protocol": "HTTPS GET",
+      "io": "query/customer id -> GIF metadata/URLs",
+      "lifecycle": "search-as-you-type; independent media attachment follow-up",
+      "usage": "request quota and price not established in inspected source",
+      "identity": "customerId passed; task/agent/charging owner not tied to Duranki",
+      "gap": "deferred/out of scope until billability/traffic established",
+      "test": "Optional synthetic metered GET observation, never model token cost",
+      "priority": "P3 — ancillary UI service",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    },
+    {
+      "id": "MS-15",
+      "family": "Pure heuristic classification and scoring",
+      "class": "non_model_processing",
+      "agents": [
+        "Vega",
+        "Newton"
+      ],
+      "entry": "Live event classifier and epistemic tree role heuristics",
+      "chain": "event/claim data -> local JavaScript rules/Jaccard/cosine -> decision",
+      "evidence": [
+        {
+          "checkout": "platform",
+          "path": "lib/vega-live/classifier.js",
+          "symbol": "pure event classifier",
+          "lines": [
+            1,
+            18
+          ],
+          "sha256": "a62ad8de608a8707cd0f9fab00179d2c4e01a52dddb6585b9ba575e37a65bfbd"
+        },
+        {
+          "checkout": "platform",
+          "path": "lib/vega-agents/epistemic-review/revision-detector.js",
+          "symbol": "Jaccard threshold",
+          "lines": [
+            28,
+            42
+          ],
+          "sha256": "7afb7eeebba923f71aadda101bc50590ec76dc0db1855c6b0d95c5b81201c09b"
+        }
+      ],
+      "model": null,
+      "publisher": null,
+      "provider": "in-process JavaScript",
+      "protocol": "local function",
+      "io": "events/text terms -> category/score/decision",
+      "lifecycle": "synchronous; no external request",
+      "usage": "no model API usage; CPU cost unmeasured",
+      "identity": "event/claim lineage belongs to platform, not model attempt",
+      "gap": "deferred/out of scope",
+      "test": "Classify as non-model in synthetic service inventory; no external charge",
+      "priority": "P3 — prevents mislabeling score/classifier names as paid models",
+      "source_status": "statically reachable source call or concrete local processing; runtime use not established",
+      "configuration_status": "default/config candidate only; exact deployed configuration unknown",
+      "runtime_observation": null,
+      "accounting_observation": "Source-level only; no invoice or production usage queried",
+      "duranki_evidence": [
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/core.py",
+          "lines": [
+            201,
+            206
+          ],
+          "sha256": "1d3ad2709796ac78f01549ab7b065152abbdae7d96a86546b0f50bd8a8b65de1"
+        },
+        {
+          "checkout": "duranki",
+          "path": "server/src/duranki_server/cache_accounting.py",
+          "lines": [
+            15,
+            70
+          ],
+          "sha256": "ccef993ac9cc0c683fd87e7841486783a75a43761d86e562715a3c6dd3423cd3"
+        },
+        {
+          "checkout": "duranki",
+          "path": "tests/gateway_integration/choice_b_worker.py",
+          "lines": [
+            143,
+            166
+          ],
+          "sha256": "9566205880ef01ba8a2e096b75ff8a7000fbafe896a32ef93286d3d9e1eab069"
+        }
+      ],
+      "unknowns": [
+        "runtime frequency",
+        "actual account billing/rate",
+        "effective deployed model unless fixed in call",
+        "production usage and owner allocation"
+      ],
+      "related_operations": [],
+      "agent_mapping_basis": "Named source entry or shared Proto route candidate; per-agent runtime invocation not observed"
+    }
+  ],
+  "not_found_in_inspected_scope": [
+    "dedicated moderation API",
+    "dedicated non-LLM classifier model",
+    "image editing endpoint",
+    "video generation/inference",
+    "browser WebGPU/ONNX inference",
+    "active local Ollama/vLLM model invocation from inspected first-party paths"
+  ],
+  "not_assessed": [
+    "external Grok Build binary and plugins",
+    "deployed configuration/secrets",
+    "untracked artifacts",
+    "live traffic/invoices",
+    "third-party SDK internals"
+  ]
+}

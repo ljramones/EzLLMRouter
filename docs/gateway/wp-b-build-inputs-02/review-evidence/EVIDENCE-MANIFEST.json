@@ -1,0 +1,1226 @@
+{
+  "absent_sources": [
+    "openai-2.54.0 sdist",
+    "anyio-4.15.1 sdist"
+  ],
+  "basis": {
+    "run41_lock_sha256": "6f2bfaea5f46c24688d5a815e7264892e4104945cb37516ecc1a339e9239f1ce",
+    "run41_zip_sha256": "84823f52252b104bcf5c57d91b398f64a25f4cbfeb64b35be3a6dabf7640f081"
+  },
+  "companion_source": {
+    "note": "Selected root source archive preserved in repository, not duplicated in this packet; inspected relevant source files and full Cargo.lock are included.",
+    "path": "docs/gateway/review-evidence-02/litellm-1.105.1.tar.gz",
+    "sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97"
+  },
+  "files": [
+    {
+      "bytes": 3260,
+      "path": "analysis/analyze_cargo.py",
+      "sha256": "5cf5f3cca413a91a83eed28f3229a9ba6bcef2870b497bb6f647deb9e6e060d5"
+    },
+    {
+      "bytes": 6941,
+      "path": "analysis/analyze_edges.py",
+      "sha256": "e4dcedbfac0644d1fe7921205cd8467428d3d19f5411a2382c729ef651c20d37"
+    },
+    {
+      "bytes": 83695,
+      "path": "analysis/cache-metadata-parsed.json",
+      "sha256": "5922a8de6c08a572d051ef643d32c00e82f0d210a1480b090d5547eb438f78f4"
+    },
+    {
+      "bytes": 290863,
+      "path": "analysis/cargo-inventory.json",
+      "sha256": "d851d9edce2ab89d0c3fdd606fb187b2dc2c9af97828250a8d430dace09b1034"
+    },
+    {
+      "bytes": 255917,
+      "path": "analysis/edge-analysis.json",
+      "sha256": "90a58142a24d6afe666793bd69e6438e969d41d062c255af5862b27e9a24b7e4"
+    },
+    {
+      "bytes": 3866,
+      "path": "analysis/generate_closure.py",
+      "sha256": "850b1e832c2bb1044e3946db0aebe7076331556d552041d03efc39965daeb39d"
+    },
+    {
+      "bytes": 6124,
+      "path": "analysis/generate_manifest.py",
+      "sha256": "6e95b18afa18d0fdc553abfadff78779eda99b04582f6a8edeb2f5a8530c2043"
+    },
+    {
+      "bytes": 5339,
+      "path": "analysis/generate_return.py",
+      "sha256": "cb1ed48e036263f7daf62c55e62f29b30378d3075e7daa4f6805407ba7ecd56f"
+    },
+    {
+      "bytes": 328,
+      "path": "analysis/inputs02-test-results.json",
+      "sha256": "25688ec0bda5f2dee5d4171d6db8ffab46c6669ddd219e560c1acab16fc4d7c5"
+    },
+    {
+      "bytes": 320,
+      "path": "analysis/metadata-access-record.json",
+      "sha256": "ab75aa1fdfec1ed05be7e6ecd04eb3ef342dd786a93f248d84477598a5246da0"
+    },
+    {
+      "bytes": 2449,
+      "path": "analysis/parse_msgpack.py",
+      "sha256": "43d06c48579e5146d03ec4c5f3bd40a6dfe07d9909db7db29bca5c148ba23ab9"
+    },
+    {
+      "bytes": 0,
+      "path": "analysis/python-version.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13,
+      "path": "analysis/python-version.stdout.txt",
+      "sha256": "fd0fd4290ad100adc37e4a82e45f821faeacbecae70f4d3eba08e85be138c632"
+    },
+    {
+      "bytes": 213,
+      "path": "analysis/run41-packet-verification.json",
+      "sha256": "b3f65391177e92ea719a36bc6908f1012d004327947a49188c659fbf81704f3c"
+    },
+    {
+      "bytes": 2,
+      "path": "analysis/selftest.exit.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "bytes": 0,
+      "path": "analysis/selftest.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 54,
+      "path": "analysis/selftest.stdout.txt",
+      "sha256": "d2dce9e231ed02f201126952b68e9791c883b439c205cdaff5bffb04cc8220e3"
+    },
+    {
+      "bytes": 2,
+      "path": "analysis/static-check.exit.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "bytes": 0,
+      "path": "analysis/static-check.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 181,
+      "path": "analysis/static-check.stdout.txt",
+      "sha256": "0c985870b7239de4bcc6c6e73a3cee1d6daa723e505b1aebc82667aa9952d269"
+    },
+    {
+      "bytes": 9318,
+      "path": "analysis/synthetic-workflow-result.json",
+      "sha256": "7034b23d5deb879881775af9fa5a14a410d0cf47e1405fddf7e30fbbd500bf74"
+    },
+    {
+      "bytes": 5795,
+      "path": "analysis/test_inputs02_rerun.py",
+      "sha256": "761d63f0c0a03d1fe2af867b485093951be005d56118066815ce72f1d118fd13"
+    },
+    {
+      "bytes": 2,
+      "path": "analysis/uv-download.exit.txt",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "bytes": 114,
+      "path": "analysis/uv-download.stderr.txt",
+      "sha256": "40fa7a99a949a879faf38218877ce7eadd9ecca91774a36581eddf4ef6bb3a02"
+    },
+    {
+      "bytes": 0,
+      "path": "analysis/uv-download.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "analysis/uv-interface-stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2706,
+      "path": "analysis/uv-interface-stdout.txt",
+      "sha256": "7f03b856c09ca8383754a32036b91027cfa55a279c55194328d5b5297dc39823"
+    },
+    {
+      "bytes": 325153,
+      "path": "authored/DURANKI-WP-B-ARTIFACT-MANIFEST-02.json",
+      "sha256": "18ed83be2029723ec4dcea68e16395df23390a86a215cbfa5c5118e633a4d748"
+    },
+    {
+      "bytes": 6164,
+      "path": "authored/DURANKI-WP-B-BUILD-INPUT-RETURN-02.json",
+      "sha256": "037a7028183cd4bb8d57f3451293a5b279f7b82c15c485decbcb2e7c80275393"
+    },
+    {
+      "bytes": 305828,
+      "path": "authored/DURANKI-WP-B-DEPENDENCY-CLOSURE-02.json",
+      "sha256": "4ebee74cafefb8546987b28a5dcd080621f626161e4ea6dc9ce49b1fe3900934"
+    },
+    {
+      "bytes": 5169,
+      "path": "authored/DURANKI-WP-B-NATIVE-AND-LICENSE-READOUT-02.md",
+      "sha256": "1e37df456af22fa5be72499c40313a7c484d264f86392ac035121f9e926dfc33"
+    },
+    {
+      "bytes": 4748,
+      "path": "authored/DURANKI-WP-B-TRANSPORT-LOCK-ALIGNMENT-03.md",
+      "sha256": "77bbabc5cc46901c4820bf9aad55c651f1312bf20144996ebc736f0ae8b0cb55"
+    },
+    {
+      "bytes": 3052,
+      "path": "authored/OWNER-ARTIFACT-ACQUISITION-02.txt",
+      "sha256": "7478d64f6187145287d7c81587234ebc5c2885a41e0d8b95f2d36a95091a3a1b"
+    },
+    {
+      "bytes": 237945,
+      "path": "frozen-run41/candidate-runtime.lock",
+      "sha256": "6f2bfaea5f46c24688d5a815e7264892e4104945cb37516ecc1a339e9239f1ce"
+    },
+    {
+      "bytes": 85484,
+      "path": "frozen-run41/downloads/httpcore-1.0.9.tar.gz",
+      "sha256": "6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"
+    },
+    {
+      "bytes": 141406,
+      "path": "frozen-run41/downloads/httpx-0.28.1.tar.gz",
+      "sha256": "75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"
+    },
+    {
+      "bytes": 3108,
+      "path": "frozen-run41/downloads/pypi-litellm-enterprise-0.1.73.json",
+      "sha256": "c985b3ade9aef04a18b574953b49231c1f9bc24d3b2f54f0d9873554f162ca64"
+    },
+    {
+      "bytes": 3148,
+      "path": "frozen-run41/downloads/pypi-litellm-proxy-extras-0.4.105.json",
+      "sha256": "13bee4d092ae62e275abf0538c96117e75cb83557ae54b06e34ed97abbec5bd5"
+    },
+    {
+      "bytes": 30214,
+      "path": "frozen-run41/downloads/pypi-maturin-1.15.0.json",
+      "sha256": "fc4a6bace60149d4db8fab29703c8a695a47268f6d206dd7440a0c0d4985406e"
+    },
+    {
+      "bytes": 6605,
+      "path": "frozen-run41/packet/EVIDENCE-MANIFEST.json",
+      "sha256": "823f5842c827a94ae784e53d70134475d0c259767cf6d881b0b3a60cfd008f73"
+    },
+    {
+      "bytes": 1448235,
+      "path": "frozen-run41/packet/INPUTS-EVIDENCE.zip",
+      "sha256": "84823f52252b104bcf5c57d91b398f64a25f4cbfeb64b35be3a6dabf7640f081"
+    },
+    {
+      "bytes": 1400,
+      "path": "frozen-run41/proxy-runtime.in",
+      "sha256": "99a608f1a1b193f927865910228b5b3e37c5c0d1d02492ccfec7ee6d372d4fb0"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/aiohappyeyeballs/2.7.1-py3-none-any.msgpack",
+      "sha256": "5fcbd0408d030d8149b077f2aa5445d2f4fd806d7a7c6d9af31ae026822264a9"
+    },
+    {
+      "bytes": 1276,
+      "path": "local-run41-uv-cache/aiohttp/3.14.5-fb72352ea2004da4.msgpack",
+      "sha256": "643c88a9760a3fe851a067ff1888b651b9940674c8c77c3071df8b8e3710c5ed"
+    },
+    {
+      "bytes": 556,
+      "path": "local-run41-uv-cache/aiosignal/1.4.0-py3-none-any.msgpack",
+      "sha256": "bac8d52edacb551fcea8d69f1576656e33c3a6d6a452a6d549d15f39da5fe135"
+    },
+    {
+      "bytes": 484,
+      "path": "local-run41-uv-cache/annotated-doc/0.0.5-py3-none-any.msgpack",
+      "sha256": "0e560a13577b139a5deae12f6d437a8f883550285397e87ea7e6aac975dcf7f8"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/annotated-types/0.8.0-py3-none-any.msgpack",
+      "sha256": "70cd5679d743f0d5a90964496e0ae1bdde9cebe60bdf2e5d486771f0bef3d94b"
+    },
+    {
+      "bytes": 636,
+      "path": "local-run41-uv-cache/anyio/4.15.1-py3-none-any.msgpack",
+      "sha256": "262cefb71236a6fbe6ae48a4aa236df98c719e6590529410879553153fa90a47"
+    },
+    {
+      "bytes": 1452,
+      "path": "local-run41-uv-cache/apscheduler/3.11.3-py3-none-any.msgpack",
+      "sha256": "7ef0de9681aea69d1bccc82d5b098309d9c675deca281127151e0700fb14a479"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/attrs/26.1.0-py3-none-any.msgpack",
+      "sha256": "30066e7ce5980c0a41a2ecfad41f9b17ec349c618f5fb2582a6dd1da17ab8c70"
+    },
+    {
+      "bytes": 604,
+      "path": "local-run41-uv-cache/azure-core/1.41.0-py3-none-any.msgpack",
+      "sha256": "5fbdacfe2c6337338fbffbc2e30004d22ab17d84f74855fc121005f8cbc1259d"
+    },
+    {
+      "bytes": 596,
+      "path": "local-run41-uv-cache/azure-identity/1.26.0-py3-none-any.msgpack",
+      "sha256": "58e132bcc8949a14d63e6376716d37cd3204849834f08ad2910403f59683bb6d"
+    },
+    {
+      "bytes": 708,
+      "path": "local-run41-uv-cache/azure-storage-blob/12.31.0-py3-none-any.msgpack",
+      "sha256": "75129f38a9d17bf927a4a79c2a28a3398cd5ccaa3bf5620b2a9be48fe412f36e"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/backoff/2.2.1-py3-none-any.msgpack",
+      "sha256": "363913ce5131788859597e7270e00faf32fe20c5ad13159eea8d889f4311d53d"
+    },
+    {
+      "bytes": 604,
+      "path": "local-run41-uv-cache/boto3/1.43.114-py3-none-any.msgpack",
+      "sha256": "f28a21ed28cfbec8ac89a2989e933e3f1dead215137afde8924cf97b902bcebd"
+    },
+    {
+      "bytes": 588,
+      "path": "local-run41-uv-cache/botocore/1.43.114-py3-none-any.msgpack",
+      "sha256": "f23a7820dbee1e62a8fada97063fde8e398cfc7731f5493c1007c2a01934a5e1"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/certifi/2026.7.22-py3-none-any.msgpack",
+      "sha256": "ca5bfe85674220b04fa6741da228af2bb0d5c052088e94a8ee5fbd5ace340c53"
+    },
+    {
+      "bytes": 564,
+      "path": "local-run41-uv-cache/cffi/2.1.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.msgpack",
+      "sha256": "7074309db5abe9703453be20b68c4936c49b37d5c47e66cb8e65817665682166"
+    },
+    {
+      "bytes": 588,
+      "path": "local-run41-uv-cache/charset-normalizer/3.5.2-fb72352ea2004da4.msgpack",
+      "sha256": "6acac968b136a5b30c92e9e444b602aa03b794a90a5c92e59d473344e5ae1045"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/click/8.5.0-py3-none-any.msgpack",
+      "sha256": "3adfa60b6d7799896a31ec96da785778f486748fc319d3782666a027fcb90f92"
+    },
+    {
+      "bytes": 492,
+      "path": "local-run41-uv-cache/croniter/6.2.4-py3-none-any.msgpack",
+      "sha256": "2ab71ad5b9fdec0677e6627db346f57415b7fb94aed0495bd1841a95ba382d42"
+    },
+    {
+      "bytes": 676,
+      "path": "local-run41-uv-cache/cryptography/50.0.2-cp311-abi3-manylinux_2_34_aarch64.msgpack",
+      "sha256": "77ed0933f92cfc56317a45f4473aa6518e5dbd6f7a84c7be42788f9e4e581bc4"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/distro/1.9.0-py3-none-any.msgpack",
+      "sha256": "dde78510010298b17b8ed73562fc101a4ac817ede7ee16765a0ce78b6229ef79"
+    },
+    {
+      "bytes": 1244,
+      "path": "local-run41-uv-cache/dnspython/2.9.0-py3-none-any.msgpack",
+      "sha256": "aabb278a0b6cf6a472e6bcccf5b55ebf566b2731d7dee7ca96f6dd4c1430ca1e"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/email-validator/2.3.0-py3-none-any.msgpack",
+      "sha256": "be969a21ebc9a72908068b8d4e98d5ea0fa02977dd4eaf5caeda7f5eec4e7057"
+    },
+    {
+      "bytes": 604,
+      "path": "local-run41-uv-cache/expression/5.7.0-py3-none-any.msgpack",
+      "sha256": "111619ec2bffb9559eb2e9ddce683149dce403b0ee9e48d8a44f7e289a9858d8"
+    },
+    {
+      "bytes": 684,
+      "path": "local-run41-uv-cache/fastapi-sso/0.23.0-py3-none-any.msgpack",
+      "sha256": "212131a3ab288cc844ae1feee1f23928d135fd7b11da0d66257c490ba6682fbc"
+    },
+    {
+      "bytes": 2572,
+      "path": "local-run41-uv-cache/fastapi/0.143.3-py3-none-any.msgpack",
+      "sha256": "aa792778740641ecf784376990e131ddd07f4ccda3e1de3ac86b03330aa3ca73"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/fastuuid/0.14.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "6edc93441acdcd1f4daf19abb61b5b845ea552fbb14db8dfe0bfc309b277a2f7"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/filelock/3.32.7-py3-none-any.msgpack",
+      "sha256": "52befc3551908e0a07741d2b1e693f28152216e4ef0c16fbcb8bd192e61794dd"
+    },
+    {
+      "bytes": 548,
+      "path": "local-run41-uv-cache/frozenlist/1.8.0-fb72352ea2004da4.msgpack",
+      "sha256": "806964b678dbd3c6fa48f7a0a615245acdf7658a22467289e54d2a05513534de"
+    },
+    {
+      "bytes": 4044,
+      "path": "local-run41-uv-cache/fsspec/2026.9.0-py3-none-any.msgpack",
+      "sha256": "0fa92ff33f710b88cd0adf2ac556d4b60bd7c905f8ce2f5b1052e4729dbb28c2"
+    },
+    {
+      "bytes": 1012,
+      "path": "local-run41-uv-cache/granian/2.8.4-cp312-cp312-manylinux_2_28_aarch64.msgpack",
+      "sha256": "5175535ac0df0374a81c09d337458c20d3b96be4fa0ca0a20247d7e6d5014418"
+    },
+    {
+      "bytes": 892,
+      "path": "local-run41-uv-cache/gunicorn/23.0.0-py3-none-any.msgpack",
+      "sha256": "6293dc9e0b4cab4b685050a181b9c8fc4286210b58c86bcb946239fcb66f18d5"
+    },
+    {
+      "bytes": 468,
+      "path": "local-run41-uv-cache/h11/0.16.0-py3-none-any.msgpack",
+      "sha256": "b153c4c8e781905ff6e6d9c7e79c11b7139b1c2cdece21dd278ed9df9cf379b1"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/h2/4.4.1-py3-none-any.msgpack",
+      "sha256": "7f4e90857e7021d9500abcc3507295ca599b26010efb1b5ce3e848c07e1032e3"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/hf-xet/1.7.0-cp38-abi3-manylinux_2_28_aarch64.msgpack",
+      "sha256": "6e8fa3930331aed3d6c1f32f8f4f44573666df2bc5f8fd8bf014169fc9158fc9"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/hiredis/3.5.0-fb72352ea2004da4.msgpack",
+      "sha256": "03a80b708a8a16c0f715dcdae8967e0e3e524bc65b7f962c58559590f75ae957"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/hpack/4.2.0-py3-none-any.msgpack",
+      "sha256": "d215951ec56c1785d1bd1679de1e5b24bd4fda758381bf339340cf145d870d44"
+    },
+    {
+      "bytes": 652,
+      "path": "local-run41-uv-cache/httpcore/1.0.9-py3-none-any.msgpack",
+      "sha256": "64449c50cd811cfca726d6e4034291d8e7b795e7064f60c1119514f6ba687abc"
+    },
+    {
+      "bytes": 668,
+      "path": "local-run41-uv-cache/httpcore2/2.13.1-py3-none-any.msgpack",
+      "sha256": "70380d4e7ae529d0db0051ffee132e8ec895b53a098fa2f78fadbd069be4fc0c"
+    },
+    {
+      "bytes": 876,
+      "path": "local-run41-uv-cache/httpx/0.28.1-py3-none-any.msgpack",
+      "sha256": "d2f4b855d9863cff8fae4411d9913a3ad4b17e9e9d117bcd670ce494bf2076f9"
+    },
+    {
+      "bytes": 1228,
+      "path": "local-run41-uv-cache/httpx2/2.13.1-py3-none-any.msgpack",
+      "sha256": "648284ddcc9b8fbac5521151336c3c48da14d62e404557dc20e14cb2af4d8ae2"
+    },
+    {
+      "bytes": 4068,
+      "path": "local-run41-uv-cache/huggingface-hub/1.33.0-py3-none-any.msgpack",
+      "sha256": "249eb6ec0114d3e812c8444969adbba3b584b2f633b4ca6165ced8a372ea9a5a"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/hyperframe/6.1.0-py3-none-any.msgpack",
+      "sha256": "5e1d1142a902337c714aa00b10cb91999a066288effe329f6b5fa73998d92bec"
+    },
+    {
+      "bytes": 660,
+      "path": "local-run41-uv-cache/idna/3.20-py3-none-any.msgpack",
+      "sha256": "c59d8afd468b94c93d0e38eb2e7cd2a6fb4bf74ae5a6104d7cc58c69387718b7"
+    },
+    {
+      "bytes": 1156,
+      "path": "local-run41-uv-cache/importlib-metadata/8.9.0-py3-none-any.msgpack",
+      "sha256": "456a2f102d49b7c4e31c04b1616d32e956ddac8785ff785085213b9de073d20b"
+    },
+    {
+      "bytes": 780,
+      "path": "local-run41-uv-cache/inquirerpy/0.3.4-py3-none-any.msgpack",
+      "sha256": "38d89cdf98e83421cf2a0a7bf15848312ab4fa32bb8e23c09e9d3f786e6d9e20"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/isodate/0.7.2-py3-none-any.msgpack",
+      "sha256": "c8751f243482d1623dc57b85201c61e2dd86c56ad7038fdc311d3c4a024ce261"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/jinja2/3.1.6-py3-none-any.msgpack",
+      "sha256": "808693e612877419806a58bdeaf1e27c2a5810ef179e4d5e8c6a5161aedb577c"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/jiter/0.17.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "725c66468e21d45bdacf96f7a05c941b104e1f55ea90169960ed0027bb741896"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/jmespath/1.1.0-py3-none-any.msgpack",
+      "sha256": "ee738b67a260e901323a68e9dd20b31cbc00f16bf7d5720d79d6e6039234ae2a"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/jsonschema-specifications/2025.9.1-py3-none-any.msgpack",
+      "sha256": "42ed6cd98fce803bc1b3a3ee855ca0f718a95e2417019761e084bd6849ff400d"
+    },
+    {
+      "bytes": 1228,
+      "path": "local-run41-uv-cache/jsonschema/4.26.0-py3-none-any.msgpack",
+      "sha256": "f71ee318a89ea0236ada2b377290e1dd29bc06c93123d33a619d1f7c8eba84d3"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/litellm-enterprise/0.1.73-py3-none-any.msgpack",
+      "sha256": "8fbaa9646ad8b2ecca5f099f97208e3c28853b8599e3fbed5cfad19a6f3e5e7f"
+    },
+    {
+      "bytes": 556,
+      "path": "local-run41-uv-cache/litellm-proxy-extras/0.4.105-py3-none-any.msgpack",
+      "sha256": "3f2140261f3e6a386d34c8ab29728a7e0083c3945371224d31a81c892f7f1f67"
+    },
+    {
+      "bytes": 1508,
+      "path": "local-run41-uv-cache/markdown-it-py/4.2.0-py3-none-any.msgpack",
+      "sha256": "f4963fa94f9a1dcbb4637565642b66c7d984a259716e6778e689f31c9f7c5c8e"
+    },
+    {
+      "bytes": 548,
+      "path": "local-run41-uv-cache/markupsafe/3.0.4-fb72352ea2004da4.msgpack",
+      "sha256": "7eff0719cef0823390d86f192fc697ffd09f87647dc6b29bf61bbe43fc41819f"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/mcp-types/2.3.0-py3-none-any.msgpack",
+      "sha256": "608b872d927eb3a7cf04475a60496aa6d7aae7448ebd06ee688612eb333743c3"
+    },
+    {
+      "bytes": 1060,
+      "path": "local-run41-uv-cache/mcp/2.3.0-py3-none-any.msgpack",
+      "sha256": "fd865b47c0b2064cd3a0548055cc6edf2c27118cf439679b62c9e6bcc1be1b1b"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/mdurl/0.1.2-py3-none-any.msgpack",
+      "sha256": "cc8f7bc8bc186a2e2681334e530d44b435bd3428936b108614a93c3f82ceadff"
+    },
+    {
+      "bytes": 564,
+      "path": "local-run41-uv-cache/msal-extensions/1.3.1-py3-none-any.msgpack",
+      "sha256": "415af6850de140591f54ecefd0be3ae04dcd1b22b03da77f19c0247b0d29d3d1"
+    },
+    {
+      "bytes": 876,
+      "path": "local-run41-uv-cache/msal/1.39.0-py3-none-any.msgpack",
+      "sha256": "8b15bfd82686cde83205e105ddbf820b577b4dff1997fa2df143babfb526b45b"
+    },
+    {
+      "bytes": 604,
+      "path": "local-run41-uv-cache/multidict/7.1.0-fb72352ea2004da4.msgpack",
+      "sha256": "a88f17f8fc8c56aa8bdf9fd587ac2bdb2823c23053ba691531711156da6f301a"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/numpy/2.5.4-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.msgpack",
+      "sha256": "c6dcf76ba6005d6142c7aa01c7a15fc8ef2185880cdbe2fd5ead5b38659f69dd"
+    },
+    {
+      "bytes": 668,
+      "path": "local-run41-uv-cache/oauthlib/4.0.0-py3-none-any.msgpack",
+      "sha256": "7912d393a8e3563103f25e2c2e0a7fbddbc324e111f6df8ba0f31884e664adef"
+    },
+    {
+      "bytes": 1132,
+      "path": "local-run41-uv-cache/openai/2.54.0-py3-none-any.msgpack",
+      "sha256": "37f525090f1dfd972f1dcf2a910964fd61cfa00aacbf7b48816b2c7fe1e857e1"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/opentelemetry-api/1.45.1-py3-none-any.msgpack",
+      "sha256": "c4e50d0ab400c105c932b0794dff4925174ae5a974b164c5fb23b68680af1e12"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/orjson/3.13.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "b0fbd2e753ea2f95e06a39b9e625f1df1837caf6e16cbebce0741f7ebfc7bad1"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/packaging/26.3-py3-none-any.msgpack",
+      "sha256": "ed50df420eddac66f8bf5e0b45ff8d1b26dc83139eb77c6d44149a8ed92dc2d1"
+    },
+    {
+      "bytes": 724,
+      "path": "local-run41-uv-cache/pfzy/0.3.4-py3-none-any.msgpack",
+      "sha256": "13b8f8a9c040be2d5b7cf012e3631c4a93fbab7723759253112213686d93408a"
+    },
+    {
+      "bytes": 548,
+      "path": "local-run41-uv-cache/polars-runtime-32/1.44.2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "f5c2aaa63401add047e1eb1b63d92cd256c9f7d6d91f47b583643e651abbaf91"
+    },
+    {
+      "bytes": 2028,
+      "path": "local-run41-uv-cache/polars/1.44.2-py3-none-any.msgpack",
+      "sha256": "3b75f0514b0b995ccabb462cb5d283000454bbab44ba8ae94411fca55d6ad488"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/prompt-toolkit/3.0.53-py3-none-any.msgpack",
+      "sha256": "3a4708df90fabe336302756361cbbba8750600e79f63b3f63e3eee60ced09e29"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/propcache/0.5.4-fb72352ea2004da4.msgpack",
+      "sha256": "79c6fefa2d127eaaab7187bb47261cd753e459c33231b7b09225c9aa5f1eccaf"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/psycopg-binary/3.3.6-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.msgpack",
+      "sha256": "7e5265807a18be2b46397fd418d3d3caa928245ba000e3da76499d50dd141e5d"
+    },
+    {
+      "bytes": 1612,
+      "path": "local-run41-uv-cache/psycopg/3.3.6-py3-none-any.msgpack",
+      "sha256": "55d4d3cf0fd61f4c3a1bb7acb54d3fa8b1b6c30f4798edac4ce1e6656756b440"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/pycparser/3.11-py3-none-any.msgpack",
+      "sha256": "5ea58c973de3cf240051c6c14f5ce7e9868f4fd31fbe7707ae9f78ef54767f91"
+    },
+    {
+      "bytes": 556,
+      "path": "local-run41-uv-cache/pydantic-core/2.50.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "9239f67e9a8ee4765b796db5e46f5d506c8dac2444b789ed31b07e9d1e78527b"
+    },
+    {
+      "bytes": 980,
+      "path": "local-run41-uv-cache/pydantic-settings/2.16.0-py3-none-any.msgpack",
+      "sha256": "3cf8db193c9b97f8c8a16d54bcb302eb57177eea5b47b857d29c2514ca841b79"
+    },
+    {
+      "bytes": 684,
+      "path": "local-run41-uv-cache/pydantic/2.14.1-py3-none-any.msgpack",
+      "sha256": "b699177318a1d105d4d46252276237702efa614e85ac592b75349afb47b4417e"
+    },
+    {
+      "bytes": 556,
+      "path": "local-run41-uv-cache/pygments/2.21.0-py3-none-any.msgpack",
+      "sha256": "77eb68dec6f3d91a5fbe9b87e794ef9aae66b8ba08958f2ecf31a61104d4616e"
+    },
+    {
+      "bytes": 572,
+      "path": "local-run41-uv-cache/pyjwt/2.15.1-py3-none-any.msgpack",
+      "sha256": "70ff14b60c799ae8f06198358e2c181826e286206d65f73df5514154a754864e"
+    },
+    {
+      "bytes": 892,
+      "path": "local-run41-uv-cache/pynacl/1.6.2-cp38-abi3-manylinux_2_34_aarch64.msgpack",
+      "sha256": "970a23d7e54321da2d11946842dca25189fc70d9df9165dbe8c71c1b99b875cc"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/pyroscope-io/0.8.16-py2.py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.msgpack",
+      "sha256": "13914694689857ae661effacf152c0b7df4c529dac286f856aab38aaf81e1332"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/python-dateutil/2.9.0.post0-py2.py3-none-any.msgpack",
+      "sha256": "116298aacc3972b30f5370bc41e62d17e0b364aa2e3da40469d41e29aedf8d68"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/python-dotenv/1.2.4-py3-none-any.msgpack",
+      "sha256": "52f540341e3cdcc24418e6af74c4467b611944078e54c7ecbca24e5a9582f330"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/python-multipart/0.0.32-py3-none-any.msgpack",
+      "sha256": "353442c59581389e17f9154b9190748beb47519254da32f24e4eb8085f3c88bf"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/pyyaml/6.0.3-fb72352ea2004da4.msgpack",
+      "sha256": "36981503d5d2ae9a79e76f25d6197b382e879e3ac6e0e3d0168f7620ccd52a95"
+    },
+    {
+      "bytes": 988,
+      "path": "local-run41-uv-cache/redis/8.1.0-py3-none-any.msgpack",
+      "sha256": "0cab20b945c2953ced643ca438ffc00bcadac60e33d1e580e480f8f96095e5cf"
+    },
+    {
+      "bytes": 572,
+      "path": "local-run41-uv-cache/referencing/0.37.0-py3-none-any.msgpack",
+      "sha256": "3d53dbf905a60cfcaea12b9809c73ff5f7c8677b197d15bf6c62f99b289f7493"
+    },
+    {
+      "bytes": 540,
+      "path": "local-run41-uv-cache/regex/2026.9.29-fb72352ea2004da4.msgpack",
+      "sha256": "1399d134764c0b34a5652ea449a1c0ba53c2752ff29a50fd5275512ef0231320"
+    },
+    {
+      "bytes": 684,
+      "path": "local-run41-uv-cache/requests/2.34.2-py3-none-any.msgpack",
+      "sha256": "3c358f7aed2d9767cca804df79a02854d7bd6ff4fb659fd0a22eae0f36fa1c55"
+    },
+    {
+      "bytes": 644,
+      "path": "local-run41-uv-cache/restrictedpython/8.5-py3-none-any.msgpack",
+      "sha256": "1cf64fadbe2a2b96915061ff740149b8a7d96304b922bf0e93661c83e350dfdd"
+    },
+    {
+      "bytes": 636,
+      "path": "local-run41-uv-cache/rich/13.9.4-py3-none-any.msgpack",
+      "sha256": "179020e78e580c93abd0369d85e55c7117b1c1effb6304e2f1f1f138f3192835"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/rpds-py/2026.9.1-0840c1007aff1b5e.msgpack",
+      "sha256": "cccac96208c1b99f4ffda5f61d5a4c0068ef89cd55d2178484f91f24fc1d6097"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/rq/2.12.0-py3-none-any.msgpack",
+      "sha256": "6fdd07e845c923b670f377741498667619f08c745c390464c700c3781bb8fded"
+    },
+    {
+      "bytes": 556,
+      "path": "local-run41-uv-cache/s3transfer/0.19.2-py3-none-any.msgpack",
+      "sha256": "c9e09fdfaedd75eb561f69014a65b65c0ed7cf496c4719e266c608dc86fdd526"
+    },
+    {
+      "bytes": 492,
+      "path": "local-run41-uv-cache/six/1.17.0-py2.py3-none-any.msgpack",
+      "sha256": "fa1b9a8278d74c96689acc1d8ea226f4120eb26e810245bb4f0de19beb705dba"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/sniffio/1.3.1-py3-none-any.msgpack",
+      "sha256": "bc57775ae60720b15443a9da6e5f66647ed1d935eeaec8e926a18d49675ae795"
+    },
+    {
+      "bytes": 548,
+      "path": "local-run41-uv-cache/soundfile/0.14.0-py2.py3-none-manylinux_2_28_aarch64.msgpack",
+      "sha256": "f4c16422cc6b19e5ad7d37b2b629a88a66573829dc2d81e4290ae8787a120d2c"
+    },
+    {
+      "bytes": 884,
+      "path": "local-run41-uv-cache/sse-starlette/3.5.0-py3-none-any.msgpack",
+      "sha256": "95743f6464b3322f42b2658a50c32cb379bfaa6ae40090a0b76d8de0eee8260a"
+    },
+    {
+      "bytes": 796,
+      "path": "local-run41-uv-cache/starlette/1.8.0-py3-none-any.msgpack",
+      "sha256": "cb3f988783e5b7805014bcbce3d1371364f97830cc3d75724e1253ac930a693d"
+    },
+    {
+      "bytes": 564,
+      "path": "local-run41-uv-cache/tiktoken/0.14.0-cp312-cp312-manylinux_2_28_aarch64.msgpack",
+      "sha256": "a489e1dac1e4934ea51ad3a1c86ed5f8b3fc9a819d06faebf2ac17c960770396"
+    },
+    {
+      "bytes": 908,
+      "path": "local-run41-uv-cache/tokenizers/0.23.3-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "bd5b1d25312ef3cf30a7c4c199f29182f0e02ec6f738900890878bcf03ff3660"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/tomlkit/0.15.2-py3-none-any.msgpack",
+      "sha256": "9a2b59fe7d84f3d825bfad41ff167a517037efba8a05dbb2fc657cf564c4d235"
+    },
+    {
+      "bytes": 748,
+      "path": "local-run41-uv-cache/tqdm/4.70.1-py3-none-any.msgpack",
+      "sha256": "a13ed2c72c6365a636ca44aefc4047c582c45e510b1fd783deb32a7b9610510c"
+    },
+    {
+      "bytes": 476,
+      "path": "local-run41-uv-cache/truststore/0.10.5-py3-none-any.msgpack",
+      "sha256": "1ecd3e7762bd90cd15a492072d90d47b4ba423ecbb4281a54a45bd8453cf314c"
+    },
+    {
+      "bytes": 500,
+      "path": "local-run41-uv-cache/typing-extensions/4.16.0-py3-none-any.msgpack",
+      "sha256": "d4cd9941fe668e8d2c264fc3f2fb86276122d2bf529850612f22c6c89289ef19"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/typing-inspection/0.4.4-py3-none-any.msgpack",
+      "sha256": "3540dfc3bc272662d2e88b82e78e7e459c64ba3065ec0f7b2443115cce0b343c"
+    },
+    {
+      "bytes": 764,
+      "path": "local-run41-uv-cache/tzlocal/5.4.4-py3-none-any.msgpack",
+      "sha256": "0e35c32d5c26f4a4885b7c10e52b5571f45d6ba80a7edd1328a34cbb2584d4d0"
+    },
+    {
+      "bytes": 812,
+      "path": "local-run41-uv-cache/urllib3/2.8.0-py3-none-any.msgpack",
+      "sha256": "0c3621feb61fff83ae6414f2ba27ba17d7a3b51155a349c9d52647ec741abb4e"
+    },
+    {
+      "bytes": 892,
+      "path": "local-run41-uv-cache/uvicorn/0.54.0-py3-none-any.msgpack",
+      "sha256": "8e32355a35e600e3c1e9848f507671c521aa34fa8570d32f9521f851405a5119"
+    },
+    {
+      "bytes": 1068,
+      "path": "local-run41-uv-cache/uvloop/0.23.0-fb72352ea2004da4.msgpack",
+      "sha256": "a1b561394e9b58acd007322a075065fc2a57df622cf8e242abb6652182b7befb"
+    },
+    {
+      "bytes": 516,
+      "path": "local-run41-uv-cache/wcwidth/0.9.2-cp310-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.msgpack",
+      "sha256": "adead3f5129c1d521a167bd5eab49b9e4fa5747d2616eaa07ef290eba06647d0"
+    },
+    {
+      "bytes": 524,
+      "path": "local-run41-uv-cache/websockets/15.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.msgpack",
+      "sha256": "92ccf1844cddefe87cbdcde80c658ebdff7ad76201aa14bb155b45e3a6f310e7"
+    },
+    {
+      "bytes": 588,
+      "path": "local-run41-uv-cache/yarl/1.25.1-fb72352ea2004da4.msgpack",
+      "sha256": "7ec461957e87177b01e440fdcbe55e5d94449ef2d2a4aea8e2dc068bd2d8affd"
+    },
+    {
+      "bytes": 1204,
+      "path": "local-run41-uv-cache/zipp/4.1.1-py3-none-any.msgpack",
+      "sha256": "50f09c6a432115491315472152c9f63b1a32d8f6fcc95461f79c91c0411d4814"
+    },
+    {
+      "bytes": 7070,
+      "path": "modified/tests/gateway-proof/docker/README.md",
+      "sha256": "35a6e32eb253ae726eb1337e384c97d3716acc3720dba023940423f0b4d2246e"
+    },
+    {
+      "bytes": 92888,
+      "path": "modified/tests/gateway-proof/docker/prepare.py",
+      "sha256": "884afdc7ce3151b8006b5f1d335704aa930a30382d64117ec963fd62f6974d02"
+    },
+    {
+      "bytes": 64391,
+      "path": "selected-source/github-advisories.json",
+      "sha256": "2ad39d7b115d23fa3adf19d269503beb529df9c9b753abc369e933380743bd59"
+    },
+    {
+      "bytes": 1419,
+      "path": "sources/litellm-source/litellm-1.105.1__LICENSE",
+      "sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273"
+    },
+    {
+      "bytes": 197660,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__Cargo.lock",
+      "sha256": "b259821aaaef0e52fcfa08f2272687c2d221f4c2fa037290e6350fa9ee8b02e1"
+    },
+    {
+      "bytes": 5962,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__Cargo.toml",
+      "sha256": "3698690d5d4f9b521889189494c2537cc47c0d892236f3cc0e01b803a391ab8d"
+    },
+    {
+      "bytes": 851,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__auth-aws__Cargo.toml",
+      "sha256": "be21a293494943a63a35bdef31d80b6acf20e17dd2be949f4d2a1f02b5712d10"
+    },
+    {
+      "bytes": 453,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__auth-azure__Cargo.toml",
+      "sha256": "c6683cc5c6244662c49b255eb6d2c8eed6b40f81e069fd775acd3c493978e45a"
+    },
+    {
+      "bytes": 511,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__auth-gcp__Cargo.toml",
+      "sha256": "a8e750e7777d23993fb070cfde3e19c5fb6b2f48d5d3c6fcd73540056508b97a"
+    },
+    {
+      "bytes": 313,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__auth-types__Cargo.toml",
+      "sha256": "434adfe15fe89fb0af1df2597b722e5c208def224586fb19ec34c9a4defdb788"
+    },
+    {
+      "bytes": 475,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__auth__Cargo.toml",
+      "sha256": "3428d34263aa8efa3f159162e685d8adb544d7b6454a56714bf19de4a03d60ee"
+    },
+    {
+      "bytes": 772,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-azure-blob__Cargo.toml",
+      "sha256": "d39edf450ad907a7808adc78b62b0ff8f7899f4ccb6ff5bfd35ca6620507aed8"
+    },
+    {
+      "bytes": 455,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-disk__Cargo.toml",
+      "sha256": "89469156979c73b1d76803513181d9da76b1f472e879c92c2b670a67588c50f6"
+    },
+    {
+      "bytes": 617,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-gcs__Cargo.toml",
+      "sha256": "ec59f8cdd6e57f073de52f6906e107140991ad765184a7712790ce766ea14f91"
+    },
+    {
+      "bytes": 289,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-memory__Cargo.toml",
+      "sha256": "4c805394dadea4420c8d86e542923651290e6e95e69cbcdc51042f5b5c91f8a0"
+    },
+    {
+      "bytes": 689,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-qdrant-semantic__Cargo.toml",
+      "sha256": "ccee367dbf500f79207efe84cf2e160c5495787f015870c649becf285f308f0e"
+    },
+    {
+      "bytes": 462,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-redis-semantic__Cargo.toml",
+      "sha256": "013d6caa123a1da8a9555b47c10ab4960e9cbcf8d5332750dc42ebc54f59dd78"
+    },
+    {
+      "bytes": 421,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-redis__Cargo.toml",
+      "sha256": "465a5cbd28a3da88ff0d033462dcf582070870c16f9b79ed2a393b1604bc784a"
+    },
+    {
+      "bytes": 584,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-response__Cargo.toml",
+      "sha256": "033822f4334318c2bee64bdac13d2036f61b37851e261c47ed106a7ba6ab33b1"
+    },
+    {
+      "bytes": 918,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-s3__Cargo.toml",
+      "sha256": "056cc5d96d1902f706b73d037bcdf368139d536cf2ea5d1c91f1241fe6354931"
+    },
+    {
+      "bytes": 200,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-testing__Cargo.toml",
+      "sha256": "6d63f509685981927de2b81cbd3c206cb0c4f1fdbd59445b2ae411e013e65ea4"
+    },
+    {
+      "bytes": 507,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache-valkey-semantic__Cargo.toml",
+      "sha256": "060aae253f3799e021e0622ae4333935d5e6dc2e52151443358079ad975341fe"
+    },
+    {
+      "bytes": 327,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__cache__Cargo.toml",
+      "sha256": "a1a9d7fdbb4503cbf052cf4d474f1f8eaa4278582b9fccb1ed0f62b16b618cc2"
+    },
+    {
+      "bytes": 432,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__callbacks-legacy-python__Cargo.toml",
+      "sha256": "4c1e0bee4af5137d5e92b6fd370e5c7b8ea60a406093482646fea3e1f040e95e"
+    },
+    {
+      "bytes": 442,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__core-utils__Cargo.toml",
+      "sha256": "a95689895702ccb5a9075a21450b7ac0b0aa31c1c0bb4970c6564c4449e43efe"
+    },
+    {
+      "bytes": 1502,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__core__Cargo.toml",
+      "sha256": "37b8b2687c66500401301bb070f0c65ac00d47f9e84f41ba5c17e097c7021b51"
+    },
+    {
+      "bytes": 430,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__coroutine__Cargo.toml",
+      "sha256": "ac27e15db3445032f3bea492ec9fce6f280d09e7a667b2776c3910b4d2f319f5"
+    },
+    {
+      "bytes": 601,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__framer__Cargo.toml",
+      "sha256": "695313042a14484fe5148ec238367d7b19f453bdbf5543c826ec7a8cfffbb876"
+    },
+    {
+      "bytes": 306,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__host-native__Cargo.toml",
+      "sha256": "6c7647eb18ad8ad8ebece295e0b7420630b213fcfc1a4f9aad0badd8496eceac"
+    },
+    {
+      "bytes": 467,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__host-python__Cargo.toml",
+      "sha256": "9e700ff07bb05f853ee05613440a3c9137fdf98ec912860c69b0621dd0bf81ae"
+    },
+    {
+      "bytes": 361,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__host__Cargo.toml",
+      "sha256": "aa99846752fd82141524b9de0f327f9f4a45b5a1b511263f922c15365ded95d3"
+    },
+    {
+      "bytes": 1041,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__http__Cargo.toml",
+      "sha256": "096ff3939c5e6e2ca753b16b93336589c50090fa4b5146f352b27b652d74c5e1"
+    },
+    {
+      "bytes": 422,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__llms-types__Cargo.toml",
+      "sha256": "370fc41e8c3d097e23051b0909c63d6883ddc95428f1ba4ad1a1784cd45f7adf"
+    },
+    {
+      "bytes": 1216,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__llms__Cargo.toml",
+      "sha256": "58df65d2c5cee4253c62720b5d3d1e8ce0a1bc37e62311014a118965879bd933"
+    },
+    {
+      "bytes": 405,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__migrate-macros__Cargo.toml",
+      "sha256": "87deb03d3e457c159a202cb9ed6fa93fdd4c6dd46fbcb5c0c75bde71405c6c22"
+    },
+    {
+      "bytes": 252,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__migrate__Cargo.toml",
+      "sha256": "54ed5fd56dfbf5c54e171fc0f77ed56c6cd98ce5378d8137d7958cafb3125d29"
+    },
+    {
+      "bytes": 2544,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__python-bridge__Cargo.toml",
+      "sha256": "d9434ff8258a7f7828b986f8a72cdf16fce17f1cfcfd5d1693ce7dadd732a5b1"
+    },
+    {
+      "bytes": 216,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__python-bridge__build.rs",
+      "sha256": "47058522169bf71400f1d928bae82b68afa7ce3423436220ee9bbe013b131831"
+    },
+    {
+      "bytes": 583,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__python-compat__Cargo.toml",
+      "sha256": "d1d5880b9dcc7f6f168267d1c1972c3e732a084e16786357037a69a509ac9560"
+    },
+    {
+      "bytes": 592,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-aws__Cargo.toml",
+      "sha256": "5fbf099b4cc88795e2064db827f1b4249551e261ea1b602fcfc0a15a09d4e29a"
+    },
+    {
+      "bytes": 660,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-azure__Cargo.toml",
+      "sha256": "b286dd533cd02f5296a98ea415a2635fbc4282b221044775125c03481807727c"
+    },
+    {
+      "bytes": 764,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-cyberark__Cargo.toml",
+      "sha256": "8e1215a7ea85ce9af2826d297e00e4be921df32427f4c17141957d6b9a2467b9"
+    },
+    {
+      "bytes": 867,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-google__Cargo.toml",
+      "sha256": "bdde683084485a2d39bc0931bd69ab0b447721e298ff3b2d8f2368ec327a9831"
+    },
+    {
+      "bytes": 577,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-hashicorp__Cargo.toml",
+      "sha256": "03cc6708c1f6ca3ffdf9c1861558085678c111a11aa280136c502b469c02ff13"
+    },
+    {
+      "bytes": 451,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets-types__Cargo.toml",
+      "sha256": "a13b1b8865f1c0e34807293fe6c33067ccddfca0197ec51c9aaaa5788960d183"
+    },
+    {
+      "bytes": 1345,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__secrets__Cargo.toml",
+      "sha256": "bdfa41e93db0c5a91ab40da7b9c2aa1d02b1e64ec36a0436493705b8e7adbdc3"
+    },
+    {
+      "bytes": 547,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__storage-clickhouse__Cargo.toml",
+      "sha256": "3c9558cdde59df5f7aab73003240dad0949225a51728f62ab173c303b48df6d9"
+    },
+    {
+      "bytes": 419,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__token-counter-fast__Cargo.toml",
+      "sha256": "819820c5abebafc73a82437e1fafa35a45674a91f85311d8a2abbc892e8dd5e6"
+    },
+    {
+      "bytes": 292,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__token-counter-huggingface__Cargo.toml",
+      "sha256": "45faebe89e951d907e06a4b54b498df23571d71468e8b1d776f2c63d2fbccc9f"
+    },
+    {
+      "bytes": 328,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__token-counter-tiktoken__Cargo.toml",
+      "sha256": "692643d567d953533394d439ac154a46fd034e70c85a634fbff83ade38aba4ab"
+    },
+    {
+      "bytes": 1016,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__token-counter__Cargo.toml",
+      "sha256": "6b2eb7504375bd22ab42d3c6ec4384843e72a957b57656315dd15dd897561a1a"
+    },
+    {
+      "bytes": 1127,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__traces__Cargo.toml",
+      "sha256": "ec530670b1fad5512c0ee534778a68d362fea0a97f51b36c6b7170487c5b49ec"
+    },
+    {
+      "bytes": 65,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__traces__build.rs",
+      "sha256": "9a929cd0994408a0c221a230650f1b2ca125a70fe34e2161eea4d472c60f437c"
+    },
+    {
+      "bytes": 474,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm-rust__crates__tracing__Cargo.toml",
+      "sha256": "35a3e05b2af9fef2309892e8366f07075c4914aef491e3025f10f0cb2bad9123"
+    },
+    {
+      "bytes": 8732,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm__proxy__auth__litellm_license.py",
+      "sha256": "d57d348a3743e166545d2c20a44a527aab5f4f8f93385d4e8c97188843b84b59"
+    },
+    {
+      "bytes": 0,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm__proxy__enterprise_billing____init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 404,
+      "path": "sources/litellm-source/litellm-1.105.1__litellm__proxy__spend_tracking__ptu_feature_flag.py",
+      "sha256": "0b67ec147a2ad0a5a12db17fa35e0b5a2240cd8bc78f5c6c48e889729c4e14c9"
+    },
+    {
+      "bytes": 15131,
+      "path": "sources/litellm-source/litellm-1.105.1__pyproject.toml",
+      "sha256": "dcd815dfbda627daa9cfded05cad5acfc90fd85772217c3ac4f48f958caa8aa0"
+    },
+    {
+      "bytes": 3696,
+      "path": "sources/numbered-source-excerpts/httpcore-1.0.9__httpcore___async__connection.py.txt",
+      "sha256": "ed62b5724f2ad8cf5384850432d0372ac048818ffb2e30bcd063e380ccf6b261"
+    },
+    {
+      "bytes": 7152,
+      "path": "sources/numbered-source-excerpts/httpcore-1.0.9__httpcore___async__connection_pool.py.txt",
+      "sha256": "e849c5585372b391c0a8a390d4dd5eeb03aa5506de8e11f37cfbe70a888dbcbc"
+    },
+    {
+      "bytes": 3352,
+      "path": "sources/numbered-source-excerpts/httpcore-1.0.9__httpcore___async__http11.py.txt",
+      "sha256": "a9b972afa294631a9df17bbdafafb6539903de502b856ff1e2d505a627ba361f"
+    },
+    {
+      "bytes": 1463,
+      "path": "sources/numbered-source-excerpts/httpcore-1.0.9__httpcore___backends__anyio.py.txt",
+      "sha256": "8388b7bce7a29e0b04736bc7a43c2229f2a259efaad649401b823232492264cb"
+    },
+    {
+      "bytes": 1912,
+      "path": "sources/numbered-source-excerpts/httpcore-1.0.9__httpcore___trace.py.txt",
+      "sha256": "16d6b68914de99a7bd2ee9da42d4454553f65feb2d8273a67b87125f6c7e2cd0"
+    },
+    {
+      "bytes": 4892,
+      "path": "sources/numbered-source-excerpts/httpx-0.28.1__httpx___client.py.txt",
+      "sha256": "a3ad7eb8591eedc70a78722d11ba4411e752a09bdf0a20b82d1edcda325769da"
+    },
+    {
+      "bytes": 5086,
+      "path": "sources/numbered-source-excerpts/httpx-0.28.1__httpx___transports__default.py.txt",
+      "sha256": "c1e6c2c2232b8fed652787e304f26e82fddb6bc6cd53819887aaec485c98ef2a"
+    },
+    {
+      "bytes": 4849,
+      "path": "sources/numbered-source-excerpts/litellm-1.105.1__litellm__proxy__auth__litellm_license.py.txt",
+      "sha256": "a03b5478fd91e0bd30375cd7f64a040dc4532c5fdb3b40c1747b7b6a0ba07c4e"
+    },
+    {
+      "bytes": 430,
+      "path": "sources/numbered-source-excerpts/litellm-1.105.1__pyproject.toml.txt",
+      "sha256": "733938089a0400fe12e3b7c02c2191307110426d70d17397596597e2e5e22503"
+    },
+    {
+      "bytes": 6578,
+      "path": "sources/oci/python_builder-config.json",
+      "sha256": "c540ce2d7349d77bcbd7144d0f80ca8571a2e03fe26b96e2555bc9d1cceae368"
+    },
+    {
+      "bytes": 6511,
+      "path": "sources/oci/python_builder-index.json",
+      "sha256": "5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b"
+    },
+    {
+      "bytes": 2327,
+      "path": "sources/oci/python_builder-manifest.json",
+      "sha256": "715a063709d47191add11cccf48b4de0cdf220302070ca78d10c249f721f1da6"
+    },
+    {
+      "bytes": 5699,
+      "path": "sources/oci/python_runtime_and_tools-config.json",
+      "sha256": "eb7d16fec874f15b584063275012ac719885a2b87574d124c0da9c156d504629"
+    },
+    {
+      "bytes": 6546,
+      "path": "sources/oci/python_runtime_and_tools-index.json",
+      "sha256": "34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258"
+    },
+    {
+      "bytes": 1754,
+      "path": "sources/oci/python_runtime_and_tools-manifest.json",
+      "sha256": "739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163"
+    },
+    {
+      "bytes": 4378,
+      "path": "sources/oci/rust_toolchain-config.json",
+      "sha256": "9ad0c47880881464036f8b5779f49a15d058154581404d0d50a20f9d11f3436e"
+    },
+    {
+      "bytes": 7752,
+      "path": "sources/oci/rust_toolchain-index.json",
+      "sha256": "af306cfa71d987911a781c37b59d7d67d934f49684058f96cf72079c3626bfe0"
+    },
+    {
+      "bytes": 1942,
+      "path": "sources/oci/rust_toolchain-manifest.json",
+      "sha256": "8aa70d1416cf5b1cff4b95ec6c57f1c5e4e649a3b53d616a26695cda6fbb46bc"
+    },
+    {
+      "bytes": 8449,
+      "path": "sources/transport-matching-source/httpcore-1.0.9__httpcore___async__connection.py",
+      "sha256": "e8e70f5ea3047dcd01537f3ffa21d4343775bca4937365154f4f57a8d6ff04e9"
+    },
+    {
+      "bytes": 17307,
+      "path": "sources/transport-matching-source/httpcore-1.0.9__httpcore___async__connection_pool.py",
+      "sha256": "0ce210dacd9909ff6a7f0c61ccca6b4cf2ea08bf0ec465e2285eaa447c6f5726"
+    },
+    {
+      "bytes": 13880,
+      "path": "sources/transport-matching-source/httpcore-1.0.9__httpcore___async__http11.py",
+      "sha256": "faa33d6d5ecf8d2405e6fc6cdfbf9e5173881706c88cf7196cd962b97f53b41c"
+    },
+    {
+      "bytes": 5252,
+      "path": "sources/transport-matching-source/httpcore-1.0.9__httpcore___backends__anyio.py",
+      "sha256": "c7c3e01215d10bc6d5aac77393f609c7c63a77d4ee6f4e82b944b09db9adaa86"
+    },
+    {
+      "bytes": 3952,
+      "path": "sources/transport-matching-source/httpcore-1.0.9__httpcore___trace.py",
+      "sha256": "724e99a08cd84e474d0087eae4c19e2aa0570edaa3397faa7d8c266456eb19ca"
+    },
+    {
+      "bytes": 65714,
+      "path": "sources/transport-matching-source/httpx-0.28.1__httpx___client.py",
+      "sha256": "c43f941baefe58c91e96d00039e1868fe719d91453026d7db1647194563bff8d"
+    },
+    {
+      "bytes": 13983,
+      "path": "sources/transport-matching-source/httpx-0.28.1__httpx___transports__default.py",
+      "sha256": "03379a454c95c0271c4f2c8d25ec437f49f57457f3cf2769748420bf0ecf2e79"
+    }
+  ],
+  "manifest_self_excluded": true,
+  "no_runtime_or_build_approval": true,
+  "schema": "duranki-wp-b-inputs02-evidence-1",
+  "status": "PARTIAL_CANDIDATE_EVIDENCE"
+}

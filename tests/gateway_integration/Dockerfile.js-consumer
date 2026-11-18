@@ -1,0 +1,18 @@
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+ENV npm_config_cache=/tmp/duranki-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
+COPY client.tgz /opt/duranki/client.tgz
+RUN mkdir -p /app/consumer \
+ && cd /app/consumer \
+ && npm install /opt/duranki/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
+ && rm -rf /opt/duranki/client.tgz /tmp/duranki-npm-cache
+COPY actors/ /app/consumer/
+RUN find /app/consumer -maxdepth 1 -type f -exec chmod 0444 {} + \
+ && chmod 0555 /app /app/consumer
+USER node
+WORKDIR /app/consumer
+RUN test -r /app/consumer/js_text.cjs && test -r /app/consumer/js_actor.cjs \
+ && test -r /app/consumer/scenarios.json && test -r /app/consumer/request.json \
+ && test -r /app/consumer/dev07_actor.cjs
+RUN node -e "if (typeof require('@mach33/duranki-client').DurankiClient !== 'function') process.exit(1)"
+CMD ["node", "-e", "setInterval(()=>{},3600000)"]

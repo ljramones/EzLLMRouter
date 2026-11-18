@@ -1,0 +1,227 @@
+{
+  "kind": "DEV-06 local validation",
+  "date": "2026-10-21",
+  "target_docker_executed_by_executor": false,
+  "owner_target_attempts": [
+    {
+      "id": "owner-up-20261021-01",
+      "command": "profile.py up",
+      "offline_image_builds": "receiver, worker and service passed",
+      "compose_up_exit": 0,
+      "readiness": "failed_connection_refused_deadline",
+      "failure_down_exit": 0,
+      "synthetic_demos_invoked": false,
+      "container_startup_logs": "not_captured_in_this_attempt",
+      "evidence_manifest": "${DURANKI_ARTIFACT_ROOT}/target-run01-readiness-failure/MANIFEST.json"
+    },
+    {
+      "id": "owner-up-20261021-02",
+      "command": "profile.py up",
+      "offline_image_builds": "receiver, worker and service passed",
+      "compose_up_exit": 0,
+      "readiness": "no_completion_record",
+      "synthetic_demos_invoked": false,
+      "launcher_process_observed_afterward": false,
+      "container_startup_logs": "read_only_diagnose_captured_after_attempt",
+      "diagnosis": "service_exited_1_module_not_found_recipe_due_to_missing_dev_slice_pythonpath",
+      "evidence": "docs/development/dev-06/evidence/owner-up-20261021-02/"
+    },
+    {
+      "id": "owner-restart-20261021-03",
+      "command": "profile.py restart",
+      "offline_image_builds": "receiver, worker and service passed",
+      "compose_up_exit": 0,
+      "readiness": "failed_connection_refused_deadline",
+      "containers_at_failure": "netns, receiver, service and worker up",
+      "host_binding_in_ps": "absent; netns listed only 8780/tcp",
+      "failure_down_exit": 0,
+      "synthetic_demos_invoked": false,
+      "evidence": "docs/development/dev-06/evidence/owner-restart-20261021-03/MANIFEST.json"
+    },
+    {
+      "id": "owner-console-20261021-04",
+      "browser": "authenticated Overview screenshot; live service, worker and sender; running commit and fingerprint visible",
+      "host_read_only_get": "HTTP 200 with Cache-Control no-store",
+      "executor_synthetic_exercise": "one invocation after three preexisting submissions; four new submissions and one caller lookup",
+      "host_api_readback": "seven total completed/dispatched; four exercise details with intent and guard receipt; no-store not_retained",
+      "independent_receiver_correlation": "passed separately in owner-audit-20261021-05",
+      "evidence": "docs/development/dev-06/evidence/owner-console-20261021-04/MANIFEST.json"
+    },
+    {
+      "id": "owner-audit-20261021-05",
+      "command": "profile.py audit",
+      "exit": 0,
+      "independent_receiver_arrivals": 7,
+      "matched_executor_attempts": 4,
+      "duplicate_attempts": false,
+      "topology_negative_added_arrivals": false,
+      "evidence": "docs/development/dev-06/evidence/owner-audit-20261021-05/MANIFEST.json"
+    },
+    {
+      "id": "owner-persistence-20261021-06",
+      "command": "profile.py verify-persistence",
+      "exit": 0,
+      "quiescent_submissions": 7,
+      "retained_submission_ids": 4,
+      "no_store_candidate_access": "not_retained",
+      "receiver_arrivals_before": 7,
+      "receiver_arrivals_after": 7,
+      "new_provider_requests": 0,
+      "evidence": "docs/development/dev-06/evidence/owner-persistence-20261021-06/MANIFEST.json"
+    },
+    {
+      "id": "browser-walkthrough-20261021-07",
+      "method": "temporary headless Chrome over running loopback console",
+      "rendered_views": [
+        "Activity",
+        "existing no-store detail",
+        "Usage",
+        "Configuration",
+        "Build & context"
+      ],
+      "keyboard": "Tab moved focus to Usage; Enter activated Usage",
+      "sign_out": "login restored; same-browser API 401",
+      "submissions_before": 7,
+      "submissions_after": 7,
+      "dispatched_attempts_before": 7,
+      "dispatched_attempts_after": 7,
+      "demo_buttons_clicked": false,
+      "evidence": "docs/development/dev-06/evidence/browser-walkthrough-20261021-07/MANIFEST.json"
+    }
+  ],
+  "artifact_root": "/Users/larrymitchell/Mach33/Duranki-artifacts/dev06-20261021-01",
+  "staging": {
+    "status": "passed",
+    "command": "DURANKI_ARTIFACT_ROOT=<declared artifact root> python3 deploy/local/profile.py prepare",
+    "fingerprint_before_final_document_commit": "5985a08f1fc04cc8cc5fa7f9406fbbaffb1e6c8d5aeec462aaa190fb714dc81d",
+    "frozen_gateway_wheels": 117,
+    "package_reacquisition": false
+  },
+  "checks": [
+    {
+      "name": "operator tests including live audit and no-resend persistence controls",
+      "passed": 32,
+      "failed": 0
+    },
+    {
+      "name": "Ruby standard YAML parse of local Compose services and dedicated publish topology",
+      "exit": 0
+    },
+    {
+      "name": "offline profile staging includes hash-matched ingress script",
+      "exit": 0
+    },
+    {
+      "name": "host import of staged local_service with corrected image-equivalent PYTHONPATH",
+      "exit": 0
+    },
+    {
+      "name": "staged retry cause",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "name": "staged signed work identity",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "name": "staged final guard",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "name": "Choice B component",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "name": "owned sender transport",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "name": "worker readiness",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "name": "DEV-05 component",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "name": "DEV-05 failure capture",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "name": "DEV-05 Python actor modes",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "name": "tool cycle core",
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "name": "model identity",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "boundary readiness",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "name": "core bridge",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "name": "Python client",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "name": "Node 24 browser JavaScript syntax",
+      "exit": 0
+    },
+    {
+      "name": "Node 24 installed JavaScript client from staged frozen tarball",
+      "positive": 1,
+      "malformed_rejected": 2,
+      "exit": 0
+    },
+    {
+      "name": "Node 24 DEV-05 actor modes",
+      "passed": 8,
+      "real_network_calls": 0,
+      "exit": 0
+    },
+    {
+      "name": "staged Docker COPY and non-root readability source review",
+      "exit": 0
+    },
+    {
+      "name": "Git new-code diff whitespace",
+      "exit": 0
+    }
+  ],
+  "local_test_environment_note": "ARM Python lacked native cryptography; staged guard/retry/identity tests passed using matching preinstalled x86 Python and local packages. No dependency was acquired.",
+  "pending_target": [],
+  "browser_limit": "No independent receiver-container recount after browsing; unchanged service submission and dispatched-attempt counts are the observed no-new-work signal.",
+  "source_remote_verification": {
+    "destination": "git@github.com:33fg/duranki.git",
+    "transport": "existing SSH identity after embedded HTTPS token was rejected",
+    "main_ref": "d3dfc8784bc9a8dc7fb958f4202c65f6c0bc7eaf",
+    "feature_ref": "verified_equal_to_local_dev06_branch_after_normal_non_force_push",
+    "anonymous_repository_lookup_http_status": 404,
+    "artifact_upload": false,
+    "first_feature_commit_verified": "0b685698fd88780ab3c749aec7901fce9cf550a9",
+    "evidence": "docs/development/dev-06/evidence/source-remote-20261021-08/MANIFEST.json",
+    "final_review_followup": "normal fast-forward push and independent exact-ref comparison"
+  }
+}

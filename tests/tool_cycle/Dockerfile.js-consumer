@@ -1,0 +1,12 @@
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+ENV npm_config_cache=/tmp/duranki-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
+COPY mach33-duranki-client-0.0.2.tgz /opt/duranki/client.tgz
+RUN mkdir -p /app/consumer \
+ && cd /app/consumer \
+ && npm install /opt/duranki/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
+ && rm -rf /opt/duranki/client.tgz /tmp/duranki-npm-cache
+COPY tests/ /app/consumer/
+USER node
+WORKDIR /app/consumer
+CMD ["node", "js_actor.cjs", "cycle"]

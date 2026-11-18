@@ -1,0 +1,51 @@
+{
+  "all_stories_usd": "0.46",
+  "attempts": 9,
+  "checks": [
+    "timeline",
+    "step chart",
+    "30-second cutoff",
+    "keyboard drill-down",
+    "play",
+    "pause",
+    "restart",
+    "seek",
+    "actor/provider filters",
+    "JSON/CSV exports",
+    "return to operational report",
+    "no POST or provider request",
+    "stable durable counters"
+  ],
+  "identity": "dev09-scripted-cost-demo-v1",
+  "main_usd": "0.32",
+  "requests_during_demo": [],
+  "scope": "disposable authenticated Chrome, temporary SQLite, fictional fixed fixture",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-demo-01-timeline-main.png",
+      "sha256": "0e1b71b8c5a1d26ef3ab31b98f842f34f12970172700b0282ffb2b8504a8be55"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-demo-01-cost-step-main.png",
+      "sha256": "deeaefb71ba05ab3cb43ab7835e86bb436008fd73381fed0369c6c9927543e38"
+    }
+  ],
+  "source_sha256": {
+    "server/src/duranki_server/demo_workspace.py": "e3a86cfb3946a72c80df276930977bde86474967e99f9e6b1208785cead92614",
+    "web/demo_workspace_view.js": "0760294aebb6cc4a4425a1b1bc4ce85aaf42500ec98dd8b4650c930e9e883eb4",
+    "web/dev09_demo_fixture.json": "eae0c2a655aa8ebd8e30d473b7e2e07ed78bceeb040632d5b145048443d3bb61"
+  },
+  "status": "PASS",
+  "traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    }
+  }
+}

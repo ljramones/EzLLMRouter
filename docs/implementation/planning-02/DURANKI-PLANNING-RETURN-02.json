@@ -1,0 +1,258 @@
+{
+  "schema_version": "0.2",
+  "disposition": "DRAFT_READY_FOR_REVIEW",
+  "status_scope": "Documentation correction only; architecture and technical proposals not newly adopted; WP-FND NOT_ISSUED",
+  "repository_snapshot_before": {
+    "root": "/Users/larrymitchell/Mach33/Duranki",
+    "git_state": "No .git directory; branch, HEAD and tracked/untracked status unavailable",
+    "existing_planning_package": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01",
+    "planning_02_target_collisions": "none at the five proposed paths"
+  },
+  "repository_snapshot_after": {
+    "root": "/Users/larrymitchell/Mach33/Duranki",
+    "git_state": "No .git directory; branch, HEAD and tracked/untracked status unavailable",
+    "new_files": [
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-PLANNING-RETURN-02.json"
+    ],
+    "preserved": "planning-01, baseline, tracker, planning readout and mach-recce unchanged by hash"
+  },
+  "source_receipts": [
+    {
+      "role": "review direction",
+      "path": "/Users/larrymitchell/Downloads/DURANKI-IMPLEMENTATION-PLAN-v0.1-REVIEW-01.md",
+      "bytes": 26827,
+      "sha256": "15eb0da9fbf4eef542ed523d598a0690e301f645bd8bdd2fb5c758f144778111"
+    },
+    {
+      "role": "review direction",
+      "path": "/Users/larrymitchell/Downloads/DURANKI-PLANNING-01-REVIEW-VALIDATION.json",
+      "bytes": 6380,
+      "sha256": "ba9e492ec0a605ad4e41a7b93a25acf131d82a8e71025a5e01920d2bc8cbdbe9"
+    },
+    {
+      "role": "controlling or supporting unchanged source",
+      "path": "/Users/larrymitchell/Mach33/LLM_Routing/llm-routing-infra-design-v1.1.md",
+      "bytes": 71744,
+      "sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c"
+    },
+    {
+      "role": "controlling or supporting unchanged source",
+      "path": "/Users/larrymitchell/Mach33/LLM_Routing/review-tracker.md",
+      "bytes": 44912,
+      "sha256": "36be1ae781fb6645fa186881eb967e7118f24dbf585913f2f8e0da9b1e1260ac"
+    },
+    {
+      "role": "controlling or supporting unchanged source",
+      "path": "/Users/larrymitchell/Mach33/LLM_Routing/Duranki-Competitive-Landscape.docx",
+      "bytes": 139985,
+      "sha256": "c1eec46e48c40ff533e1adaf4be534c97390366c1def65116aba07d5e8e0d1e6"
+    },
+    {
+      "role": "controlling or supporting unchanged source",
+      "path": "/Users/larrymitchell/Downloads/DURANKI-IMPLEMENTATION-PLAN-AUTHORING-COMMISSION-01.md",
+      "bytes": 18874,
+      "sha256": "246cc75a2d25ed5c03ec3ad3f0278bb37f1c1d433701f8a3458e3a1f08d52cc1"
+    },
+    {
+      "role": "controlling or supporting unchanged source",
+      "path": "/Users/larrymitchell/Mach33/Duranki/planning/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    },
+    {
+      "role": "unchanged original reconnaissance",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-CALL-PATH-INVENTORY.json",
+      "bytes": 80201,
+      "sha256": "f103ee1d153e2af2538d1e7dfe5b5ef0c65e6192bf219607babdbcff414f33cb"
+    },
+    {
+      "role": "unchanged original reconnaissance",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-CLIENT-CONTRACT-MAPPING.md",
+      "bytes": 7172,
+      "sha256": "3fc7f87bf63ec1293a0895086c1d4608ea1e4bc7466595b2996d19b1ea59c2a5"
+    },
+    {
+      "role": "unchanged original reconnaissance",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-FIXTURE-CATALOGUE.json",
+      "bytes": 18747,
+      "sha256": "f487c3de15fd8dd7ee301da5b501308321d771e657ecf356c6c10c4522512ce3"
+    },
+    {
+      "role": "unchanged original reconnaissance",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-MACH-PLATFORM-RECONNAISSANCE.md",
+      "bytes": 19510,
+      "sha256": "0836150411fda1b3f3fa3f1c0f5b01d7b0ab76e37d1f7010702f34af115bce80"
+    },
+    {
+      "role": "unchanged original reconnaissance",
+      "path": "/Users/larrymitchell/Mach33/Duranki/mach-recce/DURANKI-RECONNAISSANCE-RETURN.json",
+      "bytes": 3028,
+      "sha256": "3da889f7d838130a7d74bf9d071a973254b7964a23df6b76fc501ba0eb6e4804"
+    },
+    {
+      "role": "unchanged planning-01",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.1.json",
+      "bytes": 39697,
+      "sha256": "155aa419644b1f5b23c1919925b3ad697f7483d219cffc0efbe64701f0b4642a"
+    },
+    {
+      "role": "unchanged planning-01",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-IMPLEMENTATION-PLAN-v0.1.md",
+      "bytes": 22621,
+      "sha256": "2714bb5835620bc08628ba71d52b46a5e8ea5beeb54e381b581ac600c031fea8"
+    },
+    {
+      "role": "unchanged planning-01",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-IMPLEMENTATION-REGISTER-v0.1.json",
+      "bytes": 41061,
+      "sha256": "e6edd45617ee6bc2a5ec46bd8b91a2c8b5d2e237318f1a28124b14f2641c1044"
+    },
+    {
+      "role": "unchanged planning-01",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/DURANKI-PLANNING-RETURN-01.json",
+      "bytes": 9587,
+      "sha256": "787b9ff75f2c2669347665f841a9c001c906ef0b1cb68917b38ddeb729402889"
+    },
+    {
+      "role": "unchanged planning-01 input",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-01/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    }
+  ],
+  "output_receipts_excluding_return_self": [
+    {
+      "role": "v0.2 output",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+      "bytes": 33003,
+      "sha256": "852d58be6087c1952f8349b429029f23c9235c86236b26dcf3ed69d3758aebab"
+    },
+    {
+      "role": "v0.2 output",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json",
+      "bytes": 114869,
+      "sha256": "ea4657b342be60e5bb785d9093130aa980503221d9e3c75ee603adaef8eb4e92"
+    },
+    {
+      "role": "v0.2 output",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json",
+      "bytes": 59976,
+      "sha256": "1242f0f2125b15909e4cfbb0dd4fbc862f84a9064d511c44db3c7085b3273e2e"
+    },
+    {
+      "role": "byte-identical input copy",
+      "path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md",
+      "bytes": 19633,
+      "sha256": "c73980f555faf979a5d791103cc34f92dcd4b0345296f5f94c1de4e7e9ff5208"
+    }
+  ],
+  "return_path": "/Users/larrymitchell/Mach33/Duranki/docs/implementation/planning-02/DURANKI-PLANNING-RETURN-02.json",
+  "return_self_hash": "omitted to avoid self-reference",
+  "review_reference": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-IMPLEMENTATION-PLAN-v0.1-REVIEW-01.md",
+    "sha256": "15eb0da9fbf4eef542ed523d598a0690e301f645bd8bdd2fb5c758f144778111",
+    "finding_dispositions": [
+      {
+        "id": "IP01-01",
+        "disposition": "ADDRESSED_IN_DRAFT",
+        "corrected_references": "Plan §§4,6; register decisions/work_packages",
+        "summary": "Decision timing and DEC-03/DEC-12 crosswalk remove producer/entry loops."
+      },
+      {
+        "id": "IP01-02",
+        "disposition": "ADDRESSED_IN_DRAFT",
+        "corrected_references": "Plan §4 WP-C/WP-D; register C milestones and early obligations",
+        "summary": "C1 functional core, C2 clients/participants, C3 actual-service conformance, D operational hardening."
+      },
+      {
+        "id": "IP01-03",
+        "disposition": "ADDRESSED_IN_DRAFT",
+        "corrected_references": "Plan §§2,5; register T-32/OB-MANIFEST; overlay outline_and_draft",
+        "summary": "FDC then durable intent then transmit; gateway validates manifest; currently authorized generation wins."
+      },
+      {
+        "id": "IP01-04",
+        "disposition": "ADDRESSED_AS_PLANNING_MAP",
+        "corrected_references": "Plan §5; register obligation/test evidence links; overlay coverage/variant links",
+        "summary": "Partial versus complete future test relevance stated; no runtime proof claimed."
+      },
+      {
+        "id": "IP01-05",
+        "disposition": "ADDRESSED_AS_UNISSUED_ENTRY",
+        "corrected_references": "Plan §§6,8; register DEC-01/02/15 and WP-FND",
+        "summary": "Independent root, Git/custody/staging authority and package isolation made explicit for later commission."
+      }
+    ]
+  },
+  "foundation_entry_decisions": [
+    {
+      "id": "DEC-01",
+      "status": "OPEN_NOT_ADOPTED",
+      "scope": "Python/Node support and foundation build tooling with evidence for introduced dependencies"
+    },
+    {
+      "id": "DEC-02",
+      "status": "OPEN_NOT_ADOPTED",
+      "scope": "Package boundaries, build and distribution format; JavaScript source retained"
+    },
+    {
+      "id": "DEC-15",
+      "status": "OPEN_NOT_ADOPTED",
+      "scope": "Confirmed independent root, explicit local Git/branch and custody authority, separately specified stage/commit behavior"
+    }
+  ],
+  "next_executable_proposal": {
+    "id": "WP-FND",
+    "status": "NOT_ISSUED",
+    "reference": "DURANKI-IMPLEMENTATION-PLAN-v0.2.md §8",
+    "entry_decisions": [
+      "DEC-01",
+      "DEC-02",
+      "DEC-15"
+    ],
+    "summary": "Repository custody and reproducible isolated client/service package foundation; no network round trip or gateway proof"
+  },
+  "validation_results": {
+    "json_parse": "PASS: v0.2 register and overlay parsed as inert JSON",
+    "canonical_baseline_tests": "PASS: 41 unique texts and baseline phases match v1.1 §16",
+    "original_fixtures": "PASS: exact set of 19 original fixture IDs",
+    "counts": {
+      "work_packages": 12,
+      "decisions": 20,
+      "obligations": 33,
+      "baseline_tests": 41,
+      "fixture_records": 19,
+      "assertion_groups": 39,
+      "proposed_variants": 17
+    },
+    "references": "PASS: work/decision/milestone/obligation/test/variant references resolve; IDs unique",
+    "graphs": "PASS: explicit work graph acyclic; no package entry depends on its own produced decision; P0 and WP-3 output loops removed",
+    "enforcement_owners": "PASS: T-32 names Neti/gateway validator and orchestrator producer",
+    "coverage_links": "PASS: overlay complete/partial links marked, new T-10/T-12/T-18 and T-07/T-08 intervention groups; all NOT_RUN",
+    "source_preservation": "PASS: baseline, tracker, planning-01, planning readout and five reconnaissance files match recorded SHA-256",
+    "readout_copy": "PASS: byte-identical to planning-01 readout input",
+    "application_tests_build_gateway_provider_security_deployment": "NOT RUN / NOT VERIFIED",
+    "mach_platform_source": "NOT RE-AUDITED"
+  },
+  "action_summary": {
+    "created_directories": [
+      "docs/implementation/planning-02/",
+      "docs/implementation/planning-02/inputs/"
+    ],
+    "copied_unchanged": [
+      "docs/implementation/planning-02/inputs/DURANKI-RECCE-TO-IMPLEMENTATION-READOUT-01.md"
+    ],
+    "authored": [
+      "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-PLAN-v0.2.md",
+      "docs/implementation/planning-02/DURANKI-IMPLEMENTATION-REGISTER-v0.2.json",
+      "docs/implementation/planning-02/DURANKI-FIXTURE-DISPOSITION-OVERLAY-v0.2.json",
+      "docs/implementation/planning-02/DURANKI-PLANNING-RETURN-02.json"
+    ],
+    "other_changes": [],
+    "git_mutations_install_build_tests_gateway_vega_actions": "NONE"
+  }
+}

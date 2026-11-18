@@ -1,0 +1,150 @@
+--- C01/DURANKI-v1.2-C01-ASSURANCE-REGISTER.md
++++ C01-E01/DURANKI-v1.2-C01-ASSURANCE-REGISTER.md
+@@ -6,13 +6,13 @@
+ 
+ ## 1. Interpretation and evidence limits
+ 
+-This register resolves all 87 IDs: **86 canonical parent requirements and one retired alias (T-84 → T-49)**. It records 71 stable subcases. No parent has an unqualified PASS. A blank evidence cell means **not evidenced in the reviewed records**, not “not implemented”. Current repository, host, containers, credentials, provider accounts and owner-profile state were not inspected.
++This register resolves all 87 IDs: **86 canonical parent requirements and one retired alias (T-84 → T-49)**. It records 73 stable subcases. No parent has an unqualified PASS. A blank evidence cell means **not evidenced in the reviewed records**, not “not implemented”. Current repository, host, containers, credentials, provider accounts and owner-profile state were not inspected. Focused historical source/record checks are identified in the separate evidence supplement.
+ 
+ Use independent evidence dimensions: source implementation, controlled target, deployment observation, commercial qualification and integration. A prior component/controlled result can support a bounded part of a requirement, not the entire production obligation or new successor behavior. The JSON records full requirement text, profile, build/evidence, date, limits and remaining proof for every canonical parent and subcase.
+ 
+ **Source and deployment are distinct:** the DEV-11 record identifies tested source `86d1c8cb0d99c31660f8ef7ad7464e1b40e670f4` and fingerprint `e3157e9e235d8980d00ba6d264cca528e5beac5d09f981839221f9259b84e981`; its last reported running owner image was the earlier DEV-10 build. That historical statement does not establish today's runtime or allowance state. The final matrix used installed Python; earlier CommonJS/worker evidence was reused, not rerun wholesale. No real-provider call or invoice qualification is established by these receipts.
+ 
+-**Provenance unresolved:** PostgreSQL is carried from the owner's quoted 23 October decision (E-08), not a newly inspected transcript or fresh affirmation. The reconstructed Addendum A hash identifies received bytes, not its unavailable original. Valhalla 0.4 and the Proto proposal/evidence report remain absent; all R15/R16 correspondences remain attributed, not independently closed. None of these gaps justifies inventing a replacement or reversing the standalone-first direction.
++**Decision provenance:** PostgreSQL is carried from the owner's quoted 23 October decision (E-08), not a newly inspected transcript or fresh affirmation. The reconstructed Addendum A hash identifies received bytes, not its unavailable original. Valhalla 0.4 and the Proto proposal/evidence report remain absent; all R15/R16 correspondences remain attributed, not independently closed. None of these gaps justifies inventing a replacement or reversing the standalone-first direction.
+ 
+ ## 2. Profiles
+ 
+@@ -42,36 +42,41 @@
+ | E-07 | 2026-10-25 — `openai.responses.implicit-cache.v1 / openai.responses.text.cache.v2` | [CACHE-ACCOUNTING-CONTRACT.md](inputs/CACHE-ACCOUNTING-CONTRACT.md); Exact DEV-11 contract text; not a selected commercial model |
+ | E-08 | 2026-10-23 decision quoted in 2026-10-25 handoff — `document SHA256 e0c0394f862fd42ceba8726e19327a1429cb7caee16478c1df94a6419ca09fa2` | [DURANKI-ADDENDUM-A-RECONCILIATION-HANDOFF-2026-10-25.md](inputs/DURANKI-ADDENDUM-A-RECONCILIATION-HANDOFF-2026-10-25.md); Recovered owner decisions via quotation, not independently read original transcript |
+ 
++| E-09 | 2026-10-21 — `Run-16 source a711e6e30a3bf950abd3ab3b873eaa8069ce9b93d7934dd47be72bbc772f535c; runtime adf88631c2026ae1e0648dcb9e141e5887580ece5a8a294c3ad3d7088ccfc341` | [DEV-05-RUN16-REVIEW-05.md](inputs/DEV-05-RUN16-REVIEW-05.md); Independent historical review of Run-16; bounded installed clients/tools/no-store and error cases; not re-executed here. |
++| E-10 | 2026-10-21 — `Running source then 150127a37e953ee255d0dcd8b831f6c72e18c2f7; fingerprint 80ee4223546ccd93c6843b3efe9e33737ca34b0599d0673c2abeb460c185a9ee` | [DEV-06-RESULT-SUPPLIED-20261021-195653.md](inputs/DEV-06-RESULT-SUPPLIED-20261021-195653.md); Supplied living result: local console, independent receiver audit, ordinary restart and browser observations; author-reported records, no current runtime read. |
++| E-11 | 2026-10-21 — `Owner target 7ead951b47c0bcebd0b25f174e0de685851ec5e2; fingerprint 53702db06f40a3c3c51b742818ae27e5018c50a526be70b22ee2abcf1dea2040` | [DEV-07-RESULT-SUPPLIED-20261021-232233.md](inputs/DEV-07-RESULT-SUPPLIED-20261021-232233.md); Supplied living result: registry, grants, prices, queued revocations, restart and catalogue component checks. This copy predates later catalogue/CRUD browser closure. |
++| E-12 | 2026-10-21 recorded execution; 2026-10-25 mapping — `a711e6e30a3bf950abd3ab3b873eaa8069ce9b93d7934dd47be72bbc772f535c` | [DEV-05-EVIDENCE-CORRESPONDENCE.json](DEV-05-EVIDENCE-CORRESPONDENCE.json); Hash-verified Run-16 source/runtime manifests; inspected named test definitions and matching recorded suite exits. Inert correspondence only, no rerun. |
++
+ ## 4. Canonical parent map
+ 
+ “Prior bounded” means only the stated partial source/receipt mapping. “Not evidenced” carries no assertion that nobody tested it elsewhere. New successor and future-integration obligations remain open. Requirement text and all proof fields are in the JSON; the clause column below is stable within this candidate.
+ 
+ | ID | Governing clause | Applicable profiles | Evidence / scoped status |
+ |---|---|---|---|
+-| T-01 | §5.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | None mapped; not evidenced |
+-| T-02 | §5.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | None mapped; not evidenced |
++| T-01 | §5.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-12; partial historical map (supplement) |
++| T-02 | §5.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-12; partial historical map (supplement) |
+ | T-03 | §5.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | None mapped; not evidenced |
+ | T-04 | §10.1 | P-PRODUCTION | None mapped; not evidenced |
+-| T-05 | §13.2 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
++| T-05 | §13.2 | S-LEGACY, S-TEXT-CACHE | E-09, E-10; partial historical map (supplement) |
+ | T-06 | §7.1 | P-LAB | None mapped; not evidenced |
+ | T-07 | §5.4 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | None mapped; not evidenced |
+-| T-08 | §5.3 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | None mapped; not evidenced |
+-| T-09 | §5.4 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-02; prior bounded only |
++| T-08 | §5.3 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-09, E-11; partial historical map (supplement) |
++| T-09 | §5.4 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-02, E-09, E-12; partial historical map (supplement) |
+ | T-10 | §10.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+ | T-11 | §10.4 | S-LEGACY, S-TEXT-CACHE | E-03; prior bounded only |
+ | T-12 | §10.4 | S-LEGACY, S-TEXT-CACHE | E-03; prior bounded only |
+ | T-13 | §8.5 | P-PRODUCTION | None mapped; not evidenced |
+-| T-14 | §8.2 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-04; prior bounded only |
++| T-14 | §8.2 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-04, E-09, E-12; partial historical map (supplement) |
+ | T-15 | §8.4 | P-PRODUCTION | None mapped; not evidenced |
+-| T-16 | §8.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
++| T-16 | §8.4 | S-LEGACY, S-TEXT-CACHE | E-09; partial historical map (supplement) |
+ | T-17 | §8.6 | P-PRODUCTION | None mapped; not evidenced |
+-| T-18 | §10.2 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-04; prior bounded only |
++| T-18 | §10.2 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-04, E-09; partial historical map (supplement) |
+ | T-19 | §5.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+ | T-20 | §5.4 | P-PRODUCTION | None mapped; not evidenced |
+ | T-21 | §5.1 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+ | T-22 | §10.8 | P-PRODUCTION | None mapped; not evidenced |
+ | T-23 | §6.6 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+-| T-24 | §5.4 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-02; prior bounded only |
++| T-24 | §5.4 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL | E-02, E-11; partial historical map (supplement) |
+ | T-25 | §5.6 | P-EVALUATION | None mapped; not evidenced |
+ | T-26 | §11.4 | P-EVALUATION | None mapped; not evidenced |
+ | T-27 | §12.4 | P-EVALUATION | None mapped; not evidenced |
+@@ -84,17 +89,17 @@
+ | T-34 | §6.7 | P-LAB | None mapped; not evidenced |
+ | T-35 | §12.4 | P-EVALUATION | None mapped; not evidenced |
+ | T-36 | §6.5 | P-EVALUATION | None mapped; not evidenced |
+-| T-37 | §4.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+-| T-38 | §4.4 | S-LEGACY, S-TEXT-CACHE | E-02; prior bounded only |
++| T-37 | §4.4 | S-LEGACY, S-TEXT-CACHE | E-10, E-11; partial historical map (supplement) |
++| T-38 | §4.4 | S-LEGACY, S-TEXT-CACHE | E-02, E-09, E-10; partial historical map (supplement) |
+ | T-39 | §4.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+-| T-40 | §4.3 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
++| T-40 | §4.3 | S-LEGACY, S-TEXT-CACHE | E-12; partial historical map (supplement) |
+ | T-41 | §4.4 | S-LEGACY, S-TEXT-CACHE | None mapped; not evidenced |
+ | T-42 | §5.7 | S-RETRIEVAL | None mapped; not evidenced |
+-| T-43 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | E-05; prior bounded only |
++| T-43 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | E-05, E-10, E-11; partial historical map (supplement) |
+ | T-44 | §4.5 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | None mapped; not evidenced |
+-| T-45 | §5.4 | S-RETRIEVAL | None mapped; not evidenced |
++| T-45 | §5.4 | S-RETRIEVAL | E-11; partial historical map (supplement) |
+ | T-46 | §5.3 | S-RETRIEVAL | None mapped; not evidenced |
+-| T-47 | §5.7 | S-RETRIEVAL | E-03; prior bounded only |
++| T-47 | §5.7 | S-RETRIEVAL | E-03, E-09; partial historical map (supplement) |
+ | T-48 | §10.8 | S-RETRIEVAL | E-04; prior bounded only |
+ | T-49 | §10.2 | S-RETRIEVAL | E-04; prior bounded only |
+ | T-50 | §10.4 | S-RETRIEVAL | E-03; prior bounded only |
+@@ -103,8 +108,8 @@
+ | T-53 | §5.9 | S-RETRIEVAL | None mapped; not evidenced |
+ | T-54 | §5.9 | S-RETRIEVAL | None mapped; not evidenced |
+ | T-55 | §10.8 | S-RETRIEVAL | None mapped; not evidenced |
+-| T-56 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | E-03; prior bounded only |
+-| T-57 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | None mapped; not evidenced |
++| T-56 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | E-03, E-11; partial historical map (supplement) |
++| T-57 | §4.6 | S-LEGACY, S-TEXT-CACHE, S-ADMIN | E-11; partial historical map (supplement) |
+ | T-58 | §6.9 | S-ADMIN, P-EVALUATION | None mapped; not evidenced |
+ | T-59 | §6.10 | S-ADMIN | None mapped; not evidenced |
+ | T-60 | §9.1 | S-LEGACY, S-TEXT-CACHE, S-RETRIEVAL, S-ADMIN | None mapped; not evidenced |
+@@ -174,6 +179,8 @@
+ 
+ | Subcase | Assertion | Evidence status |
+ |---|---|---|
++| T-07.a | A correctly signed plan under a revoked signing-key version is rejected before first write, including after a lower wait; an eligible-key positive control succeeds. Re-signing preserves the work key and no-repeat ownership and never replays a possibly sent attempt. Production custody/rotation evidence is separately scoped. | Not executed; erratum requirement |
++| T-14.a | Unchanged WorkKey and canonical caller assertions resubmitted across server-assessed commission asserted-to-verified, unavailable-to-available, not_yet_issued or caller_omitted reason changes, and delegation coverage changes resolve to the original submission/attempt with no extra reservation or send. Current read/dispatch authority still applies; changed caller assertions under the same key conflict. | Not executed; erratum requirement |
+ | T-24.a | Effective local revocation while queued below the guard blocks first write; positive controls work. | E-02 — bounded legacy only |
+ | T-24.b | First-write/revocation order, would-block and partial-write paths preserve consumption/uncertainty. | Not evidenced for successor |
+ | T-24.c | Crash/owner recovery never repeats a possibly sent attempt. | Not evidenced for successor |
+@@ -188,7 +195,7 @@
+ | T-45.d | Credential scope change/compromise/revocation blocks queued work. | Not evidenced for successor |
+ | T-45.e | Routine rotation follows exactly the qualified revision contract; no inferred exemption. | Not evidenced for successor |
+ | T-46.a | Operation/payload/order/compatibility mutation rejected. | Not evidenced for successor |
+-| T-46.b | Commission/delegation snapshot or status/reason mutation rejected. | Not evidenced for successor |
++| T-46.b | Tampering with the signed commission/delegation admission assessment (status, coverage, server-assigned reason or work-digest linkage) is rejected; changed canonical caller assertions conflict under the same WorkKey. Legitimately appended later assessments do not mutate the original snapshot or identity. | Not evidenced for successor |
+ | T-46.c | Signed activation-context mutation rejected; activation change is not a new work key. | Not evidenced for successor |
+ | T-46.d | Price/financial-owner mutation rejected. | Not evidenced for successor |
+ | T-47.a | Installed Python/CommonJS successor schemas and defaults agree. | Not evidenced for successor |
+@@ -201,7 +208,7 @@
+ | T-48.d | Half-even nano currency rounding including opposite tie directions. | Not evidenced for successor |
+ | T-48.e | Upward reservation covers every admitted raw/settled amount. | Not evidenced for successor |
+ | T-48.f | Domain and missing/null/invalid/zero/contradictory usage cases preserve evidence and unknown liability. | Not evidenced for successor |
+-| T-48.g | Separate requests, repeat attempts and split batches apply their own minima/rates; no double-counted components. | Not evidenced for successor |
++| T-48.g | Separate requests, repeat attempts and split batches apply their own minima/rates and per-attempt rounding; no double-counted components. Tariff B: three distinct n=1 attempts total USD 0.000900000, while one n=3 attempt settles USD 0.000900002; equal raw aggregate does not imply equal rounded total. | Not evidenced for successor |
+ | T-49.a | Absent required native counter retained, cost unknown. | E-04 — bounded legacy only |
+ | T-49.b | Explicit null distinct from absence, cost unknown. | E-04 — bounded legacy only |
+ | T-49.c | Explicit zero retained; accepted as zero only when consistent with the contract. | E-04 — bounded legacy only |
+@@ -238,7 +245,7 @@
+ | T-78.e | Future real issuer/Proto chain qualification is separate from synthetic cases. | Not evidenced for successor |
+ | T-79.a | Absent commission with allowed reason and asserted record-only fixture. | Not evidenced for successor |
+ | T-79.b | Record-only reference supplies no commission execution authority. | Not evidenced for successor |
+-| T-79.c | Mutation of bound reference/status/reason rejected. | Not evidenced for successor |
++| T-79.c | Mutation of canonical caller commission assertions is detected; tampering with the signed admission status/reason or its work-digest linkage is rejected. Later linked verification leaves the original snapshot and deduplication identity unchanged. | Not evidenced for successor |
+ | T-79.d | Later verification appends evidence/time without retroactive authority upgrade. | Not evidenced for successor |
+ | T-85.a | Verified commission revocation serialized with the same T-24 first-write fence. | Not evidenced for successor |
+ | T-85.b | Stale commission/gate evidence fails closed before reliance. | Not evidenced for successor |
+@@ -251,3 +258,9 @@
+ Append scoped evidence with immutable requirement/profile/build identities, observation date and limits. Preserve earlier failures and evidence from superseded builds. A reused receipt must identify source correspondence; a later document commit does not imply new runtime. No blanket inheritance from SDK feature lists, another provider, another transport or a simulated tariff is allowed.
+ 
+ Rollups count canonical requirements only and state their profile denominator. T-84 always resolves to T-49; T-85 is separately applicable only to verified-commission integration and links the general T-24 fence. Do not aggregate synthetic and commercial evidence into one readiness score. Owner adoption, implementation, controlled execution, deployment and commercial/integration acceptance remain separate milestones.
++
++## 8. DEV-05–DEV-10 evidence supplement 01
++
++[Read the evidence supplement](DURANKI-v1.2-C01-EVIDENCE-SUPPLEMENT-01.md). Seventeen parent rows now carry additional bounded historical observations, including related positive-only provenance where stated. This does not mark all their subcases passed. Earlier C01 assertions in §5 remain dated history; the JSON preserves those assessments explicitly and appends the supplement. DEV-08–DEV-10 primary results and later DEV-07 closure remain unmapped. T-07’s signature/key-revocation negatives, T-41’s adoption-refusal path and production key custody remain unevidenced by the selected added records.
++
++All 87 parent/alias identifiers are unchanged; there are now 73 subcases. T-07.a and T-14.a are new unexecuted requirements. T-46.b and T-79.c are amended, and T-48.g has an additional fictional rounding vector. No runtime status is inherited from a document calculation.

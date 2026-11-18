@@ -1,0 +1,154 @@
+{
+  "schema_version": "wp-b-entry-return-02",
+  "created_utc_date": "2026-10-17",
+  "status": "WP_B_ENTRY_SOURCE_GROUNDED_RECOMMENDATION_READY_FOR_REVIEW",
+  "authority": {
+    "dec_13": "PROPOSED_NOT_ADOPTED",
+    "wp_b_b1_execution": "NOT_ISSUED",
+    "wp_c_execution": "NOT_ISSUED",
+    "gateway_runtime_result": "NOT_RUN",
+    "foundation_and_wp_a_a2": "PRESERVED"
+  },
+  "operative_review": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-WP-B-ENTRY-01-INDEPENDENT-REVIEW-01.md",
+    "sha256": "d4001c1c884ee6e5b0867c39e8045e084837f17ecfdbec46bce87345a16bb291",
+    "validation_path": "/Users/larrymitchell/Downloads/DURANKI-WP-B-ENTRY-01-REVIEW-VALIDATION.json",
+    "validation_sha256": "947ec154b4152357ac1cd8ea9bc8817f2fb526f8e4d0470a4fb787cd48086538"
+  },
+  "source_directory": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq",
+  "source_receipts": {
+    "manifest_sha256": "9c3b65e3beb2f124f1a8ab7db5888d51312393b25b3854754595535ef4ed79c0",
+    "manifest_members_verified": 7,
+    "transfer_zip_sha256": "440c58e944b1c7eb4fdddce631d432911798610f5fb5e072a276e24c15127e65",
+    "transfer_zip_members_matched": 8,
+    "acquisition_receipt_sha256": "f5f5ed35bd4fd9ec9086af80af674cfefb7923621d2cfe19c79ac786fb6a01ca",
+    "pypi_metadata_sha256": "3bd44cfd7f6f27847d3abc0d9611d91be4a6507636b26256a86ff2a773ddc045",
+    "release_metadata_sha256": "258e8e918d6cdf1efbe3287216eca14c882c7f9de790c75942b817f205a0a399",
+    "tag_commit_metadata_sha256": "202f38a7be923df0a86206e8ca9548d4b8c02b394d55759ae283455af13c75a3",
+    "advisory_index_sha256": "2ad39d7b115d23fa3adf19d269503beb529df9c9b753abc369e933380743bd59",
+    "sdist": {
+      "filename": "litellm-1.105.1.tar.gz",
+      "bytes": 20321773,
+      "sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+      "publisher_digest_matched": true,
+      "signature_verified": false
+    },
+    "commit_archive": {
+      "filename": "litellm-source-d665dc1a6315847fcad6cc2c1264ceb47c06abce.tar.gz",
+      "sha256": "c8891f518f909a3470ec7fd2722cc31b545375319d5f236bdeffa0538b17fd05",
+      "publisher_commit_association": "GitHub commits/v1.105.1 API reported d665dc1a6315847fcad6cc2c1264ceb47c06abce with verification.verified true; independent signature verification not performed",
+      "release_tag_immutable": false
+    }
+  },
+  "archive_inspection": {
+    "sdist_regular_members": 4416,
+    "sdist_unsafe_members": 0,
+    "commit_regular_members": 12994,
+    "commit_directory_members": 2597,
+    "commit_internal_symlink": "litellm/proxy/enterprise -> ../../enterprise; safe internal target, skipped during scratch extraction",
+    "commit_unsafe_members": 0,
+    "extraction_report_path": "/private/tmp/duranki-wp-b-entry-02/run-20261017-01/archive-extraction-report.json",
+    "extraction_report_sha256": "a275fb5f416c2080562894818fe5a3ccaf1838a4472353d24de7bc642d053e34"
+  },
+  "source_correspondence": {
+    "common_regular_paths": 4412,
+    "identical": 4140,
+    "different": 272,
+    "sdist_only": 4,
+    "commit_only": 8582,
+    "different_classification": "267 generated UI assets; five Rust Cargo.toml files each add readme = README.md in sdist; no overlapping Python source differs",
+    "inspected_proxy_adapter_transport_sources_byte_identical": true,
+    "comparison_path": "/private/tmp/duranki-wp-b-entry-02/run-20261017-01/source-comparison.json",
+    "comparison_sha256": "6f26ccd73a7c509bf6dd0e09579dea4aadf02dea3fe6744a08e40c77e182e9f1"
+  },
+  "inspected_coordinates": [
+    "commit:litellm/proxy/proxy_server.py:11940-12016",
+    "commit:litellm/proxy/auth/user_api_key_auth.py:3433-3493",
+    "commit:litellm/proxy/common_request_processing.py:2085-2240,2535-2636",
+    "commit:litellm/proxy/route_llm_request.py:431-520,640-660",
+    "commit:litellm/router.py:2779-2807",
+    "commit:litellm/main.py:2590-2690,5937-5956",
+    "commit:litellm/llms/openai/chat/gpt_transformation.py:476-542",
+    "commit:litellm/llms/openai/openai.py:374-484,889-955",
+    "commit:litellm/llms/openai/common_utils.py:306-330",
+    "commit:litellm/__init__.py:423-424",
+    "commit:litellm/integrations/custom_logger.py:533-558",
+    "commit:litellm/llms/custom_httpx/http_handler.py:799-850,1065-1094",
+    "commit:pyproject.toml:6,51-101,300-309",
+    "commit:litellm-rust/Cargo.toml:5-8",
+    "commit:litellm-rust/crates/python-bridge/Cargo.toml:1-55",
+    "commit:LICENSE; enterprise/LICENSE.md; enterprise/pyproject.toml:2-8"
+  ],
+  "recommendation": {
+    "candidate_version": "1.105.1",
+    "tag": "v1.105.1",
+    "commit": "d665dc1a6315847fcad6cc2c1264ceb47c06abce",
+    "status": "RECOMMENDED_FOR_BOUNDED_EXPERIMENT_SUBJECT_TO_GATES_NOT_ADOPTED",
+    "path": "non-streaming OpenAI-compatible chat via LiteLLM proxy Router and OpenAI SDK",
+    "proposed_enforcement": "Out-of-tree request context plus injected httpx.AsyncClient GuardTransport at litellm.aclient_session; final request recheck and durable intent before underlying send; requires independent receiver proof",
+    "source_limitation": "Separate custom HTTP handler has new-client resend path, and SDK dependency/transport exclusivity is not yet closed; startup block and receiver test required",
+    "dec_09_consequence": "If enabled send bypasses guard or final bytes cannot be bound, return evidence for owner thin-layer/alternative-gateway choice; do not fork or weaken FDC"
+  },
+  "package_and_security": {
+    "python_declared": ">=3.10,<3.15",
+    "build_backend": "maturin==1.15.0",
+    "rust_minimum": "1.88",
+    "cargo_lock_sha256": "b259821aaaef0e52fcfa08f2272687c2d221f4c2fa037290e6350fa9ee8b02e1",
+    "commit_uv_lock_sha256": "52d70b1e725dae350c621b70a3d3f9f018ee070acbb419cd0ae7fc5e1340f6f0",
+    "sdist_contains_uv_lock": false,
+    "proxy_extra_separate_distributions": ["litellm-proxy-extras==0.4.105", "litellm-enterprise==0.1.73"],
+    "enterprise_entitlement_accepted": false,
+    "dependency_closure": "NOT_RESOLVED",
+    "native_build": "NOT_RUN",
+    "publisher_advisory_snapshot_entries_inspected": 17,
+    "security_clearance": "NOT_GRANTED",
+    "soak_complete": false
+  },
+  "output_receipts": [
+    {
+      "path": "docs/gateway/wp-b-entry-02/DURANKI-DEC13-GATEWAY-CANDIDATE-02.md",
+      "sha256": "11c4e71e029f7bc4db5d1a12f9f9913b9d085af36e38571e6f8af75c651e1d16"
+    },
+    {
+      "path": "docs/gateway/wp-b-entry-02/DURANKI-WP-B-PROOF-SPEC-02.md",
+      "sha256": "262b26521e7e6d9dd845d82455352d85c1d965b9011a9ce4fd11cca30e7ba8e1"
+    }
+  ],
+  "preserved_receipts": [
+    {"path": "docs/gateway/wp-b-entry-01/DURANKI-DEC13-GATEWAY-CANDIDATE-01.md", "sha256": "7179ad86a5a83dd629a50ef971da4e7960f8fd6cd8cdd8f65e3ac8405ed314a6"},
+    {"path": "docs/gateway/wp-b-entry-01/DURANKI-WP-B-PROOF-SPEC-01.md", "sha256": "59a91910df0ccdc13bf230cf9a92724b8dd67ac3d54b2c5a4f981b9cb67a09f6"},
+    {"path": "docs/gateway/wp-b-entry-01/DURANKI-WP-B-ENTRY-RETURN-01.json", "sha256": "519a918b00ebfec78a9eb93f53e8690217180d4df82a88969452c4a2c2e80834"},
+    {"path": "docs/contracts/WP-A-A2-ADOPTION-01.md", "sha256": "330b254f0ae7fe07b549260b88ce60fce8c950290d54c6a2db5e0d6e686eb350"}
+  ],
+  "validation_and_preservation": {
+    "strict_json_duplicate_and_nonfinite_check": "PASS",
+    "source_manifest_file_hashes": "PASS_7_OF_7",
+    "output_receipts": "PASS_2_OF_2",
+    "predecessor_and_adoption_receipts": "PASS_4_OF_4",
+    "proof_case_ids": "PASS_B_01_THROUGH_B_09_UNIQUE",
+    "adopted_vector_and_transcript_references": "PASS",
+    "markdown_local_links_and_whitespace": "PASS",
+    "existing_repository_files_modified": false,
+    "new_repository_files": [
+      "docs/gateway/wp-b-entry-02/DURANKI-DEC13-GATEWAY-CANDIDATE-02.md",
+      "docs/gateway/wp-b-entry-02/DURANKI-WP-B-PROOF-SPEC-02.md",
+      "docs/gateway/wp-b-entry-02/DURANKI-WP-B-ENTRY-RETURN-02.json"
+    ]
+  },
+  "tool_receipt": {
+    "inert_parser": "/usr/bin/python3 -I -B",
+    "version": "Python 3.9.6",
+    "binary_sha256": "44a68ddc1983d6cff3fd35ba3f9ba5f82004216f1dcde69892b3d1b06e408698",
+    "scratch_run": "/private/tmp/duranki-wp-b-entry-02/run-20261017-01",
+    "downloaded_code_imported_or_executed": false,
+    "gateway_or_sdk_executed": false,
+    "git_mutated": false
+  },
+  "remaining_execution_gates": [
+    "Owner adoption of DEC-13 and separate WP-B/B1 issuance; this static recommendation does not grant execution.",
+    "Exact macOS arm64 Python/Rust/Maturin/Cargo and proxy-extra dependency closure with hashes; inspect openai/httpx SDK source and license/enterprise distribution terms.",
+    "Permission for bounded artifact acquisition, offline native build and installed gateway/SDK path, isolated VM and loopback listener; verify platform capability before running.",
+    "New scoped runtime provenance/security decision, sdist publisher trust, full advisory and change review, explicit soak disposition and no-egress/secret controls.",
+    "Actual receiver proof that all enabled sends traverse GuardTransport with current FDC and durable intent; TypeSafe passthrough remains an unqualified obligation if excluded."
+  ]
+}

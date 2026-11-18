@@ -1,0 +1,434 @@
+{
+  "status": "PASS_DOCUMENT_IDENTITY_STRUCTURE_AND_ARITHMETIC_ONLY",
+  "date": "2026-10-25",
+  "review02_manifest_match": true,
+  "reviewed_d02_and_verification_json_match": true,
+  "checks": [
+    {
+      "check": "all 43 review finding identifiers dispositioned",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "all 22 numbered research items dispositioned",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "top-level architecture sections 0 through 20 preserved",
+      "result": "PASS",
+      "detail": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "check": "87 test identifiers resolve exactly once",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "T-84 alias has no independent scored result",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "stable subcase identifiers unique",
+      "result": "PASS",
+      "detail": 71
+    },
+    {
+      "check": "assurance fields complete on 86 parent requirements",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "no unqualified parent pass",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "normative architecture shorter under same convention",
+      "result": "PASS",
+      "detail": {
+        "convention": "Python str.split Unicode whitespace; full files including tables/headings/code",
+        "submitted_v12_words": 21693,
+        "correction01_words": 20389,
+        "word_reduction": 1304,
+        "percent_reduction": 6.01,
+        "submitted_v12_bytes": 163623,
+        "correction01_bytes": 155426
+      }
+    },
+    {
+      "check": "markdown fences balanced: DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "markdown fences balanced: DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "markdown fences balanced: DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "markdown fences balanced: DURANKI-v1.2-C01-ROADMAP.md",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "check": "required new clause targets present",
+      "result": "PASS",
+      "detail": [
+        "0",
+        "0.1",
+        "0.2",
+        "0.3",
+        "1",
+        "10",
+        "10.1",
+        "10.2",
+        "10.3",
+        "10.4",
+        "10.5",
+        "10.6",
+        "10.7",
+        "10.8",
+        "11",
+        "11.1",
+        "11.2",
+        "11.3",
+        "11.4",
+        "11.5",
+        "12",
+        "12.1",
+        "12.2",
+        "12.3",
+        "12.4",
+        "12.5",
+        "13",
+        "13.1",
+        "13.2",
+        "13.3",
+        "13.4",
+        "13.5",
+        "14",
+        "14.1",
+        "14.2",
+        "14.3",
+        "14.4",
+        "14.5",
+        "14.6",
+        "15",
+        "15.1",
+        "15.2",
+        "15.3",
+        "15.4",
+        "16",
+        "16.1",
+        "16.2",
+        "16.3",
+        "16.4",
+        "17",
+        "18",
+        "19",
+        "2",
+        "20",
+        "3",
+        "4",
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "4.5",
+        "4.6",
+        "4.7",
+        "4.8",
+        "5",
+        "5.1",
+        "5.2",
+        "5.3",
+        "5.4",
+        "5.5",
+        "5.6",
+        "5.7",
+        "5.8",
+        "5.9",
+        "6",
+        "6.1",
+        "6.10",
+        "6.2",
+        "6.3",
+        "6.4",
+        "6.5",
+        "6.6",
+        "6.7",
+        "6.8",
+        "6.9",
+        "7",
+        "7.1",
+        "7.2",
+        "7.3",
+        "7.4",
+        "7.5",
+        "7.6",
+        "8",
+        "8.1",
+        "8.2",
+        "8.3",
+        "8.4",
+        "8.5",
+        "8.6",
+        "9",
+        "9.1",
+        "9.2",
+        "9.3",
+        "9.4",
+        "9.5"
+      ]
+    },
+    {
+      "check": "fictional tariffs exhaustive 25 plus 25 arithmetic domain",
+      "result": "PASS",
+      "detail": {
+        "A_max": "0.009000000",
+        "B_raw_max": "0.0100000125",
+        "B_upward_bound": "0.010000013",
+        "B_half_even_at_25": "0.010000012",
+        "product_tests_run": false
+      }
+    },
+    {
+      "check": "DEV11 supplied arithmetic and retained unknown exposure internally consistent",
+      "result": "PASS",
+      "detail": "Read-only receipt comparison; not proof of actual execution or provider semantics"
+    },
+    {
+      "check": "original 76 subjects retained with scoped wording corrections",
+      "result": "PASS",
+      "detail": {
+        "unchanged_exact_text": 71,
+        "wording_corrected": [
+          39,
+          45,
+          46,
+          47,
+          48
+        ],
+        "meaning_check": "Author mapped changes to M04/M06/M07 and F01/C04; not independent semantic review"
+      }
+    },
+    {
+      "check": "all input originals preserved and packet copies byte-identical",
+      "result": "PASS",
+      "detail": 26
+    },
+    {
+      "check": "authored companion/source links resolve",
+      "result": "PASS",
+      "detail": 22
+    },
+    {
+      "check": "authoring only no product execution",
+      "result": "PASS",
+      "detail": "Only file reads/copies/Markdown/JSON transformations, exact Decimal arithmetic and document checks; no product imports, package installation, provider/Docker/Git operations"
+    }
+  ],
+  "word_count": {
+    "convention": "Python str.split Unicode whitespace; full files including tables/headings/code",
+    "submitted_v12_words": 21693,
+    "correction01_words": 20389,
+    "word_reduction": 1304,
+    "percent_reduction": 6.01,
+    "submitted_v12_bytes": 163623,
+    "correction01_bytes": 155426
+  },
+  "input_count": 26,
+  "original_test_wording_changes": [
+    39,
+    45,
+    46,
+    47,
+    48
+  ],
+  "review_findings": 43,
+  "research_items": 22,
+  "assurance_summary": {
+    "identifiers_resolved": 87,
+    "canonical_parent_requirements": 86,
+    "retired_aliases": 1,
+    "unqualified_parent_passes": 0,
+    "subcase_count": 71
+  },
+  "addendum_word_count_convention": {
+    "python_unicode_split": 5825,
+    "standalone_dash_or_arrow": 14,
+    "reviewer_explanation": "Review02 F04 attributes 5811/5825 to GNU wc 9.4 locale convention; exact executable not replicated",
+    "local_wc": {
+      "C": {
+        "stdout": "5825 /mnt/data/duranki-v1.2-correction-01/inputs/duranki-addendum-a.md",
+        "exit": 0
+      },
+      "C.UTF-8": {
+        "stdout": "5825 /mnt/data/duranki-v1.2-correction-01/inputs/duranki-addendum-a.md",
+        "exit": 0
+      }
+    }
+  },
+  "authored_links": [
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "target": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "target": "DURANKI-v1.2-C01-ROADMAP.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "target": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "target": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "target": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "target": "DURANKI-v1.2-C01-ROADMAP.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.json",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/WP-A-A2-ADOPTION-01.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/DEV-04-RUN11-INDEPENDENT-REVIEW-15.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/RESULT%2820261025-200121%29.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/TARGET-RESULT-02.json",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/BROWSER-RESULT-02.json",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/MODEL-SERVICE-COVERAGE-REPORT.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/CACHE-ACCOUNTING-CONTRACT.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "target": "inputs/DURANKI-ADDENDUM-A-RECONCILIATION-HANDOFF-2026-10-25.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ROADMAP.md",
+      "target": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "exists": true
+    },
+    {
+      "file": "DURANKI-v1.2-C01-ROADMAP.md",
+      "target": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "exists": true
+    },
+    {
+      "file": "START-HERE.md",
+      "target": "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+      "exists": true
+    },
+    {
+      "file": "START-HERE.md",
+      "target": "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+      "exists": true
+    },
+    {
+      "file": "START-HERE.md",
+      "target": "DURANKI-v1.2-C01-ROADMAP.md",
+      "exists": true
+    },
+    {
+      "file": "START-HERE.md",
+      "target": "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+      "exists": true
+    }
+  ],
+  "scope_limits": [
+    "No independent architectural review of this new candidate",
+    "No owner adoption or fresh PostgreSQL affirmation inferred",
+    "No executable successor contract/schema/projection identifier adoption",
+    "No current repository/source/host/runtime/profile inspection",
+    "No application tests, provider requests or commercial qualification",
+    "No Valhalla/Proto primary-source correspondence",
+    "No proof of reconstructed Addendum identity with original October 23 delivery"
+  ],
+  "outputs": [
+    "DURANKI-ARCHITECTURE-v1.2-CORRECTION-01.md",
+    "INPUT-IDENTITIES.json",
+    "DURANKI-v1.2-C01-REVIEW-AND-RESEARCH-MAP.md",
+    "ARCHITECTURE-C01-vs-SUBMITTED.diff",
+    "DURANKI-v1.2-C01-ASSURANCE-REGISTER.md",
+    "DURANKI-v1.2-C01-ROADMAP.md",
+    "START-HERE.md",
+    "DURANKI-v1.2-C01-ASSURANCE-REGISTER.json",
+    "FICTIONAL-TARIFF-VECTORS.json",
+    "INCORPORATION-MAP.json"
+  ]
+}

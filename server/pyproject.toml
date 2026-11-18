@@ -1,0 +1,17 @@
+[build-system]
+requires = ["uv_build==0.13.1"]
+build-backend = "uv_build"
+
+[project]
+name = "cognitivedynamics-ezllmrouter-server"
+version = "0.3.0"
+description = "CognitiveDynamics EzLLMRouter server foundation package"
+requires-python = ">=3.12,<3.13"
+dependencies = ["cryptography==48.0.1"]
+classifiers = ["Private :: Do Not Upload"]
+
+[project.scripts]
+ezllmrouter = "ezllmrouter_server.integration_local:main"
+
+[tool.uv.build-backend]
+module-name = ["ezllmrouter_server", "duranki_server"]

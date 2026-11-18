@@ -1,0 +1,100 @@
+{
+  "status": "PROPOSED_TEST_DATA_NOT_PRODUCT_TESTS",
+  "currency": "USD",
+  "ledger_quantum": "0.000000001",
+  "settlement_rounding": "ROUND_HALF_EVEN",
+  "reservation_rounding": "ROUND_CEILING",
+  "domain": {
+    "minimum_documents": 1,
+    "maximum_documents": 25,
+    "queries_per_attempt": 1
+  },
+  "tariff_a": {
+    "formula": "max(0.005,0.003*ceil(n/10))",
+    "maximum_domain_bound": "0.009000000",
+    "cases": [
+      {
+        "documents": 1,
+        "units": 1,
+        "raw": "0.005",
+        "settled": "0.005000000"
+      },
+      {
+        "documents": 10,
+        "units": 1,
+        "raw": "0.005",
+        "settled": "0.005000000"
+      },
+      {
+        "documents": 11,
+        "units": 2,
+        "raw": "0.006",
+        "settled": "0.006000000"
+      },
+      {
+        "documents": 20,
+        "units": 2,
+        "raw": "0.006",
+        "settled": "0.006000000"
+      },
+      {
+        "documents": 21,
+        "units": 3,
+        "raw": "0.009",
+        "settled": "0.009000000"
+      },
+      {
+        "documents": 25,
+        "units": 3,
+        "raw": "0.009",
+        "settled": "0.009000000"
+      }
+    ]
+  },
+  "tariff_b": {
+    "formula": "n*(0.0003000005 if n<=10 else 0.0004000005)",
+    "tier_semantics": "Whole-request per-document tier selected by n; not graduated tiers",
+    "maximum_domain_bound": "0.010000013",
+    "cases": [
+      {
+        "documents": 1,
+        "raw": "0.0003000005",
+        "settled": "0.000300000",
+        "request_bound": "0.000300001"
+      },
+      {
+        "documents": 3,
+        "raw": "0.0009000015",
+        "settled": "0.000900002",
+        "request_bound": "0.000900002"
+      },
+      {
+        "documents": 10,
+        "raw": "0.0030000050",
+        "settled": "0.003000005",
+        "request_bound": "0.003000005"
+      },
+      {
+        "documents": 11,
+        "raw": "0.0044000055",
+        "settled": "0.004400006",
+        "request_bound": "0.004400006"
+      },
+      {
+        "documents": 25,
+        "raw": "0.0100000125",
+        "settled": "0.010000012",
+        "request_bound": "0.010000013"
+      }
+    ]
+  },
+  "negative_inputs": [
+    0,
+    26,
+    -1,
+    true,
+    "11",
+    1.5
+  ],
+  "scope": "Exact Decimal author calculations only; fictional rates, no commercial selection or spending authority"
+}

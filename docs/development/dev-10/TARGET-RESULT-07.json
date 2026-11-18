@@ -1,0 +1,83 @@
+{
+  "commonjs_result": {
+    "cases": {
+      "commonjs": {
+        "arrivals": 1,
+        "duplicate_arrivals": 0,
+        "incurred_decimal": "0.000009000",
+        "installed_commonjs": true,
+        "status": "completed"
+      }
+    },
+    "first_byte_sends": 1,
+    "guard_commits": 1,
+    "kind": "DEV-10 isolated installed client controlled TLS target",
+    "prior_worker_attempts": 6,
+    "real_provider_calls": 0,
+    "receiver_arrivals": 1,
+    "status": "PASS",
+    "worker_attempts_after": 7
+  },
+  "completed_at": "2026-10-25T02:52:09.864497+00:00",
+  "controlled_receiver_arrivals_total": 4,
+  "dirty": false,
+  "fingerprint": "b6d0b753b0250239ebd80276e05e8db15fd49e59882fb3faa0b7117ac06c6ec1",
+  "kind": "DEV-10 isolated installed-client controlled HTTPS target",
+  "persistent_profile_restarted": false,
+  "real_provider_calls": 0,
+  "result": {
+    "cases": {
+      "disable": {
+        "arrivals": 0,
+        "bound_released": true,
+        "failed_before_transmit": true
+      },
+      "pause": {
+        "arrivals": 0,
+        "bound_released": true,
+        "failed_before_transmit": true
+      },
+      "revocation": {
+        "arrivals": 0,
+        "bound_released": true,
+        "failed_before_transmit": true
+      },
+      "settled": {
+        "arrivals": 2,
+        "attempts": 2,
+        "competing_denied": true,
+        "duplicate_arrivals": 0,
+        "exhaustion_denied": true,
+        "incurred_decimal": "0.000018000"
+      },
+      "unknown": {
+        "arrivals": 1,
+        "outstanding_decimal": "0.004558000",
+        "restart_preserved": true,
+        "state": "paused"
+      }
+    },
+    "first_byte_sends": 3,
+    "guard_commits": 3,
+    "kind": "DEV-10 isolated installed client controlled TLS target",
+    "prior_worker_attempts": 0,
+    "real_provider_calls": 0,
+    "receiver_arrivals": 3,
+    "status": "PASS",
+    "worker_attempts_after": 6
+  },
+  "run_id": "dev10-target-20261025-07",
+  "source_commit": "33e7d01bdb38a41d0c77375c5cbe9f90c48db7d5",
+  "stages": [
+    {
+      "exit": 0,
+      "name": "prepare"
+    },
+    {
+      "exit": 0,
+      "name": "build-images"
+    }
+  ],
+  "started_at": "2026-10-25T02:51:54.562069+00:00",
+  "status": "PASS"
+}

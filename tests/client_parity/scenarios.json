@@ -1,0 +1,186 @@
+{
+  "corpus_version": "dev02-text-1",
+  "contract_version": "0.2",
+  "profile": "initial_1a@1",
+  "fixture_request": "tests/development_slice/request.json",
+  "cases": [
+    {
+      "id": "installed_js_a",
+      "step_id": "step.dev02.js.a",
+      "execution_generation": "gen.dev02.js.a",
+      "client": "js",
+      "wait_ms": 3000,
+      "expected_state": "delivered",
+      "receiver_delta": 1,
+      "expected_text": "Hello."
+    },
+    {
+      "id": "installed_python_b",
+      "step_id": "step.dev02.py.b",
+      "execution_generation": "gen.dev02.py.b",
+      "client": "python",
+      "wait_ms": 3000,
+      "expected_state": "delivered",
+      "receiver_delta": 1,
+      "expected_text": "Hello."
+    },
+    {
+      "id": "retained_pending",
+      "step_id": "step.dev02.pending",
+      "execution_generation": "gen.dev02.pending",
+      "client": "python",
+      "wait_ms": 0,
+      "expected_state": "pending",
+      "pending_result_policy": "pollable_if_retained",
+      "receiver_delta": 1,
+      "total_timeout_ms": 3000
+    },
+    {
+      "id": "no_store_expiry",
+      "step_id": "step.dev02.nostore",
+      "execution_generation": "gen.dev02.nostore",
+      "client": "python",
+      "wait_ms": 0,
+      "expected_state": "pending",
+      "pending_result_policy": "metadata_only_no_store",
+      "candidate_access_after": "not_retained",
+      "result_unavailable_reason": "wait_expired_no_store",
+      "receiver_delta": 1,
+      "total_timeout_ms": 3000
+    },
+    {
+      "id": "no_store_live",
+      "step_id": "step.dev02.live",
+      "execution_generation": "gen.dev02.live",
+      "client": "python",
+      "wait_ms": 3000,
+      "expected_state": "delivered",
+      "candidate_access_after": "not_retained",
+      "receiver_delta": 1,
+      "expected_text": "Hello."
+    },
+    {
+      "id": "retained_pending_js",
+      "step_id": "step.dev02.pending.js",
+      "execution_generation": "gen.dev02.pending.js",
+      "client": "js",
+      "wait_ms": 0,
+      "expected_state": "pending",
+      "pending_result_policy": "pollable_if_retained",
+      "receiver_delta": 1,
+      "total_timeout_ms": 3000
+    },
+    {
+      "id": "no_store_expiry_js",
+      "step_id": "step.dev02.nostore.js",
+      "execution_generation": "gen.dev02.nostore.js",
+      "client": "js",
+      "wait_ms": 0,
+      "expected_state": "pending",
+      "pending_result_policy": "metadata_only_no_store",
+      "candidate_access_after": "not_retained",
+      "result_unavailable_reason": "wait_expired_no_store",
+      "receiver_delta": 1,
+      "total_timeout_ms": 3000
+    },
+    {
+      "id": "no_store_live_js",
+      "step_id": "step.dev02.live.js",
+      "execution_generation": "gen.dev02.live.js",
+      "client": "js",
+      "wait_ms": 3000,
+      "expected_state": "delivered",
+      "candidate_access_after": "not_retained",
+      "receiver_delta": 1,
+      "expected_text": "Hello."
+    },
+    {
+      "id": "known_remote_failure",
+      "step_id": "step.dev02.remote_fail",
+      "execution_generation": "gen.dev02.remote_fail",
+      "client": "python",
+      "wait_ms": 3000,
+      "expected_error": "REMOTE_EXECUTION_FAILED",
+      "failure_stage": "after_transmit",
+      "receiver_delta": 1
+    },
+    {
+      "id": "serialization_equal",
+      "step_id": "step.dev02.serialization",
+      "execution_generation": "gen.dev02.serialization",
+      "client": "both",
+      "wait_ms": 3000,
+      "expected_state": "delivered",
+      "receiver_delta": 1,
+      "expected_text": "Hello."
+    },
+    {
+      "id": "fdc_python",
+      "step_id": "step.dev02.fdc.py",
+      "execution_generation": "gen.dev02.fdc.py",
+      "client": "python",
+      "wait_ms": 3000,
+      "expected_error": "FDC_REJECTED",
+      "failure_stage": "before_transmit",
+      "receiver_delta": 0
+    },
+    {
+      "id": "fdc_js",
+      "step_id": "step.dev02.fdc.js",
+      "execution_generation": "gen.dev02.fdc.js",
+      "client": "js",
+      "wait_ms": 3000,
+      "expected_error": "FDC_REJECTED",
+      "failure_stage": "before_transmit",
+      "receiver_delta": 0
+    },
+    {
+      "id": "intent_python",
+      "step_id": "step.dev02.intent.py",
+      "execution_generation": "gen.dev02.intent.py",
+      "client": "python",
+      "wait_ms": 3000,
+      "expected_error": "INTENT_PERSIST_FAILED",
+      "failure_stage": "before_transmit",
+      "receiver_delta": 0
+    },
+    {
+      "id": "intent_js",
+      "step_id": "step.dev02.intent.js",
+      "execution_generation": "gen.dev02.intent.js",
+      "client": "js",
+      "wait_ms": 3000,
+      "expected_error": "INTENT_PERSIST_FAILED",
+      "failure_stage": "before_transmit",
+      "receiver_delta": 0
+    },
+    {
+      "id": "remote_js",
+      "step_id": "step.dev02.remote.js",
+      "execution_generation": "gen.dev02.remote.js",
+      "client": "js",
+      "wait_ms": 3000,
+      "expected_error": "REMOTE_EXECUTION_FAILED",
+      "failure_stage": "after_transmit",
+      "receiver_delta": 1
+    }
+  ],
+  "component_cases": [
+    "invalid_options",
+    "invalid_selectors",
+    "malformed_handle",
+    "selector_mutation",
+    "transport_loss",
+    "wrong_version",
+    "wrong_timestamp",
+    "wrong_work",
+    "wrong_attempt_usage",
+    "unknown_cost"
+  ],
+  "proof_limits": [
+    "synthetic receiver only",
+    "no provider credentials",
+    "500 ms bounded negative drain",
+    "no production acceptance"
+  ]
+}

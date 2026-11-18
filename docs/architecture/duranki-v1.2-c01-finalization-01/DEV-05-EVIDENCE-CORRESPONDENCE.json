@@ -1,0 +1,91 @@
+{
+  "status": "HISTORICAL_RECORD_INTEGRITY_AND_STATIC_TEST_CORRESPONDENCE_ONLY",
+  "archives": [
+    {
+      "name": "DEV-05-SOURCE-run-20261021-16.zip",
+      "sha256": "a711e6e30a3bf950abd3ab3b873eaa8069ce9b93d7934dd47be72bbc772f535c",
+      "bytes": 222010,
+      "payloads_verified": 76,
+      "crc_paths_types_manifest": "PASS",
+      "execution": "NONE"
+    },
+    {
+      "name": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "sha256": "adf88631c2026ae1e0648dcb9e141e5887580ece5a8a294c3ad3d7088ccfc341",
+      "bytes": 155266,
+      "payloads_verified": 431,
+      "crc_paths_types_manifest": "PASS",
+      "execution": "NONE"
+    }
+  ],
+  "selected_records": [
+    {
+      "archive": "DEV-05-SOURCE-run-20261021-16.zip",
+      "member": "service/gateway/test_guard.py",
+      "source_sha256": "11ea06abe0a4cd977cf16f583dc70c2f13be606fb5fb2d68ee97caea8140715f",
+      "bytes": 9059,
+      "copy": "inputs/dev05-selected-records/service/gateway/test_guard.py"
+    },
+    {
+      "archive": "DEV-05-SOURCE-run-20261021-16.zip",
+      "member": "service/gateway/test_work_identity.py",
+      "source_sha256": "b0575c49b1e9cc1292d28eb56fe3aec9d95c8a111a617204ddbc659cb8beff14",
+      "bytes": 14007,
+      "copy": "inputs/dev05-selected-records/service/gateway/test_work_identity.py"
+    },
+    {
+      "archive": "DEV-05-SOURCE-run-20261021-16.zip",
+      "member": "service/gateway/owned_sender_transport.py",
+      "source_sha256": "25b7720e8e7563af4ccfe29810a31118de0f0fc5b87e3b591d982dbdbc20dcab",
+      "bytes": 7952,
+      "copy": "inputs/dev05-selected-records/service/gateway/owned_sender_transport.py"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-guard-component.argv",
+      "source_sha256": "0989e2f673e4d4143e3f3c80eeb8cc4d1b1f4b3934b8c26131a25d731a53a46d",
+      "bytes": 74,
+      "copy": "inputs/dev05-selected-records/d05-guard-component.argv"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-guard-component.stderr",
+      "source_sha256": "cbc38bb79d54c884838ed3d3aa2c346603efe6ded5f0c7777fc44000208ed8ae",
+      "bytes": 97,
+      "copy": "inputs/dev05-selected-records/d05-guard-component.stderr"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-guard-component.exit",
+      "source_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "copy": "inputs/dev05-selected-records/d05-guard-component.exit"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-work-identity-component.argv",
+      "source_sha256": "2c52a2d2b0d5215f8341aba83378ebd71ae6fcd61774fdfc4768d6c4f19763af",
+      "bytes": 101,
+      "copy": "inputs/dev05-selected-records/d05-work-identity-component.argv"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-work-identity-component.stderr",
+      "source_sha256": "239edf2b3b735799df559ebd1714f506b926222e749a7bb2786c6d8fa284f917",
+      "bytes": 98,
+      "copy": "inputs/dev05-selected-records/d05-work-identity-component.stderr"
+    },
+    {
+      "archive": "DEV-05-RUNTIME-run-20261021-16.zip",
+      "member": "d05-work-identity-component.exit",
+      "source_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "copy": "inputs/dev05-selected-records/d05-work-identity-component.exit"
+    }
+  ],
+  "not_performed": [
+    "No uploaded Python was executed",
+    "No product tests, Docker, service, credential or provider work",
+    "No current repository/profile inspection"
+  ]
+}

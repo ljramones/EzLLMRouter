@@ -1,0 +1,1670 @@
+{
+  "schema_version": "1.0",
+  "source_snapshot": {
+    "root": "/Users/larrymitchell/Mach33/mach33-platform",
+    "branch": "vega/feat/numerics-tier2",
+    "head": "e69a1fce53917603d110bdd386bde1547a82196d",
+    "status_start": [
+      "?? artifacts/"
+    ],
+    "basis": "working tree as read; tracked files clean at initial check",
+    "baseline_path": "/Users/larrymitchell/Mach33/LLM_Routing/llm-routing-infra-design-v1.1.md",
+    "baseline_sha256": "8f3ab5b86a8533687da6cb0e80e16b8d7586fc7392c02a646b8c08025aee7e9c"
+  },
+  "inventory_totals": {
+    "sdk_message_call_expressions": 98,
+    "sdk_message_call_files": 79,
+    "families_including_direct_http_and_voice": 26,
+    "not_live_traffic_measurement": true
+  },
+  "exclusions": [
+    "tests",
+    "scripts and demos",
+    "third-party packages",
+    "secret files",
+    "live systems"
+  ],
+  "records": [
+    {
+      "id": "WRAPPER",
+      "family": "AsyncLocalStorage usage wrapper; itself forwards Anthropic SDK calls",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/llm-client.js",
+          "symbol": null,
+          "line_start": 47,
+          "line_end": 66,
+          "dispatch_expression": "instrumented origCreate(args, opts)",
+          "snapshot_basis": "working-tree sha256:0928e04dd249a6ce944f8e1bf2e2935c104880a7582b3fb1acf7c07393a9a709"
+        }
+      ],
+      "registration_and_caller": "Helper used by coordinator at lib/vega-agents/coordinator.js:88; example in header excluded from dispatch count.",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "VEGA_NONSTREAM",
+      "family": "Legacy nonstream Vega chat with tools and provider failover",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-chat.js",
+          "symbol": "sendMessage",
+          "line_start": 7762,
+          "line_end": 7762,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a"
+        },
+        {
+          "path": "lib/vega-chat.js",
+          "symbol": "sendMessage",
+          "line_start": 7782,
+          "line_end": 7782,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-chat.js:7730-7758",
+      "response_consumer": "lib/vega-chat.js:7791-7863",
+      "tool_side_effect_boundary": "lib/vega-chat.js:3446-3505",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "VEGA_STREAM",
+      "family": "Legacy SSE Vega chat with streamed tool loop",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-chat-stream.js",
+          "symbol": "streamMobileLite",
+          "line_start": 148,
+          "line_end": 148,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:7799092d450c2b33288210381203633449ebb67625d6169b7b05aa57e8dd224a"
+        },
+        {
+          "path": "lib/vega-chat-stream.js",
+          "symbol": "queueTts",
+          "line_start": 759,
+          "line_end": 759,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:7799092d450c2b33288210381203633449ebb67625d6169b7b05aa57e8dd224a"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-chat-stream.js:759-849",
+      "response_consumer": "lib/vega-chat-stream.js:850-940",
+      "tool_side_effect_boundary": "lib/vega-chat-stream.js:759-849",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "CANONICAL_DISPATCH",
+      "family": "Surface-policy chat dispatcher, streamed; bounded tool handling",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-chat/dispatch.js",
+          "symbol": "_runClaude",
+          "line_start": 184,
+          "line_end": 184,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:3586a5b946e716dcab921eb5553dbfe761f5402b368bab502544f1d719c8ff50"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-chat/dispatch.js:141-190",
+      "response_consumer": "lib/vega-chat/dispatch.js:194-342",
+      "tool_side_effect_boundary": "lib/vega-chat/dispatch.js:235-312",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "AUTONOMOUS",
+      "family": "Observation-triggered Vega commentary stream",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-chat-autonomous.js",
+          "symbol": "runAutonomousTurn",
+          "line_start": 41,
+          "line_end": 41,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:9391d70a47cb44bade763f6cd3d119aae359d0e927a9b2b09ee50c44da4cb904"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "DECOMPOSER",
+      "family": "Structured decomposition and transport/contract failover",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-decomposer.js",
+          "symbol": "callWithFailover",
+          "line_start": 144,
+          "line_end": 144,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:607e457fe61b447e0bb34b25505b19b635fda7a1c3a9be4bf6393e42553c3461"
+        },
+        {
+          "path": "lib/vega-decomposer.js",
+          "symbol": "callClaude",
+          "line_start": 267,
+          "line_end": 267,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:607e457fe61b447e0bb34b25505b19b635fda7a1c3a9be4bf6393e42553c3461"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-decomposer.js:238-267",
+      "response_consumer": "lib/vega-decomposer.js:268-299",
+      "tool_side_effect_boundary": "lib/vega-decomposer.js:306-310",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "PROTO_CHAT",
+      "family": "Proto chat with streamed tool loop and memory effects",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/proto/chat-body.js",
+          "symbol": "mount",
+          "line_start": 183,
+          "line_end": 183,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:76c6a713a8f5f5a87236fdd76e68290a076393db1991f7251f6bb25b1dc9af29"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/proto/chat-body.js:180-191",
+      "response_consumer": "lib/proto/chat-body.js:191-235",
+      "tool_side_effect_boundary": "lib/proto/chat-body.js:200-212",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "MY_ASSISTANT",
+      "family": "Packaged My Assistant chat and nested research/composition",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "packages/@agents/my-assistant/body/index.js",
+          "symbol": "classifyEmails",
+          "line_start": 741,
+          "line_end": 741,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:d7c66177735d72773662db1eb4b2eb3f232c48c5294e84ccd7b15b2035f4c327"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/index.js",
+          "symbol": "send",
+          "line_start": 977,
+          "line_end": 977,
+          "dispatch_expression": "messages.stream",
+          "snapshot_basis": "working-tree sha256:d7c66177735d72773662db1eb4b2eb3f232c48c5294e84ccd7b15b2035f4c327"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/composer.js",
+          "symbol": "compose",
+          "line_start": 58,
+          "line_end": 58,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:95da75d5d7d8a6f8e8f7513a8c4b503adbb50f229e1d7142dca66f620e25c398"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/tree-builder.js",
+          "symbol": "relate",
+          "line_start": 75,
+          "line_end": 75,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:a05a5a97907c58dbad845626ba4d19649a1b7a31a6280e49b94620a54e52e4cd"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/research.js",
+          "symbol": "decomposeAngles",
+          "line_start": 38,
+          "line_end": 38,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:31fe51bc531a0f122424f3f32a9179e3be46b34f3a13c64ac02647df8dfe45f1"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/research.js",
+          "symbol": "searchAngle",
+          "line_start": 57,
+          "line_end": 57,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:31fe51bc531a0f122424f3f32a9179e3be46b34f3a13c64ac02647df8dfe45f1"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/grounding.js",
+          "symbol": "searchCandidates",
+          "line_start": 26,
+          "line_end": 26,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:993b14cf6e00478eaa7fba62aaaef20f4fcac9615c724c4b6be71e78b1b7af00"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/grounding.js",
+          "symbol": "pickReference",
+          "line_start": 55,
+          "line_end": 55,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:993b14cf6e00478eaa7fba62aaaef20f4fcac9615c724c4b6be71e78b1b7af00"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/decomposer.js",
+          "symbol": "decompose",
+          "line_start": 101,
+          "line_end": 101,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:0275711cd352635cae6af4eea49850ca5f46f82eb2de1eaf2e4b7949a004d2b7"
+        },
+        {
+          "path": "packages/@agents/my-assistant/body/lib/sources.js",
+          "symbol": "extractReferences",
+          "line_start": 82,
+          "line_end": 82,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:612378a31676eb3bb9feaea98a003bb0c9498788867b1eef01ef4162da6f517a"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "packages/@agents/my-assistant/body/index.js:950-984",
+      "response_consumer": "packages/@agents/my-assistant/body/index.js:985-1015",
+      "tool_side_effect_boundary": "packages/@agents/my-assistant/body/index.js:992-1131",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "OTHER_PACKAGE",
+      "family": "Other packaged agent call sites",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "packages/@agents/relay/body/routes.js",
+          "symbol": "register",
+          "line_start": 917,
+          "line_end": 917,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:0dd157f4a172025d80368cb5c3c6abd31cc8295e54c599090aac22bcfe7795d3"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "EDITORIAL",
+      "family": "Editorial element specialists and post-processing",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-agents/editorial/equation.js",
+          "symbol": "run",
+          "line_start": 64,
+          "line_end": 64,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:b9beac03954acb88fd76c131e4a3d7c5027dff2b1d66cf41abd50dddb7208bf4"
+        },
+        {
+          "path": "lib/vega-agents/editorial/chart.js",
+          "symbol": "run",
+          "line_start": 94,
+          "line_end": 94,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:133a72f5eb5799abe8cf27a9482165dbb9e6b473ccdf8be5a56663deb0de18e6"
+        },
+        {
+          "path": "lib/vega-agents/editorial/figure.js",
+          "symbol": "run",
+          "line_start": 126,
+          "line_end": 126,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:65933ca8c29c5c75e7fa46cac7efaa0234c205ccabe1c378f3484f8ebf508334"
+        },
+        {
+          "path": "lib/vega-agents/editorial/spreadsheet.js",
+          "symbol": "attempt",
+          "line_start": 102,
+          "line_end": 102,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:148581654bced5baa3f8121ea62935aed000e0ba8cfe2edddf6f478b98cba537"
+        },
+        {
+          "path": "lib/vega-agents/editorial/citation.js",
+          "symbol": "run",
+          "line_start": 123,
+          "line_end": 123,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:6ab6f35d7636d23bb32f0e94fab471b6e392fab394aa6f13c0d8211d9155eae0"
+        },
+        {
+          "path": "lib/vega-agents/editorial/style.js",
+          "symbol": "run",
+          "line_start": 142,
+          "line_end": 142,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:5a283be98c9c15b34120329e224ce02ed5327bfe0009fee23f4a4583188248e9"
+        },
+        {
+          "path": "lib/vega-agents/editorial/timeline.js",
+          "symbol": "run",
+          "line_start": 81,
+          "line_end": 81,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:e83e05a20b102459e8784a68d11713cd8ac6536091c481255409a57b50982617"
+        },
+        {
+          "path": "lib/vega-agents/editorial/callout.js",
+          "symbol": "run",
+          "line_start": 64,
+          "line_end": 64,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:0053eb41eab4a0df8f370bae6f1070422850226bfc3894ba3720268fddbc7c82"
+        },
+        {
+          "path": "lib/vega-agents/editorial/editor.js",
+          "symbol": "run",
+          "line_start": 72,
+          "line_end": 72,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:4dc482365c53008fd4a42a67c873124b1fa9956410dcbb01699b84481c5ae40d"
+        },
+        {
+          "path": "lib/vega-agents/editorial/table.js",
+          "symbol": "run",
+          "line_start": 88,
+          "line_end": 88,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:e92c53d91950dce1df6e8348e8415944f767e3da107d6c3d1948527ff42dd81a"
+        },
+        {
+          "path": "lib/vega-agents/editorial/image.js",
+          "symbol": "run",
+          "line_start": 60,
+          "line_end": 60,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:910db93ae8e44831535528ce42eb95ec5980515a6ed14d214bf393bf4acc33b1"
+        },
+        {
+          "path": "lib/vega-agents/editorial/prose.js",
+          "symbol": "run",
+          "line_start": 61,
+          "line_end": 61,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:af4dcc58d032784db4e902863ef3617d42a2b0679bf9886cdaf9e5d9e72482b8"
+        },
+        {
+          "path": "lib/vega-agents/editorial/comparison.js",
+          "symbol": "run",
+          "line_start": 71,
+          "line_end": 71,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:50b187717345c12a32ffbaf88f4a5123e5ac6485fca553f6603aa216599b3f1b"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "COMPOSER",
+      "family": "Composer coordinator, outline, draft and classification",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-agents/composers/session-titler.js",
+          "symbol": "titleSession",
+          "line_start": 75,
+          "line_end": 75,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:ff197ebbf5f6ed902452177467961cdb2dfec2b69fc6df1c15fa230f64329fbb"
+        },
+        {
+          "path": "lib/vega-agents/composers/composer.js",
+          "symbol": "compose",
+          "line_start": 190,
+          "line_end": 190,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:1b53621fe9c6f3bd9f096f224fefc553b850ef277dbd9e038419e6c15c74a32e"
+        },
+        {
+          "path": "lib/vega-agents/composers/composer-outliner.js",
+          "symbol": "run",
+          "line_start": 277,
+          "line_end": 277,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:83b477f63e55f93d2705b773a3f0dc01c98cb50f5469488e7f8ad1281028360a"
+        },
+        {
+          "path": "lib/vega-agents/composers/cluster-classifier.js",
+          "symbol": "refineWithClaude",
+          "line_start": 129,
+          "line_end": 129,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f364f2c30c9edda618f79dc7b56709b5dd911d5e9a1bdaadb52d7878183b5bb3"
+        },
+        {
+          "path": "lib/vega-agents/composers/composer-coordinator.js",
+          "symbol": "run",
+          "line_start": 127,
+          "line_end": 127,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:47429815e2e63cefc3f9975d2819951bbb3f5e44741b718e326d52b590982548"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-agents/composers/composer.js:175-197",
+      "response_consumer": "lib/vega-agents/composers/composer.js:199-233",
+      "tool_side_effect_boundary": "lib/vega-agents/composers/composer.js:216-225",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "DETECTOR",
+      "family": "Background detector/sweeper calls",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-agents/detectors/slack-sweeper.js",
+          "symbol": "callClaudeForThread",
+          "line_start": 134,
+          "line_end": 134,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:99481bd1c104d8e4b54576dd0319516a1b4b091ca8ab03edcd4ed40ae70ec482"
+        },
+        {
+          "path": "lib/vega-agents/detectors/document-decomposer.js",
+          "symbol": "callClaudeForDocument",
+          "line_start": 147,
+          "line_end": 147,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:2c4acab3c5b4137aabff375cf613544ca4505706fb41490b24a07515c1fe4fe9"
+        },
+        {
+          "path": "lib/vega-agents/detectors/relay-sweeper.js",
+          "symbol": "callClaudeForWindow",
+          "line_start": 83,
+          "line_end": 83,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:244affc2c4b8501e6769614070ffd3221f5fbff3f1de672d4029de02c347c2ff"
+        },
+        {
+          "path": "lib/vega-agents/detectors/entity-steward.js",
+          "symbol": "resolveNew",
+          "line_start": 160,
+          "line_end": 160,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:773659f25bec3299c72e44675b42199c3a1a4bef37065adfcbbb7bf903a77104"
+        },
+        {
+          "path": "lib/vega-agents/detectors/entity-steward.js",
+          "symbol": "connect",
+          "line_start": 262,
+          "line_end": 262,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:773659f25bec3299c72e44675b42199c3a1a4bef37065adfcbbb7bf903a77104"
+        },
+        {
+          "path": "lib/vega-agents/detectors/entity-steward.js",
+          "symbol": "enrichExternal",
+          "line_start": 326,
+          "line_end": 326,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:773659f25bec3299c72e44675b42199c3a1a4bef37065adfcbbb7bf903a77104"
+        },
+        {
+          "path": "lib/vega-agents/detectors/fireflies-sweeper.js",
+          "symbol": "callClaudeForTranscript",
+          "line_start": 144,
+          "line_end": 144,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:fe29e9d2ac9995c5fcca893c4e580e8068c6e9c69ddb1827f138ea543f20d629"
+        },
+        {
+          "path": "lib/vega-agents/detectors/commitment-tracker.js",
+          "symbol": "classifyResolution",
+          "line_start": 84,
+          "line_end": 84,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c8822f385cf15a7a33df1f52a8d9ef41af5b0123178102f14dcaddcb31a813e5"
+        },
+        {
+          "path": "lib/vega-agents/detectors/mail-decomposer.js",
+          "symbol": "callClaudeForThread",
+          "line_start": 217,
+          "line_end": 217,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:21e4ef535cfd2a169c979efda53409401b24c854002fa4c08e2b9b339dc1cbe7"
+        },
+        {
+          "path": "lib/vega-agents/detectors/mail-decomposer.js",
+          "symbol": "callClaudeForNewMessage",
+          "line_start": 274,
+          "line_end": 274,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:21e4ef535cfd2a169c979efda53409401b24c854002fa4c08e2b9b339dc1cbe7"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "SPECIALIST",
+      "family": "Other Vega critics and domain specialists",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-agents/critics/relation-inferrer.js",
+          "symbol": "classifyPairs",
+          "line_start": 173,
+          "line_end": 173,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:3fc5a4cbaddb7f4396421ffb1f268db77ff7c009a8c9c6e5ca52d9e5a6d9bfa2"
+        },
+        {
+          "path": "lib/vega-agents/critics/artifact-linker.js",
+          "symbol": "classifyArtifactPairs",
+          "line_start": 193,
+          "line_end": 193,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:ecf6d9921f37bc005251601d9dd67fad5335467465be523b09f2d7dc03126639"
+        },
+        {
+          "path": "lib/vega-agents/domain-experts/system-architect.js",
+          "symbol": "classify",
+          "line_start": 154,
+          "line_end": 154,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:1eb1f0b84f510fd4d5e9ee78bec2a6347d11cf0fbf97a2d3370c0548f28d924c"
+        },
+        {
+          "path": "lib/vega-agents/domain-experts/physicist.js",
+          "symbol": "classify",
+          "line_start": 212,
+          "line_end": 212,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:89ea4b5824b1e6f3aa9169554b414f2d2e7bf33a76f914fb00544142c1388748"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "CODING",
+      "family": "Coding/foreman agent calls and structured fix proposal",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-coding/fda.js",
+          "symbol": "writeSpec",
+          "line_start": 218,
+          "line_end": 218,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:57a7e423c3725df4c17f84710fce9d4b9b06e9cd7911aaa1c4c5547f6a743a51"
+        },
+        {
+          "path": "lib/vega-coding/project-manager.js",
+          "symbol": "writePlan",
+          "line_start": 232,
+          "line_end": 232,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:e99ae9200edde3415d9b5d19fa72489559d83f3547ee86c6e1db24eeb20894ec"
+        },
+        {
+          "path": "lib/vega-coding/spec-composer.js",
+          "symbol": "writeSpecification",
+          "line_start": 321,
+          "line_end": 321,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f1f9f195ce0bbaf98e3fadc1fd2bddf37c5cd42b2c155bef84ed8486c63880da"
+        },
+        {
+          "path": "lib/vega-coding/claude-sdk-provider.js",
+          "symbol": "proposeFix",
+          "line_start": 515,
+          "line_end": 515,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:9d65380c8b0d4538aee15b5a612804df51883c43542f10c80143e88a0dd5f6dc"
+        },
+        {
+          "path": "lib/vega-coding/claude-sdk-provider.js",
+          "symbol": "proposeFix",
+          "line_start": 567,
+          "line_end": 567,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:9d65380c8b0d4538aee15b5a612804df51883c43542f10c80143e88a0dd5f6dc"
+        },
+        {
+          "path": "lib/vega-coding/analyst.js",
+          "symbol": "analyzeFinding",
+          "line_start": 120,
+          "line_end": 120,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:8d2445e7fcff84cc8e900e4241a66452afe28c6f8464c2c11fc6f0c09e4ae019"
+        },
+        {
+          "path": "lib/vega-coding/designer.js",
+          "symbol": "writeDesign",
+          "line_start": 235,
+          "line_end": 235,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f45573b4f0c343daf1cf293f7f5eedc9167104640f3d84e2e2411ac8764bf456"
+        },
+        {
+          "path": "lib/vega-coding/architect.js",
+          "symbol": "writeSketch",
+          "line_start": 213,
+          "line_end": 213,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:7596566ff730f7d32618eab3655ed9a6c11833e2647f1fcc57ed183a0f8adf53"
+        },
+        {
+          "path": "lib/vega-coding/fdd-foreman.js",
+          "symbol": "pull",
+          "line_start": 3962,
+          "line_end": 3962,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:3416a9b191a65c6015a59856bd5b5ec036089ce824b923e509cd46fc91d2fd87"
+        },
+        {
+          "path": "lib/vega-coding/fdd-foreman.js",
+          "symbol": "_evaluate_output",
+          "line_start": 4614,
+          "line_end": 4614,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:3416a9b191a65c6015a59856bd5b5ec036089ce824b923e509cd46fc91d2fd87"
+        },
+        {
+          "path": "lib/vega-coding/fdd-foreman.js",
+          "symbol": "_exec_review_diff",
+          "line_start": 5610,
+          "line_end": 5610,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:3416a9b191a65c6015a59856bd5b5ec036089ce824b923e509cd46fc91d2fd87"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "lib/vega-coding/claude-sdk-provider.js:505-521",
+      "response_consumer": "lib/vega-coding/claude-sdk-provider.js:522-590",
+      "tool_side_effect_boundary": "lib/vega-coding/claude-sdk-provider.js:548-585",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "SEMANTICS",
+      "family": "Semantic extraction and relation classifiers",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/semantics/entity-extractor.js",
+          "symbol": "classifyBatch",
+          "line_start": 206,
+          "line_end": 206,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:19c1c0e320bd2742bc9d7fff196d5068f0a53a7a5884227538fea0201cc899b8"
+        },
+        {
+          "path": "lib/semantics/facet-detector.js",
+          "symbol": "classifyBatch",
+          "line_start": 110,
+          "line_end": 110,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c01c509be7b6e7fce7637f2d9831455915aafd724f96e93c58265ef86e7d80ca"
+        },
+        {
+          "path": "lib/semantics/entity-relation-detector.js",
+          "symbol": "classifyBatch",
+          "line_start": 162,
+          "line_end": 162,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:bf10990c3e5ba33fcb01bd95caf372f087488b07c6f063db1753fb0a1d799874"
+        },
+        {
+          "path": "lib/semantics/framing-detector.js",
+          "symbol": "classifyBatch",
+          "line_start": 99,
+          "line_end": 99,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:24551904e24ae9dc402cba98933526eb13f4fa2877a6399bd0a6ab4d9318d145"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "CRISTI",
+      "family": "Cristi document/graph processing",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/cristi-pipeline.js",
+          "symbol": "extractPdfViaClaude",
+          "line_start": 544,
+          "line_end": 544,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:ff1dbef82dda09366219878e47bbc4b8249fc9e72b2a0de82dd1ee98de046bb2"
+        },
+        {
+          "path": "lib/cristi-pipeline.js",
+          "symbol": "_extractChunk",
+          "line_start": 756,
+          "line_end": 756,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:ff1dbef82dda09366219878e47bbc4b8249fc9e72b2a0de82dd1ee98de046bb2"
+        },
+        {
+          "path": "lib/cristi-pipeline.js",
+          "symbol": "_transcribeRegion",
+          "line_start": 1133,
+          "line_end": 1133,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:ff1dbef82dda09366219878e47bbc4b8249fc9e72b2a0de82dd1ee98de046bb2"
+        },
+        {
+          "path": "lib/cristi-graph-ask.js",
+          "symbol": "ask",
+          "line_start": 74,
+          "line_end": 74,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:05f39339d37b5f414ffb89137fdb06919a38f2f50c6349a535e2ff149218e849"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "NEWTON",
+      "family": "Newton paper/citation processing",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/newton-citations.js",
+          "symbol": "extractReferences",
+          "line_start": 91,
+          "line_end": 91,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:9725fde516edc2931c5a926302b906619e5aff615c1324f24414d4ba587d3541"
+        },
+        {
+          "path": "lib/newton-core-detect.js",
+          "symbol": "detectCores",
+          "line_start": 66,
+          "line_end": 66,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c8d53639456341fe1cb7a96747599ef54a47d2da3d44c82ba981009bd21f5286"
+        },
+        {
+          "path": "lib/newton-core-detect.js",
+          "symbol": "detectSupport",
+          "line_start": 139,
+          "line_end": 139,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c8d53639456341fe1cb7a96747599ef54a47d2da3d44c82ba981009bd21f5286"
+        },
+        {
+          "path": "lib/newton-core-detect.js",
+          "symbol": "detectSameAs",
+          "line_start": 205,
+          "line_end": 205,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c8d53639456341fe1cb7a96747599ef54a47d2da3d44c82ba981009bd21f5286"
+        },
+        {
+          "path": "lib/newton-core-detect.js",
+          "symbol": "detectCoreDedup",
+          "line_start": 277,
+          "line_end": 277,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:c8d53639456341fe1cb7a96747599ef54a47d2da3d44c82ba981009bd21f5286"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "TEAM_CHAT",
+      "family": "Team chat supporting calls",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/team-chat/gdoc-drop.js",
+          "symbol": "_oneLine",
+          "line_start": 94,
+          "line_end": 94,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:bc2681e1718f27fc84a1a77b7104e463ede955cf4d99366e499837c94e2a5104"
+        },
+        {
+          "path": "lib/team-chat/routes.js",
+          "symbol": "fmtOff",
+          "line_start": 2759,
+          "line_end": 2759,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "path": "lib/team-chat/cr.js",
+          "symbol": "expand",
+          "line_start": 403,
+          "line_end": 403,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:a263d6c137ae023a3a70f9f466587c6a683fdedd669d2dccb966bd20251f21aa"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "INGESTION",
+      "family": "Ingestion enrichment calls",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/ingestion/agents.js",
+          "symbol": "runAttachmentVision",
+          "line_start": 151,
+          "line_end": 151,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:5dfd9d9b618a186699dfdfc3daa16bcd849afd6e69db9eca4070c5b14977caa8"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "RELAY",
+      "family": "Relay meeting summarization",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/agents/relay/children/meeting-summarizer.js",
+          "symbol": "build",
+          "line_start": 124,
+          "line_end": 124,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:be87fdeb64ba2145fd9485a16647e6d69ab13c415a6635273d32cc05264d585c"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "OTHER_VEGA",
+      "family": "Other Vega route, support, delegation, memo and view calls",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-delegation-routes.js",
+          "symbol": "runApiWorker",
+          "line_start": 111,
+          "line_end": 111,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:2aa9e69276fc277d4052f1dd88fb8b055229a0e87f250a83b2b19375c477598d"
+        },
+        {
+          "path": "lib/vega-composer-dispatch.js",
+          "symbol": "composeProseSection",
+          "line_start": 188,
+          "line_end": 188,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:16fdd6a642978c58ddd008d0994049dff673bb943098901ebf9d535f9618fc47"
+        },
+        {
+          "path": "lib/vega-composer-dispatch.js",
+          "symbol": "chiefEditorRevise",
+          "line_start": 233,
+          "line_end": 233,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:16fdd6a642978c58ddd008d0994049dff673bb943098901ebf9d535f9618fc47"
+        },
+        {
+          "path": "lib/vega-tension-detector.js",
+          "symbol": "callClaude",
+          "line_start": 90,
+          "line_end": 90,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:694bd045a34c80144a529969e3157201fae9f73abd836b7c4102fa3eb84863b6"
+        },
+        {
+          "path": "lib/vega-architectural-profile-bootstrap.js",
+          "symbol": "runBootstrap",
+          "line_start": 196,
+          "line_end": 196,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f2028b115abfee892ab40fc0e096cce47abd3b64630054419ee04e05b9bcd1ac"
+        },
+        {
+          "path": "lib/vega-grok-room.js",
+          "symbol": "_vegaMaybeReply",
+          "line_start": 111,
+          "line_end": 111,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:45ed8f2ad549aff018ca96b86119510f43097c3454bd3257a7981cbc42ad881d"
+        },
+        {
+          "path": "lib/vega-drafts-revise-routes.js",
+          "symbol": "register",
+          "line_start": 122,
+          "line_end": 122,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:30c6bffe43c6d430dacaf87fba17db560f81a41403b0984cd28f28cd1e07bd50"
+        },
+        {
+          "path": "lib/vega-time-awareness.js",
+          "symbol": "summarizeWithClaude",
+          "line_start": 292,
+          "line_end": 292,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:acffe5a97fa50fc3bdacbc51c4b666c249e7e6c2139145756c5ccd312fc18492"
+        },
+        {
+          "path": "lib/vega-memo-routes.js",
+          "symbol": "filterByEntityScope",
+          "line_start": 425,
+          "line_end": 425,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f203952f46d07796b6cdd859114288d6ba9472b12bb41299b9ca2322c5724ee4"
+        },
+        {
+          "path": "lib/vega-historian.js",
+          "symbol": "enrichEvent",
+          "line_start": 223,
+          "line_end": 223,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:e699622cf9e5d545bd254c36f0e8472a7e6e2483c6636c58f25f1aece7f16eeb"
+        },
+        {
+          "path": "lib/vega-historian.js",
+          "symbol": "answer",
+          "line_start": 239,
+          "line_end": 239,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:e699622cf9e5d545bd254c36f0e8472a7e6e2483c6636c58f25f1aece7f16eeb"
+        },
+        {
+          "path": "lib/vega-grok-view.js",
+          "symbol": "_lookOnce",
+          "line_start": 302,
+          "line_end": 302,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:b2c06dc70fb57c984d66ddd6c71e1a303c717eae1ed06348342788a73c450e05"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "SUPPORTING",
+      "family": "Other application call sites",
+      "reachability": "source-reachable/configured; deployment and live traffic unverified",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/patton-autonomous-reply.js",
+          "symbol": "maybeReply",
+          "line_start": 145,
+          "line_end": 145,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:434e2b5ba09f230198bd7c746680864bb386652c71ab59ffbb30cd62be479df3"
+        },
+        {
+          "path": "lib/numerics-pilot-routes.js",
+          "symbol": "register",
+          "line_start": 151,
+          "line_end": 151,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:24164d55c42ec6a8274f2b2bf51b677d8d869e537e6c5b488d178d5153462443"
+        },
+        {
+          "path": "lib/handoff/routes.js",
+          "symbol": "analyze",
+          "line_start": 116,
+          "line_end": 116,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:f1abb94747335bd56874ff8291234d26e5da8735f79e793e7994e88af521d9f0"
+        },
+        {
+          "path": "lib/drafts/organize-check.js",
+          "symbol": "trim",
+          "line_start": 132,
+          "line_end": 132,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:2194ba129af2b16419cdc71aa0d65ad7704bc363924fb90b9356b1d2d557be75"
+        },
+        {
+          "path": "lib/voice/index.js",
+          "symbol": "applyVoice",
+          "line_start": 66,
+          "line_end": 66,
+          "dispatch_expression": "messages.create",
+          "snapshot_basis": "working-tree sha256:549d0305dad60d483952a15828d2d184a09a2deca28d6310977da24cd7b2da53"
+        }
+      ],
+      "registration_and_caller": "See call_sites; full registration trace unresolved for some members",
+      "request_preparation": "See report and cited call sites; member-specific defaults may differ",
+      "response_consumer": "See report; per-member consumer trace unresolved where noted",
+      "tool_side_effect_boundary": "Application-owned when a tool block is executed; see cited call sites",
+      "retry_and_cancellation": "Application/SDK layers vary; see report; unproven SDK defaults unresolved",
+      "identity_usage_outcome": "Application-specific; see report",
+      "runtime": "Root package declares Node >=24 <25 and CommonJS; package-specific overrides must be checked",
+      "unresolved_edges": [
+        "live traffic",
+        "per-member dynamic registration",
+        "SDK defaults and provider semantics"
+      ]
+    },
+    {
+      "id": "XAI_RESPONSES",
+      "family": "Direct xAI Responses HTTP: web search, social polling and ticker",
+      "reachability": "source-reachable/configured; production reachability unresolved",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-chat.js",
+          "symbol": null,
+          "line_start": 162,
+          "line_end": 162,
+          "snapshot_basis": "working-tree sha256:44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a"
+        },
+        {
+          "path": "lib/vega-chat.js",
+          "symbol": null,
+          "line_start": 6349,
+          "line_end": 6349,
+          "snapshot_basis": "working-tree sha256:44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a"
+        },
+        {
+          "path": "lib/team-chat/ticker.js",
+          "symbol": null,
+          "line_start": 20,
+          "line_end": 20,
+          "snapshot_basis": "working-tree sha256:800630425eac9efe7796b8eb138067b5338bb697424bd11c9c4a5aa95bb91bd0"
+        },
+        {
+          "path": "lib/team-chat/ticker.js",
+          "symbol": null,
+          "line_start": 86,
+          "line_end": 86,
+          "snapshot_basis": "working-tree sha256:800630425eac9efe7796b8eb138067b5338bb697424bd11c9c4a5aa95bb91bd0"
+        },
+        {
+          "path": "lib/team-chat/ticker.js",
+          "symbol": null,
+          "line_start": 173,
+          "line_end": 173,
+          "snapshot_basis": "working-tree sha256:800630425eac9efe7796b8eb138067b5338bb697424bd11c9c4a5aa95bb91bd0"
+        },
+        {
+          "path": "lib/agent-x/x-source-live.js",
+          "symbol": null,
+          "line_start": 7,
+          "line_end": 7,
+          "snapshot_basis": "working-tree sha256:587c6d9d7b8505e25c37447f3678dbb3dd5555c2ee667930ebd47cef82ec3c24"
+        },
+        {
+          "path": "lib/agent-x/x-source-live.js",
+          "symbol": null,
+          "line_start": 22,
+          "line_end": 22,
+          "snapshot_basis": "working-tree sha256:587c6d9d7b8505e25c37447f3678dbb3dd5555c2ee667930ebd47cef82ec3c24"
+        },
+        {
+          "path": "lib/agent-x/x-source-live.js",
+          "symbol": null,
+          "line_start": 97,
+          "line_end": 97,
+          "snapshot_basis": "working-tree sha256:587c6d9d7b8505e25c37447f3678dbb3dd5555c2ee667930ebd47cef82ec3c24"
+        },
+        {
+          "path": "lib/numerics-tier2/providers/xai-web-search-adapter.js",
+          "symbol": null,
+          "line_start": 6,
+          "line_end": 6,
+          "snapshot_basis": "working-tree sha256:a5e1aac63e6bfdf8d33ad55f5703d236465fedfc02db392b820788f591a02dc7"
+        },
+        {
+          "path": "lib/numerics-tier2/providers/xai-web-search-adapter.js",
+          "symbol": null,
+          "line_start": 31,
+          "line_end": 31,
+          "snapshot_basis": "working-tree sha256:a5e1aac63e6bfdf8d33ad55f5703d236465fedfc02db392b820788f591a02dc7"
+        },
+        {
+          "path": "lib/agents/vega/tools/search-web.js",
+          "symbol": null,
+          "line_start": 24,
+          "line_end": 24,
+          "snapshot_basis": "working-tree sha256:d0f0012ec76131504b50eeda570a238a2751445ae26d43934674bf5da38fb450"
+        }
+      ],
+      "registration_and_caller": "Representative transport sources listed; detailed registration unresolved",
+      "request_preparation": "Protocol-specific; inspect cited source",
+      "response_consumer": "Protocol-specific; see report",
+      "tool_side_effect_boundary": "Application-specific",
+      "retry_and_cancellation": "Unresolved without dynamic execution",
+      "identity_usage_outcome": "Application-specific; usage completeness unresolved",
+      "runtime": "Node transport",
+      "unresolved_edges": [
+        "full protocol trace",
+        "deployment",
+        "provider semantics"
+      ]
+    },
+    {
+      "id": "XAI_CHAT_HTTP",
+      "family": "Direct xAI chat/completions HTTP coding adapter",
+      "reachability": "source-reachable/configured; production reachability unresolved",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-coding/xai-provider.js",
+          "symbol": null,
+          "line_start": 31,
+          "line_end": 31,
+          "snapshot_basis": "working-tree sha256:9fa3c65f6ad729c8b9c0eab84004c5c64178dcb312c59706374293fc1ffb95f2"
+        },
+        {
+          "path": "lib/vega-coding/xai-provider.js",
+          "symbol": null,
+          "line_start": 35,
+          "line_end": 35,
+          "snapshot_basis": "working-tree sha256:9fa3c65f6ad729c8b9c0eab84004c5c64178dcb312c59706374293fc1ffb95f2"
+        },
+        {
+          "path": "lib/vega-coding/xai-provider.js",
+          "symbol": null,
+          "line_start": 63,
+          "line_end": 63,
+          "snapshot_basis": "working-tree sha256:9fa3c65f6ad729c8b9c0eab84004c5c64178dcb312c59706374293fc1ffb95f2"
+        }
+      ],
+      "registration_and_caller": "Representative transport sources listed; detailed registration unresolved",
+      "request_preparation": "Protocol-specific; inspect cited source",
+      "response_consumer": "Protocol-specific; see report",
+      "tool_side_effect_boundary": "Application-specific",
+      "retry_and_cancellation": "Unresolved without dynamic execution",
+      "identity_usage_outcome": "Application-specific; usage completeness unresolved",
+      "runtime": "Node transport",
+      "unresolved_edges": [
+        "full protocol trace",
+        "deployment",
+        "provider semantics"
+      ]
+    },
+    {
+      "id": "VOICE_REALTIME",
+      "family": "xAI realtime WebSocket proxy; stateful audio and tools",
+      "reachability": "source-reachable/configured; production reachability unresolved",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/vega-realtime.js",
+          "symbol": null,
+          "line_start": 6,
+          "line_end": 6,
+          "snapshot_basis": "working-tree sha256:be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8"
+        },
+        {
+          "path": "lib/vega-realtime.js",
+          "symbol": null,
+          "line_start": 56,
+          "line_end": 56,
+          "snapshot_basis": "working-tree sha256:be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8"
+        },
+        {
+          "path": "lib/vega-realtime.js",
+          "symbol": null,
+          "line_start": 2090,
+          "line_end": 2090,
+          "snapshot_basis": "working-tree sha256:be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8"
+        },
+        {
+          "path": "lib/vega-realtime.js",
+          "symbol": null,
+          "line_start": 2111,
+          "line_end": 2111,
+          "snapshot_basis": "working-tree sha256:be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8"
+        },
+        {
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": null,
+          "line_start": 42,
+          "line_end": 42,
+          "snapshot_basis": "working-tree sha256:8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        },
+        {
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": null,
+          "line_start": 43,
+          "line_end": 43,
+          "snapshot_basis": "working-tree sha256:8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        },
+        {
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": null,
+          "line_start": 52,
+          "line_end": 52,
+          "snapshot_basis": "working-tree sha256:8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        },
+        {
+          "path": "lib/proto/voice/realtime-body.js",
+          "symbol": null,
+          "line_start": 184,
+          "line_end": 184,
+          "snapshot_basis": "working-tree sha256:8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f"
+        }
+      ],
+      "registration_and_caller": "Representative transport sources listed; detailed registration unresolved",
+      "request_preparation": "Protocol-specific; inspect cited source",
+      "response_consumer": "Protocol-specific; see report",
+      "tool_side_effect_boundary": "Application-specific",
+      "retry_and_cancellation": "Unresolved without dynamic execution",
+      "identity_usage_outcome": "Application-specific; usage completeness unresolved",
+      "runtime": "Node transport",
+      "unresolved_edges": [
+        "full protocol trace",
+        "deployment",
+        "provider semantics"
+      ]
+    },
+    {
+      "id": "OTHER_MODALITY",
+      "family": "Other direct provider/modality transports requiring separate scope decision",
+      "reachability": "source-reachable/configured; production reachability unresolved",
+      "evidence_class": "SOURCE_CONFIRMED",
+      "call_sites": [
+        {
+          "path": "lib/team-chat/routes.js",
+          "symbol": null,
+          "line_start": 2253,
+          "line_end": 2253,
+          "snapshot_basis": "working-tree sha256:cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "path": "lib/team-chat/routes.js",
+          "symbol": null,
+          "line_start": 2271,
+          "line_end": 2271,
+          "snapshot_basis": "working-tree sha256:cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "path": "lib/team-chat/routes.js",
+          "symbol": null,
+          "line_start": 2285,
+          "line_end": 2285,
+          "snapshot_basis": "working-tree sha256:cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "path": "lib/team-chat/routes.js",
+          "symbol": null,
+          "line_start": 2286,
+          "line_end": 2286,
+          "snapshot_basis": "working-tree sha256:cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f"
+        },
+        {
+          "path": "lib/vega-grok-image.js",
+          "symbol": null,
+          "line_start": 20,
+          "line_end": 20,
+          "snapshot_basis": "working-tree sha256:7c62a7d00957176ce115a4cfb2f5c74a9d1bf041ffdf7cc9ffd62e9f6f1d863e"
+        },
+        {
+          "path": "lib/vega-grok-image.js",
+          "symbol": null,
+          "line_start": 63,
+          "line_end": 63,
+          "snapshot_basis": "working-tree sha256:7c62a7d00957176ce115a4cfb2f5c74a9d1bf041ffdf7cc9ffd62e9f6f1d863e"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 27,
+          "line_end": 27,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 28,
+          "line_end": 28,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 75,
+          "line_end": 75,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 100,
+          "line_end": 100,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 192,
+          "line_end": 192,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        },
+        {
+          "path": "lib/proto/voice-body.js",
+          "symbol": null,
+          "line_start": 210,
+          "line_end": 210,
+          "snapshot_basis": "working-tree sha256:a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+        }
+      ],
+      "registration_and_caller": "Representative transport sources listed; detailed registration unresolved",
+      "request_preparation": "Protocol-specific; inspect cited source",
+      "response_consumer": "Protocol-specific; see report",
+      "tool_side_effect_boundary": "Application-specific",
+      "retry_and_cancellation": "Unresolved without dynamic execution",
+      "identity_usage_outcome": "Application-specific; usage completeness unresolved",
+      "runtime": "Node transport",
+      "unresolved_edges": [
+        "full protocol trace",
+        "deployment",
+        "provider semantics"
+      ]
+    }
+  ],
+  "inspected_file_sha256": {
+    "lib/vega-decomposer.js": "607e457fe61b447e0bb34b25505b19b635fda7a1c3a9be4bf6393e42553c3461",
+    "lib/cristi-pipeline.js": "ff1dbef82dda09366219878e47bbc4b8249fc9e72b2a0de82dd1ee98de046bb2",
+    "lib/vega-chat-stream.js": "7799092d450c2b33288210381203633449ebb67625d6169b7b05aa57e8dd224a",
+    "lib/patton-autonomous-reply.js": "434e2b5ba09f230198bd7c746680864bb386652c71ab59ffbb30cd62be479df3",
+    "lib/vega-delegation-routes.js": "2aa9e69276fc277d4052f1dd88fb8b055229a0e87f250a83b2b19375c477598d",
+    "lib/vega-composer-dispatch.js": "16fdd6a642978c58ddd008d0994049dff673bb943098901ebf9d535f9618fc47",
+    "lib/vega-tension-detector.js": "694bd045a34c80144a529969e3157201fae9f73abd836b7c4102fa3eb84863b6",
+    "lib/newton-citations.js": "9725fde516edc2931c5a926302b906619e5aff615c1324f24414d4ba587d3541",
+    "lib/vega-architectural-profile-bootstrap.js": "f2028b115abfee892ab40fc0e096cce47abd3b64630054419ee04e05b9bcd1ac",
+    "lib/cristi-graph-ask.js": "05f39339d37b5f414ffb89137fdb06919a38f2f50c6349a535e2ff149218e849",
+    "lib/vega-grok-room.js": "45ed8f2ad549aff018ca96b86119510f43097c3454bd3257a7981cbc42ad881d",
+    "lib/numerics-pilot-routes.js": "24164d55c42ec6a8274f2b2bf51b677d8d869e537e6c5b488d178d5153462443",
+    "lib/vega-drafts-revise-routes.js": "30c6bffe43c6d430dacaf87fba17db560f81a41403b0984cd28f28cd1e07bd50",
+    "lib/vega-time-awareness.js": "acffe5a97fa50fc3bdacbc51c4b666c249e7e6c2139145756c5ccd312fc18492",
+    "lib/vega-chat-autonomous.js": "9391d70a47cb44bade763f6cd3d119aae359d0e927a9b2b09ee50c44da4cb904",
+    "lib/vega-memo-routes.js": "f203952f46d07796b6cdd859114288d6ba9472b12bb41299b9ca2322c5724ee4",
+    "lib/llm-client.js": "0928e04dd249a6ce944f8e1bf2e2935c104880a7582b3fb1acf7c07393a9a709",
+    "lib/vega-historian.js": "e699622cf9e5d545bd254c36f0e8472a7e6e2483c6636c58f25f1aece7f16eeb",
+    "lib/vega-grok-view.js": "b2c06dc70fb57c984d66ddd6c71e1a303c717eae1ed06348342788a73c450e05",
+    "lib/newton-core-detect.js": "c8d53639456341fe1cb7a96747599ef54a47d2da3d44c82ba981009bd21f5286",
+    "lib/vega-chat.js": "44cadf0fbf0ea6388db801dd9a4fdcb40706b945fce6874cc3877e24e0ad4c9a",
+    "lib/vega-chat/dispatch.js": "3586a5b946e716dcab921eb5553dbfe761f5402b368bab502544f1d719c8ff50",
+    "lib/vega-coding/fda.js": "57a7e423c3725df4c17f84710fce9d4b9b06e9cd7911aaa1c4c5547f6a743a51",
+    "lib/vega-coding/project-manager.js": "e99ae9200edde3415d9b5d19fa72489559d83f3547ee86c6e1db24eeb20894ec",
+    "lib/vega-coding/spec-composer.js": "f1f9f195ce0bbaf98e3fadc1fd2bddf37c5cd42b2c155bef84ed8486c63880da",
+    "lib/vega-coding/claude-sdk-provider.js": "9d65380c8b0d4538aee15b5a612804df51883c43542f10c80143e88a0dd5f6dc",
+    "lib/vega-coding/analyst.js": "8d2445e7fcff84cc8e900e4241a66452afe28c6f8464c2c11fc6f0c09e4ae019",
+    "lib/vega-coding/designer.js": "f45573b4f0c343daf1cf293f7f5eedc9167104640f3d84e2e2411ac8764bf456",
+    "lib/vega-coding/architect.js": "7596566ff730f7d32618eab3655ed9a6c11833e2647f1fcc57ed183a0f8adf53",
+    "lib/vega-coding/fdd-foreman.js": "3416a9b191a65c6015a59856bd5b5ec036089ce824b923e509cd46fc91d2fd87",
+    "lib/ingestion/agents.js": "5dfd9d9b618a186699dfdfc3daa16bcd849afd6e69db9eca4070c5b14977caa8",
+    "lib/proto/chat-body.js": "76c6a713a8f5f5a87236fdd76e68290a076393db1991f7251f6bb25b1dc9af29",
+    "lib/handoff/routes.js": "f1abb94747335bd56874ff8291234d26e5da8735f79e793e7994e88af521d9f0",
+    "lib/drafts/organize-check.js": "2194ba129af2b16419cdc71aa0d65ad7704bc363924fb90b9356b1d2d557be75",
+    "lib/team-chat/gdoc-drop.js": "bc2681e1718f27fc84a1a77b7104e463ede955cf4d99366e499837c94e2a5104",
+    "lib/team-chat/routes.js": "cd542b35f53a2424004c16465522e7c9db6259374d772ca4328ecaf9c244452f",
+    "lib/team-chat/cr.js": "a263d6c137ae023a3a70f9f466587c6a683fdedd669d2dccb966bd20251f21aa",
+    "lib/semantics/entity-extractor.js": "19c1c0e320bd2742bc9d7fff196d5068f0a53a7a5884227538fea0201cc899b8",
+    "lib/semantics/facet-detector.js": "c01c509be7b6e7fce7637f2d9831455915aafd724f96e93c58265ef86e7d80ca",
+    "lib/semantics/entity-relation-detector.js": "bf10990c3e5ba33fcb01bd95caf372f087488b07c6f063db1753fb0a1d799874",
+    "lib/semantics/framing-detector.js": "24551904e24ae9dc402cba98933526eb13f4fa2877a6399bd0a6ab4d9318d145",
+    "lib/voice/index.js": "549d0305dad60d483952a15828d2d184a09a2deca28d6310977da24cd7b2da53",
+    "lib/vega-agents/composers/session-titler.js": "ff197ebbf5f6ed902452177467961cdb2dfec2b69fc6df1c15fa230f64329fbb",
+    "lib/vega-agents/composers/composer.js": "1b53621fe9c6f3bd9f096f224fefc553b850ef277dbd9e038419e6c15c74a32e",
+    "lib/vega-agents/composers/composer-outliner.js": "83b477f63e55f93d2705b773a3f0dc01c98cb50f5469488e7f8ad1281028360a",
+    "lib/vega-agents/composers/cluster-classifier.js": "f364f2c30c9edda618f79dc7b56709b5dd911d5e9a1bdaadb52d7878183b5bb3",
+    "lib/vega-agents/composers/composer-coordinator.js": "47429815e2e63cefc3f9975d2819951bbb3f5e44741b718e326d52b590982548",
+    "lib/vega-agents/editorial/equation.js": "b9beac03954acb88fd76c131e4a3d7c5027dff2b1d66cf41abd50dddb7208bf4",
+    "lib/vega-agents/editorial/chart.js": "133a72f5eb5799abe8cf27a9482165dbb9e6b473ccdf8be5a56663deb0de18e6",
+    "lib/vega-agents/editorial/figure.js": "65933ca8c29c5c75e7fa46cac7efaa0234c205ccabe1c378f3484f8ebf508334",
+    "lib/vega-agents/editorial/spreadsheet.js": "148581654bced5baa3f8121ea62935aed000e0ba8cfe2edddf6f478b98cba537",
+    "lib/vega-agents/editorial/citation.js": "6ab6f35d7636d23bb32f0e94fab471b6e392fab394aa6f13c0d8211d9155eae0",
+    "lib/vega-agents/editorial/style.js": "5a283be98c9c15b34120329e224ce02ed5327bfe0009fee23f4a4583188248e9",
+    "lib/vega-agents/editorial/timeline.js": "e83e05a20b102459e8784a68d11713cd8ac6536091c481255409a57b50982617",
+    "lib/vega-agents/editorial/callout.js": "0053eb41eab4a0df8f370bae6f1070422850226bfc3894ba3720268fddbc7c82",
+    "lib/vega-agents/editorial/editor.js": "4dc482365c53008fd4a42a67c873124b1fa9956410dcbb01699b84481c5ae40d",
+    "lib/vega-agents/editorial/table.js": "e92c53d91950dce1df6e8348e8415944f767e3da107d6c3d1948527ff42dd81a",
+    "lib/vega-agents/editorial/image.js": "910db93ae8e44831535528ce42eb95ec5980515a6ed14d214bf393bf4acc33b1",
+    "lib/vega-agents/editorial/prose.js": "af4dcc58d032784db4e902863ef3617d42a2b0679bf9886cdaf9e5d9e72482b8",
+    "lib/vega-agents/editorial/comparison.js": "50b187717345c12a32ffbaf88f4a5123e5ac6485fca553f6603aa216599b3f1b",
+    "lib/vega-agents/critics/relation-inferrer.js": "3fc5a4cbaddb7f4396421ffb1f268db77ff7c009a8c9c6e5ca52d9e5a6d9bfa2",
+    "lib/vega-agents/critics/artifact-linker.js": "ecf6d9921f37bc005251601d9dd67fad5335467465be523b09f2d7dc03126639",
+    "lib/vega-agents/domain-experts/system-architect.js": "1eb1f0b84f510fd4d5e9ee78bec2a6347d11cf0fbf97a2d3370c0548f28d924c",
+    "lib/vega-agents/domain-experts/physicist.js": "89ea4b5824b1e6f3aa9169554b414f2d2e7bf33a76f914fb00544142c1388748",
+    "lib/vega-agents/detectors/slack-sweeper.js": "99481bd1c104d8e4b54576dd0319516a1b4b091ca8ab03edcd4ed40ae70ec482",
+    "lib/vega-agents/detectors/document-decomposer.js": "2c4acab3c5b4137aabff375cf613544ca4505706fb41490b24a07515c1fe4fe9",
+    "lib/vega-agents/detectors/relay-sweeper.js": "244affc2c4b8501e6769614070ffd3221f5fbff3f1de672d4029de02c347c2ff",
+    "lib/vega-agents/detectors/entity-steward.js": "773659f25bec3299c72e44675b42199c3a1a4bef37065adfcbbb7bf903a77104",
+    "lib/vega-agents/detectors/fireflies-sweeper.js": "fe29e9d2ac9995c5fcca893c4e580e8068c6e9c69ddb1827f138ea543f20d629",
+    "lib/vega-agents/detectors/commitment-tracker.js": "c8822f385cf15a7a33df1f52a8d9ef41af5b0123178102f14dcaddcb31a813e5",
+    "lib/vega-agents/detectors/mail-decomposer.js": "21e4ef535cfd2a169c979efda53409401b24c854002fa4c08e2b9b339dc1cbe7",
+    "lib/agents/relay/children/meeting-summarizer.js": "be87fdeb64ba2145fd9485a16647e6d69ab13c415a6635273d32cc05264d585c",
+    "packages/@agents/my-assistant/body/index.js": "d7c66177735d72773662db1eb4b2eb3f232c48c5294e84ccd7b15b2035f4c327",
+    "packages/@agents/my-assistant/body/lib/composer.js": "95da75d5d7d8a6f8e8f7513a8c4b503adbb50f229e1d7142dca66f620e25c398",
+    "packages/@agents/my-assistant/body/lib/tree-builder.js": "a05a5a97907c58dbad845626ba4d19649a1b7a31a6280e49b94620a54e52e4cd",
+    "packages/@agents/my-assistant/body/lib/research.js": "31fe51bc531a0f122424f3f32a9179e3be46b34f3a13c64ac02647df8dfe45f1",
+    "packages/@agents/my-assistant/body/lib/grounding.js": "993b14cf6e00478eaa7fba62aaaef20f4fcac9615c724c4b6be71e78b1b7af00",
+    "packages/@agents/my-assistant/body/lib/decomposer.js": "0275711cd352635cae6af4eea49850ca5f46f82eb2de1eaf2e4b7949a004d2b7",
+    "packages/@agents/my-assistant/body/lib/sources.js": "612378a31676eb3bb9feaea98a003bb0c9498788867b1eef01ef4162da6f517a",
+    "packages/@agents/relay/body/routes.js": "0dd157f4a172025d80368cb5c3c6abd31cc8295e54c599090aac22bcfe7795d3",
+    "lib/team-chat/ticker.js": "800630425eac9efe7796b8eb138067b5338bb697424bd11c9c4a5aa95bb91bd0",
+    "lib/agent-x/x-source-live.js": "587c6d9d7b8505e25c37447f3678dbb3dd5555c2ee667930ebd47cef82ec3c24",
+    "lib/numerics-tier2/providers/xai-web-search-adapter.js": "a5e1aac63e6bfdf8d33ad55f5703d236465fedfc02db392b820788f591a02dc7",
+    "lib/agents/vega/tools/search-web.js": "d0f0012ec76131504b50eeda570a238a2751445ae26d43934674bf5da38fb450",
+    "lib/vega-coding/xai-provider.js": "9fa3c65f6ad729c8b9c0eab84004c5c64178dcb312c59706374293fc1ffb95f2",
+    "lib/vega-realtime.js": "be17aa0ae0e47319915d5e3e08d33c707898cd137c4dc49fe3836b40d49294b8",
+    "lib/proto/voice/realtime-body.js": "8eeb19a621fcdaaa726b647f0d5200a3db227cc8c832b6f4928ef9c35391a76f",
+    "lib/vega-grok-image.js": "7c62a7d00957176ce115a4cfb2f5c74a9d1bf041ffdf7cc9ffd62e9f6f1d863e",
+    "lib/proto/voice-body.js": "a433be0e41b3d1b3efc5cd8165ff07e51c207a68faf474b03910eb7d8b683d8a"
+  }
+}

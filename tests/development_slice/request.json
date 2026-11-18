@@ -1,0 +1,65 @@
+{
+  "contract_version": "0.2",
+  "profile": "initial_1a@1",
+  "task_id": "task.demo",
+  "task_class": "class.demo",
+  "step_class": "generic",
+  "step_id": "step.demo",
+  "step_revision": 1,
+  "execution_generation": "gen.1",
+  "purpose": "execution",
+  "requested_configuration_ref": "cfg.demo",
+  "requested_features": [
+    "text"
+  ],
+  "resolved_prompt": {
+    "prompt_id": "prompt.demo",
+    "prompt_version": "v1",
+    "block_ids": [
+      "block.system.1"
+    ],
+    "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+  },
+  "messages": [
+    {
+      "role": "system",
+      "blocks": [
+        {
+          "block_id": "block.system.1",
+          "kind": "system_text",
+          "text": "Answer briefly.",
+          "source_labels": {
+            "lineage_ids": [
+              "src.prompt.1"
+            ],
+            "sensitivity": "internal",
+            "restrictions": []
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "block_id": "block.user.1",
+          "kind": "content_text",
+          "text": "Hi",
+          "source_labels": {
+            "lineage_ids": [
+              "src.user.1"
+            ],
+            "sensitivity": "internal",
+            "restrictions": []
+          }
+        }
+      ]
+    }
+  ],
+  "generation_settings": {
+    "max_output_tokens": 32,
+    "temperature_decimal": "0",
+    "total_timeout_ms": 1000
+  },
+  "deadline": "2030-01-01T00:00:00Z"
+}

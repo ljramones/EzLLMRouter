@@ -1,0 +1,91 @@
+{
+  "title": "WP-B entry 02 source and comparison evidence",
+  "scope": "Review evidence only; no runtime or execution approval",
+  "repository_location": "docs/gateway/review-evidence-02/",
+  "copy_method": "Byte-for-byte copies; SHA-256 checked against prior receipts where available",
+  "files": [
+    {
+      "path": "SOURCE-INPUTS.zip",
+      "bytes": 81112925,
+      "sha256": "440c58e944b1c7eb4fdddce631d432911798610f5fb5e072a276e24c15127e65",
+      "role": "source transfer bundle",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/SOURCE-INPUTS.zip"
+    },
+    {
+      "path": "litellm-1.105.1.tar.gz",
+      "bytes": 20321773,
+      "sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+      "role": "PyPI source distribution, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/litellm-1.105.1.tar.gz"
+    },
+    {
+      "path": "litellm-source-d665dc1a6315847fcad6cc2c1264ceb47c06abce.tar.gz",
+      "bytes": 60605082,
+      "sha256": "c8891f518f909a3470ec7fd2722cc31b545375319d5f236bdeffa0538b17fd05",
+      "role": "commit source archive, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/litellm-source-d665dc1a6315847fcad6cc2c1264ceb47c06abce.tar.gz"
+    },
+    {
+      "path": "MANIFEST.json",
+      "bytes": 1325,
+      "sha256": "9c3b65e3beb2f124f1a8ab7db5888d51312393b25b3854754595535ef4ed79c0",
+      "role": "original source bundle manifest, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/MANIFEST.json"
+    },
+    {
+      "path": "ACQUISITION-RECEIPT.json",
+      "bytes": 6795,
+      "sha256": "f5f5ed35bd4fd9ec9086af80af674cfefb7923621d2cfe19c79ac786fb6a01ca",
+      "role": "original acquisition receipt, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/ACQUISITION-RECEIPT.json"
+    },
+    {
+      "path": "github-advisories.json",
+      "bytes": 64391,
+      "sha256": "2ad39d7b115d23fa3adf19d269503beb529df9c9b753abc369e933380743bd59",
+      "role": "original advisory metadata, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/github-advisories.json"
+    },
+    {
+      "path": "github-commit-v1.105.1.json",
+      "bytes": 57478,
+      "sha256": "202f38a7be923df0a86206e8ca9548d4b8c02b394d55759ae283455af13c75a3",
+      "role": "original commit metadata, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/github-commit-v1.105.1.json"
+    },
+    {
+      "path": "github-release-v1.105.1.json",
+      "bytes": 3416,
+      "sha256": "258e8e918d6cdf1efbe3287216eca14c882c7f9de790c75942b817f205a0a399",
+      "role": "original release metadata, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/github-release-v1.105.1.json"
+    },
+    {
+      "path": "pypi-litellm-1.105.1.json",
+      "bytes": 51589,
+      "sha256": "3bd44cfd7f6f27847d3abc0d9611d91be4a6507636b26256a86ff2a773ddc045",
+      "role": "original PyPI metadata, also inside SOURCE-INPUTS.zip",
+      "original_path": "/Users/larrymitchell/Downloads/duranki-litellm-source-8x82qovq/pypi-litellm-1.105.1.json"
+    },
+    {
+      "path": "archive-extraction-report.json",
+      "bytes": 744,
+      "sha256": "a275fb5f416c2080562894818fe5a3ccaf1838a4472353d24de7bc642d053e34",
+      "role": "raw archive path/type/link inspection record",
+      "original_path": "/private/tmp/duranki-wp-b-entry-02/run-20261017-01/archive-extraction-report.json"
+    },
+    {
+      "path": "source-comparison.json",
+      "bytes": 665128,
+      "sha256": "6f26ccd73a7c509bf6dd0e09579dea4aadf02dea3fe6744a08e40c77e182e9f1",
+      "role": "raw commit-versus-sdist comparison record",
+      "original_path": "/private/tmp/duranki-wp-b-entry-02/run-20261017-01/source-comparison.json"
+    }
+  ],
+  "prior_authored_documents_preserved": [
+    "docs/gateway/wp-b-entry-02/DURANKI-DEC13-GATEWAY-CANDIDATE-02.md",
+    "docs/gateway/wp-b-entry-02/DURANKI-WP-B-PROOF-SPEC-02.md",
+    "docs/gateway/wp-b-entry-02/DURANKI-WP-B-ENTRY-RETURN-02.json"
+  ],
+  "note": "The two tar.gz files and acquisition metadata are provided separately for convenient review and duplicate the members of SOURCE-INPUTS.zip. The raw comparison records were copied from the existing inspection run."
+}

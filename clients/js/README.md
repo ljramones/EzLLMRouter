@@ -1,0 +1,92 @@
+# CognitiveDynamics EzLLMRouter CommonJS client
+
+Package version **0.3.0** uses the CognitiveDynamics name. Existing wire and
+accounting contracts remain compatible. Historical release numbers below
+describe when each capability was introduced.
+
+## External accounting integration (0.2.3)
+
+Node `>=24.22.1 <25` is supported, matching the inspected Vega platform Node 24
+declaration. The [v2 contract](../../docs/contracts/integration-readiness-v2/CONTRACT.md)
+and [examples](../../docs/contracts/integration-readiness-v2/examples.json) define
+the successor event shapes. Install the private `0.3.0` tarball locally. No hosted
+registry or provider SDK is needed.
+
+Configure `baseUrl` from a trusted service origin, never from a model result or
+other untrusted input. The client accepts only an HTTP(S) origin without a path,
+credentials, query or fragment. It requests `Accept-Encoding: identity`; the
+EzLLMRouter service and any trusted proxy must not send Brotli-compressed responses.
+Node's built-in `fetch` can decode a response before application code sees it,
+so this header alone is not a defense against an untrusted server. Keep the
+selected runtime at or above the fixed Node 24.22.1 patch level.
+
+```js
+const {IntegrationClient} = require("@cognitivedynamics/ezllmrouter-client");
+const client = new IntegrationClient("http://127.0.0.1:48760", ingestToken, {version:"2"});
+const eligibility = await client.eligibility(datasetId, accountId, modelId);
+const receipt = await client.submitObservation(event); // one HTTP delivery, no model call
+const recovered = await client.recoverReceipt(datasetId, event.event_id);
+const stored = await client.submitSnapshot(featureSnapshot);
+const snapshot = await client.snapshot(datasetId, featureSnapshot.snapshot_id);
+```
+
+`createDataset`, `registerAccount`, `setAccountState` and `report` are
+available to an appropriately authenticated owner administrator. A normal
+ingest credential can submit observations and read its receipts/eligibility;
+it cannot administer accounts or read reports. The client never retries a
+request automatically. If delivery has an unknown transport outcome, read the
+receipt first and then redeliver the **same** event ID/body only if absent.
+An actual model retry requires a distinct attempt ID and belongs to the
+platform executor, not this transport client.
+V2 owner/report principals can call `exportDataset(datasetId)`; the service
+returns included events, selected action and referenced eligibility/snapshot
+evidence. Construct with `{version:"1"}` or omit the option to use the preserved
+v1 route and event schema against the new service. Real captured features
+require owner policy adoption; the default release accepts synthetic low-class
+snapshots only.
+
+In the corrected v2 service, `report(datasetId)` returns `usage_state` separately
+from `cost_status`. It also returns a server `eligibility_assessment` separately
+from the caller's `eligibility_evidence_status`. A same-second ordering tie is
+`indeterminate`; it is not proof of a verified selection. Snapshot and lineage
+`binding_conflict` labels preserve older inconsistent observations without
+claiming their references are valid. `exportDataset(datasetId)` includes
+`eligibility_assessments` and `snapshot_reference_assessments` beside immutable
+events. The client returns these fields without changing or retrying the work.
+
+Version 0.0.3 adds versioned attribution-run and outcome operations while
+retaining the strict wire-0.2 submission body. The client talks only to the
+EzLLMRouter service. It does not call a provider directly.
+
+```js
+const { EzLLMRouterClient } = require("@cognitivedynamics/ezllmrouter-client");
+const client = new EzLLMRouterClient({ baseUrl: "http://service:8765", token });
+const run = await client.startRun({
+  version: "1", run_id: "run.example.1", task_id: request.task_id,
+  task_class: request.task_class, evaluation_ref: "rubric.example.v1",
+  mode: "user_delegated_agent", agent_id: "agent.registered",
+  agent_version: "v1", initiating_user_id: "user.authorized",
+});
+const reply = await client.submitInRun(request, run.run_id, { wait_ms: 3000 });
+
+const child = await client.startRun({
+  version: "1", run_id: "run.example.child", task_id: request.task_id,
+  task_class: request.task_class, evaluation_ref: "rubric.example.v1",
+  mode: "nested_agent", agent_id: "agent.child", agent_version: "v1",
+  parent_run_id: run.run_id,
+});
+```
+
+Use `direct_human` with a human credential and no agent fields. Use
+`autonomous_agent` with a registered agent/version and no initiating user.
+Runs do not grant access by themselves; the server checks caller, delegation,
+owner and model permission before each send.
+
+An explicitly authorized evaluator uses `reportOutcome(event)` for a versioned
+task or step verdict. `getOutcomeReceipt(eventId)` recovers a lost receipt
+without writing or sending again. Repeated identical events return the same
+receipt; a changed event with the same ID conflicts.
+
+## Speech-operation eligibility (integration v3)
+
+Release `0.2.4` adds `version: "3"` for the [v3 speech contract](../../docs/contracts/integration-readiness-v3/CONTRACT.md). `operationEligibility(datasetId, accountId, {operation_family, capability, selection_kind, model_id?})` reads a digest-bound decision. Use `selection_kind: "provider_selected"` only when the actual speech request omits a model selector and the provider may choose it; `not_applicable` requires independent knowledge that no model identity applies. `setAccountPermissions(accountId, {dataset_id, expected_revision, allowed_models, allowed_operations})` is an owner/admin operation. Empty permission lists deny new selection. Existing v1/v2 methods remain version-specific. Telemetry delivery never authorizes repeating a provider call.

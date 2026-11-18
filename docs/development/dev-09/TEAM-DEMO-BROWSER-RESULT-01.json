@@ -1,0 +1,131 @@
+{
+  "desktop_layout": {
+    "chartBottom": 916.390625,
+    "chartTop": 755.53125,
+    "overflow": 0,
+    "timelineBottom": 747.53125,
+    "timelineTop": 454.53125,
+    "viewport": 913,
+    "width": 1440
+  },
+  "expanded_attempts": 33,
+  "expanded_usd": "1.39",
+  "fixture": "dev09-team-scripted-cost-demo-v2",
+  "legacy_usd": "0.46",
+  "narrow_layout": {
+    "chart": true,
+    "inspector": true,
+    "overflow": 0,
+    "selectors": 5,
+    "width": 900
+  },
+  "requests_during_demo": [
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.brant"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.brant&actor=demo.agent.patton"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.andrew&actor=demo.agent.patton"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team&person=demo.user.andrew"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=andrew_direct"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=scheduled_intelligence"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=legacy&story=main"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=legacy&story=all"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=expanded&story=expanded_all"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=team"
+    },
+    {
+      "method": "GET",
+      "url": "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
+    }
+  ],
+  "scope": "disposable authenticated Chrome, temporary SQLite, no model worker",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-01-oren-focused-timeline-cost.png",
+      "sha256": "ccd6357b9042b34dca7813828f70adc5a9f409da9ff6e796e20750a5325294b4"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-01-selected-vega-inspector.png",
+      "sha256": "395710ac6c6ab335bf7a667b1213745e6ee1d5a34bcb0597584ec3fe66b259ec"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-01-team-overlap-cost-65s.png",
+      "sha256": "45a9ee74d02d7c7e4b25d53c4b6a7465df4d2a40545ce54b643377d2affa503a"
+    },
+    {
+      "path": "docs/development/dev-09/screenshots/dev09-team-01-narrow-layout.png",
+      "sha256": "73f4753b1003398b05f3e9639313305d1268cb92b2e19f20d66ee41d25c4cbdb"
+    }
+  ],
+  "source_sha256": {
+    "server/src/duranki_server/demo_workspace_team.py": "9a23f0b0572528126dda6c2403172bf9170439f2114e1b50e3d30016c2477c46",
+    "server/src/duranki_server/operator_web.py": "af4e87d36464360b463eef31941bb822b5c72a88cbed6934fc114be536ee8768",
+    "web/app.css": "c166e6d981d5c9bbed4b21be6fe2a6a7009267833ec6eacca8b146d55060d389",
+    "web/demo_workspace_team_view.js": "014dd715b05c0afb670aa3b3b07ac8103a3f2b197be3f47fc0db0afeb1d4a35a",
+    "web/dev09_demo_fixture.json": "eae0c2a655aa8ebd8e30d473b7e2e07ed78bceeb040632d5b145048443d3bb61",
+    "web/dev09_team_demo_fixture.json": "5d47e3f81759c4f8b8a268b76b67e25c12a370855276b49337130991630b5249"
+  },
+  "speed_observation_seconds": {
+    "four_x": {
+      "delta": 3.8852000000029805,
+      "elapsed": 0.971300000000745
+    },
+    "one_x": {
+      "delta": 1.979199999999255,
+      "elapsed": 1.9791999999992549
+    }
+  },
+  "status": "PASS",
+  "team_usd": "1.25",
+  "traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 9,
+      "submissions": 10
+    }
+  }
+}

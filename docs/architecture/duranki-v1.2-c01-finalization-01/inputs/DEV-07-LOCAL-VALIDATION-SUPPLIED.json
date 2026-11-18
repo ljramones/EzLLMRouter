@@ -1,0 +1,80 @@
+{
+  "kind": "DEV-07 local validation and owner synthetic target",
+  "date": "2026-10-21",
+  "branch": "dev07/model-access-registries-20261021",
+  "first_source_checkpoint": "b2acc8f54d4db956f315ea3dee5c0ae6fd31f70c",
+  "running_profile_observation": {
+    "commit": "150127a37e953ee255d0dcd8b831f6c72e18c2f7",
+    "existing_submissions": 7,
+    "basis": "historical pre-upgrade DEV-06 audit and restart evidence"
+  },
+  "local_checks": [
+    {
+      "command": "python3.12 -m unittest discover -s tests/operator_console",
+      "exit": 0,
+      "tests": 46,
+      "level": "component and local loopback HTTP"
+    },
+    {
+      "command": "python3.12 -m unittest discover -s tests/development_slice -p test_core.py",
+      "exit": 0,
+      "tests": 22,
+      "level": "existing Coordinator core regression"
+    },
+    {
+      "command": "node --check web/app.js; node --check tests/gateway_integration/dev07_actor.cjs",
+      "node_version": "24.19.0",
+      "exit": 0,
+      "level": "syntax only"
+    },
+    {
+      "command": "python3.12 -m py_compile deploy/local/profile.py deploy/local/prepare.py deploy/local/dev07_run.py tests/gateway_integration/dev07_target_preflight.py tests/gateway_integration/dev07_actor.py",
+      "exit": 0,
+      "level": "syntax only"
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "level": "whitespace"
+    }
+  ],
+  "staging_checkpoint": {
+    "commit": "b2acc8f54d4db956f315ea3dee5c0ae6fd31f70c",
+    "fingerprint": "6ca5f9737c47a8357e755755d254a919763388191099fe5289605367374aa3af",
+    "exit": 0,
+    "gateway_wheels_verified": 117,
+    "note": "historical first checkpoint; final running source is recorded in target"
+  },
+  "target": {
+    "status": "PASS",
+    "evidence": "private deploy/local/.state/dev07-runs/dev07-20261021-01/result.json",
+    "source_commit": "7ead951b47c0bcebd0b25f174e0de685851ec5e2",
+    "source_fingerprint": "53702db06f40a3c3c51b742818ae27e5018c50a526be70b22ee2abcf1dea2040",
+    "preexisting_submissions": 7,
+    "receiver_before": 7,
+    "receiver_after": 20,
+    "new_receiver_requests": 13,
+    "independent_receiver_correlations": 13,
+    "caller_lookups": 1,
+    "real_pool_revocation_cases": 3,
+    "queued_first_acceptance_events_each": 0,
+    "ordinary_restart_exit": 0,
+    "revoked_grant_after_restart": true,
+    "failure_record_present": false,
+    "post_run_console_http_status": 200,
+    "browser": "pending owner observation"
+  },
+  "catalogue_continuation": {
+    "seed_sha256": "3a185d480e0c4552fab7a6a8c391a818f31db2a29676ee743ec3aaa93b5f476b",
+    "researched_entries": 12,
+    "execution_state": "catalogued_not_connected",
+    "owner_identity": "owner.local / Larry Mitchell",
+    "other_human_roster": "none supplied; no other real human registered",
+    "local_operator_tests": 50,
+    "existing_core_tests": 22,
+    "node_display_regression": "PASS",
+    "target_import_and_screenshots": "pending owner Terminal run",
+    "existing_dev07_target_preserved": true
+  },
+  "artifact_custody": "same-machine frozen artifact root; no off-machine copy claimed"
+}

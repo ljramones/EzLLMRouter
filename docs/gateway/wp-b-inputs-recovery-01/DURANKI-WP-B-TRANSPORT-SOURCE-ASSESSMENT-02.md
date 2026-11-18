@@ -1,0 +1,38 @@
+# WP-B Transport Source Assessment 02
+
+**Status:** static source assessment of four acquired inspection candidates; B-01–B-09 remain `NOT_RUN`. This supersedes the earlier `NOT_ACQUIRED/NOT_INSPECTED` observation for these four archives only. It does not adopt these versions as the runtime lock or qualify final-send control.
+
+## Exact input and file receipts
+
+The run-40 packet and sidecar verify at SHA-256 `1cca3b26fe9850d3fdb1b000d9937146c9aff10bf9c3a1971f1149551aad6a67` and `8988ddca74afaea8b1578ec94f3d2f796d08bd836eafeae84122e481626c9b73`. Its four inert source archives were checked for member paths, types and links before selected files were read. None of the four archives was imported or executed. The archive SHA-256 values are OpenAI 2.33.0 `f850c435e2a4685bba3295bd54912dd26315d9c1b7733068186134d6e0599f9a`, HTTPX 0.28.1 `75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc`, httpcore 1.0.9 `6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8`, and AnyIO 4.14.2 `cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f`.
+
+| Exact archive member | Full-file SHA-256 | Relevant lines |
+|---|---|---|
+| `openai-2.33.0/src/openai/_base_client.py` | `3ff1f84c4fd76d5cc0abb9e279da67265cada89b3beaf91a70cb053229a5622c` | 480–586, 1535–1553, 1584–1710, 1712–1724, 1726–1792 |
+| `openai-2.33.0/src/openai/_client.py` | `8df27dfc77f9261620cb5f328641aa330807868eee37376d6f48f92531bdca01` | inspected as client context; no final-write claim |
+| `httpx-0.28.1/httpx/_client.py` | `c43f941baefe58c91e96d00039e1868fe719d91453026d7db1647194563bff8d` | 1474–1483, 1594–1643, 1679–1739 |
+| `httpx-0.28.1/httpx/_transports/default.py` | `03379a454c95c0271c4f2c8d25ec437f49f57457f3cf2769748420bf0ecf2e79` | 279–359, 374–403 |
+| `httpcore-1.0.9/httpcore/_async/connection_pool.py` | `0ce210dacd9909ff6a7f0c61ccca6b4cf2ea08bf0ec465e2285eaa447c6f5726` | 48–114, 199–268 |
+| `httpcore-1.0.9/httpcore/_async/connection.py` | `e8e70f5ea3047dcd01537f3ffa21d4343775bca4937365154f4f57a8d6ff04e9` | 72–103, 105–145 |
+| `httpcore-1.0.9/httpcore/_async/http11.py` | `faa33d6d5ecf8d2405e6fc6cdfbf9e5173881706c88cf7196cd962b97f53b41c` | 65–103, 140–166 |
+| `httpcore-1.0.9/httpcore/_trace.py` | `724e99a08cd84e474d0087eae4c19e2aa0570edaa3397faa7d8c266456eb19ca` | 69–107 |
+| `httpcore-1.0.9/httpcore/_backends/anyio.py` | `c7c3e01215d10bc6d5aac77393f609c7c63a77d4ee6f4e82b944b09db9adaa86` | 21–54 |
+| `anyio-4.14.2/src/anyio/_backends/_asyncio.py` | `78ad23f0f2343bbcb76d7f1c501b1a7e858ff30b1747eb333fa722c8fe0c9249` | 1364–1382 |
+
+The generated evidence packet contains the full-file manifest and numbered excerpts. Full archive bytes remain in the preserved owner packet.
+
+## Actual selected-source path and control gap
+
+OpenAI's async loop builds an HTTPX request from merged options, headers, URL and serialized body (`_base_client.py:480–586,1611–1617`), then sends it through the supplied HTTPX client (`1546–1553,1629–1634`). SDK timeout exceptions retry while allowance remains; generic exceptions also retry; `OpenAIError` propagates without SDK retry (`1635–1665`). Retryable response statuses loop after closing/reading as required (`1677–1700`); the SDK can parse after the send returns (`1702–1710,1726–1792`). A guard denial must therefore use an explicit nonretryable error mapping or disable this SDK retry authority, and **every** allowed retry needs a new signed attempt, FDC check and durable intent. A reused SDK idempotency key (`1602–1605`) is not a fresh attempt authorization.
+
+HTTPX request hooks run before each single-request transport call (`_client.py:1679–1694`). HTTPX can select a mount/proxy transport by URL (`1474–1483,1717–1730`), generate redirects (`1701–1715`), and read a nonstreamed body after the transport returns (`1594–1643`). The default async transport maps the request's raw method, URL, headers, stream and extensions into httpcore (`_transports/default.py:374–403`). Its constructor chooses a pool or proxy (`279–359`). Thus a request hook or a guard outside the selected transport does not prove final immutable bytes, route exclusivity or no later redirect.
+
+Httpcore queues and may await pool assignment before a connection call (`connection_pool.py:199–256`); a connection may await connect/TLS and select HTTP/1.1 or HTTP/2 (`connection.py:72–103,105–145`). HTTP/1.1's trace callback starts before header emission, while the actual h11 bytes are written later (`http11.py:65–103,140–166`; `_trace.py:69–107`). The trace callback is observational/version sensitive; it is not an exclusive send gate. AnyIO's stream write goes through a per-write timeout and `send` (`_backends/anyio.py:39–50`), whose implementation awaits a cancellation checkpoint **before** calling `_transport.write`, then waits for flow control (`anyio/_backends/_asyncio.py:1364–1382`). An earlier FDC check can become stale across those waits. A trace callback alone cannot prove no first write after cancellation/revocation.
+
+## Proposed out-of-tree B1 mechanism and DEC-09 limit
+
+Retain the selected LiteLLM `litellm.aclient_session`/OpenAI SDK HTTPX-client injection hypothesis from [Entry 02](../wp-b-entry-02/DURANKI-DEC13-GATEWAY-CANDIDATE-02.md). The future wrapper should bind an authenticated request context before the selected route, reject missing/mismatched context, allow only one prepared nonstreaming request for a fresh signed attempt, freeze and compare final method/URL/headers/body and controls, append and `fsync` intent, then delegate through a custom HTTPX `AsyncBaseTransport` with redirects, proxy mounts, SDK auto-retry and alternate LiteLLM HTTP handlers either disabled or explicitly intercepted per attempt. This is an out-of-tree candidate at a supported HTTPX transport seam; it is **not** yet a first-write proof.
+
+A lower network-write gate would have to revalidate under one per-attempt authority immediately before the first actual write, after pool/connect/TLS waits and any cancellation checkpoint, and guarantee that no other enabled transport can reach the receiver. The inspected supported HTTPX transport and httpcore trace surfaces alone do not establish an atomic no-wait guard-to-write boundary. Httpcore exposes a `network_backend` constructor argument (`connection_pool.py:48–114`), but HTTPX's stock transport does not expose that argument (`default.py:279–359`), and an out-of-tree backend still must prove its exact write/cancellation semantics. **DEC-09 question:** can a bounded, out-of-tree custom transport/backend and independent receiver prove exclusive actual-write interception for this release, or is a thin admission/send layer or alternative gateway required? No vendor patch or product switch is selected here.
+
+B1 must capture final raw prepared bytes/control hashes at the selected transport, principal/context propagation through spawned tasks, every retry and redirect, lower wait/revocation/cancellation injection, total deadline through full response consumption, original exception/cause mapping, durable intent before receiver arrival, receiver sequence plus socket/egress observation, and positive controls before/after negative cases. A five-second post-drain negative observation bounds only that test window. Synthetic source inspection is not runtime evidence. The selected route still excludes streaming, automatic Responses conversion, alternate custom handler and TypeSafe passthrough; an enabled bypass fails B-08. Any later lock that selects a different OpenAI/HTTPX/httpcore/AnyIO version needs an exact-version source and behavior review before B1. All B-01 through B-09 remain `NOT_RUN`; WP-B/B1 and WP-C remain `NOT_ISSUED`.

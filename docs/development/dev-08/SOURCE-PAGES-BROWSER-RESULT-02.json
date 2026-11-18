@@ -1,0 +1,59 @@
+{
+  "back_and_reload": "PASS",
+  "blocked_grant_groups": [
+    {
+      "label": "Synthetic test fixtures",
+      "options": [
+        "Legacy synthetic demo \u00b7 permitted \u00b7 cfg.demo"
+      ]
+    },
+    {
+      "label": "Provider / OpenAI / Controlled TLS fixture (conn.dev08-controlled)",
+      "options": [
+        "Controlled Responses text \u00b7 blocked; removal only \u00b7 cfg.provider.dev08-controlled"
+      ]
+    }
+  ],
+  "model_traffic_before_after": {
+    "after": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    },
+    "before": {
+      "guard_dispatches": 0,
+      "intents": 0,
+      "submissions": 0
+    }
+  },
+  "routes": [
+    "#/providers/openai/connections/conn.dev08-controlled",
+    "#/private-hosting/conn.private-example",
+    "#/office-labs/Office%20lab%20A"
+  ],
+  "scope": "disposable browser/SQLite; synthetic credential; zero inference",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-08/screenshots/source-pages-02-provider-source-models.png",
+      "sha256": "c8b79468c5e133e3b15eac2e54cde86bfaadbf82642c96d31b2c204143a4aade"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/source-pages-02-provider-disallowed.png",
+      "sha256": "6da2584324ba053118cf744dc2bd6be61abb6d3440badff3961dc3e891a5e476"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/source-pages-02-private-installation.png",
+      "sha256": "3fb2d40739f1cf3857af78e2f3fc59b2fccd4d06628e5fb12dfbbfdf56095d17"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/source-pages-02-office-lab-supported.png",
+      "sha256": "33e16d59ee5ee93709bf5f6c14f3aa7cd7bf923ac812c3a7c24f8add42acab5c"
+    },
+    {
+      "path": "docs/development/dev-08/screenshots/source-pages-02-blocked-grant-picker.png",
+      "sha256": "783c0b9207e6c429f959de111ac6b9b524ab4a4e49983b8aa84d5b6cbfd44a36"
+    }
+  ],
+  "source_disallow_reason": "SOURCE_MODEL_DISALLOWED",
+  "status": "PASS"
+}

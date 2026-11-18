@@ -1,0 +1,71 @@
+{
+  "status": "PASS_DOCUMENT_DELTA_CHECKS",
+  "review03_sha256": "867c1a7635bac5e4cca56a957aebe95f47b31c3936b8664ca61d6001719a550f",
+  "changed_architecture_sections": [
+    "header",
+    "5.3",
+    "5.4",
+    "9.4",
+    "16",
+    "16.1"
+  ],
+  "unchanged_sections": 100,
+  "original_input_copies_unchanged": 26,
+  "register": {
+    "parent_and_alias_ids": 87,
+    "canonical_parents": 86,
+    "retired_aliases": 1,
+    "subcases": 73,
+    "added": [
+      "T-07.a",
+      "T-14.a"
+    ],
+    "amended": [
+      "T-46.b",
+      "T-79.c"
+    ],
+    "rounding_extension": "T-48.g",
+    "unqualified_parent_passes": 0
+  },
+  "tariffs": {
+    "original_vector_data_preserved": true,
+    "tariff_a_domain_cases": 25,
+    "tariff_b_domain_cases": 25,
+    "split_settled_usd": "0.000900000",
+    "batch_settled_usd": "0.000900002"
+  },
+  "active_markdown_links_checked": 47,
+  "manifest_payloads_verified": null,
+  "product_tests_run": 0,
+  "provider_requests": 0,
+  "scope": "Document consistency, exact identities, source-record integrity and fictional arithmetic only; not independent closure, owner adoption or runtime qualification.",
+  "validation_date": "2026-10-25",
+  "input_package": {
+    "path": "DURANKI-v1.2-CORRECTION-01-REVIEW-PACKAGE.zip",
+    "sha256": "de390713f284a9316b55fa1508e491cdc81c1b4e0c85eeb5fcbeace2b65da312",
+    "bytes": 586443,
+    "manifest_payloads_verified_before_authoring": 37
+  },
+  "evidence_supplement": {
+    "parent_rows_with_added_observations": 17,
+    "status": "PARTIAL_DEV05_TO_DEV10_MAPPING",
+    "pending": "Final DEV-08/09/10 primary results and later DEV-07 closure; exact capture list included.",
+    "DEV05_archive_payload_hashes_verified": {
+      "source": 76,
+      "runtime": 431
+    }
+  },
+  "limits": [
+    "No independent closure or owner adoption claimed",
+    "No exact successor schema/vector implementation",
+    "No product runtime or provider tests",
+    "No Git, deployment, credential, financial or Vega actions",
+    "All four core new/amended subcases remain unexecuted"
+  ],
+  "authored_check_note": "An initial verifier run used alias_of rather than the actual existing canonical_id field. The verifier lookup was corrected; no register alias data was changed to satisfy it.",
+  "validation_phase": "Pre-manifest document checks; final package receipt records the closed manifest and ZIP verification.",
+  "word_counts_python_unicode_split": {
+    "predecessor_C01": 20389,
+    "C01_E01": 21041
+  }
+}

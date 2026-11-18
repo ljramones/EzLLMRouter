@@ -1,0 +1,10 @@
+**
+!Dockerfile.gateway
+!Dockerfile.tools
+!.dockerignore
+!requirements-build.lock
+!requirements-runtime.lock
+!artifacts/
+!artifacts/**
+!harness/
+!harness/**

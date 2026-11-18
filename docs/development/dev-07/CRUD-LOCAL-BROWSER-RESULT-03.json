@@ -1,0 +1,54 @@
+{
+  "confirmed_dialogs": [
+    "unsaved cancellation",
+    "model archive",
+    "identity revocation"
+  ],
+  "crud_source_sha256": "547250b5a16298510e0a5dee3a5fb4c81feb46df3cc26e9ad3bd56b9dc4328b9",
+  "grant_status_after_reopen": "removed",
+  "keyboard_tab": "passed",
+  "model": "catalogue.operator.crud-local-proof-03",
+  "model_status_after_reopen": "archived",
+  "price_snapshots": [
+    "test.reference.v1",
+    "test.reference.v2"
+  ],
+  "registry_source_sha256": "5647c6bcbf10b8e6944bbc08ebebf348a1c055b26fe307aa9f206296fee6e792",
+  "scope": "temporary SQLite and actual local headless Chrome; target profile pending",
+  "screenshots": [
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-model-created.png",
+      "sha256": "be596ba84c2de03f4a8838dd09e1649024e336f9ad43f102d9167fcda672683e"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-model-edited-and-repriced.png",
+      "sha256": "1bfc7ff7fe528e21ea11ca2ba3284dec50d5566769b273639e38283b592c90e0"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-model-archived.png",
+      "sha256": "ddd0ca806d31dd2b74afb6158ec849d45e0e28e2a241de9f0086eb43aab72dc1"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-user-created.png",
+      "sha256": "457c1ff23465c283cf35b7d3e2c9de7c32c491e01b81ad04342428009dc1bc0f"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-user-granted.png",
+      "sha256": "613e3353351e7abe7e0f0d39e496660d4c0894e480039e2ea73994cc950bd436"
+    },
+    {
+      "path": "docs/development/dev-07/screenshots/crud-local-03-user-revoked.png",
+      "sha256": "f602995301f7a138556e9800c1151fcc9f273c552e5639c4b558277dd35c6b0b"
+    }
+  ],
+  "sign_out_http": 401,
+  "status": "PASS",
+  "traffic_before_after": {
+    "caller_lookups": 0,
+    "guard_dispatches": 0,
+    "intents": 0,
+    "submissions": 0
+  },
+  "user": "user.crud-local-proof-03",
+  "user_status_after_reopen": "revoked"
+}

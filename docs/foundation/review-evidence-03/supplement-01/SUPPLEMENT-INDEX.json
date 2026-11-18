@@ -1,0 +1,384 @@
+{
+  "schema_version": "1.0",
+  "scope": "FND-R03-E01 existing-evidence supplement under independent review section 7",
+  "classification": "SUPPLEMENT_INDEX_DERIVED_FROM_ORIGINAL_RECORDS",
+  "review_source": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-WP-FND-R03-INDEPENDENT-REVIEW-01.md",
+    "sha256": "1e25b1941f04d6c2ae3043464b070bddf6965eeb58d722ef45e4f76570ac3405"
+  },
+  "validation_source": {
+    "path": "/Users/larrymitchell/Downloads/DURANKI-WP-FND-R03-INDEPENDENT-VALIDATION-01.json",
+    "sha256": "3b4a407ce2f8fae4cc2972676ba80feace56ef70aa52e6de17e5eaa3dccf1540"
+  },
+  "original_run": "/private/tmp/duranki-fnd-01/run-20261016-03",
+  "session_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+  "session_line_copies": [
+    {
+      "label": "build-a-server-sdist",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2428,
+      "session_ordinal": 2427,
+      "timestamp_utc": "2026-10-17T02:09:55.592Z",
+      "copy_path": "original-session-events/build-a-server-sdist.jsonl",
+      "sha256": "08e45f16f3ea0d4d073bd9ab01568c933618e2b54ca55f8c51cf740920f92c69",
+      "bytes": 3125,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/env -i HOME=/private/tmp/duranki-fnd-01/run-20261016-03/home TMPDIR=/private/tmp/duranki-fnd-01/run-20261016-03/tmp XDG_CACHE_HOME=/private/tmp/duranki-fnd-01/run-20261016-03/cache UV_CACHE_DIR=/private/tmp/duranki-fnd-01/run-20261016-03/build-a/uv-cache UV_OFFLINE=1 UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin:/usr/sbin:/sbin /opt/homebrew/Cellar/uv/0.13.1/bin/uv build /Users/larrymitchell/Mach33/Duranki/server --sdist --out-dir /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server --python /opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12 --no-index --offline --no-python-downloads --no-config --no-create-gitignore --verbose"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "combined_output": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /Users/larrymitchell/Mach33/Duranki/server\nDEBUG Adding root workspace member: /Users/larrymitchell/Mach33/Duranki/server\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `server`\nBuilding source distribution...\nDEBUG Adding content files to source distribution\nDEBUG Source root: server/src\nDEBUG Module path: duranki_server\nDEBUG Source distribution includes: [\"pyproject.toml\", \"src/duranki_server/**\"]\nDEBUG Source dist excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding directory: mach33_duranki_server-0.0.0/\nDEBUG Adding to sdist: src/duranki_server/__init__.py\nDEBUG Adding directory: mach33_duranki_server-0.0.0/src\nDEBUG Adding directory: mach33_duranki_server-0.0.0/src/duranki_server\nDEBUG Visited 5 files for source dist build\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    },
+    {
+      "label": "failed-direct-sdist-wheel",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2434,
+      "session_ordinal": 2433,
+      "timestamp_utc": "2026-10-17T02:09:58.474Z",
+      "copy_path": "original-session-events/failed-direct-sdist-wheel.jsonl",
+      "sha256": "122df424035c94037ea8f6a37a97ef9366361f813932cd377fab7f8d2ea0e8df",
+      "bytes": 3706,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/env -i HOME=/private/tmp/duranki-fnd-01/run-20261016-03/home TMPDIR=/private/tmp/duranki-fnd-01/run-20261016-03/tmp XDG_CACHE_HOME=/private/tmp/duranki-fnd-01/run-20261016-03/cache UV_CACHE_DIR=/private/tmp/duranki-fnd-01/run-20261016-03/build-a/uv-cache UV_OFFLINE=1 UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin:/usr/sbin:/sbin /opt/homebrew/Cellar/uv/0.13.1/bin/uv build /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz --wheel --out-dir /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server --python /opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12 --no-index --offline --no-python-downloads --no-config --no-create-gitignore --verbose"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 2,
+      "combined_output": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Not using `uv_build` direct build for `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz` because its `pyproject.toml` failed to parse: failed to open file `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz/pyproject.toml`: Not a directory (os error 20)\nBuilding wheel from source distribution...\nDEBUG Using base executable for virtual environment: /opt/homebrew/opt/python@3.12/bin/python3.12\nDEBUG Resolving build requirements\nDEBUG Solving with installed Python version: 3.12.15\nDEBUG Solving with target Python version: >=3.12.15\nDEBUG Adding direct dependency: uv-build>=0.13.1, <0.13.1+\nDEBUG Searching for a compatible version of uv-build (>=0.13.1, <0.13.1+)\nDEBUG No compatible version found for: uv-build\nerror: Failed to build `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz`\n  cause: Failed to resolve requirements from `build-system.requires`\n  cause: No solution found when resolving: `uv-build==0.13.1`\n  cause: Because uv-build was not found in the provided package locations and you require uv-build==0.13.1, we can conclude that your requirements are unsatisfiable.\n\nhint: Packages were unavailable because index lookups were disabled and no additional package locations were provided (try: `--find-links <uri>`)\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    },
+    {
+      "label": "failed-first-extraction-attempt",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2446,
+      "session_ordinal": 2445,
+      "timestamp_utc": "2026-10-17T02:10:05.264Z",
+      "copy_path": "original-session-events/failed-first-extraction-attempt.jsonl",
+      "sha256": "a70ca10c35be4e115a6215d006f237cfa336d3d71fcd4f1aa77611f40fb1ba8d",
+      "bytes": 2142,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/python3 -B - <<'PY'\nfrom pathlib import Path\nimport tarfile\np=Path('/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz')\nout=Path('/private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server')\nout.mkdir()\nwith tarfile.open(p,'r:gz') as t:\n names=set()\n for m in t.getmembers():\n  q=Path(m.name)\n  if q.is_absolute() or '..' in q.parts or m.name in names or not (m.isdir() or m.isfile()):raise SystemExit('unsafe member '+m.name)\n  names.add(m.name)\n  if q.parts[0]!='mach33_duranki_server-0.0.0':raise SystemExit('unexpected root')\n t.extractall(out,filter='data')\nprint('members',len(names),'unpacked',out)\nPY"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 1,
+      "combined_output": "Traceback (most recent call last):\n  File \"<stdin>\", line 13, in <module>\nTypeError: extractall() got an unexpected keyword argument 'filter'\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    },
+    {
+      "label": "successful-server-sdist-extraction",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2453,
+      "session_ordinal": 2452,
+      "timestamp_utc": "2026-10-17T02:10:08.270Z",
+      "copy_path": "original-session-events/successful-server-sdist-extraction.jsonl",
+      "sha256": "779eb79186ccc917b75e0fa81dd1ecce90c3b905e72c9d81992d4b456089d965",
+      "bytes": 2656,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/python3 -B - <<'PY'\nfrom pathlib import Path\nimport tarfile,shutil\np=Path('/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0.tar.gz')\nout=Path('/private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server')\nif any(out.iterdir()):raise SystemExit('extraction collision')\nwith tarfile.open(p,'r:gz') as t:\n members=t.getmembers();names=set()\n for m in members:\n  q=Path(m.name)\n  if q.is_absolute() or '..' in q.parts or m.name in names or not (m.isdir() or m.isfile()):raise SystemExit('unsafe member '+m.name)\n  names.add(m.name)\n  if q.parts[0]!='mach33_duranki_server-0.0.0':raise SystemExit('unexpected root')\n for m in members:\n  target=out/m.name\n  if m.isdir():target.mkdir(parents=True,exist_ok=True)\n  else:\n   target.parent.mkdir(parents=True,exist_ok=True)\n   with t.extractfile(m) as src,target.open('xb') as dst:shutil.copyfileobj(src,dst)\nprint('members',len(names),'unpacked',out)\nPY"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "combined_output": "members 7 unpacked /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    },
+    {
+      "label": "build-a-server-wheel",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2459,
+      "session_ordinal": 2458,
+      "timestamp_utc": "2026-10-17T02:10:10.829Z",
+      "copy_path": "original-session-events/build-a-server-wheel.jsonl",
+      "sha256": "8cd5fa21a819a500195789be42e469f16dd3c5de53fd2db9834132476c9b50a4",
+      "bytes": 3421,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/env -i HOME=/private/tmp/duranki-fnd-01/run-20261016-03/home TMPDIR=/private/tmp/duranki-fnd-01/run-20261016-03/tmp XDG_CACHE_HOME=/private/tmp/duranki-fnd-01/run-20261016-03/cache UV_CACHE_DIR=/private/tmp/duranki-fnd-01/run-20261016-03/build-a/uv-cache UV_OFFLINE=1 UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin:/usr/sbin:/sbin /opt/homebrew/Cellar/uv/0.13.1/bin/uv build /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server/mach33_duranki_server-0.0.0 --wheel --out-dir /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server --python /opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12 --no-index --offline --no-python-downloads --no-config --no-create-gitignore --verbose"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "combined_output": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server/mach33_duranki_server-0.0.0\nDEBUG Adding root workspace member: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server/mach33_duranki_server-0.0.0\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server/mach33_duranki_server-0.0.0`\nBuilding wheel...\nDEBUG Writing wheel at `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0-py3-none-any.whl`\nDEBUG Wheel excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding content files to wheel\nDEBUG Source root: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-server/mach33_duranki_server-0.0.0/src\nDEBUG Module path: duranki_server\nDEBUG Adding to wheel: duranki_server/__init__.py\nDEBUG Adding directory: duranki_server\nDEBUG Visited 2 files for wheel build\nDEBUG Adding metadata files to wheel\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/server/mach33_duranki_server-0.0.0-py3-none-any.whl\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    },
+    {
+      "label": "original-ab-driver",
+      "classification": "ORIGINAL_EXECUTION_TRANSCRIPT_EXCERPT",
+      "original_source": "/Users/larrymitchell/.codex/sessions/2026/10/16/rollout-2026-10-16T16-59-41-01a14683-6ee8-7a40-80b1-6e9f4107afc4.jsonl",
+      "original_line": 2467,
+      "session_ordinal": 2466,
+      "timestamp_utc": "2026-10-17T02:10:22.169Z",
+      "copy_path": "original-session-events/original-ab-driver.jsonl",
+      "sha256": "9c365a018dd103875ac71504a74841b3598a9f72f4b0d2fb4e25ed9db1ffa1c0",
+      "bytes": 8399,
+      "argv": [
+        "/bin/zsh",
+        "-c",
+        "/usr/bin/python3 -B - <<'PY'\nfrom pathlib import Path\nimport subprocess,os,json,tarfile,shutil,hashlib\nroot=Path('/Users/larrymitchell/Mach33/Duranki');run=Path('/private/tmp/duranki-fnd-01/run-20261016-03')\nuv='/opt/homebrew/Cellar/uv/0.13.1/bin/uv';python='/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12';nodebase='/private/tmp/duranki-provenance-01/run-20261016-02/node-reference-tree/node-v24.19.0-darwin-arm64';node=nodebase+'/bin/node';npm=nodebase+'/lib/node_modules/npm/bin/npm-cli.js'\ndef call(label,args,cwd,env):\n p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True)\n record={'cwd':str(cwd),'argv':args,'exit_status':p.returncode,'stdout':p.stdout,'stderr':p.stderr}\n with (run/'logs'/f'{label}.json').open('x') as f:json.dump(record,f,indent=2)\n print(label,'exit',p.returncode,'last',((p.stdout+p.stderr).strip().splitlines() or [''])[ -1])\n if p.returncode:raise SystemExit(f'{label} failed')\n\ndef env_for(flavor):\n e={'HOME':str(run/'home'),'TMPDIR':str(run/'tmp'),'XDG_CACHE_HOME':str(run/'cache'),'PYTHONDONTWRITEBYTECODE':'1','UV_CACHE_DIR':str(run/flavor/'uv-cache'),'UV_OFFLINE':'1','UV_PYTHON_DOWNLOADS':'never','PATH':'/usr/bin:/bin:/usr/sbin:/sbin'}\n return e\n\ndef extract(package,flavor):\n dist='mach33_duranki_'+package+'-0.0.0';archive=run/flavor/package/(dist+'.tar.gz');out=run/flavor/('unpacked-'+package)\n if out.exists():raise SystemExit(f'extraction collision {out}')\n out.mkdir()\n with tarfile.open(archive,'r:gz') as t:\n  ms=t.getmembers();seen=set()\n  for m in ms:\n   path=Path(m.name)\n   if path.is_absolute() or '..' in path.parts or m.name in seen or path.parts[0]!=dist or not (m.isdir() or m.isfile()):raise SystemExit('unsafe tar member '+m.name)\n   seen.add(m.name)\n  for m in ms:\n   target=out/m.name\n   if m.isdir():target.mkdir(parents=True,exist_ok=True)\n   else:\n    target.parent.mkdir(parents=True,exist_ok=True)\n    with t.extractfile(m) as src,target.open('xb') as dst:shutil.copyfileobj(src,dst)\n return out/dist\n\ndef build(package,flavor,sdist=True):\n src=root/('server' if package=='server' else 'clients/python');out=run/flavor/package;e=env_for(flavor)\n args=[uv,'build',str(src),'--sdist','--out-dir',str(out),'--python',python,'--no-index','--offline','--no-python-downloads','--no-config','--no-create-gitignore','--verbose']\n if sdist:call(f'{flavor}-{package}-sdist',args,root,e)\n extracted=extract(package,flavor)\n args=[uv,'build',str(extracted),'--wheel','--out-dir',str(out),'--python',python,'--no-index','--offline','--no-python-downloads','--no-config','--no-create-gitignore','--verbose']\n call(f'{flavor}-{package}-wheel',args,root,e)\n\nbuild('client','build-a')\nbuild('server','build-b')\nbuild('client','build-b')\nfor flavor in ['build-a','build-b']:\n e=env_for(flavor);e.update({'PATH':nodebase+'/bin:/usr/bin:/bin:/usr/sbin:/sbin','NPM_CONFIG_CACHE':str(run/flavor/'npm-cache'),'NPM_CONFIG_USERCONFIG':str(run/'config/npm-user.conf'),'NPM_CONFIG_GLOBALCONFIG':str(run/'config/npm-global.conf'),'NPM_CONFIG_OFFLINE':'true','NPM_CONFIG_IGNORE_SCRIPTS':'true','NPM_CONFIG_AUDIT':'false','NPM_CONFIG_FUND':'false','NPM_CONFIG_UPDATE_NOTIFIER':'false','NPM_CONFIG_FETCH_RETRIES':'0'})\n out=run/flavor/'js';out.mkdir()\n call(f'{flavor}-js-pack',[node,npm,'pack','--ignore-scripts','--offline','--json','--pack-destination',str(out)],root/'clients/js',e)\nPY"
+      ],
+      "cwd": "file:///Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "combined_output": "build-a-client-sdist exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0.tar.gz\nbuild-a-client-wheel exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl\nbuild-b-server-sdist exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0.tar.gz\nbuild-b-server-wheel exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl\nbuild-b-client-sdist exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0.tar.gz\nbuild-b-client-wheel exit 0 last Successfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl\nbuild-a-js-pack exit 0 last ]\nbuild-b-js-pack exit 0 last ]\n",
+      "stdout": "NOT_SEPARATELY_RECORDED",
+      "stderr": "NOT_SEPARATELY_RECORDED",
+      "stream_note": "Original CommandExecution event retained one aggregated output field; it does not identify the contributing stream for each byte."
+    }
+  ],
+  "original_run_log_copies": [
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-client-sdist.json",
+      "copy_path": "prior-run-logs/build-a-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "81d9fba542c6bc33030175cf880b4610d1e4964f443479817862e427a00d3083",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/Users/larrymitchell/Mach33/Duranki/clients/python",
+        "--sdist",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /Users/larrymitchell/Mach33/Duranki/clients/python\nDEBUG Adding root workspace member: /Users/larrymitchell/Mach33/Duranki/clients/python\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `clients/python`\nBuilding source distribution...\nDEBUG Adding content files to source distribution\nDEBUG Source root: clients/python/src\nDEBUG Module path: duranki_client\nDEBUG Source distribution includes: [\"pyproject.toml\", \"src/duranki_client/**\"]\nDEBUG Source dist excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding directory: mach33_duranki_client-0.0.0/\nDEBUG Adding to sdist: src/duranki_client/__init__.py\nDEBUG Adding directory: mach33_duranki_client-0.0.0/src\nDEBUG Adding directory: mach33_duranki_client-0.0.0/src/duranki_client\nDEBUG Visited 5 files for source dist build\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0.tar.gz\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-client-wheel.json",
+      "copy_path": "prior-run-logs/build-a-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "81acd52e944a9b6f05db689ffa970cd642ce6d63445220718cb1537485e59b82",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-client/mach33_duranki_client-0.0.0",
+        "--wheel",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Adding root workspace member: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-client/mach33_duranki_client-0.0.0`\nBuilding wheel...\nDEBUG Writing wheel at `/private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl`\nDEBUG Wheel excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding content files to wheel\nDEBUG Source root: /private/tmp/duranki-fnd-01/run-20261016-03/build-a/unpacked-client/mach33_duranki_client-0.0.0/src\nDEBUG Module path: duranki_client\nDEBUG Adding to wheel: duranki_client/__init__.py\nDEBUG Adding directory: duranki_client\nDEBUG Visited 2 files for wheel build\nDEBUG Adding metadata files to wheel\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-a/client/mach33_duranki_client-0.0.0-py3-none-any.whl\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-a-js-pack.json",
+      "copy_path": "prior-run-logs/build-a-js-pack.json",
+      "bytes": 1234,
+      "sha256": "01e85a71b20bca085f0b5800e6080677c505a01b4f04bd530a3a5e75e6ce51d0",
+      "argv": [
+        "/private/tmp/duranki-provenance-01/run-20261016-02/node-reference-tree/node-v24.19.0-darwin-arm64/bin/node",
+        "/private/tmp/duranki-provenance-01/run-20261016-02/node-reference-tree/node-v24.19.0-darwin-arm64/lib/node_modules/npm/bin/npm-cli.js",
+        "pack",
+        "--ignore-scripts",
+        "--offline",
+        "--json",
+        "--pack-destination",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-a/js"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki/clients/js",
+      "exit_status": 0,
+      "stdout": "[\n  {\n    \"id\": \"@mach33/duranki-client@0.0.0\",\n    \"name\": \"@mach33/duranki-client\",\n    \"version\": \"0.0.0\",\n    \"size\": 349,\n    \"unpackedSize\": 389,\n    \"shasum\": \"b080d9d655c897dcca8588269d4df771679c83df\",\n    \"integrity\": \"sha512-w1SFdb8Ld+otw7O0oiyxciEkmvJdhy5WSXOdHpM/Y5sKl3ZU4jJlyIWBQbO6zB6Ab/vqatz1nbPk68zJ3unf7A==\",\n    \"filename\": \"mach33-duranki-client-0.0.0.tgz\",\n    \"files\": [\n      {\n        \"path\": \"index.cjs\",\n        \"size\": 69,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"package.json\",\n        \"size\": 320,\n        \"mode\": 420\n      }\n    ],\n    \"entryCount\": 2,\n    \"bundled\": []\n  }\n]\n",
+      "stderr": ""
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-server-sdist.json",
+      "copy_path": "prior-run-logs/build-b-server-sdist.json",
+      "bytes": 1671,
+      "sha256": "1ccab7c496d2fb761bff6966110ecb3eb4ac640005455d606dff120c9a150bcc",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/Users/larrymitchell/Mach33/Duranki/server",
+        "--sdist",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /Users/larrymitchell/Mach33/Duranki/server\nDEBUG Adding root workspace member: /Users/larrymitchell/Mach33/Duranki/server\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `server`\nBuilding source distribution...\nDEBUG Adding content files to source distribution\nDEBUG Source root: server/src\nDEBUG Module path: duranki_server\nDEBUG Source distribution includes: [\"pyproject.toml\", \"src/duranki_server/**\"]\nDEBUG Source dist excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding directory: mach33_duranki_server-0.0.0/\nDEBUG Adding to sdist: src/duranki_server/__init__.py\nDEBUG Adding directory: mach33_duranki_server-0.0.0/src\nDEBUG Adding directory: mach33_duranki_server-0.0.0/src/duranki_server\nDEBUG Visited 5 files for source dist build\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0.tar.gz\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-server-wheel.json",
+      "copy_path": "prior-run-logs/build-b-server-wheel.json",
+      "bytes": 1914,
+      "sha256": "fe020af175ed2ae7914c49ea1c042c545d863bf4375e1ca7c781f0ec18e64c64",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-server/mach33_duranki_server-0.0.0",
+        "--wheel",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-server/mach33_duranki_server-0.0.0\nDEBUG Adding root workspace member: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-server/mach33_duranki_server-0.0.0\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-server/mach33_duranki_server-0.0.0`\nBuilding wheel...\nDEBUG Writing wheel at `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl`\nDEBUG Wheel excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding content files to wheel\nDEBUG Source root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-server/mach33_duranki_server-0.0.0/src\nDEBUG Module path: duranki_server\nDEBUG Adding to wheel: duranki_server/__init__.py\nDEBUG Adding directory: duranki_server\nDEBUG Visited 2 files for wheel build\nDEBUG Adding metadata files to wheel\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/server/mach33_duranki_server-0.0.0-py3-none-any.whl\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-client-sdist.json",
+      "copy_path": "prior-run-logs/build-b-client-sdist.json",
+      "bytes": 1711,
+      "sha256": "9147f5a436f5115fbb7b29ddeead49f260d28e2acd24564e295186b09c767429",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/Users/larrymitchell/Mach33/Duranki/clients/python",
+        "--sdist",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /Users/larrymitchell/Mach33/Duranki/clients/python\nDEBUG Adding root workspace member: /Users/larrymitchell/Mach33/Duranki/clients/python\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `clients/python`\nBuilding source distribution...\nDEBUG Adding content files to source distribution\nDEBUG Source root: clients/python/src\nDEBUG Module path: duranki_client\nDEBUG Source distribution includes: [\"pyproject.toml\", \"src/duranki_client/**\"]\nDEBUG Source dist excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding directory: mach33_duranki_client-0.0.0/\nDEBUG Adding to sdist: src/duranki_client/__init__.py\nDEBUG Adding directory: mach33_duranki_client-0.0.0/src\nDEBUG Adding directory: mach33_duranki_client-0.0.0/src/duranki_client\nDEBUG Visited 5 files for source dist build\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0.tar.gz\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-client-wheel.json",
+      "copy_path": "prior-run-logs/build-b-client-wheel.json",
+      "bytes": 1914,
+      "sha256": "19b1e493fa18b3de1dd898f92a2baf3c76eff18a712a8a3152f3eabb90d2825d",
+      "argv": [
+        "/opt/homebrew/Cellar/uv/0.13.1/bin/uv",
+        "build",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0",
+        "--wheel",
+        "--out-dir",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client",
+        "--python",
+        "/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12",
+        "--no-index",
+        "--offline",
+        "--no-python-downloads",
+        "--no-config",
+        "--no-create-gitignore",
+        "--verbose"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki",
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": "DEBUG uv 0.13.1 (Homebrew 2026-10-14 aarch64-apple-darwin)\nDEBUG Found workspace root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Adding root workspace member: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0\nDEBUG Checking for Python interpreter at path `/opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12`\nDEBUG Using request connect timeout of 10s and read timeout of 30s\nDEBUG Using bundled `uv_build` backend for `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0`\nBuilding wheel...\nDEBUG Writing wheel at `/private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl`\nDEBUG Wheel excludes: [\"__pycache__\", \"*.pyc\", \"*.pyo\"]\nDEBUG Adding content files to wheel\nDEBUG Source root: /private/tmp/duranki-fnd-01/run-20261016-03/build-b/unpacked-client/mach33_duranki_client-0.0.0/src\nDEBUG Module path: duranki_client\nDEBUG Adding to wheel: duranki_client/__init__.py\nDEBUG Adding directory: duranki_client\nDEBUG Visited 2 files for wheel build\nDEBUG Adding metadata files to wheel\nSuccessfully built /private/tmp/duranki-fnd-01/run-20261016-03/build-b/client/mach33_duranki_client-0.0.0-py3-none-any.whl\n"
+    },
+    {
+      "classification": "BYTE_IDENTICAL_ORIGINAL_RUN_LOG",
+      "original_source": "/private/tmp/duranki-fnd-01/run-20261016-03/logs/build-b-js-pack.json",
+      "copy_path": "prior-run-logs/build-b-js-pack.json",
+      "bytes": 1234,
+      "sha256": "e54542322b16d46987078320814c8e50e2dbde85b8995fea4d414184ba328018",
+      "argv": [
+        "/private/tmp/duranki-provenance-01/run-20261016-02/node-reference-tree/node-v24.19.0-darwin-arm64/bin/node",
+        "/private/tmp/duranki-provenance-01/run-20261016-02/node-reference-tree/node-v24.19.0-darwin-arm64/lib/node_modules/npm/bin/npm-cli.js",
+        "pack",
+        "--ignore-scripts",
+        "--offline",
+        "--json",
+        "--pack-destination",
+        "/private/tmp/duranki-fnd-01/run-20261016-03/build-b/js"
+      ],
+      "cwd": "/Users/larrymitchell/Mach33/Duranki/clients/js",
+      "exit_status": 0,
+      "stdout": "[\n  {\n    \"id\": \"@mach33/duranki-client@0.0.0\",\n    \"name\": \"@mach33/duranki-client\",\n    \"version\": \"0.0.0\",\n    \"size\": 349,\n    \"unpackedSize\": 389,\n    \"shasum\": \"b080d9d655c897dcca8588269d4df771679c83df\",\n    \"integrity\": \"sha512-w1SFdb8Ld+otw7O0oiyxciEkmvJdhy5WSXOdHpM/Y5sKl3ZU4jJlyIWBQbO6zB6Ab/vqatz1nbPk68zJ3unf7A==\",\n    \"filename\": \"mach33-duranki-client-0.0.0.tgz\",\n    \"files\": [\n      {\n        \"path\": \"index.cjs\",\n        \"size\": 69,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"package.json\",\n        \"size\": 320,\n        \"mode\": 420\n      }\n    ],\n    \"entryCount\": 2,\n    \"bundled\": []\n  }\n]\n",
+      "stderr": ""
+    }
+  ],
+  "coverage": {
+    "successful_build_a_server_sdist": "original-session-events/build-a-server-sdist.jsonl",
+    "successful_build_a_server_wheel": "original-session-events/build-a-server-wheel.jsonl",
+    "failed_direct_sdist_wheel": "original-session-events/failed-direct-sdist-wheel.jsonl",
+    "server_sdist_validation_and_extraction": [
+      "original-session-events/failed-first-extraction-attempt.jsonl",
+      "original-session-events/successful-server-sdist-extraction.jsonl"
+    ],
+    "ab_driver_and_cache_configuration": "original-session-events/original-ab-driver.jsonl",
+    "eight_other_successful_build_logs": [
+      "prior-run-logs/build-a-client-sdist.json",
+      "prior-run-logs/build-a-client-wheel.json",
+      "prior-run-logs/build-a-js-pack.json",
+      "prior-run-logs/build-b-server-sdist.json",
+      "prior-run-logs/build-b-server-wheel.json",
+      "prior-run-logs/build-b-client-sdist.json",
+      "prior-run-logs/build-b-client-wheel.json",
+      "prior-run-logs/build-b-js-pack.json"
+    ]
+  },
+  "stream_limitation": "The three early uv CommandExecution events, extraction events and driver event capture aggregated_output only. Separate stdout and stderr were not recorded for those events. The eight subprocess logs from the inline driver do have original separate stdout and stderr fields.",
+  "explanation_not_authority": "The direct tarball wheel invocation took uv\u2019s isolated PEP 517 resolution route and failed offline when uv-build==0.13.1 was absent from the available locations. The executor then validated and extracted the already built sdist in the temporary run and invoked uv on its extracted root, where the successful transcript states that the bundled uv_build backend was used. This describes the sequence; it does not establish permission to continue after the failed invocation.",
+  "finding_dispositions": {
+    "FND-R03-E01": "SUPPLEMENTED_WITH_ORIGINAL_SESSION_EVENTS_AND_EXISTING_RUN_LOGS; separate stdout/stderr unavailable for early events",
+    "FND-R03-E02": "PENDING_OWNER_DISPOSITION"
+  },
+  "unavailable_original_fields": [
+    "Separate stdout and stderr streams for the six selected CommandExecution events; original session stores only aggregated_output."
+  ]
+}

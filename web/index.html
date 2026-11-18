@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EzLLMRouter · Local operations</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/integration_console.css">
+  <script src="/app.js" defer></script>
+  <script src="/catalogue_view.js" defer></script>
+  <script src="/activity_usage_view.js" defer></script>
+  <script src="/crud_view.js" defer></script>
+  <script src="/providers_view.js" defer></script>
+  <script src="/source_pages.js" defer></script>
+  <script src="/usage_costs_view.js" defer></script>
+  <script src="/demo_workspace_team_view.js" defer></script>
+  <script src="/integration_view.js" defer></script>
+  <script src="/integration_console.js" defer></script>
+  <script src="/mach33_demo_view.js" defer></script>
+  <script src="/integration_accounting.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand"><span class="mark" aria-hidden="true">Ez</span><div><strong>EzLLMRouter</strong><small>CognitiveDynamics · Local operations</small></div></div>
+    <div class="environment"><span class="pulse" aria-hidden="true"></span> LOCAL DEVELOPMENT</div>
+    <button id="logout" class="quiet" type="button" hidden>Sign out</button>
+  </header>
+  <main>
+    <section id="login-view" class="login-card" aria-labelledby="login-title">
+      <p class="eyebrow">Protected local console</p>
+      <h1 id="login-title">Sign in to inspect this profile</h1>
+      <p>Use the generated operator credential from the private local file shown by the launcher. The credential stays in this session only.</p>
+      <form id="login-form">
+        <label for="password">Operator credential</label>
+        <input id="password" type="password" autocomplete="off" required minlength="32">
+        <button type="submit">Sign in</button>
+      </form>
+      <p id="login-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <div id="workspace" hidden>
+      <aside class="sidebar" aria-label="Console views">
+        <p class="eyebrow">Workspace</p>
+        <nav id="navigation" aria-label="Primary">
+          <button type="button" data-view="overview" aria-current="page">Overview</button>
+          <button type="button" data-view="activity">Activity</button>
+          <button type="button" data-view="usage">Usage &amp; Costs</button>
+          <button type="button" data-view="integration">External accounting</button>
+          <button type="button" data-view="connections" hidden>Connections</button>
+          <button type="button" data-view="accounting" hidden>Accounting</button>
+          <button type="button" data-view="diagnostics" hidden>Diagnostics</button>
+          <button type="button" data-view="configuration">Configuration</button>
+          <button type="button" data-view="source_providers">Providers</button>
+          <button type="button" data-view="source_private">Private Hosting</button>
+          <button type="button" data-view="source_labs">Office Labs</button>
+          <button type="button" data-view="users">Users &amp; Access</button>
+          <button type="button" data-view="models">All Models</button>
+          <button type="button" data-view="providers">Connections &amp; Credentials</button>
+          <button type="button" data-view="build">Build &amp; context</button>
+        </nav>
+        <div class="side-note">Synthetic demos and selected provider validation require explicit actions.<br>Connection checks never run on page load.</div>
+      </aside>
+      <div class="content">
+        <div class="view-heading"><div><p class="eyebrow">Current profile</p><h1 id="view-title">Overview</h1></div><button id="refresh" class="quiet" type="button">Refresh</button></div>
+        <p id="view-message" class="message" role="status">Loading current service data…</p>
+        <section id="view-content" aria-live="polite"></section>
+        <footer>EzLLMRouter local development · metadata only · <span id="last-update">Not updated</span></footer>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

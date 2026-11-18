@@ -1,0 +1,153 @@
+{
+  "inspection_target": {
+    "version": "1.105.1",
+    "tag": "v1.105.1",
+    "commit": "d665dc1a6315847fcad6cc2c1264ceb47c06abce"
+  },
+  "started_utc": "2026-10-17T23:56:25.851934+00:00",
+  "purpose": "Inspection data only; DEC-13 not adopted",
+  "helper": {
+    "python": "/Library/Developer/CommandLineTools/usr/bin/python3",
+    "version": "3.9.6 (default, May 22 2026, 11:13:45) \n[Clang 21.0.0 (clang-2100.1.1.101)]",
+    "script_sha256": "7fe9d21bf5a0eb7ffacaa4d085fbe35fce69fcdb415bf89331ffe963089a5055"
+  },
+  "retrievals": [
+    {
+      "name": "pypi-litellm-1.105.1.json",
+      "url": "https://pypi.org/pypi/litellm/1.105.1/json",
+      "started_utc": "2026-10-17T23:56:25.865866+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 16777216,
+      "expected_sha256": null,
+      "expected_bytes": null,
+      "final_url": "https://pypi.org/pypi/litellm/1.105.1/json",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:26 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "51589",
+        "ETag": "\"WSC7hH0okPZQEycZijOFzw\""
+      },
+      "bytes": 51589,
+      "sha256": "3bd44cfd7f6f27847d3abc0d9611d91be4a6507636b26256a86ff2a773ddc045",
+      "finished_utc": "2026-10-17T23:56:26.046716+00:00"
+    },
+    {
+      "name": "litellm-1.105.1.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/1f/ce/083565ef5a988c27ac4e9f63f36b4289397a59a41be83931619eed9d76e3/litellm-1.105.1.tar.gz",
+      "started_utc": "2026-10-17T23:56:26.047208+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 67108864,
+      "expected_sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+      "expected_bytes": 20321773,
+      "final_url": "https://files.pythonhosted.org/packages/1f/ce/083565ef5a988c27ac4e9f63f36b4289397a59a41be83931619eed9d76e3/litellm-1.105.1.tar.gz",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:26 GMT",
+        "Content-Type": "application/octet-stream",
+        "Content-Length": "20321773",
+        "ETag": "\"cb47b186a347a90ef1759cd21e6da5bc\"",
+        "Last-Modified": "Wed, 14 Oct 2026 04:28:27 GMT"
+      },
+      "bytes": 20321773,
+      "sha256": "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97",
+      "finished_utc": "2026-10-17T23:56:27.344674+00:00"
+    },
+    {
+      "name": "litellm-source-d665dc1a6315847fcad6cc2c1264ceb47c06abce.tar.gz",
+      "url": "https://codeload.github.com/BerriAI/litellm/tar.gz/d665dc1a6315847fcad6cc2c1264ceb47c06abce",
+      "started_utc": "2026-10-17T23:56:27.344765+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 536870912,
+      "expected_sha256": null,
+      "expected_bytes": null,
+      "final_url": "https://codeload.github.com/BerriAI/litellm/tar.gz/d665dc1a6315847fcad6cc2c1264ceb47c06abce",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:27 GMT",
+        "Content-Type": "application/x-gzip",
+        "ETag": "\"c39398f7a957c7803c9979808ded058a5a68eaaff3eedf5741157218e733b65e\""
+      },
+      "bytes": 60605082,
+      "sha256": "c8891f518f909a3470ec7fd2722cc31b545375319d5f236bdeffa0538b17fd05",
+      "finished_utc": "2026-10-17T23:56:33.401576+00:00"
+    },
+    {
+      "name": "github-release-v1.105.1.json",
+      "url": "https://api.github.com/repos/BerriAI/litellm/releases/tags/v1.105.1",
+      "started_utc": "2026-10-17T23:56:33.401650+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 33554432,
+      "expected_sha256": null,
+      "expected_bytes": null,
+      "final_url": "https://api.github.com/repos/BerriAI/litellm/releases/tags/v1.105.1",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:33 GMT",
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Length": "3416",
+        "ETag": "W/\"258e8e918d6cdf1efbe3287216eca14c882c7f9de790c75942b817f205a0a399\"",
+        "Last-Modified": "Wed, 14 Oct 2026 04:33:53 GMT"
+      },
+      "bytes": 3416,
+      "sha256": "258e8e918d6cdf1efbe3287216eca14c882c7f9de790c75942b817f205a0a399",
+      "finished_utc": "2026-10-17T23:56:33.656389+00:00"
+    },
+    {
+      "name": "github-commit-v1.105.1.json",
+      "url": "https://api.github.com/repos/BerriAI/litellm/commits/v1.105.1",
+      "started_utc": "2026-10-17T23:56:33.656899+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 33554432,
+      "expected_sha256": null,
+      "expected_bytes": null,
+      "final_url": "https://api.github.com/repos/BerriAI/litellm/commits/v1.105.1",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:33 GMT",
+        "Content-Type": "application/json; charset=utf-8",
+        "ETag": "W/\"202f38a7be923df0a86206e8ca9548d4b8c02b394d55759ae283455af13c75a3\"",
+        "Last-Modified": "Tue, 13 Oct 2026 22:48:16 GMT"
+      },
+      "bytes": 57478,
+      "sha256": "202f38a7be923df0a86206e8ca9548d4b8c02b394d55759ae283455af13c75a3",
+      "finished_utc": "2026-10-17T23:56:33.966828+00:00"
+    },
+    {
+      "name": "github-advisories.json",
+      "url": "https://api.github.com/repos/BerriAI/litellm/security-advisories?per_page=100",
+      "started_utc": "2026-10-17T23:56:33.967377+00:00",
+      "method": "GET",
+      "status": "RETRIEVED_AND_HASHED",
+      "max_bytes": 33554432,
+      "expected_sha256": null,
+      "expected_bytes": null,
+      "final_url": "https://api.github.com/repos/BerriAI/litellm/security-advisories?per_page=100",
+      "http_status": 200,
+      "response_headers": {
+        "Date": "Sat, 17 Oct 2026 23:56:34 GMT",
+        "Content-Type": "application/json; charset=utf-8",
+        "ETag": "W/\"2ad39d7b115d23fa3adf19d269503beb529df9c9b753abc369e933380743bd59\"",
+        "Last-Modified": "Thu, 01 Oct 2026 13:57:14 GMT"
+      },
+      "bytes": 64391,
+      "sha256": "2ad39d7b115d23fa3adf19d269503beb529df9c9b753abc369e933380743bd59",
+      "finished_utc": "2026-10-17T23:56:34.409643+00:00"
+    }
+  ],
+  "signature_or_attestation_verified": false,
+  "source_sdist_correspondence": "NOT_YET_INSPECTED",
+  "archive_path_safety_and_extraction": "NOT_RUN; no extraction by this helper",
+  "dependency_closure": "NOT_RESOLVED",
+  "gateway_execution": "NOT_RUN",
+  "trust_limit": "HTTPS publisher records and advertised sdist digest; local archive hash alone is not publisher authentication",
+  "status": "SOURCE_INPUTS_ACQUIRED_FOR_INSPECTION",
+  "optional_metadata_unavailable": [],
+  "advisory_completeness": "Not a complete security review; no safety clearance",
+  "finished_utc": "2026-10-17T23:56:34.410591+00:00"
+}

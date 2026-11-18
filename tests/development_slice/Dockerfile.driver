@@ -1,0 +1,7 @@
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+COPY index.cjs /app/clients/js/index.cjs
+COPY driver.cjs test_client.cjs vectors.json request.json expected_request.txt /app/tests/development_slice/
+USER node
+WORKDIR /app/tests/development_slice
+CMD ["node", "driver.cjs", "submit"]

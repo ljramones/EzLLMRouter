@@ -1,0 +1,7010 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:duranki:proposed:consumer-service:1.0",
+  "title": "DURANKI-REAL-COMPLETION-01 proposed schemas and route catalogue",
+  "$comment": "PROPOSAL, not implemented or adopted. Route/header catalogues are annotations; semantic/state/crypto rules are normative in the accompanying Markdown. No runtime application code executed.",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "SafeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "DecimalNano": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{9}$"
+    },
+    "Message": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "enum": [
+            "system",
+            "user",
+            "assistant"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 65536
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "ResponseFormat": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "text"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "json_schema"
+            },
+            "schema": {
+              "$ref": "#/$defs/OutputSchema"
+            }
+          },
+          "required": [
+            "type",
+            "schema"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "InferenceBody": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "temperature": {
+          "const": "0.0"
+        },
+        "response_format": {
+          "$ref": "#/$defs/ResponseFormat"
+        }
+      },
+      "required": [
+        "messages",
+        "max_output_tokens",
+        "temperature",
+        "response_format"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddingBody": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 32768
+          },
+          "maxItems": 128,
+          "minItems": 1
+        },
+        "input_type": {
+          "enum": [
+            "query",
+            "document"
+          ]
+        },
+        "truncate": {
+          "const": false
+        }
+      },
+      "required": [
+        "input",
+        "input_type",
+        "truncate"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionContext": {
+      "type": "object",
+      "properties": {
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "job": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "history_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "operation": {
+          "enum": [
+            "text.generate@1",
+            "embedding.create@1"
+          ]
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "role": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "allowed_destinations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "exclude_families": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "engagement": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "embedding_space": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "index_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "attribution": {
+          "$ref": "#/$defs/AttributionAssertions"
+        }
+      },
+      "required": [
+        "tenant",
+        "issuer",
+        "job",
+        "reservation",
+        "history_epoch",
+        "operation",
+        "destination",
+        "generation",
+        "role",
+        "allowed_destinations",
+        "exclude_families",
+        "engagement",
+        "budget",
+        "attribution"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "embedding.create@1"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "embedding_space"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "embedding_space"
+                  ]
+                },
+                {
+                  "required": [
+                    "index_ref"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "JwsHeader": {
+      "type": "object",
+      "properties": {
+        "alg": {
+          "const": "EdDSA"
+        },
+        "kid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "typ": {
+          "const": "duranki-auth+jwt"
+        }
+      },
+      "required": [
+        "alg",
+        "kid",
+        "typ"
+      ],
+      "additionalProperties": false
+    },
+    "AuthorizationClaims": {
+      "type": "object",
+      "properties": {
+        "iss": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "aud": {
+          "type": "string",
+          "pattern": "^duranki:[A-Za-z0-9._:-]{1,160}$"
+        },
+        "job": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "history_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "dest": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "gen": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "op": {
+          "enum": [
+            "text.generate@1",
+            "embedding.create@1"
+          ]
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ctx_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_read_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "iat": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "exp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "iss",
+        "tenant",
+        "aud",
+        "job",
+        "reservation",
+        "history_epoch",
+        "dest",
+        "gen",
+        "op",
+        "hash",
+        "ctx_hash",
+        "policy_read_at",
+        "iat",
+        "exp"
+      ],
+      "additionalProperties": false,
+      "$comment": "All signature/scoping/context/body comparisons, expected epoch, key eligibility, first-write checks and policy_read_at<=iat<exp<=policy_read_at+issuer lifetime are mandatory runtime checks; Schema does not prove them."
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "code": {
+          "enum": [
+            "INVALID_REQUEST",
+            "INVALID_CONTEXT",
+            "BODY_TOO_LARGE",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "UNSUPPORTED_VERSION",
+            "SERVICE_AUTH_REQUIRED",
+            "AUTHORIZATION_INVALID",
+            "AUTHORIZATION_BINDING_MISMATCH",
+            "EPOCH_MISMATCH",
+            "AUTHORIZATION_EXPIRED",
+            "SCOPE_DENIED",
+            "DESTINATION_DENIED",
+            "FAMILY_EXCLUDED",
+            "TOOLS_DENIED",
+            "CANDIDATE_DENIED",
+            "KEY_REVOKED",
+            "NOT_FOUND",
+            "AUTHORIZATION_REPLAY",
+            "RESERVATION_USED",
+            "CONTEXT_CONFLICT",
+            "RESERVATION_CANCELLED",
+            "STALE_REVISION",
+            "RECOVERY_INCOMPLETE",
+            "BUDGET_EXCEEDED",
+            "MODEL_UNSERVABLE",
+            "MODEL_INPUT_REFUSED",
+            "OPERATION_UNSUPPORTED",
+            "VECTOR_SPACE_MISMATCH",
+            "MODEL_OUTPUT_INVALID",
+            "ACTUAL_MODEL_MISMATCH",
+            "SERVICE_UNAVAILABLE",
+            "CLOCK_UNSAFE",
+            "AUTHORITY_UNAVAILABLE",
+            "OUTCOME_UNCERTAIN"
+          ]
+        },
+        "failure_class": {
+          "enum": [
+            "input",
+            "authorization",
+            "policy",
+            "conflict",
+            "model",
+            "service",
+            "uncertain"
+          ]
+        },
+        "retry": {
+          "enum": [
+            "never",
+            "fresh_authorization",
+            "read_status",
+            "retry_read"
+          ]
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "http_status": {
+          "enum": [
+            400,
+            401,
+            403,
+            404,
+            409,
+            413,
+            415,
+            422,
+            426,
+            503
+          ]
+        }
+      },
+      "required": [
+        "contract_version",
+        "code",
+        "failure_class",
+        "retry",
+        "call_id",
+        "correlation_id",
+        "http_status"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "INVALID_REQUEST"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 400
+              },
+              "failure_class": {
+                "const": "input"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "never"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "INVALID_CONTEXT"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 400
+              },
+              "failure_class": {
+                "const": "input"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "never"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "BODY_TOO_LARGE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 413
+              },
+              "failure_class": {
+                "const": "input"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "never"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "UNSUPPORTED_MEDIA_TYPE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 415
+              },
+              "failure_class": {
+                "const": "input"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "never"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "UNSUPPORTED_VERSION"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 426
+              },
+              "failure_class": {
+                "const": "input"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "never"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "SERVICE_AUTH_REQUIRED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 401
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "never"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "AUTHORIZATION_INVALID"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 401
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "fresh_authorization"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "AUTHORIZATION_BINDING_MISMATCH"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 401
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "fresh_authorization"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "EPOCH_MISMATCH"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 401
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "fresh_authorization"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "AUTHORIZATION_EXPIRED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 401
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "fresh_authorization"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "SCOPE_DENIED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "policy"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "never"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "DESTINATION_DENIED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "policy"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "FAMILY_EXCLUDED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "policy"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "TOOLS_DENIED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "policy"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "CANDIDATE_DENIED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "policy"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "KEY_REVOKED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 403
+              },
+              "failure_class": {
+                "const": "authorization"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "never"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "NOT_FOUND"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 404
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "never"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "AUTHORIZATION_REPLAY"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "RESERVATION_USED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "CONTEXT_CONFLICT"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "RESERVATION_CANCELLED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "STALE_REVISION"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "retry_read"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "RECOVERY_INCOMPLETE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "type": "null"
+              },
+              "retry": {
+                "const": "retry_read"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "BUDGET_EXCEEDED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 409
+              },
+              "failure_class": {
+                "const": "conflict"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "MODEL_UNSERVABLE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "MODEL_INPUT_REFUSED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "OPERATION_UNSUPPORTED"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "VECTOR_SPACE_MISMATCH"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "MODEL_OUTPUT_INVALID"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "ACTUAL_MODEL_MISMATCH"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 422
+              },
+              "failure_class": {
+                "const": "model"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "SERVICE_UNAVAILABLE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 503
+              },
+              "failure_class": {
+                "const": "service"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "retry_read"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "CLOCK_UNSAFE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 503
+              },
+              "failure_class": {
+                "const": "service"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "retry_read"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "AUTHORITY_UNAVAILABLE"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 503
+              },
+              "failure_class": {
+                "const": "service"
+              },
+              "call_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "x-rule": "ERROR_MAPPING_INVALID",
+                "if": {
+                  "properties": {
+                    "call_id": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "call_id"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "retry": {
+                      "const": "retry_read"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "retry": {
+                      "const": "read_status"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "x-rule": "ERROR_MAPPING_INVALID",
+          "if": {
+            "properties": {
+              "code": {
+                "const": "OUTCOME_UNCERTAIN"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 503
+              },
+              "failure_class": {
+                "const": "uncertain"
+              },
+              "call_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "retry": {
+                "const": "read_status"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ModelIdentity": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "model_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tokenizer_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "family": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "deployment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        }
+      },
+      "required": [
+        "model_id",
+        "revision",
+        "model_sha256",
+        "tokenizer_sha256",
+        "family",
+        "deployment_id"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddingSpace": {
+      "type": "object",
+      "properties": {
+        "space_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "dimensions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "normalization": {
+          "enum": [
+            "none",
+            "l2"
+          ]
+        },
+        "preprocessing_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "document_recipe_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "query_recipe_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "space_id",
+        "dimensions",
+        "normalization",
+        "preprocessing_sha256",
+        "document_recipe_sha256",
+        "query_recipe_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "Generation": {
+      "type": "object",
+      "properties": {
+        "generation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "operation": {
+          "enum": [
+            "text.generate@1",
+            "embedding.create@1"
+          ]
+        },
+        "model": {
+          "$ref": "#/$defs/ModelIdentity"
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "adapter": {
+          "enum": [
+            "lab.openai-json.v1",
+            "openai.responses.v1"
+          ]
+        },
+        "adapter_version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "status": {
+          "enum": [
+            "servable",
+            "unservable",
+            "retired"
+          ]
+        },
+        "supports_json_schema": {
+          "type": "boolean"
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "max_context_tokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "max_output_tokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "max_body_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 262144
+            },
+            "max_batch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            }
+          },
+          "required": [
+            "max_context_tokens",
+            "max_output_tokens",
+            "max_body_bytes",
+            "max_batch"
+          ],
+          "additionalProperties": false
+        },
+        "embedding_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EmbeddingSpace"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rate_contract": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "qualification_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        }
+      },
+      "required": [
+        "generation",
+        "revision",
+        "operation",
+        "model",
+        "destination",
+        "adapter",
+        "adapter_version",
+        "configuration_sha256",
+        "status",
+        "supports_json_schema",
+        "limits",
+        "embedding_space",
+        "rate_contract",
+        "qualification_ref"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "GENERATION_SPACE_REQUIRED",
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "embedding.create@1"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "embedding_space": {
+                "$ref": "#/$defs/EmbeddingSpace"
+              },
+              "supports_json_schema": {
+                "const": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "embedding_space": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FinancialState": {
+      "type": "object",
+      "properties": {
+        "hold_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reserved_maximum": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{9}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "held_exposure": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{9}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_cost": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{9}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_status": {
+          "enum": [
+            "unknown",
+            "known",
+            "over_bound"
+          ]
+        },
+        "price_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage_revision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_basis": {
+          "enum": [
+            "unknown",
+            "calculated",
+            "reported",
+            "reconciled"
+          ]
+        },
+        "knowledge_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "hold_id",
+        "currency",
+        "reserved_maximum",
+        "held_exposure",
+        "effective_cost",
+        "cost_status",
+        "price_version",
+        "usage_revision",
+        "cost_basis",
+        "knowledge_reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "FINANCIAL_KNOWN_AMOUNT",
+          "if": {
+            "properties": {
+              "cost_status": {
+                "enum": [
+                  "known",
+                  "over_bound"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "effective_cost": {
+                "$ref": "#/$defs/DecimalNano"
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "cost_basis": {
+                "enum": [
+                  "calculated",
+                  "reported",
+                  "reconciled"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "effective_cost": {
+                "type": "null"
+              },
+              "cost_basis": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UsageComponent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "knowledge": {
+          "enum": [
+            "known",
+            "missing",
+            "null",
+            "invalid"
+          ]
+        },
+        "evidence_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "quantity",
+        "unit",
+        "knowledge",
+        "evidence_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "TextResult": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "text": {
+          "type": "string"
+        },
+        "parsed": {
+        },
+        "finish_reason": {
+          "enum": [
+            "stop",
+            "length"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "text",
+        "parsed",
+        "finish_reason"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddingVector": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        },
+        "vector": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 8192,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "index",
+        "vector"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddingResult": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "embeddings"
+        },
+        "space": {
+          "$ref": "#/$defs/EmbeddingSpace"
+        },
+        "vectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EmbeddingVector"
+          },
+          "maxItems": 128,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "type",
+        "space",
+        "vectors"
+      ],
+      "additionalProperties": false
+    },
+    "CancelCommand": {
+      "type": "object",
+      "properties": {
+        "cancellation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reason": {
+          "enum": [
+            "lease_lost",
+            "engagement_closed",
+            "erasure",
+            "operator"
+          ]
+        }
+      },
+      "required": [
+        "cancellation_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CancelAck": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "ack_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "cancellation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "durable_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "disposition": {
+          "enum": [
+            "prevented",
+            "too_late",
+            "uncertain"
+          ]
+        },
+        "dispatch_evidence": {
+          "enum": [
+            "no_first_write",
+            "first_write_observed",
+            "possible_first_write"
+          ]
+        },
+        "prevents_future_first_write": {
+          "const": true
+        },
+        "financial": {
+          "$ref": "#/$defs/FinancialState"
+        },
+        "recorded_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "contract_version",
+        "ack_id",
+        "cancellation_id",
+        "tenant",
+        "issuer",
+        "reservation",
+        "call_id",
+        "durable_sequence",
+        "disposition",
+        "dispatch_evidence",
+        "prevents_future_first_write",
+        "financial",
+        "recorded_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "CallStatus": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "call_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "job": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "history_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "context_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "operation": {
+          "enum": [
+            "text.generate@1",
+            "embedding.create@1"
+          ]
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "actual_model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "admission_state": {
+          "enum": [
+            "admitted",
+            "refused"
+          ]
+        },
+        "dispatch_state": {
+          "enum": [
+            "not_started",
+            "committed",
+            "first_write_observed",
+            "definite_no_send",
+            "possible_send"
+          ]
+        },
+        "result_state": {
+          "enum": [
+            "pending",
+            "succeeded",
+            "failed",
+            "unknown"
+          ]
+        },
+        "cost_status": {
+          "enum": [
+            "unknown",
+            "known",
+            "over_bound"
+          ]
+        },
+        "cancellation_state": {
+          "enum": [
+            "none",
+            "cancelled"
+          ]
+        },
+        "cancel_ack": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CancelAck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "financial": {
+          "$ref": "#/$defs/FinancialState"
+        },
+        "usage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UsageComponent"
+          },
+          "maxItems": 32
+        },
+        "ledger_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "created_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "updated_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "result_available": {
+          "type": "boolean"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TextResult"
+            },
+            {
+              "$ref": "#/$defs/EmbeddingResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Error"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reported_model_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attribution": {
+          "$ref": "#/$defs/AttributionRecord"
+        },
+        "result_access": {
+          "enum": [
+            "pending",
+            "available",
+            "expired",
+            "no_store",
+            "failed",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "contract_version",
+        "call_id",
+        "attempt_id",
+        "tenant",
+        "issuer",
+        "reservation",
+        "job",
+        "history_epoch",
+        "request_hash",
+        "context_hash",
+        "operation",
+        "generation",
+        "destination",
+        "actual_model",
+        "admission_state",
+        "dispatch_state",
+        "result_state",
+        "cost_status",
+        "cancellation_state",
+        "cancel_ack",
+        "financial",
+        "usage",
+        "ledger_sequence",
+        "created_at_ms",
+        "updated_at_ms",
+        "result_available",
+        "result",
+        "failure",
+        "reported_model_id",
+        "attribution",
+        "result_access"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "CALL_SUCCESS_MODEL_REQUIRED",
+          "if": {
+            "properties": {
+              "result_state": {
+                "const": "succeeded"
+              }
+            },
+            "required": [
+              "result_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "actual_model": {
+                "$ref": "#/$defs/ModelIdentity"
+              },
+              "reported_model_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "admission_state": {
+                "const": "admitted"
+              },
+              "failure": {
+                "type": "null"
+              },
+              "dispatch_state": {
+                "enum": [
+                  "first_write_observed",
+                  "possible_send"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_OPERATION_RESULT_MISMATCH",
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "embedding.create@1"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/EmbeddingResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "result": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TextResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_RESULT_AVAILABILITY",
+          "if": {
+            "properties": {
+              "result_available": {
+                "const": true
+              }
+            },
+            "required": [
+              "result_available"
+            ]
+          },
+          "then": {
+            "properties": {
+              "result_state": {
+                "const": "succeeded"
+              },
+              "result": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "result_access": {
+                "const": "available"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "result": {
+                "type": "null"
+              },
+              "result_access": {
+                "enum": [
+                  "pending",
+                  "expired",
+                  "no_store",
+                  "failed",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_EXPIRED_OR_NO_STORE",
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "result_state": {
+                    "const": "succeeded"
+                  }
+                },
+                "required": [
+                  "result_state"
+                ]
+              },
+              {
+                "properties": {
+                  "result_available": {
+                    "const": false
+                  }
+                },
+                "required": [
+                  "result_available"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "result_access": {
+                "enum": [
+                  "expired",
+                  "no_store"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_PENDING_STATE",
+          "if": {
+            "properties": {
+              "result_state": {
+                "const": "pending"
+              }
+            },
+            "required": [
+              "result_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "result_available": {
+                "const": false
+              },
+              "result_access": {
+                "const": "pending"
+              },
+              "admission_state": {
+                "const": "admitted"
+              },
+              "failure": {
+                "type": "null"
+              },
+              "dispatch_state": {
+                "enum": [
+                  "not_started",
+                  "committed",
+                  "first_write_observed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_UNKNOWN_STATE",
+          "if": {
+            "properties": {
+              "result_state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "result_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "result_available": {
+                "const": false
+              },
+              "result_access": {
+                "const": "unknown"
+              },
+              "admission_state": {
+                "const": "admitted"
+              },
+              "dispatch_state": {
+                "const": "possible_send"
+              },
+              "failure": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Error"
+                  },
+                  {
+                    "properties": {
+                      "code": {
+                        "const": "OUTCOME_UNCERTAIN"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_FAILED_STATE",
+          "if": {
+            "properties": {
+              "result_state": {
+                "const": "failed"
+              }
+            },
+            "required": [
+              "result_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "result_available": {
+                "const": false
+              },
+              "result_access": {
+                "const": "failed"
+              },
+              "failure": {
+                "$ref": "#/$defs/Error"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_REFUSED_STATE",
+          "if": {
+            "properties": {
+              "admission_state": {
+                "const": "refused"
+              }
+            },
+            "required": [
+              "admission_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "attempt_id": {
+                "type": "null"
+              },
+              "dispatch_state": {
+                "const": "definite_no_send"
+              },
+              "result_state": {
+                "const": "failed"
+              },
+              "actual_model": {
+                "type": "null"
+              },
+              "reported_model_id": {
+                "type": "null"
+              },
+              "financial": {
+                "properties": {
+                  "hold_id": {
+                    "type": "null"
+                  },
+                  "reserved_maximum": {
+                    "type": "null"
+                  },
+                  "held_exposure": {
+                    "enum": [
+                      null,
+                      "0.000000000"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "attempt_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "financial": {
+                "properties": {
+                  "hold_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                  }
+                }
+              },
+              "attribution": {
+                "properties": {
+                  "execution": {
+                    "$ref": "#/$defs/SignedExecutionContext"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_CANCELLATION_LINK",
+          "if": {
+            "properties": {
+              "cancellation_state": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "cancellation_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "cancel_ack": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "cancel_ack": {
+                "$ref": "#/$defs/CancelAck"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_COST_KNOWLEDGE_MATCH",
+          "if": {
+            "properties": {
+              "cost_status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "cost_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "financial": {
+                "properties": {
+                  "cost_status": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_COST_KNOWLEDGE_MATCH",
+          "if": {
+            "properties": {
+              "cost_status": {
+                "const": "known"
+              }
+            },
+            "required": [
+              "cost_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "financial": {
+                "properties": {
+                  "cost_status": {
+                    "const": "known"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "CALL_COST_KNOWLEDGE_MATCH",
+          "if": {
+            "properties": {
+              "cost_status": {
+                "const": "over_bound"
+              }
+            },
+            "required": [
+              "cost_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "financial": {
+                "properties": {
+                  "cost_status": {
+                    "const": "over_bound"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ReservationStatus": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "disposition": {
+          "enum": [
+            "cancelled_before_use",
+            "used",
+            "cancelled_after_use"
+          ]
+        },
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cancel_ack": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CancelAck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ledger_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "contract_version",
+        "tenant",
+        "issuer",
+        "reservation",
+        "disposition",
+        "call",
+        "cancel_ack",
+        "ledger_sequence"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerRow": {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "recorded_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "event": {
+          "enum": [
+            "refused",
+            "admitted",
+            "dispatch_committed",
+            "first_write_observed",
+            "definite_no_send",
+            "possible_send",
+            "result",
+            "cancelled",
+            "usage_revision",
+            "hold_changed",
+            "issuer_recovery_begin",
+            "issuer_recovery_complete",
+            "verification_appended"
+          ]
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reservation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engagement": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history_epoch": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "final_body_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dispatch_state": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_started",
+                "committed",
+                "first_write_observed",
+                "definite_no_send",
+                "possible_send"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result_state": {
+          "anyOf": [
+            {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "unknown"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "financial": {
+          "$ref": "#/$defs/FinancialState"
+        },
+        "usage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UsageComponent"
+          },
+          "maxItems": 32
+        },
+        "cancel_ack": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CancelAck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reported_model_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AttributionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "sequence",
+        "recorded_at_ms",
+        "event",
+        "tenant",
+        "issuer",
+        "reservation",
+        "call_id",
+        "attempt_id",
+        "job",
+        "engagement",
+        "budget",
+        "history_epoch",
+        "generation",
+        "request_hash",
+        "context_hash",
+        "final_body_hash",
+        "actual_model",
+        "dispatch_state",
+        "result_state",
+        "financial",
+        "usage",
+        "cancel_ack",
+        "reported_model_id",
+        "attribution"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerPage": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "as_of_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "earliest_supported_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "complete_prefix": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LedgerRow"
+          },
+          "maxItems": 200
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "selection": {
+          "enum": [
+            "whole_issuer",
+            "filtered"
+          ]
+        },
+        "snapshot_row_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "page_offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "complete_snapshot_receipt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contract_version",
+        "snapshot_id",
+        "as_of_sequence",
+        "snapshot_sha256",
+        "earliest_supported_sequence",
+        "complete_prefix",
+        "rows",
+        "next_cursor",
+        "tenant",
+        "issuer",
+        "selection",
+        "snapshot_row_count",
+        "page_offset",
+        "complete_snapshot_receipt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "RECOVERY_SNAPSHOT_INCOMPLETE",
+          "if": {
+            "properties": {
+              "complete_snapshot_receipt": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "selection": {
+                "const": "whole_issuer"
+              },
+              "complete_prefix": {
+                "const": true
+              },
+              "next_cursor": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "RECOVERY_SNAPSHOT_INCOMPLETE",
+          "if": {
+            "properties": {
+              "selection": {
+                "const": "filtered"
+              }
+            },
+            "required": [
+              "selection"
+            ]
+          },
+          "then": {
+            "properties": {
+              "complete_snapshot_receipt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BeginRecovery": {
+      "type": "object",
+      "properties": {
+        "recovery_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "previous_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "new_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "session_end_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "token_deadline_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "epoch_assertion": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "seshat_commit_wait"
+            },
+            "record_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "record_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "source",
+            "record_ref",
+            "record_sha256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "recovery_id",
+        "expected_revision",
+        "previous_epoch",
+        "new_epoch",
+        "session_end_ms",
+        "token_deadline_ms",
+        "epoch_assertion"
+      ],
+      "additionalProperties": false
+    },
+    "CompleteRecovery": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "new_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "as_of_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reconciliation_receipt": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reconciliation_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "complete_snapshot_receipt": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "new_epoch",
+        "snapshot_id",
+        "as_of_sequence",
+        "snapshot_sha256",
+        "reconciliation_receipt",
+        "reconciliation_sha256",
+        "complete_snapshot_receipt"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryStatus": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "recovery_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "enum": [
+            "recovering",
+            "complete"
+          ]
+        },
+        "previous_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "new_epoch": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "session_end_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "token_deadline_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "clock_margin_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "last_ledger_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reconciliation_receipt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "durable_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "contract_version",
+        "tenant",
+        "issuer",
+        "recovery_id",
+        "revision",
+        "state",
+        "previous_epoch",
+        "new_epoch",
+        "session_end_ms",
+        "token_deadline_ms",
+        "clock_margin_ms",
+        "last_ledger_sequence",
+        "reconciliation_receipt",
+        "durable_sequence"
+      ],
+      "additionalProperties": false
+    },
+    "Capabilities": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "profile": {
+          "const": "consumer-service@1"
+        },
+        "definitions_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "text.generate@1",
+              "embedding.create@1"
+            ]
+          },
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "generation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "clock_margin_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "max_lifetime_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "max_request_bytes": {
+          "const": 262144
+        },
+        "max_response_bytes": {
+          "const": 16777216
+        }
+      },
+      "required": [
+        "contract_version",
+        "profile",
+        "definitions_sha256",
+        "audience",
+        "operations",
+        "generation_ids",
+        "clock_margin_ms",
+        "max_lifetime_seconds",
+        "max_request_bytes",
+        "max_response_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "RevisionCommand": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyDefinition": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "operation": {
+          "enum": [
+            "text.generate@1",
+            "embedding.create@1"
+          ]
+        },
+        "issuer_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "generations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "allowed_destinations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "exclude_families": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "tools_allowed": {
+          "const": false
+        },
+        "budget_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "deadline_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000
+        },
+        "recovery_policy": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "generation": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "action": {
+                "enum": [
+                  "allow_exact_pin",
+                  "deny"
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "generation",
+              "action"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "policy_id",
+        "owner",
+        "operation",
+        "issuer_roles",
+        "generations",
+        "allowed_destinations",
+        "exclude_families",
+        "tools_allowed",
+        "budget_refs",
+        "deadline_ms",
+        "recovery_policy",
+        "rules"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyDraftCreate": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/PolicyDefinition"
+        }
+      },
+      "required": [
+        "definition"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyDraftEdit": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "definition": {
+          "$ref": "#/$defs/PolicyDefinition"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "definition"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyPreview": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "context": {
+          "$ref": "#/$defs/ExecutionContext"
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "operation_limits": {
+          "type": "object",
+          "properties": {
+            "max_output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "input_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "max_output_tokens",
+            "input_count"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "expected_revision",
+        "context",
+        "request_hash",
+        "operation_limits"
+      ],
+      "additionalProperties": false
+    },
+    "PublishPolicy": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "reviewed_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "review_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "reviewed_sha256",
+        "review_ref"
+      ],
+      "additionalProperties": false
+    },
+    "RollbackPolicy": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "target_published_version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "expected_revision",
+        "target_published_version",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyRecord": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "draft_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "enum": [
+            "draft",
+            "validated",
+            "published",
+            "retired"
+          ]
+        },
+        "published_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "definition": {
+          "$ref": "#/$defs/PolicyDefinition"
+        },
+        "definition_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "active_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "audit_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "policy_id",
+        "draft_id",
+        "revision",
+        "state",
+        "published_version",
+        "definition",
+        "definition_sha256",
+        "active_version",
+        "audit_sequence"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyPreviewResult": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "registry_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "generation": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "eligible": {
+                "type": "boolean"
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+                },
+                "maxItems": 32,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "generation",
+              "eligible",
+              "reasons"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 32
+        },
+        "possible_reservation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{9}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "creates_plan": {
+          "const": false
+        },
+        "creates_hold": {
+          "const": false
+        }
+      },
+      "required": [
+        "policy_id",
+        "revision",
+        "registry_revision",
+        "candidates",
+        "possible_reservation",
+        "currency",
+        "creates_plan",
+        "creates_hold"
+      ],
+      "additionalProperties": false
+    },
+    "OutputSchema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "object",
+            "array",
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "properties": {
+          "type": "object",
+          "maxProperties": 128,
+          "additionalProperties": {
+            "$ref": "#/$defs/OutputSchema"
+          }
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "additionalProperties": {
+          "const": false
+        },
+        "items": {
+          "$ref": "#/$defs/OutputSchema"
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8192
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8192
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 65536
+              },
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "const": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65536
+            },
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "properties",
+              "required",
+              "additionalProperties"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "items",
+              "minItems",
+              "maxItems"
+            ]
+          }
+        }
+      ],
+      "$comment": "Runtime checks depth<=16, consistent keyword/type use, required keys in properties, min<=max, total body bound and adapter support. Only this subset is accepted; no $ref or external keyword in user schemas."
+    },
+    "CancelReply": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "ack": {
+          "$ref": "#/$defs/CancelAck"
+        },
+        "current_status": {
+          "$ref": "#/$defs/ReservationStatus"
+        }
+      },
+      "required": [
+        "contract_version",
+        "command_id",
+        "ack",
+        "current_status"
+      ],
+      "additionalProperties": false
+    },
+    "ReleaseManifest": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "const": "consumer-service@1"
+        },
+        "contract_version": {
+          "const": "1.0"
+        },
+        "reviewed_source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "main_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "definitions_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifacts": {
+          "type": "object",
+          "properties": {
+            "server_wheel": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "name",
+                "bytes",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "python_wheel": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "name",
+                "bytes",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "commonjs_tarball": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "name",
+                "bytes",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "images_and_frozen_inputs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "name",
+                  "bytes",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 256
+            }
+          },
+          "required": [
+            "server_wheel",
+            "python_wheel",
+            "commonjs_tarball",
+            "images_and_frozen_inputs"
+          ],
+          "additionalProperties": false
+        },
+        "runtimes": {
+          "type": "object",
+          "properties": {
+            "python": {
+              "const": "3.12.15"
+            },
+            "node": {
+              "const": "24.22.1"
+            }
+          },
+          "required": [
+            "python",
+            "node"
+          ],
+          "additionalProperties": false
+        },
+        "deployment": {
+          "type": "object",
+          "properties": {
+            "authority_processes": {
+              "const": 1
+            },
+            "database": {
+              "const": "sqlite"
+            },
+            "worker_network": {
+              "const": "none"
+            },
+            "worker_provider_credentials": {
+              "const": false
+            },
+            "client_transport": {
+              "enum": [
+                "https-http1.1",
+                "same-host-loopback-http1.1"
+              ]
+            },
+            "entry_command": {
+              "const": "duranki serve --profile consumer-service@1 --config <absolute path>"
+            },
+            "threat_and_trust_manifest_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "authority_processes",
+            "database",
+            "worker_network",
+            "worker_provider_credentials",
+            "client_transport",
+            "entry_command",
+            "threat_and_trust_manifest_sha256"
+          ],
+          "additionalProperties": false
+        },
+        "generations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Generation"
+          },
+          "maxItems": 32,
+          "minItems": 1
+        },
+        "generation_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tenant": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "issuer": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "role": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "slot": {
+                "enum": [
+                  "pinned",
+                  "candidate"
+                ]
+              },
+              "generation": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "tenant",
+              "issuer",
+              "role",
+              "slot",
+              "generation",
+              "revision"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 128
+        },
+        "issuer_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "cap_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "retention_configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "qualification_evidence_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "commercial_qualification": {
+          "enum": [
+            "not_claimed",
+            "separately_qualified"
+          ]
+        }
+      },
+      "required": [
+        "profile",
+        "contract_version",
+        "reviewed_source_commit",
+        "main_commit",
+        "tree",
+        "definitions_sha256",
+        "artifacts",
+        "runtimes",
+        "deployment",
+        "generations",
+        "generation_bindings",
+        "issuer_configuration_sha256",
+        "cap_configuration_sha256",
+        "retention_configuration_sha256",
+        "qualification_evidence_sha256",
+        "commercial_qualification"
+      ],
+      "additionalProperties": false
+    },
+    "Commission": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "omitted"
+            },
+            "reason": {
+              "enum": [
+                "caller_omitted",
+                "not_yet_issued",
+                "not_applicable"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "asserted"
+            },
+            "reference": {
+              "$ref": "#/$defs/Identifier"
+            },
+            "declared_reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "kind",
+            "reference"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DelegationLink": {
+      "type": "object",
+      "properties": {
+        "from_actor_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "to_actor_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "from_run_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "to_run_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "declared_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "from_actor_id",
+        "to_actor_id",
+        "from_run_id",
+        "to_run_id"
+      ],
+      "additionalProperties": false
+    },
+    "CommissionAssessment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "absent"
+            },
+            "evidence_scope": {
+              "const": "none"
+            },
+            "absence_reason": {
+              "enum": [
+                "caller_omitted",
+                "not_yet_issued",
+                "unavailable",
+                "not_applicable"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "evidence_scope",
+            "absence_reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "asserted"
+            },
+            "evidence_scope": {
+              "const": "record_only"
+            }
+          },
+          "required": [
+            "status",
+            "evidence_scope"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "verified"
+            },
+            "evidence_scope": {
+              "$ref": "#/$defs/Identifier"
+            },
+            "evidence_ref": {
+              "$ref": "#/$defs/Identifier"
+            }
+          },
+          "required": [
+            "status",
+            "evidence_scope",
+            "evidence_ref"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DelegationAssessment": {
+      "type": "object",
+      "properties": {
+        "coverage": {
+          "enum": [
+            "none",
+            "partial",
+            "complete"
+          ]
+        },
+        "verified_link_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "minItems": 0,
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "absence_reason": {
+          "enum": [
+            "not_applicable",
+            "unavailable",
+            "not_yet_issued"
+          ]
+        }
+      },
+      "required": [
+        "coverage",
+        "verified_link_indices"
+      ],
+      "additionalProperties": false
+    },
+    "ActivationContext": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "absent"
+            },
+            "reason": {
+              "enum": [
+                "not_yet_issued",
+                "not_applicable",
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "tagged_fixture"
+            },
+            "epoch": {
+              "$ref": "#/$defs/Identifier"
+            }
+          },
+          "required": [
+            "state",
+            "epoch"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ActorAssertion": {
+      "type": "object",
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "actor_kind": {
+          "enum": [
+            "human",
+            "agent",
+            "service"
+          ]
+        },
+        "actor_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "actor_id",
+        "actor_kind",
+        "actor_version"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "HUMAN_HAS_NO_AGENT_VERSION",
+          "if": {
+            "properties": {
+              "actor_kind": {
+                "const": "human"
+              }
+            },
+            "required": [
+              "actor_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "actor_version": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "actor_version": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ImmutableReference": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "AttributionAssertions": {
+      "type": "object",
+      "properties": {
+        "envelope_version": {
+          "const": "consumer-attribution@1"
+        },
+        "binding_ref": {
+          "$ref": "#/$defs/ImmutableReference"
+        },
+        "actor": {
+          "$ref": "#/$defs/ActorAssertion"
+        },
+        "charging_owner_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "invocation_mode": {
+          "enum": [
+            "direct_human",
+            "delegated_agent",
+            "autonomous_service"
+          ]
+        },
+        "root_workflow_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "parent_run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "initiating_user_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "delegation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DelegationLink"
+          },
+          "maxItems": 8
+        },
+        "commission": {
+          "$ref": "#/$defs/Commission"
+        },
+        "caller_reasons": {
+          "type": "object",
+          "properties": {
+            "initiating_user_id": {
+              "enum": [
+                "not_yet_issued",
+                "not_applicable",
+                "caller_omitted",
+                "unavailable"
+              ]
+            },
+            "parent_run_id": {
+              "enum": [
+                "not_yet_issued",
+                "not_applicable",
+                "caller_omitted",
+                "unavailable"
+              ]
+            },
+            "delegation": {
+              "enum": [
+                "not_yet_issued",
+                "not_applicable",
+                "caller_omitted",
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "envelope_version",
+        "binding_ref",
+        "actor",
+        "charging_owner_id",
+        "invocation_mode",
+        "root_workflow_id",
+        "run_id",
+        "delegation"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "ATTR_DIRECT_HUMAN",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "direct_human"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "initiating_user_id"
+            ],
+            "properties": {
+              "actor": {
+                "properties": {
+                  "actor_kind": {
+                    "const": "human"
+                  }
+                }
+              },
+              "delegation": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "required": [
+                "parent_run_id"
+              ]
+            }
+          }
+        },
+        {
+          "x-rule": "ATTR_AUTONOMOUS_NOT_UNKNOWN",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "autonomous_service"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "actor": {
+                "properties": {
+                  "actor_kind": {
+                    "enum": [
+                      "agent",
+                      "service"
+                    ]
+                  }
+                }
+              },
+              "delegation": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "initiating_user_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "parent_run_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "x-rule": "ATTR_DELEGATED_AGENT",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "delegated_agent"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "parent_run_id"
+            ],
+            "properties": {
+              "actor": {
+                "properties": {
+                  "actor_kind": {
+                    "const": "agent"
+                  }
+                }
+              },
+              "delegation": {
+                "minItems": 1
+              },
+              "caller_reasons": {
+                "properties": {
+                  "initiating_user_id": {
+                    "enum": [
+                      "caller_omitted",
+                      "unavailable",
+                      "not_yet_issued"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TrustedIdentity": {
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "actor_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "actor_kind": {
+          "enum": [
+            "human",
+            "agent",
+            "service"
+          ]
+        },
+        "actor_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "charging_owner_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "source_authority_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "identity_binding_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        }
+      },
+      "required": [
+        "principal_id",
+        "actor_id",
+        "actor_kind",
+        "actor_version",
+        "charging_owner_id",
+        "source_authority_id",
+        "identity_binding_id"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "TRUSTED_HUMAN_VERSION",
+          "if": {
+            "properties": {
+              "actor_kind": {
+                "const": "human"
+              }
+            },
+            "required": [
+              "actor_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "actor_version": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "actor_version": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BindingAuthorityEvidence": {
+      "type": "object",
+      "properties": {
+        "actor": {
+          "$ref": "#/$defs/ImmutableReference"
+        },
+        "charging_owner": {
+          "$ref": "#/$defs/ImmutableReference"
+        },
+        "workflow": {
+          "$ref": "#/$defs/ImmutableReference"
+        },
+        "initiating_user": {
+          "$ref": "#/$defs/ImmutableReference"
+        }
+      },
+      "required": [
+        "actor",
+        "charging_owner",
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "AttributionBindingContent": {
+      "type": "object",
+      "properties": {
+        "binding_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "tenant": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "identity": {
+          "$ref": "#/$defs/TrustedIdentity"
+        },
+        "invocation_mode": {
+          "enum": [
+            "direct_human",
+            "delegated_agent",
+            "autonomous_service"
+          ]
+        },
+        "root_workflow_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "parent_run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "allowed_initiating_user_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "initiating_person_policy": {
+          "enum": [
+            "required_verified",
+            "optional_asserted",
+            "not_applicable"
+          ]
+        },
+        "delegation_policy": {
+          "enum": [
+            "record_only",
+            "verified_required"
+          ]
+        },
+        "authority_evidence": {
+          "$ref": "#/$defs/BindingAuthorityEvidence"
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "valid_until_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "binding_id",
+        "tenant",
+        "issuer",
+        "identity",
+        "invocation_mode",
+        "root_workflow_id",
+        "run_id",
+        "initiating_person_policy",
+        "delegation_policy",
+        "authority_evidence",
+        "valid_from_ms",
+        "valid_until_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "x-rule": "BINDING_DIRECT_HUMAN",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "direct_human"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "allowed_initiating_user_id"
+            ],
+            "properties": {
+              "identity": {
+                "properties": {
+                  "actor_kind": {
+                    "const": "human"
+                  }
+                }
+              },
+              "initiating_person_policy": {
+                "const": "required_verified"
+              },
+              "authority_evidence": {
+                "required": [
+                  "initiating_user"
+                ]
+              }
+            },
+            "not": {
+              "required": [
+                "parent_run_id"
+              ]
+            }
+          }
+        },
+        {
+          "x-rule": "BINDING_AUTONOMOUS",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "autonomous_service"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "properties": {
+                  "actor_kind": {
+                    "enum": [
+                      "agent",
+                      "service"
+                    ]
+                  }
+                }
+              },
+              "initiating_person_policy": {
+                "const": "not_applicable"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "allowed_initiating_user_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "parent_run_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "x-rule": "BINDING_DELEGATED_AGENT",
+          "if": {
+            "properties": {
+              "invocation_mode": {
+                "const": "delegated_agent"
+              }
+            },
+            "required": [
+              "invocation_mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "parent_run_id"
+            ],
+            "properties": {
+              "identity": {
+                "properties": {
+                  "actor_kind": {
+                    "const": "agent"
+                  }
+                }
+              },
+              "initiating_person_policy": {
+                "enum": [
+                  "required_verified",
+                  "optional_asserted"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "x-rule": "BINDING_REQUIRED_PERSON",
+          "if": {
+            "properties": {
+              "initiating_person_policy": {
+                "const": "required_verified"
+              }
+            },
+            "required": [
+              "initiating_person_policy"
+            ]
+          },
+          "then": {
+            "required": [
+              "allowed_initiating_user_id"
+            ],
+            "properties": {
+              "authority_evidence": {
+                "required": [
+                  "initiating_user"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AttributionBindingRegistration": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/AttributionBindingContent"
+        }
+      },
+      "required": [
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "AttributionBindingStatus": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/AttributionBindingContent"
+        },
+        "binding_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "registered_by": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "registration_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "eligibility_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "binding",
+        "binding_sha256",
+        "registered_by",
+        "registration_sequence",
+        "eligible",
+        "eligibility_revision"
+      ],
+      "additionalProperties": false
+    },
+    "AttributionBindingEligibility": {
+      "type": "object",
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "expected_revision",
+        "eligible",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "VerifiedIdentityAssessment": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "verified"
+        },
+        "source": {
+          "enum": [
+            "service_credential",
+            "registered_binding",
+            "verified_delegation"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/ImmutableReference"
+        }
+      },
+      "required": [
+        "status",
+        "source",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "MetadataIdentityAssessment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerifiedIdentityAssessment"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "asserted"
+            },
+            "source": {
+              "const": "caller"
+            }
+          },
+          "required": [
+            "status",
+            "source"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "absent"
+            },
+            "source": {
+              "const": "server"
+            },
+            "absence_reason": {
+              "enum": [
+                "not_yet_issued",
+                "not_applicable",
+                "caller_omitted",
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "source",
+            "absence_reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "IdentityAssessments": {
+      "type": "object",
+      "properties": {
+        "principal": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VerifiedIdentityAssessment"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "service_credential"
+                }
+              }
+            }
+          ]
+        },
+        "actor": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VerifiedIdentityAssessment"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "registered_binding"
+                }
+              }
+            }
+          ]
+        },
+        "charging_owner": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VerifiedIdentityAssessment"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "registered_binding"
+                }
+              }
+            }
+          ]
+        },
+        "workflow": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VerifiedIdentityAssessment"
+            },
+            {
+              "properties": {
+                "source": {
+                  "const": "registered_binding"
+                }
+              }
+            }
+          ]
+        },
+        "initiating_user": {
+          "$ref": "#/$defs/MetadataIdentityAssessment"
+        }
+      },
+      "required": [
+        "principal",
+        "actor",
+        "charging_owner",
+        "workflow",
+        "initiating_user"
+      ],
+      "additionalProperties": false
+    },
+    "AdmissionSnapshot": {
+      "type": "object",
+      "properties": {
+        "snapshot_version": {
+          "const": "consumer-admission@1"
+        },
+        "work_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assertions_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "binding_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assessed_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "identity": {
+          "$ref": "#/$defs/IdentityAssessments"
+        },
+        "commission": {
+          "$ref": "#/$defs/CommissionAssessment"
+        },
+        "delegation": {
+          "$ref": "#/$defs/DelegationAssessment"
+        }
+      },
+      "required": [
+        "snapshot_version",
+        "work_digest",
+        "assertions_sha256",
+        "binding_sha256",
+        "assessed_at_ms",
+        "identity",
+        "commission",
+        "delegation"
+      ],
+      "additionalProperties": false
+    },
+    "InternalSignature": {
+      "type": "object",
+      "properties": {
+        "alg": {
+          "const": "Ed25519"
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "key_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      },
+      "required": [
+        "alg",
+        "key_id",
+        "key_version",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "SignedAdmissionSnapshot": {
+      "type": "object",
+      "properties": {
+        "snapshot": {
+          "$ref": "#/$defs/AdmissionSnapshot"
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signature": {
+          "$ref": "#/$defs/InternalSignature"
+        }
+      },
+      "required": [
+        "snapshot",
+        "snapshot_sha256",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionAuthorityContext": {
+      "type": "object",
+      "properties": {
+        "context_version": {
+          "const": "consumer-execution@1"
+        },
+        "work_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "admission_snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "activation": {
+          "$ref": "#/$defs/ActivationContext"
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "context_version",
+        "work_digest",
+        "admission_snapshot_sha256",
+        "activation",
+        "issued_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "SignedExecutionContext": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/ExecutionAuthorityContext"
+        },
+        "context_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signature": {
+          "$ref": "#/$defs/InternalSignature"
+        }
+      },
+      "required": [
+        "context",
+        "context_sha256",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "VerificationEvent": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "work_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "admission_snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assessed_at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "evidence": {
+          "$ref": "#/$defs/ImmutableReference"
+        },
+        "identity": {
+          "$ref": "#/$defs/IdentityAssessments"
+        },
+        "commission": {
+          "$ref": "#/$defs/CommissionAssessment"
+        },
+        "delegation": {
+          "$ref": "#/$defs/DelegationAssessment"
+        }
+      },
+      "required": [
+        "event_id",
+        "sequence",
+        "work_digest",
+        "admission_snapshot_sha256",
+        "assessed_at_ms",
+        "evidence",
+        "identity",
+        "commission",
+        "delegation"
+      ],
+      "additionalProperties": false
+    },
+    "AttributionRecord": {
+      "type": "object",
+      "properties": {
+        "caller_assertions": {
+          "$ref": "#/$defs/AttributionAssertions"
+        },
+        "trusted_identity": {
+          "$ref": "#/$defs/TrustedIdentity"
+        },
+        "work_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "admission": {
+          "$ref": "#/$defs/SignedAdmissionSnapshot"
+        },
+        "execution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SignedExecutionContext"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "later_verifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerificationEvent"
+          },
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "caller_assertions",
+        "trusted_identity",
+        "work_digest",
+        "admission",
+        "execution",
+        "later_verifications"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalConsumerWork": {
+      "type": "object",
+      "properties": {
+        "schema_id": {
+          "const": "consumer-work@1"
+        },
+        "work_key": {
+          "type": "object",
+          "properties": {
+            "tenant": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "issuer": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "reservation": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "job": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "principal_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "identity_binding_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            },
+            "source_authority_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+            }
+          },
+          "required": [
+            "tenant",
+            "issuer",
+            "reservation",
+            "job",
+            "principal_id",
+            "identity_binding_id",
+            "source_authority_id"
+          ],
+          "additionalProperties": false
+        },
+        "trusted_identity": {
+          "$ref": "#/$defs/TrustedIdentity"
+        },
+        "request_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "semantic_input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "caller_context": {
+          "$ref": "#/$defs/ExecutionContext"
+        }
+      },
+      "required": [
+        "schema_id",
+        "work_key",
+        "trusted_identity",
+        "request_sha256",
+        "semantic_input_sha256",
+        "caller_context"
+      ],
+      "additionalProperties": false
+    },
+    "LocalResponseFailure": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "RESPONSE_INVALID"
+        },
+        "reason": {
+          "enum": [
+            "CALL_SUCCESS_MODEL_REQUIRED",
+            "CALL_OPERATION_RESULT_MISMATCH",
+            "GENERATION_SPACE_REQUIRED",
+            "ERROR_MAPPING_INVALID",
+            "CALL_RESULT_AVAILABILITY",
+            "CALL_EXPIRED_OR_NO_STORE",
+            "CALL_PENDING_STATE",
+            "CALL_UNKNOWN_STATE",
+            "CALL_FAILED_STATE",
+            "CALL_REFUSED_STATE",
+            "CALL_CANCELLATION_LINK",
+            "CALL_COST_KNOWLEDGE_MATCH",
+            "FINANCIAL_KNOWN_AMOUNT",
+            "MODEL_GENERATION_MISMATCH",
+            "RESULT_COUNT_MISMATCH",
+            "RESULT_DIMENSION_MISMATCH",
+            "RESULT_INDEX_MISMATCH",
+            "ADMISSION_BINDING_MISMATCH",
+            "RECOVERY_SNAPSHOT_INCOMPLETE",
+            "UNCLASSIFIED_SCHEMA_REJECTION"
+          ]
+        },
+        "retry": {
+          "const": "read_status"
+        }
+      },
+      "required": [
+        "code",
+        "reason",
+        "retry"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/capabilities",
+      "authority": "service:execute|read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/Capabilities"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/inference",
+      "authority": "service:execute + component-JWS",
+      "request_schema": {
+        "$ref": "#/$defs/InferenceBody"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/CallStatus"
+        },
+        "202": {
+          "$ref": "#/$defs/CallStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/embeddings",
+      "authority": "service:execute + component-JWS",
+      "request_schema": {
+        "$ref": "#/$defs/EmbeddingBody"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/CallStatus"
+        },
+        "202": {
+          "$ref": "#/$defs/CallStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/reservations/{reservation}",
+      "authority": "service:read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/ReservationStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/calls/{call_id}",
+      "authority": "service:read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/CallStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/reservations/{reservation}/cancel",
+      "authority": "service:cancel",
+      "request_schema": {
+        "$ref": "#/$defs/CancelCommand"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/CancelReply"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger",
+      "authority": "service:ledger.read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/LedgerPage"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/issuer-recoveries",
+      "authority": "service:issuer.recover",
+      "request_schema": {
+        "$ref": "#/$defs/BeginRecovery"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/RecoveryStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/issuer-recoveries/{recovery_id}",
+      "authority": "service:issuer.recover",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/RecoveryStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/issuer-recoveries/{recovery_id}/complete",
+      "authority": "service:issuer.recover",
+      "request_schema": {
+        "$ref": "#/$defs/CompleteRecovery"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/RecoveryStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/generations/{generation}",
+      "authority": "service:read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/Generation"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/policies/drafts",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/PolicyDraftCreate"
+      },
+      "success": {
+        "201": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/operator/v1/policies/drafts/{draft_id}",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/PolicyDraftEdit"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/policies/drafts/{draft_id}/validate",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/RevisionCommand"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/policies/drafts/{draft_id}/preview",
+      "authority": "operator:read + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/PolicyPreview"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyPreviewResult"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/policies/drafts/{draft_id}/publish",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/PublishPolicy"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/policies/{policy_id}/rollback",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/RollbackPolicy"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/operator/v1/policies/{policy_id}",
+      "authority": "operator:read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/PolicyRecord"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/attribution-bindings",
+      "authority": "operator:registry_admin + origin/CSRF + current actor/financial/workflow authority",
+      "request_schema": {
+        "$ref": "#/$defs/AttributionBindingRegistration"
+      },
+      "success": {
+        "201": {
+          "$ref": "#/$defs/AttributionBindingStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/operator/v1/attribution-bindings/{binding_id}",
+      "authority": "operator:scoped read",
+      "request_schema": null,
+      "success": {
+        "200": {
+          "$ref": "#/$defs/AttributionBindingStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/operator/v1/attribution-bindings/{binding_id}/eligibility",
+      "authority": "operator:registry_admin + origin/CSRF",
+      "request_schema": {
+        "$ref": "#/$defs/AttributionBindingEligibility"
+      },
+      "success": {
+        "200": {
+          "$ref": "#/$defs/AttributionBindingStatus"
+        }
+      },
+      "error_schema": {
+        "$ref": "#/$defs/Error"
+      }
+    }
+  ],
+  "x-headers": {
+    "common": {
+      "Authorization": "Bearer <current registered scoped service credential>",
+      "Duranki-Contract-Version": "1.0"
+    },
+    "execution": {
+      "Duranki-Authorization": "unpadded compact Ed25519 JWS",
+      "Duranki-Context": "base64url(JCS ExecutionContext)",
+      "Content-Type": "application/json",
+      "Content-Length": "exact captured body byte length",
+      "Duranki-Wait-Ms": "optional 0..30000, default 0"
+    },
+    "operator": {
+      "Cookie": "existing authenticated operator session",
+      "Origin": "configured exact operator origin",
+      "X-Duranki-CSRF": "current session CSRF token on mutations"
+    }
+  },
+  "x-ledger-query": {
+    "type": "object",
+    "properties": {
+      "reservation": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "job": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "engagement": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "budget": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "after_sequence": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "snapshot_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "cursor": {
+        "type": "string",
+        "maxLength": 2048
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 200
+      },
+      "principal_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "actor_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "actor_version": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "initiating_user_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "root_workflow_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "run_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "parent_run_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "charging_owner_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "commission_reference": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      },
+      "invocation_mode": {
+        "enum": [
+          "direct_human",
+          "delegated_agent",
+          "autonomous_service"
+        ]
+      },
+      "identity_status": {
+        "enum": [
+          "verified",
+          "asserted",
+          "absent"
+        ]
+      },
+      "recovery_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+      }
+    },
+    "required": [
+
+    ],
+    "additionalProperties": false
+  },
+  "x-runtime-rules": [
+    "Cryptographic signature and exact header/body/context comparisons are mandatory.",
+    "No automatic POST retry, redirect, fallback, token renewal, epoch registration by inference, or replay recovery.",
+    "All unknown exposure/cancellation/epoch/financial state survives consumer restore and service restart.",
+    "Finite JSON numbers only; unsafe integers and duplicate decoded keys reject. Explicit null does not mean zero.",
+    "Generation model/space result bindings, role/candidate/destination/family/tools grants and all caps recheck at the qualified first-write fence.",
+    "Policy/issuer/generation/budget setup cannot bypass existing authenticated operator authorization and current revision publication."
+  ],
+  "x-vector_file": "DURANKI-REAL-COMPLETION-01-VECTORS.json",
+  "x-error-map": [
+    {
+      "code": "INVALID_REQUEST",
+      "http_status": 400,
+      "failure_class": "input",
+      "request_retry": "never",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "INVALID_CONTEXT",
+      "http_status": 400,
+      "failure_class": "input",
+      "request_retry": "never",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "BODY_TOO_LARGE",
+      "http_status": 413,
+      "failure_class": "input",
+      "request_retry": "never",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "UNSUPPORTED_MEDIA_TYPE",
+      "http_status": 415,
+      "failure_class": "input",
+      "request_retry": "never",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "UNSUPPORTED_VERSION",
+      "http_status": 426,
+      "failure_class": "input",
+      "request_retry": "never",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "SERVICE_AUTH_REQUIRED",
+      "http_status": 401,
+      "failure_class": "authorization",
+      "request_retry": "never",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "AUTHORIZATION_INVALID",
+      "http_status": 401,
+      "failure_class": "authorization",
+      "request_retry": "fresh_authorization",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "AUTHORIZATION_BINDING_MISMATCH",
+      "http_status": 401,
+      "failure_class": "authorization",
+      "request_retry": "fresh_authorization",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "EPOCH_MISMATCH",
+      "http_status": 401,
+      "failure_class": "authorization",
+      "request_retry": "fresh_authorization",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "AUTHORIZATION_EXPIRED",
+      "http_status": 401,
+      "failure_class": "authorization",
+      "request_retry": "fresh_authorization",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "SCOPE_DENIED",
+      "http_status": 403,
+      "failure_class": "policy",
+      "request_retry": "never",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "DESTINATION_DENIED",
+      "http_status": 403,
+      "failure_class": "policy",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "FAMILY_EXCLUDED",
+      "http_status": 403,
+      "failure_class": "policy",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "TOOLS_DENIED",
+      "http_status": 403,
+      "failure_class": "policy",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "CANDIDATE_DENIED",
+      "http_status": 403,
+      "failure_class": "policy",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "KEY_REVOKED",
+      "http_status": 403,
+      "failure_class": "authorization",
+      "request_retry": "never",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "NOT_FOUND",
+      "http_status": 404,
+      "failure_class": "conflict",
+      "request_retry": "never",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "AUTHORIZATION_REPLAY",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "read_status",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "RESERVATION_USED",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "read_status",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "CONTEXT_CONFLICT",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "read_status",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "RESERVATION_CANCELLED",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "read_status",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "STALE_REVISION",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "retry_read",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "RECOVERY_INCOMPLETE",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": "retry_read",
+      "call_retry": null,
+      "call_link": "forbidden"
+    },
+    {
+      "code": "BUDGET_EXCEEDED",
+      "http_status": 409,
+      "failure_class": "conflict",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "MODEL_UNSERVABLE",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "MODEL_INPUT_REFUSED",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "OPERATION_UNSUPPORTED",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "VECTOR_SPACE_MISMATCH",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "MODEL_OUTPUT_INVALID",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "ACTUAL_MODEL_MISMATCH",
+      "http_status": 422,
+      "failure_class": "model",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    },
+    {
+      "code": "SERVICE_UNAVAILABLE",
+      "http_status": 503,
+      "failure_class": "service",
+      "request_retry": "retry_read",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "CLOCK_UNSAFE",
+      "http_status": 503,
+      "failure_class": "service",
+      "request_retry": "retry_read",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "AUTHORITY_UNAVAILABLE",
+      "http_status": 503,
+      "failure_class": "service",
+      "request_retry": "retry_read",
+      "call_retry": "read_status",
+      "call_link": "optional"
+    },
+    {
+      "code": "OUTCOME_UNCERTAIN",
+      "http_status": 503,
+      "failure_class": "uncertain",
+      "request_retry": null,
+      "call_retry": "read_status",
+      "call_link": "required"
+    }
+  ],
+  "x-correction": {
+    "id": "CORRECTION-01",
+    "standing": "PROPOSED; D1–D4 still require approval",
+    "reviewed_input_sha256": "947423bdeb72884df34e483e94ee30f7580bde83a79e0f59be772e4659c3602f",
+    "C1": "Typed per-call assertions, trusted per-run binding, immutable signed admission and execution context; source H successor model reused",
+    "C2": "Formal conditional response/generation/error invariants plus runtime cross-record obligations",
+    "C3": "Future bound applies only to policy_read_at and iat; expiry has separate conservative comparison"
+  },
+  "x-runtime-cross-record-checks": [
+    "Verify immutable binding content hash, tenant/issuer/principal and current actor/version, charging-owner grant, workflow/run constraints and evidence; asserted intermediate links confer no authority.",
+    "Recompute canonical work/assertion/admission/context digests and signatures; activation/assessments never enter logical effect identity.",
+    "CallStatus actual_model equals approved Generation.model and reported model resolves to it; operation, role and all compatibility constraints match admitted work.",
+    "Embedding vector count equals admitted input count, indexes preserve that order, coordinate count equals space.dimensions and space equals Generation.embedding_space/context.",
+    "Call identity equals nested failure/cancellation identities; financial and attribution rows/digests join original admitted records exactly.",
+    "Every Error top-level HTTP status equals its http_status; embedded failure http_status describes the execution error, not the GET/status envelope.",
+    "Recovery completion requires unfiltered whole-issuer complete snapshot with every page and current relevant high-water mark; selected filtered pages cannot qualify.",
+    "Budget refusal persists a consumed/refused reservation and ledger row atomically while tentative holds roll back; persistence uncertainty returns no durable acknowledgement.",
+    "Evaluate policy_read_at and iat against service_now_ms+margin_ms; evaluate expiry only by service_now_ms+margin_ms<1000*exp and original read-origin max lifetime."
+  ]
+}
