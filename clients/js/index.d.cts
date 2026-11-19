@@ -8,10 +8,17 @@ export type IntegrationVersion = "1" | "2" | "3";
 export type StatusSelector = { submission_id: string } | Wire02.WorkSelector;
 export interface SubmitOptions { wait_ms?: number; }
 
+export interface FetchBodyReader {
+  read(): Promise<{ done: boolean; value?: Uint8Array }>;
+  cancel(): Promise<void>;
+  releaseLock(): void;
+}
+
 export interface FetchResponse {
   readonly status: number;
   readonly ok: boolean;
   readonly headers: { get(name: string): string | null };
+  readonly body?: { getReader(): FetchBodyReader } | null;
   json(): Promise<unknown>;
   arrayBuffer(): Promise<ArrayBuffer>;
 }

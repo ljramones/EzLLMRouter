@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Location", "/redirected")
         if mode == "compressed":
             self.send_header("Content-Encoding", "gzip")
-        if mode == "chunked":
+        if mode in ("chunked", "stream_oversize"):
             self.send_header("Transfer-Encoding", "chunked")
         else:
             length = 20000000 if mode == "oversize" else len(BODY) + (10 if mode == "truncated" else 0)
@@ -48,7 +48,13 @@ class Handler(BaseHTTPRequestHandler):
         if mode == "slow":
             time.sleep(0.6)
         try:
-            if mode == "chunked":
+            if mode == "stream_oversize":
+                chunk = b"x" * 65536
+                for _ in range(128):
+                    self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
+                    self.wfile.flush()
+                self.wfile.write(b"0\r\n\r\n")
+            elif mode == "chunked":
                 for offset in range(0, len(BODY), 17):
                     chunk = BODY[offset:offset + 17]
                     self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
@@ -91,6 +97,8 @@ def main():
             server.shutdown()
             thread.join(timeout=5)
     expected = Counter({mode: len(clients) for mode in ("success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow")})
+    if "js" in clients:
+        expected["stream_oversize"] = 1
     if COUNTS != expected:
         raise AssertionError(f"Unexpected request delivery or replay: {COUNTS}")
     print("HTTP fixture: valid replies preserved, expected transport faults rejected, and no request replay.")

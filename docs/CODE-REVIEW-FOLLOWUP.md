@@ -20,6 +20,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.2.4: Sender checks size after buffering | Check declared length and incrementally stop at 64 KiB, closing the response on success or failure. Declared-length and unknown-length stream regressions verify early termination. |
 | 4.2.5: Diagnostic fsync blocks or fails execution | Use a bounded best-effort queue and background writer. Tests block fsync and simulate a disk failure while guarded requests complete. Durable intent/accounting commits remain synchronous. |
 | 4.2.6: Fault hooks and missing gateway/worker logging | Runtime adapters no longer read mutation, context-swap, bypass, destination-override, trace-file or pool-probe switches. Explicit fixture adapters retain the negative controls under `tools/gateway/` and require opt-in staging. Worker raw egress probes exist only in the fixture entry point. The isolated worker receives the same standard-library-only, secret-safe logger as the server. Command, relay, reply, transport and worker startup failures log exception types and stack locations without messages or payloads. |
+| 4.3.4: JavaScript client drift | All JavaScript protocols use a shared streamed byte reader and strict decoder: 1 MiB for wire 0.2/attribution, 16 MiB for wire 0.3/accounting. Results match submitted profiles instead of a synthetic configuration list. Error handles are validated against the original selector and copied; foreign/malformed handles are discarded. Installed-package checks cover all 125 shared contract cases and 35 additional transport/recovery/result cases, including exact byte-cap boundaries, an embedding above 64 KiB and newly registered profiles. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -30,7 +31,7 @@ from the tests despite a successful local pack.
 The expanded offline Python/component runner passes: 545 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
-pass. Go, Java and .NET pass all 125 shared cases against their built clients.
+pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
 
 The executor cannot bind localhost or access the Docker daemon. Its Rust
 installation contains x86 executables that cannot run on this ARM host. Therefore
@@ -74,14 +75,12 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Complete JavaScript parity for
-   response limits, configuration validation and matching handles (4.3.4).
-2. Bound registry observation retention and select only relevant observations;
+1. Bound registry observation retention and select only relevant observations;
    add indexes through a new migration rather than editing the adopted initial
    schema (4.1.2). Resolve lock-held provider discovery and dataset-purge races.
-3. Widen lint/type coverage incrementally; the current strict mypy gate still
+2. Widen lint/type coverage incrementally; the current strict mypy gate still
    covers only its explicit file list (4.3.2).
-4. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
+3. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
    large functions with focused behavior tests. Continue the platform, process
    recovery, generated-input and performance work in the testing roadmap.
 

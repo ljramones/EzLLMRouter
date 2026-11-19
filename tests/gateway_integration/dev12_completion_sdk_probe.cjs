@@ -28,8 +28,7 @@ const expected = { positive: "accepted", unknown_version: "UNSUPPORTED_VERSION",
     const fetchImpl = async (url, request) => {
       requests.push({ method: request.method, url,
         contract_version: request.headers["EzLLMRouter-Contract-Version"] });
-      return { status: 200, headers: { get: () => header },
-        arrayBuffer: async () => raw };
+      return new Response(raw, {status: 200, headers: {"EzLLMRouter-Contract-Version": header}});
     };
     const client = new EzLLMRouterClient({ baseUrl: "http://127.0.0.1:1",
       token: "synthetic-local-only", fetchImpl });

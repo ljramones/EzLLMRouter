@@ -87,11 +87,20 @@ def main():
             shutil.copy2(vectors, target / "vectors.json")
             shutil.copy2(request, target / "request.json")
         commands = [
+            ["node", "--test", str(ROOT / "tests/client_languages/javascript_contracts.cjs")],
+            ["node", "--test", str(ROOT / "tests/client_languages/javascript_safety.cjs")],
             ["node", str(ROOT / "tests/development_slice/test_client.cjs")],
             ["node", str(ROOT / "tests/development_slice/test_dev12_sdk.cjs")],
             ["node", str(consumer / "tool/test_js_client.cjs")],
             ["node", str(consumer / "actor/test_actor_logic.cjs")],
             ["node", str(ROOT / "tests/gateway_integration/test_dev05_js_actor.cjs")],
+            [
+                "node",
+                str(ROOT / "tests/gateway_integration/actor_output_regression.cjs"),
+                str(ROOT / "tests/gateway_integration/js_text.cjs"),
+                str(installed / "index.cjs"),
+                str(request),
+            ],
             ["node", str(ROOT / "tests/security/node_client_transport.cjs"), directory],
         ]
         if args.http:

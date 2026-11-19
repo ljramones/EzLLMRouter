@@ -165,8 +165,8 @@ const fs = require("node:fs");
 const {EzLLMRouterClient} = require(process.argv[1]);
 const data = JSON.parse(fs.readFileSync(0, "utf8"));
 let n = 0;
-const fetchImpl = async () => ({status: 200, ok: true,
-  headers: {get: () => "0.2"}, json: async () => [data.reply, data.status][n++]});
+const fetchImpl = async () => new Response(JSON.stringify([data.reply, data.status][n++]),
+  {status: 200, headers: {"EzLLMRouter-Contract-Version": "0.2"}});
 const client = new EzLLMRouterClient({baseUrl: "http://127.0.0.1:8765", token: "token", fetchImpl});
 (async () => {
   if (data.reject) {

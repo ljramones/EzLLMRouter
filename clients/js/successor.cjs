@@ -1,13 +1,13 @@
 "use strict";
 
 const bundle = require("./dev12_schemas.json");
-const registrations = require("./dev12_registrations.json");
+const {SUCCESSOR_RESPONSE_LIMIT} = require("./http.cjs");
 const own = (value, key) => Object.hasOwn(value, key);
 
-function scalar(value) {
+function scalar(value, freeText=false) {
   for (let i=0;i<value.length;i++) {
     const c=value.charCodeAt(i);
-    if (c<32||c===127) return false;
+    if (c===0||!freeText&&(c<32||c===127)) return false;
     if (c>=0xd800&&c<=0xdbff) {
       const next=value.charCodeAt(++i);
       if (!(next>=0xdc00&&next<=0xdfff)) return false;
@@ -18,7 +18,7 @@ function scalar(value) {
 
 // Same bounded JSON grammar as the adopted A1 vectors; object keys retain
 // duplicates until they can be rejected before a typed response is built.
-function strictDecode(bytes, limit=65536) {
+function strictDecode(bytes, limit=SUCCESSOR_RESPONSE_LIMIT) {
   if (!Buffer.isBuffer(bytes)||bytes.length>limit) throw Error("response limit");
   let source;
   try { source=new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(bytes); }
@@ -31,7 +31,7 @@ function strictDecode(bytes, limit=65536) {
     while(position<source.length){const char=source[position++];
       if(char==='"'&&!escaped){let value;
         try{value=JSON.parse(source.slice(start,position));}catch{throw Error("JSON string");}
-        if(!scalar(value))throw Error("JSON scalar");return value;}
+        if(!scalar(value,true))throw Error("JSON scalar");return value;}
       if(char==='\\'&&!escaped)escaped=true;else escaped=false;}
     throw Error("unterminated JSON string");
   }
@@ -130,9 +130,8 @@ function resultValid(result,attempt,request) {
     if(result.vectors.some((vector,index)=>vector.input_index!==index||
         vector.values.length!==result.dimensions||vector.values.some(value=>!decimalValid(value))))return false;
     if(!request)return true;
-    const config=registrations.configurations.find(item=>item.configuration_ref===request.requested_configuration_ref);
-    const profile=config?.embedding_profile;
-    return !!profile&&result.profile_id===profile.profile_id&&result.model_ref===profile.model_ref&&
+    const profile=request.input.profile;
+    return result.profile_id===profile.profile_id&&result.model_ref===profile.model_ref&&
       result.dimensions===profile.dimensions&&result.vectors.length===request.input.items.length&&
       result.vectors.every((vector,index)=>vector.item_id===request.input.items[index].item_id);
   }
@@ -142,8 +141,7 @@ function resultValid(result,attempt,request) {
         compareDecimal(ranking[index-1].score,item.score)===0&&ranking[index-1].input_index>item.input_index))||
       new Set(ranking.map(item=>item.candidate_id)).size!==ranking.length)return false;
   if(!request)return true;
-  const config=registrations.configurations.find(item=>item.configuration_ref===request.requested_configuration_ref);
-  return !!config&&result.ranking_profile_id===config.ranking_profile_id&&
+  return result.ranking_profile_id===request.input.ranking_profile_id&&
     ranking.length===request.input.top_k&&ranking.every(item=>item.input_index<request.input.candidates.length&&
       item.candidate_id===request.input.candidates[item.input_index].candidate_id);
 }

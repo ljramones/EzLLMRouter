@@ -4,6 +4,7 @@ const schemas={"1":require("./integration_schema.json").$defs,
   "2":require("./integration_schema_v2.json").$defs,
   "3":require("./integration_schema_v3.json").$defs};
 const {strictDecode}=require("./successor.cjs");
+const {readResponse,INTEGRATION_RESPONSE_LIMIT}=require("./http.cjs");
 const crypto=require("node:crypto");
 const own=(v,k)=>Object.hasOwn(v,k);
 function valid(v,s,schema=schemas["1"]){
@@ -109,7 +110,7 @@ class IntegrationClient{
       body:body===undefined?undefined:JSON.stringify(body),redirect:"error",cache:"no-store"});}
     catch{throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",null,"query_first");}
     let value;
-    try{value=strictDecode(Buffer.from(await response.arrayBuffer()),16777216);}
+    try{value=strictDecode(await readResponse(response,INTEGRATION_RESPONSE_LIMIT),INTEGRATION_RESPONSE_LIMIT);}
     catch{throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",response.status,"query_first");}
     if(response.headers.get("EzLLMRouter-Integration-Version")!==this.version||value?.integration_version!==this.version)
       throw new IntegrationClientError("UNSUPPORTED_VERSION",response.status);

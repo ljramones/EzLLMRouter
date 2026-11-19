@@ -52,9 +52,8 @@ function values(work) {
   return {reply,pending,status,waiting};
 }
 function response(value,status=200,badJSON=false) {
-  return {status,ok:status>=200&&status<300,headers:{get:()=>"0.2"},
-    json:async()=>{if(badJSON) throw new SyntaxError("fixture invalid JSON");return copy(value);},
-    clone:()=>response(value,status,badJSON)};
+  return new Response(badJSON ? "{invalid JSON" : JSON.stringify(value),
+    {status,headers:{"EzLLMRouter-Contract-Version":"0.2"}});
 }
 async function run(test) {
   const out=[],err=[],calls=[];let arrivalCount=0, getCount=0, fixture;

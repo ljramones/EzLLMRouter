@@ -13,8 +13,8 @@ function clientFor(value, status = 200) {
   const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
     fetchImpl: async () => {
       calls++;
-      return { status, ok: status >= 200 && status < 300,
-        headers: { get: () => "0.2" }, json: async () => value };
+      return new Response(JSON.stringify(value), {status,
+        headers: {"EzLLMRouter-Contract-Version": "0.2"}});
     } });
   return { client, calls: () => calls };
 }
@@ -122,7 +122,8 @@ async function main() {
             if (kind === "by_id") value.handle.submission_id = "submission.other";
             else value.handle.work_key.task_id = "task.other";
           }
-          return { status: 200, ok: true, headers: { get: () => "0.2" }, json: async () => value };
+          return new Response(JSON.stringify(value), {status: 200,
+            headers: {"EzLLMRouter-Contract-Version": "0.2"}});
         } });
       const pending = client.getStatus(selected);
       await enteredPromise;

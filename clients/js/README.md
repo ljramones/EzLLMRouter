@@ -33,6 +33,32 @@ against a locally packed package. Run `bash tests/client_languages/check_typescr
 with that compiler installed; `--package-only` checks exports and declaration
 syntax without claiming a compiler type check.
 
+## Response validation and recovery
+
+Wire 0.2 execution and attribution responses have a 1 MiB byte limit. Wire 0.3
+embedding/rerank and external accounting responses have a 16 MiB limit. Native
+fetch responses are read incrementally; the client rejects non-identity content
+encoding, invalid or excessive declared lengths and length mismatches. A failed
+read cancels the stream and releases its reader. Requests are never replayed.
+
+All protocols use strict UTF-8 JSON decoding, rejecting duplicate keys, unsafe
+or non-integer JSON numbers, NUL, lone surrogates and nesting beyond 32 levels.
+Escaped newlines and tabs remain valid in free text; field-specific schema
+restrictions still apply. Embedding and rerank results are checked against the
+submitted profile, dimensions and item identities, so newly registered
+configurations do not require client fixture changes.
+
+Execution errors expose a recovery handle only when it is structurally valid
+and matches the original submission ID or work selector. A mismatched response
+cannot substitute another work identity. Valid matching handles remain available
+for query-first recovery after a failed result.
+
+An injected `fetchImpl` must return a response with a readable byte stream or
+`arrayBuffer()`. Buffered injected transports own their allocation; the client
+checks their bytes before decoding. JSON-only response doubles are unsupported.
+The caller can supply its own deadlines through `fetchImpl`; these byte bounds
+do not introduce a total request deadline.
+
 ## External accounting integration (0.2.3)
 
 Node `>=24.22.1 <25` is supported, matching the inspected Vega platform Node 24

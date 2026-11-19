@@ -38,9 +38,13 @@ python3 -I -S tests/client_languages/check_javascript.py
 python3 -I -S tests/client_languages/check_javascript.py --http
 ```
 
-The JavaScript HTTP deadline is supplied by the fixture's caller. This check does
-not establish a default total deadline or complete response-size parity with
-Python. See the [review follow-up](CODE-REVIEW-FOLLOWUP.md) for remaining work.
+The JavaScript checks run the 125 shared contract cases against Python's expected
+errors, handles and exact outgoing requests. Additional cases cover streamed byte
+limits, cleanup, strict decoding, new configuration profiles and large embeddings.
+The HTTP fixture also sends an oversized chunked body to exercise native fetch
+cancellation. Its deadline is supplied by the fixture's caller; these checks do
+not establish a default total deadline. See the
+[review follow-up](CODE-REVIEW-FOLLOWUP.md) for remaining work.
 
 Go and Java clients are independent packages with no external runtime dependencies.
 Use the Go version in `clients/go/.go-version` and JDK 17+:

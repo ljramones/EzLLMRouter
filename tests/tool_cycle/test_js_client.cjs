@@ -8,8 +8,8 @@ const request = JSON.parse(fs.readFileSync(__dirname + "/request.json", "utf8"))
 async function check(reply, expectedCode) {
   let sends = 0;
   const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic",
-    fetchImpl: async () => { sends++; return { status: 200, ok: true,
-      headers: { get: () => "0.2" }, json: async () => reply }; } });
+    fetchImpl: async () => { sends++; return new Response(JSON.stringify(reply), {status: 200,
+      headers: {"EzLLMRouter-Contract-Version": "0.2"}}); } });
   if (expectedCode) {
     await assert.rejects(client.submit(request), error => error instanceof EzLLMRouterError && error.code === expectedCode);
   } else {

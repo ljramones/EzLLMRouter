@@ -22,6 +22,7 @@
     "index.d.cts",
     "contracts.d.cts",
     "index.cjs",
+    "http.cjs",
     "successor.cjs",
     "integration.cjs",
     "integration_schema.json",

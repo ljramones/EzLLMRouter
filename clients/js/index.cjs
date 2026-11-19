@@ -2,6 +2,7 @@
 
 const VERSION = "0.2";
 const successor = require("./successor.cjs");
+const {readResponse, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT} = require("./http.cjs");
 const {IntegrationClient, IntegrationClientError} = require("./integration.cjs");
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/;
 const FEATURES = new Set(["text", "tools", "document_text", "background", "nested", "streaming",
@@ -14,16 +15,16 @@ const ERROR_CODES = new Set(["UNSUPPORTED_VERSION", "AUTHENTICATION_FAILED", "MA
 const object = x => x !== null && typeof x === "object" && !Array.isArray(x);
 const keys = (x, required, optional = []) => object(x) && required.every(k => Object.hasOwn(x, k)) &&
   Object.keys(x).every(k => required.includes(k) || optional.includes(k));
-const id = x => typeof x === "string" && ID.test(x);
+const id = x => typeof x === "string" && ID.exec(x)?.[0] === x;
 const count = x => Number.isSafeInteger(x) && x > 0;
 const safeCount = x => Number.isSafeInteger(x) && x >= 0;
 function utc(x) {
-  if (typeof x !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(x)) return false;
+  if (typeof x !== "string" || x.length !== 20 || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(x)) return false;
   const year = Number(x.slice(0, 4)), month = Number(x.slice(5, 7)), day = Number(x.slice(8, 10));
   const hour = Number(x.slice(11, 13)), minute = Number(x.slice(14, 16)), second = Number(x.slice(17, 19));
   const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1] &&
+  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1] &&
     hour <= 23 && minute <= 59 && second <= 59;
 }
 const uniqueFeatures = x => Array.isArray(x) && x.every(v => FEATURES.has(v)) && new Set(x).size === x.length;
@@ -130,6 +131,11 @@ function handleMatchesSelector(handle, selector) {
   return ["task_id", "step_id", "step_revision", "execution_generation"].every(
     k => handle.work_key[k] === selector[k]);
 }
+function matchingHandle(handle, selector, successorWire = false) {
+  if (!selector || !(successorWire ? successor.selectorMatches(handle, selector) :
+      handleMatchesSelector(handle, selector))) return undefined;
+  return structuredClone(handle);
+}
 function validReply(x, status) {
   if (!object(x) || x.contract_version !== VERSION) return false;
   if (x.state === "delivered") return status === 200 && keys(x, ["contract_version", "state", "handle", "candidate"]) &&
@@ -223,13 +229,17 @@ class EzLLMRouterClient {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "query_first", null, { selector: workSelector, cause });
     }
     let value;
-    try { value = await response.json(); } catch (cause) {
+    try {
+      const raw = await readResponse(response, WIRE_RESPONSE_LIMIT);
+      value = successor.strictDecode(raw, WIRE_RESPONSE_LIMIT);
+    } catch (cause) {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector: workSelector, cause });
     }
     if (value?.contract_version !== VERSION || response.headers.get("EzLLMRouter-Contract-Version") !== VERSION) {
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", value?.error?.correlation_id ?? null,
-        { selector: workSelector, handle: validHandle(value?.handle) ? value.handle : undefined });
+        { selector: workSelector });
     }
+    const usableHandle = matchingHandle(value?.handle, workSelector);
     const valid = value?.error && !Object.hasOwn(value, "state") ?
       keys(value, ["contract_version", "error"]) && validError(value.error) && response.status >= 400 :
       responseKind === "submit" ? validReply(value, response.status) :
@@ -241,17 +251,17 @@ class EzLLMRouterClient {
       responseKind === "status" ? (!value?.handle || handleMatchesSelector(value.handle, workSelector)) : true;
     if (!valid || !corresponds) {
       throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
-        { selector: workSelector, handle: validHandle(value?.handle) ? value.handle : undefined });
+        { selector: workSelector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     if (value.error || value.state === "failed" || value.state === "rejected") {
       const err = value.error ?? { code: "INTERNAL_UNAVAILABLE", retry_guidance: "query_first" };
       throw new EzLLMRouterError(err.code, response.status, err.retry_guidance, err.correlation_id,
-        { handle: value.handle, attempt_id: value.attempt_id, failure_stage: value.failure_stage,
-          work_key: value.handle?.work_key, selector: value.selector ?? workSelector, error: err });
+        { handle: usableHandle, attempt_id: value.attempt_id, failure_stage: value.failure_stage,
+          work_key: usableHandle?.work_key, selector: workSelector, error: err });
     }
     if (!response.ok && response.status !== 202) {
       throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
-        { selector: workSelector, handle: validHandle(value?.handle) ? value.handle : undefined });
+        { selector: workSelector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     return value;
   }
@@ -292,9 +302,10 @@ class EzLLMRouterClient {
       response = await this.fetchImpl(this.baseUrl + path, {
         method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual",
       });
-      value = await response.json();
+      const raw = await readResponse(response, WIRE_RESPONSE_LIMIT);
+      value = successor.strictDecode(raw, WIRE_RESPONSE_LIMIT);
     } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "query_first", null, { cause });
+      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response?.status ?? null, "query_first", null, { cause });
     }
     if (!object(value) || value.contract_version !== VERSION ||
         response.headers.get("EzLLMRouter-Contract-Version") !== VERSION)
@@ -398,8 +409,8 @@ class EzLLMRouterClient {
     }
     let value;
     try {
-      const raw = Buffer.from(await response.arrayBuffer());
-      value = successor.strictDecode(raw);
+      const raw = await readResponse(response, SUCCESSOR_RESPONSE_LIMIT);
+      value = successor.strictDecode(raw, SUCCESSOR_RESPONSE_LIMIT);
     } catch (cause) {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector, cause });
     }
@@ -412,14 +423,15 @@ class EzLLMRouterClient {
       }
       throw new EzLLMRouterError(value.code, response.status, value.retry_guidance, value.correlation_id, { selector });
     }
+    const usableHandle = matchingHandle(value?.handle, selector, true);
     if (!successor.responseValid(value,kind === "submit" ? "SubmitReply" : "StatusSnapshot",
         response.status,selector,kind === "submit" ? body : undefined)) {
       throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
-        { selector, handle: value?.handle, work_key: value?.handle?.work_key });
+        { selector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     if (kind === "submit" && value.state === "failed") {
       throw new EzLLMRouterError(value.error.code, response.status, value.error.retry_guidance,
-        value.error.correlation_id, { selector, handle: value.handle, work_key: value.handle.work_key,
+        value.error.correlation_id, { selector, handle: usableHandle, work_key: usableHandle?.work_key,
           attempt_id: value.attempt_id,
           failure_stage: value.failure_stage, error: value.error });
     }

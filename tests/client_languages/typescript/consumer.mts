@@ -2,13 +2,21 @@ import {
   EzLLMRouterClient, IntegrationClient, EzLLMRouterError, IntegrationClientError,
   contractVersion,
 } from "@cognitivedynamics/ezllmrouter-client";
-import type { Wire02, Wire03, IntegrationV1, IntegrationV2, IntegrationV3, FetchImplementation } from "@cognitivedynamics/ezllmrouter-client";
+import type { Wire02, Wire03, IntegrationV1, IntegrationV2, IntegrationV3, FetchImplementation, FetchBodyReader } from "@cognitivedynamics/ezllmrouter-client";
 
 const version: "0.2" = contractVersion;
 const injected: FetchImplementation = async () => ({
   status: 200, ok: true, headers: { get: () => "0.2" },
   json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0),
 });
+const reader: FetchBodyReader = {
+  read: async () => ({done: true}), cancel: async () => {}, releaseLock: () => {},
+};
+const streamed: FetchImplementation = async () => ({
+  status: 200, ok: true, headers: { get: () => null }, body: { getReader: () => reader },
+  json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0),
+});
+new EzLLMRouterClient({baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl: streamed});
 const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token", fetchImpl: injected });
 const capabilities: Promise<Wire02.CapabilityResponse> = client.getCapabilities();
 const status: Promise<Wire02.StatusSnapshot> = client.getStatus({ submission_id: "submission.synthetic" });
