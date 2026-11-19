@@ -58,6 +58,7 @@ MODULES = (
     "tests.unit.test_database",
     "tests.unit.test_operator_routes",
     "tests.client_languages.test_contracts",
+    "tests.playwright.test_server",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",

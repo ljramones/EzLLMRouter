@@ -12,6 +12,7 @@ Current guides for operating and developing CognitiveDynamics EzLLMRouter:
 | [Encryption](ENCRYPTION.md) | Independent keyrings, rotation and consistent backups. |
 | [Security](SECURITY.md) | Credentials, transport boundaries and frozen runtime inputs. |
 | [Development](DEVELOPMENT.md) | Environment setup, checks and test inputs. |
+| [Testing roadmap](TESTING-ROADMAP.md) | Browser acceptance gate and priorities for subsequent testing. |
 
 Start the local accounting console using the [project README](../README.md).
 The optional isolated execution profile is described in the

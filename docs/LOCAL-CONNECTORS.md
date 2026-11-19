@@ -73,6 +73,10 @@ Enter a connection name, server type, and server URL. API keys are optional for
 servers that allow unauthenticated local access. Choose **Connect and discover
 models** to save the connector and read its inventory.
 
+If discovery fails, the console keeps the saved connector, shows a warning and
+leaves it disabled. Correct its address or API key, then choose **Discover
+models** on that connector to retry.
+
 The URL is resolved from the machine or container running EzLLMRouter:
 
 | Where EzLLMRouter runs | Model server address |

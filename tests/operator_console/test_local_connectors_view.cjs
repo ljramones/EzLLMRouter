@@ -24,7 +24,7 @@ const kinds={ollama:{name:"Ollama",default_url:"http://localhost:11434"},
   lmstudio:{name:"LM Studio",default_url:"http://localhost:1234"},vllm:{name:"vLLM",default_url:"http://localhost:8000"},
   llamacpp:{name:"llama.cpp",default_url:"http://localhost:8080"},localai:{name:"LocalAI",default_url:"http://localhost:8080"},
   openai_compatible:{name:"Other OpenAI-compatible server",default_url:"http://localhost:8000"}};
-const requests=[],items=[];let loseDiscoveryResponse=false;
+const requests=[],items=[];let loseDiscoveryResponse=false,rejectDiscoveryCredential=false;
 const timers=new Map();let timerId=0,healthState="online",healthCheckedAt=null;
 const timer=(fn,delay,repeat)=>{const id=++timerId;timers.set(id,{fn,delay,repeat});return id;};
 const context=vm.createContext({console,Node:Element,URLSearchParams,URL,Set,Map,Date,
@@ -55,9 +55,11 @@ const context=vm.createContext({console,Node:Element,URLSearchParams,URL,Set,Map
         revision:1,selected_models:[],credential_present:!!body.api_key,enabled:false,status:"not_configured",
         discovery:{state:"not_checked",models:[]}};items.push(value);
     }else if(url.endsWith("/discover")){
-      const item=items[0];item.revision++;item.discovery={state:"observed",complete:true,server_version:"0.12.0",loaded_inventory_available:true,
+      const item=items[0];item.revision++;item.discovery=rejectDiscoveryCredential?
+        {state:"failed",reason:"SERVER_AUTHENTICATION_REQUIRED",models:[],complete:false}:
+        {state:"observed",complete:true,server_version:"0.12.0",loaded_inventory_available:true,
         models:[{id:"llama3.2:latest",parameter_size:"3.2B",quantization:"Q4_K_M",size_bytes:2019393189,loaded:true,vram_bytes:3100000000},
-          {id:"qwen3:8b",size_bytes:5200000000,loaded:false}]};value=item;
+          {id:"qwen3:8b",size_bytes:5200000000,loaded:false}]};value=item;rejectDiscoveryCredential=false;
       if(loseDiscoveryResponse){loseDiscoveryResponse=false;throw TypeError("Discovery response lost");}
     }else if(url.endsWith("/models")){
       Object.assign(items[0],{selected_models:body.selected_models,enabled:body.enabled,
@@ -158,6 +160,20 @@ async function submit(values){const selected=form();assert(selected,"connector f
   await findButtons("Models")[0].onclick();await syncRoute();assert.equal(discoveryCount(),3,"Models refreshes selected server inventory");
   await findButtons("Delete connector")[0].onclick();await syncRoute();assert.equal(items.length,0);
   const creations=()=>requests.filter(request=>request.method==="POST"&&request.url==="/operator/v1/local-connectors").length;
+  const beforeRejected=creations();findButtons("Add local connector")[0].onclick();rejectDiscoveryCredential=true;
+  const rejectedForm=await submit({display_name:"Rejected credential",kind:"ollama",base_url:"http://localhost:11434",api_key:"rejected-test-key"});
+  await syncRoute();
+  assert.equal(items.length,1);assert.equal(items[0].enabled,false);assert.equal(items[0].discovery.state,"failed");
+  assert.equal(form(),undefined,"a recorded failure retains the saved connector without a second creation form");
+  assert(elements["view-message"].textContent.includes("Model discovery was not confirmed"));
+  assert(elements["view-message"].textContent.includes("requires a valid API key"));
+  assert(!elements["view-message"].textContent.includes("completed"));
+  assert.equal(rejectedForm.querySelector("input[name=api_key]").value,"");
+  assert(!text().includes("rejected-test-key"));
+  await findButtons("Discover models")[0].onclick();
+  assert.equal(creations(),beforeRejected+1,"recovery after a credential rejection reuses its connector");
+  assert.equal(items[0].discovery.state,"observed");
+  await findButtons("Delete connector")[0].onclick();await syncRoute();assert.equal(items.length,0);
   const beforeRecovery=creations();findButtons("Add local connector")[0].onclick();loseDiscoveryResponse=true;
   const recoveryForm=await submit({display_name:"Saved before disconnect",kind:"ollama",base_url:"http://localhost:11434",api_key:"temporary-test-key"});
   await syncRoute();

@@ -1,0 +1,22 @@
+{
+  "name": "ezllmrouter-browser-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:headed": "playwright test --project=chromium --headed",
+    "test:list": "playwright test --list --reporter=list",
+    "typecheck": "tsc --noEmit",
+    "report": "playwright show-report ../../.artifacts/playwright/report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}

@@ -132,6 +132,8 @@ function localConnectorForm(record=null,preset=null){
     {name:"base_url",label:"Server URL",type:"url",value:record?.base_url||preset?.base_url||kinds[initial].default_url,maxLength:512},
     {name:"api_key",label:record?.credential_present?"API key · leave blank to keep the saved key":"API key · optional",type:"password",required:false,maxLength:4096}];
   if(record?.credential_present)fields.push({name:"remove_key",label:"Remove saved API key",type:"checkbox",required:false,value:false});
+  const unconfirmed=reason=>({notice:{value:"Connector saved. Model discovery was not confirmed: "+
+    localProblem(reason)+" Use Discover models on this connector to retry.",error:true}});
   const form=crudForm(record?"Edit local connector":"Add local connector",fields,record?"Save settings":"Connect and discover models",
     saved=>saved&&savedId?localGo(savedId):localGo(record?.connector_id),async values=>{
       const body={display_name:values.display_name,kind:values.kind,base_url:values.base_url};
@@ -141,9 +143,10 @@ function localConnectorForm(record=null,preset=null){
         const item=await api(localPath(record?.connector_id),{method:"POST",csrf:true,body});
         savedId=item.connector_id;
         if(!record){
-          try{await api(localPath(item.connector_id)+"/discover",{method:"POST",csrf:true,body:{expected_revision:item.revision}});}
+          try{const discovered=await api(localPath(item.connector_id)+"/discover",{method:"POST",csrf:true,body:{expected_revision:item.revision}});
+            if(discovered.discovery?.state!=="observed")return unconfirmed(discovered.discovery?.reason);}
           catch(error){if(error.staleView)throw error;
-            return {notice:{value:"Connector saved. Model discovery was not confirmed: "+localProblem(error.message)+" Use Discover models on this connector to retry.",error:true}};}
+            return unconfirmed(error.message);}
         }
       }catch(error){if(error.staleView)throw error;throw Error(localProblem(error.message));}
     });

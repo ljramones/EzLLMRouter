@@ -76,3 +76,38 @@ jobs:
         run: bash tests/client_languages/check_rust.sh
       - name: Native Rust HTTP fixtures
         run: python3 -I -S tests/client_languages/http_fixture.py --client rust
+  browser-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
+        with:
+          node-version-file: .nvmrc
+      - name: Install pinned environment manager
+        run: python3 -m pip install uv==0.13.9
+      - name: Install locked service dependencies
+        run: uv sync --locked --all-groups --python 3.12.15
+      - name: Install locked browser test dependencies
+        working-directory: tests/playwright
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install browser and platform dependencies
+        working-directory: tests/playwright
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Check browser test types
+        working-directory: tests/playwright
+        run: npm run typecheck
+      - name: Exercise real console and isolated database
+        working-directory: tests/playwright
+        run: npm test -- --project=${{ matrix.browser }}
+      - name: Retain failure report, screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v5 # Node 24
+        with:
+          name: browser-failures-${{ matrix.browser }}
+          path: .artifacts/playwright/
+          retention-days: 7
