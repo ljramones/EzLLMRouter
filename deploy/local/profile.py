@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import secrets
 import sqlite3
+import stat
 import subprocess
 import sys
 import time
@@ -17,6 +18,8 @@ from check import exercise, readback, wait_health
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "server/src"))
+from duranki_server.private_files import read_private, write_private
 LOCAL = ROOT / "deploy/local"
 STATE = LOCAL / ".state"
 COMPOSE = LOCAL / "compose.yaml"
@@ -27,29 +30,76 @@ DOCKER = ["docker", "--context", "desktop-linux"]
 
 
 def secrets_on_disk():
+    STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if STATE.is_symlink():
+        raise RuntimeError("local secret directory must not be a symlink")
+    STATE.chmod(0o700)
     credentials = STATE / "credentials.json"
     password = STATE / "operator-password"
-    if credentials.exists() != password.exists():
+    bundle = STATE / "profile-secrets.json"
+    # Adopt existing profile credentials without rotating them. Repair the old
+    # 0644 files before reading; reject links, special files and foreign owners.
+    for path in (bundle, credentials, password):
+        if path.is_symlink():
+            raise RuntimeError("local credentials must not be symlinks")
+        if path.exists():
+            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            try:
+                metadata = os.fstat(descriptor)
+                if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid():
+                    raise RuntimeError("local credentials must be owned regular files")
+                os.fchmod(descriptor, 0o600)
+            finally:
+                os.close(descriptor)
+    if not bundle.exists() and credentials.exists() != password.exists():
         raise RuntimeError("partial local credentials; inspect .state without overwriting either file")
-    if not credentials.exists():
+    if bundle.exists():
+        saved = json.loads(read_private(bundle))
+        data, value = saved["credentials"], saved["operator_password"]
+    elif credentials.exists():
+        data = json.loads(read_private(credentials))
+        value = read_private(password).decode("ascii").strip()
+    else:
         data = {"service_token": secrets.token_urlsafe(36),
                 "synthetic_provider_key": "sk-" + secrets.token_hex(32)}
-        credentials.write_text(json.dumps(data) + "\n")
-        password.write_text(secrets.token_urlsafe(36) + "\n")
-        # The containing directory is 0700; read-only container mounts need
-        # owner-independent file read permissions for UID 10001.
-        credentials.chmod(0o644)
-        password.chmod(0o644)
-    data = json.loads(credentials.read_text())
-    value = password.read_text().strip()
+        value = secrets.token_urlsafe(36)
     if (set(data) != {"service_token", "synthetic_provider_key"} or
+            not all(isinstance(item, str) for item in data.values()) or
+            not isinstance(value, str) or
             len(data["service_token"]) < 32 or not data["synthetic_provider_key"].startswith("sk-") or
             len(value) < 32):
         raise RuntimeError("invalid local credential files")
+    # Publish one canonical bundle first: interruption between the two derived
+    # files can then resume with exactly the same credentials.
+    if not bundle.exists():
+        try:
+            write_private(bundle, json.dumps({"credentials": data,
+                "operator_password": value}).encode("ascii"))
+        except FileExistsError:
+            return secrets_on_disk()
+    for path, content in ((credentials, (json.dumps(data) + "\n").encode("ascii")),
+                          (password, (value + "\n").encode("ascii"))):
+        if path.exists():
+            existing = read_private(path)
+            matches = (json.loads(existing) == data if path == credentials
+                       else existing.decode("ascii").strip() == value)
+            if not matches:
+                raise RuntimeError("local credential files disagree with the canonical bundle")
+        else:
+            write_private(path, content)
     return data, value
 
 
 def redact(value):
+    bundle = STATE / "profile-secrets.json"
+    if bundle.is_file() and not bundle.is_symlink():
+        try:
+            saved = json.loads(read_private(bundle))
+            for secret in (*saved["credentials"].values(), saved["operator_password"]):
+                if isinstance(secret, str) and secret:
+                    value = value.replace(secret, "[REDACTED]")
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
     for path in (STATE / "credentials.json", STATE / "operator-password"):
         if not path.exists():
             continue
@@ -64,12 +114,13 @@ def redact(value):
     return value
 
 
-def command(name, argv, env=None, allowed=(0,)):
+def command(name, argv, env=None, allowed=(0,), input_data=None):
     STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
     records = STATE / "commands"
     records.mkdir(exist_ok=True)
     print("Local profile: " + name + "…", flush=True)
-    result = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True)
+    result = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True,
+                            input=input_data, timeout=900)
     stdout, stderr = redact(result.stdout), redact(result.stderr)
     (records / (name + ".stdout")).write_text(stdout)
     (records / (name + ".stderr")).write_text(stderr)
@@ -380,9 +431,7 @@ def capture_failed_start(env):
 
 
 def profile_up(verify_demos=False):
-    STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
-    os.chmod(STATE, 0o700)
-    _, password = secrets_on_disk()
+    credentials, password = secrets_on_disk()
     command("prepare", [sys.executable, "-I", "-B", str(LOCAL / "prepare.py")],
             env=os.environ.copy())
     build = current()
@@ -393,6 +442,9 @@ def profile_up(verify_demos=False):
     if prior.strip():
         raise RuntimeError("profile already has containers; use status or stop before another up")
     build_images(build, env)
+    # Stdin keeps secret bytes out of argv, Docker configuration and command logs.
+    command("initialize-credentials", compose_args("run", "--rm", "-T", "--no-deps", "credential-init"),
+            env, input_data=json.dumps({"credentials": credentials, "operator_password": password}))
     created_new = True
     started = False
     try:

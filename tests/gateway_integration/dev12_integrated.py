@@ -81,6 +81,7 @@ def observations(path):
 def runtime_source_identity():
     """Hash mounted runtime inputs independently of Git availability in the image."""
     roots = (ROOT / "server/src", ROOT / "clients/python/src", ROOT / "clients/js",
+             ROOT / "tools/gateway", ROOT / "worker",
              ROOT / "tests/gateway_integration", ROOT / "docs/contracts/dev12-successor-01")
     files = sorted(path for directory in roots for path in directory.rglob("*")
                    if path.is_file() and "__pycache__" not in path.parts and

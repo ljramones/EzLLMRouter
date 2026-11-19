@@ -21,9 +21,9 @@ for name in ('httpcore','httpx','anyio','h11','certifi','idna','sniffio','typing
  if len(matches)!=1: raise RuntimeError('frozen wheel mismatch: '+name)
  sys.path.insert(0,matches[0])
 import httpx
-from proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
-from guard import ACTIVE, Invocation, provider_expectation
-from owned_sender_transport import LocalSendAuthority, OwnedSocketStream
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from duranki_server.gateway.guard import ACTIVE, Invocation, provider_expectation
+from duranki_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedSocketStream
 from duranki_server.canonical import ContractError
 from duranki_server.core import Coordinator
 from duranki_server.plans import PlanAuthority

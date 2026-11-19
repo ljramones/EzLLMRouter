@@ -1,30 +1,11 @@
-"""Inspect selected runtime logs in memory; export only safe metadata."""
-import hashlib
-import json
-import subprocess
-import sys
-
-
-def main():
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: scan_dev05_logs.py COMPOSE_FILE PROJECT")
-    result = subprocess.run(["docker", "--context", "desktop-linux", "compose", "-f", sys.argv[1],
-                             "-p", sys.argv[2], "logs", "--no-color", "service_choice_b",
-                             "worker_choice_b"], capture_output=True)
-    if result.returncode:
-        print(json.dumps({"log_scan": "unavailable", "exit": result.returncode}))
-        raise SystemExit(result.returncode)
-    raw = result.stdout + result.stderr
-    markers = (b"Use lookup for synthetic.", b"Lookup: synthetic", b'"key":"synthetic"')
-    found = [index for index, marker in enumerate(markers) if marker in raw]
-    report = {"log_scan": "PASS" if not found else "CONTENT_LITERAL_FOUND",
-              "services": ["service_choice_b", "worker_choice_b"],
-              "bytes": len(raw), "lines": len(raw.splitlines()),
-              "sha256": hashlib.sha256(raw).hexdigest(), "matched_marker_indexes": found}
-    print(json.dumps(report, sort_keys=True))
-    if found:
-        raise SystemExit(1)
-
-
+"""Compatibility entry point; implementation lives in tools.gateway.evidence.scan_dev05_logs."""
+from pathlib import Path as _Path
+import sys as _sys
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
+from importlib import import_module as _import_module
+_runtime = _import_module('tools.gateway.evidence.scan_dev05_logs')
 if __name__ == "__main__":
-    main()
+    _runtime.main()
+else:
+    _sys.modules[__name__] = _runtime
+    globals().update(vars(_runtime))

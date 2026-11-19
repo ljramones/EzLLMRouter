@@ -15,7 +15,7 @@ import tarfile
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-ROOTS = ("server/src/", "clients/python/src/", "clients/js/",
+ROOTS = ("server/src/", "clients/python/src/", "clients/js/", "tools/gateway/", "worker/",
          "tests/gateway_integration/", "tests/operator_console/", "web/",
          "docs/contracts/dev12-successor-01/")
 FIXED = {"tests/development_slice/request.json", "tests/tool_cycle/scenarios.json"}

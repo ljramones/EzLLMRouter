@@ -1,6 +1,8 @@
 """Standalone synthetic authority with durable revisions and a first-write gate."""
 from __future__ import annotations
 
+from .observability import log_failure
+
 import base64
 from copy import deepcopy
 import json
@@ -147,6 +149,7 @@ class SyntheticSuccessorAuthority:
             try:
                 self.store._transaction(action)
             except Exception as exc:
+                log_failure('successor_authority.SyntheticSuccessorAuthority.update.failed')
                 # A failed/uncertain DB commit cannot expose a newly permissive view.
                 if not getattr(exc, "duranki_definite_rollback", False):
                     self.revoked = True

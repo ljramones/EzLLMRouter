@@ -8,6 +8,9 @@ import re
 from datetime import datetime, timezone
 from urllib.parse import quote, urlsplit
 
+from ._http import DEFAULT_TIMEOUT, INTEGRATION_RESPONSE_LIMIT, bounded_request
+from ._json import strict_reply
+
 SCHEMAS = {version: json.loads((Path(__file__).parent / filename).read_text())["$defs"]
            for version, filename in (("1", "integration_schema.json"), ("2", "integration_schema_v2.json"),
                                      ("3", "integration_schema_v3.json"))}
@@ -124,19 +127,9 @@ class IntegrationClientError(Exception):
 
 
 def _decode(raw):
-    if len(raw) > 16777216 or raw.startswith(b"\xef\xbb\xbf"):
-        raise ValueError("response limit or BOM")
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise ValueError("duplicate response key")
-            result[key] = value
-        return result
-    def reject(_text):
-        raise ValueError("unsupported response number")
-    return json.loads(raw.decode("utf-8", "strict"), object_pairs_hook=pairs,
-                      parse_float=reject, parse_constant=reject)
+    if len(raw) > INTEGRATION_RESPONSE_LIMIT:
+        raise ValueError("response limit")
+    return strict_reply(raw)
 
 
 def _receipt_valid(value, dataset_id, event_id, kind=None, digest=None):
@@ -152,7 +145,9 @@ def _receipt_valid(value, dataset_id, event_id, kind=None, digest=None):
 
 
 class IntegrationClient:
-    def __init__(self, base_url, token, *, transport=None, timeout=None, version="1"):
+    def __init__(self, base_url, token, *, transport=None, timeout=DEFAULT_TIMEOUT, version="1"):
+        if type(base_url) is not str or type(token) is not str:
+            raise TypeError("invalid integration client configuration")
         parsed = urlsplit(base_url)
         if (type(base_url) is not str or type(token) is not str or not token or
                 parsed.scheme not in ("http", "https") or not parsed.hostname or
@@ -194,13 +189,13 @@ class IntegrationClient:
         else:
             data = None
         try:
-            response = self.transport.request(method, self.base_url + path, headers=headers,
-                                              **({"content": data} if data is not None else {}))
+            response = bounded_request(self.transport, method, self.base_url + path,
+                headers=headers, content=data, limit=INTEGRATION_RESPONSE_LIMIT)
         except Exception as exc:
-            raise IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN", retry_guidance="query_first") from exc
+            raise IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None), "query_first") from exc
         try:
             value = _decode(response.content)
-        except (ValueError, UnicodeError, TypeError) as exc:
+        except (ValueError, UnicodeError, TypeError, RecursionError) as exc:
             raise IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN", response.status_code, "query_first") from exc
         if type(value) is not dict or response.headers.get("Duranki-Integration-Version") != self.version or value.get("integration_version") != self.version:
             raise IntegrationClientError("UNSUPPORTED_VERSION", response.status_code)
@@ -329,7 +324,7 @@ class IntegrationClient:
                              quote(dataset_id, safe=""), None, (200,))
 
     def submit_snapshot(self, snapshot):
-        if self.version not in ("2", "3") or snapshot.get("integration_version") != self.version or not _snapshot_valid(snapshot):
+        if type(snapshot) is not dict or self.version not in ("2", "3") or snapshot.get("integration_version") != self.version or not _snapshot_valid(snapshot):
             raise TypeError("invalid snapshot")
         digest = "sha256:" + hashlib.sha256(json.dumps(snapshot, ensure_ascii=False,
             separators=(",", ":"), sort_keys=True).encode("utf-8")).hexdigest()

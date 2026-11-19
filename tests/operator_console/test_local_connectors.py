@@ -4,7 +4,6 @@ import io
 import json
 import socket
 import ssl
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -24,7 +23,6 @@ INVENTORY = {"models": [{"name": "llama3.2:latest", "model": "llama3.2:latest", 
 class LocalFixture(UserFixture):
     def setUp(self):
         super().setUp()
-        self.registry.provider_vault = SimpleNamespace(key=b"k" * 32)
         self.calls = []
         self.inventory = copy.deepcopy(INVENTORY)
         def read(url, path, key):
@@ -145,7 +143,7 @@ class LocalConnectorTests(LocalFixture):
     def test_missing_key_does_not_replace_or_erase_encrypted_credentials(self):
         item = self.connector(api_key="private-api-key-for-container")
         sealed = self.store.db.execute("SELECT secret FROM local_connectors WHERE id=?", (item["connector_id"],)).fetchone()[0]
-        self.registry.provider_vault = None
+        self.connectors.key_path.unlink()
         failed = self.discover_connector(item)
         self.assertEqual(failed["discovery"]["reason"], "CREDENTIAL_UNAVAILABLE")
         self.assertEqual(self.store.db.execute("SELECT secret FROM local_connectors WHERE id=?", (item["connector_id"],)).fetchone()[0], sealed)

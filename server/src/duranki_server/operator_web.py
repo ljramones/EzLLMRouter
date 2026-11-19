@@ -1,11 +1,13 @@
 """Loopback-only synthetic operator console and authenticated metadata API."""
 from __future__ import annotations
 
+from .observability import log_failure
+
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from http import cookies
 from http.client import HTTPConnection
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from .http_server import BoundedHTTPServer as ThreadingHTTPServer, SafeHTTPRequestHandler
 import csv
 import hmac
 import io
@@ -47,14 +49,24 @@ def _reject_number(_text):
     raise ValueError("unsupported operator number")
 
 
+def _accounting_maintenance(accounting, stopped):
+    while not stopped.wait(60):
+        try:
+            accounting.maintain()
+        except Exception:
+            log_failure("accounting_maintenance_failed")
+
+
 def serve(host, port, *, projection, runner, password, fixture, build, web_root,
           worker_probe, sender_status, allowed_hosts=None, socket_path=None, registry=None,
-          provider_validation=None, successor_store=None, integration_only=False, mach33_demo=None):
+          provider_validation=None, successor_store=None, integration_only=False, mach33_demo=None,
+          bootstrap_password_file=None):
     if host not in ("0.0.0.0", "127.0.0.1") or not password or len(password) < 32:
         raise ValueError("unsafe operator binding or credential")
     allowed_hosts = allowed_hosts or {f"127.0.0.1:{port}", f"localhost:{port}"}
     allowed_origins = {"http://" + value for value in allowed_hosts}
-    accounts = UserManager(registry) if registry else None
+    accounts = ((getattr(registry, "users", None) or UserManager(registry,
+                bootstrap_password_file=bootstrap_password_file)) if registry else None)
     local_connectors = LocalConnectors(registry) if registry else None
     if registry:
         registry.local_connectors = local_connectors
@@ -70,6 +82,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             projection.finish_launch(operation_id, "completed", result["submission_ids"],
                                      result["caller_lookups"])
         except Exception as exc:
+            log_failure('operator_web.serve.execute.failed')
             prior = projection.launch(operation_id)
             ids = prior["submission_ids"] if prior else []
             code = getattr(exc, "code", None)
@@ -79,7 +92,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 "outcome_unknown" if code in ("DEMO_OUTCOME_UNKNOWN", "TRANSPORT_OUTCOME_UNKNOWN")
                 else "failed", ids, error_code=code or "DEMO_FAILED")
 
-    class Handler(BaseHTTPRequestHandler):
+    class Handler(SafeHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
         def log_message(self, *_args):
@@ -184,6 +197,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             except (ValueError, TypeError, KeyError):
                 return self._fail(400, "INVALID_USER_CHANGE")
             except Exception:
+                log_failure('operator_web.serve.Handler._user_write.failed')
                 return self._fail(503, "USER_MANAGEMENT_UNAVAILABLE")
 
         def _local_connector_write(self, body, session, *, delete=False):
@@ -213,6 +227,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             except (ValueError, TypeError, KeyError):
                 return self._fail(400, "INVALID_CONNECTOR_CHANGE")
             except Exception:
+                log_failure('operator_web.serve.Handler._local_connector_write.failed')
                 return self._fail(503, "CONNECTOR_UNAVAILABLE")
 
         def _registry_read(self, path, session):
@@ -333,7 +348,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         4096 if self.path in ("/operator/v1/registry", "/operator/v1/provider-probe") else 2048) or
                     self.headers.get("Transfer-Encoding")):
                 raise ValueError("body shape")
-            value = json.loads(self.rfile.read(int(lengths[0])), object_pairs_hook=_pairs,
+            value = json.loads(self.read_body(int(lengths[0])), object_pairs_hook=_pairs,
                                parse_float=_reject_number, parse_constant=_reject_number)
             if type(value) is not dict:
                 raise ValueError("body shape")
@@ -607,6 +622,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     try:
                         worker = worker_probe()
                     except Exception as exc:
+                        log_failure('operator_web.serve.Handler.do_GET.failed')
                         worker = {"state": "unavailable", "error_type": type(exc).__name__}
                     return self._send(200, {"profile": ("LOCAL DEVELOPMENT · PROVIDER PATH GATED"
                         if registry and registry.provider_execution_ready else "LIVE SYNTHETIC DEVELOPMENT"),
@@ -678,12 +694,22 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             except (ValueError, KeyError, TypeError):
                 return self._fail(400, "INVALID_SELECTOR")
             except Exception:
+                log_failure('operator_web.serve.Handler.do_GET.failed')
                 return self._fail(503, "METADATA_UNAVAILABLE")
             return self._fail(404, "NOT_FOUND")
 
         def do_POST(self):
             if not self._origin_ok(mutation=True) or urlsplit(self.path).query:
                 return self._fail(403, "ORIGIN_REJECTED")
+            session = None
+            if self.path != "/operator/v1/login":
+                session = self._session()
+                if not session:
+                    self.close_connection = True
+                    return self._fail(401, "AUTH_REQUIRED")
+                if not hmac.compare_digest(self.headers.get("X-Duranki-CSRF", ""), session[1]["csrf"]):
+                    self.close_connection = True
+                    return self._fail(403, "CSRF_REJECTED")
             try:
                 body = self._body()
             except (ValueError, UnicodeError, json.JSONDecodeError):
@@ -715,6 +741,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         principal = registry.credential_principal(body["password"], "human")
                         principal_id = principal["principal_id"]
                     except Exception:
+                        log_failure('operator_web.serve.Handler.do_POST.failed')
                         return self._fail(401, "AUTH_FAILED")
                 else:
                     return self._fail(401, "AUTH_FAILED")
@@ -793,6 +820,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except IntegrationError as exc:
                     return self._fail(exc.status, exc.code)
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "INTEGRATION_UNAVAILABLE")
             if integration_only and self.path != "/operator/v1/logout" and not (
                     self.path == "/operator/v1/registry" and body.get("action") == "set_grant"):
@@ -820,6 +848,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except PermissionError:
                     return self._fail(403, "ADMIN_REQUIRED")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "REGISTRY_UNAVAILABLE")
             if registry and self.path == "/operator/v1/personal-campaign":
                 if session[1]["principal_id"] != "owner.local" or not getattr(registry, "personal_campaign", None):
@@ -839,6 +868,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except ValueError:
                     return self._fail(409, "CAMPAIGN_NOT_ELIGIBLE")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "CAMPAIGN_UNAVAILABLE")
             if registry and self.path == "/operator/v1/provider-credential":
                 if session[1]["role"] != "registry_admin":
@@ -856,6 +886,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except PermissionError:
                     return self._fail(403, "ADMIN_REQUIRED")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "CREDENTIAL_UNAVAILABLE")
             if registry and self.path == "/operator/v1/provider-probe":
                 if session[1]["role"] != "registry_admin":
@@ -872,6 +903,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except PermissionError:
                     return self._fail(403, "ADMIN_REQUIRED")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "PROBE_UNAVAILABLE")
             if registry and self.path == "/operator/v1/provider-validation":
                 if session[1]["role"] != "registry_admin":
@@ -921,6 +953,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except ValueError:
                     return self._fail(409, "VALIDATION_OPERATION_CONFLICT")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "VALIDATION_UNAVAILABLE")
                 live_candidate = None
                 try:
@@ -932,6 +965,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     projection.finish_provider_validation(body["operation_id"], state)
                     live_candidate = result.get("candidate") if type(result) is dict else None
                 except Exception as exc:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     handle = getattr(exc, "handle", None)
                     if type(handle) is dict and type(handle.get("submission_id")) is str:
                         projection.record_provider_validation_submission(body["operation_id"],
@@ -962,6 +996,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 except ValueError:
                     return self._fail(400, "INVALID_REGISTRY_CHANGE")
                 except Exception:
+                    log_failure('operator_web.serve.Handler.do_POST.failed')
                     return self._fail(503, "REGISTRY_UNAVAILABLE")
             if self.path.startswith("/operator/v1/demos/"):
                 if registry and session[1]["role"] != "registry_admin":
@@ -981,16 +1016,19 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
         def do_DELETE(self):
             path = urlsplit(self.path)
             if not self._origin_ok(mutation=True) or path.query or path.fragment:
+                self.close_connection = True
                 return self._fail(403, "ORIGIN_REJECTED")
+            session = self._session()
+            if not session:
+                self.close_connection = True
+                return self._fail(401, "AUTH_REQUIRED")
+            if not hmac.compare_digest(self.headers.get("X-Duranki-CSRF", ""), session[1]["csrf"]):
+                self.close_connection = True
+                return self._fail(403, "CSRF_REJECTED")
             try:
                 body = self._body()
             except (ValueError, UnicodeError, json.JSONDecodeError):
                 return self._fail(400, "INVALID_BODY")
-            session = self._session()
-            if not session:
-                return self._fail(401, "AUTH_REQUIRED")
-            if not hmac.compare_digest(self.headers.get("X-Duranki-CSRF", ""), session[1]["csrf"]):
-                return self._fail(403, "CSRF_REJECTED")
             if session[1].get("must_change_password"):
                 return self._fail(403, "PASSWORD_CHANGE_REQUIRED")
             if path.path.startswith("/operator/v1/users/"):
@@ -1021,6 +1059,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             try:
                 connections = registry.list_connections() if registry else []
             except Exception:
+                log_failure('operator_web.serve.scheduled_checks.failed')
                 continue
             active = set()
             for connection in connections:
@@ -1041,15 +1080,26 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     registry.probe_connection("owner.local", key, connection["revision"],
                         "probe.scheduled." + uuid.uuid4().hex, connection["scheduled_operation"])
                 except Exception:
+                    log_failure('operator_web.serve.scheduled_checks.failed')
                     pass  # The next bounded interval may record a new observation.
             for key in set(due) - active:
                 due.pop(key, None)
     scheduler_thread = threading.Thread(target=scheduled_checks, daemon=True,
                                         name="duranki-provider-checks")
     scheduler_thread.start()
+    maintenance_stop = threading.Event()
+    maintenance_thread = None
+    if registry is not None:
+        maintenance_thread = threading.Thread(target=_accounting_maintenance,
+            args=(registry.integration, maintenance_stop), daemon=True,
+            name="ezllmrouter-accounting-maintenance")
+        maintenance_thread.start()
     original_close = server.server_close
     def close_with_scheduler():
         scheduler_stop.set()
+        maintenance_stop.set()
+        if maintenance_thread is not None:
+            maintenance_thread.join()  # Complete any cleanup transaction before the DB closes.
         scheduler_thread.join(timeout=4)
         if local_connectors:
             local_connectors.close()

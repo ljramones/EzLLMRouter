@@ -297,20 +297,30 @@ class FiniteSuccessorCampaign:
                 return audit
             return self.store._transaction(action)
 
-    def finish(self, attempt_id):
+    def finish(self, attempt_id, *, db=None):
         """Release concurrency only; historical unknown exposure remains reserved."""
-        def action():
-            row = self.store.db.execute(
+        def action(connection):
+            row = connection.execute(
                 "SELECT state FROM dev12_campaign_attempts WHERE attempt_id=? AND campaign_id=?",
                 (attempt_id, self.campaign_id)).fetchone()
             if not row:
                 raise KeyError(attempt_id)
             if row[0] == "finished":
                 return
-            campaign = self._record(self.store.db)
+            campaign = self._record(connection)
             campaign["inflight_count"] -= 1
-            self.store.db.execute("UPDATE dev12_campaign_attempts SET state='finished' WHERE attempt_id=?",
+            connection.execute("UPDATE dev12_campaign_attempts SET state='finished' WHERE attempt_id=?",
                                   (attempt_id,))
-            self.store.db.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+            connection.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
                                   (encode(campaign), self.campaign_id))
-        self.store._transaction(action)
+        if db is not None:
+            action(db)
+        else:
+            self.store._transaction(lambda: action(self.store.db))
+
+    def proves_no_send(self, record):
+        """Require matching campaign scope and durable evidence of no lower write."""
+        if record.get("campaign_id") != self.campaign_id:
+            return False
+        with self.store._lock:
+            return self._definite_no_send(self.store.db, record)

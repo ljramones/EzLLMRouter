@@ -1,6 +1,6 @@
 "use strict";
 const fs = require("node:fs");
-const { DurankiClient } = require("@mach33/duranki-client");
+const { DurankiClient } = require("@cognitivedynamics/ezllmrouter-client");
 
 (async () => {
   const input = JSON.parse(fs.readFileSync(0, "utf8"));
@@ -21,7 +21,7 @@ const { DurankiClient } = require("@mach33/duranki-client");
         !same(await client.getOutcomeReceipt(input.outcome.event_id)))
       throw Error("outcome duplicate or read receipt changed");
   }
-  process.stdout.write(JSON.stringify({package: require.resolve("@mach33/duranki-client"), runs, outcome}) + "\n");
+  process.stdout.write(JSON.stringify({package: require.resolve("@cognitivedynamics/ezllmrouter-client"), runs, outcome}) + "\n");
 })().catch(error => {
   process.stderr.write(`${error.code || error.name}: ${error.message}\n`);
   process.exitCode = 1;

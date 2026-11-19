@@ -48,6 +48,16 @@ class CaptureTests(unittest.TestCase):
     def test_absent_credentials_preserve_early_failure(self):
         self.assert_safe(())
 
+    def test_encryption_keyrings_and_sealed_credentials_are_not_exported(self):
+        private = self.run / "private"
+        private.mkdir()
+        for name in ("integration.keys.json", "provider.keys.json", "local-connectors.keys.json",
+                     "provider.keys.json.lock", "credential.1.sealed"):
+            (private / name).write_text("synthetic-key-material-canary")
+        self.assert_safe(("synthetic-key-material-canary",))
+        with zipfile.ZipFile(self.root / "DEV-05-RUNTIME-run-20261020-99.zip") as archive:
+            self.assertFalse(any(name.startswith("private/") for name in archive.namelist()))
+
     def test_partial_credentials_redact_available_secret(self):
         token = "synthetic-token-value-123456"
         self.generated(["token"], {"token": token})

@@ -5,6 +5,8 @@ module intentionally does not import its offline JavaScript reference checker.
 """
 from __future__ import annotations
 
+from .observability import log_failure
+
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_CEILING, ROUND_HALF_EVEN
 from hashlib import sha256
@@ -281,6 +283,7 @@ def decimal_valid(value, score=False):
     try:
         number = Decimal(value)
     except Exception:
+        log_failure('successor_contract.decimal_valid.failed')
         return False
     if number.is_zero() and number.is_signed():
         return False

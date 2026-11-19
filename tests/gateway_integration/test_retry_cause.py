@@ -49,9 +49,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from duranki_server.core import Coordinator
 from duranki_server.plans import PlanAuthority
 from duranki_server.store import SQLiteStore
-from adapter import LiteLLMAsgiAdapter
-from guard import ACTIVE, GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
-from proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from duranki_server.gateway.adapter import LiteLLMAsgiAdapter
+from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 FIXTURE = json.loads((data_dir / 'fixture.json').read_text())
 REQUEST = json.loads((data_dir / 'request.json').read_text())
@@ -252,7 +252,7 @@ class RetryCauseTests(unittest.TestCase):
     def test_provider_field_leak_remains_rejected(self):
         self.execute()
         invocation = deepcopy(self.adapter.invocations[0].projection)
-        from guard import Invocation, check_request
+        from duranki_server.gateway.guard import Invocation, check_request
         context = Invocation('submission.test', 'attempt.test',
                              {'plan_id':'plan.test','work_digest':'sha256:test',
                               'per_attempt_total_timeout_ms':1000}, invocation, lambda:None, lambda _:None)
@@ -281,7 +281,7 @@ class RetryCauseTests(unittest.TestCase):
 
     def test_timeout_over_signed_budget_still_rejects(self):
         self.execute()
-        from guard import Invocation, check_request
+        from duranki_server.gateway.guard import Invocation, check_request
         context = Invocation('submission.timeout', 'attempt.timeout',
             {'plan_id': 'plan.timeout', 'work_digest': 'sha256:test',
              'per_attempt_total_timeout_ms': 1000},

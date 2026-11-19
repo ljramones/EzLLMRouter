@@ -26,7 +26,7 @@ from duranki_server.personal_campaign import PersonalCampaign
 from duranki_server.registry import Registry
 from duranki_server.reporting import usage_costs
 from duranki_server.store import SQLiteStore
-from proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
 
 
 class Authority:
@@ -53,9 +53,10 @@ class Adapter:
 
     def send(self, prepared, _timeout_ms, _expected):
         self.sent.append(json.loads(prepared))
-        usage = {"input_tokens": 5, "output_tokens": 2}
+        usage = {"input_tokens": 5, "output_tokens": 2, "total_tokens": 7}
         if self.return_details:
-            usage.update(input_tokens_details={"cached_tokens": 0},
+            usage.update(input_tokens_details={"cached_tokens": 0, "cache_write_tokens": 0,
+                         "cache_write_tokens_details": {"ttl_30m_tokens": 0, "ttl_12h_tokens": 0}},
                          output_tokens_details={"reasoning_tokens": 0})
         return {"status": 200, "body": {"text": "Controlled result.",
             "served_model": "test-response-model", "usage": usage}}
@@ -120,9 +121,16 @@ class ProviderPlanTests(unittest.TestCase):
                 self.assertEqual(config["destination"]["connection_revision"], 4)
                 config = change("publish_price", "cfg.provider.plan", 1,
                     {"price_version": "plan.rate.v1", "currency": "USD",
-                     "rates": {"input_uncached": "1", "output_text": "2"},
+                     "rates": {"input_uncached": "1", "input_cache_read": "0.1",
+                               "input_cache_write_30m": "1.25", "output_text": "2"},
                      "source": "operator-approved provider schedule",
-                     "usage_semantics_version": "openai.responses.text.v1"})
+                     "usage_semantics_version": "openai.responses.text.cache.v2",
+                     "contract": {"version": "openai.responses.implicit-cache.v1",
+                         "requested_model": "test-response-model", "returned_models": ["test-response-model"],
+                         "cache_mode": "implicit_default_30m", "input_token_ceiling": 1000,
+                         "max_output_tokens": 32, "input_bound_basis": "provider_enforced_context_window",
+                         "temperature_zero_supported": True, "price_conditions": "single_tier_no_modifiers",
+                         "price_source_url": "https://example.test/fictional-rates", "observed_on": "2026-10-25"}})
                 change("set_source_permissions", "conn.plan", 0,
                     {"allowed": True, "items": [{"serving_id": "test-response-model", "expected_revision": 0}]})
                 registry.provider_execution_ready = False

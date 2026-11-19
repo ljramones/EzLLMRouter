@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import os
+from pathlib import Path
 import re
 import secrets
 import sqlite3
@@ -16,10 +17,11 @@ import uuid
 
 from .registry import timestamp
 from .store import encode
+from .private_files import secret_text
 
 
 DEFAULT_ADMIN_USERNAME = "admin"
-DEFAULT_ADMIN_PASSWORD = "ChangeMeNow!"
+PASSWORD_HASH_SLOTS = threading.BoundedSemaphore(2)
 ROLE_PERMISSIONS = {
     "ordinary": ("activity.read_own", "models.read_allowed", "models.use_granted"),
     "read_only_operator": ("activity.read_all", "reports.read_all", "registry.read", "settings.read"),
@@ -49,8 +51,9 @@ def validate_password(value):
 
 def password_hash(value):
     salt = secrets.token_bytes(16)
-    digest = hashlib.scrypt(validate_password(value).encode(), salt=salt,
-                            n=32768, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
+    with PASSWORD_HASH_SLOTS:
+        digest = hashlib.scrypt(validate_password(value).encode(), salt=salt,
+                                n=32768, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
     return "scrypt$" + base64.b64encode(salt).decode() + "$" + base64.b64encode(digest).decode()
 
 
@@ -61,8 +64,9 @@ def password_matches(value, encoded):
         algorithm, salt, expected = encoded.split("$")
         if algorithm != "scrypt":
             return False
-        digest = hashlib.scrypt(value.encode(), salt=base64.b64decode(salt, validate=True),
-                                n=32768, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
+        with PASSWORD_HASH_SLOTS:
+            digest = hashlib.scrypt(value.encode(), salt=base64.b64decode(salt, validate=True),
+                                    n=32768, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
         return hmac.compare_digest(digest, base64.b64decode(expected, validate=True))
     except (ValueError, TypeError):
         return False
@@ -92,8 +96,10 @@ class LoginThrottle:
 
 
 class UserManager:
-    def __init__(self, registry):
+    def __init__(self, registry, *, bootstrap_password_file=None):
         self.registry, self.store = registry, registry.store
+        self.bootstrap_password_file = (Path(bootstrap_password_file) if bootstrap_password_file else
+                                        Path(self.store.path).parent / ".console-secrets" / "admin.password")
         self._dummy_hash = password_hash(secrets.token_urlsafe(24))
         with self.store._lock:
             self.store.db.executescript("""
@@ -122,7 +128,13 @@ class UserManager:
             if not principal:
                 raise RuntimeError("an existing active administrator is required for console bootstrap")
             name = username(os.environ.get("EZLLMROUTER_ADMIN_USERNAME", DEFAULT_ADMIN_USERNAME))
-            secret = os.environ.get("EZLLMROUTER_ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+            secret = os.environ.get("EZLLMROUTER_ADMIN_PASSWORD")
+            if secret is None:
+                secret = secret_text(self.bootstrap_password_file)
+            try:
+                validate_password(secret)
+            except UserError as exc:
+                raise UserError("BOOTSTRAP_PASSWORD_REQUIRES_12_TO_256_CHARACTERS") from exc
             at = timestamp()
             db.execute("INSERT INTO console_users VALUES (?,?,?,?,?,?,?)",
                        (principal["principal_id"], name, password_hash(secret), 1, 1, at, at))
@@ -315,8 +327,6 @@ class UserManager:
     def change_password(self, principal_id, data):
         self._fields(data, ("current_password", "new_password"))
         validate_password(data["new_password"])
-        if data["new_password"] == DEFAULT_ADMIN_PASSWORD:
-            raise UserError("PASSWORD_MUST_DIFFER")
         context = self.context(principal_id)
         if not context:
             raise UserError("AUTH_REQUIRED", 401)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from copy import deepcopy
+from contextvars import copy_context
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 import hashlib
@@ -17,6 +18,7 @@ import uuid
 from .canonical import (ContractError, digest, ident, jcs, projection, utc_second,
                         validate_text_request, work_digest, strict_loads)
 from .plans import PROVIDER_RECIPE_REF, PROVIDER_ADAPTER_VERSION
+from .observability import log_failure
 from .cache_accounting import SEMANTICS as CACHE_SEMANTICS, cache_usage_revision, exposure_bound
 
 
@@ -394,16 +396,17 @@ class Coordinator:
                 return 202, self._pending(duplicate)
             raise ContractError("WORK_CONFLICT", 409)
         except Exception as exc:
+            log_failure('core.Coordinator.submit.failed')
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
         admission_clock = time.monotonic()
         deadline_seconds = (datetime.fromisoformat(deadline.replace("Z", "+00:00")) -
                             datetime.now(timezone.utc)).total_seconds()
         response_deadline = admission_clock + max(0, min(wait_ms / 1000, deadline_seconds))
         # The signed plan is generated from trusted facts only, after durable admission.
-        plan = self.authority.issue(admitted_projection, wd, key, admitted_classification, admitted_retention,
-            **({"decision_record_ref": "decision." + sid +
-                ("." + attribution_digest if attribution_digest else "")} if self.registry else {}))
         try:
+            plan = self.authority.issue(admitted_projection, wd, key, admitted_classification, admitted_retention,
+                **({"decision_record_ref": "decision." + sid +
+                    ("." + attribution_digest if attribution_digest else "")} if self.registry else {}))
             if decision and plan["registry_version"] != "registry.local." + str(decision["authority_revision"]):
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
             self.authority.verify(plan, wd, self.authority.policy["policy_version"])
@@ -412,6 +415,10 @@ class Coordinator:
         except ContractError:
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
             return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+        except Exception:
+            log_failure("execution_plan_failed")
+            self._failed(sid, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            return 503, self._failed_reply(handle, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
         if credential is None:
             credential = (None if self.registry else
                           next((token for token, scope in self.identity.items() if scope is trusted), None))
@@ -424,6 +431,7 @@ class Coordinator:
             body = json.loads(expected)
             prepared = self.adapter.prepare(body)
         except Exception:
+            log_failure('core.Coordinator.submit.failed')
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
             return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
         if self.faults.get("mutate_after_binding"):
@@ -432,6 +440,7 @@ class Coordinator:
             observed_request = self.adapter.describe(prepared, timeout_ms, admitted_config)
             preparation_match = prepared == expected and observed_request == expected_request
         except Exception:
+            log_failure('core.Coordinator.submit.failed')
             preparation_match = False
         if not preparation_match:
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
@@ -447,14 +456,21 @@ class Coordinator:
         try:
             self.store.intent(sid, aid, intent)
         except Exception as exc:
+            log_failure('core.Coordinator.submit.failed')
             try:
                 self._failed(sid, aid, "INTENT_PERSIST_FAILED", "before_transmit")
             except Exception:
+                log_failure('core.Coordinator.submit.failed')
                 raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
             return 503, self._failed_reply(handle, aid, "INTENT_PERSIST_FAILED", "before_transmit")
-        future = self.pool.submit(self._dispatch, sid, aid, req["execution_generation"],
-                                  prepared, plan, expected_request, credential, admitted_scope,
-                                  admitted_projection, decision)
+        try:
+            future = self.pool.submit(copy_context().run, self._dispatch, sid, aid, req["execution_generation"],
+                                      prepared, plan, expected_request, credential, admitted_scope,
+                                      admitted_projection, decision)
+        except Exception:
+            log_failure("execution_schedule_failed")
+            self._failed(sid, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            return 503, self._failed_reply(handle, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
         with self._futures_lock:
             self._futures[sid] = future
         def release(done):
@@ -470,6 +486,7 @@ class Coordinator:
                 self.store.mark_wait_expired_no_store(sid, now())
             return 202, pending
         except Exception as exc:
+            log_failure('core.Coordinator.submit.failed')
             # Intent remains recoverable by work key. An unavailable store cannot
             # honestly produce a durable post-transmit terminal result.
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
@@ -492,7 +509,8 @@ class Coordinator:
                                        "updated_at": now(), "attempt_revision": 3})
         campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
         if campaign and result.get("campaign"):
-            campaign.settle(aid, before_transmit=stage == "before_transmit")
+            observed = self.store.get(sid)
+            campaign.settle(aid, observed.get("usage", {}).get("revision"), before_transmit=stage == "before_transmit")
         return result
 
     def _failed_reply(self, handle, aid, code, stage):
@@ -576,17 +594,69 @@ class Coordinator:
             self._failed(sid, aid, code, "before_transmit")
             return {"kind": "failed", "code": code, "stage": "before_transmit"}
         except Exception:
+            log_failure('core.Coordinator._dispatch.failed')
             self.store.update(sid, {"submission_state": "outcome_unknown", "dispatch_state": "outcome_unknown",
                                     "candidate_access": "not_yet_available", "updated_at": now(), "attempt_revision": 3})
             campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
             if campaign:
                 campaign.settle(aid)
             return {"kind": "unknown"}
+        try:
+            return self._observe_response(sid, aid, generation, plan, admitted_projection, decision, response)
+        except Exception:
+            log_failure("dispatch_response_failed")
+            return self._outcome_unknown(sid, aid, plan, decision, response)
+
+    def _outcome_unknown(self, sid, aid, plan=None, decision=None, response=None):
+        record = self.store.get(sid)
+        usage = record.get("usage", {}).get("revision")
+        if usage is None and type(response) is dict and type(response.get("body")) is dict:
+            body = response["body"]
+            raw_usage = body.get("usage")
+            if type(raw_usage) is dict:
+                try:
+                    provider = plan["destination"].get("service") == "openai.responses.v1"
+                    pricing = {**decision, "provider_model": plan["destination"]["model"]} if provider and decision else decision
+                    usage = usage_revision(aid, raw_usage, decision=pricing,
+                                           reported_model=body.get("served_model") if provider else None)
+                except Exception:
+                    log_failure("response_usage_unusable")
+                    usage = None
+        if record["submission_state"] != "completed":
+            self.store.update(sid, {"submission_state": "outcome_unknown", "dispatch_state": "outcome_unknown",
+                                   "candidate_access": "not_yet_available", "updated_at": now(), "attempt_revision": 3},
+                              usage=usage if record.get("usage", {}).get("state") != "available" else None)
+            record = self.store.get(sid)
+        campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+        if campaign and record.get("campaign"):
+            campaign.settle(aid, record.get("usage", {}).get("revision"))
+        return {"kind": "unknown"}
+
+    def _observe_response(self, sid, aid, generation, plan, admitted_projection, decision, response):
         if response["status"] != 200:
             self._failed(sid, aid, "REMOTE_EXECUTION_FAILED", "after_transmit")
             return {"kind": "failed", "code": "REMOTE_EXECUTION_FAILED"}
         body = response["body"]
         tool_request = "tools" in admitted_projection["work"]["requested_features"]
+        provider = plan["destination"].get("service") == "openai.responses.v1"
+        provider_model = body.get("served_model") if provider and isinstance(body, dict) else None
+        pricing = {**decision, "provider_model": plan["destination"]["model"]} if provider and decision else decision
+        try:
+            raw_usage = body.get("usage") if isinstance(body, dict) else None
+            if isinstance(body, dict) and "usage" in body and not isinstance(raw_usage, dict):
+                raise ValueError("invalid reported usage")
+            raw_usage_bytes = (json.dumps(raw_usage, ensure_ascii=False, sort_keys=True,
+                                          separators=(",", ":"), allow_nan=False).encode("utf-8")
+                               if raw_usage is not None else None)
+            if raw_usage_bytes is not None and len(raw_usage_bytes) > 65536:
+                raise ValueError("oversize usage")
+            if isinstance(raw_usage, dict):
+                observed_usage = usage_revision(aid, raw_usage, tool_request, pricing, provider_model)
+                self.store.update(sid, {"raw_usage_digest": digest(raw_usage_bytes), "updated_at": now()},
+                                  usage=observed_usage)
+        except (TypeError, ValueError, UnicodeError, ContractError):
+            self._failed(sid, aid, "CANDIDATE_UNUSABLE", "after_transmit")
+            return {"kind": "failed", "code": "CANDIDATE_UNUSABLE"}
         if not isinstance(body, dict) or (not isinstance(body.get("text"), str) and
                                           not (tool_request and isinstance(body.get("tool_calls"), list))):
             self._failed(sid, aid, "CANDIDATE_UNUSABLE", "after_transmit")
@@ -598,7 +668,7 @@ class Coordinator:
                 return {"lineage_ids": [lineage],
                         "sensitivity": output_classification["sensitivity"],
                         "restrictions": list(output_classification["combined_restrictions"])}
-            if "text" in body:
+            if isinstance(body.get("text"), str):
                 output = body["text"]
                 output_bytes = output.encode("utf-8", "strict")
                 if not output_bytes or len(output_bytes) > 65536 or any(0xD800 <= ord(c) <= 0xDFFF for c in output):
@@ -629,21 +699,9 @@ class Coordinator:
             if not blocks or ("tool_calls" in body) != (body.get("finish_reason") == "tool_calls"):
                 if "tool_calls" in body or "finish_reason" in body:
                     raise ValueError("invalid finish reason")
-            raw_usage = body.get("usage")
-            if "usage" in body and not isinstance(raw_usage, dict):
-                raise ValueError("invalid reported usage")
-            raw_usage_bytes = (json.dumps(raw_usage, ensure_ascii=False, sort_keys=True,
-                                          separators=(",", ":"), allow_nan=False).encode("utf-8")
-                               if raw_usage is not None else None)
-            if raw_usage_bytes is not None and len(raw_usage_bytes) > 65536:
-                raise ValueError("oversize usage")
         except (TypeError, ValueError, UnicodeError, ContractError):
             self._failed(sid, aid, "CANDIDATE_UNUSABLE", "after_transmit")
             return {"kind": "failed", "code": "CANDIDATE_UNUSABLE"}
-        provider_model = body.get("served_model") if plan["destination"].get("service") == "openai.responses.v1" else None
-        if decision and plan["destination"].get("service") == "openai.responses.v1":
-            decision = {**decision, "provider_model": plan["destination"]["model"]}
-        usage = usage_revision(aid, raw_usage, tool_request, decision, provider_model) if isinstance(raw_usage, dict) else None
         candidate = {"candidate_id": "candidate." + uuid.uuid4().hex, "attempt_id": aid,
                      "execution_generation": generation,
                      "served_destination": public_served_destination(plan["destination"]),
@@ -665,7 +723,7 @@ class Coordinator:
         if plan["destination"].get("service") == "openai.responses.v1":
             self.store.update(sid, {"provider_model_reported": provider_model,
                                     "updated_at": now()})
-        final = self.store.complete_candidate(sid, candidate, usage, raw_usage_digest,
+        final = self.store.complete_candidate(sid, candidate, None, raw_usage_digest,
             current_retention["content_store_allowed"], current_retention.get("content_expires_at"), now(),
             [self._live_source_tag(block) for block in blocks
              if block["kind"] == "tool_call"] if current_delivery_allowed else [])

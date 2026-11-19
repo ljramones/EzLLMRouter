@@ -5,8 +5,6 @@ import json
 import re
 
 SCHEMAS = json.loads(files("duranki_client").joinpath("dev12_schemas.json").read_text())
-REGISTRATIONS = json.loads(files("duranki_client").joinpath("dev12_registrations.json").read_text())
-ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
 
 
 def schema(value, shape):
@@ -91,10 +89,8 @@ def result_valid(result, attempt_id, request=None):
             return False
         if request is None:
             return True
-        config = next((item for item in REGISTRATIONS["configurations"]
-                       if item["configuration_ref"] == request["requested_configuration_ref"]), None)
-        profile = config.get("embedding_profile") if config else None
-        return bool(profile and result["profile_id"] == profile["profile_id"] and
+        profile = request["input"]["profile"]
+        return bool(result["profile_id"] == profile["profile_id"] and
                     result["model_ref"] == profile["model_ref"] and
                     result["dimensions"] == profile["dimensions"] and
                     len(vectors) == len(request["input"]["items"]) and
@@ -111,10 +107,8 @@ def result_valid(result, attempt_id, request=None):
         return False
     if request is None:
         return len({item["candidate_id"] for item in ranking}) == len(ranking)
-    config = next((item for item in REGISTRATIONS["configurations"]
-                   if item["configuration_ref"] == request["requested_configuration_ref"]), None)
     candidates = request["input"]["candidates"]
-    return bool(config and result["ranking_profile_id"] == config["ranking_profile_id"] and
+    return bool(result["ranking_profile_id"] == request["input"]["ranking_profile_id"] and
                 len(ranking) == request["input"]["top_k"] and
                 len({item["candidate_id"] for item in ranking}) == len(ranking) and
                 all(item["input_index"] < len(candidates) and

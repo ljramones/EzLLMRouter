@@ -13,13 +13,14 @@ sys.path.insert(0, str(ROOT / "server/src"))
 from duranki_server.registry import Registry
 from duranki_server.store import SQLiteStore
 from duranki_server.user_management import (
-    DEFAULT_ADMIN_PASSWORD, LoginThrottle, UserError, UserManager,
+    LoginThrottle, UserError, UserManager,
 )
 
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
         "model": "model.demo", "model_version": "v1", "processing_region": "local"}
 TRUSTED = {"principal_id": "svc.demo", "charging_owner_id": "team.demo"}
 PASSWORD = "A private test passphrase!"
+DEFAULT_ADMIN_PASSWORD = "Synthetic bootstrap passphrase!"
 
 
 class Authority:
@@ -35,7 +36,7 @@ class UserFixture(unittest.TestCase):
         self.addCleanup(self.store.close)
         self.registry = Registry(self.store, Authority(), legacy_destination=DEST,
             legacy_token="synthetic-legacy-token-for-users-000000000000", legacy_trusted=TRUSTED)
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"EZLLMROUTER_ADMIN_PASSWORD": DEFAULT_ADMIN_PASSWORD}, clear=True):
             self.users = UserManager(self.registry)
 
     def create(self, name="alice", role="ordinary"):

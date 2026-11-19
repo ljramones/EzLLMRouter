@@ -106,7 +106,7 @@ def mounted_source_identity(root=None):
     """Match the runtime's length-prefixed source fingerprint without imports."""
     root = Path(root or Path(__file__).resolve().parents[2]).resolve()
     roots = tuple(root / name for name in (
-        "server/src", "clients/python/src", "clients/js",
+        "server/src", "clients/python/src", "clients/js", "tools/gateway", "worker",
         "tests/gateway_integration", "tests/operator_console", "web",
         "docs/contracts/dev12-successor-01"))
     fixed = tuple(root / name for name in (
@@ -959,7 +959,7 @@ def main():
     tracked = subprocess.run(["git", "diff", "--quiet", "HEAD", "--"],
         capture_output=True, text=True)
     extras = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
-        "server/src", "clients", "tests/gateway_integration", "docs/contracts/dev12-successor-01"],
+        "server/src", "clients", "tools/gateway", "worker", "tests/gateway_integration", "docs/contracts/dev12-successor-01"],
         capture_output=True, text=True)
     if (source.returncode != 0 or tracked.returncode != 0 or
             extras.returncode != 0 or extras.stdout.strip() or

@@ -84,8 +84,9 @@ From the project folder, start the console with:
 ./start.sh
 ```
 
-Open **http://127.0.0.1:48761/integration**. On first sign-in use
-**`admin` / `ChangeMeNow!`**, then change the password. Stop with **Ctrl+C**.
+Open **http://127.0.0.1:48761/integration**. On first sign-in use **`admin`** and
+the random temporary password in `local-instance/secrets/admin.password`, then
+change the password. Startup prints the private file's path. Stop with **Ctrl+C**.
 The launcher uses Python 3.12 through `uv`, keeps data in the ignored
 `local-instance/` directory, and installs the exact dependencies in
 `server/uv.lock`, downloading any that are missing. Install `uv` and Python 3.12
@@ -106,13 +107,34 @@ ezllmrouter \
 ```
 
 The defaults are API port `48760` and operator console port `48761`. In a fresh
-installation, sign in as **`admin` / `ChangeMeNow!`** and choose a new password
-before continuing. Server version **0.3.1** adds **Users & Permissions** for
+installation, sign in as **`admin`** using the generated `admin.password` file in
+your secrets directory and choose a new password before continuing.
+Server version **0.3.1** adds **Users & Permissions** for
 account CRUD, role assignment, password resets, and model grants. See the
 [user management guide](docs/USER-MANAGEMENT.md) for roles, setup overrides,
 and compatibility with existing operator tooling. Keep the state and generated
 credential files private. The optional `--demo-scope` flag reads a separately
 prepared immutable synthetic demo; opening a console page does not run a model.
+
+Startup resumes interrupted creation of the integration sender and credential
+consumer using their saved private token files. A normal restart preserves their
+tokens and account states, including suspension and revocation. If a registered
+account's `ingest.token` or `consumer.token` is missing or does not match the
+database, restore its original private file from the same instance. Startup
+reports the affected filename and leaves the registered credential unchanged.
+Keep the database, its adjacent `service.sqlite.secrets` directory and the
+configured secrets directory together when backing up or restoring an instance.
+New private token files are saved before their database binding. Integration
+credentials, local connectors and the execution vault have independent keyrings;
+see [encryption and rotation](docs/ENCRYPTION.md) for the initial storage format,
+offline maintenance commands and backup requirements.
+
+Accounting and snapshot reads enforce retention deadlines without deleting data
+during the request. The operator service runs physical cleanup once a minute.
+Missing or inconsistent retention metadata withholds the affected real dataset
+and leaves it for repair; unrelated datasets remain available. Recovery preserves
+possible-send exposure, never replays an interrupted request, and keeps historical
+charges attached to their original campaign.
 
 Server **0.3.3** separates **External Providers** from **Local Connectors**.
 Use Local Connectors for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or another
@@ -127,6 +149,35 @@ The older offline Docker profile is described in
 [deploy/local/README.md](deploy/local/README.md). It requires frozen, verified
 artifacts in addition to this source checkout. Its existing environment
 variables, artifact names, and stored identities remain compatible.
+
+## Development checks
+
+Use Python 3.12.15 and the Node version in `.nvmrc`. From the repository root:
+
+```sh
+uv sync --locked --all-groups --python 3.12.15
+uv run --locked python -m tools.check
+```
+
+The command runs the maintained offline Python regression modules,
+JavaScript syntax and console tests, Ruff correctness checks, and strict mypy
+for the initial typed modules. Each Python test module runs in its own process;
+network connections and listener binds fail in this suite; local IPC pairs are
+used for framing checks. The initial lint rules catch fatal syntax
+and undefined-name errors across server, client and deployment source. Formatting
+and strict typing start with the new file and logging utilities and the runner;
+the legacy modules still need gradual adoption.
+
+Local HTTP fixtures are a separate explicit check:
+
+```sh
+uv run --locked python -m tools.check --http-only
+```
+
+CI runs both commands. Docker, provider execution and historical evidence
+scripts remain separate owner-operated workflows with their documented frozen
+inputs. These checks do not establish deployment or production acceptance.
+`--tests-only` omits lint and type checks when diagnosing test failures.
 
 ## Language choice
 
@@ -147,11 +198,25 @@ before choosing a rewrite.
 | Path | Contents |
 | --- | --- |
 | `server/` | Coordinator, registry, persistence, operator API, and trusted service. |
+| `server/src/duranki_server/gateway/` | Guard, owned sender transports, adapter, IPC framing and gateway recipes. |
+| `worker/` | Isolated worker source, staged separately from the trusted service package. |
 | `clients/python/`, `clients/js/` | Installable network clients. |
 | `web/` | Operator console HTML, CSS, and JavaScript. |
 | `deploy/local/` | Frozen-input Docker profile and lifecycle tools. |
 | `tests/` | Contracts, clients, accounting, gateway, sender, and console checks. |
+| `tools/gateway/` | Local synthetic launchers, source staging and evidence export/verification tools. |
 | `docs/` | Current architecture, contracts, plans, and historical evidence. |
+
+Gateway runtime imports use `duranki_server.gateway`. The older flat imports and
+script paths remain compatibility shims, sharing the same guard context and
+exception classes. Local profile staging takes implementations from the runtime
+package and worker source, and takes launch/export tools from `tools/gateway`.
+The service package does not include the isolated worker, local launchers or
+evidence exporters. Its gateway modules use the local profile's reviewed HTTPX
+and HTTPcore closure; importing the base service or gateway package does not load
+LiteLLM. Frozen dependencies, image digests and retained evidence are unchanged.
+Older qualification runners remain under `tests/gateway_integration`; this move
+covers the runtime implementation and active staging, launch and export tools.
 
 ## Compatibility and development status
 

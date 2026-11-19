@@ -14,8 +14,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "server/src"), str(Path(__file__).resolve().parent),
                 str(ROOT / "tests/development_slice")]
-from dev12_guard import check_synthetic_request  # noqa: E402
-from guard import GuardRejected  # noqa: E402
+from duranki_server.gateway.dev12_guard import check_synthetic_request  # noqa: E402
+from duranki_server.gateway.guard import GuardRejected  # noqa: E402
 
 
 class _URL:
@@ -61,8 +61,8 @@ class FinalTimeoutTests(unittest.TestCase):
                  ("infinity", {**exact, "read": math.inf}, False),
                  ("boolean", {**exact, "read": True}, False),
                  ("text", {**exact, "read": "5"}, False))
-        with patch("dev12_guard.classify_request", return_value="ACCEPT"), \
-             patch("dev12_guard.plan_valid", return_value=True):
+        with patch("duranki_server.gateway.dev12_guard.classify_request", return_value="ACCEPT"), \
+             patch("duranki_server.gateway.dev12_guard.plan_valid", return_value=True):
             for name, timeout, valid in cases:
                 with self.subTest(name=name):
                     request = SimpleNamespace(method="POST", url=_URL(), headers=headers,

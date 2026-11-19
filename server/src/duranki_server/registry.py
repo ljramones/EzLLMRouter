@@ -6,12 +6,13 @@ complete. A failed commit leaves the old epoch and records untouched.
 """
 from __future__ import annotations
 
+from .observability import log_failure
+
 from copy import deepcopy
 from datetime import datetime, timezone
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 import hashlib
-import hmac
 import json
 import re
 import secrets
@@ -119,6 +120,7 @@ class Registry:
         try:
             return "synthetic_http1_ready" if self.runtime_ready() else "transport_unavailable"
         except Exception:
+            log_failure('registry.Registry.readiness.failed')
             return "transport_unavailable"
 
     def _migrate(self, destination, token, trusted):
@@ -358,9 +360,9 @@ class Registry:
             raise ValueError("remove has no credential body")
         if mode == "replace" and type(secret) is not str:
             raise ValueError("credential required")
-        digest = hmac.new(self.provider_vault.key,
+        digest = self.provider_vault.request_digest(
             encode({"connection_id": connection_id, "expected_revision": expected_revision,
-                    "mode": mode, "secret": secret}).encode(), hashlib.sha256).hexdigest()
+                    "mode": mode, "secret": secret}).encode())
         with self.send_authority.gate:
             db = self.store.db
             with self.store._lock:
@@ -990,7 +992,7 @@ class Registry:
                     raise ValueError("service identity cannot receive console authority")
                 if getattr(self, "users", None):
                     self.users.validate_principal_change(db, record, data["role"], record["status"])
-                if record["role"] == "registry_admin" and data["role"] != "registry_admin":
+                if record["role"] == "registry_admin" and record["status"] == "active" and data["role"] != "registry_admin":
                     active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
                     if active <= 1:
                         raise ValueError("last active administrator")
@@ -1003,7 +1005,7 @@ class Registry:
                     raise ValueError("principal credential not provisioned")
                 if getattr(self, "users", None):
                     self.users.validate_principal_change(db, record, record["role"], data["status"])
-                if record["role"] == "registry_admin" and data["status"] != "active":
+                if record["role"] == "registry_admin" and record["status"] == "active" and data["status"] != "active":
                     active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
                     if active <= 1:
                         raise ValueError("last active administrator")
@@ -1107,14 +1109,28 @@ class Registry:
             raise RegistryConflict("stale revision")
         return record
 
-    def provision_credential(self, actor, principal_id, expected_revision, operation_id):
-        """Private helper path: return the new secret exactly once to its caller."""
+    def credential_bound_to(self, principal_id, token):
+        """Compare a saved credential without authenticating an inactive identity."""
+        if type(token) is not str or not 32 <= len(token) <= 4096:
+            return False
+        verifier = hashlib.sha256(token.encode()).hexdigest()
+        with self.store._lock:
+            return self.store.db.execute(
+                "SELECT 1 FROM registry_credentials WHERE principal_id=? AND verifier=?",
+                (principal_id, verifier)).fetchone() is not None
+
+    def provision_credential(self, actor, principal_id, expected_revision, operation_id,
+                             *, secret_factory=None):
+        """Return a new secret once; an optional factory can persist it before binding.
+
+        The factory runs after authorization and idempotency checks, inside the
+        transaction. It must return the same saved secret when retried after an
+        interruption. Ordinary provisioning continues to generate a random token.
+        """
         identifier(operation_id)
         identifier(principal_id)
         if type(expected_revision) is not int or expected_revision < 1:
             raise ValueError("invalid expected revision")
-        secret = secrets.token_urlsafe(48)
-        verifier = hashlib.sha256(secret.encode()).hexdigest()
         with self.send_authority.gate:
             def action():
                 db = self.store.db
@@ -1129,10 +1145,15 @@ class Registry:
                 if prior:
                     if prior[0] != actor or prior[1] != request_hash:
                         raise RegistryConflict("operation reuse conflict")
-                    return json.loads(prior[2])["record"], None, False
+                    return json.loads(prior[2])["record"], None, None
                 record = self._load_for_update(db, "registry_principals", "id", principal_id, expected_revision)
                 if record["status"] == "revoked" or record["credential_state"] == "local_operator":
                     raise ValueError("identity cannot be provisioned")
+                secret = secret_factory() if secret_factory is not None else secrets.token_urlsafe(48)
+                if (type(secret) is not str or not 32 <= len(secret) <= 4096 or
+                        any(not 33 <= ord(character) <= 126 for character in secret)):
+                    raise ValueError("invalid generated credential")
+                verifier = hashlib.sha256(secret.encode()).hexdigest()
                 db.execute("DELETE FROM registry_credentials WHERE principal_id=?", (principal_id,))
                 db.execute("INSERT INTO registry_credentials VALUES (?,?,?)",
                            (verifier, principal_id, "cred." + verifier[:16]))
@@ -1145,8 +1166,8 @@ class Registry:
                            (actor, "provision_credential", principal_id, expected_revision, record["revision"], revision, timestamp()))
                 db.execute("INSERT INTO registry_operations VALUES (?,?,?,?)",
                            (operation_id, actor, request_hash, encode({"record": record, "authority_revision": revision})))
-                return record, revision, True
-            record, revision, fresh = self.store._transaction(action)
+                return record, revision, secret
+            record, revision, secret = self.store._transaction(action)
             if revision is not None:
                 self.send_authority.epoch = revision
-        return record, secret if fresh else None
+        return record, secret

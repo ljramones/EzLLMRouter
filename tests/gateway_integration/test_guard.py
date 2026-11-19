@@ -14,9 +14,9 @@ sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation
-from adapter import LiteLLMAsgiAdapter
-from proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
+from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation
+from duranki_server.gateway.adapter import LiteLLMAsgiAdapter
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
 from duranki_server.store import SQLiteStore
 
 
@@ -149,7 +149,9 @@ class StoreGuardTests(unittest.TestCase):
             store = SQLiteStore(Path(directory) / "store.sqlite")
             record = {"submission_id": "submission.one", "attempt_id": "attempt.one",
                       "principal_id": "svc.test", "task_id": "task.test",
-                      "work_key": {"task_id": "task.test"}, "work_digest": "sha256:test",
+                      "work_key": {"principal_id": "svc.test", "task_id": "task.test",
+                                   "step_id": "step.test", "step_revision": 1,
+                                   "execution_generation": "gen.1"}, "work_digest": "sha256:test",
                       "status_revision": 1}
             store.create(record)
             store.intent("submission.one", "attempt.one", {"attempt_id": "attempt.one",

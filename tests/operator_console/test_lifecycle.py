@@ -58,7 +58,7 @@ class LifecycleTests(unittest.TestCase):
     def test_readiness_failure_captures_logs_before_owned_cleanup(self):
         names = []
 
-        def fake_command(name, _argv, env=None, allowed=(0,)):
+        def fake_command(name, _argv, env=None, allowed=(0,), **_kwargs):
             names.append(name)
             return ("127.0.0.1:8780" if name == "console-port" else ""), 0
 
@@ -78,7 +78,7 @@ class LifecycleTests(unittest.TestCase):
     def test_missing_console_binding_fails_before_readiness_wait(self):
         names = []
 
-        def fake_command(name, _argv, env=None, allowed=(0,)):
+        def fake_command(name, _argv, env=None, allowed=(0,), **_kwargs):
             names.append(name)
             return "", 0
 

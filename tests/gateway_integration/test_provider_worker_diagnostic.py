@@ -24,7 +24,7 @@ class WorkerDiagnosticTests(unittest.TestCase):
 
         async def aresponses(**kwargs):
             called.append(kwargs)
-            return SimpleNamespace(model_dump=lambda mode: {"object": "response", "output": []})
+            return SimpleNamespace(model_dump=lambda mode, exclude_unset: {"object": "response", "output": []})
 
         fake_litellm = SimpleNamespace(aresponses=aresponses, aclient_session=worker.client)
         body = {"model": "openai/test-response-model", "input": "Hi", "store": False,

@@ -73,6 +73,14 @@ class UserHTTPFixture(UserFixture):
         self.login(password=PASSWORD)
 
 class UserHTTPTests(UserHTTPFixture):
+    def test_unauthenticated_mutations_are_rejected_before_reading_body(self):
+        with patch.object(self.server.handler, "_body", side_effect=AssertionError("body read before authentication")):
+            for method in ("POST", "DELETE"):
+                with self.subTest(method=method):
+                    status, headers, _ = self.request(method, "/operator/v1/users", {"anything": "ignored"})
+                    self.assertEqual(status, 401)
+                    self.assertTrue(headers["X-Request-ID"].startswith("request."))
+
     def test_http_first_login_allows_only_password_change_and_logout(self):
         session = self.login()
         self.assertTrue(session["must_change_password"])

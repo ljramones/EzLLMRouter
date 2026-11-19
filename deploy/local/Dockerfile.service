@@ -5,18 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_CONFIG_F
 COPY wheels/ /opt/duranki/wheels/
 COPY wheelhouse.sha256 /opt/duranki/wheelhouse.sha256
 COPY requirements.gateway.lock /opt/duranki/requirements.gateway.lock
-COPY mach33_duranki_client-0.0.3-py3-none-any.whl /opt/duranki/mach33_duranki_client-0.0.3-py3-none-any.whl
-COPY mach33_duranki_client-0.0.4-py3-none-any.whl /opt/duranki/mach33_duranki_client-0.0.4-py3-none-any.whl
+COPY client/ /opt/duranki/client/
 COPY client-wheel.sha256 /opt/duranki/client-wheel.sha256
 RUN cd /opt/duranki/wheels && sha256sum -c /opt/duranki/wheelhouse.sha256 \
  && python -m pip install --no-index --find-links=/opt/duranki/wheels --only-binary=:all: \
       --require-hashes -r /opt/duranki/requirements.gateway.lock \
- && echo 'efabf2ee4832b627b104845b79bf0302f1b7448f17c2c4ef8c35b8287d8fac57  /opt/duranki/mach33_duranki_client-0.0.3-py3-none-any.whl' | sha256sum -c - \
  && sha256sum -c /opt/duranki/client-wheel.sha256 \
- && python -m pip install --no-index --no-deps /opt/duranki/mach33_duranki_client-0.0.4-py3-none-any.whl \
+ && python -m pip install --no-index --no-deps /opt/duranki/client/*.whl \
  && python -m pip check \
- && python -B -c "import duranki_client; assert duranki_client.__version__ == '0.0.4'" \
- && rm -rf /opt/duranki/wheels /opt/duranki/mach33_duranki_client-0.0.3-py3-none-any.whl /opt/duranki/mach33_duranki_client-0.0.4-py3-none-any.whl
+ && python -B -c "import importlib.metadata,json; p=json.load(open('/opt/duranki/client/metadata.json')); assert importlib.metadata.version(p['distribution']) == p['version']" \
+ && rm -rf /opt/duranki/wheels /opt/duranki/client
 COPY server/ /app/server/
 COPY gateway/ /app/gateway/
 COPY dev_slice/ /app/dev_slice/
@@ -30,7 +28,7 @@ RUN find /app/server /app/gateway /app/dev_slice /app/local /app/web /app/tests 
 USER 10001:10001
 WORKDIR /app
 RUN test -r /app/server/duranki_server/core.py && test -r /app/server/duranki_server/registry.py \
- && test -r /app/gateway/guard.py \
+ && test -r /app/server/duranki_server/gateway/guard.py \
  && test -r /app/local/local_service.py && test -r /app/web/index.html
 RUN python -B /app/gateway/dev07_target_preflight.py
 RUN --network=none python -B /app/gateway/dev08_integrated.py --preflight

@@ -109,6 +109,22 @@ class SQLiteStore:
         self.db.execute("INSERT INTO work_key_owners VALUES (?,?,?,?)",
                         (key["principal_id"], encode(key), version, submission_id))
 
+    @classmethod
+    def open_existing(cls, path):
+        """Open for offline maintenance without creating a database or running schema setup."""
+        result = cls.__new__(cls)
+        result.path = str(path)
+        result._lock = threading.RLock()
+        result.db = sqlite3.connect(Path(path).as_uri() + "?mode=rw", uri=True,
+                                    check_same_thread=False, isolation_level=None)
+        try:
+            result.db.execute("PRAGMA synchronous=FULL")
+            result.db.execute("PRAGMA foreign_keys=ON")
+        except BaseException:
+            result.db.close()
+            raise
+        return result
+
     def close(self):
         self.db.close()
 
@@ -276,7 +292,7 @@ class SQLiteStore:
                 unknown += 1
             else:
                 known += Decimal(usage["amount_decimal"])
-        return {"known_amount_decimal": str(known.quantize(Decimal("0.000000001"))),
+        return {"known_amount_decimal": format(known.quantize(Decimal("0.000000001")), "f"),
                 "unknown_attempts": unknown, "distinct_attempts": len(rows)}
 
     def successor_expire_results(self, now):
@@ -312,7 +328,8 @@ class SQLiteStore:
             try:
                 result = action()
             except BaseException as exc:
-                self.db.execute("ROLLBACK")
+                if self.db.in_transaction:
+                    self.db.execute("ROLLBACK")
                 try:
                     exc.duranki_definite_rollback = True
                 except (AttributeError, TypeError):
@@ -322,7 +339,8 @@ class SQLiteStore:
             try:
                 self.db.execute("COMMIT")
             except BaseException:
-                self.db.execute("ROLLBACK")
+                if self.db.in_transaction:
+                    self.db.execute("ROLLBACK")
                 raise
             return result
 
@@ -449,6 +467,11 @@ class SQLiteStore:
                                 (attempt_id, revision_data["revision"], submission_id,
                                  encode(revision_data)))
                 latest_usage = {"state": "available", "revision": revision_data}
+            else:
+                prior = self.db.execute("SELECT usage FROM usage_revisions WHERE attempt_id=? "
+                                        "ORDER BY revision DESC LIMIT 1", (record["attempt_id"],)).fetchone()
+                if prior:
+                    latest_usage = {"state": "available", "revision": json.loads(prior[0])}
             fields = {"submission_state": "completed", "dispatch_state": "response_observed",
                       "attempt_revision": 4, "updated_at": at,
                       "content_store_allowed": retain,

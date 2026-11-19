@@ -34,6 +34,7 @@ const context=vm.createContext({console,Node:Element,URLSearchParams,URL,Set,Dat
   integrationViews:new Set(["connections","accounting","diagnostics","users"]),
   integrationRoute:()=>({view:"users",params:new URLSearchParams()}),integrationGo(){},
   sourceRoute:()=>null,sourceGo(){},sourceIndex:async()=>{},sourceDetail:async()=>{},providers:async()=>{},localConnectorsView:async()=>{},
+  catalogueModelDetail:async()=>{},catalogueUserDetail:async()=>{},
   integrationView:async()=>{},integrationConnections:async()=>{},integrationAccounting:async()=>{},integrationDiagnostics:async()=>{},
   navigator:{clipboard:{writeText:async()=>{}}},
   fetch:async(url,options={})=>{

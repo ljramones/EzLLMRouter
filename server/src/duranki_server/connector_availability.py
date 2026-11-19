@@ -1,4 +1,6 @@
 """Bounded, cached API availability observations; no persistent permission writes."""
+
+from .observability import log_failure
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import threading
@@ -72,6 +74,7 @@ class AvailabilityMonitor:
             result = {key: observation[key] for key in ("state", "reason", "reachable", "model_count")
                       if key in observation}
         except Exception:
+            log_failure('connector_availability.AvailabilityMonitor._run.failed')
             result = {"state": "attention", "reason": "CHECK_FAILED", "reachable": None}
         result.update(checked_at=datetime.now(timezone.utc).isoformat(),
                       latency_ms=max(0, round((time.monotonic() - started) * 1000)))

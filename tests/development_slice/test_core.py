@@ -486,14 +486,14 @@ class CoreTests(unittest.TestCase):
             def __getattr__(self, name): return getattr(self.inner, name)
             def complete_candidate(self, *_args): raise OSError("synthetic final commit failure")
         c = self.coordinator(store=FailFinal(self.store))
-        with self.assertRaises(ContractError) as raised:
-            c.submit(REQUEST, self.trusted)
-        self.assertEqual(raised.exception.code, "INTERNAL_UNAVAILABLE")
+        code, reply = c.submit(REQUEST, self.trusted)
+        self.assertEqual((code, reply["state"]), (202, "pending"))
         record = self.store.by_work({"principal_id": self.trusted["principal_id"],
             **{k: REQUEST[k] for k in ("task_id", "step_id", "step_revision", "execution_generation")}})
         self.assertEqual((record["submission_state"], record["dispatch_state"], len(self.adapter.sent)),
-                         ("admitted", "intent_persisted", 1))
+                         ("outcome_unknown", "outcome_unknown", 1))
         self.assertNotIn("terminal_failure", record)
+        self.assertEqual(record["usage"]["state"], "available")
 
 if __name__ == "__main__":
     unittest.main()

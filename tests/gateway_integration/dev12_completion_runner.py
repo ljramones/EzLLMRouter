@@ -71,7 +71,7 @@ def _tree() -> str:
 
 
 def _clean_relevant_source() -> bool:
-    paths = ("server/src", "clients", "tests/gateway_integration",
+    paths = ("server/src", "clients", "tools/gateway", "worker", "tests/gateway_integration",
              "tests/operator_console", "web", "docs/contracts/dev12-successor-01")
     changed = subprocess.run(("git", "diff", "--quiet", "HEAD", "--", *paths),
                              cwd=ROOT, check=False)

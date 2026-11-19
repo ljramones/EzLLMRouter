@@ -12,15 +12,18 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / "deploy/local/.state"
-CLIENT = "mach33_duranki_client-0.0.3-py3-none-any.whl"
-DEV09_CLIENT = "mach33_duranki_client-0.0.4-py3-none-any.whl"
+PYTHON_CLIENT = tomllib.loads((ROOT / "clients/python/pyproject.toml").read_text(encoding="utf-8"))["project"]
+JS_CLIENT = json.loads((ROOT / "clients/js/package.json").read_text(encoding="utf-8"))
+DEV09_CLIENT = re.sub(r"[-_.]+", "_", PYTHON_CLIENT["name"]) + "-" + PYTHON_CLIENT["version"] + "-py3-none-any.whl"
+JS_ARCHIVE = JS_CLIENT["name"].lstrip("@").replace("/", "-") + "-" + JS_CLIENT["version"] + ".tgz"
 SOURCE_ROOTS = ("server/src", "tests/gateway_integration", "tests/development_slice",
                 "tests/tool_cycle", "tests/operator_console", "clients/python", "clients/js",
-                "deploy/local", "web")
+                "deploy/local", "tools/gateway", "worker", "web")
 FIXED_INPUTS = ("docs/development/dev-04/WHEEL-INVENTORY.json",
                 "docs/development/dev-04/requirements.gateway.lock",
                 "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json")
@@ -124,11 +127,18 @@ def main():
             shutil.rmtree(work)
 
 
+def copy_web_assets(source, destination):
+    destination.mkdir()
+    for asset in sorted(source.iterdir()):
+        if asset.is_file() and asset.suffix in {".html", ".css", ".js", ".json", ".svg", ".ico", ".png", ".woff2"}:
+            shutil.copy2(asset, destination / asset.name)
+
+
 def prepare_work(work, run, source_hash, artifact):
     # Keep failed offline builds outside the fingerprinted cache entry. The
     # source packet moves with the completed context in the final rename.
     env = dict(os.environ, DURANKI_ARTIFACT_ROOT=str(artifact))
-    subprocess.run((sys.executable, "-I", "-B", str(ROOT / "tests/gateway_integration/stage.py"),
+    subprocess.run((sys.executable, "-I", "-B", str(ROOT / "tools/gateway/stage.py"),
                     str(ROOT), str(work), str(work), "DEV-05"),
                    check=True, env=env, stdout=subprocess.DEVNULL)
     source_packet = "DEV-05-SOURCE-" + run.name + ".zip"
@@ -142,7 +152,7 @@ def prepare_work(work, run, source_hash, artifact):
                         "-o", str(sdk_out)), check=True, env=env, stdout=subprocess.DEVNULL)
     wheel = sdk_out / DEV09_CLIENT
     if not wheel.is_file() or package_artifacts(sdk_out) != {DEV09_CLIENT}:
-        raise RuntimeError("offline DEV-09 client wheel mismatch")
+        raise RuntimeError("offline client wheel does not match clients/python/pyproject.toml")
     shutil.copy2(ROOT / "deploy/local/Dockerfile.service", build / "service/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/Dockerfile.worker", build / "worker/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/local_worker.py", build / "worker/local_worker.py")
@@ -158,14 +168,13 @@ def prepare_work(work, run, source_hash, artifact):
     local = build / "service/local"
     local.mkdir()
     for source, name in (("deploy/local/local_service.py", "local_service.py"),
+                         ("deploy/local/initialize_credentials.py", "initialize_credentials.py"),
                          ("deploy/local/socket_lease.py", "socket_lease.py"),
                          ("tests/development_slice/request.json", "request.json"),
                          ("tests/tool_cycle/scenarios.json", "scenarios.json")):
         shutil.copy2(ROOT / source, local / name)
     web = build / "service/web"
-    web.mkdir()
-    for name in ("index.html", "app.css", "app.js", "catalogue_view.js", "activity_usage_view.js", "crud_view.js", "providers_view.js", "source_pages.js", "usage_costs_view.js", "demo_workspace_view.js", "demo_workspace_team_view.js", "dev09_demo_fixture.json", "dev09_team_demo_fixture.json"):
-        shutil.copy2(ROOT / "web" / name, web / name)
+    copy_web_assets(ROOT / "web", web)
     # Disposable installed-client actors for the DEV-07 target matrix. The
     # existing frozen wheel/tarball remain the only SDK inputs.
     shutil.copy2(ROOT / "tests/gateway_integration/dev07_actor.py",
@@ -175,11 +184,15 @@ def prepare_work(work, run, source_hash, artifact):
     ingress = build / "ingress"
     ingress.mkdir()
     shutil.copy2(ROOT / "deploy/local/console_ingress.py", ingress / "console_ingress.py")
-    shutil.copy2(build / "python/wheels" / CLIENT, build / "service" / CLIENT)
-    shutil.copy2(wheel, build / "service" / DEV09_CLIENT)
+    service_client = build / "service/client"
+    service_client.mkdir()
+    shutil.copy2(wheel, service_client / DEV09_CLIENT)
+    client_metadata = service_client / "metadata.json"
+    client_metadata.write_text(json.dumps({"distribution": PYTHON_CLIENT["name"], "version": PYTHON_CLIENT["version"]}) + "\n", encoding="utf-8")
     client_digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
     (build / "service/client-wheel.sha256").write_text(
-        f"{client_digest}  /opt/duranki/{DEV09_CLIENT}\n")
+        f"{client_digest}  /opt/duranki/client/{DEV09_CLIENT}\n" +
+        f"{hashlib.sha256(client_metadata.read_bytes()).hexdigest()}  /opt/duranki/client/metadata.json\n")
     target_tests = build / "service/tests/operator_console"
     target_tests.mkdir(parents=True)
     (build / "service/tests/__init__.py").write_text("")
@@ -203,13 +216,16 @@ def prepare_work(work, run, source_hash, artifact):
     shutil.copy2(ROOT / "tests/gateway_integration/dev10_js_actor.cjs", dev09_js / "dev10_js_actor.cjs")
     subprocess.run(("npm", "pack", "--offline", "--pack-destination", str(sdk_out),
                     "./clients/js"), check=True, cwd=ROOT, env=env, stdout=subprocess.DEVNULL)
-    js_package = sdk_out / "mach33-duranki-client-0.0.3.tgz"
+    js_package = sdk_out / JS_ARCHIVE
     if not js_package.is_file() or package_artifacts(sdk_out) != \
             {DEV09_CLIENT, js_package.name}:
         raise RuntimeError("offline DEV-09 CommonJS package mismatch")
     shutil.copy2(js_package, dev09_js / "client.tgz")
+    js_metadata = dev09_js / "client-metadata.json"
+    js_metadata.write_text(json.dumps({"name": JS_CLIENT["name"], "version": JS_CLIENT["version"]}) + "\n", encoding="utf-8")
     js_digest = hashlib.sha256(js_package.read_bytes()).hexdigest()
-    (dev09_js / "client.tgz.sha256").write_text(f"{js_digest}  /opt/duranki/client.tgz\n")
+    (dev09_js / "client.tgz.sha256").write_text(f"{js_digest}  /opt/duranki/client.tgz\n" +
+        f"{hashlib.sha256(js_metadata.read_bytes()).hexdigest()}  /opt/duranki/client-metadata.json\n")
     identity = {"commit": git("rev-parse", "HEAD"), "tree": git("rev-parse", "HEAD^{tree}"),
                 "dirty": source_dirty(),
                 "fingerprint": source_hash, "prepared_at": datetime.now(timezone.utc).isoformat()}
@@ -224,7 +240,7 @@ def prepare_work(work, run, source_hash, artifact):
                 build / "worker/local_worker.py", build / "worker/socket_lease.py",
                 *(local.iterdir()), *(web.iterdir()), *(ingress.iterdir()),
                 build / "python/actors/dev07_actor.py", build / "js/actors/dev07_actor.cjs",
-                build / "service" / CLIENT, build / "service" / DEV09_CLIENT,
+                *(service_client.iterdir()),
                 build / "service/client-wheel.sha256",
                 build / "service/gateway/dev09_migration_check.py",
                 build / "service/local/dev09_python_actor.py",

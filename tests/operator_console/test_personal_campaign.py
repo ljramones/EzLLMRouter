@@ -229,18 +229,21 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM personal_campaign_attempts").fetchone()[0], 1)
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM personal_campaigns").fetchone()[0], 2)
 
-    def test_missing_master_key_and_corrupt_ciphertext_fail_closed(self):
+    def test_missing_keyring_and_corrupt_ciphertext_fail_closed(self):
         self.vault.seal("conn.personal", 1, "distinctive-synthetic-secret")
         root = pathlib.Path(self.temp.name) / "vault"
-        (root / "master.key").unlink()
+        key_path = root / "provider.keys.json"
+        saved = key_path.read_bytes()
+        key_path.unlink()
         with self.assertRaises(RuntimeError):
             ProviderVault(root)
-        self.assertFalse((root / "master.key").exists())
+        self.assertFalse(key_path.exists())
         sealed = self.vault._path("conn.personal", 1)
         sealed.unlink()
         with self.assertRaises(RuntimeError):
             ProviderVault(root, require_existing=True)
-        (root / "master.key").write_bytes(self.vault.key)
+        key_path.write_bytes(saved)
+        key_path.chmod(0o600)
         sealed.write_bytes(b"broken ciphertext")
         with self.assertRaises(RuntimeError):
             self.vault.resolve("conn.personal", 1)

@@ -83,14 +83,16 @@ class DemoTests(unittest.TestCase):
 
             def submit(self, request, options):
                 self.requests.append((deepcopy(request), options))
-                return {"state": "delivered", "handle": {"submission_id": "submission.provider.test"}}
+                return {"state": "delivered", "handle": {"submission_id": "submission.provider.test"},
+                        "candidate": {"output_blocks": [{"kind": "content_text", "text": "hello"}]}}
 
         fixture = json.loads((ROOT / "tests/development_slice/request.json").read_text())
         runner = ProviderValidationRunner(fixture, "http://127.0.0.1:8773", "test-token",
                                           "svc.demo", client_factory=Client)
         handles = []
         self.assertEqual(runner.run("cfg.provider.test", "op.provider.test", 16, handles.append),
-                         "completed")
+                         {"state": "completed", "candidate": {"output_blocks": [
+                             {"kind": "content_text", "text": "hello"}]}})
         self.assertEqual(handles, ["submission.provider.test"])
         self.assertEqual(len(Client.requests), 1)
         request, options = Client.requests[0]

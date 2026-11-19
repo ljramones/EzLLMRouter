@@ -1,0 +1,35 @@
+[project]
+name = "ezllmrouter-development"
+version = "0.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "cognitivedynamics-ezllmrouter-server==0.3.3",
+    "cognitivedynamics-ezllmrouter-client==0.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy==1.18.2",
+    "ruff==0.14.0",
+    "uv==0.13.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+cognitivedynamics-ezllmrouter-server = { path = "server", editable = true }
+cognitivedynamics-ezllmrouter-client = { path = "clients/python", editable = true }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# Establish a blocking correctness baseline without disguising legacy style debt.
+select = ["E9", "F821", "F822", "F823"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+follow_imports = "skip"

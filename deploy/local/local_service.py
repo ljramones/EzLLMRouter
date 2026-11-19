@@ -10,6 +10,7 @@ import threading
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from duranki_server.observability import configure_logging
 from duranki_server.core import Coordinator
 from duranki_server.operator_demo import DemoRunner, ProviderValidationRunner
 from duranki_server.operator_projection import OperatorProjection
@@ -20,14 +21,15 @@ from duranki_server.provider_vault import ProviderVault
 from duranki_server.personal_campaign import PersonalCampaign
 from duranki_server.store import SQLiteStore
 from duranki_server.web import serve as serve_wire
-from choice_b_sender import ChoiceBSenderAdapter
-from owned_sender_transport import LocalSendAuthority
-from proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
-from worker_ready import probe
+from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter
+from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from duranki_server.gateway.worker_ready import probe
 from socket_lease import remove_stale_socket
 
 
 def main():
+    configure_logging()
     if "litellm" in sys.modules:
         raise RuntimeError("LiteLLM imported into trusted sender")
     credentials = json.loads(Path("/run/duranki/credentials.json").read_text())
@@ -52,7 +54,10 @@ def main():
         "json_extract(record,'$.credential_version') FROM registry_connections "
         "WHERE json_extract(record,'$.credential_state')='present'").fetchall()
         if has_connections else [])
-    vault = ProviderVault("/data/provider-vault", require_existing=bool(protected))
+    used_vault = (store.db.execute("SELECT 1 FROM registry_connections "
+        "WHERE json_extract(record,'$.credential_version')>0 LIMIT 1").fetchone()
+        if has_connections else None)
+    vault = ProviderVault("/data/provider-vault", require_existing=bool(used_vault))
     for connection_id, version in protected:
         vault.resolve(connection_id, version)  # Fail startup if recovery material is missing or corrupt.
     remove_stale_socket(Path("/link/sender.sock"))

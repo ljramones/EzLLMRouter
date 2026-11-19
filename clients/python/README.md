@@ -54,10 +54,23 @@ with EzLLMRouterClient(base_url="http://service:8765", token="local-token") as c
 ```
 
 The default HTTPX transport disables redirects, proxy inheritance and retries.
-Its timeout is unset so it cannot silently shorten the server's bounded wait;
-callers may set `timeout=` when constructing the client. Call `close()` or use a
-context manager. `get_status` and `get_capabilities` are aliases. For tests,
-`transport=` accepts an object with `request` and optional `close` methods.
+Default connect/read/write/pool timeouts are 10/35/30/10 seconds, allowing the
+server's maximum 30-second response wait. `timeout=` can override these HTTPX
+settings; explicitly passing `None` disables them. Call `close()` or use a context
+manager. `get_status` and `get_capabilities` are aliases; `get_status` also accepts
+`contract_version="0.3"`.
+
+HTTPX responses are streamed into a bounded buffer with `Accept-Encoding:
+identity`; compressed responses are rejected before decoding. Wire 0.2 and
+attribution responses are capped at 1 MiB; wire 0.3 and integration responses at
+16 MiB. The wire 0.3 bound accommodates the supported embedding dimensions and
+batch size. Result profiles are checked against the request, allowing new
+server configuration references without a client-side fixture allowlist.
+
+For tests, `transport=` accepts an object with `request` and optional `close`
+methods. A transport providing the HTTPX `stream` interface uses bounded reads;
+a request-only transport is responsible for its own buffering. Responses close
+on success, malformed data, size rejection and interrupted reads.
 
 A lost or unparseable response raises `EzLLMRouterError` with
 `code="TRANSPORT_OUTCOME_UNKNOWN"`, `retry_guidance="query_first"` and the
@@ -65,6 +78,9 @@ original work selector. No operation is automatically replayed. Other errors
 expose `http_status`, `correlation_id`, `handle`, `attempt_id`, and
 `failure_stage` where valid evidence provides them. `None` for an unavailable
 field does not imply that work did not execute.
+Recovery errors attach a handle only when it matches the original request or
+status selector. The original selector remains available when a response's handle
+is malformed or belongs to another submission.
 
 ## Trusted attribution and outcomes (client 0.0.4)
 

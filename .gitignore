@@ -70,10 +70,14 @@ htmlcov/
 .ssh/
 *.pem
 *.key
+*.keys.json
+*.keys.json.lock
+*.sealed
 *.p12
 *.pfx
 credentials.json
 operator-password
+.console-secrets/
 
 # Runtime state, databases, diagnostics, and local backups
 /deploy/local/.state/

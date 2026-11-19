@@ -1,5 +1,17 @@
 name: duranki-dev06-local
 services:
+  credential-init:
+    profiles: [setup]
+    image: ${DURANKI_SERVICE_IMAGE:?}
+    pull_policy: never
+    network_mode: none
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["credential_data:/run/duranki"]
+    command: ["python", "-B", "/app/local/initialize_credentials.py"]
   netns:
     image: ${DURANKI_PYTHON_IMAGE:?}
     pull_policy: never
@@ -45,8 +57,7 @@ services:
       - service_data:/data
       - link_data:/link
       - console_link_data:/console
-      - ./.state/credentials.json:/run/duranki/credentials.json:ro
-      - ./.state/operator-password:/run/duranki/operator-password:ro
+      - credential_data:/run/duranki:ro
     environment:
       DURANKI_DB_PATH: /data/store.sqlite
       DURANKI_DEV04_POOL_PROBE: ${DURANKI_DEV07_POOL_PROBE:-0}
@@ -67,6 +78,7 @@ services:
     command: ["python", "-B", "/console_ingress.py"]
     depends_on: [netns, service]
 volumes:
+  credential_data:
   receiver_data:
   service_data:
   link_data:

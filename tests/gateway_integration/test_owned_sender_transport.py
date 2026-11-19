@@ -23,8 +23,8 @@ for name in ("httpcore", "httpx", "anyio", "h11", "certifi", "idna",
 
 import httpcore  # noqa: E402
 import httpx  # noqa: E402
-from guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402
-from owned_sender_transport import LocalSendAuthority, OwnedHTTPTransport, OwnedSocketStream  # noqa: E402
+from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402
+from duranki_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedHTTPTransport, OwnedSocketStream  # noqa: E402
 from test_guard import invocation as guard_invocation  # noqa: E402
 
 

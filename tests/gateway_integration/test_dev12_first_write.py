@@ -19,7 +19,7 @@ from duranki_server.store import SQLiteStore  # noqa: E402
 from duranki_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
 from duranki_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
 from duranki_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
-from guard import GuardRejected  # noqa: E402
+from duranki_server.gateway.guard import GuardRejected  # noqa: E402
 import owned_tls_sender_transport as tls_sender  # noqa: E402
 
 

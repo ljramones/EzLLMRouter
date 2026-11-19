@@ -12,7 +12,14 @@ Run `./start.sh` from the project folder, then open
 For a database without console accounts:
 
 - Username: **`admin`**
-- Temporary password: **`ChangeMeNow!`**
+- Temporary password: randomly generated in
+  **`local-instance/secrets/admin.password`** by the standard launcher. The file
+  has mode `0600`; startup prints its path rather than its contents.
+
+There is no shared default password. A restart reuses an unfinished bootstrap's
+private password file and never replaces an existing account's password.
+Library users can supply `bootstrap_password_file`; its default is
+`.console-secrets/admin.password` beside the database.
 
 The initial account is bound to the existing active human administrator, normally
 `owner.local`. It cannot use the console until its temporary password is changed.

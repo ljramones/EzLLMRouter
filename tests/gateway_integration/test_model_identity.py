@@ -20,7 +20,7 @@ from duranki_client import DurankiClient, DurankiError
 from duranki_server.core import Coordinator
 from duranki_server.plans import PlanAuthority
 from duranki_server.store import SQLiteStore
-from proxy_recipe import (GatewayProxyRecipe, PROXY_MODEL, PUBLIC_MODEL,
+from duranki_server.gateway.proxy_recipe import (GatewayProxyRecipe, PROXY_MODEL, PUBLIC_MODEL,
                           public_destination, proxy_policy)
 
 

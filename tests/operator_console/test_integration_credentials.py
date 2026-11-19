@@ -67,7 +67,7 @@ class CredentialTests(unittest.TestCase):
             return {"state": "observed", "reason": "inventory_not_inference_entitlement",
                     "models": models, "details": [{"id": model, "name": model} for model in models],
                     "has_more": False}
-        self.key_path = self.root / "secrets/integration.master.key"
+        self.key_path = self.root / "secrets/integration.keys.json"
         self.credentials = DatabaseCredentialStore(self.registry, self.key_path, discover=discover, controlled=True)
         self.registry.integration_credentials = self.credentials
 
@@ -143,12 +143,12 @@ class CredentialTests(unittest.TestCase):
         self.connect()
         saved = self.key_path.read_bytes()
         self.key_path.unlink()
-        with self.assertRaisesRegex(RuntimeError, "CREDENTIAL_BOOTSTRAP_KEY_MISSING"):
+        with self.assertRaisesRegex(RuntimeError, "SECRET_KEYRING_MISSING"):
             DatabaseCredentialStore(self.registry, self.key_path, discover=self.credentials.discover)
         self.assertFalse(self.key_path.exists())
         self.key_path.write_bytes(b"x" * 32)
         self.key_path.chmod(0o600)
-        with self.assertRaisesRegex(RuntimeError, "CREDENTIAL_BOOTSTRAP_KEY_MISMATCH"):
+        with self.assertRaisesRegex(RuntimeError, "SECRET_KEYRING_UNAVAILABLE"):
             DatabaseCredentialStore(self.registry, self.key_path, discover=self.credentials.discover)
         self.assertNotEqual(saved, self.key_path.read_bytes())
 
@@ -259,6 +259,10 @@ class CredentialTests(unittest.TestCase):
         self.assertEqual(reopened.resolve_for(self.consumer, self.dataset, account_id,
             "claude-opus-4-8", "generation", "vega-provider-dispatch")["api_key"],
             "known-fixture-api-key-0002")
+
+class CredentialHTTPTests(unittest.TestCase):
+    setUp = CredentialTests.setUp
+    connect = CredentialTests.connect
 
     def test_owner_http_journey_and_nonowner_boundary(self):
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())

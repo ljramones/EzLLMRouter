@@ -1,19 +1,20 @@
 """Local model-server inventory and explicit connection/model selection."""
 from __future__ import annotations
 
-import base64
+from .observability import log_failure
+
 import hashlib
 import http.client
 import ipaddress
 import json
-import secrets
+from pathlib import Path
 import socket
 import ssl
 import time
 import uuid
 from urllib.parse import urlsplit, urlunsplit
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from .secret_box import SecretBox, validate_secret
 
 from .registry import timestamp
 from .store import encode
@@ -282,8 +283,34 @@ def discover(kind, base_url, api_key="", *, read=None):
     return result
 
 
+def connector_key_path(database):
+    if str(database) == ":memory:":
+        raise ValueError("an explicit connector key path is required for an in-memory store")
+    return Path(str(database) + ".secrets") / "local-connectors.keys.json"
+
+
+def connector_context(connector_id):
+    return encode({"connector_id": connector_id}).encode()
+
+
+def reencrypt_connectors(store, box):
+    def rewrite():
+        changed = 0
+        for identifier, raw in store.db.execute(
+                "SELECT id,secret FROM local_connectors WHERE secret IS NOT NULL").fetchall():
+            envelope = json.loads(raw)
+            context = connector_context(identifier)
+            value = box.open(envelope, context)
+            if envelope["key_id"] != box.active_id:
+                store.db.execute("UPDATE local_connectors SET secret=? WHERE id=?",
+                                 (encode(box.seal(value, context)), identifier))
+                changed += 1
+        return changed
+    return store._transaction(rewrite)
+
+
 class LocalConnectors:
-    def __init__(self, registry, *, discover_fn=None, availability_read=None):
+    def __init__(self, registry, *, discover_fn=None, availability_read=None, key_path=None):
         self.registry, self.store = registry, registry.store
         self.discover_fn = discover_fn or discover
         self.availability_read = availability_read
@@ -292,6 +319,11 @@ class LocalConnectors:
             self.store.db.execute("CREATE TABLE IF NOT EXISTS local_connectors "
                                   "(id TEXT PRIMARY KEY,record TEXT NOT NULL,secret TEXT)")
         self.store._transaction(migrate)
+        with self.store._lock:
+            rows = self.store.db.execute("SELECT secret FROM local_connectors WHERE secret IS NOT NULL").fetchall()
+        known = {json.loads(row[0])["key_id"] for row in rows}
+        self.key_path = Path(key_path) if key_path else connector_key_path(self.store.path)
+        self.box = SecretBox(self.key_path, "local-connector-credentials", required_ids=known)
 
     def _authorize(self, db, actor, *, write=False):
         row = db.execute("SELECT record FROM registry_principals WHERE id=?", (actor,)).fetchone()
@@ -309,39 +341,34 @@ class LocalConnectors:
             raise ConnectorError("CONNECTOR_NOT_FOUND", 404)
         return record, row[1]
 
-    def _keys(self):
-        keys = {}
-        for name in ("integration_credentials", "provider_vault"):
-            key = getattr(getattr(self.registry, name, None), "key", None)
-            if type(key) is bytes and len(key) == 32:
-                keys[hashlib.sha256(key).hexdigest()] = key
-        return keys
-
     def _seal(self, connector_id, value):
-        if type(value) is not str or len(value) > 4096 or any(ord(char) < 33 or ord(char) > 126 for char in value):
-            raise ConnectorError("INVALID_API_KEY")
-        if not value:
+        if value == "":
             return None
-        keys = self._keys()
-        if not keys:
-            raise ConnectorError("CREDENTIAL_STORAGE_UNAVAILABLE", 503)
-        key_id, key = next(iter(keys.items()))
-        nonce = secrets.token_bytes(12)
-        context = ("ezllmrouter.local_connector:" + connector_id).encode()
-        ciphertext = nonce + AESGCM(key).encrypt(nonce, value.encode(), context)
-        return encode({"key_id": key_id, "ciphertext": base64.b64encode(ciphertext).decode()})
+        try:
+            validate_secret(value)
+        except ValueError as exc:
+            raise ConnectorError("INVALID_API_KEY") from exc
+        try:
+            return encode(self.box.seal(value, connector_context(connector_id)))
+        except Exception as exc:
+            log_failure('local_connectors.LocalConnectors._seal.failed')
+            raise ConnectorError("CREDENTIAL_STORAGE_UNAVAILABLE", 503) from exc
 
     def _resolve(self, connector_id, sealed):
         if not sealed:
             return ""
         try:
-            value = json.loads(sealed)
-            key = self._keys()[value["key_id"]]
-            ciphertext = base64.b64decode(value["ciphertext"], validate=True)
-            context = ("ezllmrouter.local_connector:" + connector_id).encode()
-            return AESGCM(key).decrypt(ciphertext[:12], ciphertext[12:], context).decode()
+            return self.box.open(json.loads(sealed), connector_context(connector_id))
         except Exception as exc:
+            log_failure('local_connectors.LocalConnectors._resolve.failed')
             raise ConnectorError("CREDENTIAL_UNAVAILABLE", 503) from exc
+
+    def reencrypt_secrets(self):
+        return reencrypt_connectors(self.store, self.box)
+
+    def rotate_encryption_key(self):
+        identifier = self.box.rotate()
+        return {"key_id": identifier, "rewritten": self.reencrypt_secrets()}
 
     @staticmethod
     def _configuration(record):

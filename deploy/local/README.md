@@ -1,5 +1,9 @@
 # EzLLMRouter local synthetic operator profile
 
+Provider credentials and local connector credentials use independent keyrings.
+See [encryption and rotation](../../docs/ENCRYPTION.md) for offline maintenance
+and the complete set of files required for backup and restoration.
+
 This guide covers the existing frozen-input Docker profile. Its artifact names,
 environment variables, and project identifiers retain their historical names.
 Current CognitiveDynamics packages and the standalone accounting service are
@@ -25,7 +29,7 @@ DURANKI_ARTIFACT_ROOT=/Users/larrymitchell/Mach33/Duranki-artifacts/dev09-certif
 
 `up-and-verify` is an **explicit synthetic exercise**. It starts the profile, verifies worker and service identity and separation, invokes fixed text, two-round lookup and no-store text demos through the authenticated operator API, checks four new receiver arrivals and one caller lookup, then performs a normal stop/start and metadata readback. It leaves the profile running on success. A failure records redacted command outputs under `deploy/local/.state/commands/` and stops only containers created by this invocation; it preserves named metadata volumes.
 
-The console URL is `http://127.0.0.1:8780/`. The launcher prints the private operator credential-file path; its current path is `deploy/local/.state/operator-password`. Read that file locally to sign in. The launcher never prints the credential value. The `.state` directory is private and ignored by Git. Its files are readable inside the non-root trusted container through read-only mounts. The worker receives neither credential nor trusted code.
+The console URL is `http://127.0.0.1:8780/`. The launcher prints the private operator credential-file path; its current path is `deploy/local/.state/operator-password`. Read that file locally to sign in. The launcher never prints the credential value. The `.state` directory is mode 0700 and ignored by Git; all host credential files are mode 0600. Setup sends their contents over stdin to a network-isolated initializer, which writes mode 0400 copies owned by UID 10001 in a dedicated Docker volume. The trusted service mounts that volume read-only. The worker receives neither credential nor trusted code. Existing complete credential files are adopted without rotation; interrupted new setup resumes from its atomically saved private bundle. Ambiguous legacy partial files require inspection before setup can continue.
 
 For ordinary use without an automatic demonstration, run `python3 deploy/local/profile.py up` with the same artifact-root setting. The launcher prints each completed stage and announces its bounded readiness wait. If a start is interrupted or the browser refuses a connection, run `python3 deploy/local/profile.py diagnose`; it reads existing profile container status and bounded redacted logs without building, starting, stopping, or sending work. After correcting source, `DURANKI_ARTIFACT_ROOT=... python3 deploy/local/profile.py restart` stops only the owned profile without removing volumes, prepares and builds from current source with frozen inputs, then starts it and checks readiness. `python3 deploy/local/profile.py status` checks a healthy current state. To stop while **preserving metadata**, run:
 

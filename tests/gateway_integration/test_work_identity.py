@@ -49,10 +49,10 @@ from duranki_server.canonical import SAFE
 from duranki_server.core import Coordinator
 from duranki_server.plans import PlanAuthority
 from duranki_server.store import SQLiteStore
-from choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-from guard import GuardTransport, Invocation, PROVIDER_URL
-from owned_sender_transport import LocalSendAuthority
-from proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+from duranki_server.gateway.guard import GuardTransport, Invocation, PROVIDER_URL
+from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 FIXTURE=json.loads((DATA/'fixture.json').read_text())
 REQUEST=json.loads((DATA/'request.json').read_text())

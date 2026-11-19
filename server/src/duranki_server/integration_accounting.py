@@ -12,6 +12,7 @@ from urllib.parse import unquote_to_bytes
 import uuid
 
 from .store import encode
+from .observability import log_failure
 
 VERSION = "1"
 SCHEMA = json.loads((Path(__file__).parent / "integration_schema.json").read_text())
@@ -27,6 +28,32 @@ class IntegrationError(ValueError):
     def __init__(self, code, status=400, retry_guidance="never"):
         super().__init__(code)
         self.code, self.status, self.retry_guidance = code, status, retry_guidance
+
+
+def _cohort_expiry(dataset, days, activated_at):
+    try:
+        if (type(days) is not int or not 1 <= days <= 397 or not _utc(activated_at) or
+                dataset["activated_at"] != activated_at):
+            raise ValueError("invalid accounting retention metadata")
+        return datetime.fromisoformat(activated_at.replace("Z", "+00:00")) + timedelta(days=days)
+    except (ValueError, KeyError, TypeError, OverflowError):
+        raise ValueError("invalid accounting retention metadata") from None
+
+
+def _dataset_available(dataset, days, activated_at, at):
+    if not dataset["dataset_id"].startswith("dataset.local.real."):
+        return True
+    try:
+        return _cohort_expiry(dataset, days, activated_at) > at
+    except ValueError:
+        return False
+
+
+def _snapshot_record(metadata, content, digest, at):
+    meta = json.loads(metadata)
+    if meta["status"] == "captured" and meta["retention_until"] <= at:
+        content = None
+    return meta, content, digest
 
 
 def _shape(value, schema, definitions=None):
@@ -287,9 +314,13 @@ class ExternalAccounting:
     def _expire_snapshots(self):
         # Content is purged, while identity, digest and expiry evidence remain.
         def action():
-            self.store.db.execute("UPDATE integration_snapshots SET content=NULL WHERE content IS NOT NULL "
-                                  "AND json_extract(metadata,'$.retention_until')<=?", (_time(),))
-        self.store._transaction(action)
+            return self.store.db.execute("UPDATE integration_snapshots SET content=NULL WHERE content IS NOT NULL "
+                                  "AND json_extract(metadata,'$.retention_until')<=?", (_time(),)).rowcount
+        return self.store._transaction(action)
+
+    def maintain(self):
+        """Explicit physical cleanup; read methods enforce expiry without writing."""
+        return {"expired_datasets": self.expire_datasets(), "expired_snapshots": self._expire_snapshots()}
 
     def expire_datasets(self):
         """Purge adopted local real cohorts at T0 plus the configured horizon.
@@ -306,13 +337,12 @@ class ExternalAccounting:
                               "WHERE d.id LIKE 'dataset.local.real.%'").fetchall()
             expired = []
             for did, raw, days, activated_at in rows:
-                if days is None:
-                    raise RuntimeError("UNMANAGED_REAL_DATASET")
-                dataset = json.loads(raw)
-                if dataset["activated_at"] != activated_at:
-                    raise RuntimeError("REAL_DATASET_T0_MISMATCH")
-                t0 = datetime.fromisoformat(activated_at.replace("Z", "+00:00"))
-                if t0 + timedelta(days=days) <= now:
+                try:
+                    expiry = _cohort_expiry(json.loads(raw), days, activated_at)
+                except (ValueError, KeyError, TypeError):
+                    log_failure("accounting_retention_metadata_invalid")
+                    continue  # Do not guess a purge policy for an unmanaged cohort.
+                if expiry <= now:
                     expired.append(did)
             for did in expired:
                 db.execute("INSERT OR IGNORE INTO integration_expired_datasets VALUES (?,?)",
@@ -328,12 +358,16 @@ class ExternalAccounting:
         return self.store._transaction(action)
 
     def _dataset(self, dataset_id):
-        self.expire_datasets()
         with self.store._lock:
-            row = self.store.db.execute("SELECT record FROM integration_datasets WHERE id=?", (dataset_id,)).fetchone()
+            row = self.store.db.execute("SELECT d.record,r.days,r.activated_at FROM integration_datasets d "
+                "LEFT JOIN integration_dataset_retention r ON r.dataset_id=d.id WHERE d.id=?",
+                (dataset_id,)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-        return json.loads(row[0])
+        dataset = json.loads(row[0])
+        if not _dataset_available(dataset, row[1], row[2], datetime.fromisoformat(_time().replace("Z", "+00:00"))):
+            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+        return dataset
 
     def _authorize(self, principal, dataset, action):
         same_owner = principal["owner"] == dataset["owner_id"]
@@ -348,7 +382,6 @@ class ExternalAccounting:
 
     def create_dataset(self, principal, body, version="1"):
         body = _checked(body, "dataset", version)
-        self.expire_datasets()
         if (principal["principal_id"] != body["owner_id"] or principal["owner"] != body["owner_id"] or
                 principal["role"] != "registry_admin"):
             raise IntegrationError("POLICY_DENIED", 403)
@@ -365,9 +398,27 @@ class ExternalAccounting:
                 raise IntegrationError("DATASET_EXPIRED", 410)
             old = db.execute("SELECT record FROM integration_datasets WHERE id=?", (body["dataset_id"],)).fetchone()
             if old:
+                if local_real:
+                    retention = db.execute("SELECT days,activated_at FROM integration_dataset_retention WHERE dataset_id=?",
+                                           (body["dataset_id"],)).fetchone()
+                    if not retention:
+                        raise IntegrationError("POLICY_DENIED", 403)
+                    try:
+                        expiry = _cohort_expiry(json.loads(old[0]), *retention)
+                    except ValueError:
+                        raise IntegrationError("POLICY_DENIED", 403) from None
+                    if expiry <= datetime.fromisoformat(_time().replace("Z", "+00:00")):
+                        raise IntegrationError("DATASET_EXPIRED", 410)
                 if json.loads(old[0]) != body:
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 return 200, {"integration_version": version, **body}
+            if local_real:
+                try:
+                    expiry = _cohort_expiry(body, self.accounting_retention_days, body["activated_at"])
+                except ValueError:
+                    raise IntegrationError("POLICY_DENIED", 403) from None
+                if expiry <= datetime.fromisoformat(_time().replace("Z", "+00:00")):
+                    raise IntegrationError("DATASET_EXPIRED", 410)
             db.execute("INSERT INTO integration_datasets VALUES (?,?)", (body["dataset_id"], encode(body)))
             if local_real:
                 db.execute("INSERT INTO integration_dataset_retention VALUES (?,?,?)",
@@ -486,14 +537,18 @@ class ExternalAccounting:
         return result
 
     def datasets(self, principal):
-        self.expire_datasets()
         if principal["role"] not in ("registry_admin", "read_only_operator"):
             raise IntegrationError("POLICY_DENIED", 403)
         with self.store._lock:
-            rows = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM integration_datasets ORDER BY id")]
-        return {"integration_version": VERSION, "items": [
-            item for item in rows if item["owner_id"] == principal["owner"]]}
+            rows = self.store.db.execute("SELECT d.record,r.days,r.activated_at FROM integration_datasets d "
+                "LEFT JOIN integration_dataset_retention r ON r.dataset_id=d.id ORDER BY d.id").fetchall()
+        at = datetime.fromisoformat(_time().replace("Z", "+00:00"))
+        items = []
+        for raw, days, activated_at in rows:
+            item = json.loads(raw)
+            if item["owner_id"] == principal["owner"] and _dataset_available(item, days, activated_at, at):
+                items.append(item)
+        return {"integration_version": VERSION, "items": items}
 
     def accounts(self, principal, dataset_id):
         dataset = self._dataset(dataset_id)
@@ -838,23 +893,22 @@ class ExternalAccounting:
         self._authorize(principal, dataset, "snapshot")
         if not _shape(snapshot_id, SCHEMA_V2["$defs"]["id"]):
             raise IntegrationError("SCHEMA_INVALID")
-        self._expire_snapshots()
         with self.store._lock:
             row = self.store.db.execute("SELECT metadata,content,digest FROM integration_snapshots "
                 "WHERE dataset_id=? AND snapshot_id=?", (dataset_id, snapshot_id)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-        meta = json.loads(row[0])
-        if row[1] and "sha256:" + hashlib.sha256(encode({**meta, **json.loads(row[1])}).encode()).hexdigest() != row[2]:
+        meta, content, digest = _snapshot_record(*row, _time())
+        if content and "sha256:" + hashlib.sha256(encode({**meta, **json.loads(content)}).encode()).hexdigest() != digest:
             raise IntegrationError("SNAPSHOT_INTEGRITY_FAILED", 503, "query_first")
-        status = "expired" if meta["status"] == "captured" and row[1] is None else meta["status"]
+        status = "expired" if meta["status"] == "captured" and content is None else meta["status"]
         return {**meta, "integration_version": version, "status": status,
-                "snapshot_digest": row[2], **(json.loads(row[1]) if row[1] else {})}
+                "snapshot_digest": digest, **(json.loads(content) if content else {})}
 
     def dataset_export(self, principal, dataset_id, version="2"):
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "report")
-        self._expire_snapshots()
+        at = _time()
         with self.store._lock:
             db = self.store.db
             attempts = [json.loads(r[0]) for r in db.execute("SELECT record FROM integration_attempts "
@@ -868,7 +922,7 @@ class ExternalAccounting:
             eligibility = [json.loads(r[0]) for r in db.execute(
                 "SELECT record FROM integration_eligibility_reads WHERE dataset_id=? ORDER BY eligibility_id", (dataset_id,))
                 if json.loads(r[0])["eligibility_id"] in eligible_ids]
-            snapshots = [(json.loads(r[0]), r[1], r[2]) for r in db.execute(
+            snapshots = [_snapshot_record(*r, at) for r in db.execute(
                 "SELECT metadata,content,digest FROM integration_snapshots WHERE dataset_id=? ORDER BY snapshot_id",
                 (dataset_id,))]
             history = defaultdict(list)
@@ -925,8 +979,7 @@ class ExternalAccounting:
     def report(self, principal, dataset_id, filters=None, version="1"):
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "report")
-        if version in ("2", "3"):
-            self._expire_snapshots()
+        at = _time()
         filters = filters or {}
         if set(filters) - {"actor_id", "provider_account_id", "task_id", "model_id",
                             "initiating_user_id", "root_run_id", "run_id", "from", "to"}:
@@ -947,7 +1000,7 @@ class ExternalAccounting:
             runs = {row[0]: row[1] for row in self.store.db.execute(
                 "SELECT run_id,parent_run_id FROM integration_runs WHERE dataset_id=?", (dataset_id,))}
             if version in ("2", "3"):
-                snapshots = {row[0]: (json.loads(row[1]), row[2], row[3]) for row in self.store.db.execute(
+                snapshots = {row[0]: _snapshot_record(row[1], row[2], row[3], at) for row in self.store.db.execute(
                     "SELECT snapshot_id,metadata,content,digest FROM integration_snapshots WHERE dataset_id=?",
                     (dataset_id,))}
                 eligibility_reads = {row[0]: json.loads(row[1]) for row in self.store.db.execute(

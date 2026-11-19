@@ -1,5 +1,4 @@
 """Local source, sender-admission and Unix-record gates before target execution."""
-import ast
 import base64
 import asyncio
 from concurrent.futures import Future
@@ -21,22 +20,15 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 from choice_b_wire import LIMIT, receive, send  # noqa: E402
+from tools.gateway.stage import source_mapping
 
 
 WORKER_SOURCE_FILES = {"choice_b_worker.py", "choice_b_wire.py"}
 
 
 def stage_worker_source_context(root, destination):
-    """Replay only stage.py's literal worker source map; no wheels or Docker."""
-    tree = ast.parse((root / "tests/gateway_integration/stage.py").read_text())
-    main = next(node for node in tree.body
-                if isinstance(node, ast.FunctionDef) and node.name == "main")
-    assignments = [node for node in main.body if isinstance(node, ast.Assign)
-                   and any(isinstance(target, ast.Name) and target.id == "source_files"
-                           for target in node.targets)]
-    if len(assignments) != 1:
-        raise AssertionError("stage source map changed; review this layout test")
-    mappings = ast.literal_eval(assignments[0].value)
+    """Replay the worker source map without frozen wheels or Docker."""
+    mappings = source_mapping(root)
     targets = set()
     for source, target in mappings:
         if not target.startswith("worker/"):
@@ -192,8 +184,8 @@ class ChoiceBComponentTests(unittest.TestCase):
             matches = glob.glob(str(ROOT / "gateway-inputs/dev04/wheels" / (name + "-*.whl")))
             self.assertEqual(len(matches), 1, name)
             sys.path.insert(0, matches[0])
-        from choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-        from guard import Invocation
+        from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+        from duranki_server.gateway.guard import Invocation
 
         adapter = object.__new__(ChoiceBSenderAdapter)
         adapter.provider_key = "sk-trusted-synthetic-provider-key-000000000000"
@@ -241,8 +233,8 @@ class ChoiceBComponentTests(unittest.TestCase):
             self.assertEqual(len(matches), 1, name)
             sys.path.insert(0, matches[0])
         import httpx
-        from choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-        from guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
+        from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+        from duranki_server.gateway.guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
         from test_guard import invocation
 
         arrivals, receipts = [], []

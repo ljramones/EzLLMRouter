@@ -99,7 +99,7 @@ class OperatorProjection:
             "execution_generation": _identifier(key.get("execution_generation")),
             "submission_state": record.get("submission_state") if record.get("submission_state") in STATES else "unavailable",
             "dispatch_state": record.get("dispatch_state") if record.get("dispatch_state") in
-                {"prepared", "intent_persisted", "guard_committed", "response_observed", "outcome_unknown"}
+                {"prepared", "intent_persisted", "guard_committed", "failed_before_dispatch", "response_observed", "outcome_unknown"}
                 else "unavailable",
             "candidate_access": record.get("candidate_access") if record.get("candidate_access") in
                 {"not_yet_available", "present", "not_retained", "expired", "unavailable_due_failure"}

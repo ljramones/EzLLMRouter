@@ -1,0 +1,24 @@
+name: Quality checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - name: Install pinned environment manager
+        run: python3 -m pip install uv==0.13.9
+      - name: Install locked development environment
+        run: uv sync --locked --all-groups --python 3.12.15
+      - name: Offline regression and quality checks
+        run: uv run --locked python -m tools.check
+      - name: Local HTTP regression fixtures
+        run: uv run --locked python -m tools.check --http-only

@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
-from typing import Any
 from urllib.parse import quote, urlsplit
 
 from . import _validation as v
 from . import _successor_validation as v03
+from ._http import DEFAULT_TIMEOUT, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT, bounded_request
+from ._json import strict_reply as _strict_reply
 
 __version__ = "0.3.0"
 
@@ -38,41 +39,19 @@ class EzLLMRouterError(Exception):
         self.error = error
 
 
-def _pairs(items):
-    value = {}
-    for key, item in items:
-        if key in value:
-            raise ValueError("duplicate JSON key")
-        value[key] = item
-    return value
-
-
-def _reject_number(_text):
-    raise ValueError("unsupported JSON number")
-
-
-def _strict_reply(data):
-    if data.startswith(b"\xef\xbb\xbf"):
-        raise ValueError("unexpected UTF-8 BOM")
-    value = json.loads(data.decode("utf-8", "strict"), object_pairs_hook=_pairs,
-                       parse_float=_reject_number, parse_constant=_reject_number)
-    def check(item, depth=0):
-        if depth > 32:
-            raise ValueError("response nesting limit")
-        if type(item) is int and abs(item) > 9007199254740991:
-            raise ValueError("unsafe response integer")
-        if type(item) is str and any(ord(c) < 32 or ord(c) == 127 or
-                                     0xD800 <= ord(c) <= 0xDFFF for c in item):
-            raise ValueError("invalid response scalar")
-        if type(item) is dict:
-            for key, child in item.items():
-                check(key, depth + 1)
-                check(child, depth + 1)
-        elif type(item) is list:
-            for child in item:
-                check(child, depth + 1)
-    check(value)
-    return value
+def _matching_handle(value, selected, *, successor=False):
+    if type(value) is not dict or selected is None:
+        return None
+    handle = value.get("handle")
+    if successor:
+        matches = v03.matches_selector(handle, selected)
+    elif not v.handle(handle):
+        matches = False
+    elif "submission_id" in selected:
+        matches = handle["submission_id"] == selected["submission_id"]
+    else:
+        matches = all(handle["work_key"][key] == selected[key] for key in v.SELECTOR)
+    return deepcopy(handle) if matches else None
 
 
 def _wire_data(value, seen=None, depth=0):
@@ -109,15 +88,15 @@ def _wire_data(value, seen=None, depth=0):
 
 
 class EzLLMRouterClient:
-    """Synchronous, non-streaming client; call ``close`` or use ``with``.
+    """Synchronous client; call ``close`` or use ``with``.
 
     ``base_url`` is the EzLLMRouter service URL, ``token`` its bearer credential.
-    ``timeout`` defaults to ``None`` so it cannot shorten a 30-second server
-    response wait; callers may set a transport timeout explicitly. Redirects,
+    Default connect/read/write/pool timeouts are 10/35/30/10 seconds, allowing
+    a 30-second server response wait. Callers may override them. Redirects,
     environment proxy inheritance and automatic request retries are disabled.
     """
 
-    def __init__(self, base_url: str, token: str, *, transport=None, timeout=None):
+    def __init__(self, base_url: str, token: str, *, transport=None, timeout=DEFAULT_TIMEOUT):
         if type(base_url) is not str or type(token) is not str or not token:
             raise TypeError("base_url and token are required")
         parsed = urlsplit(base_url)
@@ -166,25 +145,23 @@ class EzLLMRouterClient:
             headers["Duranki-Attribution-Version"] = "1"
             headers["Duranki-Attribution-Run"] = attribution_run_id
         try:
-            response = self._transport.request(method, self.base_url + path, headers=headers,
-                                               **({"content": body} if body is not None else {}))
+            response = bounded_request(self._transport, method, self.base_url + path,
+                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT)
         except Exception as cause:
-            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", retry_guidance="query_first", selector=original) from cause
+            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(cause, "status_code", None),
+                                   "query_first", selector=original) from cause
         status = response.status_code
         try:
-            raw = response.content
-            if len(raw) > 1048576:
-                raise ValueError("response too large")
-            value = _strict_reply(raw)
+            value = _strict_reply(response.content)
         except (AttributeError, TypeError, UnicodeError, ValueError, OverflowError, RecursionError) as cause:
             raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", status, "query_first", selector=original) from cause
-        usable_handle = value.get("handle") if type(value) is dict and v.handle(value.get("handle")) else None
         if type(value) is not dict or value.get("contract_version") != v.VERSION or \
                 response.headers.get("Duranki-Contract-Version") != v.VERSION:
             correlation = value.get("error", {}).get("correlation_id") if type(value) is dict and \
                 type(value.get("error")) is dict else None
             raise EzLLMRouterError("UNSUPPORTED_VERSION", status, "never", correlation,
-                               selector=original, handle=usable_handle)
+                               selector=original)
+        usable_handle = _matching_handle(value, original)
         try:
             envelope_error = "error" in value and "state" not in value
             valid = (v.shape(value, ("contract_version", "error")) and v.error(value["error"]) and status >= 400) \
@@ -253,13 +230,12 @@ class EzLLMRouterClient:
         if body is not None:
             headers["Content-Type"] = "application/json"
         try:
-            response = self._transport.request(method, self.base_url + path, headers=headers,
-                                               **({"content": body} if body is not None else {}))
-            if len(response.content) > 1048576:
-                raise ValueError("response too large")
+            response = bounded_request(self._transport, method, self.base_url + path,
+                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT)
             value = _strict_reply(response.content)
         except Exception as exc:
-            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", retry_guidance="query_first") from exc
+            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None),
+                                   "query_first") from exc
         if type(value) is not dict or value.get("contract_version") != v.VERSION or \
                 response.headers.get("Duranki-Contract-Version") != v.VERSION:
             raise EzLLMRouterError("UNSUPPORTED_VERSION", response.status_code)
@@ -369,14 +345,12 @@ class EzLLMRouterClient:
         if wait_ms is not None:
             headers["Duranki-Wait-Ms"] = str(wait_ms)
         try:
-            response = self._transport.request(method, self.base_url + path, headers=headers,
-                                               **({"content": body} if body is not None else {}))
+            response = bounded_request(self._transport, method, self.base_url + path,
+                headers=headers, content=body, limit=SUCCESSOR_RESPONSE_LIMIT)
         except Exception as cause:
-            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", retry_guidance="query_first",
+            raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(cause, "status_code", None), "query_first",
                                selector=selector) from cause
         try:
-            if len(response.content) > 65536:
-                raise ValueError("successor response size")
             value = _strict_reply(response.content)
         except (UnicodeError, ValueError, TypeError, RecursionError) as cause:
             raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status_code, "query_first",
@@ -390,9 +364,10 @@ class EzLLMRouterClient:
             raise EzLLMRouterError(value["code"], response.status_code, value["retry_guidance"],
                                value["correlation_id"], selector=selector)
         name = "SubmitReply" if kind == "submit" else "StatusSnapshot"
+        usable_handle = _matching_handle(value, selector, successor=True)
         if not v03.response_valid(value, name, response.status_code, selector, request):
             raise EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status_code, "query_first", selector=selector,
-                               handle=value.get("handle"))
+                               handle=usable_handle)
         if kind == "submit" and value["state"] == "failed":
             error = value["error"]
             raise EzLLMRouterError(error["code"], response.status_code, error["retry_guidance"],
@@ -440,8 +415,8 @@ class EzLLMRouterClient:
     def getCapabilities(self):
         return self._perform("GET", "/v1/capabilities", None, "capabilities")
 
-    def get_status(self, selector: dict):
-        return self.getStatus(selector)
+    def get_status(self, selector: dict, *, contract_version: str = "0.2"):
+        return self.getStatus(selector, contract_version=contract_version)
 
     def get_capabilities(self):
         return self.getCapabilities()

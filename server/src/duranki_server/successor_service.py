@@ -1,6 +1,8 @@
 """Explicit wire-0.3 standalone service over authenticated synthetic contexts."""
 from __future__ import annotations
 
+from .observability import log_failure
+
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -60,26 +62,37 @@ class SuccessorService:
 
     def recover_incomplete(self):
         """Never replay after restart; retain possible-send exposure durably."""
-        with self.store._lock:
-            rows = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM dev12_submissions WHERE json_extract(record,'$.submission_state')='pending'")]
-        for record in rows:
-            sid, aid = record["submission_id"], record["attempt_id"]
+        with self.authority.gate:
             with self.store._lock:
-                committed = self.store.db.execute(
-                    "SELECT 1 FROM dev12_send_ownership WHERE attempt_id=?", (aid,)).fetchone()
-            if committed:
-                self._update(sid, {"submission_state": "unknown",
-                    "dispatch_state": "possible_send", "delivery_state": "unknown",
-                    "candidate_access": "unknown_outcome"}, self.clock(),
-                    on_update=lambda db: self.allowance.pause_in_transaction(db, "unknown_outcome"))
-            else:
-                self._update(sid, {"submission_state": "failed",
-                    "dispatch_state": "blocked", "delivery_state": "pending",
-                    "candidate_access": "unavailable_due_failure", "failure_stage": "before_send",
-                    "failure": error_response("FDC_REJECTED")}, self.clock())
-            with self.authority.gate:
-                self.allowance.finish(aid)
+                rows = [json.loads(row[0]) for row in self.store.db.execute(
+                    "SELECT record FROM dev12_submissions WHERE json_extract(record,'$.submission_state')='pending' "
+                    "AND json_extract(record,'$.campaign_id')=?", (self.allowance.campaign_id,))]
+            for record in rows:
+                sid, aid = record["submission_id"], record["attempt_id"]
+                committed = self._send_committed(sid, aid)
+                def settled(db):
+                    if committed:
+                        self.allowance.pause_in_transaction(db, "unknown_outcome")
+                    self.allowance.finish(aid, db=db)
+                if committed:
+                    fields = {"submission_state": "unknown", "dispatch_state": "possible_send",
+                              "delivery_state": "unknown", "candidate_access": "unknown_outcome"}
+                else:
+                    fields = {"submission_state": "failed", "dispatch_state": "blocked",
+                              "delivery_state": "pending", "candidate_access": "unavailable_due_failure",
+                              "failure_stage": "before_send", "failure": error_response("FDC_REJECTED")}
+                self._update(sid, fields, self.clock(), on_update=settled)
+
+    def _send_committed(self, sid, aid):
+        with self.store._lock:
+            return self.store.db.execute(
+                "SELECT 1 FROM dev12_send_ownership WHERE submission_id=? AND attempt_id=?",
+                (sid, aid)).fetchone() is not None
+
+    def _possible_send(self, sid):
+        return self._update(sid, {"submission_state": "unknown", "dispatch_state": "possible_send",
+            "delivery_state": "unknown", "candidate_access": "unknown_outcome"}, self.clock(),
+            on_update=lambda db: self.allowance.pause_in_transaction(db, "unknown_outcome"))
 
     def ingest_usage_revision(self, submission_id, usage, trusted):
         """Historical settlement needs current write authority, not send eligibility."""
@@ -306,12 +319,14 @@ class SuccessorService:
         except TimeoutError:
             pass
         except Exception:
+            log_failure('successor_service.SuccessorService.submit.failed')
             # The durable row/intent controls recovery; no second invocation.
             pass
         return self._reply(self.store.successor_get(sid))
 
     def _execute(self, record, trusted):
         sid, aid = record["submission_id"], record["attempt_id"]
+        response_observed = False
         try:
             current = self.authority.current_context(record, self.clock())
             if not execution_eligible(record["signed_plan"], record["request"],
@@ -319,11 +334,7 @@ class SuccessorService:
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
             outcome = self.executor.execute(record, self.authority, self.store, self.allowance)
             if outcome["state"] == "unknown":
-                self._update(sid, {"submission_state": "unknown",
-                                                  "dispatch_state": "possible_send",
-                                                  "delivery_state": "unknown",
-                                                  "candidate_access": "unknown_outcome"}, self.clock(),
-                    on_update=lambda db: self.allowance.pause_in_transaction(db, "unknown_outcome"))
+                self._possible_send(sid)
                 return
             with self.store._lock:
                 committed = self.store.db.execute(
@@ -332,6 +343,7 @@ class SuccessorService:
                 raise ContractError("FDC_REJECTED", 409)
             if outcome["state"] != "observed":
                 raise ContractError("RESULT_INVALID", 502)
+            response_observed = True
             if "usage_component" not in outcome:
                 from .successor_contract import price_for
                 component = {"component": price_for(record["request"])["component"], "presence": "absent"}
@@ -373,8 +385,14 @@ class SuccessorService:
                                               "candidate_access": "present", "result": outcome["result"],
                                               "result_available_at": self.clock()}, self.clock())
         except ContractError as exc:
-            stage = ("before_send" if exc.code == "INTENT_PERSIST_FAILED" or exc.status < 500
-                     else "result_validation")
+            no_send = {**record, "submission_state": "failed", "dispatch_state": "blocked",
+                       "failure_stage": "before_send", "failure": error_response(exc.code)}
+            if (self._send_committed(sid, aid) and not response_observed and
+                    not self.allowance.proves_no_send(no_send)):
+                log_failure("successor_contract_failed_after_commit", exc)
+                self._possible_send(sid)
+                return
+            stage = "result_validation" if response_observed else "before_send"
             self._update(sid, {"submission_state": "failed",
                                               "dispatch_state": "blocked" if stage == "before_send" else "sent",
                                               "delivery_state": "invalid" if stage == "result_validation" else "pending",
@@ -382,16 +400,10 @@ class SuccessorService:
                                               "failure_stage": stage,
                                               "failure": error_response(exc.code)}, self.clock())
         except Exception:
+            log_failure('successor_service.SuccessorService._execute.failed')
             # A durable guard commitment means the receiver may have the bytes.
-            with self.store._lock:
-                committed = self.store.db.execute(
-                    "SELECT 1 FROM dev12_send_ownership WHERE attempt_id=?", (aid,)).fetchone()
-            if committed:
-                self._update(sid, {"submission_state": "unknown",
-                                                  "dispatch_state": "possible_send",
-                                                  "delivery_state": "unknown",
-                                                  "candidate_access": "unknown_outcome"}, self.clock(),
-                    on_update=lambda db: self.allowance.pause_in_transaction(db, "unknown_outcome"))
+            if self._send_committed(sid, aid):
+                self._possible_send(sid)
             else:
                 self._update(sid, {"submission_state": "failed",
                                                   "dispatch_state": "blocked", "delivery_state": "pending",

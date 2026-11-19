@@ -27,7 +27,7 @@ from duranki_server.personal_campaign import PersonalCampaign
 from duranki_server.registry import Registry
 from duranki_server.canonical import ContractError
 from dev08_integrated import TEST_TOKEN, certificate, fixture_paths, prepare_registry
-from proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
+from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
 from test_provider_plan import Adapter
 
 

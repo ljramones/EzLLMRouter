@@ -2,6 +2,7 @@ ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
 ENV npm_config_cache=/tmp/duranki-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 COPY client.tgz /opt/duranki/client.tgz
+COPY client-metadata.json /opt/duranki/client-metadata.json
 COPY client.tgz.sha256 /opt/duranki/client.tgz.sha256
 RUN sha256sum -c /opt/duranki/client.tgz.sha256 \
  && mkdir -p /app/consumer \
@@ -12,7 +13,7 @@ RUN sha256sum -c /opt/duranki/client.tgz.sha256 \
 COPY dev09_js_actor.cjs /app/consumer/dev09_js_actor.cjs
 COPY dev10_js_actor.cjs /app/consumer/dev10_js_actor.cjs
 RUN chmod 0444 /app/consumer/dev09_js_actor.cjs /app/consumer/dev10_js_actor.cjs \
- && node -e "const p=require('/app/consumer/node_modules/@mach33/duranki-client/package.json'); if(p.version!=='0.0.3')process.exit(1)"
+ && node -e "const m=require('/opt/duranki/client-metadata.json'); const p=require('/app/consumer/node_modules/'+m.name+'/package.json'); if(p.version!==m.version)process.exit(1)"
 USER node
 WORKDIR /app/consumer
 CMD ["node", "/app/consumer/dev09_js_actor.cjs"]

@@ -1,7 +1,9 @@
 """Version-selected HTTP boundary; coordinator and successor are injected."""
 from __future__ import annotations
 
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from .observability import log_failure
+
+from .http_server import BoundedHTTPServer as ThreadingHTTPServer, SafeHTTPRequestHandler
 import json
 import re
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -12,7 +14,7 @@ from .integration_accounting import IntegrationError, route_id
 
 
 def serve(host: str, port: int, coordinator, *, integration_only=False):
-    class Handler(BaseHTTPRequestHandler):
+    class Handler(SafeHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
         def log_message(self, _format, *_args):
@@ -213,6 +215,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     return self._integration_reply(200, None, csv_body=out.getvalue())
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
             except Exception as exc:
+                log_failure('web.serve.Handler._integration_get.failed')
                 self._integration_error(exc)
 
         def _integration_post(self):
@@ -228,7 +231,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     raise IntegrationError("LIMIT_EXCEEDED", 413)
                 from .canonical import strict_loads
                 try:
-                    body = strict_loads(self.rfile.read(int(lengths[0])))
+                    body = strict_loads(self.read_body(int(lengths[0])))
                 except ContractError as exc:
                     raise IntegrationError(exc.code, exc.status) from exc
                 ledger = coordinator.registry.integration
@@ -254,6 +257,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
                 self._integration_reply(status, reply)
             except Exception as exc:
+                log_failure('web.serve.Handler._integration_post.failed')
                 self._integration_error(exc)
 
         def do_GET(self):
@@ -294,6 +298,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                 else:
                     raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
             except Exception as exc:
+                log_failure('web.serve.Handler.do_GET.failed')
                 self._error(exc)
 
         def do_POST(self):
@@ -322,7 +327,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                 max_bytes = 262144 if self.selected_version == "0.3" else 65536
                 if len(lengths or []) != 1 or not lengths[0].isdigit() or int(lengths[0]) > max_bytes or self.headers.get("Transfer-Encoding"):
                     raise ContractError("LIMIT_EXCEEDED", 413)
-                data = self.rfile.read(int(lengths[0]))
+                data = self.read_body(int(lengths[0]))
                 if self.selected_version == "0.3":
                     from .successor_contract import strict_decode
                     request = strict_decode(data)
@@ -349,6 +354,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     run_id=run_headers[0] if run_headers else None)
                 self._reply(status, reply)
             except Exception as exc:
+                log_failure('web.serve.Handler.do_POST.failed')
                 self._error(exc)
     server = ThreadingHTTPServer((host, port), Handler)
     server.daemon_threads = True
