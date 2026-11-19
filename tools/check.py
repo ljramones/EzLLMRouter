@@ -54,6 +54,7 @@ MODULES = (
     "tests.tool_cycle.test_python_client",
     "tests.unit.test_gateway_packaging",
     "tests.unit.test_secret_rotation",
+    "tests.unit.test_certificate_constraints",
     "tests.unit.test_database",
     "tests.unit.test_operator_routes",
 )
