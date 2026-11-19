@@ -123,9 +123,10 @@ class DatabaseCredentialStore:
     def _settings(self, provider):
         return {"origin": PROVIDERS[provider][1], "location": "commercial", "site": "owner.local"}
 
-    def _discover(self, binding, version=None):
+    def _discover(self, binding, version=None, *, secret=None):
         result = self.discover(PROVIDERS[binding["provider"]][0], self._settings(binding["provider"]),
-                               self._resolve(binding, version), "inventory", controlled=self.controlled)
+                               self._resolve(binding, version) if secret is None else secret,
+                               "inventory", controlled=self.controlled)
         if result["state"] == "observed" and not result.get("models"):
             result = {"state": "empty", "reason": "empty_catalogue", "models": []}
         return {"state": result["state"], "reason": result["reason"],
@@ -136,6 +137,15 @@ class DatabaseCredentialStore:
 
     def _public(self, binding):
         return {key: value for key, value in binding.items() if key not in ("request_hash",)}
+
+    def _current(self, principal, dataset_id, account_id, expected_revision):
+        """Call within the write transaction when publishing a changed binding."""
+        self._owner(principal, dataset_id)
+        item = self._binding(account_id)
+        if (type(expected_revision) is not int or item["dataset_id"] != dataset_id or
+                item["revision"] != expected_revision):
+            raise IntegrationError("STALE_REVISION", 409)
+        return item
 
     def _clean_pending(self):
         cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -183,6 +193,7 @@ class DatabaseCredentialStore:
                        "revision": 1, "created_at": _time(), "updated_at": _time()}
             def create():
                 db = self.store.database
+                self._owner(principal, body["dataset_id"])
                 db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_BINDINGS,
                            (account_id, body["dataset_id"], encode(binding)))
                 db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_VERSIONS,
@@ -190,13 +201,18 @@ class DatabaseCredentialStore:
                 db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_OPERATIONS,
                            (operation_id, digest, account_id))
             self.store.database.transaction(create)
-            discovery = self._discover(binding, 1)
-            binding["discovery"] = discovery
-            binding["updated_at"] = _time()
-            self.store.database.transaction(lambda: self.store.database.execute(
-                _queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
-                (encode(binding), account_id)))
-            return self._public(binding)
+            secret = self._resolve(binding, 1)
+        discovery = self._discover(binding, 1, secret=secret)
+        with self._gate:
+            def finish():
+                self._owner(principal, binding["dataset_id"])
+                current = self._binding(account_id)
+                if current["revision"] == binding["revision"]:
+                    current.update(discovery=discovery, updated_at=_time())
+                    self.store.database.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
+                                                (encode(current), account_id))
+                return self._public(current)
+            return self.store.database.transaction(finish)
 
     def list(self, principal, dataset_id):
         self._owner(principal, dataset_id)
@@ -253,6 +269,7 @@ class DatabaseCredentialStore:
                         revision=item["revision"] + 1, updated_at=_time())
             def commit():
                 db = self.store.database
+                self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 if account:
                     db.execute(_queries.COMMIT_INSERT_INTEGRATION_ACCOUNTS,
                                (account_id, item["dataset_id"], encode(account)))
@@ -261,6 +278,8 @@ class DatabaseCredentialStore:
                 else:
                     row = db.execute(_queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS,
                                      (account_id, item["dataset_id"])).fetchone()
+                    if not row:
+                        raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
                     old = json.loads(row[0])
                     old.update(allowed_models=models, allowed_operations=operations,
                                revision=old["revision"] + 1, changed_at=_time())
@@ -276,57 +295,66 @@ class DatabaseCredentialStore:
     def refresh(self, principal, account_id, body):
         self._owner(principal, body.get("dataset_id"))
         with self._gate:
-            item = self._binding(account_id)
-            if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision"):
-                raise IntegrationError("STALE_REVISION", 409)
-            discovery = self._discover(item, item["pending_version"] or item["selected_version"])
-            discovery["record_revision"] = item["revision"] + 1
-            item.update(discovery=discovery, revision=item["revision"] + 1, updated_at=_time())
-            self.store.database.transaction(lambda: self.store.database.execute(
-                _queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
-                (encode(item), account_id)))
-            return self._public(item)
+            item = self._current(principal, body["dataset_id"], account_id, body.get("expected_revision"))
+            version = item["pending_version"] or item["selected_version"]
+            secret = self._resolve(item, version)
+        discovery = self._discover(item, version, secret=secret)
+        with self._gate:
+            def commit():
+                current = self._current(principal, item["dataset_id"], account_id, item["revision"])
+                discovery["record_revision"] = current["revision"] + 1
+                current.update(discovery=discovery, revision=current["revision"] + 1, updated_at=_time())
+                self.store.database.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
+                                            (encode(current), account_id))
+                return self._public(current)
+            return self.store.database.transaction(commit)
 
     def replace(self, principal, account_id, body):
         self._owner(principal, body.get("dataset_id"))
+        secret = body.get("api_key")
+        dataset_id, expected_revision = body["dataset_id"], body.get("expected_revision")
         with self._gate:
-            item = self._binding(account_id)
-            if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get("expected_revision") or item["state"] not in ("connected", "pending"):
-                raise IntegrationError("STALE_REVISION", 409)
-            version = max(item["selected_version"], item["pending_version"] or 0) + 1
-            key_id, nonce, ciphertext = self._seal(account_id, version, item["provider"], body.get("api_key"))
-            self.store.database.transaction(lambda: self.store.database.execute(
-                _queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_VERSIONS,
-                (account_id, version, key_id, nonce, ciphertext)))
+            def stage():
+                item = self._current(principal, dataset_id, account_id, expected_revision)
+                if item["state"] not in ("connected", "pending"):
+                    raise IntegrationError("STALE_REVISION", 409)
+                stored = self.store.database.execute(_queries.NEXT_CREDENTIAL_VERSION, (account_id,)).fetchone()[0]
+                version = max(stored, item["selected_version"], item["pending_version"] or 0) + 1
+                key_id, nonce, ciphertext = self._seal(account_id, version, item["provider"], secret)
+                self.store.database.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_VERSIONS,
+                                            (account_id, version, key_id, nonce, ciphertext))
+                return item, version
+            item, version = self.store.database.transaction(stage)
+        try:
             try:
-                result = self._discover(item, version)
+                result = self._discover(item, version, secret=secret)
             except Exception:
-                log_failure('integration_credentials.DatabaseCredentialStore.replace.failed')
-                self.store.database.transaction(lambda: self.store.database.execute(
-                    _queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
-                    (account_id, version)))
+                log_failure("integration_credentials.replacement_discovery_failed")
                 raise
-            if item["state"] == "connected" and (result["state"] != "observed" or result.get("has_more")):
+            with self._gate:
+                def commit():
+                    current = self._current(principal, item["dataset_id"], account_id, item["revision"])
+                    if current["state"] == "connected" and (result["state"] != "observed" or result.get("has_more")):
+                        return {**self._public(current), "replacement": result}
+                    previous_pending = current["pending_version"]
+                    if current["state"] == "pending":
+                        current["pending_version"] = version
+                    else:
+                        current["selected_version"] = version
+                    current.update(discovery=result, revision=current["revision"] + 1, updated_at=_time())
+                    current["discovery"]["record_revision"] = current["revision"]
+                    self.store.database.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
+                                                (encode(current), account_id))
+                    if previous_pending and previous_pending != version:
+                        self.store.database.execute(_queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
+                                                    (account_id, previous_pending))
+                    return self._public(current)
+                return self.store.database.transaction(commit)
+        finally:
+            # Never remove a version that another completed mutation selected.
+            with self._gate:
                 self.store.database.transaction(lambda: self.store.database.execute(
-                    _queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
-                    (account_id, version)))
-                return {**self._public(item), "replacement": result}
-            previous_pending = item["pending_version"]
-            if item["state"] == "pending":
-                item["pending_version"] = version
-            else:
-                item["selected_version"] = version
-            item.update(discovery=result, revision=item["revision"] + 1, updated_at=_time())
-            item["discovery"]["record_revision"] = item["revision"]
-            def commit():
-                db = self.store.database
-                db.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
-                           (encode(item), account_id))
-                if previous_pending and previous_pending != version:
-                    db.execute(_queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
-                               (account_id, previous_pending))
-            self.store.database.transaction(commit)
-            return self._public(item)
+                    _queries.DISCARD_UNSELECTED_CREDENTIAL_VERSION, (account_id, version)))
 
     def disable(self, principal, account_id, body):
         self._owner(principal, body.get("dataset_id"))
@@ -338,6 +366,7 @@ class DatabaseCredentialStore:
                 return self._public(item)
             item.update(state="disabled", revision=item["revision"] + 1, updated_at=_time())
             def commit():
+                self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 db = self.store.database
                 row = db.execute(_queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS,
                                  (account_id, item["dataset_id"])).fetchone()
@@ -365,6 +394,7 @@ class DatabaseCredentialStore:
                 raise IntegrationError("RETIREMENT_NOT_ACKNOWLEDGED", 409)
             item.update(revision=item["revision"] + 1, updated_at=_time())
             def commit():
+                self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 self.store.database.execute(_queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
                                       (account_id, version))
                 self.store.database.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
@@ -380,6 +410,7 @@ class DatabaseCredentialStore:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
 
         def release():
+            dataset = self.registry.integration._dataset(dataset_id)
             current = self.registry.principal(principal["principal_id"])
             if not current or current["status"] != "active" or current["owner"] != dataset["owner_id"]:
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)

@@ -25,15 +25,16 @@ class DatabaseTests(unittest.TestCase):
         self.addCleanup(value.close)
         return value
 
-    def test_initial_schema_contains_all_domains_and_has_one_revision(self):
+    def test_current_schema_contains_all_domains_and_records_each_revision(self):
         store = self.store()
-        self.assertEqual(schema.validate(store.db), 1)
+        self.assertEqual(schema.validate(store.db), schema.VERSION)
         tables = {row[0] for row in store.db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertTrue({"submissions", "console_users", "local_connectors", "registry_principals",
                          "integration_credential_versions", "personal_campaigns", "dev12_authority"} <= tables)
         self.assertNotIn("integration_meta", tables)
         self.assertEqual(store.db.execute("PRAGMA foreign_key_check").fetchall(), [])
-        self.assertEqual(store.db.execute("SELECT version FROM schema_revisions").fetchall(), [(1,)])
+        self.assertEqual(store.db.execute("SELECT version FROM schema_revisions ORDER BY version").fetchall(),
+                         [(number,) for number in range(1, schema.VERSION + 1)])
 
     def test_unversioned_database_is_rejected_without_adopting_its_tables(self):
         with sqlite3.connect(self.path) as connection:
@@ -60,10 +61,10 @@ class DatabaseTests(unittest.TestCase):
 
     def test_future_versions_and_changed_migration_hashes_fail_closed(self):
         store = self.store()
-        store.db.execute("PRAGMA user_version=2")
+        store.db.execute(f"PRAGMA user_version={schema.VERSION + 1}")
         with self.assertRaises(RuntimeError):
             SQLiteStore(self.path)
-        store.db.execute("PRAGMA user_version=1")
+        store.db.execute(f"PRAGMA user_version={schema.VERSION}")
         store.db.execute("UPDATE schema_revisions SET sha256='tampered'")
         with self.assertRaisesRegex(RuntimeError, "revision"):
             SQLiteStore(self.path)

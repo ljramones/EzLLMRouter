@@ -123,10 +123,35 @@ APPLY_INSERT_REGISTRY_DEPLOYMENTS = Query('INSERT INTO registry_deployments VALU
 
 CREDENTIAL_BOUND_TO_SELECT_REGISTRY_CREDENTIALS = Query('SELECT 1 FROM registry_credentials WHERE principal_id=? AND verifier=?')
 
-SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS = Query(
-    'SELECT record FROM registry_observations WHERE connection_id=? AND '
-    "json_extract(record,'$.operation')='inventory' ORDER BY rowid DESC"
+_INVENTORY_ANCHORS = """
+WITH latest AS (
+    SELECT rowid FROM registry_observations WHERE connection_id=?1
+    AND json_extract(record,'$.operation')='inventory' ORDER BY rowid DESC LIMIT 1
+), usable AS (
+    SELECT rowid FROM registry_observations WHERE connection_id=?1
+    AND json_extract(record,'$.operation')='inventory'
+    AND json_extract(record,'$.state') IN ('observed','partial') ORDER BY rowid DESC LIMIT 1
+), complete AS (
+    SELECT rowid FROM registry_observations WHERE connection_id=?1
+    AND json_extract(record,'$.operation')='inventory'
+    AND json_extract(record,'$.state')='observed' ORDER BY rowid DESC LIMIT 1
+), anchors AS (
+    SELECT rowid FROM latest UNION SELECT rowid FROM usable UNION SELECT rowid FROM complete
 )
+"""
+
+SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS = Query(_INVENTORY_ANCHORS + """
+SELECT record FROM registry_observations WHERE rowid IN (SELECT rowid FROM anchors)
+ORDER BY rowid DESC
+""")
+
+PRUNE_CONNECTION_OBSERVATIONS = Query(_INVENTORY_ANCHORS + """
+DELETE FROM registry_observations WHERE connection_id=?1
+AND rowid NOT IN (SELECT rowid FROM anchors)
+AND rowid NOT IN (
+    SELECT rowid FROM registry_observations WHERE connection_id=?1 ORDER BY rowid DESC LIMIT 20
+)
+""")
 
 SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS = Query(
     'SELECT record FROM registry_source_permissions WHERE '

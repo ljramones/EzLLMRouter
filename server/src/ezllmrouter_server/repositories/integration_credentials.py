@@ -31,6 +31,16 @@ COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS = Query('UPDATE integration_creden
 
 COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS = Query('DELETE FROM integration_credential_versions WHERE account_id=? AND version=?')
 
+NEXT_CREDENTIAL_VERSION = Query(
+    'SELECT COALESCE(MAX(version),0) FROM integration_credential_versions WHERE account_id=?'
+)
+
+DISCARD_UNSELECTED_CREDENTIAL_VERSION = Query(
+    'DELETE FROM integration_credential_versions WHERE account_id=?1 AND version=?2 '
+    'AND NOT EXISTS (SELECT 1 FROM integration_credential_bindings WHERE account_id=?1 '
+    "AND (json_extract(record,'$.selected_version')=?2 OR json_extract(record,'$.pending_version')=?2))"
+)
+
 INIT_SELECT_INTEGRATION_CREDENTIAL_META = Query("SELECT value FROM integration_credential_meta WHERE key='keyring_id'")
 
 INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS = Query('SELECT DISTINCT key_id FROM integration_credential_versions')

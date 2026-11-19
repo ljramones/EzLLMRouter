@@ -60,7 +60,7 @@ console uses JavaScript, HTML and CSS. Python, JavaScript/TypeScript, Go, Java,
 C# and Rust clients expose service
 and accounting interfaces without calling a provider directly.
 
-All tables start from the [initial database schema](DATABASE.md). Repository
+All tables use the [versioned database schema](DATABASE.md). Repository
 modules own SQL queries; shared transactions keep accounting, credentials,
 permissions and audit entries consistent. The operator server separates transport,
 authentication, route dispatch and per-server application state.

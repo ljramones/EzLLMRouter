@@ -1,11 +1,11 @@
-"""One versioned, transactional schema owner for new service databases."""
+"""One versioned, transactional schema owner for service databases."""
 
 from hashlib import sha256
 from importlib.resources import files
 import sqlite3
 
 APPLICATION_ID = 0x455A4C4C
-MIGRATIONS = ("v001_initial.sql",)
+MIGRATIONS = ("v001_initial.sql", "v002_observation_retention.sql")
 VERSION = len(MIGRATIONS)
 
 

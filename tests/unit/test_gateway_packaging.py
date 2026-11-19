@@ -123,7 +123,8 @@ assert old_recipe.SyntheticDevelopmentRecipe is synthetic_recipe.SyntheticDevelo
 assert 'service/server' in str(Path(ezllmrouter_server.__file__))
 assert 'service/server' in secret_rotation.__file__
 store = SQLiteStore('staged.sqlite')
-assert store.db.execute('PRAGMA user_version').fetchone() == (1,)
+from ezllmrouter_server.schema import VERSION
+assert store.db.execute('PRAGMA user_version').fetchone() == (VERSION,)
 store.close()
 for name in ('guard', 'choice_b_sender', 'adapter', 'owned_sender_transport', 'owned_tls_sender_transport',
              'proxy_recipe', 'worker_ready', 'dev12_guard', 'choice_b_wire'):

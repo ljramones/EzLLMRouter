@@ -8,7 +8,7 @@ Current guides for operating and developing CognitiveDynamics EzLLMRouter:
 | [API and clients](API.md) | Client interfaces, versioned accounting and recovery behavior. |
 | [Users and permissions](USER-MANAGEMENT.md) | First sign-in, roles and account management. |
 | [Local connectors](LOCAL-CONNECTORS.md) | Model-server inventory, availability and model selection. |
-| [Database](DATABASE.md) | Initial schema, repository queries and operator server structure. |
+| [Database](DATABASE.md) | Schema upgrades, probe retention, transactions and operator server structure. |
 | [Encryption](ENCRYPTION.md) | Independent keyrings, rotation and consistent backups. |
 | [Security](SECURITY.md) | Credentials, transport boundaries and frozen runtime inputs. |
 | [Development](DEVELOPMENT.md) | Environment setup, checks and test inputs. |

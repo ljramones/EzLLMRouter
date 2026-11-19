@@ -309,6 +309,9 @@ class ExternalAccounting:
             for did in expired:
                 db.execute(_queries.ACTION_INSERT_INTEGRATION_EXPIRED_DATASETS,
                            (did, _time()))
+                db.execute(_queries.PURGE_CREDENTIAL_VERSIONS, (did,))
+                db.execute(_queries.PURGE_CREDENTIAL_OPERATIONS, (did,))
+                db.execute(_queries.PURGE_CREDENTIAL_BINDINGS, (did,))
                 for table in ("integration_events", "integration_attempts", "integration_runs",
                               "integration_snapshots", "integration_eligibility_reads",
                               "integration_accounts"):
@@ -393,6 +396,7 @@ class ExternalAccounting:
         self._authorize(principal, dataset, "admin")
         def action():
             db = self.store.database
+            self._authorize(principal, self._dataset(body["dataset_id"]), "admin")
             old = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (body["account_id"], body["dataset_id"])).fetchone()
             if old:
@@ -416,6 +420,7 @@ class ExternalAccounting:
         self._authorize(principal, dataset, "admin")
         def action():
             db = self.store.database
+            self._authorize(principal, self._dataset(body["dataset_id"]), "admin")
             row = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (account_id, body["dataset_id"])).fetchone()
             if not row:
@@ -438,6 +443,7 @@ class ExternalAccounting:
         self._authorize(principal, dataset, "admin")
         def action():
             db = self.store.database
+            self._authorize(principal, self._dataset(body["dataset_id"]), "admin")
             row = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (account_id, body["dataset_id"])).fetchone()
             if not row:
@@ -468,34 +474,39 @@ class ExternalAccounting:
                 raise IntegrationError("SCHEMA_INVALID")
         if model_id is not None and not _shape(model_id, SCHEMA["$defs"]["id"]) or version != "3" and model_id is None:
             raise IntegrationError("SCHEMA_INVALID")
-        with self.store.database.read():
+        def action():
+            self._authorize(principal, self._dataset(dataset_id), "eligibility")
             row = self.store.database.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
-                                        (account_id, dataset_id)).fetchone()
-        if not row:
-            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-        record = json.loads(row[0])
-        permitted = (model_id in record["allowed_models"] if selection_kind == "known_model" or version != "3"
-                     else operation_family in record.get("allowed_operations", ()))
-        reason = "usable" if record["state"] == "usable" and permitted else (
-            "account_disabled" if record["state"] != "usable" else
-            "model_not_permitted" if version != "3" or selection_kind == "known_model" else
-            "operation_not_permitted")
-        result = {"integration_version": version, "dataset_id": dataset_id, "account_id": account_id,
-                "account_revision": record["revision"],
-                "usable": reason == "usable", "reason": reason}
-        if model_id is not None:
-            result["model_id"] = model_id
-        if version == "3":
-            result.update(operation_family=operation_family, capability=capability,
-                          selection_kind=selection_kind, provider_id=record["provider_id"],
-                          credential_ref=record["credential_ref"])
+                                             (account_id, dataset_id)).fetchone()
+            if not row:
+                raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
+            record = json.loads(row[0])
+            permitted = (model_id in record["allowed_models"] if selection_kind == "known_model" or version != "3"
+                         else operation_family in record.get("allowed_operations", ()))
+            reason = "usable" if record["state"] == "usable" and permitted else (
+                "account_disabled" if record["state"] != "usable" else
+                "model_not_permitted" if version != "3" or selection_kind == "known_model" else
+                "operation_not_permitted")
+            result = {"integration_version": version, "dataset_id": dataset_id, "account_id": account_id,
+                    "account_revision": record["revision"],
+                    "usable": reason == "usable", "reason": reason}
+            if model_id is not None:
+                result["model_id"] = model_id
+            if version == "3":
+                result.update(operation_family=operation_family, capability=capability,
+                              selection_kind=selection_kind, provider_id=record["provider_id"],
+                              credential_ref=record["credential_ref"])
+            if version in ("2", "3"):
+                result.update(eligibility_id="eligibility." + uuid.uuid4().hex, evaluated_at=_time())
+                result["eligibility_digest"] = "sha256:" + hashlib.sha256(encode(result).encode()).hexdigest()
+                self.store.database.execute(
+                    _queries.ELIGIBILITY_INSERT_INTEGRATION_ELIGIBILITY_READS,
+                    (dataset_id, result["eligibility_id"], encode(result)))
+            return result
         if version in ("2", "3"):
-            result.update(eligibility_id="eligibility." + uuid.uuid4().hex, evaluated_at=_time())
-            result["eligibility_digest"] = "sha256:" + hashlib.sha256(encode(result).encode()).hexdigest()
-            self.store.database.transaction(lambda: self.store.database.execute(
-                _queries.ELIGIBILITY_INSERT_INTEGRATION_ELIGIBILITY_READS,
-                (dataset_id, result["eligibility_id"], encode(result))))
-        return result
+            return self.store.database.transaction(action)
+        with self.store.database.read():
+            return action()
 
     def datasets(self, principal):
         if principal["role"] not in ("registry_admin", "read_only_operator"):
@@ -655,6 +666,7 @@ class ExternalAccounting:
         digest = hashlib.sha256(encode(event).encode()).hexdigest()
         def action():
             db = self.store.database
+            self._authorize(principal, self._dataset(event["dataset_id"]), "ingest")
             did, eid, kind = event["dataset_id"], event["event_id"], event["kind"]
             old = db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_3,
                              (did, eid)).fetchone()
@@ -799,6 +811,7 @@ class ExternalAccounting:
         metadata = {key: value for key, value in record.items() if key not in content}
         def action():
             db = self.store.database
+            self._authorize(principal, self._dataset(record["dataset_id"]), "ingest")
             old = db.execute(_queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS_2,
                              (did, sid)).fetchone()
             if old:

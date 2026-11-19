@@ -233,7 +233,7 @@ before choosing a rewrite.
 | `server/` | Coordinator, registry, persistence, operator API, and trusted service. |
 | `server/src/ezllmrouter_server/gateway/` | Guard, owned sender transports, adapter, IPC framing and gateway recipes. |
 | `server/src/ezllmrouter_server/repositories/` | Domain-owned, named SQL queries. |
-| `server/src/ezllmrouter_server/schema/` | Versioned initial database schema. |
+| `server/src/ezllmrouter_server/schema/` | Numbered database migrations. |
 | `server/src/ezllmrouter_server/operator_http/` | Operator transport, authentication, routes and application state. |
 | `worker/` | Isolated worker source, staged separately from the trusted service package. |
 | `clients/python/`, `clients/js/`, `clients/go/`, `clients/java/`, `clients/dotnet/`, `clients/rust/` | Installable network clients. |
@@ -259,7 +259,8 @@ ownership, shared transactions, dispatch boundaries and verification.
 
 ## Development status
 
-The current database starts from one fresh initial schema. The local test suite
+The current database uses versioned migrations and upgrades version 1 to version 2
+atomically. The local test suite
 covers accounting, credential recovery, authorization and operator workflows.
 Docker deployment, live-provider execution and production qualification require
 their own validation. Learned routing remains future work.

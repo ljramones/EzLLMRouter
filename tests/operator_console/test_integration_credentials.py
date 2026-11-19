@@ -198,7 +198,8 @@ class CredentialTests(unittest.TestCase):
         before = self.store.db.execute("SELECT record FROM integration_accounts WHERE id=?",
                                        (account_id,)).fetchone()[0]
         self.registry.integration = ExternalAccounting(self.registry)
-        self.assertEqual(self.store.db.execute("PRAGMA user_version").fetchone()[0], 1)
+        from ezllmrouter_server.schema import VERSION
+        self.assertEqual(self.store.db.execute("PRAGMA user_version").fetchone()[0], VERSION)
         self.assertEqual(self.store.db.execute("SELECT record FROM integration_accounts WHERE id=?",
                                         (account_id,)).fetchone()[0], before)
         self.assertEqual(self.credentials.resolve_for(self.consumer, self.dataset, account_id,

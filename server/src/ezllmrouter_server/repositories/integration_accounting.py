@@ -80,6 +80,18 @@ def ACTION_DELETE_RECORD(*, table):
     identifier(table)
     return Query(f'DELETE FROM {table} WHERE dataset_id=?')
 
+PURGE_CREDENTIAL_VERSIONS = Query(
+    'DELETE FROM integration_credential_versions WHERE account_id IN '
+    '(SELECT account_id FROM integration_credential_bindings WHERE dataset_id=?)'
+)
+
+PURGE_CREDENTIAL_OPERATIONS = Query(
+    'DELETE FROM integration_credential_operations WHERE account_id IN '
+    '(SELECT account_id FROM integration_credential_bindings WHERE dataset_id=?)'
+)
+
+PURGE_CREDENTIAL_BINDINGS = Query('DELETE FROM integration_credential_bindings WHERE dataset_id=?')
+
 DATASET_SELECT_INTEGRATION_DATASETS = Query(
     'SELECT d.record,r.days,r.activated_at FROM integration_datasets d LEFT JOIN '
     'integration_dataset_retention r ON r.dataset_id=d.id WHERE d.id=?'

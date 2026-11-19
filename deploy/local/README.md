@@ -38,8 +38,9 @@ The console is published at `http://127.0.0.1:8780`. Named accounts follow the
 [users guide](../../docs/USER-MANAGEMENT.md). Runtime preparation and starting the
 profile are separate from selecting or authorizing any provider execution.
 
-The initial database schema requires fresh instance storage; it does not adopt
-prior development databases. See [database setup](../../docs/DATABASE.md).
+The service initializes fresh storage and upgrades the version 1 schema to version
+2 atomically. It does not adopt unversioned development databases. See
+[database setup](../../docs/DATABASE.md).
 
 ## Stop, restart and backup
 

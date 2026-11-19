@@ -433,6 +433,7 @@ class Registry:
             def save():
                 self.store.database.execute(_queries.SAVE_INSERT_REGISTRY_OBSERVATIONS,
                     (operation_id, connection_id, encode(observation)))
+                self.store.database.execute(_queries.PRUNE_CONNECTION_OBSERVATIONS, (connection_id,))
             self.store.database.transaction(save)
             return observation
 
