@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/operator_console"))
 
-from duranki_server.reporting import usage_costs
-from duranki_server.web import serve
+from ezllmrouter_server.reporting import usage_costs
+from ezllmrouter_server.web import serve
 from test_registry_core import RegistryCoordinatorTests, REQUEST, TOKEN
 
 
@@ -27,8 +27,8 @@ def main():
     result_path = ROOT / "docs/development/dev-09/INSTALLED-CLIENT-RESULT-01.json"
     if result_path.exists():
         raise SystemExit("installed-client result already exists; preserve the first proof")
-    if not (python_dir / "duranki_client/__init__.py").is_file() or \
-            not (js_dir / "@mach33/duranki-client/index.cjs").is_file():
+    if not (python_dir / "ezllmrouter_client/__init__.py").is_file() or \
+            not (js_dir / "@cognitivedynamics/ezllmrouter-client/index.cjs").is_file():
         raise SystemExit("both offline-installed SDK packages are required")
     fixture = RegistryCoordinatorTests("test_attributed_run_binds_signed_decision_and_rejects_reassignment")
     fixture.setUp()
@@ -135,8 +135,8 @@ def main():
         assert all(item["initiating_user_id"] == "user.alpha" for item in scoped["attempts"])
         alpha_run = next(run for run in report["workflows"] if run["run_id"] == alpha["run"]["run_id"])
         assert alpha_run["outcome"]["verdict"] == "rejected"
-        package_sources = {"python": python_dir / "duranki_client/__init__.py",
-            "commonjs": js_dir / "@mach33/duranki-client/index.cjs"}
+        package_sources = {"python": python_dir / "ezllmrouter_client/__init__.py",
+            "commonjs": js_dir / "@cognitivedynamics/ezllmrouter-client/index.cjs"}
         result = {"status": "PASS", "kind": "DEV-09 disposable installed SDK HTTP/Coordinator proof",
             "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT).decode().strip(),
             "source_dirty": True, "installed_python": direct["version"], "installed_commonjs": "0.0.3",

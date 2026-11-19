@@ -12,13 +12,13 @@ import sqlite3
 import sys
 import threading
 
-from duranki_client.integration import IntegrationClient
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_client.integration import IntegrationClient
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = Path("/Users/larrymitchell/Mach33/Duranki-artifacts/integration-correction03-20261028-01/candidate1/corrected")
+SOURCE = Path("/Users/larrymitchell/Mach33/EzLLMRouter-artifacts/integration-correction03-20261028-01/candidate1/corrected")
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 DATASET = "dataset.c03.historical"
 ACCOUNT = "account.synthetic.v3.mixed"

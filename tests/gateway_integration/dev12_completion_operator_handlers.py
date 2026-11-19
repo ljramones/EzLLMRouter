@@ -240,7 +240,7 @@ def operator_identity(runtime, case):
     if (case["scenario_id"], case["variant"]) != ("t60", "composed"):
         raise NotImplementedError("unsupported operator identity case")
     from dev12_completion_handlers import _case_request, _headers, _post
-    from duranki_server.successor_contract import classify_request
+    from ezllmrouter_server.successor_contract import classify_request
 
     before = _census(runtime)
     positives = {}
@@ -646,7 +646,7 @@ def persistence_migration(runtime, case):
     """Additive readback of a representative old row, independent of live DB."""
     if (case["scenario_id"], case["variant"]) != ("t66", "composed"):
         raise NotImplementedError("unsupported preserving migration case")
-    from duranki_server.store import SQLiteStore
+    from ezllmrouter_server.store import SQLiteStore
     before = _census(runtime)
     path = runtime.root / "cases" / (case["id"] + "-legacy.sqlite")
     path.parent.mkdir(exist_ok=True)

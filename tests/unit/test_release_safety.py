@@ -9,9 +9,9 @@ from types import SimpleNamespace
 from tests.development_slice import test_core as core_fixtures
 from tests.tool_cycle import test_core as tool_fixtures
 from tests.operator_console import test_personal_campaign as campaign_fixtures
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server import observability
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server import observability
 
 
 class CoreFailureTests(unittest.TestCase):
@@ -46,7 +46,7 @@ class CoreFailureTests(unittest.TestCase):
 
     def test_unexpected_response_processing_failure_preserves_usage_and_prevents_resend(self):
         coordinator = self.coordinator()
-        with patch("duranki_server.core.public_served_destination", side_effect=RuntimeError("private reply")):
+        with patch("ezllmrouter_server.core.public_served_destination", side_effect=RuntimeError("private reply")):
             code, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         self.assertEqual(code, 202)
         sid = reply["handle"]["submission_id"]
@@ -99,8 +99,8 @@ class CoreFailureTests(unittest.TestCase):
         correlation = observability.REQUEST_CORRELATION.set("request.synthetic-correlation")
         captured = []
         try:
-            with patch("duranki_server.core.public_served_destination", side_effect=RuntimeError("private response")), \
-                    patch("duranki_server.core.log_failure", side_effect=lambda *_args: captured.append(
+            with patch("ezllmrouter_server.core.public_served_destination", side_effect=RuntimeError("private response")), \
+                    patch("ezllmrouter_server.core.log_failure", side_effect=lambda *_args: captured.append(
                         observability.REQUEST_CORRELATION.get())):
                 code, _ = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
             self.assertEqual(code, 202)
@@ -116,7 +116,7 @@ class CoreFailureTests(unittest.TestCase):
         with self.assertRaises(RuntimeError) as raised:
             self.store._transaction(action)
         self.assertIs(raised.exception, failure)
-        self.assertTrue(failure.duranki_definite_rollback)
+        self.assertTrue(failure.ezllmrouter_definite_rollback)
 
 
 class CampaignFailureTests(unittest.TestCase):

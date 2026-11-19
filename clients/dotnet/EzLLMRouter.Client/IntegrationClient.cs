@@ -18,7 +18,7 @@ public sealed class IntegrationClient : IDisposable
     private static EzLLMRouterException Bad() => new("PROTOCOL_INVALID", null, "query_first");
     private async Task<JsonObject> RequestAsync(string method, string endpoint, JsonObject? body, int[] expected, CancellationToken cancellationToken)
     {
-        var (value, status) = await connection.RequestAsync(method, path + endpoint, "Duranki-Integration-Version", Version, body, null, 16 * 1024 * 1024, null, cancellationToken).ConfigureAwait(false);
+        var (value, status) = await connection.RequestAsync(method, path + endpoint, "EzLLMRouter-Integration-Version", Version, body, null, 16 * 1024 * 1024, null, cancellationToken).ConfigureAwait(false);
         if (status >= 400)
         {
             var error = At(value, "error"); string code = Text(At(error, "code")), guidance = Text(At(error, "retry_guidance"));

@@ -21,9 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server/src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import httpx
 
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.store import SQLiteStore
 from dev12_completion_operator_handlers import _csv_finance_reconcile
 
 

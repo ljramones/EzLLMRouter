@@ -1,18 +1,18 @@
 "use strict";
-// Installed CommonJS client; only the private Duranki service is called.
+// Installed CommonJS client; only the private EzLLMRouter service is called.
 const fs = require("node:fs");
-const { DurankiClient } = require("@mach33/duranki-client");
+const { EzLLMRouterClient } = require("@cognitivedynamics/ezllmrouter-client");
 const BASE = JSON.parse(fs.readFileSync(__dirname + "/request.json", "utf8"));
 
 async function count() {
-  const response = await fetch(process.env.DURANKI_RECEIVER_URL + "/observations");
+  const response = await fetch(process.env.EZLLMROUTER_RECEIVER_URL + "/observations");
   if (!response.ok) throw Error("receiver unavailable");
   return (await response.json()).arrivals.length;
 }
 
 async function diagnosticFetch(url, options) {
   const response = await fetch(url, options);
-  const diagnostic = { diagnostic: "duranki_http_response_shape",
+  const diagnostic = { diagnostic: "ezllmrouter_http_response_shape",
     method: options.method, status: response.status };
   try {
     const value = await response.clone().json();
@@ -54,8 +54,8 @@ async function main() {
   const mode = process.argv[2];
   if (!["first", "after_tool", "after_destination", "after_guard"].includes(mode))
     throw Error("usage: js_text.cjs first|after_tool|after_destination|after_guard");
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL,
-    token: process.env.DURANKI_DEV_TOKEN, fetchImpl: diagnosticFetch });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL,
+    token: process.env.EZLLMROUTER_DEV_TOKEN, fetchImpl: diagnosticFetch });
   const before = await count();
   const request = structuredClone(BASE);
   request.step_id = mode === "first" ? "step.dev04.js.text" : "step.dev04.js.control." + mode;

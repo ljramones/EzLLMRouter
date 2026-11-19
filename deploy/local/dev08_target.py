@@ -45,8 +45,8 @@ def command(name, argv, run):
 def main():
     if len(sys.argv) != 2 or not re.fullmatch(r"dev08-[0-9]{8}-[0-9]{2}", sys.argv[1]):
         raise SystemExit("usage: dev08_target.py dev08-YYYYMMDD-NN")
-    if not os.environ.get("DURANKI_ARTIFACT_ROOT"):
-        raise SystemExit("DURANKI_ARTIFACT_ROOT is required")
+    if not os.environ.get("EZLLMROUTER_ARTIFACT_ROOT"):
+        raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required")
     RUNS.mkdir(mode=0o700, parents=True, exist_ok=True)
     run = RUNS / sys.argv[1]
     if run.exists():
@@ -62,7 +62,7 @@ def main():
     try:
         if dirty:
             raise RuntimeError("source checkout is dirty; commit reviewed changes before target build")
-        artifact = Path(os.environ["DURANKI_ARTIFACT_ROOT"])
+        artifact = Path(os.environ["EZLLMROUTER_ARTIFACT_ROOT"])
         if not (artifact / "ARTIFACT-CUSTODY.json").is_file():
             raise RuntimeError("declared frozen artifact custody missing")
         for name, action in (("prepare", "prepare"), ("build-images", "build-images")):

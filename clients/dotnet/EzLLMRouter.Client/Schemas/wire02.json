@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://duranki.invalid/contracts/wp-a/v0.2/schema-bundle",
-  "title": "Duranki WP-A proposed schema bundle v0.3 Correction 01",
+  "$id": "https://ezllmrouter.invalid/contracts/wp-a/v0.2/schema-bundle",
+  "title": "EzLLMRouter WP-A proposed schema bundle v0.3 Correction 01",
   "description": "Proposal only. Select an entrypoint local $ref; shape validation neither authenticates nor authorizes. Resolve this identifier locally without network access. Focused A03-01/A03-02 correction; wire version remains 0.2.",
   "contract_status": "PROPOSED_NOT_ADOPTED",
   "entrypoints": {
@@ -1993,7 +1993,7 @@
       ],
       "properties": {
         "projection_version": {
-          "const": "duranki-work-v0.2"
+          "const": "ezllmrouter-work-v0.2"
         },
         "trusted": {
           "type": "object",

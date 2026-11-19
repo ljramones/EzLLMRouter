@@ -7,9 +7,9 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, os.environ.get("DURANKI_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.store import SQLiteStore
+sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.store import SQLiteStore
 
 
 def record(sid, aid, step, *, no_store=False, state="admitted"):

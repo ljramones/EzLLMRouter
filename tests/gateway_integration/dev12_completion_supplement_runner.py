@@ -69,9 +69,9 @@ def _sha(path):
 
 def _root(path):
     root = Path(path).resolve(strict=True)
-    approved = Path("/Users/larrymitchell/Mach33/Duranki-artifacts").resolve(strict=True)
+    approved = Path("/Users/larrymitchell/Mach33/EzLLMRouter-artifacts").resolve(strict=True)
     if approved not in root.parents or root.is_symlink() or not root.is_dir():
-        raise RuntimeError("dedicated existing Duranki-artifacts root required")
+        raise RuntimeError("dedicated existing EzLLMRouter-artifacts root required")
     return root
 
 

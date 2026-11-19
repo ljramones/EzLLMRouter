@@ -49,8 +49,8 @@ def _case_request(runtime, case, vector="DIRECT_DOCUMENT", *, item_id="doc.valid
 
 def _headers(runtime, vector="DIRECT_DOCUMENT", *, version="0.3"):
     return {"Authorization": "Bearer " + runtime.credentials[vector],
-            "Duranki-Contract-Version": version,
-            "Content-Type": "application/json", "Duranki-Wait-Ms": "5000"}
+            "EzLLMRouter-Contract-Version": version,
+            "Content-Type": "application/json", "EzLLMRouter-Wait-Ms": "5000"}
 
 
 def _census(runtime):
@@ -80,7 +80,7 @@ def _post(runtime, request, headers):
             for _ in range(100):
                 current = client.get("/v1/submissions/" + sid, headers={
                     "Authorization": headers["Authorization"],
-                    "Duranki-Contract-Version": headers["Duranki-Contract-Version"]})
+                    "EzLLMRouter-Contract-Version": headers["EzLLMRouter-Contract-Version"]})
                 status = current.json()
                 if status.get("submission_state") != "pending":
                     break
@@ -174,9 +174,9 @@ def ingress_identity(runtime, case):
         from dev12_completion_boundary_handlers import taint_boundary
         return taint_boundary(runtime, case)
     if case["scenario_id"] in {"t79_c", "t79_d"} and case["variant"] == "composed":
-        from duranki_server.successor_contract import (digest, work_digest,
+        from ezllmrouter_server.successor_contract import (digest, work_digest,
             schema_valid, SCHEMAS)
-        from duranki_server.successor_plan import execution_eligible
+        from ezllmrouter_server.successor_plan import execution_eligible
         request = _case_request(runtime, case, "DELEGATED_RERANK")
         before = _census(runtime)
         first = _post(runtime, request, _headers(runtime, "DELEGATED_RERANK"))
@@ -233,7 +233,7 @@ def ingress_identity(runtime, case):
                     "Schema-valid assessment status and reason edits fail unchanged signed admission binding"),
                 "t79_c.digest_link_tamper": (rejected["link"] and
                     original["work_digest"] == work_digest(record["canonical_work"]) and
-                    digest("duranki-admission-v1\n", original) == original_digest,
+                    digest("ezllmrouter-admission-v1\n", original) == original_digest,
                     "Changing snapshot work-digest link cannot validate against original plan" )}
         else:
             checks = {"t79_d.later_verification_no_retroactive_upgrade": (
@@ -258,9 +258,9 @@ def ingress_identity(runtime, case):
             record["attempt_id"])
     if case["scenario_id"] in {"t77_a", "t77_b", "t77_c", "t77_d"} and \
             case["variant"] == "composed":
-        from duranki_server.successor_contract import (SCHEMAS, schema_valid,
+        from ezllmrouter_server.successor_contract import (SCHEMAS, schema_valid,
             digest, work_digest)
-        from duranki_server.successor_plan import execution_eligible
+        from ezllmrouter_server.successor_plan import execution_eligible
         request = _case_request(runtime, case)
         before = _census(runtime)
         missing = None
@@ -310,7 +310,7 @@ def ingress_identity(runtime, case):
         elif case["scenario_id"] == "t77_c":
             # A separate pre-successor row is read through the additive store
             # without backfilling a fictional admission assessment.
-            from duranki_server.store import SQLiteStore
+            from ezllmrouter_server.store import SQLiteStore
             old_path = runtime.root / "cases" / (case["id"] + "-preadmission.sqlite")
             old_path.parent.mkdir(exist_ok=True)
             if old_path.exists():
@@ -356,7 +356,7 @@ def ingress_identity(runtime, case):
             {"ingress": {"positive_http": response["http_status"],
                          "missing_auth_http": missing["http_status"] if missing else "not_tested"},
              "admission": {"submission_id": sid,
-                           "snapshot_digest": digest("duranki-admission-v1\n", snapshot),
+                           "snapshot_digest": digest("ezllmrouter-admission-v1\n", snapshot),
                            "snapshot_valid": schema_valid(snapshot, SCHEMAS["$defs"]["AdmissionSnapshot"])}},
             checks, {"response": response, "record": record,
                      "missing": missing, "before": before,
@@ -416,7 +416,7 @@ def ingress_identity(runtime, case):
             delegated_record["attempt_id"])
     if case["scenario_id"] in {"t78_a", "t78_b", "t78_c", "t78_d"} and \
             case["variant"] == "composed":
-        from duranki_server.successor_contract import classify_request
+        from ezllmrouter_server.successor_contract import classify_request
         scenario = case["scenario_id"]
         vector = ("DIRECT_DOCUMENT" if scenario == "t78_a" else
                   "AUTONOMOUS_QUERY" if scenario == "t78_c" else
@@ -692,7 +692,7 @@ def recovery_chain(runtime, case):
                "expires_at": context["expires_at"]}
     before = _census(runtime)
     if variant == "retained_receipt":
-        from duranki_server.successor_receiver_evidence import DurableReceiverReceipts
+        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
         with runtime.store._lock:
             record = runtime.store.successor_get(sid)
             guard_row = runtime.store.db.execute(
@@ -793,7 +793,7 @@ def authority_recovery(runtime, case):
         from dev12_completion_boundary_handlers import crash_recovery
         return crash_recovery(runtime, case)
     if case["scenario_id"].startswith("t45_"):
-        from duranki_server.successor_plan import execution_eligible
+        from ezllmrouter_server.successor_plan import execution_eligible
         scenario = case["scenario_id"]
         before = _census(runtime)
         outcomes = {}
@@ -974,7 +974,7 @@ def authority_recovery(runtime, case):
             record["attempt_id"] if record else "none")
     if case["scenario_id"] in {"t46_a", "t46_b", "t46_c", "t46_d"} and \
             case["variant"] == "composed":
-        from duranki_server.successor_plan import execution_eligible, verified_signature
+        from ezllmrouter_server.successor_plan import execution_eligible, verified_signature
         request = _case_request(runtime, case)
         if case["scenario_id"] == "t46_a":
             request["input"]["items"] = [
@@ -1093,7 +1093,7 @@ def authority_recovery(runtime, case):
             "revoked_plan_after_wait"}:
         raise NotImplementedError("authority/recovery variant not implemented")
     from cryptography.hazmat.primitives.asymmetric import ed25519
-    from duranki_server.successor_plan import verified_signature
+    from ezllmrouter_server.successor_plan import verified_signature
 
     request = _case_request(runtime, case)
     before = _census(runtime)
@@ -1207,13 +1207,13 @@ def native_accounting(runtime, case):
         # a fresh supported send cannot exceed its own bound. Exercise the
         # adopted historical-underbound read/settlement path in a distinct,
         # zero-send imported fixture scope; leave the live campaign untouched.
-        from duranki_server.store import SQLiteStore
-        from duranki_server.successor_campaign import FiniteSuccessorCampaign
-        from duranki_server.successor_contract import (native_usage_row, price_for,
+        from ezllmrouter_server.store import SQLiteStore
+        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from ezllmrouter_server.successor_contract import (native_usage_row, price_for,
             tariff, usage_valid)
-        from duranki_server.successor_plan import (plan_valid, signing_message,
+        from ezllmrouter_server.successor_plan import (plan_valid, signing_message,
             verified_signature)
-        from duranki_server.successor_reporting import usage_report
+        from ezllmrouter_server.successor_reporting import usage_report
         import base64
         before = _census(runtime)
         with runtime.store._lock:
@@ -1788,7 +1788,7 @@ def native_accounting(runtime, case):
 
 def _retrieval_request(runtime, case, vector, suffix, selectors):
     """Make independently keyed, valid requests for controlled receiver modes."""
-    from duranki_server.successor_contract import content_digest
+    from ezllmrouter_server.successor_contract import content_digest
     request = _case_request(runtime, case, vector)
     request["work_selector"]["step_id"] += "." + suffix
     if request["operation"]["type"] == "embedding.create":
@@ -1813,7 +1813,7 @@ def retrieval_workflow(runtime, case):
     if case["variant"] != "composed" or scenario not in {
             "t51", "t52", "t53", "t54", "t55"}:
         raise NotImplementedError("retrieval workflow variant not implemented")
-    from duranki_server.successor_contract import result_valid
+    from ezllmrouter_server.successor_contract import result_valid
 
     observations = {}
     supplemental = {}
@@ -1996,11 +1996,11 @@ def client_contract(runtime, case):
         env={"DEV12_JS_CLIENT_DIR": str(runtime.installed_js_root)})
     source_schemas = (root / "tests/fixtures/contracts/dev12-successor-01/schemas.json").read_bytes()
     py_schemas = (runtime.installed_python_root /
-                  "duranki_client/dev12_schemas.json").read_bytes()
+                  "ezllmrouter_client/dev12_schemas.json").read_bytes()
     js_schemas = (runtime.installed_js_root / "dev12_schemas.json").read_bytes()
     source_registry = (root / "tests/fixtures/contracts/dev12-successor-01/registrations.json").read_bytes()
     py_registry = (runtime.installed_python_root /
-                   "duranki_client/dev12_registrations.json").read_bytes()
+                   "ezllmrouter_client/dev12_registrations.json").read_bytes()
     js_registry = (runtime.installed_js_root / "dev12_registrations.json").read_bytes()
     exact_assets = (source_schemas == py_schemas == js_schemas and
                     source_registry == py_registry == js_registry)
@@ -2008,14 +2008,14 @@ def client_contract(runtime, case):
     runs = [python, js]
     live = {}
     if scenario == "t47_a":
-        from duranki_client import DurankiClient
-        import duranki_client
-        installed_python = Path(duranki_client.__file__).resolve().is_relative_to(
+        from ezllmrouter_client import EzLLMRouterClient
+        import ezllmrouter_client
+        installed_python = Path(ezllmrouter_client.__file__).resolve().is_relative_to(
             runtime.installed_python_root.resolve())
         py_request = _case_request(runtime, case, "DIRECT_DOCUMENT")
         py_request["work_selector"]["step_id"] += ".wheel"
         live_before = _census(runtime)
-        with DurankiClient(runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"],
+        with EzLLMRouterClient(runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"],
                            timeout=12) as installed:
             py_reply = installed.submit_embedding(py_request, {"wait_ms": 5000})
             py_status = installed.get_successor_status({
@@ -2041,7 +2041,7 @@ def client_contract(runtime, case):
         except (IndexError, ValueError):
             js_observed = {}
         live_after = _census(runtime)
-        live = {"installed_python_source": str(Path(duranki_client.__file__).resolve()),
+        live = {"installed_python_source": str(Path(ezllmrouter_client.__file__).resolve()),
                 "python_reply": py_reply, "python_status": py_status,
                 "commonjs_actor": js_live, "commonjs_observed": js_observed,
                 "before": live_before, "after": live_after,
@@ -2081,7 +2081,7 @@ def client_contract(runtime, case):
     elif scenario == "t47_c":
         legacy_js = _offline_command(runtime, "installed-commonjs-legacy",
             ["/dev12-node", str(root / "tests/development_slice/test_client.cjs")],
-            env={"DURANKI_INSTALLED_CLIENT": "1",
+            env={"EZLLMROUTER_INSTALLED_CLIENT": "1",
                  "NODE_PATH": str(runtime.installed_js_root.parents[1])})
         legacy_py = _offline_command(runtime, "legacy-python-contract",
             [sys.executable, "-I", "-B", str(root /

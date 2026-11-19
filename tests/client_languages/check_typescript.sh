@@ -14,7 +14,7 @@ if [[ "${1:-}" != "--package-only" ]]; then
   "${TSC_BINARY:-tsc}" --strict --noEmit --target ES2022 --lib ES2022 --module commonjs --moduleResolution node \
     "$consumer/consumer.cts"
 fi
-node -e 'const c=require(process.argv[1]);if(c.DurankiClient!==c.EzLLMRouterClient||c.contractVersion!=="0.2")process.exit(1)' \
+node -e 'const c=require(process.argv[1]);const keys=["EzLLMRouterClient","EzLLMRouterError","IntegrationClient","IntegrationClientError","contractVersion"];if(typeof c.EzLLMRouterClient!=="function"||Object.keys(c).sort().join()!==keys.sort().join()||c.contractVersion!=="0.2")process.exit(1)' \
   "$consumer/node_modules/@cognitivedynamics/ezllmrouter-client"
 node --input-type=module -e 'import {pathToFileURL} from "node:url";const c=await import(pathToFileURL(process.argv[1]));if(c.EzLLMRouterClient!==c.default.EzLLMRouterClient||c.contractVersion!=="0.2")process.exit(1)' \
   "$consumer/node_modules/@cognitivedynamics/ezllmrouter-client/index.mjs"

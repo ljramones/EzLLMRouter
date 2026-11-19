@@ -2,14 +2,14 @@
 import json
 import sys
 
-from duranki_client import DurankiClient, __version__
+from ezllmrouter_client import EzLLMRouterClient, __version__
 
 
 def main():
     data = json.load(sys.stdin)
     runs = []
     outcome = None
-    with DurankiClient(base_url=data["base_url"], token=data["token"]) as client:
+    with EzLLMRouterClient(base_url=data["base_url"], token=data["token"]) as client:
         for row in data["rows"]:
             run = client.start_run(row["run"])
             reply = client.submit_in_run(row["request"], row["run"]["run_id"], {"wait_ms": 3000})
@@ -29,7 +29,7 @@ def main():
                 except Exception as exc:
                     if getattr(exc, "code", None) != "POLICY_DENIED":
                         raise
-    print(json.dumps({"package": __import__("duranki_client").__file__, "version": __version__,
+    print(json.dumps({"package": __import__("ezllmrouter_client").__file__, "version": __version__,
                       "runs": runs, "outcome": outcome}, sort_keys=True))
 
 

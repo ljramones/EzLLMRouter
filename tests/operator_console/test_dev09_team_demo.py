@@ -7,8 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.demo_workspace import project_demo
-from duranki_server.demo_workspace_team import project_team_demo
+from ezllmrouter_server.demo_workspace import project_demo
+from ezllmrouter_server.demo_workspace_team import project_team_demo
 
 LEGACY = ROOT / "web/dev09_demo_fixture.json"
 TEAM = ROOT / "web/dev09_team_demo_fixture.json"

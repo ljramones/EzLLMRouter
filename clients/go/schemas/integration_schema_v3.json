@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:mach33:duranki:external-accounting:3",
-  "title": "Duranki external accounting integration v3",
+  "$id": "urn:mach33:ezllmrouter:external-accounting:3",
+  "title": "EzLLMRouter external accounting integration v3",
   "$defs": {
     "id": {
       "type": "string",

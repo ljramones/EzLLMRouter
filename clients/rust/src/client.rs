@@ -21,7 +21,7 @@ impl Client {
         let selector = Value::Object(SELECTOR.iter().map(|key| ((*key).into(), at(&body, key).clone())).collect());
         if !named(&selector, "0.2", "WorkSelector") { return Err(Error::invalid()); }
         let mut headers = wait_headers(wait_ms)?;
-        if let Some(run) = run_id { headers.insert("Duranki-Attribution-Version".into(), "1".into()); headers.insert("Duranki-Attribution-Run".into(), run.into()); }
+        if let Some(run) = run_id { headers.insert("EzLLMRouter-Attribution-Version".into(), "1".into()); headers.insert("EzLLMRouter-Attribution-Run".into(), run.into()); }
         self.wire("POST", "/v1/submissions", "0.2", "submit", Some(&body), Some(&selector), headers)
     }
     pub fn get_status(&self, selector: &Value) -> Result<Value> { self.status(selector, "0.2") }
@@ -50,7 +50,7 @@ impl Client {
     #[allow(clippy::too_many_arguments)]
     fn wire(&self, method: &str, path: &str, version: &str, kind: &str, body: Option<&Value>, selector: Option<&Value>, headers: BTreeMap<String, String>) -> Result<Value> {
         let limit = if version == "0.3" { 16 * 1024 * 1024 } else { 1024 * 1024 };
-        let (value, status) = self.connection.request(method, path, "Duranki-Contract-Version", version, body, headers, limit, selector)?;
+        let (value, status) = self.connection.request(method, path, "EzLLMRouter-Contract-Version", version, body, headers, limit, selector)?;
         let handle = protocol::matching_handle(&value, selector, version);
         let envelope_error = if version == "0.3" { has(&value, "code") } else { has(&value, "error") && !has(&value, "state") };
         if envelope_error {
@@ -69,6 +69,6 @@ impl Client {
 }
 fn wait_headers(wait: Option<u32>) -> Result<BTreeMap<String, String>> {
     let mut headers = BTreeMap::new();
-    if let Some(wait) = wait { if wait > 30000 { return Err(Error::invalid()); } headers.insert("Duranki-Wait-Ms".into(), wait.to_string()); }
+    if let Some(wait) = wait { if wait > 30000 { return Err(Error::invalid()); } headers.insert("EzLLMRouter-Wait-Ms".into(), wait.to_string()); }
     Ok(headers)
 }

@@ -6,7 +6,7 @@
  *
  * Example (credential supplied privately through the environment):
  * node tests/operator_console/dev12_completion_browser.cjs \
- *   --root /Users/larrymitchell/Mach33/Duranki-artifacts/<run> \
+ *   --root /Users/larrymitchell/Mach33/EzLLMRouter-artifacts/<run> \
  *   --mode t64 --debug-port <owned Chrome port> \
  *   --browser-url http://127.0.0.1:<mapped operator port> \
  *   --mapping-evidence <run>/operator-port-forward.json
@@ -42,9 +42,9 @@ function options(argv) {
 
 function retainedRoot(input) {
   const root = fs.realpathSync(input);
-  const approved = fs.realpathSync("/Users/larrymitchell/Mach33/Duranki-artifacts");
+  const approved = fs.realpathSync("/Users/larrymitchell/Mach33/EzLLMRouter-artifacts");
   assert(root.startsWith(approved + path.sep) && fs.statSync(root).isDirectory(),
-    "capture root must be a dedicated Duranki-artifacts directory");
+    "capture root must be a dedicated EzLLMRouter-artifacts directory");
   return root;
 }
 

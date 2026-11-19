@@ -28,7 +28,7 @@ class ActorModes(unittest.TestCase):
                                          ("status", 0), ("by_work", 0), ("mutation", 0)):
                 sends = [0]
                 clock = [0.0]
-                class DurankiError(Exception):
+                class EzLLMRouterError(Exception):
                     def __init__(self, code, status, handle=None):
                         self.code, self.http_status, self.handle = code, status, handle
                 class FakeReceiver:
@@ -43,11 +43,11 @@ class ActorModes(unittest.TestCase):
                     def __exit__(self, *_): return False
                     def submit(self, request, _options):
                         if request["step_id"] == "step.dev03.mutation":
-                            raise DurankiError("FDC_REJECTED", 409,
+                            raise EzLLMRouterError("FDC_REJECTED", 409,
                                 {"submission_id": "submission.mutation"})
                         if any(block.get("arguments", {}).get("key") == "forged"
                                for message in request["messages"] for block in message["blocks"]):
-                            raise DurankiError("SOURCE_INVALID", 422)
+                            raise EzLLMRouterError("SOURCE_INVALID", 422)
                         sends[0] += 1
                         index = sends[0]
                         labels = {"lineage_ids": ["src.candidate.tool"],
@@ -84,19 +84,19 @@ class ActorModes(unittest.TestCase):
                     def getCapabilities(self): return {"contract_version": "0.2"}
                 fake_httpx = types.ModuleType("httpx")
                 fake_httpx.Client = lambda **_kwargs: FakeReceiver()
-                fake_client = types.ModuleType("duranki_client")
-                fake_client.DurankiClient = FakeClient
-                fake_client.DurankiError = DurankiError
+                fake_client = types.ModuleType("ezllmrouter_client")
+                fake_client.EzLLMRouterClient = FakeClient
+                fake_client.EzLLMRouterError = EzLLMRouterError
                 stdout, stderr = io.StringIO(), io.StringIO()
                 argv = [str(work / "python_actor.py"), mode]
                 if mode == "status": argv.append("submission.1")
                 if mode == "by_work": argv.extend(("step.dev03.js", "gen.1", "tool_call"))
                 def fake_sleep(duration): clock[0] += duration
                 with patch.dict(sys.modules, {"httpx": fake_httpx,
-                                              "duranki_client": fake_client}), \
+                                              "ezllmrouter_client": fake_client}), \
                      patch.object(sys, "argv", argv), \
-                     patch.dict("os.environ", {"DURANKI_SERVICE_URL": "http://service.invalid",
-                         "DURANKI_RECEIVER_URL": "http://receiver.invalid", "DURANKI_DEV_TOKEN": "synthetic"}), \
+                     patch.dict("os.environ", {"EZLLMROUTER_SERVICE_URL": "http://service.invalid",
+                         "EZLLMROUTER_RECEIVER_URL": "http://receiver.invalid", "EZLLMROUTER_DEV_TOKEN": "synthetic"}), \
                      patch.object(time, "sleep", fake_sleep), \
                      patch.object(time, "monotonic", lambda: clock[0]), \
                      contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):

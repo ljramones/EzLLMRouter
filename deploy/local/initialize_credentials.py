@@ -50,4 +50,4 @@ def initialize(payload: bytes, directory: Path) -> None:
 
 
 if __name__ == "__main__":
-    initialize(sys.stdin.buffer.read(8193), Path("/run/duranki"))
+    initialize(sys.stdin.buffer.read(8193), Path("/run/ezllmrouter"))

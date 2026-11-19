@@ -23,8 +23,8 @@ for name in ("httpcore", "httpx", "anyio", "h11", "certifi", "idna",
 
 import httpcore  # noqa: E402
 import httpx  # noqa: E402
-from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedHTTPTransport, OwnedSocketStream  # noqa: E402
+from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedHTTPTransport, OwnedSocketStream  # noqa: E402
 from test_guard import invocation as guard_invocation  # noqa: E402
 
 
@@ -93,8 +93,8 @@ class OwnedSenderTests(unittest.TestCase):
                 item.plan["per_attempt_total_timeout_ms"] = 3000
                 item.authority_epoch = authority.snapshot_epoch()
             key = "sk-" + "q" * 40
-            old_key = os.environ.get("DURANKI_DEV04_PROVIDER_KEY")
-            os.environ["DURANKI_DEV04_PROVIDER_KEY"] = key
+            old_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
+            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = key
             entered, release = asyncio.Event(), asyncio.Event()
 
             async def held_receiver():
@@ -154,9 +154,9 @@ class OwnedSenderTests(unittest.TestCase):
                 first_receiver.close()
                 second_receiver.close()
                 if old_key is None:
-                    os.environ.pop("DURANKI_DEV04_PROVIDER_KEY", None)
+                    os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
                 else:
-                    os.environ["DURANKI_DEV04_PROVIDER_KEY"] = old_key
+                    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = old_key
 
         epoch, arrival, receipts, first, second = asyncio.run(scenario())
         self.assertEqual(epoch, 1)
@@ -180,8 +180,8 @@ class OwnedSenderTests(unittest.TestCase):
             item.plan["per_attempt_total_timeout_ms"] = 3000
             item.authority_epoch = authority.snapshot_epoch()
             key = "sk-" + "t" * 40
-            old_key = os.environ.get("DURANKI_DEV04_PROVIDER_KEY")
-            os.environ["DURANKI_DEV04_PROVIDER_KEY"] = key
+            old_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
+            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = key
 
             async def synthetic_receiver():
                 body = b""
@@ -218,16 +218,16 @@ class OwnedSenderTests(unittest.TestCase):
                 await transport.aclose()
                 receiver.close()
                 if old_key is None:
-                    os.environ.pop("DURANKI_DEV04_PROVIDER_KEY", None)
+                    os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
                 else:
-                    os.environ["DURANKI_DEV04_PROVIDER_KEY"] = old_key
+                    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = old_key
 
         status, data, arrival, receipts, accepted = asyncio.run(scenario())
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(data)["choices"][0]["message"]["content"], "Hello.")
         self.assertEqual(len(receipts), 1)
         self.assertEqual(receipts[0]["attempt_id"], "attempt.owned.guard")
-        self.assertIn(b"x-duranki-attempt: attempt.owned.guard", arrival.lower())
+        self.assertIn(b"x-ezllmrouter-attempt: attempt.owned.guard", arrival.lower())
         self.assertTrue(accepted)
 
     def test_revoke_before_first_write_rejects_without_bytes(self):

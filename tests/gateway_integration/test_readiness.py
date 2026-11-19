@@ -1,4 +1,4 @@
-"""Exercise the exact boundary readiness probes against Duranki's HTTP handler."""
+"""Exercise the exact boundary readiness probes against EzLLMRouter's HTTP handler."""
 from contextlib import redirect_stdout
 import io
 import os
@@ -16,8 +16,8 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.canonical import ContractError  # noqa: E402
-from duranki_server.web import serve  # noqa: E402
+from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server.web import serve  # noqa: E402
 
 
 TOKEN = "synthetic-readiness-token-0000000000000000"
@@ -93,13 +93,13 @@ class ReadinessTests(unittest.TestCase):
             headers = dict(request.header_items())
             if strip_version:
                 headers = {key: value for key, value in headers.items()
-                           if key.lower() != "duranki-contract-version"}
+                           if key.lower() != "ezllmrouter-contract-version"}
             mapped = urllib.request.Request(
                 f"http://127.0.0.1:{self.port}{url.path}", headers=headers,
                 method=request.get_method())
             return REAL_URLOPEN(mapped, timeout=timeout)
 
-        with (patch.dict(os.environ, {"DURANKI_DEV_TOKEN": token}),
+        with (patch.dict(os.environ, {"EZLLMROUTER_DEV_TOKEN": token}),
               patch("urllib.request.urlopen", side_effect=route),
               patch("time.sleep"), redirect_stdout(output)):
             exec(compile(code, "<exact-boundary-readiness>", "exec"), {"__name__": "__main__"})
@@ -122,14 +122,14 @@ class ReadinessTests(unittest.TestCase):
     def test_version_without_auth_is_401(self):
         code = ('import urllib.request; urllib.request.urlopen(urllib.request.Request('
                 '"http://127.0.0.1:8771/v1/capabilities",'
-                'headers={"Duranki-Contract-Version":"0.2"}),timeout=1)')
+                'headers={"EzLLMRouter-Contract-Version":"0.2"}),timeout=1)')
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.execute(code)
         self.assertEqual(error.exception.code, 401)
 
     def test_wrong_version_rejected_immediately(self):
-        code = self.probes[5][1].replace('"Duranki-Contract-Version":"0.2"',
-                                        '"Duranki-Contract-Version":"9.9"')
+        code = self.probes[5][1].replace('"EzLLMRouter-Contract-Version":"0.2"',
+                                        '"EzLLMRouter-Contract-Version":"9.9"')
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.execute(code)
         self.assertEqual((error.exception.code, len(self.requests)), (426, 1))
@@ -166,13 +166,13 @@ class ReadinessTests(unittest.TestCase):
         for case in (5, 6):
             role, code = self.probes[case]
             self.assertEqual(role, "python_consumer")
-            self.assertIn('os.environ["DURANKI_DEV_TOKEN"]', code)
+            self.assertIn('os.environ["EZLLMROUTER_DEV_TOKEN"]', code)
             self.assertNotIn(TOKEN, code)
         compose = (ROOT / "tests/gateway_integration/compose.yaml").read_text()
         netns = compose.split("  netns:", 1)[1].split("  receiver:", 1)[0]
         consumer = compose.split("  python_consumer:", 1)[1].split("  js_consumer:", 1)[0]
-        self.assertNotIn("DURANKI_DEV_TOKEN", netns)
-        self.assertIn("DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}", consumer)
+        self.assertNotIn("EZLLMROUTER_DEV_TOKEN", netns)
+        self.assertIn("EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}", consumer)
 
     def test_probe_only_reads_capabilities(self):
         self.execute(self.probes[5][1])

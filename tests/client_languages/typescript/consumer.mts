@@ -1,5 +1,5 @@
 import {
-  EzLLMRouterClient, DurankiClient, IntegrationClient, EzLLMRouterError, IntegrationClientError,
+  EzLLMRouterClient, EzLLMRouterClient, IntegrationClient, EzLLMRouterError, IntegrationClientError,
   contractVersion,
 } from "@cognitivedynamics/ezllmrouter-client";
 import type { Wire02, Wire03, IntegrationV1, IntegrationV2, IntegrationV3, FetchImplementation } from "@cognitivedynamics/ezllmrouter-client";
@@ -10,7 +10,7 @@ const injected: FetchImplementation = async () => ({
   json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0),
 });
 const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token", fetchImpl: injected });
-const legacy = new DurankiClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token" });
+const legacy = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token" });
 const capabilities: Promise<Wire02.CapabilityResponse> = client.getCapabilities();
 const status: Promise<Wire02.StatusSnapshot> = legacy.getStatus({ submission_id: "submission.synthetic" });
 const successor: Promise<Wire03.StatusSnapshot> = client.getStatus({ submission_id: "submission.synthetic" }, { contractVersion: "0.3" });

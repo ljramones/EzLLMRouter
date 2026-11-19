@@ -14,10 +14,10 @@ import sqlite3
 import sys
 import threading
 
-from duranki_client.integration import IntegrationClient
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_client.integration import IntegrationClient
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "deploy/local/.state/integration-v3-runs/speech-v3-20261029-12"
@@ -25,7 +25,7 @@ RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 DATASET = "dataset.synthetic.speech.installed"
 ACCOUNT = "account.synthetic.speech.volume"
 TARGET = 512
-if (version("mach33-duranki-server"), version("mach33-duranki-client")) != ("0.2.4", "0.2.4"):
+if (version("mach33-ezllmrouter-server"), version("cognitivedynamics-ezllmrouter-client")) != ("0.2.4", "0.2.4"):
     raise SystemExit("installed 0.2.4 service and client required")
 if RUN.exists() or not sys.argv[1].startswith("volume-v3-"):
     raise SystemExit("new one-use volume-v3 run ID required")
@@ -82,7 +82,7 @@ def read_all(service):
     connection = http_client.HTTPConnection(base.split("://", 1)[1].rstrip("/"), timeout=30)
     connection.request("GET", "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
                        headers={"Authorization": "Bearer " + token,
-                                "Duranki-Integration-Version": "3"})
+                                "EzLLMRouter-Integration-Version": "3"})
     response = connection.getresponse()
     raw_csv = response.read()
     connection.close()
@@ -191,8 +191,8 @@ report, exported, csv_text, size = first
 (RUN / "export.json").write_text(json.dumps(exported, sort_keys=True, indent=2) + "\n")
 (RUN / "report.csv").write_text(csv_text)
 result = {"status": "PASS", "run_id": sys.argv[1], "source_run": SOURCE.name,
-          "installed_server_version": version("mach33-duranki-server"),
-          "installed_client_version": version("mach33-duranki-client"),
+          "installed_server_version": version("mach33-ezllmrouter-server"),
+          "installed_client_version": version("cognitivedynamics-ezllmrouter-client"),
           "attempts": TARGET, "new_synthetic_observations": TARGET - 11,
           "unknown_cost_attempts": TARGET, "known_total_by_currency": {},
           "csv_rows": TARGET, "export_json_bytes": size,

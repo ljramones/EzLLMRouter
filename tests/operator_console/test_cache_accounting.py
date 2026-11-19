@@ -9,9 +9,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.cache_accounting import (CONTRACT, SEMANTICS, cache_usage_revision,
+from ezllmrouter_server.cache_accounting import (CONTRACT, SEMANTICS, cache_usage_revision,
                                               exposure_bound, validate_contract)
-from duranki_server.core import public_usage
+from ezllmrouter_server.core import public_usage
 
 
 def fixture():

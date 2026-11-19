@@ -18,12 +18,12 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 from cryptography.x509.oid import NameOID
 
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 from choice_b_sender import ChoiceBSenderAdapter
 from owned_sender_transport import LocalSendAuthority
 from proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
@@ -146,12 +146,12 @@ def run(preflight=False):
                     "provider_execution_only_in_disposable_fixture": True,
                     "network_or_model_requests": 0}, sort_keys=True))
                 return
-            from duranki_client import DurankiClient
+            from ezllmrouter_client import EzLLMRouterClient
             from worker_ready import probe
             probe(Path("/link/worker.sock"), deadline_seconds=50, require_empty=True)
-            os.environ["DURANKI_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-            os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
-            os.environ["DURANKI_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
+            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
+            os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
+            os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
             receiver_log = root / "receiver.jsonl"
             receiver_error = root / "receiver.stderr"
             with receiver_error.open("w") as err:
@@ -186,7 +186,7 @@ def run(preflight=False):
                 thread = threading.Thread(target=wire.serve_forever, daemon=True)
                 thread.start()
                 stage = "installed_client_submit"
-                with DurankiClient("http://127.0.0.1:8773", TEST_TOKEN) as client:
+                with EzLLMRouterClient("http://127.0.0.1:8773", TEST_TOKEN) as client:
                     reply = client.submit(request, {"wait_ms": 10000})
                     if reply["state"] != "delivered":
                         raise AssertionError("controlled installed-client result not delivered: " + reply["state"])
@@ -234,7 +234,7 @@ def run(preflight=False):
                     "receiver_arrivals": len(rows(receiver_log)),
                     "send_events": len(rows(root / "send.jsonl")),
                     "guard_stages": [row.get("stage") for row in rows(root / "guard.jsonl")][:20]}
-                if type(exc).__name__ == "DurankiError":
+                if type(exc).__name__ == "EzLLMRouterError":
                     diagnostic["sdk_code"] = exc.code
                     diagnostic["http_status"] = exc.http_status
                     diagnostic["failure_stage"] = exc.failure_stage

@@ -42,13 +42,13 @@ def build(repo, review, export, lineage, input_zip, stage, output):
     commit = git(repo, "rev-parse", "HEAD").decode().strip()
     tree = git(repo, "rev-parse", "HEAD^{tree}").decode().strip()
     remote = git(repo, "remote", "get-url", "origin").decode().strip()
-    if branch != "dev12/operation-contract" or remote != "git@github.com:33fg/duranki.git":
+    if branch != "dev12/operation-contract" or remote != "git@github.com:33fg/ezllmrouter.git":
         raise AssertionError("approved branch/remote differs")
     if git(repo, "status", "--porcelain", "--untracked-files=no"):
         raise AssertionError("tracked source must be committed before exact packet build")
     with ZipFile(input_zip) as z:
         names = z.namelist()
-        assert "DURANKI-DEV12-COMPLETION-02-CONTINUE-03.md" in names
+        assert "EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-03.md" in names
         assert "A2-AUTHENTICATION-PROJECTION-CLARIFICATION-01.md" in names
         assert not any(re.search(r"\.sqlite$|\.pem$|\.key$|private-input", name, re.I)
                        for name in names)
@@ -83,10 +83,10 @@ def build(repo, review, export, lineage, input_zip, stage, output):
         "evidence/overbound/historical-overbound-context.png":
             review / "overbound-browser-02/historical-overbound-context.png",
         "evidence/contention/PREFLIGHT.json": review / "CONTENTION-PREFLIGHT-FINAL.json",
-        "packages/corrected/mach33_duranki_client-0.0.4-py3-none-any.whl":
-            review / "packages-01/mach33_duranki_client-0.0.4-py3-none-any.whl",
-        "packages/corrected/mach33-duranki-client-0.0.3.tgz":
-            review / "packages-01/mach33-duranki-client-0.0.3.tgz",
+        "packages/corrected/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl":
+            review / "packages-01/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl",
+        "packages/corrected/cognitivedynamics-ezllmrouter-client-0.3.0.tgz":
+            review / "packages-01/cognitivedynamics-ezllmrouter-client-0.3.0.tgz",
     }
     for name, path in selected.items():
         if not path.is_file() or path.is_symlink():
@@ -108,9 +108,9 @@ def build(repo, review, export, lineage, input_zip, stage, output):
         "source_lineage_manifest_sha256": digest((lineage / "MANIFEST.sha256").read_bytes()),
         "old_installed_packages_preserved": True,
         "corrected_wheel_sha256":
-            digest(selected["packages/corrected/mach33_duranki_client-0.0.4-py3-none-any.whl"].read_bytes()),
+            digest(selected["packages/corrected/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"].read_bytes()),
         "corrected_tarball_sha256":
-            digest(selected["packages/corrected/mach33-duranki-client-0.0.3.tgz"].read_bytes()),
+            digest(selected["packages/corrected/cognitivedynamics-ezllmrouter-client-0.3.0.tgz"].read_bytes()),
         "raw_databases_private_keys_credentials_included": False,
         "real_provider_calls": 0, "real_spend": 0,
         "off_machine_backup_verified": False}

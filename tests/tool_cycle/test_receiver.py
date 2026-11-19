@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import unittest
 
-os.environ.setdefault("DURANKI_RECEIVER_LOG", "/private/tmp/duranki-dev-03/run-20261018-01/receiver-test-unused.jsonl")
+os.environ.setdefault("EZLLMROUTER_RECEIVER_LOG", "/private/tmp/ezllmrouter-dev-03/run-20261018-01/receiver-test-unused.jsonl")
 path = Path(__file__).resolve().parents[1] / "development_slice/receiver.py"
 spec = importlib.util.spec_from_file_location("synthetic_receiver_test", path)
 module = importlib.util.module_from_spec(spec)

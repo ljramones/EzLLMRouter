@@ -62,11 +62,11 @@ def main():
             if not same_tree(old_source / kind, new_source / kind):
                 raise RuntimeError(kind + " source changed; scoped image reuse unavailable")
             profile.command("catalogue-tag-" + kind,
-                [*profile.DOCKER, "tag", old_env["DURANKI_" + kind.upper() + "_IMAGE"],
-                 env["DURANKI_" + kind.upper() + "_IMAGE"]], env)
+                [*profile.DOCKER, "tag", old_env["EZLLMROUTER_" + kind.upper() + "_IMAGE"],
+                 env["EZLLMROUTER_" + kind.upper() + "_IMAGE"]], env)
         profile.command("catalogue-build-service", [*profile.DOCKER, "build", "--pull=false",
             "--network=none", "--build-arg", "PYTHON_IMAGE=" + profile.BASE,
-            "-t", env["DURANKI_SERVICE_IMAGE"], "-f", str(new_source / "service/Dockerfile"),
+            "-t", env["EZLLMROUTER_SERVICE_IMAGE"], "-f", str(new_source / "service/Dockerfile"),
             str(new_source / "service")], env)
         profile.command("catalogue-stop", profile.compose_args("down", "--remove-orphans"), old_env)
         profile.command("catalogue-up", profile.compose_args("up", "-d", "--no-build"), env)

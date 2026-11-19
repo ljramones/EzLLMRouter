@@ -20,9 +20,9 @@ services:
     volumes:
       - driver-evidence:/evidence
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
-      org.duranki.role: driver
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.role: driver
 
   gateway:
     image: ${DKR_GATEWAY_IMAGE:?approved local-wheel image required}
@@ -48,9 +48,9 @@ services:
       - gateway-intent:/intent
       - gateway-logs:/logs
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
-      org.duranki.role: gateway
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.role: gateway
 
   receiver:
     image: ${DKR_TOOLS_IMAGE:?approved Linux ARM64 tools image required}
@@ -74,38 +74,38 @@ services:
     volumes:
       - receiver-evidence:/evidence
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
-      org.duranki.role: receiver
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.role: receiver
 
 networks:
   ingress:
     internal: true
     enable_ipv6: false
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
   provider:
     internal: true
     enable_ipv6: false
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
 
 volumes:
   driver-evidence:
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
   gateway-intent:
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
   gateway-logs:
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}
   receiver-evidence:
     labels:
-      org.duranki.proof: wp-b
-      org.duranki.run: ${DKR_RUN_ID:?collision-checked run ID required}
+      org.ezllmrouter.proof: wp-b
+      org.ezllmrouter.run: ${DKR_RUN_ID:?collision-checked run ID required}

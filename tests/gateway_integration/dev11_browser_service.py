@@ -15,13 +15,13 @@ import threading
 import time
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from duranki_server.core import Coordinator
-from duranki_server.operator_demo import DemoRunner, ProviderValidationRunner
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve as serve_operator
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.plans import PlanAuthority
-from duranki_server.web import serve as serve_wire
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.operator_demo import DemoRunner, ProviderValidationRunner
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve as serve_operator
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.web import serve as serve_wire
 from choice_b_sender import ChoiceBSenderAdapter
 from dev08_integrated import (TEST_TOKEN, certificate, fixture_paths,
                               prepare_registry, rows)
@@ -141,9 +141,9 @@ def main():
                  "purposes": ["execution"], "task_classes": ["class.demo"]}})
     registry.controlled_provider_proof = False
     registry.personal_campaign = PersonalCampaign(store, registry)
-    os.environ["DURANKI_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-    os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(ROOT / "guard.jsonl")
-    os.environ["DURANKI_DEV04_SEND_EVENTS"] = str(ROOT / "send.jsonl")
+    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
+    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(ROOT / "guard.jsonl")
+    os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(ROOT / "send.jsonl")
     adapter = ChoiceBSenderAdapter(authority, registry=registry, controlled_provider_proof=True)
     registry.runtime_ready = lambda: adapter.server_thread.is_alive() and not authority.is_revoked()
     coordinator = Coordinator(store, {TEST_TOKEN: fixture["trusted_context"]},

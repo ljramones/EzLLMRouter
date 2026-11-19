@@ -39,7 +39,7 @@ func headers(options *SubmitOptions) (http.Header, error) {
 		if wait < 0 || wait > 30000 {
 			return nil, problem("SCHEMA_INVALID", 0, "never", nil)
 		}
-		h.Set("Duranki-Wait-Ms", strconv.Itoa(wait))
+		h.Set("EzLLMRouter-Wait-Ms", strconv.Itoa(wait))
 	}
 	return h, nil
 }
@@ -62,8 +62,8 @@ func (c *Client) submit(ctx context.Context, request Object, options *SubmitOpti
 		return nil, err
 	}
 	if runID != "" {
-		h.Set("Duranki-Attribution-Version", "1")
-		h.Set("Duranki-Attribution-Run", runID)
+		h.Set("EzLLMRouter-Attribution-Version", "1")
+		h.Set("EzLLMRouter-Attribution-Run", runID)
 	}
 	return c.wire(ctx, "POST", "/v1/submissions", "0.2", "submit", body, selected(body), h)
 }
@@ -134,7 +134,7 @@ func (c *Client) wire(ctx context.Context, method, path, version, kind string, b
 	if version == "0.3" {
 		limit = 16 * 1024 * 1024
 	}
-	value, status, err := c.conn.request(ctx, method, path, "Duranki-Contract-Version", version, body, h, limit, selector)
+	value, status, err := c.conn.request(ctx, method, path, "EzLLMRouter-Contract-Version", version, body, h, limit, selector)
 	if err != nil {
 		return nil, err
 	}

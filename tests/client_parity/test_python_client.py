@@ -6,12 +6,12 @@ import unittest
 
 import httpx
 
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 HERE = Path(__file__).resolve().parent
 VECTOR_FILE = HERE / "vectors.json"
 if not VECTOR_FILE.exists():
-    VECTOR_FILE = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    VECTOR_FILE = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"
 EXAMPLES = json.loads(VECTOR_FILE.read_text())["examples"]
 
 
@@ -19,7 +19,7 @@ class Response:
     def __init__(self, value, status=200, version="0.2"):
         self.content = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
         self.status_code = status
-        self.headers = {"Duranki-Contract-Version": version}
+        self.headers = {"EzLLMRouter-Contract-Version": version}
 
 
 class Transport:
@@ -44,7 +44,7 @@ def selected():
 
 
 def error(call, code):
-    with unittest.TestCase().assertRaises(DurankiError) as caught:
+    with unittest.TestCase().assertRaises(EzLLMRouterError) as caught:
         call()
     assert caught.exception.code == code, (caught.exception.code, code)
     return caught.exception
@@ -53,7 +53,7 @@ def error(call, code):
 class ClientTests(unittest.TestCase):
     def client(self, response, *, status=200, callback=None, lost=False, version="0.2"):
         transport = Transport(Response(response, status, version), callback, lost)
-        return DurankiClient("http://synthetic.invalid", "token.synthetic", transport=transport), transport
+        return EzLLMRouterClient("http://synthetic.invalid", "token.synthetic", transport=transport), transport
 
     def test_enabled_controls_and_wait_header(self):
         for name, action, status in [
@@ -69,10 +69,10 @@ class ClientTests(unittest.TestCase):
                 self.assertEqual(len(transport.calls), 1)
                 self.assertTrue(transport.closed)
                 method, _, kwargs = transport.calls[0]
-                self.assertEqual(kwargs["headers"]["Duranki-Contract-Version"], "0.2")
+                self.assertEqual(kwargs["headers"]["EzLLMRouter-Contract-Version"], "0.2")
                 if method == "GET": self.assertNotIn("content", kwargs)
-                elif name == "reply_delivered": self.assertEqual(kwargs["headers"]["Duranki-Wait-Ms"], "0")
-                else: self.assertNotIn("Duranki-Wait-Ms", kwargs["headers"])
+                elif name == "reply_delivered": self.assertEqual(kwargs["headers"]["EzLLMRouter-Wait-Ms"], "0")
+                else: self.assertNotIn("EzLLMRouter-Wait-Ms", kwargs["headers"])
         client, transport = self.client(EXAMPLES["capabilities"])
         self.assertEqual(client.get_capabilities()["profile"], "initial_1a@1")
         client.close()
@@ -154,9 +154,9 @@ class ClientTests(unittest.TestCase):
         deep = b"[" * 20000 + b"0" + b"]" * 20000
         def respond(request):
             requests.append(request)
-            return httpx.Response(200, headers={"Duranki-Contract-Version": "0.2"}, content=deep)
+            return httpx.Response(200, headers={"EzLLMRouter-Contract-Version": "0.2"}, content=deep)
         transport = httpx.Client(transport=httpx.MockTransport(respond), trust_env=False)
-        client = DurankiClient("http://synthetic.invalid", "token.synthetic", transport=transport)
+        client = EzLLMRouterClient("http://synthetic.invalid", "token.synthetic", transport=transport)
         original = selected()
         caught = error(lambda: client.submit(EXAMPLES["submit_text"]), "TRANSPORT_OUTCOME_UNKNOWN")
         self.assertEqual(caught.selector, original)

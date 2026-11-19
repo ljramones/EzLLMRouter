@@ -211,7 +211,7 @@ class EzLLMRouterClient {
   async _request(method, path, body, extraHeaders = {}, workSelector, responseKind = "submit") {
     // Bind response matching and error recovery to the issued operation.
     workSelector = workSelector === undefined ? undefined : Object.freeze({ ...workSelector });
-    const headers = { "Duranki-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
       "Accept-Encoding": "identity", ...extraHeaders };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     let response;
@@ -226,7 +226,7 @@ class EzLLMRouterClient {
     try { value = await response.json(); } catch (cause) {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector: workSelector, cause });
     }
-    if (value?.contract_version !== VERSION || response.headers.get("Duranki-Contract-Version") !== VERSION) {
+    if (value?.contract_version !== VERSION || response.headers.get("EzLLMRouter-Contract-Version") !== VERSION) {
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", value?.error?.correlation_id ?? null,
         { selector: workSelector, handle: validHandle(value?.handle) ? value.handle : undefined });
     }
@@ -268,13 +268,13 @@ class EzLLMRouterClient {
       if (Object.hasOwn(options, "wait_ms")) {
         const n = options.wait_ms;
         if (!Number.isInteger(n) || n < 0 || n > 30000) throw new EzLLMRouterError("SCHEMA_INVALID", null, "never", null);
-        headers["Duranki-Wait-Ms"] = String(n);
+        headers["EzLLMRouter-Wait-Ms"] = String(n);
       }
     }
     if (runId !== undefined) {
       if (!id(runId)) throw new EzLLMRouterError("SCHEMA_INVALID", null, "never", null);
-      headers["Duranki-Attribution-Version"] = "1";
-      headers["Duranki-Attribution-Run"] = runId;
+      headers["EzLLMRouter-Attribution-Version"] = "1";
+      headers["EzLLMRouter-Attribution-Run"] = runId;
     }
     return this._request("POST", "/v1/submissions", request, headers, selected);
   }
@@ -284,7 +284,7 @@ class EzLLMRouterClient {
   submitInRun(request, runId, options) { return this._submit(request, options, runId); }
 
   async _extension(method, path, body, kind) {
-    const headers = { "Duranki-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
       "Accept-Encoding": "identity" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     let response, value;
@@ -297,7 +297,7 @@ class EzLLMRouterClient {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "query_first", null, { cause });
     }
     if (!object(value) || value.contract_version !== VERSION ||
-        response.headers.get("Duranki-Contract-Version") !== VERSION)
+        response.headers.get("EzLLMRouter-Contract-Version") !== VERSION)
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", null);
     if (keys(value, ["contract_version", "error"]) && validError(value.error) && response.status >= 400)
       throw new EzLLMRouterError(value.error.code, response.status, value.error.retry_guidance,
@@ -385,10 +385,10 @@ class EzLLMRouterClient {
   }
 
   async _requestSuccessor(method, path, selector, body, waitMs, kind) {
-    const headers = { "Duranki-Contract-Version": "0.3", Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": "0.3", Authorization: `Bearer ${this.token}`,
       "Accept-Encoding": "identity" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    if (waitMs !== undefined) headers["Duranki-Wait-Ms"] = String(waitMs);
+    if (waitMs !== undefined) headers["EzLLMRouter-Wait-Ms"] = String(waitMs);
     let response;
     try {
       response = await this.fetchImpl(this.baseUrl + path, { method, headers,
@@ -403,7 +403,7 @@ class EzLLMRouterClient {
     } catch (cause) {
       throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector, cause });
     }
-    if (value?.contract_version !== "0.3" || response.headers.get("Duranki-Contract-Version") !== "0.3") {
+    if (value?.contract_version !== "0.3" || response.headers.get("EzLLMRouter-Contract-Version") !== "0.3") {
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", null, { selector });
     }
     if (Object.hasOwn(value, "code")) {
@@ -468,5 +468,5 @@ class EzLLMRouterClient {
   getCapabilities() { return this._request("GET", "/v1/capabilities", undefined, {}, undefined, "capabilities"); }
 }
 
-module.exports = Object.freeze({ DurankiClient: EzLLMRouterClient, DurankiError: EzLLMRouterError, EzLLMRouterClient, EzLLMRouterError, IntegrationClient, IntegrationClientError,
+module.exports = Object.freeze({ EzLLMRouterClient, EzLLMRouterError, IntegrationClient, IntegrationClientError,
   contractVersion: VERSION });

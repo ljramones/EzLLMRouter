@@ -38,7 +38,7 @@ def main() -> None:
         "docs/development/integration-readiness/RELEASE.md",
         "docs/development/integration-readiness/RELEASE-v1.md",
         "docs/development/integration-readiness/RELEASE-v2.md",
-        "docs/plan/DURANKI-INTEGRATION-FEATURE-RETENTION-POLICY.md",
+        "docs/plan/EZLLMROUTER-INTEGRATION-FEATURE-RETENTION-POLICY.md",
         "tests/fixtures/contracts/integration-readiness-v1/CONTRACT.md",
         "tests/fixtures/contracts/integration-readiness-v2/CONTRACT.md",
         "tests/fixtures/contracts/integration-readiness-v2/schema.json",
@@ -49,7 +49,7 @@ def main() -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(repo / rel, dest)
     (release / "README.md").write_text(
-        "# Duranki integration accounting 0.2.1\n\n"
+        "# EzLLMRouter integration accounting 0.2.1\n\n"
         "See [local installation](docs/development/integration-readiness/RELEASE.md).\n"
     )
     source = subprocess.check_output(("git", "rev-parse", TESTED_SOURCE), cwd=repo, text=True).strip()
@@ -66,7 +66,7 @@ def main() -> None:
     (release / "MANIFEST.sha256").write_text("".join(
         f"{digest(path)}  {path.relative_to(release).as_posix()}\n" for path in entries
     ))
-    archive = candidate / "duranki-integration-service-0.2.1.zip"
+    archive = candidate / "ezllmrouter-integration-service-0.2.1.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(p for p in release.rglob("*") if p.is_file()):
             zf.write(path, path.relative_to(release).as_posix())

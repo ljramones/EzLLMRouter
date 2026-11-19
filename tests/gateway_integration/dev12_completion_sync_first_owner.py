@@ -154,7 +154,7 @@ def preflight(root, output):
         _eligible(campaign, legacy=legacy, allocated_admissions=1, allocated_sends=1,
                   allocated_usd=Decimal("0.010000000"))
     source = HERE / "dev12_completion_sync_first_owner.py"
-    service = HERE.parents[1] / "server/src/duranki_server/successor_service.py"
+    service = HERE.parents[1] / "server/src/ezllmrouter_server/successor_service.py"
     document = {"kind": "dev12_completion02_sync_http_first_owner_preflight_v1",
         "status": "BLOCKED_BY_CURRENT_AUTHORITY" if blockers else "ELIGIBLE_FOR_INDEPENDENT_RELEASE",
         "campaign_id": campaign["campaign_id"], "budget_account_id": campaign["budget_account_id"],

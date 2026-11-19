@@ -7,14 +7,15 @@ accounting console is documented in the [project README](../../README.md).
 ## Inputs
 
 Use a verified artifact store containing `ARTIFACT-CUSTODY.json` and `inputs/`,
-the frozen 117-wheel set, declared client archives and pinned base images.
+the frozen 117-wheel set and pinned base images. Python and JavaScript clients
+are built offline from the current repository sources and recorded by hash.
 Build metadata is in [inputs/](inputs/README.md). Preparation verifies hashes
 locally; it does not download replacement dependencies or pull images.
 
-Set the existing artifact-store variable in your Terminal:
+Set the artifact-store variable in your Terminal:
 
 ```sh
-export DURANKI_ARTIFACT_ROOT=/absolute/path/to/verified/artifact-store
+export EZLLMROUTER_ARTIFACT_ROOT=/absolute/path/to/verified/artifact-store
 uv run --locked python deploy/local/profile.py prepare
 ```
 

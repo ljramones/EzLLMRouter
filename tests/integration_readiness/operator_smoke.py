@@ -18,7 +18,7 @@ def request(method, path, body=None, cookie=None, csrf=None):
     if cookie:
         headers["Cookie"] = cookie
     if csrf:
-        headers["X-Duranki-CSRF"] = csrf
+        headers["X-EzLLMRouter-CSRF"] = csrf
     if body is not None:
         headers["Content-Type"] = "application/json"
         body = json.dumps(body)

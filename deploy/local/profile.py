@@ -19,11 +19,11 @@ from check import exercise, readback, wait_health
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.private_files import read_private, write_private
+from ezllmrouter_server.private_files import read_private, write_private
 LOCAL = ROOT / "deploy/local"
 STATE = LOCAL / ".state"
 COMPOSE = LOCAL / "compose.yaml"
-PROJECT = "duranki-dev06-local"
+PROJECT = "ezllmrouter-dev06-local"
 BASE = "docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163"
 NODE = "docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c"
 DOCKER = ["docker", "--context", "desktop-linux"]
@@ -145,13 +145,13 @@ def current():
 
 def environment(build):
     suffix = build["fingerprint"][:16]
-    return dict(os.environ, DURANKI_PYTHON_IMAGE=BASE,
-        DURANKI_INGRESS_SCRIPT=str(Path(build["build_dir"]) / "ingress/console_ingress.py"),
-        DURANKI_RECEIVER_IMAGE="duranki-dev06-receiver:" + suffix,
-        DURANKI_WORKER_IMAGE="duranki-dev06-worker:" + suffix,
-        DURANKI_SERVICE_IMAGE="duranki-dev06-service:" + suffix,
-        DURANKI_DEV07_PYACTOR_IMAGE="duranki-dev07-pyactor:" + suffix,
-        DURANKI_DEV07_JSACTOR_IMAGE="duranki-dev07-jsactor:" + suffix)
+    return dict(os.environ, EZLLMROUTER_PYTHON_IMAGE=BASE,
+        EZLLMROUTER_INGRESS_SCRIPT=str(Path(build["build_dir"]) / "ingress/console_ingress.py"),
+        EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-dev06-receiver:" + suffix,
+        EZLLMROUTER_WORKER_IMAGE="ezllmrouter-dev06-worker:" + suffix,
+        EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev06-service:" + suffix,
+        EZLLMROUTER_DEV07_PYACTOR_IMAGE="ezllmrouter-dev07-pyactor:" + suffix,
+        EZLLMROUTER_DEV07_JSACTOR_IMAGE="ezllmrouter-dev07-jsactor:" + suffix)
 
 
 def compose_args(*args):
@@ -215,7 +215,7 @@ def backup_live_store(env):
 def build_images(build, env):
     source = Path(build["build_dir"])
     for kind in ("receiver", "worker", "service"):
-        image = env["DURANKI_" + kind.upper() + "_IMAGE"]
+        image = env["EZLLMROUTER_" + kind.upper() + "_IMAGE"]
         _, present = command("inspect-" + kind, [*DOCKER, "image", "inspect", image], env,
                              allowed=(0, 1))
         if present == 0:
@@ -228,8 +228,8 @@ def build_images(build, env):
 def build_dev07_actors(build, env):
     source = Path(build["build_dir"])
     for kind, image_key, base, argument in (
-            ("python", "DURANKI_DEV07_PYACTOR_IMAGE", BASE, "PYTHON_IMAGE"),
-            ("js", "DURANKI_DEV07_JSACTOR_IMAGE", NODE, "NODE_IMAGE")):
+            ("python", "EZLLMROUTER_DEV07_PYACTOR_IMAGE", BASE, "PYTHON_IMAGE"),
+            ("js", "EZLLMROUTER_DEV07_JSACTOR_IMAGE", NODE, "NODE_IMAGE")):
         image = env[image_key]
         _, present = command("inspect-dev07-" + kind, [*DOCKER, "image", "inspect", image], env,
                              allowed=(0, 1))
@@ -260,7 +260,7 @@ def topology(env):
         "assert os.getuid()==10001\n"
         "assert pathlib.Path('/console/operator.sock').is_socket()\n"
         "assert not any(pathlib.Path(x).exists() for x in "
-        "('/link','/data','/app/server','/run/duranki/credentials.json'))\n"
+        "('/link','/data','/app/server','/run/ezllmrouter/credentials.json'))\n"
         "try:\n socket.getaddrinfo('netns',8766)\n"
         "except socket.gaierror:\n pass\n"
         "else:\n raise AssertionError('receiver name reachable from ingress')\n"
@@ -269,7 +269,7 @@ def topology(env):
     command("worker-isolation", compose_args("exec", "-T", "worker", "python", "-c",
         "import os,pathlib,socket,json; r=pathlib.Path('/proc/net/route').read_text().splitlines(); "
         "assert not any(len(x.split())>1 and x.split()[1]=='00000000' for x in r[1:]); "
-        "assert 'DURANKI_DEV_TOKEN' not in os.environ and 'DURANKI_DEV04_PROVIDER_KEY' not in os.environ; "
+        "assert 'EZLLMROUTER_DEV_TOKEN' not in os.environ and 'EZLLMROUTER_DEV04_PROVIDER_KEY' not in os.environ; "
         "assert not any(pathlib.Path(x).exists() for x in ('/app/server','/app/dev_slice','/app/gateway')); "
         "s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(('127.0.0.1',8766)); s.close(); "
         "assert rc!=0; print(json.dumps({'worker_network':'none','direct_receiver_errno':rc}))"), env)

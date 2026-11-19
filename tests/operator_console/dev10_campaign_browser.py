@@ -21,9 +21,9 @@ for relative in ("server/src", "deploy/local", "tests/gateway_integration", "tes
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
 from dev08_integrated import prepare_registry
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.personal_campaign import PersonalCampaign
 from provider_browser_smoke import NeverRun, counters
 from test_providers import ProviderTests
 
@@ -33,14 +33,14 @@ def main():
     result = ROOT / (".artifacts/browser/dev-10/CAMPAIGN-BROWSER-RESULT-" + suffix + ".json")
     if result.exists():
         raise SystemExit("one-use DEV-10 browser result already exists")
-    with tempfile.TemporaryDirectory(prefix="duranki-dev10-campaign-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev10-campaign-") as scratch:
         run = Path(scratch)
         fixture_tls = ProviderTests("test_distinct_native_tls_inventory_and_readiness")
         fixture_tls.setUp()
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
         store, authority, registry, model = prepare_registry(run, fixture, fixture_tls.origin,
             fixture_tls.cert, funding_kind="personal_testing",
-            display_name="Larry — Personal Duranki Testing")
+            display_name="Larry — Personal EzLLMRouter Testing")
         server = None
         try:
             registry.mutate("owner.local", {"operation_id": "op.dev10.browser.owner.grant", "action": "set_grant",
@@ -107,7 +107,7 @@ def main():
                 "controlled_management_requests": [path for path, _ in fixture_tls.server.requests],
                 "screenshot": {"path": str(target.relative_to(ROOT)), "sha256": shot["sha256"]},
                 "source_hashes": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-                    for name in ("web/source_pages.js", "server/src/duranki_server/personal_campaign.py")}}
+                    for name in ("web/source_pages.js", "server/src/ezllmrouter_server/personal_campaign.py")}}
             result.write_text(json.dumps(payload, indent=2, sort_keys=True)+"\n")
             print(json.dumps(payload, sort_keys=True))
         finally:

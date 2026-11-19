@@ -53,10 +53,10 @@ def capture_failure(review, target, original):
                 document(review / "PLAN.json")["original_file_sha256"]):
         raise AssertionError("unexpected admission, HTTP request or original target change")
     containers = subprocess.run(("docker", "ps", "-a", "--filter",
-        "name=duranki-dev12-ct02b-supp01-", "--format", "{{.Names}}"),
+        "name=ezllmrouter-dev12-ct02b-supp01-", "--format", "{{.Names}}"),
         capture_output=True, text=True, check=True).stdout.splitlines()
     volume = subprocess.run(("docker", "volume", "ls", "--filter",
-        "name=^duranki-dev12-ct02b-supp01-link$", "--format", "{{.Name}}"),
+        "name=^ezllmrouter-dev12-ct02b-supp01-link$", "--format", "{{.Name}}"),
         capture_output=True, text=True, check=True).stdout.splitlines()
     if containers or volume:
         raise AssertionError("owned failed target resources still live")
@@ -303,7 +303,7 @@ def audit(root):
     if (len(winner) != 1 or len(loser) != 1 or winner[0]["http_status"] != 200 or
             loser[0]["reply"].get("code") != "WORK_CONFLICT" or
             loser[0]["reply"].get("retry_guidance") != "never" or
-            loser[0]["response_headers"].get("Duranki-Contract-Version") != "0.3" or
+            loser[0]["response_headers"].get("EzLLMRouter-Contract-Version") != "0.3" or
             observation["owner"]["submission_id"] !=
                 winner[0]["reply"]["handle"]["submission_id"]):
         raise AssertionError("selected-wire winner/conflict differs")

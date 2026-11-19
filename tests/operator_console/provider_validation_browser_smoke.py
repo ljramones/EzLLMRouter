@@ -17,8 +17,8 @@ for relative in ("server/src", "deploy/local", "tests/operator_console", "tests/
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
 from dev08_integrated import certificate, prepare_registry
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from provider_browser_smoke import NeverRun, counters
 
 
@@ -36,7 +36,7 @@ def main():
         raise SystemExit("validation browser result already exists; preserve prior proof")
     fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
     server = None
-    with tempfile.TemporaryDirectory(prefix="duranki-validation-browser-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="ezllmrouter-validation-browser-") as scratch:
         run = Path(scratch)
         cert, _ = certificate(run)
         store, _, registry, _ = prepare_registry(run, fixture, "https://localhost:8766", cert.read_text())

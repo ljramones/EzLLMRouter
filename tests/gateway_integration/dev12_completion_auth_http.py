@@ -19,13 +19,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 from cryptography.hazmat.primitives import serialization
 import httpx
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
-from duranki_server.web import serve
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
+from ezllmrouter_server.web import serve
 
 PORT = 8768
 RENEWED = "dev12.continue03.renewed.synthetic"
@@ -47,7 +47,7 @@ def census(store):
 
 def main(target, package_root, output):
     source = target / "campaign.sqlite"
-    if output.exists() or not source.is_file() or not (package_root / "duranki_client").is_dir():
+    if output.exists() or not source.is_file() or not (package_root / "ezllmrouter_client").is_dir():
         raise ValueError("fresh owned output, target and exact unpacked wheel required")
     source_hash, receiver_hash = digest(source), digest(target / "receiver.jsonl")
     output.mkdir(parents=True)
@@ -113,7 +113,7 @@ def main(target, package_root, output):
                 for label, header in (("missing", None), ("malformed", "Broken synthetic"),
                                       ("invalid", "Bearer invalid.synthetic"),
                                       ("revoked", "Bearer " + OLD)):
-                    headers = {"Duranki-Contract-Version": "0.3"}
+                    headers = {"EzLLMRouter-Contract-Version": "0.3"}
                     if header is not None:
                         headers["Authorization"] = header
                     response = (client.post(path, content=b"{malformed-json", headers={
@@ -125,7 +125,7 @@ def main(target, package_root, output):
                         raise AssertionError(f"non-JSON {label} {path}: HTTP {response.status_code} "
                                              f"{response.text[:120]!r}") from exc
                     assert response.status_code == 401
-                    assert response.headers["Duranki-Contract-Version"] == "0.3"
+                    assert response.headers["EzLLMRouter-Contract-Version"] == "0.3"
                     assert set(value) == {"contract_version", "code", "correlation_id", "retry_guidance"}
                     assert (value["contract_version"], value["code"], value["retry_guidance"]) == \
                         ("0.3", "POLICY_DENIED", "never")
@@ -133,12 +133,12 @@ def main(target, package_root, output):
                     raw.append({"selector": "pre_body_post" if path == "/v1/submissions" else
                         "submission_id" if path == paths[0] else "work_key",
                         "credential_state": label, "http_status": response.status_code,
-                        "contract_header": response.headers["Duranki-Contract-Version"],
+                        "contract_header": response.headers["EzLLMRouter-Contract-Version"],
                         "body": value, "exact_body_utf8": response.text,
                         "body_sha256": sha256(response.content).hexdigest()})
                 if path == "/v1/submissions":
                     continue
-                renewed = client.get(path, headers={"Duranki-Contract-Version": "0.3",
+                renewed = client.get(path, headers={"EzLLMRouter-Contract-Version": "0.3",
                     "Authorization": "Bearer " + RENEWED})
                 answer = renewed.json()
                 assert renewed.status_code == 200 and answer["handle"]["submission_id"] == sid
@@ -148,35 +148,35 @@ def main(target, package_root, output):
                 assert answer["attempts"][0]["settlement_state"] == record["settlement_state"]
                 raw.append({"selector": "submission_id" if path == paths[0] else "work_key",
                     "credential_state": "renewed", "http_status": renewed.status_code,
-                    "contract_header": renewed.headers["Duranki-Contract-Version"],
+                    "contract_header": renewed.headers["EzLLMRouter-Contract-Version"],
                     "handle": answer["handle"], "attempt_id": answer["attempts"][0]["attempt_id"],
                     "settlement_state": answer["attempts"][0]["settlement_state"],
                     "usage_revision": latest})
-                denied = client.get(path, headers={"Duranki-Contract-Version": "0.3",
+                denied = client.get(path, headers={"EzLLMRouter-Contract-Version": "0.3",
                     "Authorization": "Bearer " + FOREIGN})
                 denied_body = denied.json()
-                assert (denied.status_code, denied.headers["Duranki-Contract-Version"],
+                assert (denied.status_code, denied.headers["EzLLMRouter-Contract-Version"],
                         denied_body["code"], denied_body["retry_guidance"]) == \
                        (404, "0.3", "NOT_FOUND_OR_FORBIDDEN", "never")
                 raw.append({"selector": "submission_id" if path == paths[0] else "work_key",
                     "credential_state": "authenticated_foreign", "http_status": denied.status_code,
-                    "contract_header": denied.headers["Duranki-Contract-Version"],
+                    "contract_header": denied.headers["EzLLMRouter-Contract-Version"],
                     "body": denied_body})
-            legacy = client.get(paths[0], headers={"Duranki-Contract-Version": "0.2"})
+            legacy = client.get(paths[0], headers={"EzLLMRouter-Contract-Version": "0.2"})
             assert legacy.status_code == 401 and legacy.json()["error"]["code"] == \
                 "AUTHENTICATION_FAILED"
         sys.path.insert(0, str(package_root))
-        from duranki_client import DurankiClient, DurankiError
-        import duranki_client
-        assert Path(duranki_client.__file__).resolve().is_relative_to(package_root)
+        from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
+        import ezllmrouter_client
+        assert Path(ezllmrouter_client.__file__).resolve().is_relative_to(package_root)
         client_results = []
         for label, token in (("revoked", OLD), ("renewed", RENEWED),
                              ("authenticated_foreign", FOREIGN)):
-            with DurankiClient(origin, token) as client:
+            with EzLLMRouterClient(origin, token) as client:
                 for query in ({"submission_id": sid}, {"work_selector": work}):
                     try:
                         value = client.get_successor_status(query)
-                    except DurankiError as exc:
+                    except EzLLMRouterError as exc:
                         expected = (("POLICY_DENIED", 401, "never") if label == "revoked" else
                                     ("NOT_FOUND_OR_FORBIDDEN", 404, "never"))
                         if label == "renewed" or (exc.code, exc.http_status,
@@ -200,7 +200,7 @@ def main(target, package_root, output):
             "status": "PASS", "target_database_sha256": source_hash,
             "target_receiver_sha256": receiver_hash,
             "private_copy_sha256_before_js": digest(copy),
-            "installed_python_source": str(Path(duranki_client.__file__).resolve()),
+            "installed_python_source": str(Path(ezllmrouter_client.__file__).resolve()),
             "selected_submission_id": sid, "selected_attempt_id": record["attempt_id"],
             "selected_work_key": record["work_key"],
             "raw_http": raw, "legacy_auth_http": legacy.status_code,

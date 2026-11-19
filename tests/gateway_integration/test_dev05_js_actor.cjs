@@ -54,15 +54,15 @@ async function run(mode, kind) {
     [process.execPath, actor, mode, "step.dev03.js", "gen.1", kind] :
     [process.execPath, actor, mode,
       mode === "status" || mode === "failure_status" ? "submission.1" : undefined,
-      kind], exitCode: 0, env: {DURANKI_SERVICE_URL: "http://service.invalid",
-    DURANKI_RECEIVER_URL: "http://receiver.invalid", DURANKI_DEV_TOKEN: "synthetic"}};
+      kind], exitCode: 0, env: {EZLLMROUTER_SERVICE_URL: "http://service.invalid",
+    EZLLMROUTER_RECEIVER_URL: "http://receiver.invalid", EZLLMROUTER_DEV_TOKEN: "synthetic"}};
   const sandbox = {__dirname: path.dirname(actor), process: localProcess,
     structuredClone, Date: class {static now() {clock += 5200; return clock;}},
     setTimeout: callback => {queueMicrotask(callback); return 1;},
     fetch: async () => ({ok: true, json: async () => ({arrivals: Array(sends).fill({})})}),
     console: {log: value => stdout.push(value), error: value => stderr.push(value)},
     require: name => {
-      if (name === "@mach33/duranki-client") return {DurankiClient: Client};
+      if (name === "@cognitivedynamics/ezllmrouter-client") return {EzLLMRouterClient: Client};
       if (name === "node:fs") return {readFileSync: filename =>
         filename.endsWith("/request.json") ? JSON.stringify(request) : JSON.stringify(scenarios)};
       throw Error("unexpected import " + name);

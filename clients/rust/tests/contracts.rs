@@ -18,7 +18,7 @@ impl Transport for Fake {
         for (key, value) in call["headers"].as_object().unwrap() { assert_eq!(request.headers.get(key).map(String::as_str), value.as_str()); }
         let body = request.body.as_ref().map(|raw| parse_object(raw).unwrap()).unwrap_or(Value::Null); assert_eq!(body, call["body"]);
         if self.fixture["lost"] == true { return Err(TransportError { http_status: None }); }
-        let mut headers = BTreeMap::new(); headers.insert("Duranki-Contract-Version".into(), self.fixture["wire"].as_str().unwrap_or("0.2").into()); headers.insert("Duranki-Integration-Version".into(), self.fixture["version"].as_str().unwrap_or("1").into());
+        let mut headers = BTreeMap::new(); headers.insert("EzLLMRouter-Contract-Version".into(), self.fixture["wire"].as_str().unwrap_or("0.2").into()); headers.insert("EzLLMRouter-Integration-Version".into(), self.fixture["version"].as_str().unwrap_or("1").into());
         if let Some(extra) = self.fixture["response_headers"].as_object() { for (key, value) in extra { headers.insert(key.clone(), value.as_str().unwrap().into()); } }
         let raw = if let Some(raw) = self.fixture["raw"].as_str() { base64::engine::general_purpose::STANDARD.decode(raw).unwrap() } else { canonical(&self.fixture["response"]).unwrap() };
         Ok(Response { status: self.fixture["status"].as_u64().unwrap_or(200) as u16, headers,

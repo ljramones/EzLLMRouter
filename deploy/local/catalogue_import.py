@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SEED = ROOT / "deploy/local/inputs/catalogue.json"
 PASSWORD = ROOT / "deploy/local/.state/operator-password"
-SEED_SHA256 = "3a185d480e0c4552fab7a6a8c391a818f31db2a29676ee743ec3aaa93b5f476b"
+SEED_SHA256 = "1f01fe3ad181905e77738109739cde4ea7f76e55b0f3b245f0da296ad4cfe2bd"
 
 
 class OperatorClient:
@@ -34,7 +34,7 @@ class OperatorClient:
             headers["Origin"] = f"http://127.0.0.1:{self.port}"
             headers["Content-Type"] = "application/json"
             if self.csrf:
-                headers["X-Duranki-CSRF"] = self.csrf
+                headers["X-EzLLMRouter-CSRF"] = self.csrf
         encoded = json.dumps(body, separators=(",", ":")) if body is not None else None
         try:
             conn.request(method, path, encoded, headers)
@@ -61,7 +61,7 @@ def seed_data():
     if hashlib.sha256(raw).hexdigest() != SEED_SHA256:
         raise RuntimeError("researched seed hash changed")
     seed = json.loads(raw)
-    if seed.get("schema") != "duranki.researched_catalogue_seed.v1" or len(seed.get("models", [])) != 12:
+    if seed.get("schema") != "ezllmrouter.researched_catalogue_seed.v1" or len(seed.get("models", [])) != 12:
         raise RuntimeError("unexpected researched catalogue shape")
     return seed
 

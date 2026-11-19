@@ -17,9 +17,9 @@ sys.path.insert(0, str(ROOT / "tests/operator_console"))
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.registry import Registry
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.registry import Registry
 from provider_browser_smoke import NeverRun, counters
 from test_providers import ProviderTests
 
@@ -58,7 +58,7 @@ def main():
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         before = counters(store)
-        with tempfile.TemporaryDirectory(prefix="duranki-provider-approval-browser-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-provider-approval-browser-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)

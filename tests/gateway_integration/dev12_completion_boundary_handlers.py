@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def taint_boundary(runtime, case):
     """Exercise the unchanged wire-0.2 caller-owned tool-result validator."""
     from dev12_completion_handlers import _census, _evidence
-    from duranki_server.canonical import ContractError, validate_text_request
+    from ezllmrouter_server.canonical import ContractError, validate_text_request
 
     if (case["scenario_id"], case["variant"]) != ("t03", "composed"):
         raise NotImplementedError("unsupported taint case")

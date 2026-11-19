@@ -10,7 +10,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-CAPABILITIES = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())["examples"]["capabilities"]
+CAPABILITIES = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())["examples"]["capabilities"]
 BODY = json.dumps(CAPABILITIES).encode()
 COUNTS = Counter()
 LOCK = threading.Lock()
@@ -32,7 +32,7 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 COUNTS["wrong_encoding"] += 1
         self.send_response(307 if mode == "redirect" else 200)
-        self.send_header("Duranki-Contract-Version", "0.2")
+        self.send_header("EzLLMRouter-Contract-Version", "0.2")
         self.send_header("Connection", "close")
         if mode == "redirect":
             self.send_header("Location", "/redirected")

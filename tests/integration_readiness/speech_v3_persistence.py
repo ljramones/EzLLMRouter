@@ -15,16 +15,16 @@ import sqlite3
 import sys
 import threading
 
-from duranki_client.integration import IntegrationClient
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_client.integration import IntegrationClient
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "deploy/local/.state/integration-v3-runs/speech-v3-20261029-12"
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
-SERVER_VERSION = version("mach33-duranki-server")
-CLIENT_VERSION = version("mach33-duranki-client")
+SERVER_VERSION = version("mach33-ezllmrouter-server")
+CLIENT_VERSION = version("cognitivedynamics-ezllmrouter-client")
 if (SERVER_VERSION, CLIENT_VERSION) != ("0.2.4", "0.2.4"):
     raise SystemExit("installed v3 candidate versions do not match 0.2.4")
 if RUN.exists() or not sys.argv[1].startswith("persistence-v3-"):
@@ -76,7 +76,7 @@ def inspect(database):
         connection = http_client.HTTPConnection("127.0.0.1", port, timeout=5)
         connection.request("GET", "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
                            headers={"Authorization": "Bearer " + admin_token,
-                                    "Duranki-Integration-Version": "3"})
+                                    "EzLLMRouter-Integration-Version": "3"})
         response = connection.getresponse()
         raw_csv = response.read()
         connection.close()

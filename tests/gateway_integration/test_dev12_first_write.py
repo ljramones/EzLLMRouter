@@ -15,11 +15,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "server/src"), str(Path(__file__).resolve().parent),
                 str(ROOT / "tests/development_slice")]
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
-from duranki_server.store import SQLiteStore  # noqa: E402
-from duranki_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
-from duranki_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
-from duranki_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
-from duranki_server.gateway.guard import GuardRejected  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
+from ezllmrouter_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
+from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
 import owned_tls_sender_transport as tls_sender  # noqa: E402
 
 

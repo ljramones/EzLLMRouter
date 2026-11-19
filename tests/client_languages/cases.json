@@ -125,10 +125,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -294,10 +294,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -472,10 +472,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -630,7 +630,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -689,7 +689,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -828,10 +828,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1038,10 +1038,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1163,7 +1163,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -1334,10 +1334,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1495,7 +1495,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -1591,7 +1591,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -1719,10 +1719,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1851,7 +1851,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -1979,10 +1979,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2111,7 +2111,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -2200,7 +2200,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -2259,7 +2259,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -2355,7 +2355,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -2483,10 +2483,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2645,7 +2645,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -2773,10 +2773,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2942,10 +2942,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Wait-Ms": "0",
+            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -3098,7 +3098,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -3157,7 +3157,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -3195,7 +3195,7 @@
           "method": "GET",
           "path": "/v1/capabilities",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -3284,7 +3284,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.demo",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -3418,11 +3418,11 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "Duranki-Attribution-Version": "1",
-            "Duranki-Attribution-Run": "run.synthetic",
+            "EzLLMRouter-Attribution-Version": "1",
+            "EzLLMRouter-Attribution-Run": "run.synthetic",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -3837,7 +3837,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4044,7 +4044,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4251,7 +4251,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4413,7 +4413,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4575,7 +4575,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4737,7 +4737,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -4899,7 +4899,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5061,7 +5061,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5223,7 +5223,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5385,7 +5385,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5547,7 +5547,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5757,7 +5757,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -5921,7 +5921,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6085,7 +6085,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6277,7 +6277,7 @@
       }
     },
     "response_headers": {
-      "Duranki-Contract-Version": "0.3"
+      "EzLLMRouter-Contract-Version": "0.3"
     },
     "expected": {
       "code": "UNSUPPORTED_VERSION",
@@ -6295,7 +6295,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6515,7 +6515,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6643,19 +6643,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -6694,7 +6694,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6749,19 +6749,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -6831,19 +6831,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -6904,7 +6904,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -6959,19 +6959,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -7041,19 +7041,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -7117,7 +7117,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -7172,19 +7172,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -7254,19 +7254,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -7305,7 +7305,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -7360,19 +7360,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -7466,7 +7466,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7540,7 +7540,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7604,7 +7604,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7672,7 +7672,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7736,7 +7736,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7828,7 +7828,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7879,7 +7879,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -7947,7 +7947,7 @@
           "method": "GET",
           "path": "/v1/submissions/submission.synthetic.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -8010,19 +8010,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -8101,7 +8101,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -8156,19 +8156,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -8238,19 +8238,19 @@
             {
               "candidate_id": "doc.1",
               "content_version": "v1",
-              "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
               "text": "Sky"
             },
             {
               "candidate_id": "doc.2",
               "content_version": "v1",
-              "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
               "text": "Earth"
             },
             {
               "candidate_id": "doc.3",
               "content_version": "v1",
-              "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
               "text": "River"
             }
           ],
@@ -8329,7 +8329,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -8384,19 +8384,19 @@
                 {
                   "candidate_id": "doc.1",
                   "content_version": "v1",
-                  "content_digest": "sha256:e57692c6d49bd5b2eef669441d646c4b17643d93a4e8ba160eeb899a13121327",
+                  "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
                   "text": "Sky"
                 },
                 {
                   "candidate_id": "doc.2",
                   "content_version": "v1",
-                  "content_digest": "sha256:419329261c6b24825da2f70fd4d927cb9047b8e75ba45b94cd38ca23266b9e0a",
+                  "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
                   "text": "Earth"
                 },
                 {
                   "candidate_id": "doc.3",
                   "content_version": "v1",
-                  "content_digest": "sha256:19309f5af6d2e050d76aad7dfe5e9549c893bd5f526df8f74ead16be834173e8",
+                  "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
                   "text": "River"
                 }
               ],
@@ -8494,7 +8494,7 @@
           "method": "GET",
           "path": "/v1/submissions/by-work/task.demo/step.rerank/1/gen.1",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -8624,7 +8624,7 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
-            "Duranki-Contract-Version": "0.3",
+            "EzLLMRouter-Contract-Version": "0.3",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -8712,7 +8712,7 @@
           "path": "/integration/v1/datasets",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -8757,7 +8757,7 @@
           "path": "/integration/v1/accounts",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -8812,7 +8812,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -8858,7 +8858,7 @@
           "path": "/integration/v1/events/event.root/receipt?dataset_id=dataset.local.vega.01",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -8906,7 +8906,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -8965,7 +8965,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9031,7 +9031,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9095,7 +9095,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9149,7 +9149,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9200,7 +9200,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9266,7 +9266,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9343,7 +9343,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9420,7 +9420,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9492,7 +9492,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9553,7 +9553,7 @@
           "path": "/integration/v1/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9599,7 +9599,7 @@
           "path": "/integration/v1/accounts/account.synthetic.01/state",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9631,7 +9631,7 @@
           "path": "/integration/v1/reports/usage?dataset_id=dataset.local.vega.01",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -9666,7 +9666,7 @@
           "path": "/integration/v1/accounts/account.synthetic.01/eligibility?dataset_id=dataset.local.vega.01&model_id=model.synthetic",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "1",
+            "EzLLMRouter-Integration-Version": "1",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -9701,7 +9701,7 @@
           "path": "/integration/v2/datasets",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9746,7 +9746,7 @@
           "path": "/integration/v2/accounts",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9811,7 +9811,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -9867,7 +9867,7 @@
           "path": "/integration/v2/events/event.TimeZ/receipt?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -9925,7 +9925,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10002,7 +10002,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10083,7 +10083,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10164,7 +10164,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10234,7 +10234,7 @@
           "path": "/integration/v2/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10305,7 +10305,7 @@
           "path": "/integration/v2/snapshots",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10360,7 +10360,7 @@
           "path": "/integration/v2/snapshots/feature.synthetic?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10403,7 +10403,7 @@
           "path": "/integration/v2/snapshots",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10446,7 +10446,7 @@
           "path": "/integration/v2/snapshots/feature.not_collected?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10478,7 +10478,7 @@
           "path": "/integration/v2/accounts/account%3Asynthetic%3Av2/state",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10510,7 +10510,7 @@
           "path": "/integration/v2/reports/usage?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10537,7 +10537,7 @@
           "path": "/integration/v2/reports/dataset?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10575,7 +10575,7 @@
           "path": "/integration/v2/accounts/account%3Asynthetic%3Av2/eligibility?dataset_id=dataset.synthetic.v2&model_id=model.synthetic",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "2",
+            "EzLLMRouter-Integration-Version": "2",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10610,7 +10610,7 @@
           "path": "/integration/v3/datasets",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10657,7 +10657,7 @@
           "path": "/integration/v3/accounts",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10723,7 +10723,7 @@
           "path": "/integration/v3/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10778,7 +10778,7 @@
           "path": "/integration/v3/events/event.synthetic.speech.start/receipt?dataset_id=dataset.synthetic.speech",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10835,7 +10835,7 @@
           "path": "/integration/v3/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10907,7 +10907,7 @@
           "path": "/integration/v3/events",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10980,7 +10980,7 @@
           "path": "/integration/v3/snapshots",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11035,7 +11035,7 @@
           "path": "/integration/v3/snapshots/feature.synthetic?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11067,7 +11067,7 @@
           "path": "/integration/v3/accounts/account.synthetic.speech/state",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11099,7 +11099,7 @@
           "path": "/integration/v3/reports/usage?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11126,7 +11126,7 @@
           "path": "/integration/v3/reports/dataset?dataset_id=dataset.synthetic.v2",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11169,7 +11169,7 @@
           "path": "/integration/v3/accounts/account.synthetic.speech/eligibility?dataset_id=dataset.synthetic.v2&operation_family=generation&capability=generation&selection_kind=known_model&model_id=model.synthetic",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11215,7 +11215,7 @@
           "path": "/integration/v3/accounts/account.synthetic.speech/eligibility?dataset_id=dataset.synthetic.v2&operation_family=speech_input&capability=transcription&selection_kind=provider_selected",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11248,7 +11248,7 @@
           "path": "/integration/v3/accounts/account.synthetic.speech/permissions",
           "headers": {
             "Authorization": "Bearer synthetic-token",
-            "Duranki-Integration-Version": "3",
+            "EzLLMRouter-Integration-Version": "3",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11303,7 +11303,7 @@
           "method": "POST",
           "path": "/v1/attribution-runs",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -11354,7 +11354,7 @@
           "method": "GET",
           "path": "/v1/attribution-runs/run.synthetic",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
@@ -11399,7 +11399,7 @@
           "method": "POST",
           "path": "/v1/outcomes",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
@@ -11444,7 +11444,7 @@
           "method": "GET",
           "path": "/v1/outcomes/outcome.synthetic",
           "headers": {
-            "Duranki-Contract-Version": "0.2",
+            "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },

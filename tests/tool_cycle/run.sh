@@ -4,16 +4,16 @@ umask 077
 root=$(cd "$(dirname "$0")/../.." && pwd -P)
 run_name=${1:?usage: ./tests/tool_cycle/run.sh run-YYYYMMDD-NN}
 [[ "$run_name" =~ ^run-[0-9]{8}-[0-9]{2}$ ]] || { echo 'invalid run name' >&2; exit 2; }
-run_dir="/private/tmp/duranki-dev-03/$run_name"
+run_dir="/private/tmp/ezllmrouter-dev-03/$run_name"
 result_dir="$root/.artifacts/tool-cycle"
-project="duranki-dev03-${run_name#run-}"
+project="ezllmrouter-dev03-${run_name#run-}"
 python_tool=/opt/homebrew/bin/python3.12
 python_image=docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163
 node_image=docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
-export DURANKI_RECEIVER_IMAGE="duranki-dev03-receiver:$run_name"
-export DURANKI_SERVICE_IMAGE="duranki-dev03-service:$run_name"
-export DURANKI_PYTHON_CLIENT_IMAGE="duranki-dev03-pyclient:$run_name"
-export DURANKI_JS_CLIENT_IMAGE="duranki-dev03-jsclient:$run_name"
+export EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-dev03-receiver:$run_name"
+export EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev03-service:$run_name"
+export EZLLMROUTER_PYTHON_CLIENT_IMAGE="ezllmrouter-dev03-pyclient:$run_name"
+export EZLLMROUTER_JS_CLIENT_IMAGE="ezllmrouter-dev03-jsclient:$run_name"
 compose_file="$root/tests/tool_cycle/compose.yaml"
 started=0
 mutation_started=0
@@ -100,43 +100,43 @@ mkdir -p -m 700 "$run_dir/build/python" "$run_dir/build/js" "$run_dir/build/serv
 trap finish EXIT
 "$python_tool" -I -B -c 'import secrets,sys;open(sys.argv[1],"x").write(secrets.token_urlsafe(48))' "$run_dir/token"
 chmod 0600 "$run_dir/token"
-export DURANKI_DEV_TOKEN
-DURANKI_DEV_TOKEN=$(cat "$run_dir/token")
+export EZLLMROUTER_DEV_TOKEN
+EZLLMROUTER_DEV_TOKEN=$(cat "$run_dir/token")
 logrun stage "$python_tool" -I -B "$root/tests/tool_cycle/stage.py" prepare "$root" "$run_dir"
 logrun core-regression env TMPDIR="$run_dir" "$python_tool" -I -B "$root/tests/development_slice/test_core.py" -v
-logrun tool-core-component env DURANKI_TEST_SCRATCH="$run_dir" "$python_tool" -I -B "$root/tests/tool_cycle/test_core.py" -v
+logrun tool-core-component env EZLLMROUTER_TEST_SCRATCH="$run_dir" "$python_tool" -I -B "$root/tests/tool_cycle/test_core.py" -v
 logrun receiver-component "$python_tool" -I -B "$root/tests/tool_cycle/test_receiver.py" -v
 logrun base-image-inspect docker --context desktop-linux image inspect "$python_image" "$node_image"
 logrun base-image-verify "$python_tool" -I -B "$root/tests/tool_cycle/stage.py" verify-images "$run_dir/base-image-inspect.stdout"
 logrun image-tag-list docker --context desktop-linux image ls --format '{{.Repository}}:{{.Tag}}'
 logrun image-tag-collision-check "$python_tool" -I -B -c 'import sys;tags=set(open(sys.argv[1]).read().splitlines());wanted=sys.argv[2:];assert not tags.intersection(wanted),"run image tag collision";print("run image tags clear")' \
-  "$run_dir/image-tag-list.stdout" "$DURANKI_RECEIVER_IMAGE" "$DURANKI_SERVICE_IMAGE" "$DURANKI_PYTHON_CLIENT_IMAGE" "$DURANKI_JS_CLIENT_IMAGE"
+  "$run_dir/image-tag-list.stdout" "$EZLLMROUTER_RECEIVER_IMAGE" "$EZLLMROUTER_SERVICE_IMAGE" "$EZLLMROUTER_PYTHON_CLIENT_IMAGE" "$EZLLMROUTER_JS_CLIENT_IMAGE"
 source_hash=$(shasum -a 256 "$run_dir/source-build-manifest.json" | awk '{print $1}')
 logrun receiver-build docker --context desktop-linux build --pull=false --network none --platform linux/arm64 --build-arg "PYTHON_IMAGE=$python_image" \
-  --label "org.duranki.dev03.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/development_slice/Dockerfile.receiver" -t "$DURANKI_RECEIVER_IMAGE" "$run_dir/build/receiver"
-built_images+=("$DURANKI_RECEIVER_IMAGE")
+  --label "org.ezllmrouter.dev03.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/development_slice/Dockerfile.receiver" -t "$EZLLMROUTER_RECEIVER_IMAGE" "$run_dir/build/receiver"
+built_images+=("$EZLLMROUTER_RECEIVER_IMAGE")
 logrun service-build docker --context desktop-linux build --pull=false --network none --platform linux/arm64 --build-arg "PYTHON_IMAGE=$python_image" \
-  --label "org.duranki.dev03.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/development_slice/Dockerfile.service" -t "$DURANKI_SERVICE_IMAGE" "$run_dir/build/service"
-built_images+=("$DURANKI_SERVICE_IMAGE")
+  --label "org.ezllmrouter.dev03.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/development_slice/Dockerfile.service" -t "$EZLLMROUTER_SERVICE_IMAGE" "$run_dir/build/service"
+built_images+=("$EZLLMROUTER_SERVICE_IMAGE")
 logrun python-client-build docker --context desktop-linux build --pull=false --network none --platform linux/arm64 --build-arg "PYTHON_IMAGE=$python_image" \
-  --label "org.duranki.dev03.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/tool_cycle/Dockerfile.python-consumer" -t "$DURANKI_PYTHON_CLIENT_IMAGE" "$run_dir/build/python"
-built_images+=("$DURANKI_PYTHON_CLIENT_IMAGE")
+  --label "org.ezllmrouter.dev03.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/tool_cycle/Dockerfile.python-consumer" -t "$EZLLMROUTER_PYTHON_CLIENT_IMAGE" "$run_dir/build/python"
+built_images+=("$EZLLMROUTER_PYTHON_CLIENT_IMAGE")
 logrun js-client-build docker --context desktop-linux build --pull=false --network none --platform linux/arm64 --build-arg "NODE_IMAGE=$node_image" \
-  --label "org.duranki.dev03.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/tool_cycle/Dockerfile.js-consumer" -t "$DURANKI_JS_CLIENT_IMAGE" "$run_dir/build/js"
-built_images+=("$DURANKI_JS_CLIENT_IMAGE")
+  --label "org.ezllmrouter.dev03.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/tool_cycle/Dockerfile.js-consumer" -t "$EZLLMROUTER_JS_CLIENT_IMAGE" "$run_dir/build/js"
+built_images+=("$EZLLMROUTER_JS_CLIENT_IMAGE")
 logrun built-image-inspect docker --context desktop-linux image inspect "${built_images[@]}"
 logrun crypto-proof docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  "$DURANKI_SERVICE_IMAGE" python /app/tests/test_crypto.py
+  "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_crypto.py
 logrun tool-core-target docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/tool_cycle/test_core.py -v
+  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/tool_cycle/test_core.py -v
 logrun http-boundary docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_http.py -v
+  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_http.py -v
 logrun native-adapter docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
+  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
 started=1
 logrun compose-up compose up -d receiver service
 ready=0
@@ -146,11 +146,11 @@ for _ in {1..20}; do
 done
 [[ "$ready" == 1 ]] || { echo 'service readiness failed' >&2; exit 1; }
 logrun python-installed-identity compose run -T --rm --no-deps python_consumer python -c \
-  'import duranki_client,importlib.metadata,importlib.util,json,hashlib,pathlib;d=importlib.metadata.distribution("mach33-duranki-client");assert importlib.util.find_spec("duranki_server") is None;p=pathlib.Path(duranki_client.__file__);print(json.dumps({"module":str(p),"module_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"version":d.version,"requires":d.requires}))'
+  'import ezllmrouter_client,importlib.metadata,importlib.util,json,hashlib,pathlib;d=importlib.metadata.distribution("cognitivedynamics-ezllmrouter-client");assert importlib.util.find_spec("ezllmrouter_server") is None;p=pathlib.Path(ezllmrouter_client.__file__);print(json.dumps({"module":str(p),"module_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"version":d.version,"requires":d.requires}))'
 logrun python-pip-check compose run -T --rm --no-deps python_consumer python -m pip check
 logrun python-tool-client-unit compose run -T --rm --no-deps python_consumer python test_python_client.py -v
 logrun js-installed-identity compose run -T --rm --no-deps js_consumer node -e \
-  'const fs=require("node:fs"),crypto=require("node:crypto");let n=0;globalThis.fetch=()=>{n++;throw Error("import invoked fetch")};const p=require("@mach33/duranki-client"),file=require.resolve("@mach33/duranki-client");console.log(JSON.stringify({module:file,module_sha256:crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),exports:Object.keys(p),fetch_calls:n}))'
+  'const fs=require("node:fs"),crypto=require("node:crypto");let n=0;globalThis.fetch=()=>{n++;throw Error("import invoked fetch")};const p=require("@cognitivedynamics/ezllmrouter-client"),file=require.resolve("@cognitivedynamics/ezllmrouter-client");console.log(JSON.stringify({module:file,module_sha256:crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),exports:Object.keys(p),fetch_calls:n}))'
 logrun js-tool-client-unit compose run -T --rm --no-deps js_consumer node test_js_client.cjs
 logrun python-cycle compose run -T --rm --no-deps python_consumer python python_actor.py cycle
 python_first=$("$python_tool" -I -B -c 'import json,sys;print(json.load(open(sys.argv[1]))["first_submission_id"])' "$run_dir/python-cycle.stdout")
@@ -202,7 +202,7 @@ for _ in {1..20}; do
   sleep 1
 done
 [[ "$mutation_ready" == 1 ]] || { echo 'mutation service readiness failed' >&2; exit 1; }
-logrun tool-mutation-no-send compose run -T --rm --no-deps -e DURANKI_SERVICE_URL=http://service_mutation:8765 python_consumer python python_actor.py mutation
+logrun tool-mutation-no-send compose run -T --rm --no-deps -e EZLLMROUTER_SERVICE_URL=http://service_mutation:8765 python_consumer python python_actor.py mutation
 logrun mutation-service-observation compose exec -T service_mutation python -c \
   'import sqlite3,json;d=sqlite3.connect("/data/store.sqlite");print(json.dumps({"submissions":d.execute("select count(*) from submissions").fetchone()[0],"intents":d.execute("select count(*) from intents").fetchone()[0],"usage_revisions":d.execute("select count(*) from usage_revisions").fetchone()[0]}))'
 logrun mutation-service-check "$python_tool" -I -B -c 'import json,sys;row=json.load(open(sys.argv[1]));assert row=={"submissions":1,"intents":0,"usage_revisions":0};print(json.dumps(row))' "$run_dir/mutation-service-observation.stdout"

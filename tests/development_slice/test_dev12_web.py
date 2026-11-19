@@ -12,9 +12,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.core import Coordinator  # noqa: E402
-from duranki_server.canonical import ContractError  # noqa: E402
-from duranki_server.web import serve  # noqa: E402
+from ezllmrouter_server.core import Coordinator  # noqa: E402
+from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server.web import serve  # noqa: E402
 
 
 class FakeSuccessor:
@@ -47,14 +47,14 @@ class WebBoundaryTests(unittest.TestCase):
                                                 ("GET", "/v1/submissions/submission.test", "Bearer wrong")):
                 with self.subTest(method=method):
                     connection = http.client.HTTPConnection("127.0.0.1", wire.server_address[1], timeout=5)
-                    headers = {"Duranki-Contract-Version": "0.3"}
+                    headers = {"EzLLMRouter-Contract-Version": "0.3"}
                     if authorization is not None:
                         headers["Authorization"] = authorization
                     connection.request(method, path, b"{}" if method == "POST" else None, headers)
                     response = connection.getresponse()
                     value = json.loads(response.read())
                     self.assertEqual(response.status, 401)
-                    self.assertEqual(response.getheader("Duranki-Contract-Version"), "0.3")
+                    self.assertEqual(response.getheader("EzLLMRouter-Contract-Version"), "0.3")
                     self.assertEqual(set(value), {"contract_version", "code", "correlation_id", "retry_guidance"})
                     self.assertEqual((value["contract_version"], value["code"], value["retry_guidance"]),
                                      ("0.3", "POLICY_DENIED", "never"))
@@ -62,13 +62,13 @@ class WebBoundaryTests(unittest.TestCase):
                     connection.close()
             connection = http.client.HTTPConnection("127.0.0.1", wire.server_address[1], timeout=5)
             connection.request("POST", "/v1/submissions", b"{malformed-json",
-                               {"Duranki-Contract-Version": "0.3",
+                               {"EzLLMRouter-Contract-Version": "0.3",
                                 "Content-Type": "application/json"})
             denied = connection.getresponse()
             self.assertEqual((denied.status, denied.getheader("Connection")), (401, "close"))
             denied.read()
             connection.request("GET", "/v1/submissions/submission.test", headers={
-                "Duranki-Contract-Version": "0.3", "Authorization": "Bearer test.token"})
+                "EzLLMRouter-Contract-Version": "0.3", "Authorization": "Bearer test.token"})
             permitted = connection.getresponse()
             self.assertEqual(permitted.status, 200)
             permitted.read()
@@ -100,7 +100,7 @@ class WebBoundaryTests(unittest.TestCase):
                     body = json.dumps({"contract_version": version}).encode()
                     connection.request("POST", "/v1/submissions", body,
                                        {"Authorization": "Bearer test.token",
-                                        "Duranki-Contract-Version": version,
+                                        "EzLLMRouter-Contract-Version": version,
                                         "Content-Type": "application/json"})
                     response = connection.getresponse()
                     value = json.loads(response.read())
@@ -136,18 +136,18 @@ class WebBoundaryTests(unittest.TestCase):
             connection.close()
             return answer
         try:
-            headers = {"Authorization": "Bearer test.token", "Duranki-Contract-Version": "0.3",
+            headers = {"Authorization": "Bearer test.token", "EzLLMRouter-Contract-Version": "0.3",
                        "Content-Type": "application/json"}
             request = {"contract_version": "0.3", "work_selector": {
                 "task_id": "task.demo", "step_id": "step.demo", "step_revision": 1,
                 "execution_generation": "gen.demo"}}
             raw = json.dumps(request).encode()
             status, _ = post(raw, {key: value for key, value in headers.items()
-                                   if key != "Duranki-Contract-Version"})
+                                   if key != "EzLLMRouter-Contract-Version"})
             self.assertEqual(status, 426)
             status, answer = post(raw.replace(b'"0.3"', b'"0.2"'), headers)
             self.assertEqual((status, answer["code"]), (426, "UNSUPPORTED_VERSION"))
-            status, answer = post(raw, headers, (("Duranki-Wait-Ms", "1"), ("Duranki-Wait-Ms", "2")))
+            status, answer = post(raw, headers, (("EzLLMRouter-Wait-Ms", "1"), ("EzLLMRouter-Wait-Ms", "2")))
             self.assertEqual((status, answer["code"]), (400, "SCHEMA_INVALID"))
             status, answer = post(b'{"contract_version":"0.3","contract_version":"0.3"}', headers)
             self.assertEqual((status, answer["code"]), (400, "MALFORMED_JSON"))

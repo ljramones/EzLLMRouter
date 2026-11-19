@@ -9,19 +9,19 @@ import sys
 import time
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
-import duranki_client
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
+import ezllmrouter_client
 
 HERE = Path(__file__).resolve().parent
 CORPUS = {x["id"]: x for x in json.loads((HERE / "scenarios.json").read_text())["cases"]}
 BASE = json.loads((HERE / "request.json").read_text())
-assert importlib.util.find_spec("duranki_server") is None
-assert "site-packages" in str(Path(duranki_client.__file__).resolve())
+assert importlib.util.find_spec("ezllmrouter_server") is None
+assert "site-packages" in str(Path(ezllmrouter_client.__file__).resolve())
 
 
 def arrivals():
     with httpx.Client(trust_env=False, follow_redirects=False, timeout=5.0) as client:
-        r = client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations")
+        r = client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations")
         r.raise_for_status()
         return r.json()["arrivals"]
 
@@ -68,13 +68,13 @@ def reordered(value):
 
 def main():
     mode = sys.argv[1]
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         if mode == "capabilities":
             result = client.getCapabilities()
             assert result["supported_features"] == ["text"]
             print(json.dumps({"actor": "python", "mode": mode, "profile": result["profile"],
-                              "module": str(Path(duranki_client.__file__).resolve()),
-                              "version": importlib.metadata.version("mach33-duranki-client")}))
+                              "module": str(Path(ezllmrouter_client.__file__).resolve()),
+                              "version": importlib.metadata.version("cognitivedynamics-ezllmrouter-client")}))
             return
         if mode in ("submit", "submit_reordered"):
             item = CORPUS[sys.argv[2]]
@@ -120,7 +120,7 @@ def main():
             item = CORPUS[sys.argv[2]];before = arrivals()
             try:
                 client.submit(case_request(item), {"wait_ms": item["wait_ms"]})
-            except DurankiError as exc:
+            except EzLLMRouterError as exc:
                 assert exc.code == item["expected_error"] and exc.failure_stage == item["failure_stage"]
                 assert exc.handle and exc.attempt_id
                 snapshot = client.getStatus({"submission_id": exc.handle["submission_id"]})
@@ -165,9 +165,9 @@ def main():
             return
         if mode == "forbidden_status":
             sid=sys.argv[2];before=arrivals()
-            with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN_SECONDARY"]) as other:
+            with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN_SECONDARY"]) as other:
                 try: other.getStatus({"submission_id": sid})
-                except DurankiError as exc:
+                except EzLLMRouterError as exc:
                     assert exc.code == "NOT_FOUND_OR_FORBIDDEN" and exc.http_status == 404
                 else: raise AssertionError("second principal read first principal work")
             _after, drain_ms = no_send_drain(len(before))
@@ -176,10 +176,10 @@ def main():
             return
         if mode == "auth":
             before = arrivals()
-            with DurankiClient(os.environ["DURANKI_SERVICE_URL"], "invalid.synthetic.token") as invalid:
+            with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], "invalid.synthetic.token") as invalid:
                 try:
                     invalid.getCapabilities()
-                except DurankiError as exc:
+                except EzLLMRouterError as exc:
                     assert exc.code == "AUTHENTICATION_FAILED" and exc.http_status == 401
                 else:
                     raise AssertionError("unauthorized client was accepted")

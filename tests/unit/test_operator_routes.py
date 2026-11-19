@@ -5,8 +5,8 @@ from pathlib import Path
 import threading
 from unittest.mock import patch
 
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from tests.operator_console.test_user_management_web import MemoryServer, UserHTTPFixture
 
 
@@ -27,7 +27,7 @@ class OperatorRouteTests(UserHTTPFixture):
     def test_two_servers_never_share_sessions(self):
         self.ready_admin()
         first = self.server
-        with patch("duranki_server.operator_web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer):
             second = serve("127.0.0.1", 48761, projection=OperatorProjection(self.store, "svc.demo"),
                 runner=None, password="synthetic-operator-password-000000000000000", fixture={}, build={},
                 web_root=Path(__file__).resolve().parents[2] / "web", worker_probe=lambda: {},
@@ -66,8 +66,8 @@ class OperatorRouteTests(UserHTTPFixture):
         class FailedServer:
             def __init__(self, *_args):
                 raise OSError("injected bind failure")
-        with patch("duranki_server.operator_web.ThreadingHTTPServer", FailedServer), patch(
-                "duranki_server.operator_web.OperatorApplication.close", autospec=True) as closed:
+        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", FailedServer), patch(
+                "ezllmrouter_server.operator_web.OperatorApplication.close", autospec=True) as closed:
             with self.assertRaises(OSError):
                 serve("127.0.0.1", 48761, projection=self.server.application.projection, runner=None,
                     password="synthetic-operator-password-000000000000000", fixture={}, build={},
@@ -111,7 +111,7 @@ class OperatorRouteTests(UserHTTPFixture):
         self.assertTrue(future.result())
 
     def test_background_thread_start_failure_closes_bound_server_and_jobs(self):
-        with patch("duranki_server.operator_web.ThreadingHTTPServer", MemoryServer), patch.object(
+        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer), patch.object(
                 threading.Thread, "start", side_effect=RuntimeError("injected thread failure")), patch.object(
                 MemoryServer, "server_close", autospec=True) as closed:
             with self.assertRaises(RuntimeError):

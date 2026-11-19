@@ -25,7 +25,7 @@ function check(){
   eq(r.workDigest(work),x.work_digest,x.id+' domain digest');
   ok(r.schemaValid(x.admission_snapshot,s.$defs.AdmissionSnapshot,s),x.id+' assessment shape');
   ok(r.assessmentValid(x.admission_snapshot,x,s),x.id+' assessment semantics');
-  eq(r.digest('duranki-admission-v1\n',x.admission_snapshot),x.admission_snapshot_digest,x.id+' assessment digest');
+  eq(r.digest('ezllmrouter-admission-v1\n',x.admission_snapshot),x.admission_snapshot_digest,x.id+' assessment digest');
  }
  const direct=example('DIRECT_DOCUMENT'),explicit=example('EXPLICIT_DIRECT_OMISSION');
  ok(!r.own(direct.request.metadata,'commission')&&!r.own(direct.canonical_work.metadata,'commission'),'absence remains absent');
@@ -34,7 +34,7 @@ function check(){
  ok(direct.work_digest!==explicit.work_digest,'distinct asserted work conflicts at same key');
  const improved=clone(direct.admission_snapshot);improved.assessed_at='2030-01-01T00:00:02Z';
  eq(r.workDigest(r.workProjection(direct.request,direct.trusted_context)),direct.work_digest,'server reassessment does not alter work');
- ok(r.digest('duranki-admission-v1\n',improved)!==direct.admission_snapshot_digest,'assessment separately changes');
+ ok(r.digest('ezllmrouter-admission-v1\n',improved)!==direct.admission_snapshot_digest,'assessment separately changes');
  for(const x of v.result_examples){const e=example(x.request_case);ok(r.resultValid(x.value,e.request,x.value.attempt_id,g,s),x.id+' correlated result');}
  const rr=v.result_examples.find(x=>x.id==='RERANK_RESULT');
  for(const field of ['attempt_id','ranking_profile_id']){const bad=clone(rr.value);bad[field]='wrong';ok(!r.resultValid(bad,example(rr.request_case).request,'attempt.rank',g,s),'result '+field+' mismatch');}
@@ -109,7 +109,7 @@ function check(){
  const slowFixture=v.nonconforming_timeout_fixture,slow=slowFixture.signed_plan;
  const slowKey={public_key_spki_base64:slowFixture.public_key_spki_base64};
  eq(r.sha(r.planMessage(slow)),slowFixture.signing_message_sha256,'nonconforming timeout full signing bytes');
- eq(slow.execution_descriptor.recipe_digest,r.digest('duranki-preparation-v1\n',r.recipeFor(e.request,e.work_digest,r.configFor(e.request,g),slow.execution_descriptor)),'nonconforming timeout recipe recomputed');
+ eq(slow.execution_descriptor.recipe_digest,r.digest('ezllmrouter-preparation-v1\n',r.recipeFor(e.request,e.work_digest,r.configFor(e.request,g),slow.execution_descriptor)),'nonconforming timeout recipe recomputed');
  ok(r.signatureValid(slow,slowKey),'internally consistent non-5000 plan is correctly signed');
  const slowContext=clone(authority);slowContext.verification_keys=[{key_id:slow.key_id,key_version:slow.key_version,public_key_spki_base64:slowFixture.public_key_spki_base64,eligibility:'eligible'}];
  ok(!r.schemaValid(slow,s.$defs.SignedPlan,s)&&!r.planValid(slow,e.request,e,g,s)&&!r.executionEligible(slow,e,g,s,slowContext),'fixed 5000 ms timeout enforced');
@@ -187,7 +187,7 @@ function check(){
  const fabricatedUsage=clone(known);fabricatedUsage.price_ref=fabricatedPlan.price_ref;
  const fabricatedContext=clone(empty);fabricatedContext.expected_price_ref=fabricatedPlan.price_ref;
  fabricatedContext.expected_reservation=clone(fabricatedPlan.reservation);
- fabricatedContext.stored_signed_plan_digest=r.digest('duranki-stored-plan-v1\n',fabricatedPlan);
+ fabricatedContext.stored_signed_plan_digest=r.digest('ezllmrouter-stored-plan-v1\n',fabricatedPlan);
  ok(!r.usageValid(fabricatedUsage,e,fabricatedPlan,g,s,fabricatedContext),'matching fabricated plan/usage refs cannot replace registered price');
  const changedStoredPlan=clone(plan);changedStoredPlan.reservation.budget_account_id='budget.other';
  ok(!r.usageValid(known,e,changedStoredPlan,g,s,empty),'stored plan digest and budget remain independently anchored');
@@ -203,7 +203,7 @@ function check(){
  const secondPlan=clone(plan);secondPlan.attempt_id='attempt.rank.second';secondPlan.reservation.reservation_id='reservation.synthetic.2';
  secondPlan.key_id='synthetic.test.second';secondPlan.signature=crypto.sign(null,r.planMessage(secondPlan),testKey.privateKey).toString('base64url');
  const secondHistory=clone(empty);secondHistory.expected_attempt_id=secondPlan.attempt_id;secondHistory.expected_reservation=clone(secondPlan.reservation);
- secondHistory.stored_signed_plan_digest=r.digest('duranki-stored-plan-v1\n',secondPlan);
+ secondHistory.stored_signed_plan_digest=r.digest('ezllmrouter-stored-plan-v1\n',secondPlan);
  const secondCall=clone(known);secondCall.attempt_id=secondPlan.attempt_id;
  ok(r.acceptedHistoryValid(secondHistory,e,secondPlan,g,s),'second independently stored attempt context');
  const secondAccepted=r.acceptUsage(secondCall,e,secondPlan,g,s,secondHistory);
@@ -286,7 +286,7 @@ function check(){
   if(x.id==='ABSENT_VS_EXPLICIT'){eq(r.canonical(direct.canonical_work.work_key),r.canonical(explicit.canonical_work.work_key),x.id+' key');ok(direct.work_digest!==explicit.work_digest,x.id+' digest');}
   if(x.id==='OBJECT_KEY_ORDER_EQUIVALENT'){const reordered={...direct.request,metadata:{...direct.request.metadata}};eq(r.workDigest(r.workProjection(reordered,direct.trusted_context)),direct.work_digest,x.id);}
   if(x.id==='ORDERED_INPUT_CHANGE'){const changed=clone(direct.request);changed.input.items.reverse();ok(r.workDigest(r.workProjection(changed,direct.trusted_context))!==direct.work_digest,x.id);}
-  if(x.id==='SERVER_ASSESSMENT_CHANGE'){eq(r.workDigest(r.workProjection(direct.request,direct.trusted_context)),direct.work_digest,x.id+' work');ok(r.digest('duranki-admission-v1\n',improved)!==direct.admission_snapshot_digest,x.id+' assessment');}
+  if(x.id==='SERVER_ASSESSMENT_CHANGE'){eq(r.workDigest(r.workProjection(direct.request,direct.trusted_context)),direct.work_digest,x.id+' work');ok(r.digest('ezllmrouter-admission-v1\n',improved)!==direct.admission_snapshot_digest,x.id+' assessment');}
   if(x.id==='CHANGED_CALLER_ASSERTION'){const changed=clone(direct.request);changed.metadata.commission={kind:'omitted',reason:'caller_declared'};eq(r.canonical(r.workProjection(changed,direct.trusted_context).work_key),r.canonical(direct.canonical_work.work_key),x.id+' key');ok(r.workDigest(r.workProjection(changed,direct.trusted_context))!==direct.work_digest,x.id+' conflict predicate');}
   if(x.id==='CROSS_VERSION_SAME_WORK_KEY'){const changed=clone(direct.request);changed.contract_version='0.2';eq(r.canonical(r.workProjection(changed,direct.trusted_context).work_key),r.canonical(direct.canonical_work.work_key),x.id+' key');ok(changed.contract_version!==direct.request.contract_version,x.id+' version-conflict predicate');}
  }

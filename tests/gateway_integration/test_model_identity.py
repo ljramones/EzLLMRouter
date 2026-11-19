@@ -14,19 +14,19 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-sys.path.insert(0, str(ROOT / "tests/gateway_integration/inputs/mach33_duranki_client-0.0.3-py3-none-any.whl"))
+sys.path.insert(0, str(ROOT / "tests/gateway_integration/inputs/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"))
 
-from duranki_client import DurankiClient, DurankiError
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
-from duranki_server.gateway.proxy_recipe import (GatewayProxyRecipe, PROXY_MODEL, PUBLIC_MODEL,
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.gateway.proxy_recipe import (GatewayProxyRecipe, PROXY_MODEL, PUBLIC_MODEL,
                           public_destination, proxy_policy)
 
 
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
 REQUEST = json.loads((ROOT / "tests/development_slice/request.json").read_text())
-JS_TARBALL = ROOT / "tests/gateway_integration/inputs/mach33-duranki-client-0.0.2.tgz"
+JS_TARBALL = ROOT / "tests/gateway_integration/inputs/cognitivedynamics-ezllmrouter-client-0.3.0.tgz"
 
 
 class BoundAdapter:
@@ -67,7 +67,7 @@ class BoundAdapter:
 
 class WireResponse:
     status_code = 200
-    headers = {"Duranki-Contract-Version": "0.2"}
+    headers = {"EzLLMRouter-Contract-Version": "0.2"}
 
     def __init__(self, body):
         self.content = json.dumps(body, separators=(",", ":")).encode()
@@ -114,7 +114,7 @@ class ModelIdentityTests(unittest.TestCase):
                 self.assertEqual(status["candidate"]["served_destination"]["model"], PUBLIC_MODEL)
                 self.assertEqual(store.guard_record(reply["candidate"]["attempt_id"])["attempt_id"],
                                  reply["candidate"]["attempt_id"])
-                with DurankiClient("http://127.0.0.1:8765", "token",
+                with EzLLMRouterClient("http://127.0.0.1:8765", "token",
                                    transport=WireTransport(reply, status)) as client:
                     self.assertEqual(client.submit(request)["candidate"]["served_destination"]["model"], PUBLIC_MODEL)
                     self.assertEqual(client.getStatus({"submission_id": sid})["candidate"]["served_destination"]["model"], PUBLIC_MODEL)
@@ -123,11 +123,11 @@ class ModelIdentityTests(unittest.TestCase):
                 invalid_status = deepcopy(status)
                 invalid_reply["candidate"]["served_destination"]["model"] = PROXY_MODEL
                 invalid_status["candidate"]["served_destination"]["model"] = PROXY_MODEL
-                with DurankiClient("http://127.0.0.1:8765", "token",
+                with EzLLMRouterClient("http://127.0.0.1:8765", "token",
                                    transport=WireTransport(invalid_reply, invalid_status)) as client:
-                    with self.assertRaises(DurankiError) as first:
+                    with self.assertRaises(EzLLMRouterError) as first:
                         client.submit(request)
-                    with self.assertRaises(DurankiError) as second:
+                    with self.assertRaises(EzLLMRouterError) as second:
                         client.getStatus({"submission_id": sid})
                 self.assertEqual((first.exception.code, second.exception.code),
                                  ("INTERNAL_UNAVAILABLE", "INTERNAL_UNAVAILABLE"))
@@ -158,12 +158,12 @@ class ModelIdentityTests(unittest.TestCase):
         package.write_bytes(source)
         script = r'''
 const fs = require("node:fs");
-const {DurankiClient} = require(process.argv[1]);
+const {EzLLMRouterClient} = require(process.argv[1]);
 const data = JSON.parse(fs.readFileSync(0, "utf8"));
 let n = 0;
 const fetchImpl = async () => ({status: 200, ok: true,
   headers: {get: () => "0.2"}, json: async () => [data.reply, data.status][n++]});
-const client = new DurankiClient({baseUrl: "http://127.0.0.1:8765", token: "token", fetchImpl});
+const client = new EzLLMRouterClient({baseUrl: "http://127.0.0.1:8765", token: "token", fetchImpl});
 (async () => {
   if (data.reject) {
     for (const call of [() => client.submit(data.request),

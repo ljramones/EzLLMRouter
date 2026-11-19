@@ -6,9 +6,9 @@ import tempfile
 import threading
 import unittest
 
-from duranki_server.registry import Registry
-from duranki_server.reporting import usage_costs
-from duranki_server.store import SQLiteStore, encode
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.reporting import usage_costs
+from ezllmrouter_server.store import SQLiteStore, encode
 
 
 ROOT = Path(__file__).resolve().parents[2]

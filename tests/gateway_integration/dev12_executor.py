@@ -14,9 +14,9 @@ import httpx
 from choice_b_wire import receive, send
 from dev12_tls_transport import OwnedSyntheticTLSHTTPTransport
 from guard import ACTIVE, GuardRejected, GuardTransport, Invocation
-from duranki_server.canonical import ContractError
-from duranki_server.successor_contract import config_for, price_for
-from duranki_server.successor_plan import execution_eligible, recipe_for
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.successor_contract import config_for, price_for
+from ezllmrouter_server.successor_plan import execution_eligible, recipe_for
 
 
 def now():

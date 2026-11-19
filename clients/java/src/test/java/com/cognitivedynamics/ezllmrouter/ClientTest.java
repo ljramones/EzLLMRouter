@@ -65,7 +65,7 @@ public final class ClientTest {
             field(call, "headers").forEach((key, value) -> check(eq(request.headers().get(key), value), "header " + key));
             check(eq(request.body() == null ? null : Json.parse(request.body()), call.get("body")), "body mismatch");
             if (Boolean.TRUE.equals(test.get("lost"))) throw new IOException("synthetic lost reply");
-            Map<String, String> headers = new HashMap<>(); headers.put("Duranki-Contract-Version", test.containsKey("wire") ? text(test.get("wire")) : "0.2"); headers.put("Duranki-Integration-Version", test.containsKey("version") ? text(test.get("version")) : "1");
+            Map<String, String> headers = new HashMap<>(); headers.put("EzLLMRouter-Contract-Version", test.containsKey("wire") ? text(test.get("wire")) : "0.2"); headers.put("EzLLMRouter-Integration-Version", test.containsKey("version") ? text(test.get("version")) : "1");
             field(test, "response_headers").forEach((key, value) -> headers.put(key, text(value)));
             observed[0] = new Body(test.containsKey("raw") ? Base64.getDecoder().decode(text(test.get("raw"))) : Json.bytes(test.get("response")));
             return new Transport.Response(test.containsKey("status") ? (int) number(test.get("status")) : 200, headers, observed[0]);
@@ -142,7 +142,7 @@ public final class ClientTest {
         }
         input.put("items", items); result.put("vectors", vectors); byte[] bytes = Json.bytes(reply); check(bytes.length > 1024 * 1024, "large fixture too small");
         AtomicInteger calls = new AtomicInteger();
-        Transport transport = sent -> { calls.incrementAndGet(); return new Transport.Response(200, Map.of("Duranki-Contract-Version", "0.3"), new ByteArrayInputStream(bytes)); };
+        Transport transport = sent -> { calls.incrementAndGet(); return new Transport.Response(200, Map.of("EzLLMRouter-Contract-Version", "0.3"), new ByteArrayInputStream(bytes)); };
         try (EzLLMRouterClient client = new EzLLMRouterClient("http://synthetic.invalid", "token", transport)) {
             check(array(field(client.submitEmbedding(request), "result").get("vectors")).size() == 25 && calls.get() == 1, "large result rejected");
         }

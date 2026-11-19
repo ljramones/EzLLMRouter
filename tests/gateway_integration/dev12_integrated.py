@@ -30,15 +30,15 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 from cryptography.x509.oid import NameOID
 
-from duranki_server.core import Coordinator
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve as serve_operator
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_contract import content_digest
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
-from duranki_server.web import serve
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve as serve_operator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_contract import content_digest
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
+from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_tls_receiver import TEST_KEY
 
@@ -167,7 +167,7 @@ def run():
                     "--target", "/tmp/dev12-installed-client", str(wheel)], check=True,
                    stdout=subprocess.DEVNULL)
     sys.path.insert(0, "/tmp/dev12-installed-client")
-    from duranki_client import DurankiClient
+    from ezllmrouter_client import EzLLMRouterClient
 
     worker = Path("/link/dev12-worker.sock")
     if not worker.exists():
@@ -258,7 +258,7 @@ def run():
             inventory["start_at"], inventory["expires_at"] = started["start_at"], started["expires_at"]
             (root / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
             executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
-            os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
+            os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
             executed = executor.execute
             def diagnosed_execute(*args, **kwargs):
                 try:
@@ -275,7 +275,7 @@ def run():
                 trusted["source_authority_id"] == record["trusted_identity"]["source_authority_id"] and
                 trusted["identity_binding_id"] == record["trusted_identity"]["identity_binding_id"])
             coordinator = Coordinator(store, legacy, {}, {}, {}, None, None, {}, {}, None)
-            from duranki_server.successor_assembly import attach_standalone_synthetic
+            from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
             successor = attach_standalone_synthetic(coordinator, store=store,
                 contexts_by_credential=contexts, authority=authority, executor=executor,
                 allowance=allowance, read_allowed=permitted, usage_write_allowed=permitted)
@@ -301,7 +301,7 @@ def run():
             threading.Thread(target=operator.serve_forever, daemon=True).start()
             results = []
             for index, ((request, _context), token) in enumerate(zip(requests, tokens)):
-                with DurankiClient(f"http://127.0.0.1:{service_port}", token) as client:
+                with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", token) as client:
                     reply = (client.submit_embedding(request, {"wait_ms": 5000})
                              if request["operation"]["type"] == "embedding.create" else
                              client.submit_rerank(request, {"wait_ms": 5000}))
@@ -336,7 +336,7 @@ def run():
                             cases[index][0], request):
                         raise AssertionError("installed JS tariff mismatch")
                     results.append({"case": name, **data})
-            with DurankiClient(f"http://127.0.0.1:{service_port}", tokens[0]) as client:
+            with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", tokens[0]) as client:
                 first = requests[0][0]
                 duplicate = (client.submit_embedding(first, {"wait_ms": 0}) if
                              first["operation"]["type"] == "embedding.create" else

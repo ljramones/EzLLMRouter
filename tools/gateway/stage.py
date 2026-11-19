@@ -5,19 +5,33 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
+import tomllib
 import zipfile
 
 
-CLIENT_WHEEL = "mach33_duranki_client-0.0.3-py3-none-any.whl"
-CLIENT_WHEEL_SHA = "efabf2ee4832b627b104845b79bf0302f1b7448f17c2c4ef8c35b8287d8fac57"
-CLIENT_TARBALL = "mach33-duranki-client-0.0.2.tgz"
-CLIENT_TARBALL_SHA = "5672be3e0c5ed7e847e508f22ef269d83c04bb65c830dba47e923055ec93ec82"
 CLIENT_DEPS = {"anyio", "certifi", "h11", "httpcore", "httpx", "idna", "typing-extensions"}
 
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def build_clients(root, destination):
+    """Build current client sources offline instead of relying on retired SDK archives."""
+    python = tomllib.loads((root / "clients/python/pyproject.toml").read_text())["project"]
+    javascript = json.loads((root / "clients/js/package.json").read_text())
+    wheel = re.sub(r"[-_.]+", "_", python["name"]) + "-" + python["version"] + "-py3-none-any.whl"
+    tarball = javascript["name"].lstrip("@").replace("/", "-") + "-" + javascript["version"] + ".tgz"
+    destination.mkdir(parents=True)
+    subprocess.run(["uv", "build", "--offline", "--wheel", str(root / "clients/python"),
+                    "-o", str(destination)], check=True, cwd=root, stdout=subprocess.DEVNULL)
+    subprocess.run(["npm", "pack", "--offline", "--pack-destination", str(destination),
+                    "./clients/js"], check=True, cwd=root, stdout=subprocess.DEVNULL)
+    if {p.name for p in destination.iterdir() if p.name != ".gitignore"} != {wheel, tarball}:
+        raise ValueError("unexpected current client package inventory")
+    return python, destination / wheel, destination / tarball
 
 
 def verify_lock_inventory(lock, wheels):
@@ -78,8 +92,8 @@ def source_mapping(root, dev05=False):
         ("tools/gateway/compat/owned_sender_transport.py", "service/gateway/owned_sender_transport.py"),
         ("tools/gateway/compat/owned_tls_sender_transport.py", "service/gateway/owned_tls_sender_transport.py"),
         ("tools/gateway/choice_b_service.py", "service/gateway/choice_b_service.py"),
-        ("server/src/duranki_server/gateway/choice_b_wire.py", "service/gateway/choice_b_wire.py"),
-        ("server/src/duranki_server/gateway/choice_b_wire.py", "worker/choice_b_wire.py"),
+        ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "service/gateway/choice_b_wire.py"),
+        ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "worker/choice_b_wire.py"),
         ("worker/choice_b_worker.py", "worker/choice_b_worker.py"),
         ("tools/gateway/compat/proxy_recipe.py", "service/gateway/proxy_recipe.py"),
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
@@ -101,7 +115,7 @@ def source_mapping(root, dev05=False):
         ("tools/gateway/compat/recipe.py", "service/dev_slice/recipe.py"),
     ]
     server_source = root / "server/src"
-    for package in ("duranki_server", "ezllmrouter_server"):
+    for package in ("ezllmrouter_server",):
         source_files.extend((str(path.relative_to(root)),
                              "service/server/" + str(path.relative_to(server_source)))
                             for path in sorted((server_source / package).rglob("*"))
@@ -124,9 +138,9 @@ def source_mapping(root, dev05=False):
             ("tests/gateway_integration/test_dev05_js_actor.cjs", "harness/test_dev05_js_actor.cjs"),
             ("tests/tool_cycle/test_python_client.py", "python/actors/test_python_client.py"),
             ("tests/tool_cycle/test_js_client.cjs", "js/actors/test_js_client.cjs"),
-            ("tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+            ("tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
              "python/actors/vectors.json"),
-            ("tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+            ("tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
              "js/actors/vectors.json"),
         ])
     return source_files
@@ -143,7 +157,7 @@ def main():
     build = run / "build"
     if build.exists():
         raise ValueError("build context collision")
-    artifact_root = os.environ.get("DURANKI_ARTIFACT_ROOT")
+    artifact_root = os.environ.get("EZLLMROUTER_ARTIFACT_ROOT")
     wheel_dir = ((Path(artifact_root) / "inputs/gateway-inputs/dev04/wheels")
                  if artifact_root else root / "gateway-inputs/dev04/wheels")
     inventory = json.loads((root / "deploy/local/inputs/gateway/WHEEL-INVENTORY.json").read_text())
@@ -184,20 +198,15 @@ def main():
     client_rows = [row for row in wheels if row["name"].lower().replace("_", "-") in CLIENT_DEPS]
     if len(client_rows) != 7:
         raise ValueError("client HTTPX closure mismatch")
-    client_input = ((Path(artifact_root) / "inputs/tests/gateway_integration/inputs")
-                    if artifact_root else root / "tests/gateway_integration/inputs")
-    client_source = client_input / CLIENT_WHEEL
-    js_source = client_input / CLIENT_TARBALL
-    if sha(client_source) != CLIENT_WHEEL_SHA or sha(js_source) != CLIENT_TARBALL_SHA:
-        raise ValueError("reviewed client artifact mismatch")
+    client, client_source, js_source = build_clients(root, run / "client-packages")
     client_wheel_dir = build / "python/wheels"
     client_wheel_dir.mkdir(parents=True)
     for row in client_rows:
         shutil.copy2(wheel_dir / row["filename"], client_wheel_dir / row["filename"])
-    shutil.copy2(client_source, client_wheel_dir / CLIENT_WHEEL)
+    shutil.copy2(client_source, client_wheel_dir / client_source.name)
     shutil.copy2(js_source, build / "js/client.tgz")
-    all_client = [*client_rows, {"name": "mach33-duranki-client", "version": "0.0.3",
-                                 "filename": CLIENT_WHEEL, "sha256": CLIENT_WHEEL_SHA}]
+    all_client = [*client_rows, {"name": client["name"], "version": client["version"],
+                                 "filename": client_source.name, "sha256": sha(client_source)}]
     (build / "python/wheelhouse.sha256").write_text(
         "".join(f"{row['sha256']}  {row['filename']}\n" for row in all_client))
     (build / "python/requirements.client.lock").write_text(
@@ -205,8 +214,8 @@ def main():
                 for row in all_client))
     manifest = {"source_files": rows, "gateway_wheels": len(wheels),
                 "gateway_wheel_bytes": sum(row["bytes"] for row in wheels),
-                "client_artifacts": {CLIENT_WHEEL: CLIENT_WHEEL_SHA,
-                                     CLIENT_TARBALL: CLIENT_TARBALL_SHA}}
+                "client_artifacts": {client_source.name: sha(client_source),
+                                     js_source.name: sha(js_source)}}
     (run / "source-build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     source_output.mkdir(parents=True, exist_ok=True, mode=0o700)
     source_zip = source_output / f"{'DEV-05' if dev05 else 'DEV-04'}-SOURCE-{run.name}.zip"

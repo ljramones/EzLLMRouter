@@ -56,9 +56,9 @@ def snapshot(path: Path) -> dict:
 
 def _checked_artifact_root(path: str) -> Path:
     root = Path(path).resolve(strict=True)
-    approved = Path("/Users/larrymitchell/Mach33/Duranki-artifacts").resolve(strict=True)
+    approved = Path("/Users/larrymitchell/Mach33/EzLLMRouter-artifacts").resolve(strict=True)
     if root == approved or approved not in root.parents or root.is_symlink():
-        raise ValueError("a dedicated directory under Duranki-artifacts is required")
+        raise ValueError("a dedicated directory under EzLLMRouter-artifacts is required")
     if not root.is_dir() or not os.access(root, os.W_OK):
         raise ValueError("durable evidence directory unavailable")
     return root
@@ -1143,7 +1143,7 @@ class CompletionRuntime:
         artifacts = {row["kind"]: Path(row["path"]) for row in self.plan["artifacts"]}
         self.installed_python_root = self.root / "installed-python"
         self.installed_js_root = (self.root / "installed-js" / "node_modules" /
-                                  "@mach33" / "duranki-client")
+                                  "@mach33" / "ezllmrouter-client")
         self.installed_python_root.mkdir()
         self.installed_js_root.mkdir(parents=True)
         with zipfile.ZipFile(artifacts["python_wheel"]) as package:
@@ -1191,16 +1191,16 @@ class CompletionRuntime:
                         str(ROOT / "tests/development_slice")]
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import ed25519
-        from duranki_server.core import Coordinator
-        from duranki_server.operator_projection import OperatorProjection
-        from duranki_server.operator_web import serve as serve_operator
-        from duranki_server.registry import Registry
-        from duranki_server.store import SQLiteStore
-        from duranki_server.successor_assembly import attach_standalone_synthetic
-        from duranki_server.successor_authority import SyntheticSuccessorAuthority
-        from duranki_server.successor_campaign import FiniteSuccessorCampaign
-        from duranki_server.successor_receiver_evidence import DurableReceiverReceipts
-        from duranki_server.web import serve
+        from ezllmrouter_server.core import Coordinator
+        from ezllmrouter_server.operator_projection import OperatorProjection
+        from ezllmrouter_server.operator_web import serve as serve_operator
+        from ezllmrouter_server.registry import Registry
+        from ezllmrouter_server.store import SQLiteStore
+        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
+        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from ezllmrouter_server.web import serve
         from dev12_executor import Dev12SyntheticExecutor
         from dev12_integrated import certificate, free_port
         from dev12_completion_preflight import mounted_source_identity
@@ -1300,7 +1300,7 @@ class CompletionRuntime:
             verify_started_limits(self.allowance.inspect(), finite_scope)
         self.executor = Dev12SyntheticExecutor(worker, receiver_port,
                                                cert.read_text(), TEST_KEY)
-        os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(self.guard_log)
+        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(self.guard_log)
         def permitted(current, original):
             return (current["principal_id"] == original["work_key"]["principal_id"] and
                     current["source_authority_id"] ==
@@ -1344,16 +1344,16 @@ class CompletionRuntime:
         sys.path[:0] = [str(ROOT / "server/src"), str(HERE),
                         str(ROOT / "tests/development_slice")]
         from cryptography.hazmat.primitives import serialization
-        from duranki_server.core import Coordinator
-        from duranki_server.operator_projection import OperatorProjection
-        from duranki_server.operator_web import serve as serve_operator
-        from duranki_server.registry import Registry
-        from duranki_server.store import SQLiteStore
-        from duranki_server.successor_assembly import attach_standalone_synthetic
-        from duranki_server.successor_authority import SyntheticSuccessorAuthority
-        from duranki_server.successor_campaign import FiniteSuccessorCampaign
-        from duranki_server.successor_receiver_evidence import DurableReceiverReceipts
-        from duranki_server.web import serve
+        from ezllmrouter_server.core import Coordinator
+        from ezllmrouter_server.operator_projection import OperatorProjection
+        from ezllmrouter_server.operator_web import serve as serve_operator
+        from ezllmrouter_server.registry import Registry
+        from ezllmrouter_server.store import SQLiteStore
+        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
+        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from ezllmrouter_server.web import serve
         from dev12_executor import Dev12SyntheticExecutor
         from dev12_integrated import certificate, free_port
         from dev12_completion_preflight import mounted_source_identity
@@ -1370,7 +1370,7 @@ class CompletionRuntime:
             raise RuntimeError("original isolated worker socket unavailable to service UID")
         self.installed_python_root = self.root / "installed-python"
         self.installed_js_root = (self.root / "installed-js" / "node_modules" /
-                                  "@mach33" / "duranki-client")
+                                  "@mach33" / "ezllmrouter-client")
         for installed in (self.installed_python_root, self.installed_js_root):
             if not installed.is_dir() or installed.is_symlink():
                 raise RuntimeError("original exact installed-client extraction absent")
@@ -1443,7 +1443,7 @@ class CompletionRuntime:
         self._wait_port(self.receiver, self.receiver_port)
         self.executor = Dev12SyntheticExecutor(worker, self.receiver_port,
                                                cert.read_text(), TEST_KEY)
-        os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(self.guard_log)
+        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(self.guard_log)
         def permitted(current, original):
             return (current["principal_id"] == original["work_key"]["principal_id"] and
                     current["source_authority_id"] ==
@@ -1533,16 +1533,16 @@ class CompletionRuntime:
         if not self.started or self.executor.first_write_wait is not None:
             raise RuntimeError("service restart requires quiescent live assembly")
         from cryptography.hazmat.primitives import serialization
-        from duranki_server.core import Coordinator
-        from duranki_server.operator_projection import OperatorProjection
-        from duranki_server.operator_web import serve as serve_operator
-        from duranki_server.registry import Registry
-        from duranki_server.store import SQLiteStore
-        from duranki_server.successor_assembly import attach_standalone_synthetic
-        from duranki_server.successor_authority import SyntheticSuccessorAuthority
-        from duranki_server.successor_campaign import FiniteSuccessorCampaign
-        from duranki_server.successor_receiver_evidence import DurableReceiverReceipts
-        from duranki_server.web import serve
+        from ezllmrouter_server.core import Coordinator
+        from ezllmrouter_server.operator_projection import OperatorProjection
+        from ezllmrouter_server.operator_web import serve as serve_operator
+        from ezllmrouter_server.registry import Registry
+        from ezllmrouter_server.store import SQLiteStore
+        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
+        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from ezllmrouter_server.web import serve
         import sqlite3
 
         before = self.allowance.inspect()
@@ -1671,7 +1671,7 @@ class CompletionRuntime:
     def _verify_case_correlation(self, case, before, after,
                                  allowance_before, allowance_after, result):
         """Check actual receiver/guard/usage lineage and case financial allocation."""
-        from duranki_server.successor_contract import usage_valid
+        from ezllmrouter_server.successor_contract import usage_valid
         new_attempts = set(after["submissions"]) - set(before["submissions"])
         new_guards = set(after["guards"]) - set(before["guards"])
         new_usage = {(aid, revision) for aid, revision, _sid, _row in after["usage_rows"]} - \
@@ -2193,7 +2193,7 @@ class CompletionRuntime:
         from dev12_completion_handlers import _case_request, _headers, _post
         from dev12_completion_operator_handlers import (_census, _operator_client,
                                                          _read, _retained)
-        from duranki_server.successor_contract import classify_request
+        from ezllmrouter_server.successor_contract import classify_request
         if (case["scenario_id"], case["variant"], case["id"]) != (
                 "t60", "composed", checkpoint["failed_id"] + ".continuation5"):
             raise RuntimeError("unregistered operator-identity continuation case")
@@ -2499,7 +2499,7 @@ def main(argv=None):
     receipt_path = args.receipt_path or root / "preflight-receipt.json"
     if args.continue_existing:
         receipt_path = receipt_path.resolve(strict=True)
-        approved = Path("/Users/larrymitchell/Mach33/Duranki-artifacts").resolve(strict=True)
+        approved = Path("/Users/larrymitchell/Mach33/EzLLMRouter-artifacts").resolve(strict=True)
         if approved not in receipt_path.parents or receipt_path == root / "preflight-receipt.json":
             raise SystemExit("continuation receipt must be a distinct durable artifact")
     checkpoint = None

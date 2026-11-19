@@ -2,12 +2,12 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const assert = require("node:assert/strict");
-const { DurankiClient, DurankiError } = require("@mach33/duranki-client");
+const { EzLLMRouterClient, EzLLMRouterError } = require("@cognitivedynamics/ezllmrouter-client");
 const corpus = Object.fromEntries(JSON.parse(fs.readFileSync(path.join(__dirname, "scenarios.json"))).cases.map(x => [x.id, x]));
 const base = JSON.parse(fs.readFileSync(path.join(__dirname, "request.json")));
-const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
 async function arrivals() {
-  const response = await fetch(process.env.DURANKI_RECEIVER_URL + "/observations", { redirect: "manual" });
+  const response = await fetch(process.env.EZLLMROUTER_RECEIVER_URL + "/observations", { redirect: "manual" });
   assert.equal(response.status, 200);
   return (await response.json()).arrivals;
 }
@@ -37,12 +37,12 @@ function requestFor(item) {
 }
 async function main() {
   const mode = process.argv[2];
-  assert.ok(require.resolve("@mach33/duranki-client").includes("node_modules"));
+  assert.ok(require.resolve("@cognitivedynamics/ezllmrouter-client").includes("node_modules"));
   if (mode === "capabilities") {
     const value = await client.getCapabilities();
     assert.deepEqual(value.supported_features, ["text"]);
     console.log(JSON.stringify({ actor: "js", mode, profile: value.profile,
-      module: require.resolve("@mach33/duranki-client"), version: "0.0.1" }));
+      module: require.resolve("@cognitivedynamics/ezllmrouter-client"), version: "0.0.1" }));
     return;
   }
   if (mode === "submit") {
@@ -73,7 +73,7 @@ async function main() {
     let caught;
     try { await client.submit(requestFor(item), { wait_ms: item.wait_ms }); }
     catch (error) { caught = error; }
-    assert.ok(caught instanceof DurankiError);
+    assert.ok(caught instanceof EzLLMRouterError);
     assert.equal(caught.code, item.expected_error);
     assert.equal(caught.failure_stage, item.failure_stage);
     assert.ok(caught.handle?.submission_id && caught.attempt_id);
@@ -136,8 +136,8 @@ async function main() {
   }
   if (mode === "auth") {
     const before = await arrivals();
-    const invalid = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: "invalid.synthetic.token" });
-    await assert.rejects(() => invalid.getCapabilities(), e => e instanceof DurankiError &&
+    const invalid = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: "invalid.synthetic.token" });
+    await assert.rejects(() => invalid.getCapabilities(), e => e instanceof EzLLMRouterError &&
       e.code === "AUTHENTICATION_FAILED" && e.http_status === 401);
     const drained = await noSendDrain(before.length);
     console.log(JSON.stringify({ actor: "js", mode, code: "AUTHENTICATION_FAILED",

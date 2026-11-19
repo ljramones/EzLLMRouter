@@ -6,7 +6,7 @@ import sys
 import time
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -43,13 +43,13 @@ def receive(client, request):
 
 def observed_count():
     with httpx.Client(trust_env=False, follow_redirects=False) as client:
-        response = client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations")
+        response = client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations")
         response.raise_for_status()
         return len(response.json()["arrivals"])
 
 
 def cycle(alternative=False):
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         first = json.loads(json.dumps(BASE))
         first.update(step_id=CASE["step_id"], execution_generation="gen.3" if alternative else "gen.1",
@@ -101,7 +101,7 @@ def cycle(alternative=False):
 
 
 def status(submission_id, expected_kind="tool_call"):
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         value = client.getStatus({"submission_id": submission_id})
         after = observed_count()
@@ -116,7 +116,7 @@ def status(submission_id, expected_kind="tool_call"):
 
 
 def status_by_work(step_id, generation, expected_kind):
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         selector = {"task_id": BASE["task_id"], "step_id": step_id,
                     "step_revision": BASE["step_revision"], "execution_generation": generation}
@@ -133,7 +133,7 @@ def status_by_work(step_id, generation, expected_kind):
 
 
 def text_regression():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         request = json.loads(json.dumps(BASE))
         request["step_id"] = "step.dev03.text"
@@ -150,7 +150,7 @@ def text_regression():
 
 
 def no_store_cycle():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         first = json.loads(json.dumps(BASE))
         first.update(step_id="step.dev03.no_store", execution_generation="gen.1",
@@ -176,7 +176,7 @@ def no_store_cycle():
         forged["messages"][2]["blocks"][0]["arguments"]["key"] = "forged"
         try:
             client.submit(forged, {"wait_ms": 3000})
-        except DurankiError as exc:
+        except EzLLMRouterError as exc:
             assert exc.code == "SOURCE_INVALID" and exc.http_status == 422
         else:
             raise AssertionError("forged live source accepted")
@@ -233,7 +233,7 @@ def stable_receiver_count(client, expected, duration=.6):
 
 
 def wait_expiry_no_store():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         request = tool_request("step.dev03.wait.no_store", "Use lookup for synthetic wait.", True)
         reply = client.submit(request, {"wait_ms": 0})
@@ -251,12 +251,12 @@ def wait_expiry_no_store():
 
 
 def malformed_provider_negative():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         request = tool_request("step.dev03.malformed", "Use lookup for synthetic malformed.")
         try:
             client.submit(request, {"wait_ms": 3000})
-        except DurankiError as exc:
+        except EzLLMRouterError as exc:
             assert exc.code == "CANDIDATE_UNUSABLE" and exc.http_status == 502 and exc.handle
             handle = exc.handle
         else:
@@ -272,12 +272,12 @@ def malformed_provider_negative():
 
 
 def mutation_no_send_negative():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         request = tool_request("step.dev03.mutation", "Use lookup for synthetic.")
         try:
             client.submit(request, {"wait_ms": 3000})
-        except DurankiError as exc:
+        except EzLLMRouterError as exc:
             assert exc.code == "FDC_REJECTED" and exc.http_status == 409 and exc.handle
             handle = exc.handle
         else:
@@ -293,7 +293,7 @@ def mutation_no_send_negative():
 
 
 def multi_call_cycle():
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         before = observed_count()
         first = tool_request("step.dev03.multi", "Use two lookups for synthetic.")
         first_reply = receive(client, first)

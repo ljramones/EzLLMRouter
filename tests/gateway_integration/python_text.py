@@ -6,7 +6,7 @@ import sys
 import time
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -14,7 +14,7 @@ BASE = json.loads(Path(__file__).with_name("request.json").read_text())
 
 def count():
     with httpx.Client(trust_env=False) as client:
-        return len(client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations").json()["arrivals"])
+        return len(client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations").json()["arrivals"])
 
 
 def receive(client, request):
@@ -34,7 +34,7 @@ def receive(client, request):
 
 def main():
     mode = sys.argv[1]
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         if mode == "cross_and_submit":
             first_id = sys.argv[2]
             before = count()
@@ -63,7 +63,7 @@ def main():
             request["step_id"] = "step.dev04.guard.failure"
             try:
                 client.submit(request, {"wait_ms": 3000})
-            except DurankiError as exc:
+            except EzLLMRouterError as exc:
                 assert exc.code == "INTENT_PERSIST_FAILED" and exc.http_status == 503
                 print(json.dumps({"actor": "installed-python", "negative": "guard_commit_failure",
                                   "error_code": exc.code, "receiver_delta": count() - before}))

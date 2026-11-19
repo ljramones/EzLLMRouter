@@ -82,7 +82,7 @@ class SecretCustodyTests(unittest.TestCase):
         self.assertEqual((destination / "operator-password").read_text().strip(), password)
         compose = (ROOT / "deploy/local/compose.yaml").read_text()
         self.assertNotIn("./.state/credentials.json:", compose)
-        self.assertIn("credential_data:/run/duranki:ro", compose)
+        self.assertIn("credential_data:/run/ezllmrouter:ro", compose)
 
     def test_invalid_container_input_creates_no_files(self):
         destination = self.directory / "volume"

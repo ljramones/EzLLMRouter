@@ -6,8 +6,8 @@ import json
 import os
 import time
 
-arrivals = Path(os.environ["DURANKI_RECEIVER_LOG"])
-mode = os.environ.get("DURANKI_RECEIVER_MODE", "normal")
+arrivals = Path(os.environ["EZLLMROUTER_RECEIVER_LOG"])
+mode = os.environ.get("EZLLMROUTER_RECEIVER_MODE", "normal")
 if mode not in ("normal", "fail", "delay", "drop", "partial"):
     raise ValueError("unsupported synthetic receiver mode")
 

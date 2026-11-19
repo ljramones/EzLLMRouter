@@ -1,15 +1,15 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app/server:/app/tests
-COPY requirements.lock /opt/duranki/requirements.lock
-COPY wheels/ /opt/duranki/wheels/
-RUN python -m pip install --no-index --find-links=/opt/duranki/wheels --require-hashes --only-binary=:all: -r /opt/duranki/requirements.lock \
- && rm -rf /opt/duranki/wheels
+COPY requirements.lock /opt/ezllmrouter/requirements.lock
+COPY wheels/ /opt/ezllmrouter/wheels/
+RUN python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --require-hashes --only-binary=:all: -r /opt/ezllmrouter/requirements.lock \
+ && rm -rf /opt/ezllmrouter/wheels
 COPY server/ /app/server/
 COPY tests/ /app/tests/
 RUN mkdir -p /data && chown 10001:10001 /data
 USER 10001:10001
 WORKDIR /app/tests
-RUN test -r /app/server/duranki_server/canonical.py \
+RUN test -r /app/server/ezllmrouter_server/canonical.py \
  && test -r /app/tests/test_crypto.py
 CMD ["python", "/app/tests/service_main.py"]

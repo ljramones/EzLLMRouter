@@ -14,8 +14,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "server/src"), str(Path(__file__).resolve().parent),
                 str(ROOT / "tests/development_slice")]
-from duranki_server.gateway.dev12_guard import check_synthetic_request  # noqa: E402
-from duranki_server.gateway.guard import GuardRejected  # noqa: E402
+from ezllmrouter_server.gateway.dev12_guard import check_synthetic_request  # noqa: E402
+from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
 
 
 class _URL:
@@ -51,7 +51,7 @@ class FinalTimeoutTests(unittest.TestCase):
                                                  "origin": "https://synthetic.invalid:443"},
                                      attempt_id="attempt.synthetic", provider_key="test-only")
         headers = {"host": "synthetic.invalid:443", "content-type": "application/json",
-                   "authorization": "Bearer test-only", "x-duranki-attempt": "attempt.synthetic",
+                   "authorization": "Bearer test-only", "x-ezllmrouter-attempt": "attempt.synthetic",
                    "content-length": str(len(body))}
         exact = {phase: 5.0 for phase in ("connect", "read", "write", "pool")}
         cases = (("exact", exact, True), ("short", {**exact, "read": 4.0}, False),
@@ -61,8 +61,8 @@ class FinalTimeoutTests(unittest.TestCase):
                  ("infinity", {**exact, "read": math.inf}, False),
                  ("boolean", {**exact, "read": True}, False),
                  ("text", {**exact, "read": "5"}, False))
-        with patch("duranki_server.gateway.dev12_guard.classify_request", return_value="ACCEPT"), \
-             patch("duranki_server.gateway.dev12_guard.plan_valid", return_value=True):
+        with patch("ezllmrouter_server.gateway.dev12_guard.classify_request", return_value="ACCEPT"), \
+             patch("ezllmrouter_server.gateway.dev12_guard.plan_valid", return_value=True):
             for name, timeout, valid in cases:
                 with self.subTest(name=name):
                     request = SimpleNamespace(method="POST", url=_URL(), headers=headers,

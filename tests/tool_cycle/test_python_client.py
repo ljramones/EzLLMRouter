@@ -4,12 +4,12 @@ import json
 from pathlib import Path
 import unittest
 
-from duranki_client import _validation as v
+from ezllmrouter_client import _validation as v
 
 HERE = Path(__file__).resolve().parent
 VECTOR_PATH = HERE / "vectors.json"
 if not VECTOR_PATH.exists():
-    VECTOR_PATH = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    VECTOR_PATH = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"
 VECTORS = json.loads(VECTOR_PATH.read_text())
 
 

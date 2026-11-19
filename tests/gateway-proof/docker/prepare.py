@@ -29,13 +29,13 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[3]
 KIT = Path(__file__).resolve().parent
-INPUTS = ROOT / 'docs/gateway/wp-b-docker-01-c02/DURANKI-WP-B-BUILD-INPUTS-01-CORRECTION-02.json'
+INPUTS = ROOT / 'docs/gateway/wp-b-docker-01-c02/EZLLMROUTER-WP-B-BUILD-INPUTS-01-CORRECTION-02.json'
 SOURCE = ROOT / 'docs/gateway/review-evidence-02/litellm-1.105.1.tar.gz'
 SOURCE_SHA = 'f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97'
 PKG_INFO_SHA = '2781e2079443c555c32c49d7bd06fc9beb70c9d0936d05805dea34dd500e127c'
 UV = Path('/opt/homebrew/bin/uv')
 UV_SHA = 'cfe5e5695316639f9820e8e57d0732e8a361311c03f1ea1786f4fc879cebf4c5'
-RUN_PARENT = Path('/private/tmp/duranki-wp-b-docker-01')
+RUN_PARENT = Path('/private/tmp/ezllmrouter-wp-b-docker-01')
 MAX_AGGREGATE = 2 * 1024 * 1024 * 1024
 MAX_TRANSFER = 50_000_000
 TRANSFER_SECONDS = 60
@@ -45,7 +45,7 @@ HOSTS = {'pypi.org', 'files.pythonhosted.org', 'auth.docker.io',
          'static.rust-lang.org', 'api.github.com', 'raw.githubusercontent.com',
          'codeload.github.com'}
 CONFIG_DELIVERY_ORIGIN = 'https://production.cloudfront.docker.com'
-PREDECESSOR_ZIP = Path('/Users/larrymitchell/Downloads/duranki-wpb-inputs-run-20261017-40/INPUTS-EVIDENCE.zip')
+PREDECESSOR_ZIP = Path('/Users/larrymitchell/Downloads/ezllmrouter-wpb-inputs-run-20261017-40/INPUTS-EVIDENCE.zip')
 PREDECESSOR_MANIFEST = PREDECESSOR_ZIP.with_name('EVIDENCE-MANIFEST.json')
 PREDECESSOR_ZIP_SHA = '1cca3b26fe9850d3fdb1b000d9937146c9aff10bf9c3a1971f1149551aad6a67'
 PREDECESSOR_MANIFEST_SHA = '8988ddca74afaea8b1578ec94f3d2f796d08bd836eafeae84122e481626c9b73'
@@ -56,8 +56,8 @@ PHASES = ('wheel', 'runtime', 'tools')
 TARGET_PYTHON = (3, 12, 15)
 TARGET_GLIBC = (2, 36)
 OWNER_HANDOFF_PARENT = Path('/Users/larrymitchell/Downloads')
-INPUTS02_PARENT = Path('/private/tmp/duranki-wp-b-inputs-02')
-INPUTS02_PACKET = OWNER_HANDOFF_PARENT / 'duranki-wpb-inputs-run-20261018-41/INPUTS-EVIDENCE.zip'
+INPUTS02_PARENT = Path('/private/tmp/ezllmrouter-wp-b-inputs-02')
+INPUTS02_PACKET = OWNER_HANDOFF_PARENT / 'ezllmrouter-wpb-inputs-run-20261018-41/INPUTS-EVIDENCE.zip'
 INPUTS02_SIDECAR = INPUTS02_PACKET.with_name('EVIDENCE-MANIFEST.json')
 INPUTS02_PACKET_SHA = '84823f52252b104bcf5c57d91b398f64a25f4cbfeb64b35be3a6dabf7640f081'
 INPUTS02_SIDECAR_SHA = '823f5842c827a94ae784e53d70134475d0c259767cf6d881b0b3a60cfd008f73'
@@ -206,7 +206,7 @@ def run_bytes(run):
 
 def load_inputs():
     data = read_json(INPUTS)
-    if data.get('schema') != 'duranki-wp-b-dkr01-c02-inputs-1':
+    if data.get('schema') != 'ezllmrouter-wp-b-dkr01-c02-inputs-1':
         raise ValueError('input schema mismatch')
     if data.get('selected_source', {}).get('sdist_sha256') != SOURCE_SHA:
         raise ValueError('selected source input mismatch')
@@ -335,7 +335,7 @@ def http_bytes(url, limit, headers=None, opener=None, trace=None, config_binding
     redirect = CheckedRedirect(trace, config_binding)
     opener = opener or urllib.request.build_opener(urllib.request.ProxyHandler({}), redirect,
                                                    *([transport_handler] if transport_handler else []))
-    request = urllib.request.Request(url, headers={'User-Agent': 'Duranki-DKR-01-c02-data/1', **(headers or {})})
+    request = urllib.request.Request(url, headers={'User-Agent': 'EzLLMRouter-DKR-01-c02-data/1', **(headers or {})})
     started = time.monotonic()
     def transfer():
         with opener.open(request, timeout=10) as response:
@@ -1022,7 +1022,7 @@ def packet(run, handoff_parent=None):
         if parent != OWNER_HANDOFF_PARENT:
             raise ValueError('handoff parent must be owner Downloads')
         safe_component_path(parent, Path('/'))
-        outdir = parent / ('duranki-wpb-inputs-' + run.name)
+        outdir = parent / ('ezllmrouter-wpb-inputs-' + run.name)
         outdir.mkdir(mode=0o700, exist_ok=False)
     allowed_files = [run / 'proxy-runtime.in', run / 'candidate-runtime.lock', run / 'proposal-status.json']
     allowed_dirs = [run / 'receipts', run / 'downloads', run / 'oci', run / 'predecessor']
@@ -1068,7 +1068,7 @@ def packet(run, handoff_parent=None):
 
 def check():
     if Path.cwd().resolve() != ROOT:
-        raise ValueError('run from independent Duranki root')
+        raise ValueError('run from independent EzLLMRouter root')
     data = load_inputs()
     selected = static_requirements()
     for name in ('compose.yaml', 'Dockerfile.gateway', 'Dockerfile.tools', '.dockerignore',
@@ -1319,7 +1319,7 @@ def inputs02_fetch(url, limit, expected_size=None, expected_sha=None):
     if type(limit) is not int or not 0 < limit <= INPUTS02_MAX_ARTIFACT:
         raise ValueError('invalid INPUTS-02 transfer limit')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), Inputs02NoRedirect())
-    request = urllib.request.Request(url, headers={'User-Agent': 'Duranki-INPUTS-02-data/1'})
+    request = urllib.request.Request(url, headers={'User-Agent': 'EzLLMRouter-INPUTS-02-data/1'})
     def transfer():
         with opener.open(request, timeout=10) as response:
             if response.status != 200 or response.geturl() != url:
@@ -1656,7 +1656,7 @@ def inputs02_collect_core(outdir, pins, packet_payloads, fetcher=inputs02_fetch,
 def inputs02_collect(args):
     pins, payloads = inputs02_packet()  # Every predecessor byte checked before output creation.
     if Path.cwd().resolve() != ROOT:
-        raise ValueError('run INPUTS-02 from independent Duranki root')
+        raise ValueError('run INPUTS-02 from independent EzLLMRouter root')
     if args.handoff_parent != str(OWNER_HANDOFF_PARENT):
         raise ValueError('INPUTS-02 handoff parent must be owner Downloads')
     INPUTS02_PARENT.mkdir(mode=0o700, exist_ok=True)
@@ -1664,7 +1664,7 @@ def inputs02_collect(args):
     if not RUN_RE.fullmatch(args.new_run):
         raise ValueError('unsafe INPUTS-02 run name')
     run = INPUTS02_PARENT / args.new_run
-    handoff = OWNER_HANDOFF_PARENT / ('duranki-wpb-artifacts-' + args.new_run)
+    handoff = OWNER_HANDOFF_PARENT / ('ezllmrouter-wpb-artifacts-' + args.new_run)
     if run.exists() or run.is_symlink() or handoff.exists() or handoff.is_symlink():
         raise ValueError('INPUTS-02 run/handoff collision')
     run.mkdir(mode=0o700, exist_ok=False)

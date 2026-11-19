@@ -16,10 +16,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 from recipe import SyntheticTextRecipe
 
 FIXTURE = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())

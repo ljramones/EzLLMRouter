@@ -6,10 +6,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from duranki_server import schema
-from duranki_server.database import Query
-from duranki_server.repositories import local_connectors, registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server import schema
+from ezllmrouter_server.database import Query
+from ezllmrouter_server.repositories import local_connectors, registry
+from ezllmrouter_server.store import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -46,7 +46,7 @@ class DatabaseTests(unittest.TestCase):
             self.assertEqual(connection.execute("PRAGMA user_version").fetchone(), (0,))
 
     def test_failed_schema_install_rolls_back_every_table_and_marker(self):
-        with patch("duranki_server.schema.migration", return_value=(
+        with patch("ezllmrouter_server.schema.migration", return_value=(
                 "CREATE TABLE partial (value TEXT);\nTHIS IS NOT SQL;\n", "synthetic")):
             with self.assertRaises(sqlite3.Error):
                 SQLiteStore(self.path)
@@ -94,7 +94,7 @@ class DatabaseTests(unittest.TestCase):
             registry.RECORD_SELECT_RECORD(table="registry_models; DROP TABLE registry_models", where="ref=?")
 
     def test_services_do_not_own_ddl_or_access_private_store_primitives(self):
-        root = ROOT / "server/src/duranki_server"
+        root = ROOT / "server/src/ezllmrouter_server"
         for path in [*root.glob("*.py"), ROOT / "deploy/local/local_service.py"]:
             if path.stem in {"database", "schema", "store"}:
                 continue

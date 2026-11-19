@@ -21,8 +21,8 @@ for relative in ("server/src", "deploy/local", "tests/operator_console"):
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from test_dev09_reporting import ReportingTests
 
 
@@ -75,7 +75,7 @@ def main():
             sender_status=lambda: {"state": "not configured"}, registry=registry)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        with tempfile.TemporaryDirectory(prefix="duranki-dev09-team-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-team-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)
@@ -256,8 +256,8 @@ def main():
             hashes = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in (
                 "web/dev09_demo_fixture.json", "web/dev09_team_demo_fixture.json",
                 "web/demo_workspace_team_view.js", "web/app.css",
-                "server/src/duranki_server/demo_workspace_team.py",
-                "server/src/duranki_server/operator_web.py")}
+                "server/src/ezllmrouter_server/demo_workspace_team.py",
+                "server/src/ezllmrouter_server/operator_web.py")}
             record = {"status": "PASS", "fixture": "dev09-team-scripted-cost-demo-v2",
                 "scope": "disposable authenticated Chrome, temporary SQLite, no model worker",
                 "legacy_usd": "0.46", "team_usd": "1.25", "expanded_usd": "1.39", "expanded_attempts": 33,

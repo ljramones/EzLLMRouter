@@ -1,7 +1,7 @@
 "use strict";
 // Installed CommonJS client; private token arrives only on stdin.
 const fs = require("node:fs");
-const {DurankiClient} = require("@mach33/duranki-client");
+const {EzLLMRouterClient} = require("@cognitivedynamics/ezllmrouter-client");
 const base = JSON.parse(fs.readFileSync(__dirname + "/request.json", "utf8"));
 const value = JSON.parse(fs.readFileSync(0, "utf8"));
 const keys = Object.keys(value).sort().join(",");
@@ -15,7 +15,7 @@ request.execution_generation = value.generation;
 request.step_id = value.step_id;
 
 async function main() {
-  const client = new DurankiClient({baseUrl:"http://127.0.0.1:8773", token:value.token});
+  const client = new EzLLMRouterClient({baseUrl:"http://127.0.0.1:8773", token:value.token});
   if (value.mode === "deny") {
     try { await client.submit(request, {wait_ms:3000}); }
     catch (error) {

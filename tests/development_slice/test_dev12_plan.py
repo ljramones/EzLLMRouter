@@ -11,8 +11,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server import successor_contract as contract  # noqa: E402
-from duranki_server import successor_plan as plan_module  # noqa: E402
+from ezllmrouter_server import successor_contract as contract  # noqa: E402
+from ezllmrouter_server import successor_plan as plan_module  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 

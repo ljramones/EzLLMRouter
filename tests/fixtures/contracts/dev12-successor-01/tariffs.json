@@ -1,6 +1,6 @@
 {
   "schema_version": "dev12-a1-tariffs@2",
-  "source": "../../architecture/duranki-v1.2-c01-finalization-01/FICTIONAL-TARIFF-VECTORS.json",
+  "source": "../../architecture/ezllmrouter-v1.2-c01-finalization-01/FICTIONAL-TARIFF-VECTORS.json",
   "fictional": true,
   "currency": "USD",
   "quantum": "0.000000001",

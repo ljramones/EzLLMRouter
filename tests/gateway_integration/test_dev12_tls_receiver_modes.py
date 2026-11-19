@@ -32,7 +32,7 @@ class ReceiverModesTests(unittest.TestCase):
         handler.path = "/synthetic/v1/embeddings"
         handler.headers = {"Content-Length": str(len(raw)),
             "Authorization": "Bearer " + (TEST_KEY if good else "wrong"),
-            "Content-Type": "application/json", "X-Duranki-Attempt": attempt}
+            "Content-Type": "application/json", "X-EzLLMRouter-Attempt": attempt}
         handler.rfile = BytesIO(raw)
         handler.connection = ClosedConnection()
         handler.close_connection = False

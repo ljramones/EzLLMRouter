@@ -59,8 +59,8 @@ def command(name, argv, run, *, timeout=180, allowed=(0,)):
 def main():
     if len(sys.argv) != 2 or not re.fullmatch(r"dev08-integrated-[0-9]{8}-[0-9]{2}", sys.argv[1]):
         raise SystemExit("usage: dev08_integrated_run.py dev08-integrated-YYYYMMDD-NN")
-    if not os.environ.get("DURANKI_ARTIFACT_ROOT"):
-        raise SystemExit("DURANKI_ARTIFACT_ROOT is required")
+    if not os.environ.get("EZLLMROUTER_ARTIFACT_ROOT"):
+        raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required")
     RUNS.mkdir(mode=0o700, parents=True, exist_ok=True)
     run = RUNS / sys.argv[1]
     if run.exists():
@@ -74,15 +74,15 @@ def main():
             "started_at": datetime.now(timezone.utc).isoformat(), "stages": [],
             "persistent_profile_restarted": False, "real_provider_calls": 0}
     suffix = sys.argv[1].replace("_", "-")
-    worker, service, volume = ("duranki-" + suffix + "-worker",
-                               "duranki-" + suffix + "-service",
-                               "duranki-" + suffix + "-link")
+    worker, service, volume = ("ezllmrouter-" + suffix + "-worker",
+                               "ezllmrouter-" + suffix + "-service",
+                               "ezllmrouter-" + suffix + "-link")
     created_volume = False
     started_worker = False
     try:
         if dirty:
             raise RuntimeError("source checkout is dirty; commit reviewed source first")
-        if not (Path(os.environ["DURANKI_ARTIFACT_ROOT"]) / "ARTIFACT-CUSTODY.json").is_file():
+        if not (Path(os.environ["EZLLMROUTER_ARTIFACT_ROOT"]) / "ARTIFACT-CUSTODY.json").is_file():
             raise RuntimeError("declared frozen artifact custody missing")
         for kind, resource in (("volume", volume), ("container", worker), ("container", service)):
             argv = ([*DOCKER, "volume", "inspect", resource] if kind == "volume" else
@@ -107,7 +107,7 @@ def main():
             "--network=none", "--read-only", "--user", "10001:10001",
             "--tmpfs", "/tmp:rw,nosuid,nodev,size=32m", "--cap-drop=ALL",
             "--security-opt", "no-new-privileges:true", "-v", volume + ":/link",
-            env["DURANKI_WORKER_IMAGE"]], run)
+            env["EZLLMROUTER_WORKER_IMAGE"]], run)
         started_worker = True
         command("worker-topology", [*DOCKER, "inspect", "--format",
             "{{.HostConfig.NetworkMode}}", worker], run)
@@ -117,7 +117,7 @@ def main():
             "--name", service, "--network=none", "--read-only", "--user", "10001:10001",
             "--tmpfs", "/tmp:rw,nosuid,nodev,size=32m", "--cap-drop=ALL",
             "--security-opt", "no-new-privileges:true", "-v", volume + ":/link",
-            env["DURANKI_SERVICE_IMAGE"], "python", "-B",
+            env["EZLLMROUTER_SERVICE_IMAGE"], "python", "-B",
             "/app/gateway/dev08_integrated.py"], run, timeout=150)
         result = json.loads(output)
         if result.get("status") != "PASS" or result.get("receiver_arrivals") != 1 or \

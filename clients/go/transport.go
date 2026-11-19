@@ -179,7 +179,7 @@ func (c *connection) request(ctx context.Context, method, path, header, version 
 	}
 	value := object(parsed)
 	bodyVersion := "contract_version"
-	if header == "Duranki-Integration-Version" {
+	if header == "EzLLMRouter-Integration-Version" {
 		bodyVersion = "integration_version"
 	}
 	if value == nil || value[bodyVersion] != version || response.Header.Get(header) != version {

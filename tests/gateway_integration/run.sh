@@ -13,36 +13,36 @@ elif [[ "$phase" == dev05 ]]; then
   source "$root/tests/gateway_integration/dev05_steps.sh"
 fi
 packet_prefix=DEV-04
-run_dir="/private/tmp/duranki-dev-04/$run_name"
+run_dir="/private/tmp/ezllmrouter-dev-04/$run_name"
 result_dir="$root/.artifacts/gateway/dev-04"
 if [[ "$phase" == dev05 ]]; then
   packet_prefix=DEV-05
-  run_dir="/private/tmp/duranki-dev-05/$run_name"
+  run_dir="/private/tmp/ezllmrouter-dev-05/$run_name"
   result_dir="$root/.artifacts/gateway/dev-05"
 fi
 frozen_dir="$root/.artifacts/gateway/dev-04"
 wheel_dir="$root/gateway-inputs/dev04/wheels"
 compose_file="$root/tests/gateway_integration/compose.yaml"
-project="duranki-dev04-${run_name#run-}"
-if [[ "$phase" == dev05 ]]; then project="duranki-dev05-${run_name#run-}"; fi
+project="ezllmrouter-dev04-${run_name#run-}"
+if [[ "$phase" == dev05 ]]; then project="ezllmrouter-dev05-${run_name#run-}"; fi
 python_tool=/usr/local/bin/python3
 node24_tool=/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node
 if [[ "$phase" == dev05 ]]; then python_tool=/usr/local/bin/python3.12; fi
 python_image=docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163
 node_image=docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
-export DURANKI_DEV04_PYTHON_BASE="$python_image"
-export DURANKI_DEV04_SERVICE_IMAGE="duranki-dev04-service:$run_name"
-export DURANKI_DEV04_RECEIVER_IMAGE="duranki-dev04-receiver:$run_name"
-export DURANKI_DEV04_PYCLIENT_IMAGE="duranki-dev04-pyclient:$run_name"
-export DURANKI_DEV04_JSCLIENT_IMAGE="duranki-dev04-jsclient:$run_name"
-export DURANKI_DEV04_WORKER_IMAGE="duranki-dev04-worker:$run_name"
+export EZLLMROUTER_DEV04_PYTHON_BASE="$python_image"
+export EZLLMROUTER_DEV04_SERVICE_IMAGE="ezllmrouter-dev04-service:$run_name"
+export EZLLMROUTER_DEV04_RECEIVER_IMAGE="ezllmrouter-dev04-receiver:$run_name"
+export EZLLMROUTER_DEV04_PYCLIENT_IMAGE="ezllmrouter-dev04-pyclient:$run_name"
+export EZLLMROUTER_DEV04_JSCLIENT_IMAGE="ezllmrouter-dev04-jsclient:$run_name"
+export EZLLMROUTER_DEV04_WORKER_IMAGE="ezllmrouter-dev04-worker:$run_name"
 if [[ "$phase" == dev05 ]]; then
-  export DURANKI_DEV05_TEST_TOOL_MUTATION=1
-  export DURANKI_DEV04_SERVICE_IMAGE="duranki-dev05-service:$run_name"
-  export DURANKI_DEV04_RECEIVER_IMAGE="duranki-dev05-receiver:$run_name"
-  export DURANKI_DEV04_PYCLIENT_IMAGE="duranki-dev05-pyclient:$run_name"
-  export DURANKI_DEV04_JSCLIENT_IMAGE="duranki-dev05-jsclient:$run_name"
-  export DURANKI_DEV04_WORKER_IMAGE="duranki-dev05-worker:$run_name"
+  export EZLLMROUTER_DEV05_TEST_TOOL_MUTATION=1
+  export EZLLMROUTER_DEV04_SERVICE_IMAGE="ezllmrouter-dev05-service:$run_name"
+  export EZLLMROUTER_DEV04_RECEIVER_IMAGE="ezllmrouter-dev05-receiver:$run_name"
+  export EZLLMROUTER_DEV04_PYCLIENT_IMAGE="ezllmrouter-dev05-pyclient:$run_name"
+  export EZLLMROUTER_DEV04_JSCLIENT_IMAGE="ezllmrouter-dev05-jsclient:$run_name"
+  export EZLLMROUTER_DEV04_WORKER_IMAGE="ezllmrouter-dev05-worker:$run_name"
 fi
 started=0
 fault_started=0
@@ -260,7 +260,7 @@ if [[ "$phase" == choice_b || "$phase" == dev05 ]]; then
   logrun choice-b-owned-sender-component "$python_tool" -I -B "$root/tests/gateway_integration/test_owned_sender_transport.py" -q
   logrun choice-b-run10-timeout-regression "$python_tool" -I -B \
     "$root/tests/gateway_integration/test_run10_held_timeout.py" \
-    --repo "$root" --runtime /private/tmp/duranki-dev-04/run-20261020-10 \
+    --repo "$root" --runtime /private/tmp/ezllmrouter-dev-04/run-20261020-10 \
     --timeout-source "$root/tests/gateway_integration/inputs/litellm_completion_timeout_1_105_1.py"
 fi
 if [[ "$phase" == dev05 ]]; then
@@ -282,7 +282,7 @@ if [[ "$phase" == dev05 ]]; then
   logrun dev05-js-actor-modes "$node24_tool" \
     "$root/tests/gateway_integration/test_dev05_js_actor.cjs"
 fi
-if [[ "$phase" == dev05 && ${DURANKI_DEV05_PREFLIGHT_ONLY:-0} == 1 ]]; then
+if [[ "$phase" == dev05 && ${EZLLMROUTER_DEV05_PREFLIGHT_ONLY:-0} == 1 ]]; then
   printf 'PRE_DOCKER_COMPONENTS_ONLY\n' > "$run_dir/preflight-only.status"
   exit 0
 fi
@@ -293,20 +293,20 @@ for name, value in (("token",lambda: secrets.token_urlsafe(48)),
                     ("provider-key",lambda: "sk-"+secrets.token_urlsafe(48))):
  expected.append(name); state.write_text(json.dumps({"expected":expected}))
  (run/name).write_text(value())' "$run_dir"
-export DURANKI_DEV_TOKEN DURANKI_DEV04_PROVIDER_KEY
-DURANKI_DEV_TOKEN=$(<"$run_dir/token")
-DURANKI_DEV04_PROVIDER_KEY=$(<"$run_dir/provider-key")
+export EZLLMROUTER_DEV_TOKEN EZLLMROUTER_DEV04_PROVIDER_KEY
+EZLLMROUTER_DEV_TOKEN=$(<"$run_dir/token")
+EZLLMROUTER_DEV04_PROVIDER_KEY=$(<"$run_dir/provider-key")
 logrun base-inspect docker --context desktop-linux image inspect "$python_image" "$node_image"
 
 roles=(service receiver python js)
 if [[ "$phase" == choice_b || "$phase" == dev05 ]]; then roles+=(worker); fi
 for role in "${roles[@]}"; do
   case "$role" in
-    service) tag=$DURANKI_DEV04_SERVICE_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
-    receiver) tag=$DURANKI_DEV04_RECEIVER_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
-    python) tag=$DURANKI_DEV04_PYCLIENT_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
-    js) tag=$DURANKI_DEV04_JSCLIENT_IMAGE; base=$node_image; arg=NODE_IMAGE ;;
-    worker) tag=$DURANKI_DEV04_WORKER_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
+    service) tag=$EZLLMROUTER_DEV04_SERVICE_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
+    receiver) tag=$EZLLMROUTER_DEV04_RECEIVER_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
+    python) tag=$EZLLMROUTER_DEV04_PYCLIENT_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
+    js) tag=$EZLLMROUTER_DEV04_JSCLIENT_IMAGE; base=$node_image; arg=NODE_IMAGE ;;
+    worker) tag=$EZLLMROUTER_DEV04_WORKER_IMAGE; base=$python_image; arg=PYTHON_IMAGE ;;
   esac
   logrun "build-$role" docker --context desktop-linux build --pull=false --network=none \
     --platform linux/arm64 --build-arg "$arg=$base" -t "$tag" "$run_dir/build/$role"
@@ -347,7 +347,7 @@ logrun guard-component compose exec -T service python -B /app/gateway/test_guard
 logrun retry-cause-regression compose exec -T service python -B /app/gateway/test_retry_cause.py --source-root /app -q
 logrun actor-output-regression compose exec -T js_consumer node \
   /app/consumer/actor_output_regression.cjs /app/consumer/js_text.cjs \
-  /app/consumer/node_modules/@mach33/duranki-client/index.cjs /app/consumer/request.json
+  /app/consumer/node_modules/@cognitivedynamics/ezllmrouter-client/index.cjs /app/consumer/request.json
 logrun actor-output-consumer "$python_tool" -I -B \
   "$root/tests/gateway_integration/verify_actor_output.py" \
   "$run_dir/actor-output-regression.stdout"
@@ -380,7 +380,7 @@ for attempt in range(60):
   if attempt==59: raise
   time.sleep(0.5)'
 logrun receiver-before-tool-negative compose exec -T receiver cat /data/arrivals.jsonl
-logrun python-tool-mutation compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8769 \
+logrun python-tool-mutation compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8769 \
   python_consumer python /app/actors/python_negative.py tool
 logrun tool-sdk-retry compose exec -T service_tool_mutation python -c \
   'import json; r=[json.loads(x) for x in open("/data/sdk-retry-observations.jsonl")]; assert len(r)==1 and r[0]["matched_sdk_clients"]>=1 and type(r[0]["effective_max_retries"]) is int and r[0]["effective_max_retries"]==0; print(json.dumps(r))'
@@ -405,7 +405,7 @@ for attempt in range(60):
   if attempt==59: raise
   time.sleep(0.5)'
 logrun receiver-before-destination-negative compose exec -T receiver cat /data/arrivals.jsonl
-logrun python-destination-mutation compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8770 \
+logrun python-destination-mutation compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8770 \
   python_consumer python /app/actors/python_negative.py destination
 logrun destination-sdk-retry compose exec -T service_destination_mutation python -c \
   'import json; r=[json.loads(x) for x in open("/data/sdk-retry-observations.jsonl")]; assert len(r)==1 and r[0]["matched_sdk_clients"]>=1 and type(r[0]["effective_max_retries"]) is int and r[0]["effective_max_retries"]==0; print(json.dumps(r))'
@@ -431,7 +431,7 @@ for attempt in range(60):
   if attempt==59: raise
   time.sleep(0.5)'
 logrun receiver-before-fault compose exec -T receiver cat /data/arrivals.jsonl
-logrun python-guard-failure compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8768 \
+logrun python-guard-failure compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8768 \
   python_consumer python /app/actors/python_text.py guard_failure
 logrun fault-sdk-retry compose exec -T service_fault python -c \
   'import json; r=[json.loads(x) for x in open("/data/sdk-retry-observations.jsonl")]; assert len(r)==1 and r[0]["matched_sdk_clients"]>=1 and type(r[0]["effective_max_retries"]) is int and r[0]["effective_max_retries"]==0; print(json.dumps(r))'

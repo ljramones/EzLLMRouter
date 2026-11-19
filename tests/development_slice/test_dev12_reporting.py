@@ -10,9 +10,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.store import SQLiteStore  # noqa: E402
-from duranki_server.successor_contract import native_usage_row, price_for, work_projection, work_digest  # noqa: E402
-from duranki_server.successor_reporting import usage_report  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.successor_contract import native_usage_row, price_for, work_projection, work_digest  # noqa: E402
+from ezllmrouter_server.successor_reporting import usage_report  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 

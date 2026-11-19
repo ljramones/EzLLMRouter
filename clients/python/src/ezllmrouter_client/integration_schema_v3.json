@@ -1,0 +1,1040 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mach33:ezllmrouter:external-accounting:3",
+  "title": "EzLLMRouter external accounting integration v3",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,9})?$"
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "platform_id",
+        "environment_id",
+        "owner_id",
+        "ingest_principal_id",
+        "activated_at"
+      ],
+      "properties": {
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "platform_id": {
+          "$ref": "#/$defs/id"
+        },
+        "environment_id": {
+          "$ref": "#/$defs/id"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/id"
+        },
+        "ingest_principal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "activated_at": {
+          "$ref": "#/$defs/utc"
+        }
+      }
+    },
+    "account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_id",
+        "dataset_id",
+        "provider_id",
+        "credential_ref",
+        "allowed_models",
+        "allowed_operations",
+        "state"
+      ],
+      "properties": {
+        "account_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "provider_id": {
+          "$ref": "#/$defs/id"
+        },
+        "credential_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "allowed_models": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "allowed_operations": {
+          "$ref": "#/$defs/allowed_operations"
+        },
+        "state": {
+          "enum": [
+            "usable",
+            "disabled"
+          ]
+        }
+      }
+    },
+    "allowed_operations": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["speech_input", "speech_output"]
+      }
+    },
+    "account_permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataset_id", "expected_revision", "allowed_models", "allowed_operations"],
+      "properties": {
+        "dataset_id": {"$ref": "#/$defs/id"},
+        "expected_revision": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "allowed_models": {"type": "array", "minItems": 0, "maxItems": 128, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}},
+        "allowed_operations": {"$ref": "#/$defs/allowed_operations"}
+      }
+    },
+    "account_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "expected_revision",
+        "state"
+      ],
+      "properties": {
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "enum": [
+            "usable",
+            "disabled"
+          ]
+        }
+      }
+    },
+    "native_unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "quantity_decimal"
+      ],
+      "properties": {
+        "unit": {
+          "$ref": "#/$defs/id"
+        },
+        "quantity_decimal": {
+          "$ref": "#/$defs/decimal"
+        }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "activity_kind",
+        "task_id",
+        "run_id",
+        "root_run_id",
+        "actor_kind",
+        "actor_id"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "activity"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "activity_kind": {
+          "enum": [
+            "task",
+            "step",
+            "tool",
+            "delegation",
+            "outcome"
+          ]
+        },
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "root_run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "parent_run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "agent",
+            "service",
+            "human"
+          ]
+        },
+        "actor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "outcome": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "attempt_started": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "started_at",
+        "task_id",
+        "step_id",
+        "run_id",
+        "root_run_id",
+        "actor_kind",
+        "actor_id",
+        "provider_account_id",
+        "context_ref",
+        "operation_family_version",
+        "operation_family",
+        "model_identity_state",
+        "logical_operation_id",
+        "attempt_role"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "attempt_started"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "started_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "root_run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "parent_run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_kind": {
+          "enum": [
+            "agent",
+            "service",
+            "human"
+          ]
+        },
+        "actor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "initiating_user_id": {
+          "$ref": "#/$defs/id"
+        },
+        "provider_account_id": {
+          "$ref": "#/$defs/id"
+        },
+        "model_id": {
+          "$ref": "#/$defs/id"
+        },
+        "context_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "operation_family_version": {
+          "const": "1"
+        },
+        "operation_family": {
+          "$ref": "#/$defs/operation_family"
+        },
+        "model_identity_state": {
+          "enum": [
+            "known",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "logical_operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt_role": {
+          "enum": [
+            "initial",
+            "retry",
+            "fallback",
+            "fanout",
+            "unknown"
+          ]
+        },
+        "predecessor_attempt_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "decision_ref",
+        "selected_account_id",
+        "operation_family",
+        "capability",
+        "selection_kind",
+        "policy_version",
+        "eligibility_evidence"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "decision"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "decision_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "selected_account_id": {
+          "$ref": "#/$defs/id"
+        },
+        "selected_model_id": {
+          "$ref": "#/$defs/id"
+        },
+        "operation_family": {"$ref": "#/$defs/operation_family"},
+        "capability": {"$ref": "#/$defs/id"},
+        "selection_kind": {"enum": ["known_model", "provider_selected", "not_applicable"]},
+        "policy_version": {
+          "$ref": "#/$defs/id"
+        },
+        "eligibility_evidence": {
+          "$ref": "#/$defs/eligibility_evidence"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "result_state"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "result"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "result_state": {
+          "enum": [
+            "completed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "result_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "usage_known": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "usage_revision",
+        "usage_state",
+        "currency",
+        "amount_decimal",
+        "cost_basis",
+        "price_ref",
+        "price_version",
+        "native_units"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "1"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "usage"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "usage_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "usage_state": {
+          "const": "known"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "amount_decimal": {
+          "$ref": "#/$defs/decimal"
+        },
+        "cost_basis": {
+          "enum": [
+            "provider_reported",
+            "derived",
+            "estimated",
+            "reconciled"
+          ]
+        },
+        "price_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "price_version": {
+          "$ref": "#/$defs/id"
+        },
+        "native_units": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/native_unit"
+          }
+        },
+        "zero_basis": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "usage_unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "usage_revision",
+        "usage_state"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "1"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "usage"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "usage_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "usage_state": {
+          "const": "unknown"
+        }
+      }
+    },
+    "event": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/activity"
+        },
+        {
+          "$ref": "#/$defs/attempt_started"
+        },
+        {
+          "$ref": "#/$defs/decision"
+        },
+        {
+          "$ref": "#/$defs/result"
+        },
+        {
+          "$ref": "#/$defs/usage_v2"
+        },
+        {
+          "$ref": "#/$defs/account_resolution"
+        },
+        {
+          "$ref": "#/$defs/lineage"
+        }
+      ]
+    },
+    "operation_family": {
+      "type": "string",
+      "enum": [
+        "generation",
+        "embedding",
+        "speech_input",
+        "speech_output",
+        "search",
+        "realtime",
+        "rerank",
+        "other",
+        "unknown"
+      ]
+    },
+    "eligibility_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "verified",
+            "stale",
+            "denied",
+            "bypassed",
+            "unavailable"
+          ]
+        },
+        "eligibility_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "usage_v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "usage_revision",
+        "usage_state",
+        "cost_state"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "usage"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "usage_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "usage_state": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "cost_state": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "native_units": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/native_unit"
+          }
+        },
+        "usage_provenance": {
+          "enum": [
+            "provider_reported",
+            "derived",
+            "estimated",
+            "reconciled"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "amount_decimal": {
+          "$ref": "#/$defs/decimal"
+        },
+        "cost_basis": {
+          "enum": [
+            "provider_reported",
+            "derived",
+            "estimated",
+            "reconciled"
+          ]
+        },
+        "price_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "price_version": {
+          "$ref": "#/$defs/id"
+        },
+        "zero_basis": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "account_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "resolved_account_id"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "account_resolution"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "resolved_account_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "event_id",
+        "dataset_id",
+        "kind",
+        "occurred_at",
+        "attempt_id",
+        "logical_operation_id",
+        "attempt_role",
+        "predecessor_attempt_id"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "const": "lineage"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "logical_operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt_role": {
+          "enum": [
+            "retry",
+            "fallback",
+            "fanout"
+          ]
+        },
+        "predecessor_attempt_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "feature_fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_category": {
+          "$ref": "#/$defs/id"
+        },
+        "operation_category": {
+          "$ref": "#/$defs/id"
+        },
+        "modalities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "text",
+              "image",
+              "audio",
+              "video",
+              "structured",
+              "other"
+            ]
+          }
+        },
+        "input_size": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unit",
+            "quantity_decimal",
+            "provenance"
+          ],
+          "properties": {
+            "unit": {
+              "enum": [
+                "tokens",
+                "bytes",
+                "characters"
+              ]
+            },
+            "quantity_decimal": {
+              "$ref": "#/$defs/decimal"
+            },
+            "provenance": {
+              "enum": [
+                "measured",
+                "estimated"
+              ]
+            }
+          }
+        },
+        "requested_output_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "latency_budget_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "required_capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "agent_version": {
+          "$ref": "#/$defs/id"
+        },
+        "policy_version": {
+          "$ref": "#/$defs/id"
+        },
+        "configuration_version": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "selected_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selected_account_id",
+        "operation_family",
+        "capability",
+        "selection_kind",
+        "policy_version",
+        "eligibility_evidence"
+      ],
+      "properties": {
+        "selected_account_id": {
+          "$ref": "#/$defs/id"
+        },
+        "selected_model_id": {
+          "$ref": "#/$defs/id"
+        },
+        "operation_family": {"$ref": "#/$defs/operation_family"},
+        "capability": {"$ref": "#/$defs/id"},
+        "selection_kind": {"enum": ["known_model", "provider_selected", "not_applicable"]},
+        "policy_version": {
+          "$ref": "#/$defs/id"
+        },
+        "eligibility_evidence": {
+          "$ref": "#/$defs/eligibility_evidence"
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_version",
+        "snapshot_id",
+        "dataset_id",
+        "attempt_id",
+        "snapshot_kind",
+        "status",
+        "schema_version",
+        "producer_version",
+        "provenance",
+        "source_at",
+        "available_at",
+        "classification",
+        "retention_until"
+      ],
+      "properties": {
+        "integration_version": {
+          "const": "3"
+        },
+        "snapshot_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dataset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "snapshot_kind": {
+          "enum": [
+            "feature",
+            "decision"
+          ]
+        },
+        "status": {
+          "enum": [
+            "captured",
+            "not_collected",
+            "unavailable"
+          ]
+        },
+        "schema_version": {
+          "const": "1"
+        },
+        "producer_version": {
+          "$ref": "#/$defs/id"
+        },
+        "provenance": {
+          "enum": [
+            "platform",
+            "derived",
+            "synthetic"
+          ]
+        },
+        "source_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "available_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "classification": {
+          "enum": [
+            "low",
+            "internal",
+            "confidential"
+          ]
+        },
+        "source_expires_at": {
+          "$ref": "#/$defs/utc"
+        },
+        "retention_until": {
+          "$ref": "#/$defs/utc"
+        },
+        "features": {
+          "$ref": "#/$defs/feature_fields"
+        },
+        "selected_action": {
+          "$ref": "#/$defs/selected_action"
+        }
+      }
+    },
+    "report_usage_state": {
+      "enum": [
+        "known",
+        "unknown",
+        "not_observed",
+        "legacy_absent"
+      ]
+    },
+    "report_eligibility_assessment": {
+      "enum": [
+        "verified",
+        "stale",
+        "denied",
+        "indeterminate",
+        "binding_conflict",
+        "not_assessed",
+        "missing",
+        "legacy_absent"
+      ]
+    },
+    "report_snapshot_status": {
+      "enum": [
+        "captured",
+        "not_collected",
+        "unavailable",
+        "expired",
+        "missing",
+        "binding_conflict"
+      ]
+    },
+    "report_lineage_status": {
+      "enum": [
+        "linked",
+        "pending_predecessor",
+        "not_collected",
+        "binding_conflict",
+        "legacy_absent"
+      ]
+    }
+  }
+}

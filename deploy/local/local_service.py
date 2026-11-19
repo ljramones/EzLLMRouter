@@ -10,22 +10,22 @@ import threading
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from duranki_server.observability import configure_logging
-from duranki_server.core import Coordinator
-from duranki_server.operator_demo import DemoRunner, ProviderValidationRunner
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve as serve_operator
-from duranki_server.plans import PlanAuthority
-from duranki_server.registry import Registry
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.repositories import startup as startup_queries
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve as serve_wire
-from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
-from duranki_server.gateway.worker_ready import probe
+from ezllmrouter_server.observability import configure_logging
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.operator_demo import DemoRunner, ProviderValidationRunner
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve as serve_operator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.repositories import startup as startup_queries
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve as serve_wire
+from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.gateway.worker_ready import probe
 from socket_lease import remove_stale_socket
 
 
@@ -33,23 +33,23 @@ def main():
     configure_logging()
     if "litellm" in sys.modules:
         raise RuntimeError("LiteLLM imported into trusted sender")
-    credentials = json.loads(Path("/run/duranki/credentials.json").read_text())
+    credentials = json.loads(Path("/run/ezllmrouter/credentials.json").read_text())
     token, provider_key = credentials["service_token"], credentials["synthetic_provider_key"]
-    password = Path("/run/duranki/operator-password").read_text().strip()
+    password = Path("/run/ezllmrouter/operator-password").read_text().strip()
     if (type(token) is not str or len(token) < 32 or type(provider_key) is not str or
             not provider_key.startswith("sk-") or len(provider_key) < 36 or len(password) < 32):
         raise RuntimeError("invalid local synthetic credential files")
-    os.environ["DURANKI_DEV_TOKEN"] = token
-    os.environ["DURANKI_DEV04_PROVIDER_KEY"] = provider_key
-    os.environ["DURANKI_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
-    os.environ["DURANKI_DEV04_SEND_EVENTS"] = "/data/send-events.jsonl"
+    os.environ["EZLLMROUTER_DEV_TOKEN"] = token
+    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = provider_key
+    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
+    os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = "/data/send-events.jsonl"
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     request = json.loads(Path("/app/local/request.json").read_text())
     scenarios = json.loads(Path("/app/local/scenarios.json").read_text())
     build = json.loads(Path("/app/local/build-identity.json").read_text())
     trusted = dict(fixture["trusted_context"])
     identity = {token: trusted}
-    store = SQLiteStore(os.environ["DURANKI_DB_PATH"])
+    store = SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"])
     protected = store.database.execute(startup_queries.PROTECTED_PROVIDER_CREDENTIALS).fetchall()
     used_vault = store.database.execute(startup_queries.USED_PROVIDER_VAULT).fetchone()
     vault = ProviderVault("/data/provider-vault", require_existing=bool(used_vault))

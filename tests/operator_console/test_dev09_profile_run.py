@@ -30,7 +30,7 @@ class ProfileRunnerTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
             subprocess.run(["git", "add", "clients/python/pyproject.toml"], cwd=root,
                            check=True, capture_output=True)
-            subprocess.run(["git", "-c", "user.name=Duranki test",
+            subprocess.run(["git", "-c", "user.name=EzLLMRouter test",
                             "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline"],
                            cwd=root, check=True, capture_output=True)
             commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
@@ -63,7 +63,7 @@ class ProfileRunnerTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
             subprocess.run(["git", "add", "deploy/local/prepare.py"], cwd=root,
                            check=True, capture_output=True)
-            subprocess.run(["git", "-c", "user.name=Duranki test",
+            subprocess.run(["git", "-c", "user.name=EzLLMRouter test",
                             "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline"],
                            cwd=root, check=True, capture_output=True)
             other = root / "docs/architecture/new-notes.md"
@@ -100,7 +100,7 @@ class ProfileRunnerTests(unittest.TestCase):
             with patch.object(prepare, "ROOT", root), patch.object(prepare, "STATE", state), \
                  patch.object(prepare, "fingerprint", return_value="a" * 64), \
                  patch.object(prepare, "prepare_work", side_effect=RuntimeError("offline build failed")), \
-                 patch.dict(prepare.os.environ, {"DURANKI_ARTIFACT_ROOT": str(artifact)}):
+                 patch.dict(prepare.os.environ, {"EZLLMROUTER_ARTIFACT_ROOT": str(artifact)}):
                 with self.assertRaisesRegex(RuntimeError, "offline build failed"):
                     prepare.main()
             self.assertEqual(sorted(path.name for path in (state / "staging").iterdir()),

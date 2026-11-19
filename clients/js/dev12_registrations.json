@@ -2,14 +2,14 @@
   "schema_version": "dev12-a1-registrations@1",
   "status": "FIXED_PUBLIC_SYNTHETIC_ONLY",
   "handling_profile": "public-synthetic-retained@1",
-  "content_digest_domain": "sha256(UTF8(\"duranki-content-v1\\n\" + content_version + \"\\n\") || UTF8(text))",
+  "content_digest_domain": "sha256(UTF8(\"ezllmrouter-content-v1\\n\" + content_version + \"\\n\") || UTF8(text))",
   "allowed_public_text_sha256": [
-    "sha256:9ce7f33ca1ae148bc74ccf1a7c8aa5c04dad78b93d8e44b72b7d5b707fc58b29",
-    "sha256:f62718b331c8e3e90c2ac74161ea664a8bc6d88f1163456fcc98b89cf538e8eb",
-    "sha256:07f2540cd5ccc378fe612d026f9cabcf8ed277de0732452c2848a9d7cf67074a",
-    "sha256:0abc6918948c78990776df09615920b3030004496366eb155c83f2e01824c0ff",
-    "sha256:fd52c2d63b1877f962adadf9d3eb6798bb16d72d76a3e39a94e7722d28e924c2",
-    "sha256:212e36924f8f9238b6112df1d0f6610fc26e09d5cf2fa4df15b171734b3a45b7"
+    "sha256:121fd6262cf1cb26a1db57a7f77e755a207af0a211fbbfe9409c816be636a0f3",
+    "sha256:20d37ab719d9040dbe04efa7cf61e2dc2df92bd0469bb317e028673280a4ab31",
+    "sha256:f1dfb3100c14c101ac81694d03e67056292d001599b26c23be73b4af344dc39e",
+    "sha256:f146aad15c25c4adb8626e69351983e848fa1abd5a1333db365d3589a68c245d",
+    "sha256:226d016e0d425364f28e3ead255a06d3a52c77bb6a0c03a5ddbad31d0dbe167b",
+    "sha256:5a128b295bdb74084ec5cf33d5a773663864fe90ddbbe99999c19b8bb571acd7"
   ],
   "configurations": [
     {

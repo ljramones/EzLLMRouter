@@ -62,25 +62,25 @@ async function run(test) {
     calls.push({url,method:options.method||"GET"});
     if(url==="http://receiver.test/observations")
       return test.failure==="receiver"?response({},503):response({arrivals:Array(arrivalCount).fill({})});
-    if(url==="http://duranki.test/v1/submissions"&&options.method==="POST") {
+    if(url==="http://ezllmrouter.test/v1/submissions"&&options.method==="POST") {
       arrivalCount++;fixture=values(JSON.parse(options.body));
       if(test.failure==="model") fixture.reply.candidate.served_destination.model="openai/model.demo";
       return response(test.pending?fixture.pending:fixture.reply,test.pending?202:200,test.failure==="json");
     }
-    if(url==="http://duranki.test/v1/submissions/submission.stub"&&options.method==="GET") {
+    if(url==="http://ezllmrouter.test/v1/submissions/submission.stub"&&options.method==="GET") {
       getCount++;return response(test.pending&&getCount<=test.waiting?fixture.waiting:fixture.status);
     }
     throw Error("unexpected fake transport request: "+url);
   };
   const localProcess={argv:[process.execPath,actorPath,test.mode],exitCode:0,
-    env:{DURANKI_SERVICE_URL:"http://duranki.test",DURANKI_RECEIVER_URL:"http://receiver.test",
-         DURANKI_DEV_TOKEN:"synthetic-unit-token"}};
+    env:{EZLLMROUTER_SERVICE_URL:"http://ezllmrouter.test",EZLLMROUTER_RECEIVER_URL:"http://receiver.test",
+         EZLLMROUTER_DEV_TOKEN:"synthetic-unit-token"}};
   const sandbox={__dirname:path.dirname(actorPath),process:localProcess,fetch:fakeFetch,structuredClone,
     setTimeout:fn=>{queueMicrotask(fn);return 0;},
     console:{log:(...v)=>out.push(v.map(String).join(" ")),
              error:(...v)=>err.push(v.map(String).join(" "))},
     require:name=>{
-      if(name==="@mach33/duranki-client") return sdk;
+      if(name==="@cognitivedynamics/ezllmrouter-client") return sdk;
       if(name==="node:fs") return {readFileSync:(p)=>{
         assert.equal(p,path.dirname(actorPath)+"/request.json");return JSON.stringify(base);}};
       throw Error("unexpected actor require: "+name);
@@ -100,7 +100,7 @@ async function run(test) {
       assert.equal(result.submission_id,"submission.stub");assert.equal(result.receiver_delta,1);
       const diagnostics=err.map(line=>JSON.parse(line));
       assert.equal(diagnostics.length,1+getCount);
-      assert(diagnostics.every(d=>d.diagnostic==="duranki_http_response_shape"));
+      assert(diagnostics.every(d=>d.diagnostic==="ezllmrouter_http_response_shape"));
       assert.equal(arrivalCount,1);assert.equal(calls.filter(c=>c.method==="POST").length,1);
     }
   } catch(error) {assertionError=String(error);}

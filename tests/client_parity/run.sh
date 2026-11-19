@@ -3,16 +3,16 @@ set -Eeuo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd -P)
 run_name=${1:-run-20261019-04}
 [[ "$run_name" =~ ^run-[0-9]{8}-[0-9]{2}$ ]] || { echo 'invalid run name' >&2; exit 2; }
-run_dir="/private/tmp/duranki-dev-02/$run_name"
+run_dir="/private/tmp/ezllmrouter-dev-02/$run_name"
 result_dir="$root/.artifacts/client-parity"
-project="duranki-dev02-${run_name#run-}"
+project="ezllmrouter-dev02-${run_name#run-}"
 python_tool=/opt/homebrew/bin/python3.12
 python_image=docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163
 node_image=docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
-export DURANKI_SERVICE_IMAGE="duranki-dev02-service:$run_name"
-export DURANKI_RECEIVER_IMAGE=duranki-dev01-receiver:run-20261018-04
-export DURANKI_PYTHON_CLIENT_IMAGE="duranki-dev02-pyclient:$run_name"
-export DURANKI_JS_CLIENT_IMAGE="duranki-dev02-jsclient:$run_name"
+export EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev02-service:$run_name"
+export EZLLMROUTER_RECEIVER_IMAGE=ezllmrouter-dev01-receiver:run-20261018-04
+export EZLLMROUTER_PYTHON_CLIENT_IMAGE="ezllmrouter-dev02-pyclient:$run_name"
+export EZLLMROUTER_JS_CLIENT_IMAGE="ezllmrouter-dev02-jsclient:$run_name"
 compose_file="$root/tests/client_parity/compose.yaml"
 
 logrun() {
@@ -73,7 +73,7 @@ finish() {
   compose down --remove-orphans --volumes > "$run_dir/cleanup.stdout" 2> "$run_dir/cleanup.stderr"
   local cleanup_rc=$?
   printf '%s\n' "$cleanup_rc" > "$run_dir/cleanup.exit"
-  docker --context desktop-linux image rm "$DURANKI_SERVICE_IMAGE" "$DURANKI_PYTHON_CLIENT_IMAGE" "$DURANKI_JS_CLIENT_IMAGE" > "$run_dir/image-cleanup.stdout" 2> "$run_dir/image-cleanup.stderr"
+  docker --context desktop-linux image rm "$EZLLMROUTER_SERVICE_IMAGE" "$EZLLMROUTER_PYTHON_CLIENT_IMAGE" "$EZLLMROUTER_JS_CLIENT_IMAGE" > "$run_dir/image-cleanup.stdout" 2> "$run_dir/image-cleanup.stderr"
   local image_cleanup_rc=$?
   printf '%s\n' "$image_cleanup_rc" > "$run_dir/image-cleanup.exit"
   if [[ $rc == 0 && $cleanup_rc != 0 ]]; then rc=$cleanup_rc; fi
@@ -95,13 +95,13 @@ trap finish EXIT
 chmod 0600 "$run_dir/token"
 "$python_tool" -I -B -c 'import secrets,sys;open(sys.argv[1],"x").write(secrets.token_urlsafe(48))' "$run_dir/token-secondary"
 chmod 0600 "$run_dir/token-secondary"
-export DURANKI_DEV_TOKEN
-DURANKI_DEV_TOKEN=$(cat "$run_dir/token")
-export DURANKI_DEV_TOKEN_SECONDARY
-DURANKI_DEV_TOKEN_SECONDARY=$(cat "$run_dir/token-secondary")
+export EZLLMROUTER_DEV_TOKEN
+EZLLMROUTER_DEV_TOKEN=$(cat "$run_dir/token")
+export EZLLMROUTER_DEV_TOKEN_SECONDARY
+EZLLMROUTER_DEV_TOKEN_SECONDARY=$(cat "$run_dir/token-secondary")
 logrun stage "$python_tool" -I -B "$root/tests/client_parity/stage.py" prepare "$root" "$run_dir"
-logrun image-inspect docker --context desktop-linux image inspect duranki-dev01-service:run-20261018-04 "$DURANKI_RECEIVER_IMAGE" \
-  duranki-dev01-driver:run-20261018-04 "$python_image" "$node_image"
+logrun image-inspect docker --context desktop-linux image inspect ezllmrouter-dev01-service:run-20261018-04 "$EZLLMROUTER_RECEIVER_IMAGE" \
+  ezllmrouter-dev01-driver:run-20261018-04 "$python_image" "$node_image"
 logrun image-identity "$python_tool" -I -B "$root/tests/client_parity/stage.py" verify-images "$root" "$run_dir/image-inspect.stdout"
 logrun npm-pack-image docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
   --tmpfs /tmp:rw,nosuid,nodev,size=16m,mode=1777 --user "$(id -u):$(id -g)" \
@@ -112,7 +112,7 @@ logrun npm-pack-image docker --context desktop-linux run --rm --pull=never --pla
 logrun stage-image-js "$python_tool" -I -B - "$root" "$run_dir" <<'PY'
 import hashlib,json,shutil,sys,tarfile
 from pathlib import Path
-root,run=map(Path,sys.argv[1:]);src=run/'image-artifacts/mach33-duranki-client-0.0.1.tgz'
+root,run=map(Path,sys.argv[1:]);src=run/'image-artifacts/cognitivedynamics-ezllmrouter-client-0.3.0.tgz'
 if not src.is_file() or src.is_symlink():raise SystemExit('image npm artifact missing')
 with tarfile.open(src,'r:gz') as t:
  members=t.getmembers();names=[m.name for m in members]
@@ -128,21 +128,21 @@ print(json.dumps({'name':src.name,'bytes':src.stat().st_size,'sha256':hashlib.sh
 PY
 source_hash=$(shasum -a 256 "$run_dir/source-build-manifest.json" | awk '{print $1}')
 logrun service-build docker --context desktop-linux build --pull=false --build-arg "PYTHON_IMAGE=$python_image" \
-  --label "org.duranki.dev02.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/development_slice/Dockerfile.service" -t "$DURANKI_SERVICE_IMAGE" "$run_dir/build/service"
+  --label "org.ezllmrouter.dev02.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/development_slice/Dockerfile.service" -t "$EZLLMROUTER_SERVICE_IMAGE" "$run_dir/build/service"
 logrun python-client-build docker --context desktop-linux build --pull=false --build-arg "PYTHON_IMAGE=$python_image" \
-  --label "org.duranki.dev02.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/client_parity/Dockerfile.python-consumer" -t "$DURANKI_PYTHON_CLIENT_IMAGE" "$run_dir/build/python"
+  --label "org.ezllmrouter.dev02.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/client_parity/Dockerfile.python-consumer" -t "$EZLLMROUTER_PYTHON_CLIENT_IMAGE" "$run_dir/build/python"
 logrun js-client-build docker --context desktop-linux build --pull=false --build-arg "NODE_IMAGE=$node_image" \
-  --label "org.duranki.dev02.source-manifest-sha256=$source_hash" \
-  -f "$root/tests/client_parity/Dockerfile.js-consumer" -t "$DURANKI_JS_CLIENT_IMAGE" "$run_dir/build/js"
-logrun built-image-inspect docker --context desktop-linux image inspect "$DURANKI_SERVICE_IMAGE" "$DURANKI_PYTHON_CLIENT_IMAGE" "$DURANKI_JS_CLIENT_IMAGE"
+  --label "org.ezllmrouter.dev02.source-manifest-sha256=$source_hash" \
+  -f "$root/tests/client_parity/Dockerfile.js-consumer" -t "$EZLLMROUTER_JS_CLIENT_IMAGE" "$run_dir/build/js"
+logrun built-image-inspect docker --context desktop-linux image inspect "$EZLLMROUTER_SERVICE_IMAGE" "$EZLLMROUTER_PYTHON_CLIENT_IMAGE" "$EZLLMROUTER_JS_CLIENT_IMAGE"
 logrun crypto-proof docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  "$DURANKI_SERVICE_IMAGE" python /app/tests/test_crypto.py
+  "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_crypto.py
 logrun http-boundary docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_http.py -v
+  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_http.py -v
 logrun native-adapter docker --context desktop-linux run --rm --pull=never --platform linux/arm64 --network none --read-only --cap-drop ALL \
-  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
+  --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
 logrun compose-up compose up -d receiver service
 ready=0
 for _ in {1..20}; do
@@ -155,11 +155,11 @@ logrun js-installed-unit compose run -T --rm --no-deps js_consumer node test_cli
 logrun python-actor-logic compose run -T --rm --no-deps python_consumer python test_actor_logic.py -v
 logrun js-actor-logic compose run -T --rm --no-deps js_consumer node test_actor_logic.cjs
 logrun python-installed-identity compose run -T --rm --no-deps python_consumer python -c \
- 'import duranki_client,importlib.metadata,importlib.util,json,hashlib,pathlib;d=importlib.metadata.distribution("mach33-duranki-client");assert importlib.util.find_spec("duranki_server") is None;p=pathlib.Path(duranki_client.__file__);print(json.dumps({"module":str(p),"module_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"version":d.version,"requires":d.requires}))'
+ 'import ezllmrouter_client,importlib.metadata,importlib.util,json,hashlib,pathlib;d=importlib.metadata.distribution("cognitivedynamics-ezllmrouter-client");assert importlib.util.find_spec("ezllmrouter_server") is None;p=pathlib.Path(ezllmrouter_client.__file__);print(json.dumps({"module":str(p),"module_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"version":d.version,"requires":d.requires}))'
 logrun python-pip-check compose run -T --rm --no-deps python_consumer python -m pip check
 logrun python-installed-set compose run -T --rm --no-deps python_consumer python -m pip list --format=json
 logrun js-installed-identity compose run -T --rm --no-deps js_consumer node -e \
- 'const fs=require("node:fs"),crypto=require("node:crypto");let n=0;globalThis.fetch=()=>{n++;throw Error("import invoked fetch")};const p=require("@mach33/duranki-client"),file=require.resolve("@mach33/duranki-client");console.log(JSON.stringify({module:file,module_sha256:crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),exports:Object.keys(p),fetch_calls:n}))'
+ 'const fs=require("node:fs"),crypto=require("node:crypto");let n=0;globalThis.fetch=()=>{n++;throw Error("import invoked fetch")};const p=require("@cognitivedynamics/ezllmrouter-client"),file=require.resolve("@cognitivedynamics/ezllmrouter-client");console.log(JSON.stringify({module:file,module_sha256:crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),exports:Object.keys(p),fetch_calls:n}))'
 logrun python-capabilities compose run -T --rm --no-deps python_consumer python integration_python.py capabilities
 logrun js-capabilities compose run -T --rm --no-deps js_consumer node integration_js.cjs capabilities
 logrun js-submit-a compose run -T --rm --no-deps js_consumer node integration_js.cjs submit installed_js_a
@@ -196,7 +196,7 @@ for service_name in service_delay service_nostore_delay service_nostore_live ser
   [[ "$ready" == 1 ]] || { echo "service readiness failed: $service_name" >&2; exit 1; }
 done
 logrun retained-pending compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   python_consumer python integration_python.py submit retained_pending
 pending_sid=$($python_tool -I -B - "$run_dir/retained-pending.stdout" <<'PY'
 import json,sys
@@ -206,10 +206,10 @@ print(rows[0]['submission_id'])
 PY
 )
 logrun retained-status compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   python_consumer python integration_python.py status retained_pending "$pending_sid"
 logrun no-store-expiry compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   python_consumer python integration_python.py submit no_store_expiry
 nostore_sid=$($python_tool -I -B - "$run_dir/no-store-expiry.stdout" <<'PY'
 import json,sys
@@ -219,13 +219,13 @@ print(rows[0]['submission_id'])
 PY
 )
 logrun no-store-metadata compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   python_consumer python integration_python.py status_metadata no_store_expiry "$nostore_sid"
 logrun no-store-live compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_live:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_live:8765 \
   python_consumer python integration_python.py submit no_store_live
 logrun retained-pending-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   js_consumer node integration_js.cjs submit retained_pending_js
 pending_js_sid=$($python_tool -I -B - "$run_dir/retained-pending-js.stdout" <<'PY'
 import json,sys
@@ -235,10 +235,10 @@ print(rows[0]['submission_id'])
 PY
 )
 logrun retained-status-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   js_consumer node integration_js.cjs status retained_pending_js "$pending_js_sid"
 logrun no-store-expiry-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   js_consumer node integration_js.cjs submit no_store_expiry_js
 nostore_js_sid=$($python_tool -I -B - "$run_dir/no-store-expiry-js.stdout" <<'PY'
 import json,sys
@@ -248,34 +248,34 @@ print(rows[0]['submission_id'])
 PY
 )
 logrun no-store-metadata-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_delay:8765 -e DURANKI_RECEIVER_URL=http://receiver_delay:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_delay:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_delay:8766 \
   js_consumer node integration_js.cjs status_metadata no_store_expiry_js "$nostore_js_sid"
 logrun no-store-live-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_nostore_live:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_nostore_live:8765 \
   js_consumer node integration_js.cjs submit no_store_live_js
 logrun fdc-python compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_mutant:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_mutant:8765 \
   python_consumer python integration_python.py failure fdc_python
 logrun fdc-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_mutant:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_mutant:8765 \
   js_consumer node integration_js.cjs failure fdc_js
 logrun intent-python compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_failstore:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_failstore:8765 \
   python_consumer python integration_python.py failure intent_python
 logrun intent-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_failstore:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_failstore:8765 \
   js_consumer node integration_js.cjs failure intent_js
 logrun remote-python compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_remote_fail:8765 -e DURANKI_RECEIVER_URL=http://receiver_fail:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_remote_fail:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_fail:8766 \
   python_consumer python integration_python.py failure known_remote_failure
 logrun remote-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_remote_fail:8765 -e DURANKI_RECEIVER_URL=http://receiver_fail:8766 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_remote_fail:8765 -e EZLLMROUTER_RECEIVER_URL=http://receiver_fail:8766 \
   js_consumer node integration_js.cjs failure remote_js
 logrun serial-js compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_serial_a:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_serial_a:8765 \
   js_consumer node integration_js.cjs submit serialization_equal
 logrun serial-python-reordered compose run -T --rm --no-deps \
-  -e DURANKI_SERVICE_URL=http://service_serial_b:8765 \
+  -e EZLLMROUTER_SERVICE_URL=http://service_serial_b:8765 \
   python_consumer python integration_python.py submit_reordered serialization_equal
 logrun serial-digest-a compose exec -T service_serial_a python -c \
   'import sqlite3,json;d=sqlite3.connect("/data/store.sqlite");print(json.dumps(d.execute("select work_digest from submissions").fetchall()))'

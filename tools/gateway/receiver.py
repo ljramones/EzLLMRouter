@@ -8,7 +8,7 @@ import threading
 import time
 
 
-ARRIVALS = Path(os.environ.get("DURANKI_RECEIVER_LOG", "/data/arrivals.jsonl"))
+ARRIVALS = Path(os.environ.get("EZLLMROUTER_RECEIVER_LOG", "/data/arrivals.jsonl"))
 CONTROLS = ARRIVALS.with_name("controls.jsonl")
 LOCK = threading.Lock()
 HOLD = threading.Event()
@@ -65,7 +65,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(413, {"error": "size"})
             return
         raw = self.rfile.read(size)
-        attempt = self.headers.get("X-Duranki-Attempt")
+        attempt = self.headers.get("X-EzLLMRouter-Attempt")
         with LOCK:
             sequence = len(records()) + 1
             row = {"sequence": sequence, "method": "POST", "path": self.path,

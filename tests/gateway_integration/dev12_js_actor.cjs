@@ -1,11 +1,11 @@
 "use strict";
 // Installed CommonJS package, same authenticated HTTP/guard/TLS route as Python.
 const fs = require("node:fs");
-const {DurankiClient} = require("/js/node_modules/@mach33/duranki-client");
+const {EzLLMRouterClient} = require("/js/node_modules/@cognitivedynamics/ezllmrouter-client");
 
 async function main() {
   const {base_url, token, request} = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-  const client = new DurankiClient({baseUrl: base_url, token});
+  const client = new EzLLMRouterClient({baseUrl: base_url, token});
   const reply = request.operation.type === "embedding.create" ?
     await client.submitEmbedding(request, {wait_ms: 5000}) :
     await client.submitRerank(request, {wait_ms: 5000});

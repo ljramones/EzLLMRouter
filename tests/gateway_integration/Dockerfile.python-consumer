@@ -1,14 +1,14 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_CONFIG_FILE=/dev/null
-COPY wheels/ /opt/duranki/wheels/
-COPY wheelhouse.sha256 /opt/duranki/wheelhouse.sha256
-COPY requirements.client.lock /opt/duranki/requirements.client.lock
-RUN cd /opt/duranki/wheels && sha256sum -c /opt/duranki/wheelhouse.sha256 \
- && python -m pip install --no-index --find-links=/opt/duranki/wheels --only-binary=:all: \
-      --require-hashes -r /opt/duranki/requirements.client.lock \
+COPY wheels/ /opt/ezllmrouter/wheels/
+COPY wheelhouse.sha256 /opt/ezllmrouter/wheelhouse.sha256
+COPY requirements.client.lock /opt/ezllmrouter/requirements.client.lock
+RUN cd /opt/ezllmrouter/wheels && sha256sum -c /opt/ezllmrouter/wheelhouse.sha256 \
+ && python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --only-binary=:all: \
+      --require-hashes -r /opt/ezllmrouter/requirements.client.lock \
  && python -m pip check \
- && rm -rf /opt/duranki/wheels
+ && rm -rf /opt/ezllmrouter/wheels
 COPY actors/ /app/actors/
 RUN find /app/actors -type d -exec chmod 0555 {} + \
  && find /app/actors -type f -exec chmod 0444 {} + \
@@ -18,5 +18,5 @@ WORKDIR /app/actors
 RUN test -r /app/actors/python_actor.py && test -r /app/actors/python_text.py \
  && test -r /app/actors/python_negative.py && test -r /app/actors/request.json \
  && test -r /app/actors/scenarios.json && test -r /app/actors/dev07_actor.py
-RUN python -B -c "import duranki_client, httpx; assert duranki_client.__version__ == '0.0.3'"
+RUN python -B -c "import ezllmrouter_client, httpx; assert ezllmrouter_client.__version__ == '0.3.0'"
 CMD ["python", "-c", "import time; time.sleep(3600)"]

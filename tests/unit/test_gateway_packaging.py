@@ -15,12 +15,28 @@ import unittest
 from tools.gateway.stage import source_mapping
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNTIME = ROOT / "server/src/duranki_server/gateway"
+RUNTIME = ROOT / "server/src/ezllmrouter_server/gateway"
 MODULES = ("guard", "adapter", "choice_b_sender", "choice_b_wire", "owned_sender_transport",
            "owned_tls_sender_transport", "proxy_recipe", "worker_ready", "dev12_guard")
 
 
 class GatewayPackagingTests(unittest.TestCase):
+    def test_python_distributions_have_one_implementation_namespace(self):
+        import tomllib
+        from ezllmrouter_client import EzLLMRouterClient
+        from ezllmrouter_server.core import Coordinator
+
+        for directory, namespace in (("server", "ezllmrouter_server"),
+                                     ("clients/python", "ezllmrouter_client")):
+            package = ROOT / directory
+            config = tomllib.loads((package / "pyproject.toml").read_text())
+            self.assertEqual(config["tool"]["uv"]["build-backend"]["module-name"], namespace)
+            implementations = {path.name for path in (package / "src").iterdir()
+                               if path.is_dir() and (path / "__init__.py").is_file()}
+            self.assertEqual(implementations, {namespace})
+        self.assertEqual(EzLLMRouterClient.__module__, "ezllmrouter_client")
+        self.assertEqual(Coordinator.__module__, "ezllmrouter_server.core")
+
     def dependencies(self, *, native=False):
         # Reuse the active declared dependency environment, with no checkout or
         # test directories in the child interpreter's import search path.
@@ -62,9 +78,9 @@ class GatewayPackagingTests(unittest.TestCase):
         sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
         self.addCleanup(sys.path.remove, str(ROOT / "tests/gateway_integration"))
         for name in MODULES:
-            self.assertIs(import_module(name), import_module("duranki_server.gateway." + name), name)
-        guard = import_module("duranki_server.gateway.guard")
-        owned = import_module("duranki_server.gateway.owned_sender_transport")
+            self.assertIs(import_module(name), import_module("ezllmrouter_server.gateway." + name), name)
+        guard = import_module("ezllmrouter_server.gateway.guard")
+        owned = import_module("ezllmrouter_server.gateway.owned_sender_transport")
         self.assertIs(guard.ACTIVE, owned.ACTIVE)
         self.assertIs(guard.GuardRejected, owned.GuardRejected)
 
@@ -95,23 +111,23 @@ class GatewayPackagingTests(unittest.TestCase):
             script = """
 import importlib, json
 from pathlib import Path
-import duranki_server
-from duranki_server import registry, operator_web
+import ezllmrouter_server
+from ezllmrouter_server import registry, operator_web
 from ezllmrouter_server import secret_rotation
-from duranki_server.store import SQLiteStore
-from duranki_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
 import guard as old_guard
 import recipe as old_recipe
 assert old_guard is guard
 assert old_recipe.SyntheticDevelopmentRecipe is synthetic_recipe.SyntheticDevelopmentRecipe
-assert 'service/server' in str(Path(duranki_server.__file__))
+assert 'service/server' in str(Path(ezllmrouter_server.__file__))
 assert 'service/server' in secret_rotation.__file__
 store = SQLiteStore('staged.sqlite')
 assert store.db.execute('PRAGMA user_version').fetchone() == (1,)
 store.close()
 for name in ('guard', 'choice_b_sender', 'adapter', 'owned_sender_transport', 'owned_tls_sender_transport',
              'proxy_recipe', 'worker_ready', 'dev12_guard', 'choice_b_wire'):
-    module = importlib.import_module('duranki_server.gateway.' + name)
+    module = importlib.import_module('ezllmrouter_server.gateway.' + name)
     assert 'service/server' in module.__file__
 assert 'litellm' not in sys.modules and 'openai' not in sys.modules
 print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}))
@@ -130,7 +146,6 @@ print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}
             script = """
 import importlib.util, json
 import choice_b_worker, choice_b_wire
-assert importlib.util.find_spec('duranki_server') is None
 assert importlib.util.find_spec('ezllmrouter_server') is None
 assert 'litellm' not in sys.modules
 assert choice_b_wire.LIMIT == 262144

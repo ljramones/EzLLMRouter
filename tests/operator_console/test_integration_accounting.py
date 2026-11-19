@@ -16,10 +16,10 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.integration_accounting import IntegrationError
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_server.integration_accounting import IntegrationError
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 
 EXAMPLES = json.loads((ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json").read_text())
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
@@ -70,7 +70,7 @@ class IntegrationTests(unittest.TestCase):
     def request(self, method, path, body=None, *, admin=False, token=None, version="1"):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         headers = {"Authorization": "Bearer " + (token or (self.admin_token if admin else self.ingest_token)),
-                   "Duranki-Integration-Version": version}
+                   "EzLLMRouter-Integration-Version": version}
         data = None
         if body is not None:
             headers["Content-Type"] = "application/json"
@@ -91,7 +91,7 @@ class IntegrationTests(unittest.TestCase):
     def event(self, value):
         return self.request("POST", "/integration/v1/events", value)
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2026-11-03T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2026-11-03T00:00:00Z")
     def test_local_real_cohort_expiry_at_t0_boundary(self, clock):
         owner = {"principal_id": "owner.local", "owner": "owner.local", "role": "registry_admin"}
         accounting = self.registry.integration
@@ -124,7 +124,7 @@ class IntegrationTests(unittest.TestCase):
         with self.assertRaisesRegex(IntegrationError, "DATASET_EXPIRED"):
             accounting.create_dataset(owner, real)
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_v3_speech_opt_in_and_model_scope(self, _clock):
         def api(method, path, body=None, admin=False):
             return self.request(method, "/integration/v3" + path, body, admin=admin, version="3")
@@ -237,7 +237,7 @@ class IntegrationTests(unittest.TestCase):
         start.pop("parent_run_id")
         return api, did, account, start
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction02_lineage_both_orders_and_historical_conflict(self, _clock):
         api, did, _, base = self.correction02_fixture("lineage")
         link = {"integration_version": "2", "event_id": "event.link.orphan", "dataset_id": did,
@@ -313,7 +313,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(next(row for row in after["attempts"] if row["attempt_id"] == "attempt.orphan")
                          ["lineage_status"], "binding_conflict")
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction03_mixed_version_lineage_orders_and_unrelated_work(self, _clock):
         def old_start(did, account, event_id):
             start = {**EXAMPLES["events"][2], "dataset_id": did,
@@ -372,7 +372,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(api("POST", "/events", base)[0], 201)
         self.assertEqual(api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]["attempt_count"], 1)
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction03_previously_accepted_mixed_conflict_projection(self, _clock):
         api, did, account, base = self.correction02_fixture("old.mixed")
         link = {"integration_version": "2", "event_id": "event.old.link", "dataset_id": did,
@@ -412,7 +412,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(before, after)
 
     def test_correction02_eligibility_same_second_and_unambiguous(self):
-        with mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z"):
+        with mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z"):
             api, did, account, base = self.correction02_fixture("eligibility")
             answer = api("GET", "/accounts/" + account["account_id"] +
                 "/eligibility?dataset_id=" + did + "&model_id=model.synthetic")[1]
@@ -449,7 +449,7 @@ class IntegrationTests(unittest.TestCase):
             csv_rows = list(csv.DictReader(io.StringIO(api("GET",
                 "/reports/usage?dataset_id=" + did + "&export=csv", admin=True)[1])))
             self.assertEqual({row["eligibility_assessment"] for row in csv_rows}, {"indeterminate"})
-        with mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:01Z"):
+        with mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:01Z"):
             denied = api("GET", "/accounts/" + account["account_id"] +
                 "/eligibility?dataset_id=" + did + "&model_id=model.synthetic")[1]
         stale_start = {**first, "event_id": "event.stale", "attempt_id": "attempt.stale",
@@ -481,7 +481,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(assessments["attempt.stale"], "stale")
         self.assertEqual(assessments["attempt.denied"], "denied")
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction02_snapshot_binding_both_orders_and_old_mismatches(self, clock):
         api, did, account, base = self.correction02_fixture("snapshots")
         self.assertEqual(api("POST", "/events", base)[0], 201)
@@ -564,7 +564,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(next(row for row in report["attempts"] if row["attempt_id"] == "attempt.base")
                          ["feature_snapshot_status"], "expired")
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction02_usage_state_json_csv_and_export(self, _clock):
         api, did, _, base = self.correction02_fixture("usage")
         for suffix in ("both", "units", "cost", "unknown", "absent"):
@@ -780,7 +780,7 @@ class IntegrationTests(unittest.TestCase):
                                  admin=True, version="2")[1]
         self.assertEqual(v2_report["attempts"][0]["usage_state"], "legacy_absent")
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction_v2_accounting_lineage_snapshots_and_export(self, _clock):
         dataset = {**self.dataset, "dataset_id": "dataset.correction.01"}
         account = {**self.account, "dataset_id": dataset["dataset_id"], "account_id": "account:correct:01"}
@@ -881,7 +881,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(sum((Decimal(x["amount_decimal"]) for x in csv_rows if x["amount_decimal"]), Decimal(0)),
                          Decimal("0.03"))
 
-    @mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
+    @mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-01T00:00:00Z")
     def test_correction_v2_negative_policy_lineage_and_expiry(self, clock):
         did = "dataset.correction.negative"
         dataset = {**self.dataset, "dataset_id": did}
@@ -993,7 +993,7 @@ class IntegrationTests(unittest.TestCase):
         backup = Path(self.tmp.name) / "before-expiry.sqlite"
         with self.store._lock, sqlite3.connect(backup) as destination:
             self.store.db.backup(destination)
-        with mock.patch("duranki_server.integration_accounting._time", return_value="2099-01-03T00:00:00Z"):
+        with mock.patch("ezllmrouter_server.integration_accounting._time", return_value="2099-01-03T00:00:00Z"):
             expired = api("GET", "/snapshots/feature.base?dataset_id=" + did)[1]
             self.assertEqual(expired["status"], "expired")
             self.assertNotIn("features", expired)

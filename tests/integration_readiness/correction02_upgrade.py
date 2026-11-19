@@ -3,14 +3,14 @@ import json
 from pathlib import Path
 import sys
 
-from duranki_client import IntegrationClient, __version__
+from ezllmrouter_client import IntegrationClient, __version__
 
 
 def main():
     root = Path(sys.argv[1]).resolve()
     base = sys.argv[2]
     generation = sys.argv[3]
-    assert __version__ == "0.2.1" and "site-packages" in str(Path(sys.modules["duranki_client"].__file__).resolve())
+    assert __version__ == "0.2.1" and "site-packages" in str(Path(sys.modules["ezllmrouter_client"].__file__).resolve())
     assert generation in {"v1", "v2"}
     dataset = "dataset.local.vega.01" if generation == "v1" else "dataset.integration.correction.v2"
     expected = "0.055000000" if generation == "v1" else "0.030000000"

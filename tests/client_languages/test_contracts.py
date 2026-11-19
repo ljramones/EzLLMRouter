@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class NativeClientContracts(unittest.TestCase):
     def test_embedded_schemas_match_the_contract_sources(self):
-        sources = {"wire02.json": "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
+        sources = {"wire02.json": "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
             **{name: "clients/js/" + name for name in ("dev12_schemas.json", "integration_schema.json",
                 "integration_schema_v2.json", "integration_schema_v3.json")}}
         for directory in ("clients/go/schemas", "clients/java/src/main/resources/com/cognitivedynamics/ezllmrouter/schemas",

@@ -17,8 +17,8 @@ for relative in ("server/src", "deploy/local", "tests/operator_console"):
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from provider_browser_smoke import NeverRun, counters
 from test_providers import ProviderTests
 
@@ -59,7 +59,7 @@ def main():
             registry=registry)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         before = counters(store)
-        with tempfile.TemporaryDirectory(prefix="duranki-dev09-provider-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-provider-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)
@@ -101,10 +101,10 @@ def main():
                 call(browser, "navigate", "models")
                 call(browser, "rowClick", "catalogue.operator.dev09", "View")
                 wait(browser, "document.querySelector('#view-content').textContent.includes('One observed price')", "one-point chart")
-                call(browser, "click", "Edit Duranki settings")
+                call(browser, "click", "Edit EzLLMRouter settings")
                 call(browser, "submit", {"display_name": "Local reference alias", "notes": "Local note"})
                 wait(browser, "document.querySelector('#view-content').textContent.includes('Local reference alias')", "saved local alias")
-                call(browser, "click", "Edit Duranki settings")
+                call(browser, "click", "Edit EzLLMRouter settings")
                 call(browser, "fill", "display_name", "Discarded alias")
                 call(browser, "click", "Cancel")
                 wait(browser, "[...document.querySelectorAll('#view-content button')].some(x=>x.textContent.trim()==='Correct recorded price data')", "cancelled edit")
@@ -143,7 +143,7 @@ def main():
                 "screenshots": screenshots,
                 "source_hashes": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                     for name in ("web/providers_view.js", "web/crud_view.js", "web/source_pages.js",
-                                 "server/src/duranki_server/registry.py")}}
+                                 "server/src/ezllmrouter_server/registry.py")}}
             result.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
             print(json.dumps(record, sort_keys=True))
     finally:

@@ -9,11 +9,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 
 from cryptography.hazmat.primitives import serialization
-from duranki_server.canonical import ContractError
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
 
 
 class NeverExecute:

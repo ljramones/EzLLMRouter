@@ -26,8 +26,8 @@ def digest(value):
 class Response:
     def __init__(self, case):
         self.status_code = case.get("status", 200)
-        self.headers = {"Duranki-Contract-Version": case.get("wire", "0.2"),
-            "Duranki-Integration-Version": case.get("version", "1"), **case.get("response_headers", {})}
+        self.headers = {"EzLLMRouter-Contract-Version": case.get("wire", "0.2"),
+            "EzLLMRouter-Integration-Version": case.get("version", "1"), **case.get("response_headers", {})}
         self.content = b64decode(case["raw"]) if "raw" in case else json.dumps(case["response"], ensure_ascii=False).encode()
 
     def close(self):
@@ -68,7 +68,7 @@ def evaluate(case):
 
 def cases():
     out = []
-    legacy = read("tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json")["examples"]
+    legacy = read("tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json")["examples"]
     successor = read("tests/fixtures/contracts/dev12-successor-01/vectors.json")
     request = legacy["submit_text"]
     selector = {key: request[key] for key in ("task_id", "step_id", "step_revision", "execution_generation")}
@@ -101,7 +101,7 @@ def cases():
     add("compressed", "submit", legacy["reply_delivered"], [request], response_headers={"Content-Encoding": "gzip"})
     add("oversize", "submit", {}, [request], response_headers={"Content-Length": "20000000"})
     add("truncated", "submit", {}, [request], response_headers={"Content-Length": "500"})
-    add("wrong_version", "submit", legacy["reply_delivered"], [request], response_headers={"Duranki-Contract-Version": "0.3"})
+    add("wrong_version", "submit", legacy["reply_delivered"], [request], response_headers={"EzLLMRouter-Contract-Version": "0.3"})
     add("redirect", "submit", legacy["reply_delivered"], [request], status=307, response_headers={"Location": "https://foreign.invalid"})
     rerank = next(x["request"] for x in successor["examples"] if x["id"] == "DELEGATED_RERANK")
     completed = next(x["value"] for x in successor["protocol_fixtures"] if x["id"] == "COMPLETED")

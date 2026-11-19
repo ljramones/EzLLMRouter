@@ -11,9 +11,9 @@ import sys
 import threading
 import uuid
 
-from duranki_server.registry import Registry
-from duranki_server.reporting import usage_costs
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.reporting import usage_costs
+from ezllmrouter_server.store import SQLiteStore
 
 
 TABLES = ("submissions", "intents", "guard_dispatches", "usage_revisions", "registry_models",

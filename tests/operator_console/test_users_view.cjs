@@ -76,7 +76,7 @@ async function submitForm(values){const selected=form();assert(selected,"user fo
   assert.equal(requests.length,before,"mismatched passwords never send");
   elements["confirm-password"].value=elements["new-password"].value;
   await elements["password-form"].listeners.submit[0]({preventDefault(){}});
-  assert.equal(requests.at(-1).headers["X-Duranki-CSRF"],"csrf-test");
+  assert.equal(requests.at(-1).headers["X-EzLLMRouter-CSRF"],"csrf-test");
   assert.equal(elements["login-view"].hidden,false);assert.equal(elements["new-password"].value,"");
   elements.password.value="A new admin passphrase";
   await elements["login-form"].listeners.submit[0]({preventDefault(){}});
@@ -94,7 +94,7 @@ async function submitForm(values){const selected=form();assert(selected,"user fo
   buttons("Edit")[1].onclick();await submitForm({username:"alice",display_name:"Alice Updated",role:"read_only_operator",status:"suspended"});
   assert.equal(users[1].role,"read_only_operator");assert.equal(users[1].status,"suspended");
   await buttons("Delete")[1].onclick();assert.equal(users.length,1);
-  assert(requests.some(request=>request.method==="DELETE"&&request.headers["X-Duranki-CSRF"]==="csrf-test"));
+  assert(requests.some(request=>request.method==="DELETE"&&request.headers["X-EzLLMRouter-CSRF"]==="csrf-test"));
   const readsBefore=requests.filter(request=>request.url==="/operator/v1/users").length;
   await run('applyConsoleSession({csrf:"user-csrf",role:"ordinary",principal_id:"user.ordinary",username:"ordinary",user_management:true,permissions:["activity.read_own"]})');
   assert.equal(buttons("Create user").length,0);

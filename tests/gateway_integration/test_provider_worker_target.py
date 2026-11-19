@@ -29,7 +29,7 @@ class CapturedRelay(choice_b_worker.RelayTransport):
 
 
 def main():
-    if os.environ.get("DURANKI_DEV_TOKEN") or os.environ.get("DURANKI_DEV04_PROVIDER_KEY"):
+    if os.environ.get("EZLLMROUTER_DEV_TOKEN") or os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY"):
         raise RuntimeError("trusted credentials present in worker target check")
     choice_b_worker.RelayTransport = CapturedRelay
     worker = Worker()
@@ -67,7 +67,7 @@ def main():
         raise AssertionError("frozen Responses transformation selected wrong operation URL")
     if row["headers"].get("authorization") != "Bearer " + choice_b_worker.WORKER_KEY:
         raise AssertionError("worker did not use its placeholder credential")
-    if row["headers"].get("x-duranki-attempt") != envelope["attempt_id"]:
+    if row["headers"].get("x-ezllmrouter-attempt") != envelope["attempt_id"]:
         raise AssertionError("worker did not bind the selected final request to the attempt")
     payload = row["body"]
     expected = {k: v for k, v in body.items() if k not in ("api_base", "timeout", "max_retries")}

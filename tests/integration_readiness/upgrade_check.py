@@ -7,8 +7,8 @@ import sqlite3
 import sys
 import threading
 
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 
 
 class Authority:
@@ -29,7 +29,7 @@ def main():
     store = SQLiteStore(path)
     try:
         if mode == "seed":
-            assert importlib.metadata.version("mach33-duranki-server") == "0.0.0"
+            assert importlib.metadata.version("mach33-ezllmrouter-server") == "0.0.0"
             registry = Registry(store, Authority(), legacy_destination=DEST,
                 legacy_token="synthetic-upgrade-legacy-token-000000000000000",
                 legacy_trusted={"principal_id": "svc.upgrade", "charging_owner_id": "team.upgrade"})
@@ -40,7 +40,7 @@ def main():
             assert registry.principal("user.upgrade.reader")["revision"] == 1
             assert not store.db.execute("SELECT name FROM sqlite_master WHERE name='integration_meta'").fetchone()
         elif mode == "verify":
-            assert importlib.metadata.version("mach33-duranki-server") == "0.1.0"
+            assert importlib.metadata.version("mach33-ezllmrouter-server") == "0.1.0"
             registry = Registry(store, Authority())
             assert registry.principal("user.upgrade.reader")["display_name"] == "Retained synthetic reader"
             assert registry.principal("user.upgrade.reader")["revision"] == 1

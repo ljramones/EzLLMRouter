@@ -37,7 +37,7 @@ impl Client {
         self.attribution("GET", &format!("/v1/outcomes/{}", escape(event_id)), None, true, event_id)
     }
     fn attribution(&self, method: &str, path: &str, body: Option<&Value>, receipt: bool, expected_id: &str) -> Result<Value> {
-        let (value, status) = self.connection.request(method, path, "Duranki-Contract-Version", "0.2", body, BTreeMap::new(), 1024 * 1024, None)?;
+        let (value, status) = self.connection.request(method, path, "EzLLMRouter-Contract-Version", "0.2", body, BTreeMap::new(), 1024 * 1024, None)?;
         if named(&value, "0.2", "ErrorResponse") && status >= 400 { return Err(protocol::evidence(at(&value, "error"), status, None, None, &value)); }
         let (version, key, id_key) = if receipt { ("outcome_version", "receipt", "event_id") } else { ("attribution_version", "run", "run_id") };
         let item = at(&value, key); let mut valid = keys(&value, &["contract_version", version, key], &[]) && is(at(&value, version), "1") && (status == 200 || receipt && status == 201) && is(at(item, id_key), expected_id);

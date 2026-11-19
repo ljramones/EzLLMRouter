@@ -6,7 +6,7 @@ import os
 import sys
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -15,7 +15,7 @@ CORPUS = json.loads(Path(__file__).with_name("scenarios.json").read_text())
 
 def count():
     with httpx.Client(trust_env=False) as client:
-        return len(client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations").json()["arrivals"])
+        return len(client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations").json()["arrivals"])
 
 
 def main():
@@ -29,10 +29,10 @@ def main():
                        tool_definitions=[CORPUS["tool_definition"]], tool_choice="auto")
         request["messages"][1]["blocks"][0]["text"] = "Use lookup for synthetic."
     before = count()
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         try:
             client.submit(request, {"wait_ms": 3000})
-        except DurankiError as exc:
+        except EzLLMRouterError as exc:
             if exc.code != "FDC_REJECTED" or exc.http_status != 409:
                 raise
             if count() != before:

@@ -1,0 +1,705 @@
+{
+  "schema_version": "dev12-a1-tariffs@2",
+  "source": "../../architecture/ezllmrouter-v1.2-c01-finalization-01/FICTIONAL-TARIFF-VECTORS.json",
+  "fictional": true,
+  "currency": "USD",
+  "quantum": "0.000000001",
+  "domain": {
+    "minimum_documents": 1,
+    "maximum_documents": 25,
+    "queries_per_attempt": 1
+  },
+  "schedule_a": {
+    "id": "tariff.synthetic.a@1",
+    "unit": "search_units",
+    "units_formula": "ceil(documents/10)",
+    "per_unit_usd": "0.003",
+    "minimum_per_attempt_usd": "0.005",
+    "maximum_domain_bound_usd": "0.009000000"
+  },
+  "schedule_b": {
+    "id": "tariff.synthetic.b@1",
+    "unit": "document_units",
+    "whole_request_tier_le_10_usd": "0.0003000005",
+    "whole_request_tier_ge_11_usd": "0.0004000005",
+    "maximum_domain_bound_usd": "0.010000013"
+  },
+  "rows": [
+    {
+      "documents": 1,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 1,
+        "raw_usd": "0.0003000005",
+        "settled_usd": "0.000300000",
+        "request_bound_usd": "0.000300001"
+      }
+    },
+    {
+      "documents": 2,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 2,
+        "raw_usd": "0.0006000010",
+        "settled_usd": "0.000600001",
+        "request_bound_usd": "0.000600001"
+      }
+    },
+    {
+      "documents": 3,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 3,
+        "raw_usd": "0.0009000015",
+        "settled_usd": "0.000900002",
+        "request_bound_usd": "0.000900002"
+      }
+    },
+    {
+      "documents": 4,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 4,
+        "raw_usd": "0.0012000020",
+        "settled_usd": "0.001200002",
+        "request_bound_usd": "0.001200002"
+      }
+    },
+    {
+      "documents": 5,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 5,
+        "raw_usd": "0.0015000025",
+        "settled_usd": "0.001500002",
+        "request_bound_usd": "0.001500003"
+      }
+    },
+    {
+      "documents": 6,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 6,
+        "raw_usd": "0.0018000030",
+        "settled_usd": "0.001800003",
+        "request_bound_usd": "0.001800003"
+      }
+    },
+    {
+      "documents": 7,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 7,
+        "raw_usd": "0.0021000035",
+        "settled_usd": "0.002100004",
+        "request_bound_usd": "0.002100004"
+      }
+    },
+    {
+      "documents": 8,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 8,
+        "raw_usd": "0.0024000040",
+        "settled_usd": "0.002400004",
+        "request_bound_usd": "0.002400004"
+      }
+    },
+    {
+      "documents": 9,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 9,
+        "raw_usd": "0.0027000045",
+        "settled_usd": "0.002700004",
+        "request_bound_usd": "0.002700005"
+      }
+    },
+    {
+      "documents": 10,
+      "tariff_a": {
+        "search_units": 1,
+        "raw_usd": "0.005",
+        "settled_usd": "0.005000000",
+        "request_bound_usd": "0.005000000"
+      },
+      "tariff_b": {
+        "document_units": 10,
+        "raw_usd": "0.0030000050",
+        "settled_usd": "0.003000005",
+        "request_bound_usd": "0.003000005"
+      }
+    },
+    {
+      "documents": 11,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 11,
+        "raw_usd": "0.0044000055",
+        "settled_usd": "0.004400006",
+        "request_bound_usd": "0.004400006"
+      }
+    },
+    {
+      "documents": 12,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 12,
+        "raw_usd": "0.0048000060",
+        "settled_usd": "0.004800006",
+        "request_bound_usd": "0.004800006"
+      }
+    },
+    {
+      "documents": 13,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 13,
+        "raw_usd": "0.0052000065",
+        "settled_usd": "0.005200006",
+        "request_bound_usd": "0.005200007"
+      }
+    },
+    {
+      "documents": 14,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 14,
+        "raw_usd": "0.0056000070",
+        "settled_usd": "0.005600007",
+        "request_bound_usd": "0.005600007"
+      }
+    },
+    {
+      "documents": 15,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 15,
+        "raw_usd": "0.0060000075",
+        "settled_usd": "0.006000008",
+        "request_bound_usd": "0.006000008"
+      }
+    },
+    {
+      "documents": 16,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 16,
+        "raw_usd": "0.0064000080",
+        "settled_usd": "0.006400008",
+        "request_bound_usd": "0.006400008"
+      }
+    },
+    {
+      "documents": 17,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 17,
+        "raw_usd": "0.0068000085",
+        "settled_usd": "0.006800008",
+        "request_bound_usd": "0.006800009"
+      }
+    },
+    {
+      "documents": 18,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 18,
+        "raw_usd": "0.0072000090",
+        "settled_usd": "0.007200009",
+        "request_bound_usd": "0.007200009"
+      }
+    },
+    {
+      "documents": 19,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 19,
+        "raw_usd": "0.0076000095",
+        "settled_usd": "0.007600010",
+        "request_bound_usd": "0.007600010"
+      }
+    },
+    {
+      "documents": 20,
+      "tariff_a": {
+        "search_units": 2,
+        "raw_usd": "0.006",
+        "settled_usd": "0.006000000",
+        "request_bound_usd": "0.006000000"
+      },
+      "tariff_b": {
+        "document_units": 20,
+        "raw_usd": "0.0080000100",
+        "settled_usd": "0.008000010",
+        "request_bound_usd": "0.008000010"
+      }
+    },
+    {
+      "documents": 21,
+      "tariff_a": {
+        "search_units": 3,
+        "raw_usd": "0.009",
+        "settled_usd": "0.009000000",
+        "request_bound_usd": "0.009000000"
+      },
+      "tariff_b": {
+        "document_units": 21,
+        "raw_usd": "0.0084000105",
+        "settled_usd": "0.008400010",
+        "request_bound_usd": "0.008400011"
+      }
+    },
+    {
+      "documents": 22,
+      "tariff_a": {
+        "search_units": 3,
+        "raw_usd": "0.009",
+        "settled_usd": "0.009000000",
+        "request_bound_usd": "0.009000000"
+      },
+      "tariff_b": {
+        "document_units": 22,
+        "raw_usd": "0.0088000110",
+        "settled_usd": "0.008800011",
+        "request_bound_usd": "0.008800011"
+      }
+    },
+    {
+      "documents": 23,
+      "tariff_a": {
+        "search_units": 3,
+        "raw_usd": "0.009",
+        "settled_usd": "0.009000000",
+        "request_bound_usd": "0.009000000"
+      },
+      "tariff_b": {
+        "document_units": 23,
+        "raw_usd": "0.0092000115",
+        "settled_usd": "0.009200012",
+        "request_bound_usd": "0.009200012"
+      }
+    },
+    {
+      "documents": 24,
+      "tariff_a": {
+        "search_units": 3,
+        "raw_usd": "0.009",
+        "settled_usd": "0.009000000",
+        "request_bound_usd": "0.009000000"
+      },
+      "tariff_b": {
+        "document_units": 24,
+        "raw_usd": "0.0096000120",
+        "settled_usd": "0.009600012",
+        "request_bound_usd": "0.009600012"
+      }
+    },
+    {
+      "documents": 25,
+      "tariff_a": {
+        "search_units": 3,
+        "raw_usd": "0.009",
+        "settled_usd": "0.009000000",
+        "request_bound_usd": "0.009000000"
+      },
+      "tariff_b": {
+        "document_units": 25,
+        "raw_usd": "0.0100000125",
+        "settled_usd": "0.010000012",
+        "request_bound_usd": "0.010000013"
+      }
+    }
+  ],
+  "rounding_pair": {
+    "separate_counts": [
+      1,
+      1,
+      1
+    ],
+    "separate_settled_total_usd": "0.000900000",
+    "separate_bounds_total_usd": "0.000900003",
+    "batched_count": 3,
+    "batched_settled_usd": "0.000900002",
+    "batched_bound_usd": "0.000900002"
+  },
+  "usage_evidence_cases": [
+    {
+      "id": "A_REPORTED_ONE",
+      "component": "search_units",
+      "presence": "known",
+      "evidence": "reported",
+      "quantity": 1,
+      "cost_status": "calculated"
+    },
+    {
+      "id": "B_ABSENT",
+      "component": "document_units",
+      "presence": "absent",
+      "cost_status": "unknown"
+    },
+    {
+      "id": "B_NULL",
+      "component": "document_units",
+      "presence": "null",
+      "cost_status": "unknown"
+    },
+    {
+      "id": "B_ZERO_CONTRADICTION",
+      "component": "document_units",
+      "presence": "known",
+      "evidence": "reported",
+      "quantity": 0,
+      "cost_status": "unknown"
+    },
+    {
+      "id": "B_INVALID",
+      "component": "document_units",
+      "presence": "invalid",
+      "cost_status": "unknown"
+    },
+    {
+      "id": "B_DERIVED",
+      "component": "document_units",
+      "presence": "known",
+      "evidence": "derived",
+      "quantity": 3,
+      "cost_status": "unknown"
+    }
+  ],
+  "negative_cardinalities": [
+    0,
+    26,
+    -1,
+    true,
+    "11",
+    1.5
+  ],
+  "usage_semantics_ref": "dev12-native-usage@1",
+  "embedding_document": {
+    "id": "tariff.synthetic.embed-doc@1",
+    "operation": "embedding.create@1",
+    "role": "document",
+    "unit": "document_units",
+    "minimum_items": 1,
+    "maximum_items": 25,
+    "per_item_usd": "0.000200000",
+    "maximum_domain_bound_usd": "0.005000000"
+  },
+  "embedding_query": {
+    "id": "tariff.synthetic.embed-query@1",
+    "operation": "embedding.create@1",
+    "role": "query",
+    "unit": "query_units",
+    "minimum_items": 1,
+    "maximum_items": 1,
+    "per_item_usd": "0.000200000",
+    "maximum_domain_bound_usd": "0.000200000"
+  },
+  "embedding_document_rows": [
+    {
+      "items": 1,
+      "document_units": 1,
+      "raw_usd": "0.000200000",
+      "settled_usd": "0.000200000",
+      "request_bound_usd": "0.000200000"
+    },
+    {
+      "items": 2,
+      "document_units": 2,
+      "raw_usd": "0.000400000",
+      "settled_usd": "0.000400000",
+      "request_bound_usd": "0.000400000"
+    },
+    {
+      "items": 3,
+      "document_units": 3,
+      "raw_usd": "0.000600000",
+      "settled_usd": "0.000600000",
+      "request_bound_usd": "0.000600000"
+    },
+    {
+      "items": 4,
+      "document_units": 4,
+      "raw_usd": "0.000800000",
+      "settled_usd": "0.000800000",
+      "request_bound_usd": "0.000800000"
+    },
+    {
+      "items": 5,
+      "document_units": 5,
+      "raw_usd": "0.001000000",
+      "settled_usd": "0.001000000",
+      "request_bound_usd": "0.001000000"
+    },
+    {
+      "items": 6,
+      "document_units": 6,
+      "raw_usd": "0.001200000",
+      "settled_usd": "0.001200000",
+      "request_bound_usd": "0.001200000"
+    },
+    {
+      "items": 7,
+      "document_units": 7,
+      "raw_usd": "0.001400000",
+      "settled_usd": "0.001400000",
+      "request_bound_usd": "0.001400000"
+    },
+    {
+      "items": 8,
+      "document_units": 8,
+      "raw_usd": "0.001600000",
+      "settled_usd": "0.001600000",
+      "request_bound_usd": "0.001600000"
+    },
+    {
+      "items": 9,
+      "document_units": 9,
+      "raw_usd": "0.001800000",
+      "settled_usd": "0.001800000",
+      "request_bound_usd": "0.001800000"
+    },
+    {
+      "items": 10,
+      "document_units": 10,
+      "raw_usd": "0.002000000",
+      "settled_usd": "0.002000000",
+      "request_bound_usd": "0.002000000"
+    },
+    {
+      "items": 11,
+      "document_units": 11,
+      "raw_usd": "0.002200000",
+      "settled_usd": "0.002200000",
+      "request_bound_usd": "0.002200000"
+    },
+    {
+      "items": 12,
+      "document_units": 12,
+      "raw_usd": "0.002400000",
+      "settled_usd": "0.002400000",
+      "request_bound_usd": "0.002400000"
+    },
+    {
+      "items": 13,
+      "document_units": 13,
+      "raw_usd": "0.002600000",
+      "settled_usd": "0.002600000",
+      "request_bound_usd": "0.002600000"
+    },
+    {
+      "items": 14,
+      "document_units": 14,
+      "raw_usd": "0.002800000",
+      "settled_usd": "0.002800000",
+      "request_bound_usd": "0.002800000"
+    },
+    {
+      "items": 15,
+      "document_units": 15,
+      "raw_usd": "0.003000000",
+      "settled_usd": "0.003000000",
+      "request_bound_usd": "0.003000000"
+    },
+    {
+      "items": 16,
+      "document_units": 16,
+      "raw_usd": "0.003200000",
+      "settled_usd": "0.003200000",
+      "request_bound_usd": "0.003200000"
+    },
+    {
+      "items": 17,
+      "document_units": 17,
+      "raw_usd": "0.003400000",
+      "settled_usd": "0.003400000",
+      "request_bound_usd": "0.003400000"
+    },
+    {
+      "items": 18,
+      "document_units": 18,
+      "raw_usd": "0.003600000",
+      "settled_usd": "0.003600000",
+      "request_bound_usd": "0.003600000"
+    },
+    {
+      "items": 19,
+      "document_units": 19,
+      "raw_usd": "0.003800000",
+      "settled_usd": "0.003800000",
+      "request_bound_usd": "0.003800000"
+    },
+    {
+      "items": 20,
+      "document_units": 20,
+      "raw_usd": "0.004000000",
+      "settled_usd": "0.004000000",
+      "request_bound_usd": "0.004000000"
+    },
+    {
+      "items": 21,
+      "document_units": 21,
+      "raw_usd": "0.004200000",
+      "settled_usd": "0.004200000",
+      "request_bound_usd": "0.004200000"
+    },
+    {
+      "items": 22,
+      "document_units": 22,
+      "raw_usd": "0.004400000",
+      "settled_usd": "0.004400000",
+      "request_bound_usd": "0.004400000"
+    },
+    {
+      "items": 23,
+      "document_units": 23,
+      "raw_usd": "0.004600000",
+      "settled_usd": "0.004600000",
+      "request_bound_usd": "0.004600000"
+    },
+    {
+      "items": 24,
+      "document_units": 24,
+      "raw_usd": "0.004800000",
+      "settled_usd": "0.004800000",
+      "request_bound_usd": "0.004800000"
+    },
+    {
+      "items": 25,
+      "document_units": 25,
+      "raw_usd": "0.005000000",
+      "settled_usd": "0.005000000",
+      "request_bound_usd": "0.005000000"
+    }
+  ],
+  "embedding_query_row": {
+    "items": 1,
+    "query_units": 1,
+    "raw_usd": "0.000200000",
+    "settled_usd": "0.000200000",
+    "request_bound_usd": "0.000200000"
+  },
+  "operation_bindings": [
+    {
+      "configuration_ref": "cfg.rerank.synthetic.a",
+      "operation": "rerank@1",
+      "price_ref": "tariff.synthetic.a@1",
+      "component": "search_units",
+      "domain": "one_query_plus_1_to_25_documents"
+    },
+    {
+      "configuration_ref": "cfg.rerank.synthetic",
+      "operation": "rerank@1",
+      "price_ref": "tariff.synthetic.b@1",
+      "component": "document_units",
+      "domain": "one_query_plus_1_to_25_documents"
+    },
+    {
+      "configuration_ref": "cfg.embed.synthetic",
+      "operation": "embedding.create@1",
+      "role": "document",
+      "price_ref": "tariff.synthetic.embed-doc@1",
+      "component": "document_units",
+      "domain": "1_to_25_documents"
+    },
+    {
+      "configuration_ref": "cfg.embed.synthetic",
+      "operation": "embedding.create@1",
+      "role": "query",
+      "price_ref": "tariff.synthetic.embed-query@1",
+      "component": "query_units",
+      "domain": "one_query"
+    }
+  ]
+}

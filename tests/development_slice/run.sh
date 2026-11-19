@@ -4,8 +4,8 @@ root=$(cd "$(dirname "$0")/../.." && pwd -P)
 mode=${1:-}
 run_name=${2:-run-20261018-02}
 [[ "$run_name" =~ ^run-[0-9]{8}-[0-9]{2}$ ]] || { echo 'invalid run name' >&2; exit 2; }
-run_dir="/private/tmp/duranki-dev-01/$run_name"
-project="duranki-dev01-${run_name#run-}"
+run_dir="/private/tmp/ezllmrouter-dev-01/$run_name"
+project="ezllmrouter-dev01-${run_name#run-}"
 compose_file="$root/tests/development_slice/compose.yaml"
 result_dir="$root/.artifacts/development-slice"
 python_tool=/opt/homebrew/bin/python3.12
@@ -36,11 +36,11 @@ new_run() {
 
 load_run() {
   [[ -d "$run_dir" && ! -L "$run_dir" ]] || { echo "missing run: $run_dir" >&2; exit 2; }
-  export DURANKI_DEV_TOKEN
-  DURANKI_DEV_TOKEN=$(cat "$run_dir/token")
-  export DURANKI_SERVICE_IMAGE="duranki-dev01-service:$run_name"
-  export DURANKI_RECEIVER_IMAGE="duranki-dev01-receiver:$run_name"
-  export DURANKI_DRIVER_IMAGE="duranki-dev01-driver:$run_name"
+  export EZLLMROUTER_DEV_TOKEN
+  EZLLMROUTER_DEV_TOKEN=$(cat "$run_dir/token")
+  export EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev01-service:$run_name"
+  export EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-dev01-receiver:$run_name"
+  export EZLLMROUTER_DRIVER_IMAGE="ezllmrouter-dev01-driver:$run_name"
 }
 
 compose() { docker compose -f "$compose_file" -p "$project" "$@"; }
@@ -96,7 +96,7 @@ reuse_inputs() {
   [[ "$predecessor" =~ ^run-[0-9]{8}-[0-9]{2}$ && "$predecessor" != "$run_name" ]] || {
     echo 'invalid predecessor run' >&2; exit 2;
   }
-  local old="/private/tmp/duranki-dev-01/$predecessor"
+  local old="/private/tmp/ezllmrouter-dev-01/$predecessor"
   [[ -d "$old" && ! -L "$old" ]] || { echo "missing predecessor: $old" >&2; exit 2; }
   logrun domain-tests env PYTHONDONTWRITEBYTECODE=1 "$python_tool" -I -B "$root/tests/development_slice/test_core.py" -v
   "$python_tool" -I -B - "$old" "$run_dir" "$root/tests/development_slice/requirements.lock" > "$run_dir/reuse-inputs.json" <<'PY'
@@ -181,7 +181,7 @@ PY
   cp "$root/tests/development_slice/receiver.py" "$run_dir/build/receiver/"
   cp "$root/clients/js/index.cjs" "$run_dir/build/driver/"
   cp "$root/tests/development_slice/"{driver.cjs,test_client.cjs,request.json,expected_request.txt} "$run_dir/build/driver/"
-  cp "$root/tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json" "$run_dir/build/driver/vectors.json"
+  cp "$root/tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json" "$run_dir/build/driver/vectors.json"
   "$python_tool" -I -B - "$run_dir/build" "$root" > "$run_dir/source-build-manifest.json" <<'PY'
 import hashlib,json,sys
 from pathlib import Path
@@ -205,25 +205,25 @@ PY
   local source_hash
   source_hash=$(shasum -a 256 "$run_dir/source-build-manifest.json" | awk '{print $1}')
   logrun service-build docker build --pull=false --build-arg "PYTHON_IMAGE=$python_digest" \
-    --label "org.duranki.dev01.source-manifest-sha256=$source_hash" \
-    -f "$root/tests/development_slice/Dockerfile.service" -t "$DURANKI_SERVICE_IMAGE" "$run_dir/build/service"
+    --label "org.ezllmrouter.dev01.source-manifest-sha256=$source_hash" \
+    -f "$root/tests/development_slice/Dockerfile.service" -t "$EZLLMROUTER_SERVICE_IMAGE" "$run_dir/build/service"
   logrun receiver-build docker build --pull=false --build-arg "PYTHON_IMAGE=$python_digest" \
-    --label "org.duranki.dev01.source-manifest-sha256=$source_hash" \
-    -f "$root/tests/development_slice/Dockerfile.receiver" -t "$DURANKI_RECEIVER_IMAGE" "$run_dir/build/receiver"
+    --label "org.ezllmrouter.dev01.source-manifest-sha256=$source_hash" \
+    -f "$root/tests/development_slice/Dockerfile.receiver" -t "$EZLLMROUTER_RECEIVER_IMAGE" "$run_dir/build/receiver"
   logrun driver-build docker build --pull=false --build-arg "NODE_IMAGE=$(cat "$run_dir/node-image.txt")" \
-    --label "org.duranki.dev01.source-manifest-sha256=$source_hash" \
-    -f "$root/tests/development_slice/Dockerfile.driver" -t "$DURANKI_DRIVER_IMAGE" "$run_dir/build/driver"
-  logrun built-image-inspect docker image inspect "$DURANKI_SERVICE_IMAGE" "$DURANKI_RECEIVER_IMAGE" "$DURANKI_DRIVER_IMAGE"
+    --label "org.ezllmrouter.dev01.source-manifest-sha256=$source_hash" \
+    -f "$root/tests/development_slice/Dockerfile.driver" -t "$EZLLMROUTER_DRIVER_IMAGE" "$run_dir/build/driver"
+  logrun built-image-inspect docker image inspect "$EZLLMROUTER_SERVICE_IMAGE" "$EZLLMROUTER_RECEIVER_IMAGE" "$EZLLMROUTER_DRIVER_IMAGE"
 }
 
 run_tests() {
   load_run
   logrun crypto-proof docker run --rm --network none --read-only --cap-drop ALL \
-    "$DURANKI_SERVICE_IMAGE" python /app/tests/test_crypto.py
+    "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_crypto.py
   logrun http-boundary docker run --rm --network none --read-only --cap-drop ALL \
-    --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_http.py -v
+    --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_http.py -v
   logrun native-adapter docker run --rm --network none --read-only --cap-drop ALL \
-    --tmpfs /tmp:rw,nosuid,nodev,size=8m "$DURANKI_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
+    --tmpfs /tmp:rw,nosuid,nodev,size=8m "$EZLLMROUTER_SERVICE_IMAGE" python /app/tests/test_native_adapter.py -v
   logrun compose-up compose up -d receiver service service_mutant service_failstore
   local ready=0
   for actor in service service_mutant service_failstore; do
@@ -252,7 +252,7 @@ if len(match)!=1: raise SystemExit('roundtrip receipt missing')
 print(match[0])
 PY
 )
-  export DURANKI_SUBMISSION_ID="$sid"
+  export EZLLMROUTER_SUBMISSION_ID="$sid"
   logrun service-restart compose restart service
   ready=0
   for _ in {1..20}; do

@@ -48,10 +48,10 @@ class _Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
 
 
 def main():
-    if any(name in os.environ for name in ("DURANKI_DEV04_PROVIDER_KEY", "OPENAI_API_KEY",
-                                         "DURANKI_DEV_TOKEN")):
+    if any(name in os.environ for name in ("EZLLMROUTER_DEV04_PROVIDER_KEY", "OPENAI_API_KEY",
+                                         "EZLLMROUTER_DEV_TOKEN")):
         raise RuntimeError("credential in networkless DEV-12 worker")
-    link = Path(os.environ.get("DURANKI_DEV12_LINK", "/link"))
+    link = Path(os.environ.get("EZLLMROUTER_DEV12_LINK", "/link"))
     path = link / "dev12-worker.sock"
     if path.exists() or path.is_symlink():
         raise RuntimeError("DEV-12 worker socket collision")

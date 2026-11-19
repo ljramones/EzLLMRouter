@@ -13,9 +13,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
 from recipe import SyntheticDevelopmentRecipe
 
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
@@ -76,7 +76,7 @@ class FakeAdapter:
 
 class ToolCoreTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="core-", dir=os.environ.get("DURANKI_TEST_SCRATCH"))
+        self.temp = tempfile.TemporaryDirectory(prefix="core-", dir=os.environ.get("EZLLMROUTER_TEST_SCRATCH"))
         self.store = SQLiteStore(Path(self.temp.name) / "store.sqlite")
         self.adapter = FakeAdapter()
         self.trusted = deepcopy(FIXTURE["trusted_context"])

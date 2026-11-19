@@ -16,13 +16,13 @@ sys.path[:0] = [str(ROOT / "server/src"), str(Path(__file__).resolve().parent),
                 str(ROOT / "tests/development_slice")]
 
 from cryptography.hazmat.primitives import serialization
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
-from duranki_server.successor_reporting import usage_report
-from duranki_server.web import serve
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
+from ezllmrouter_server.successor_reporting import usage_report
+from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_integrated import fixture, observations, independent_amount
 from dev12_tls_receiver import TEST_KEY

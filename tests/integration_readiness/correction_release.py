@@ -11,7 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from duranki_client import IntegrationClient, __version__
+from ezllmrouter_client import IntegrationClient, __version__
 
 ROOT = Path(__file__).resolve().parents[2]
 DID = "dataset.integration.correction.v2"
@@ -23,7 +23,7 @@ def csv_report(token):
     connection = http.client.HTTPConnection("127.0.0.1", 48760, timeout=5)
     try:
         connection.request("GET", "/integration/v2/reports/usage?dataset_id=" + DID + "&export=csv",
-                           headers={"Authorization": "Bearer " + token, "Duranki-Integration-Version": "2"})
+                           headers={"Authorization": "Bearer " + token, "EzLLMRouter-Integration-Version": "2"})
         response = connection.getresponse()
         assert response.status == 200
         return response.read().decode("utf-8")
@@ -34,8 +34,8 @@ def csv_report(token):
 def main():
     root = Path(sys.argv[1]).resolve()
     mode = sys.argv[2]
-    assert __version__ == "0.2.0" and "site-packages" in str(Path(sys.modules["duranki_client"].__file__).resolve())
-    package = root / "consumer-js24/node_modules/@mach33/duranki-client"
+    assert __version__ == "0.2.0" and "site-packages" in str(Path(sys.modules["ezllmrouter_client"].__file__).resolve())
+    package = root / "consumer-js24/node_modules/@cognitivedynamics/ezllmrouter-client"
     assert package.resolve().is_dir() and str(package.resolve()).startswith(str(root))
     secrets = Path(sys.argv[3]) if len(sys.argv) > 3 else root / "secrets"
     admin_token = (secrets / "admin.token").read_text().strip()

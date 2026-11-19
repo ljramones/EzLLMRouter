@@ -13,9 +13,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
 from recipe import SyntheticDevelopmentRecipe
 
 
@@ -44,7 +44,7 @@ class GatewayAdapterStub:
             self.revoke()
         context["fresh_check"]()
         if self.fail_commit:
-            from duranki_server.canonical import ContractError
+            from ezllmrouter_server.canonical import ContractError
             raise ContractError("INTENT_PERSIST_FAILED", 503)
         context["commit"]({"attempt_id": context["attempt_id"],
                            "plan_id": context["plan"]["plan_id"],

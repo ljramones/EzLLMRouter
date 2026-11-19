@@ -12,9 +12,9 @@ from unittest.mock import Mock, patch
 
 from tests.operator_console import test_user_management as user_fixtures
 from tests.operator_console import test_integration_credentials as credential_fixtures
-from duranki_server.http_server import BoundedThreadingMixIn, SafeHTTPRequestHandler, REQUEST_TIMEOUT_SECONDS
-from duranki_server.private_files import read_private, secret_text, write_private
-from duranki_server.user_management import UserManager, UserError, password_hash
+from ezllmrouter_server.http_server import BoundedThreadingMixIn, SafeHTTPRequestHandler, REQUEST_TIMEOUT_SECONDS
+from ezllmrouter_server.private_files import read_private, secret_text, write_private
+from ezllmrouter_server.user_management import UserManager, UserError, password_hash
 
 
 class PrivateFileTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class PrivateFileTests(unittest.TestCase):
     def test_failure_before_publication_leaves_no_partial_secret(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "admin.password"
-            with patch("duranki_server.private_files.os.link", side_effect=OSError("publication failed")):
+            with patch("ezllmrouter_server.private_files.os.link", side_effect=OSError("publication failed")):
                 with self.assertRaises(OSError):
                     write_private(path, b"complete-secret")
             self.assertFalse(path.exists())
@@ -78,7 +78,7 @@ class BootstrapTests(unittest.TestCase):
             if calls == 2:
                 raise RuntimeError("database bootstrap interrupted")
             return password_hash(value)
-        with patch.dict(os.environ, {}, clear=True), patch("duranki_server.user_management.password_hash", side_effect=failing_hash):
+        with patch.dict(os.environ, {}, clear=True), patch("ezllmrouter_server.user_management.password_hash", side_effect=failing_hash):
             with self.assertRaises(RuntimeError):
                 UserManager(self.registry, bootstrap_password_file=path)
         password = read_private(path).decode().strip()
@@ -188,7 +188,7 @@ class HTTPBudgetTests(unittest.TestCase):
             return timer
         def slow_input():
             callbacks[0]()
-        with patch("duranki_server.http_server.threading.Timer", side_effect=make_timer), \
+        with patch("ezllmrouter_server.http_server.threading.Timer", side_effect=make_timer), \
                 patch("http.server.BaseHTTPRequestHandler.handle_one_request", side_effect=slow_input):
             handler.handle_one_request()
         handler.connection.shutdown.assert_called_once()
@@ -218,7 +218,7 @@ class HTTPBudgetTests(unittest.TestCase):
             with lock:
                 active -= 1
             return b"x" * 32
-        with patch("duranki_server.user_management.hashlib.scrypt", side_effect=hash_work), ThreadPoolExecutor(max_workers=6) as pool:
+        with patch("ezllmrouter_server.user_management.hashlib.scrypt", side_effect=hash_work), ThreadPoolExecutor(max_workers=6) as pool:
             jobs = [pool.submit(password_hash, "synthetic test password") for _ in range(6)]
             try:
                 self.assertTrue(two_entered.wait(timeout=3))

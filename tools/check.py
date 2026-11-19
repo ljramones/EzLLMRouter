@@ -79,13 +79,13 @@ FRONTEND_TESTS = (
     "test_dev09_provider_index.cjs",
 )
 TYPED_FILES = (
-    "server/src/duranki_server/private_files.py",
-    "server/src/duranki_server/observability.py",
-    "server/src/duranki_server/database.py",
-    "server/src/duranki_server/schema.py",
+    "server/src/ezllmrouter_server/private_files.py",
+    "server/src/ezllmrouter_server/observability.py",
+    "server/src/ezllmrouter_server/database.py",
+    "server/src/ezllmrouter_server/schema.py",
     "tools/check.py",
-    "clients/python/src/duranki_client/_http.py",
-    "clients/python/src/duranki_client/_json.py",
+    "clients/python/src/ezllmrouter_client/_http.py",
+    "clients/python/src/ezllmrouter_client/_json.py",
 )
 
 

@@ -12,7 +12,7 @@ import re
 import sys
 import time
 
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -49,7 +49,7 @@ def main():
         if set(value) != {"token", "mode", "submission_id"} or type(value["submission_id"]) is not str or \
                 not IDENT.fullmatch(value["submission_id"]):
             raise ValueError("status input shape")
-        with DurankiClient("http://127.0.0.1:8773", token) as client:
+        with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
             status = client.getStatus({"submission_id": value["submission_id"]})
         attempts = status.get("attempts") or []
         print(json.dumps({"kind": "status", "submission_id": value["submission_id"],
@@ -83,7 +83,7 @@ def main():
         req["requested_features"] = ["text", "tools"]
         req["tool_definitions"] = [deepcopy(SCENARIOS["tool_definition"])]
         req["tool_choice"] = "auto"
-    with DurankiClient("http://127.0.0.1:8773", token) as client:
+    with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
         if mode in ("pending_hold", "pending_text"):
             reply = client.submit(req, {"wait_ms": 0})
             if reply["state"] != "pending":
@@ -94,7 +94,7 @@ def main():
         if mode == "deny":
             try:
                 client.submit(req, {"wait_ms": 3000})
-            except DurankiError as exc:
+            except EzLLMRouterError as exc:
                 print(json.dumps({"kind": "denied", "code": exc.code,
                     "http_status": exc.http_status, "failure_stage": exc.failure_stage,
                     "attempt_id": exc.attempt_id,

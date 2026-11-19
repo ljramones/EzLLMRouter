@@ -8,16 +8,16 @@ const path = require("node:path");
 const fromConsumer = process.argv[2];
 const consumer = fromConsumer && path.resolve(fromConsumer);
 const load = consumer ? createRequire(path.join(consumer, "package.json")) : require;
-const {DurankiClient, IntegrationClient} = consumer ? load("@mach33/duranki-client") :
+const {EzLLMRouterClient, IntegrationClient} = consumer ? load("@cognitivedynamics/ezllmrouter-client") :
   require("../../clients/js");
-const pkgPath = consumer ? path.join(consumer, "node_modules/@mach33/duranki-client/package.json") :
+const pkgPath = consumer ? path.join(consumer, "node_modules/@cognitivedynamics/ezllmrouter-client/package.json") :
   path.join(__dirname, "../../clients/js/package.json");
 const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
 assert.equal(pkg.engines.node, ">=24.22.1 <25");
 
 for (const baseUrl of ["http://user:pass@localhost:8765", "http://localhost:8765/path",
   "http://localhost:8765/?q=1", "http://localhost:8765/#fragment", "file:///tmp/service"]) {
-  assert.throws(() => new DurankiClient({baseUrl, token: "synthetic"}), TypeError);
+  assert.throws(() => new EzLLMRouterClient({baseUrl, token: "synthetic"}), TypeError);
   assert.throws(() => new IntegrationClient(baseUrl, "synthetic", {version: "2"}), TypeError);
 }
 
@@ -27,7 +27,7 @@ async function main() {
     calls.push({url, options});
     throw new Error("synthetic transport stop before any network request");
   };
-  const controlled = new DurankiClient({baseUrl: "http://localhost:8765/", token: "synthetic", fetchImpl});
+  const controlled = new EzLLMRouterClient({baseUrl: "http://localhost:8765/", token: "synthetic", fetchImpl});
   await assert.rejects(controlled.getStatus({submission_id: "synthetic.submission"}));
   await assert.rejects(controlled._extension("GET", "/v1/outcomes/synthetic", undefined, "receipt"));
   await assert.rejects(controlled._requestSuccessor("GET", "/v2/status/synthetic", undefined, undefined,

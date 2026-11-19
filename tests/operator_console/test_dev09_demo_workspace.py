@@ -6,7 +6,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.demo_workspace import project_demo
+from ezllmrouter_server.demo_workspace import project_demo
 
 
 FIXTURE = ROOT / "web/dev09_demo_fixture.json"

@@ -38,7 +38,7 @@ class WorkerDiagnosticTests(unittest.TestCase):
         self.assertEqual(len(called), 1)
         self.assertIs(called[0]["client"], worker.responses_handler)
         self.assertEqual(called[0]["extra_headers"],
-                         {"X-Duranki-Attempt": envelope["attempt_id"]})
+                         {"X-EzLLMRouter-Attempt": envelope["attempt_id"]})
         self.assertEqual(called[0]["api_key"], WORKER_KEY)
 
     def test_early_failure_names_exception_but_not_message(self):
@@ -48,7 +48,7 @@ class WorkerDiagnosticTests(unittest.TestCase):
 
         with patch.object(target, "Worker", FailingWorker), patch.object(
                 target.CapturedRelay, "requests", []), patch.dict(
-                target.os.environ, {"DURANKI_DEV_TOKEN": "", "DURANKI_DEV04_PROVIDER_KEY": ""}):
+                target.os.environ, {"EZLLMROUTER_DEV_TOKEN": "", "EZLLMROUTER_DEV04_PROVIDER_KEY": ""}):
             with self.assertRaises(AssertionError) as caught:
                 target.main()
         diagnostic = str(caught.exception)

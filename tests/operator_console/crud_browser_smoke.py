@@ -16,10 +16,10 @@ sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "deploy/local"))
 
 from crud_browser import run_browser
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 
 
 class Authority:
@@ -51,7 +51,7 @@ def main():
     result_path = ROOT / (".artifacts/browser/dev-07/CRUD-LOCAL-BROWSER-RESULT" + suffix + ".json")
     if result_path.exists():
         raise SystemExit("local browser result already exists; preserve prior proof")
-    with tempfile.TemporaryDirectory(prefix="duranki-crud-browser-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="ezllmrouter-crud-browser-") as scratch:
         location = Path(scratch)
         store_path = location / "metadata.sqlite"
         store = SQLiteStore(store_path)
@@ -121,7 +121,7 @@ def main():
             "confirmed_dialogs": result["confirmed_dialogs"], "keyboard_tab": result["keyboard_tab"],
             "sign_out_http": result["sign_out_http"],
             "crud_source_sha256": hashlib.sha256((ROOT / "web/crud_view.js").read_bytes()).hexdigest(),
-            "registry_source_sha256": hashlib.sha256((ROOT / "server/src/duranki_server/registry.py").read_bytes()).hexdigest()}
+            "registry_source_sha256": hashlib.sha256((ROOT / "server/src/ezllmrouter_server/registry.py").read_bytes()).hexdigest()}
         result_path.write_text(json.dumps(safe, indent=2, sort_keys=True) + "\n")
         print(json.dumps(safe, sort_keys=True))
 

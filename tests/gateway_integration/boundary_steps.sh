@@ -31,12 +31,12 @@ run_boundaries() {
   wait_started=1
   logrun d04-5-readiness compose exec -T python_consumer python -c \
     'import os,time,urllib.request,urllib.error
-u=urllib.request.Request("http://127.0.0.1:8771/v1/capabilities",headers={"Duranki-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["DURANKI_DEV_TOKEN"]})
+u=urllib.request.Request("http://127.0.0.1:8771/v1/capabilities",headers={"EzLLMRouter-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["EZLLMROUTER_DEV_TOKEN"]})
 for i in range(60):
  try:
   with urllib.request.urlopen(u,timeout=1) as response:
    assert response.status==200
-   assert response.headers.get("Duranki-Contract-Version")=="0.2"
+   assert response.headers.get("EzLLMRouter-Contract-Version")=="0.2"
    print(response.status)
   break
  except urllib.error.HTTPError:
@@ -44,9 +44,9 @@ for i in range(60):
  except (urllib.error.URLError,TimeoutError,ConnectionError):
   if i==59: raise
   time.sleep(.1)'
-  logrun d04-5-positive-before compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-positive-before compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_boundary.py positive wait_before
-  logrun d04-5-hold-stale compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-hold-stale compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py hold hold_stale
   logrun d04-5-hold-stale-sid "$python_tool" -I -B -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["submission_id"])' "$run_dir/d04-5-hold-stale.stdout"
@@ -57,7 +57,7 @@ for i in range(100):
  if sum(x["event"]=="hold_entered_after_receiver_arrival" for x in r)>=1: print(json.dumps(r[-1])); break
  time.sleep(.05)
 else: raise AssertionError("receiver hold not entered")'
-  logrun d04-5-queued-stale compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-queued-stale compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py queued queued_stale
   logrun d04-5-queued-stale-sid "$python_tool" -I -B -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["submission_id"])' "$run_dir/d04-5-queued-stale.stdout"
@@ -76,9 +76,9 @@ else: raise AssertionError("selected request never queued in httpcore pool")' "$
     'import urllib.request; print(urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:8766/control/release",data=b"",method="POST"),timeout=3).status)'
   local hold_sid
   hold_sid=$(<"$run_dir/d04-5-hold-stale-sid.stdout")
-  logrun d04-5-hold-status compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-hold-status compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py status "$hold_sid"
-  logrun d04-5-queued-status compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-queued-status compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py status "$queued_sid"
   logrun d04-5-stale-before-horizon compose exec -T receiver cat /data/arrivals.jsonl
   logrun d04-5-stale-horizon "$python_tool" -I -B -c \
@@ -87,11 +87,11 @@ else: raise AssertionError("selected request never queued in httpcore pool")' "$
   logrun d04-5-stale-no-late-send cmp "$run_dir/d04-5-stale-before-horizon.stdout" "$run_dir/d04-5-stale-after-horizon.stdout"
   logrun d04-5-authority-active compose exec -T service_wait python -c \
     'import json,pathlib,time; pathlib.Path("/data/authority-state").write_text("active"); row={"event":"authority_restored","monotonic_ns":time.monotonic_ns()}; p=pathlib.Path("/data/authority-events.jsonl"); p.write_text(p.read_text()+json.dumps(row)+"\n"); print(json.dumps(row))'
-  logrun d04-5-positive-after-stale compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-positive-after-stale compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_boundary.py positive wait_after_stale
 
   # Actual ContextVar swap while a distinct authenticated context is in flight.
-  logrun d04-5-hold-swap compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-hold-swap compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py hold hold_swap
   logrun d04-5-hold-swap-sid "$python_tool" -I -B -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["submission_id"])' "$run_dir/d04-5-hold-swap.stdout"
@@ -102,22 +102,22 @@ for i in range(100):
  if sum(x["event"]=="hold_entered_after_receiver_arrival" for x in r)>=2: print(json.dumps(r[-1])); break
  time.sleep(.05)
 else: raise AssertionError("second receiver hold not entered")'
-  logrun d04-5-swapped-context compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-swapped-context compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py swapped
   logrun d04-5-release-swap compose exec -T netns python -c \
     'import urllib.request; print(urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:8766/control/release",data=b"",method="POST"),timeout=3).status)'
   local swap_hold_sid
   swap_hold_sid=$(<"$run_dir/d04-5-hold-swap-sid.stdout")
-  logrun d04-5-swap-hold-status compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-swap-hold-status compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py status "$swap_hold_sid"
   logrun d04-5-swap-before-horizon compose exec -T receiver cat /data/arrivals.jsonl
   logrun d04-5-swap-horizon "$python_tool" -I -B -c \
     'import time; start=time.monotonic(); time.sleep(5.2); print(round((time.monotonic()-start)*1000))'
   logrun d04-5-swap-after-horizon compose exec -T receiver cat /data/arrivals.jsonl
   logrun d04-5-swap-no-late-send cmp "$run_dir/d04-5-swap-before-horizon.stdout" "$run_dir/d04-5-swap-after-horizon.stdout"
-  logrun d04-5-positive-after-swap compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-positive-after-swap compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_boundary.py positive wait_after_swap
-  logrun d04-5-overlap-contexts compose exec -T -e DURANKI_SERVICE_URL=http://127.0.0.1:8771 \
+  logrun d04-5-overlap-contexts compose exec -T -e EZLLMROUTER_SERVICE_URL=http://127.0.0.1:8771 \
     python_consumer python /app/actors/python_wait.py overlap
   logrun d04-5-receiver compose exec -T receiver cat /data/arrivals.jsonl
   logrun d04-5-events compose exec -T service_wait cat /data/guard-events.jsonl
@@ -136,12 +136,12 @@ else: raise AssertionError("second receiver hold not entered")'
   probe_started=1
   logrun d04-6-readiness compose exec -T python_consumer python -c \
     'import os,time,urllib.request,urllib.error
-u=urllib.request.Request("http://127.0.0.1:8772/v1/capabilities",headers={"Duranki-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["DURANKI_DEV_TOKEN"]})
+u=urllib.request.Request("http://127.0.0.1:8772/v1/capabilities",headers={"EzLLMRouter-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["EZLLMROUTER_DEV_TOKEN"]})
 for i in range(60):
  try:
   with urllib.request.urlopen(u,timeout=1) as response:
    assert response.status==200
-   assert response.headers.get("Duranki-Contract-Version")=="0.2"
+   assert response.headers.get("EzLLMRouter-Contract-Version")=="0.2"
    print(response.status)
   break
  except urllib.error.HTTPError:

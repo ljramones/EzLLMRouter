@@ -15,16 +15,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from tests.operator_console import test_integration_credentials as credential_fixtures
 from tests.operator_console import test_personal_campaign as personal_fixtures
 from tests.operator_console.test_projection import record as legacy_record
-from duranki_server.canonical import ContractError
-from duranki_server.integration_accounting import IntegrationError
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import _accounting_maintenance
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore, encode
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.integration_accounting import IntegrationError
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import _accounting_maintenance
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore, encode
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
 
 ROOT = Path(__file__).resolve().parents[2]
 EXTERNAL = json.loads((ROOT / "tests/fixtures/contracts/integration-readiness-v2/examples.json").read_text())
@@ -45,7 +45,7 @@ class RetentionReadTests(unittest.TestCase):
         return record
 
     def test_unmanaged_cohort_does_not_block_unrelated_reads_or_maintenance(self):
-        with patch("duranki_server.integration_accounting._time", return_value="2026-11-03T12:00:00Z") as clock:
+        with patch("ezllmrouter_server.integration_accounting._time", return_value="2026-11-03T12:00:00Z") as clock:
             invalid = self.real_dataset("unmanaged", valid=False)
             expired = self.real_dataset("managed")
             accounting = self.registry.integration
@@ -68,7 +68,7 @@ class RetentionReadTests(unittest.TestCase):
             self.assertEqual(restarted.integration._dataset(self.dataset)["dataset_id"], self.dataset)
 
     def test_expiry_is_enforced_on_reads_before_physical_cleanup(self):
-        with patch("duranki_server.integration_accounting._time", return_value="2026-11-03T12:00:00Z") as clock:
+        with patch("ezllmrouter_server.integration_accounting._time", return_value="2026-11-03T12:00:00Z") as clock:
             record = self.real_dataset("deadline")
             clock.return_value = "2026-11-04T00:00:00Z"
             accounting = self.registry.integration
@@ -89,7 +89,7 @@ class RetentionReadTests(unittest.TestCase):
 
     def test_snapshot_report_and_export_hide_expired_content_without_writes(self):
         accounting = self.registry.integration
-        with patch("duranki_server.integration_accounting._time", return_value="2026-10-27T00:00:40Z") as clock:
+        with patch("ezllmrouter_server.integration_accounting._time", return_value="2026-10-27T00:00:40Z") as clock:
             accounting.create_dataset(self.owner, EXTERNAL["dataset"], "2")
             accounting.create_account(self.owner, EXTERNAL["account"], "2")
             ingest = self.registry.principal("svc.integration")
@@ -123,7 +123,7 @@ class RetentionReadTests(unittest.TestCase):
         accounting, stopped = Mock(), Mock()
         stopped.wait.side_effect = [False, False, True]
         accounting.maintain.side_effect = [RuntimeError("private diagnostic"), {}]
-        with patch("duranki_server.operator_web.log_failure") as logged:
+        with patch("ezllmrouter_server.operator_web.log_failure") as logged:
             _accounting_maintenance(accounting, stopped)
         self.assertEqual(accounting.maintain.call_count, 2)
         logged.assert_called_once_with("accounting_maintenance_failed")

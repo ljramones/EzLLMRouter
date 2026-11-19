@@ -9,9 +9,9 @@ from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.operator_projection import OperatorProjection  # noqa: E402
-from duranki_server.operator_web import serve  # noqa: E402
-from duranki_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.operator_projection import OperatorProjection  # noqa: E402
+from ezllmrouter_server.operator_web import serve  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore  # noqa: E402
 
 
 def run():

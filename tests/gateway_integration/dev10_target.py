@@ -15,14 +15,14 @@ import threading
 import time
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from duranki_client import DurankiClient, DurankiError
-from duranki_server.core import Coordinator
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.plans import PlanAuthority
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 from choice_b_sender import ChoiceBSenderAdapter
 from dev08_integrated import (TEST_KEY, TEST_TOKEN, certificate, fixture_paths,
                               prepare_registry, rows)
@@ -118,7 +118,7 @@ def send(client, request, wait=10000):
 def denied(client, request, label):
     try:
         send(client, request)
-    except DurankiError as exc:
+    except EzLLMRouterError as exc:
         require(exc.code == "FINANCIAL_AUTH_REQUIRED", label + " wrong denial: " + exc.code)
         return
     raise AssertionError(label + " unexpectedly admitted")
@@ -127,7 +127,7 @@ def denied(client, request, label):
 def settled(store, authority, registry, config, campaign, coordinator, adapter,
             token, before, receiver_log, base):
     first = request_for(base, config, "first")
-    with DurankiClient("http://127.0.0.1:8773", token) as client:
+    with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
         reply = send(client, first)
         require(reply["state"] == "delivered", "first send did not deliver")
         attempt = reply["candidate"]["attempt_id"]
@@ -167,7 +167,7 @@ def settled(store, authority, registry, config, campaign, coordinator, adapter,
                 "settled total or count")
         require(store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0] == 2,
                 "usage revisions did not reconcile")
-        require(len(rows(Path(os.environ["DURANKI_DEV04_SEND_EVENTS"]))) == 2, "sender count")
+        require(len(rows(Path(os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"]))) == 2, "sender count")
         return {"arrivals": 2, "duplicate_arrivals": 0, "competing_denied": True,
                 "exhaustion_denied": True, "incurred_decimal": summary["incurred_decimal"],
                 "attempts": summary["request_count"]}
@@ -175,7 +175,7 @@ def settled(store, authority, registry, config, campaign, coordinator, adapter,
 
 def unknown(store, authority, registry, config, campaign, coordinator, adapter,
             token, before, receiver_log, base):
-    with DurankiClient("http://127.0.0.1:8773", token) as client:
+    with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
         reply = send(client, request_for(base, config, "unknown", unknown=True))
         require(reply["state"] == "pending", "unknown transport outcome was treated as delivered")
         require(len(rows(receiver_log)) == before + 1, "unknown receiver arrival")
@@ -207,7 +207,7 @@ def queued(kind):
             require(release.wait(8), "queued dispatch timeout")
             return original(*args)
         adapter.send_with_context = held
-        with DurankiClient("http://127.0.0.1:8773", token) as client:
+        with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(send, client, request_for(base, config, kind))
                 require(entered.wait(5), kind + " dispatch did not queue")
@@ -227,7 +227,7 @@ def queued(kind):
                 try:
                     reply = future.result(timeout=15)
                     require(reply["state"] == "failed", kind + " queued work unexpectedly delivered")
-                except DurankiError as exc:
+                except EzLLMRouterError as exc:
                     require(exc.failure_stage == "before_transmit", kind + " wrong failure stage")
         require(len(rows(receiver_log)) == before, kind + " reached receiver")
         record = store.db.execute("SELECT record FROM submissions").fetchone()
@@ -288,9 +288,9 @@ def main():
         root = Path(scratch)
         cert, key = certificate(root)
         receiver_log = root / "receiver.jsonl"
-        os.environ["DURANKI_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-        os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
-        os.environ["DURANKI_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
+        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
+        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
+        os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
         with (root / "receiver.stderr").open("w") as err:
             receiver = subprocess.Popen([sys.executable, "-B",
                 str(Path(__file__).with_name("dev08_tls_receiver.py")), str(cert), str(key),

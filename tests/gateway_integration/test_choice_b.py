@@ -170,10 +170,10 @@ class ChoiceBComponentTests(unittest.TestCase):
         self.assertIn('user: "10001:10001"', worker)
         self.assertIn("read_only: true", worker)
         self.assertIn("choice_b_link:/link", worker)
-        self.assertNotIn("DURANKI_DEV_TOKEN", worker)
-        self.assertNotIn("DURANKI_DEV04_PROVIDER_KEY", worker)
+        self.assertNotIn("EZLLMROUTER_DEV_TOKEN", worker)
+        self.assertNotIn("EZLLMROUTER_DEV04_PROVIDER_KEY", worker)
         self.assertNotIn("choice_b_data", worker)
-        self.assertIn("DURANKI_DEV04_PROVIDER_KEY", sender)
+        self.assertIn("EZLLMROUTER_DEV04_PROVIDER_KEY", sender)
         self.assertIn("choice_b_data:/data", sender)
 
     def test_sender_claims_one_registered_attempt_and_rejects_forgery(self):
@@ -184,8 +184,8 @@ class ChoiceBComponentTests(unittest.TestCase):
             matches = glob.glob(str(ROOT / "gateway-inputs/dev04/wheels" / (name + "-*.whl")))
             self.assertEqual(len(matches), 1, name)
             sys.path.insert(0, matches[0])
-        from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-        from duranki_server.gateway.guard import Invocation
+        from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+        from ezllmrouter_server.gateway.guard import Invocation
 
         adapter = object.__new__(ChoiceBSenderAdapter)
         adapter.provider_key = "sk-trusted-synthetic-provider-key-000000000000"
@@ -233,8 +233,8 @@ class ChoiceBComponentTests(unittest.TestCase):
             self.assertEqual(len(matches), 1, name)
             sys.path.insert(0, matches[0])
         import httpx
-        from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-        from duranki_server.gateway.guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
+        from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+        from ezllmrouter_server.gateway.guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
         from test_guard import invocation
 
         arrivals, receipts = [], []
@@ -263,8 +263,8 @@ class ChoiceBComponentTests(unittest.TestCase):
             "headers": [[key, value] for key, value in prepared.headers.items()],
             "body_b64": base64.b64encode(prepared.content).decode("ascii"),
             "timeout": {"connect": 1.0, "read": 1.0, "write": 1.0, "pool": 1.0}}
-        original_provider_key = os.environ.get("DURANKI_DEV04_PROVIDER_KEY")
-        os.environ["DURANKI_DEV04_PROVIDER_KEY"] = adapter.provider_key
+        original_provider_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
+        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = adapter.provider_key
         try:
             result = adapter.process_relay(envelope)
             self.assertEqual(result["status"], 200)
@@ -312,7 +312,7 @@ class ChoiceBComponentTests(unittest.TestCase):
                 "headers": [[key, value] for key, value in tool_request.headers.items()],
                 "body_b64": base64.b64encode(tool_request.content).decode("ascii")}
             with tempfile.TemporaryDirectory() as tmp:
-                with patch.dict(os.environ, {"DURANKI_DEV05_TEST_TOOL_MUTATION": "1"}), \
+                with patch.dict(os.environ, {"EZLLMROUTER_DEV05_TEST_TOOL_MUTATION": "1"}), \
                      patch("choice_b_sender.Path", side_effect=lambda _path: Path(tmp) / "mutation.jsonl"):
                     with self.assertRaises(GuardRejected):
                         adapter.process_relay(mutation_envelope)
@@ -323,9 +323,9 @@ class ChoiceBComponentTests(unittest.TestCase):
             self.assertEqual(len(receipts), 1)
         finally:
             if original_provider_key is None:
-                os.environ.pop("DURANKI_DEV04_PROVIDER_KEY", None)
+                os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
             else:
-                os.environ["DURANKI_DEV04_PROVIDER_KEY"] = original_provider_key
+                os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = original_provider_key
             asyncio.run_coroutine_threadsafe(adapter.guard.aclose(), adapter.loop).result(timeout=3)
             adapter.loop.call_soon_threadsafe(adapter.loop.stop)
             thread.join(timeout=3)

@@ -24,7 +24,7 @@ def copy(src, dst, expected=None):
 
 def prepare(root, run):
     root, run = Path(root).resolve(), Path(run).resolve()
-    predecessor = Path("/private/tmp/duranki-dev-01/run-20261018-04")
+    predecessor = Path("/private/tmp/ezllmrouter-dev-01/run-20261018-04")
     manifest = json.loads((predecessor / "wheel-manifest.json").read_text())
     py_lock = json.loads((root / "tests/client_parity/wheelhouse.lock.json").read_text())["wheels"]
     by_name = {x["filename"]: x for x in manifest}
@@ -45,8 +45,8 @@ def prepare(root, run):
         if src.stat().st_size != entry["bytes"]:
             raise ValueError("service wheel size mismatch")
         rows.append(copy(src, run / "build/service/wheels" / src.name, entry["sha256"]))
-    for name, target in (("mach33_duranki_client-0.0.3-py3-none-any.whl", "python"),
-                         ("mach33-duranki-client-0.0.2.tgz", "js")):
+    for name, target in (("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "python"),
+                         ("cognitivedynamics-ezllmrouter-client-0.3.0.tgz", "js")):
         rows.append(copy(root / "docs/development/dev-03" / name, run / "build" / target / name))
     for name, target in (("python_actor.py", "python"), ("js_actor.cjs", "js"),
                          ("test_python_client.py", "python"), ("test_js_client.cjs", "js")):
@@ -54,7 +54,7 @@ def prepare(root, run):
     for target in ("python", "js"):
         rows.append(copy(root / "tests/development_slice/request.json", run / "build" / target / "tests/request.json"))
         rows.append(copy(root / "tests/tool_cycle/scenarios.json", run / "build" / target / "tests/scenarios.json"))
-        rows.append(copy(root / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+        rows.append(copy(root / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
                          run / "build" / target / "tests/vectors.json"))
     for src in sorted((root / "server/src").rglob("*")):
         if src.is_dir() or "__pycache__" in src.parts or src.name == ".DS_Store":

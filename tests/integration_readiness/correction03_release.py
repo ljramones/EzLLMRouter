@@ -14,7 +14,7 @@ import subprocess
 import sys
 from urllib.parse import urlsplit
 
-from duranki_client import IntegrationClient, IntegrationClientError, __version__
+from ezllmrouter_client import IntegrationClient, IntegrationClientError, __version__
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -90,7 +90,7 @@ def csv_report(base, token, did):
     try:
         conn.request("GET", "/integration/v2/reports/usage?dataset_id=" + did + "&export=csv",
                      headers={"Authorization": "Bearer " + token,
-                              "Duranki-Integration-Version": "2"})
+                              "EzLLMRouter-Integration-Version": "2"})
         response = conn.getresponse()
         assert response.status == 200
         return response.read().decode()
@@ -133,7 +133,7 @@ def check_historical(owner, sender, base, admin_token, db, expected_hash, expect
 def main():
     root, base, mode = Path(sys.argv[1]).resolve(), sys.argv[2], sys.argv[3]
     assert mode in {"seed_old", "seed_corrected", "verify_corrected", "probe_conflicts"}
-    assert __version__ == "0.2.2" and "site-packages" in str(Path(sys.modules["duranki_client"].__file__).resolve())
+    assert __version__ == "0.2.2" and "site-packages" in str(Path(sys.modules["ezllmrouter_client"].__file__).resolve())
     evidence = root / "evidence"
     evidence.mkdir(parents=True, exist_ok=True)
     instance = root / ("historical" if mode == "seed_old" else "corrected")
@@ -182,7 +182,7 @@ def main():
                 "attempt_id": "attempt.reverse.legacy", "logical_operation_id": "logical.reverse",
                 "attempt_role": "fallback", "predecessor_attempt_id": "attempt.reverse.pending"}))
             node = node_actor(base, secrets / "ingest.token",
-                instance / "consumer-node24/node_modules/@mach33/duranki-client", "probe", evidence)
+                instance / "consumer-node24/node_modules/@cognitivedynamics/ezllmrouter-client", "probe", evidence)
             assert history_hash(db) == expected
             summary = {"mode": mode, "result": "PASS", "related_error": related_error,
                        "reverse_error": reverse_error,
@@ -205,7 +205,7 @@ def main():
             for did in ("dataset.c03.mixed.linkfirst", "dataset.c03.mixed.startfirst", "dataset.c03.pure"):
                 assert owner.create_dataset(dataset(did))["dataset_id"] == did
                 assert owner.register_account(account(did, "account:" + did))["revision"] == 1
-            package = instance / "consumer-node24/node_modules/@mach33/duranki-client"
+            package = instance / "consumer-node24/node_modules/@cognitivedynamics/ezllmrouter-client"
             assert package.is_dir()
             node_actor(base, secrets / "ingest.token", package, "seed", evidence)
             did = "dataset.c03.mixed.startfirst"
@@ -236,7 +236,7 @@ def main():
         assert (next(row for row in pure["attempts"] if row["attempt_id"] == "attempt.pure.child")
                 ["lineage_status"] == "linked")
         node_actor(base, secrets / "ingest.token",
-                   instance / "consumer-node24/node_modules/@mach33/duranki-client", "verify", evidence)
+                   instance / "consumer-node24/node_modules/@cognitivedynamics/ezllmrouter-client", "verify", evidence)
         if mode == "seed_corrected":
             (evidence / "corrected-report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
             (evidence / "corrected-export.json").write_text(json.dumps(exported, indent=2, sort_keys=True) + "\n")

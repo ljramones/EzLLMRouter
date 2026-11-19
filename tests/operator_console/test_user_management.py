@@ -10,9 +10,9 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.user_management import (
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.user_management import (
     LoginThrottle, UserError, UserManager,
 )
 

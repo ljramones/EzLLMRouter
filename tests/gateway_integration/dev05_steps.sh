@@ -20,11 +20,11 @@ run_dev05() {
   started=1
   logrun d05-up compose up -d netns receiver worker_choice_b service_choice_b python_choice_b js_choice_b
   logrun d05-readiness compose exec -T python_choice_b python -c \
-    'import os,time,urllib.request,urllib.error; u=urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"Duranki-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["DURANKI_DEV_TOKEN"]});
+    'import os,time,urllib.request,urllib.error; u=urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"EzLLMRouter-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["EZLLMROUTER_DEV_TOKEN"]});
 for i in range(60):
  try:
   with urllib.request.urlopen(u,timeout=1) as response:
-   assert response.status==200 and response.headers.get("Duranki-Contract-Version")=="0.2"
+   assert response.status==200 and response.headers.get("EzLLMRouter-Contract-Version")=="0.2"
    print(response.status)
   break
  except urllib.error.HTTPError: raise
@@ -32,13 +32,13 @@ for i in range(60):
   if i==59: raise
   time.sleep(.2)'
   logrun d05-python-package compose exec -T python_choice_b python -c \
-    'import importlib.metadata as m,duranki_client,json; print(json.dumps({"version":m.version("mach33-duranki-client"),"path":duranki_client.__file__}))'
+    'import importlib.metadata as m,ezllmrouter_client,json; print(json.dumps({"version":m.version("cognitivedynamics-ezllmrouter-client"),"path":ezllmrouter_client.__file__}))'
   logrun d05-js-package compose exec -T js_choice_b node -e \
-    'const p=require.resolve("@mach33/duranki-client");const m=require("/app/consumer/node_modules/@mach33/duranki-client/package.json");console.log(JSON.stringify({version:m.version,path:p}))'
+    'const p=require.resolve("@cognitivedynamics/ezllmrouter-client");const m=require("/app/consumer/node_modules/@cognitivedynamics/ezllmrouter-client/package.json");console.log(JSON.stringify({version:m.version,path:p}))'
   logrun d05-worker-identities compose exec -T service_choice_b \
     python -B /app/gateway/worker_ready.py
   logrun d05-worker-isolation compose exec -T worker_choice_b python -c \
-    'import json,os,pathlib,socket; routes=pathlib.Path("/proc/net/route").read_text().splitlines(); assert not any(len(x.split())>1 and x.split()[1]=="00000000" for x in routes[1:]); assert "DURANKI_DEV_TOKEN" not in os.environ and "DURANKI_DEV04_PROVIDER_KEY" not in os.environ; assert not any(pathlib.Path(x).exists() for x in ("/app/server","/app/dev_slice","/app/gateway")); s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(("127.0.0.1",8766)); s.close(); assert rc != 0; print(json.dumps({"network_mode":"none","default_route":False,"direct_receiver_connect_errno":rc,"trusted_code_mounted":False,"trusted_credentials_in_environment":False}))'
+    'import json,os,pathlib,socket; routes=pathlib.Path("/proc/net/route").read_text().splitlines(); assert not any(len(x.split())>1 and x.split()[1]=="00000000" for x in routes[1:]); assert "EZLLMROUTER_DEV_TOKEN" not in os.environ and "EZLLMROUTER_DEV04_PROVIDER_KEY" not in os.environ; assert not any(pathlib.Path(x).exists() for x in ("/app/server","/app/dev_slice","/app/gateway")); s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(("127.0.0.1",8766)); s.close(); assert rc != 0; print(json.dumps({"network_mode":"none","default_route":False,"direct_receiver_connect_errno":rc,"trusted_code_mounted":False,"trusted_credentials_in_environment":False}))'
   logrun d05-guard-component compose exec -T service_choice_b python -B /app/gateway/test_guard.py -q
   logrun d05-retry-component compose exec -T service_choice_b python -B /app/gateway/test_retry_cause.py --source-root /app -q
   logrun d05-work-identity-component compose exec -T service_choice_b \
@@ -49,7 +49,7 @@ for i in range(60):
     node /app/consumer/test_js_client.cjs
   logrun d05-js-actor-output-regression compose exec -T js_choice_b node \
     /app/consumer/actor_output_regression.cjs /app/consumer/js_text.cjs \
-    /app/consumer/node_modules/@mach33/duranki-client/index.cjs /app/consumer/request.json
+    /app/consumer/node_modules/@cognitivedynamics/ezllmrouter-client/index.cjs /app/consumer/request.json
   logrun d05-js-actor-output-consumer "$python_tool" -I -B \
     "$root/tests/gateway_integration/verify_actor_output.py" \
     "$run_dir/d05-js-actor-output-regression.stdout"
@@ -123,7 +123,7 @@ for i in range(60):
   logrun d05-receiver compose exec -T receiver cat /data/arrivals.jsonl
   logrun d05-probes-no-send cmp "$run_dir/d05-probes-before.stdout" "$run_dir/d05-receiver.stdout"
   logrun d05-probes-health compose exec -T python_choice_b python -c \
-    'import os,urllib.request; a=urllib.request.urlopen("http://127.0.0.1:8766/health",timeout=2); b=urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"Duranki-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["DURANKI_DEV_TOKEN"]}),timeout=2); assert a.status==b.status==200; print("200")'
+    'import os,urllib.request; a=urllib.request.urlopen("http://127.0.0.1:8766/health",timeout=2); b=urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"EzLLMRouter-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["EZLLMROUTER_DEV_TOKEN"]}),timeout=2); assert a.status==b.status==200; print("200")'
   logrun d05-controls compose exec -T receiver python -c \
     'from pathlib import Path; p=Path("/data/controls.jsonl"); print(p.read_text() if p.exists() else "",end="")'
   logrun d05-guard-events compose exec -T service_choice_b cat /data/guard-events.jsonl

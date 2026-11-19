@@ -13,12 +13,12 @@ import threading
 import time
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from duranki_client import DurankiClient
-from duranki_server.core import Coordinator
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.plans import PlanAuthority
-from duranki_server.registry import Registry
-from duranki_server.web import serve
+from ezllmrouter_client import EzLLMRouterClient
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.web import serve
 from choice_b_sender import ChoiceBSenderAdapter
 from dev08_integrated import (TEST_KEY, TEST_TOKEN, certificate, fixture_paths, prepare_registry, rows)
 from dev10_target import request_for
@@ -42,9 +42,9 @@ def main():
         root = Path(scratch)
         cert, key = certificate(root)
         receiver_log = root / "receiver.jsonl"
-        os.environ["DURANKI_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-        os.environ["DURANKI_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
-        os.environ["DURANKI_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
+        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
+        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
+        os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
         with (root / "receiver.stderr").open("w") as err:
             receiver = subprocess.Popen([sys.executable, "-B",
                 str(Path(__file__).with_name("dev08_tls_receiver.py")), str(cert), str(key),
@@ -109,7 +109,7 @@ def main():
             request = request_for(base, config, "cache-" + case)
             if case != "mixed":
                 request["messages"][1]["blocks"][0]["text"] += " DEV11_CACHE_" + case.upper()
-            with DurankiClient("http://127.0.0.1:8773", token) as client:
+            with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
                 reply = client.submit(request, {"wait_ms": 10000})
                 check(reply["state"] == "delivered", "one controlled call did not deliver")
                 duplicate = client.submit(request, {"wait_ms": 10000})

@@ -51,7 +51,7 @@ function showLogin(error=""){
 }
 function showWorkspace(){if($("skip-link"))$("skip-link").hidden=false;$("login-view").hidden=true;$("workspace").hidden=false;$("logout").hidden=false;}
 async function api(path,{method="GET",body=null,csrf=false}={}){
-  const headers={};if(body!==null)headers["Content-Type"]="application/json";if(csrf)headers["X-Duranki-CSRF"]=state.csrf;
+  const headers={};if(body!==null)headers["Content-Type"]="application/json";if(csrf)headers["X-EzLLMRouter-CSRF"]=state.csrf;
   const generation=viewUi.generation;
   const checkCurrent=()=>{if(generation!==viewUi.generation)throw Object.assign(Error("This screen has changed."),{staleView:true});};
   let response,value;

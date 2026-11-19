@@ -19,7 +19,7 @@ class TargetRunnerTests(unittest.TestCase):
             marker.write_text("historical\n")
             with patch.object(dev08_target, "RUNS", Path(tmp)), patch.object(sys, "argv",
                 ["dev08_target.py", "dev08-20261021-01"]), patch.dict("os.environ",
-                {"DURANKI_ARTIFACT_ROOT": tmp}), patch.object(dev08_target, "command") as command:
+                {"EZLLMROUTER_ARTIFACT_ROOT": tmp}), patch.object(dev08_target, "command") as command:
                 with self.assertRaisesRegex(SystemExit, "run ID already exists"):
                     dev08_target.main()
                 command.assert_not_called()
@@ -29,7 +29,7 @@ class TargetRunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with patch.object(dev08_target, "RUNS", Path(tmp)), patch.object(sys, "argv",
                 ["dev08_target.py", "dev08-20261021-02"]), patch.dict("os.environ",
-                {"DURANKI_ARTIFACT_ROOT": tmp}), patch.object(dev08_target.subprocess,
+                {"EZLLMROUTER_ARTIFACT_ROOT": tmp}), patch.object(dev08_target.subprocess,
                 "check_output", side_effect=["a" * 40, " M web/app.js"]), patch.object(
                 dev08_target, "command") as command:
                 with self.assertRaisesRegex(SystemExit, "source checkout is dirty"):

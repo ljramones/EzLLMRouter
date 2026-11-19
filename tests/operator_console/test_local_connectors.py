@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from tests.operator_console.test_user_management import UserFixture
-from duranki_server.local_connectors import (
+from ezllmrouter_server.local_connectors import (
     ConnectorError, KINDS, LocalConnectors, MAX_RESPONSE, _read_json,
     allowed_address, discover, normalize_url,
 )
@@ -265,9 +265,9 @@ class LocalTransportTests(unittest.TestCase):
     def call(self, response, *, addresses=None, url="http://localhost:8000/v1", secret=""):
         sock = FakeSocket()
         addresses = addresses or [(2, 1, 6, "", ("127.0.0.1", 8000))]
-        with patch("duranki_server.local_connectors.socket.getaddrinfo", return_value=addresses), \
-                patch("duranki_server.local_connectors.socket.socket", return_value=sock) as connect, \
-                patch("duranki_server.local_connectors.http.client.HTTPResponse", return_value=response):
+        with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", return_value=addresses), \
+                patch("ezllmrouter_server.local_connectors.socket.socket", return_value=sock) as connect, \
+                patch("ezllmrouter_server.local_connectors.http.client.HTTPResponse", return_value=response):
             result = _read_json(url, "/v1/models", secret)
         return result, sock, connect
 
@@ -281,9 +281,9 @@ class LocalTransportTests(unittest.TestCase):
 
     def test_public_or_metadata_dns_answer_is_rejected_before_connect(self):
         for address in ("169.254.169.254", "8.8.8.8"):
-            with patch("duranki_server.local_connectors.socket.getaddrinfo", return_value=[
+            with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", return_value=[
                     (2, 1, 6, "", ("127.0.0.1", 8000)), (2, 1, 6, "", (address, 8000))]), \
-                    patch("duranki_server.local_connectors.socket.socket") as sock:
+                    patch("ezllmrouter_server.local_connectors.socket.socket") as sock:
                 with self.assertRaises(ConnectorError):
                     _read_json("http://container-name:8000", "/v1/models", "")
                 sock.assert_not_called()
@@ -312,11 +312,11 @@ class LocalTransportTests(unittest.TestCase):
 
     def test_https_preserves_certificate_validation_and_hostname(self):
         raw, tls = FakeSocket(), FakeSocket()
-        with patch("duranki_server.local_connectors.socket.getaddrinfo", return_value=[
+        with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", return_value=[
                 (2, 1, 6, "", ("192.168.1.20", 443))]), \
-                patch("duranki_server.local_connectors.socket.socket", return_value=raw), \
-                patch("duranki_server.local_connectors.ssl.create_default_context") as context, \
-                patch("duranki_server.local_connectors.http.client.HTTPResponse", return_value=FakeResponse()):
+                patch("ezllmrouter_server.local_connectors.socket.socket", return_value=raw), \
+                patch("ezllmrouter_server.local_connectors.ssl.create_default_context") as context, \
+                patch("ezllmrouter_server.local_connectors.http.client.HTTPResponse", return_value=FakeResponse()):
             context.return_value.wrap_socket.return_value = tls
             _read_json("https://model-server.local", "/v1/models", "private-token")
         context.assert_called_once_with()
@@ -326,15 +326,15 @@ class LocalTransportTests(unittest.TestCase):
         self.assertTrue(raw.closed and tls.closed)
 
     def test_dns_and_tls_errors_are_classified_without_echoing_exceptions(self):
-        with patch("duranki_server.local_connectors.socket.getaddrinfo", side_effect=socket.gaierror("private diagnostic")):
+        with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", side_effect=socket.gaierror("private diagnostic")):
             with self.assertRaises(ConnectorError) as exc:
                 _read_json("http://container-name:11434", "/api/tags", "")
         self.assertEqual(exc.exception.code, "SERVER_NAME_NOT_RESOLVED")
         raw = FakeSocket()
-        with patch("duranki_server.local_connectors.socket.getaddrinfo", return_value=[
+        with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", return_value=[
                 (2, 1, 6, "", ("127.0.0.1", 443))]), \
-                patch("duranki_server.local_connectors.socket.socket", return_value=raw), \
-                patch("duranki_server.local_connectors.ssl.create_default_context") as context:
+                patch("ezllmrouter_server.local_connectors.socket.socket", return_value=raw), \
+                patch("ezllmrouter_server.local_connectors.ssl.create_default_context") as context:
             context.return_value.wrap_socket.side_effect = ssl.SSLCertVerificationError("private diagnostic")
             with self.assertRaises(ConnectorError) as exc:
                 _read_json("https://localhost", "/v1/models", "")

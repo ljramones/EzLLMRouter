@@ -5,8 +5,8 @@ const fs = require("node:fs");
 async function main() {
   if (process.argv.length !== 3) throw Error("one bounded input file required");
   const input = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-  const {DurankiClient} = require(input.package_path);
-  const client = new DurankiClient({baseUrl: input.base_url, token: input.token});
+  const {EzLLMRouterClient} = require(input.package_path);
+  const client = new EzLLMRouterClient({baseUrl: input.base_url, token: input.token});
   if (input.action === "recover") {
     const observed = {};
     for (const [label, selector] of Object.entries(input.selectors)) {

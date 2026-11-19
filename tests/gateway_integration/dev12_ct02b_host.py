@@ -29,9 +29,9 @@ NODE_IMAGE = "sha256:517e1b65b0e7e17377720978f1e7756318d17f57df8dce51d79e717c10c
 WHEEL_SHA = "955b15582de0739377a1f1206a686283ba3b8d4b39212ef36d3f02baf63210c0"
 TARBALL_SHA = "cfe563b1c50a597e6d65876432436b9cf9cb6d9bfeb22dee80520b90a69ac52d"
 PACKAGE_SHA = "880eb1c3ea47440682719d4550d5cf673ada129758097927f7582ea3a307df6c"
-WORKER = "duranki-dev12-ct02b-supp01-worker"
-SERVICE = "duranki-dev12-ct02b-supp01-service"
-VOLUME = "duranki-dev12-ct02b-supp01-link"
+WORKER = "ezllmrouter-dev12-ct02b-supp01-worker"
+SERVICE = "ezllmrouter-dev12-ct02b-supp01-service"
+VOLUME = "ezllmrouter-dev12-ct02b-supp01-link"
 
 
 def call(*args, check=True, timeout=30):
@@ -62,7 +62,7 @@ def prepare(review, original, predecessor, supplied_package, owner_start, correc
             review.parent.name != "dev12-a2-a4-completion02-20261026-01"):
         raise ValueError("fresh approved review root and unused fixed target required")
     if git("rev-parse", "--abbrev-ref", "HEAD") != "dev12/operation-contract" or \
-            git("remote", "get-url", "origin") != "git@github.com:33fg/duranki.git" or \
+            git("remote", "get-url", "origin") != "git@github.com:33fg/ezllmrouter.git" or \
             git("status", "--porcelain", "--untracked-files=no"):
         raise AssertionError("committed approved feature source required")
     if digest(supplied_package.read_bytes()) != PACKAGE_SHA:
@@ -75,15 +75,15 @@ def prepare(review, original, predecessor, supplied_package, owner_start, correc
     adjudication = REPO / "docs/development/dev-12/LEGACY-ALLOCATION-ADJUDICATION-01.json"
     snapshot = verify_legacy(adjudication, predecessor, original)
     with ZipFile(supplied_package) as z:
-        instruction = z.read("DURANKI-DEV12-COMPLETION-02-CONTINUE-04.md")
-        if z.read("DURANKI-DEV12-COMPLETION-02-CONTINUE-04-START.txt") != owner_start.read_bytes() or \
+        instruction = z.read("EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-04.md")
+        if z.read("EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-04-START.txt") != owner_start.read_bytes() or \
                 z.read("LEGACY-ALLOCATION-ADJUDICATION-01.json") != adjudication.read_bytes():
             raise AssertionError("owner adoption and adjudication package bytes differ")
     if now() >= utc(EXPIRY) - timedelta(minutes=25):
         raise PermissionError("insufficient original deadline before source preparation")
     packages = {
-        "python_wheel": (corrected / "mach33_duranki_client-0.0.4-py3-none-any.whl", WHEEL_SHA),
-        "js_tarball": (corrected / "mach33-duranki-client-0.0.3.tgz", TARBALL_SHA),
+        "python_wheel": (corrected / "cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", WHEEL_SHA),
+        "js_tarball": (corrected / "cognitivedynamics-ezllmrouter-client-0.3.0.tgz", TARBALL_SHA),
     }
     for name, (path, expected) in packages.items():
         if not path.is_file() or path.is_symlink() or digest(path.read_bytes()) != expected:
@@ -190,7 +190,7 @@ def no_send_gate(review, original, predecessor):
         raise AssertionError("fixed Docker volume namespace already used")
     if snapshot["campaign"]["pause_reasons"] != ["authority"]:
         raise AssertionError("original terminal pause differs")
-    owner_profile = call("docker", "ps", "--filter", "name=duranki-dev06-local-",
+    owner_profile = call("docker", "ps", "--filter", "name=ezllmrouter-dev06-local-",
         "--format", "{{.ID}} {{.Names}} {{.Image}}").stdout.splitlines()
     return {"status": "PASS", "kind": "ct02b_no_send_gate_v1",
         "checked_at": now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -297,7 +297,7 @@ def release(review, original, predecessor):
         durable_json(target / "HOST-COMMANDS.json", commands)
     after = original_snapshot(original)
     same_original = after["file_sha256"] == plan["original_file_sha256"]
-    owner_profile_after = call("docker", "ps", "--filter", "name=duranki-dev06-local-",
+    owner_profile_after = call("docker", "ps", "--filter", "name=ezllmrouter-dev06-local-",
         "--format", "{{.ID}} {{.Names}} {{.Image}}").stdout.splitlines()
     final = {"kind": "ct02b_host_one_use_release_v1",
         "status": "PASS" if result is not None and result.returncode == 0 and

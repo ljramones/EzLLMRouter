@@ -5,8 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from tests.operator_console.test_local_connectors import LocalFixture, FakeSocket
-from duranki_server.connector_availability import AvailabilityMonitor
-from duranki_server.local_connectors import ConnectorError, _read_json
+from ezllmrouter_server.connector_availability import AvailabilityMonitor
+from ezllmrouter_server.local_connectors import ConnectorError, _read_json
 
 
 def drain(monitor):
@@ -195,9 +195,9 @@ class AvailabilityTests(LocalFixture):
     def test_transport_permission_error_is_not_reported_as_server_offline(self):
         raw = FakeSocket()
         raw.connect = lambda _: (_ for _ in ()).throw(PermissionError("sandbox private diagnostic"))
-        with patch("duranki_server.local_connectors.socket.getaddrinfo", return_value=[
+        with patch("ezllmrouter_server.local_connectors.socket.getaddrinfo", return_value=[
                 (2, 1, 6, "", ("127.0.0.1", 8081))]), \
-                patch("duranki_server.local_connectors.socket.socket", return_value=raw):
+                patch("ezllmrouter_server.local_connectors.socket.socket", return_value=raw):
             with self.assertRaises(ConnectorError) as exc:
                 _read_json("http://localhost:8081", "/v1/models", "")
         self.assertEqual(exc.exception.code, "SERVER_CHECK_BLOCKED")

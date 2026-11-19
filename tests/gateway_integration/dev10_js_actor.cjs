@@ -1,7 +1,7 @@
 "use strict";
 // Installed package in a separate disposable container; no provider credential here.
 const fs = require("node:fs");
-const { DurankiClient } = require("@cognitivedynamics/ezllmrouter-client");
+const { EzLLMRouterClient } = require("@cognitivedynamics/ezllmrouter-client");
 const inputPath = "/link/dev10-js-input.json";
 const resultPath = "/link/dev10-js-result.json";
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -10,7 +10,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   for (let i = 0; i < 100 && !fs.existsSync(inputPath); i++) await wait(100);
   if (!fs.existsSync(inputPath)) throw Error("service readiness deadline");
   const input = JSON.parse(fs.readFileSync(inputPath, "utf8"));
-  const client = new DurankiClient({ baseUrl: input.base_url, token: input.token });
+  const client = new EzLLMRouterClient({ baseUrl: input.base_url, token: input.token });
   const first = await client.submit(input.request, { wait_ms: 10000 });
   if (first.state !== "delivered") throw Error("first response not delivered");
   const duplicate = await client.submit(input.request, { wait_ms: 10000 });

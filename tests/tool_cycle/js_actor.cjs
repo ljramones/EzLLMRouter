@@ -1,7 +1,7 @@
 "use strict";
 // Installed CommonJS client caller: the only JS code that executes lookup.
 const fs = require("node:fs");
-const { DurankiClient } = require("@mach33/duranki-client");
+const { EzLLMRouterClient } = require("@cognitivedynamics/ezllmrouter-client");
 const BASE = JSON.parse(fs.readFileSync(__dirname + "/request.json", "utf8"));
 const CORPUS = JSON.parse(fs.readFileSync(__dirname + "/scenarios.json", "utf8"));
 const CASE = CORPUS.cases.find(x => x.actor === "js");
@@ -14,7 +14,7 @@ function lookup(args) {
   return CASE.result;
 }
 async function observedCount() {
-  const reply = await fetch(process.env.DURANKI_RECEIVER_URL + "/observations");
+  const reply = await fetch(process.env.EZLLMROUTER_RECEIVER_URL + "/observations");
   if (!reply.ok) throw Error("receiver observation unavailable");
   return (await reply.json()).arrivals.length;
 }
@@ -32,7 +32,7 @@ async function receive(client, request) {
   throw Error("candidate did not become available");
 }
 async function cycle(alternative = false) {
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
   const before = await observedCount();
   const first = structuredClone(BASE);
   Object.assign(first, { step_id: CASE.step_id, execution_generation: alternative ? "gen.3" : "gen.1", requested_features: ["text", "tools"],
@@ -72,7 +72,7 @@ async function cycle(alternative = false) {
     usage: [firstStatus.attempts[0].usage, secondStatus.attempts[0].usage] }));
 }
 async function status(submissionId, expectedKind = "tool_call") {
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
   const before = await observedCount();
   const value = await client.getStatus({ submission_id: submissionId });
   const after = await observedCount();
@@ -84,7 +84,7 @@ async function status(submissionId, expectedKind = "tool_call") {
     provider_sends_delta: 0, caller_tool_executions: 0 }));
 }
 async function statusByWork(stepId, generation, expectedKind) {
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
   const before = await observedCount();
   const selector = {task_id: BASE.task_id, step_id: stepId,
     step_revision: BASE.step_revision, execution_generation: generation};
@@ -99,7 +99,7 @@ async function statusByWork(stepId, generation, expectedKind) {
     provider_sends_delta: 0, caller_tool_executions: 0}));
 }
 async function failureStatus(submissionId, expectedState) {
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
   const before = await observedCount();
   const value = await client.getStatus({ submission_id: submissionId });
   const after = await observedCount();
@@ -114,7 +114,7 @@ async function failureStatus(submissionId, expectedState) {
     caller_tool_executions: 0 }));
 }
 async function noStoreCycle() {
-  const client = new DurankiClient({ baseUrl: process.env.DURANKI_SERVICE_URL, token: process.env.DURANKI_DEV_TOKEN });
+  const client = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_SERVICE_URL, token: process.env.EZLLMROUTER_DEV_TOKEN });
   const before = await observedCount();
   const first = structuredClone(BASE);
   Object.assign(first, { step_id: "step.dev03.js.no_store", execution_generation: "gen.1",

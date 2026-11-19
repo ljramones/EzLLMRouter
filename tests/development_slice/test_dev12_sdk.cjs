@@ -4,7 +4,7 @@ const assert=require("node:assert/strict");
 const path=require("node:path");
 const root=path.resolve(__dirname,"../..");
 const source=process.env.DEV12_JS_CLIENT_DIR||path.join(root,"clients/js");
-const {DurankiClient,DurankiError}=require(path.join(source,"index.cjs"));
+const {EzLLMRouterClient,EzLLMRouterError}=require(path.join(source,"index.cjs"));
 const vectors=require(path.join(root,"tests/fixtures/contracts/dev12-successor-01/vectors.json"));
 const request=vectors.examples.find(item=>item.id==="DELEGATED_RERANK").request;
 const completed=vectors.protocol_fixtures.find(item=>item.id==="COMPLETED").value;
@@ -15,14 +15,14 @@ const clone=value=>structuredClone(value);
 
 async function invoke(value,http=200,raw,kind="submit") {
   const bytes=raw??Buffer.from(JSON.stringify(value));
-  const client=new DurankiClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
-    fetchImpl:async()=>new Response(bytes,{status:http,headers:{"Duranki-Contract-Version":"0.3"}})});
+  const client=new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
+    fetchImpl:async()=>new Response(bytes,{status:http,headers:{"EzLLMRouter-Contract-Version":"0.3"}})});
   return kind==="submit"?client.submit_rerank(clone(request)):
     client.getSuccessorStatus({submission_id:status.handle.submission_id});
 }
 async function rejects(value,http=200,raw,kind="submit",guidance="query_first") {
   await assert.rejects(invoke(value,http,raw,kind),error=>{
-    assert(error instanceof DurankiError);assert.equal(error.retry_guidance,guidance);return true;});
+    assert(error instanceof EzLLMRouterError);assert.equal(error.retry_guidance,guidance);return true;});
 }
 async function main(){
   assert.equal((await invoke(completed)).state,"completed");
@@ -50,9 +50,9 @@ async function main(){
   assert.equal(successor.errorValid({...authentication,code:"INTENT_PERSIST_FAILED"},401,"submit"),false);
   assert.equal(successor.errorValid({...authentication,extra:true},401,"submit"),false);
   const reordered=clone(request);reordered.operation={version:1,type:"rerank"};
-  const reorderedClient=new DurankiClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
+  const reorderedClient=new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
     fetchImpl:async()=>new Response(Buffer.from(JSON.stringify(completed)),{status:200,
-      headers:{"Duranki-Contract-Version":"0.3"}})});
+      headers:{"EzLLMRouter-Contract-Version":"0.3"}})});
   assert.equal((await reorderedClient.submit_rerank(reordered)).state,"completed");
   for(const component of [
     {component:"document_units",presence:"absent"},
@@ -93,9 +93,9 @@ async function main(){
     else foreign.handle.work_key.step_id="step.foreign";
     let release;
     const gate=new Promise(resolve=>{release=resolve;});
-    const client=new DurankiClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
+    const client=new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"test-only-token",
       fetchImpl:async()=>{await gate;return new Response(Buffer.from(JSON.stringify(foreign)),
-        {status:200,headers:{"Duranki-Contract-Version":"0.3"}});}});
+        {status:200,headers:{"EzLLMRouter-Contract-Version":"0.3"}});}});
     const pending=client.getSuccessorStatus(selected);
     if(bySubmission)selected.submission_id="submission.foreign";
     else selected.work_selector.step_id="step.foreign";

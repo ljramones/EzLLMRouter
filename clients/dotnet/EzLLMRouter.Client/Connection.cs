@@ -80,7 +80,7 @@ internal sealed class Connection : IDisposable
             }
             if (declared.HasValue && output.Length != declared.Value) throw new IOException("Response length mismatch");
             var value = ProtocolJson.ParseObject(output.ToArray());
-            string field = header == "Duranki-Integration-Version" ? "integration_version" : "contract_version";
+            string field = header == "EzLLMRouter-Integration-Version" ? "integration_version" : "contract_version";
             if (!Is(At(value, field), version) || !response.Headers.TryGetValues(header, out var versions) || !versions.SequenceEqual([version])) throw new EzLLMRouterException("UNSUPPORTED_VERSION", status, "never", selector);
             return (value, status.Value);
         }

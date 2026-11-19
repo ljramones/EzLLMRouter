@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.store import SQLiteStore  # noqa: E402
-from duranki_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
-from duranki_server.successor_contract import native_usage_row, work_projection, work_digest  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
+from ezllmrouter_server.successor_contract import native_usage_row, work_projection, work_digest  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
@@ -87,7 +87,7 @@ class SuccessorStoreTests(unittest.TestCase):
                                       "max_exposure_decimal": "0.000600000"},
                       "status_revision": 1, "settlement_state": "pending", "updated_at": "2030-01-01T00:00:01Z"}
             # Resolve the actual bound refs rather than trusting this test's spelling.
-            from duranki_server.successor_contract import price_for
+            from ezllmrouter_server.successor_contract import price_for
             price = price_for(request)
             record["reservation"]["price_ref"] = price["price_ref"]
             record["reservation"]["usage_ref"] = price["usage_ref"]

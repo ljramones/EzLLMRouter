@@ -5,12 +5,12 @@ import sys
 
 root = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(root / "server/src"))
-from duranki_server.integration_accounting import _checked, IntegrationError
+from ezllmrouter_server.integration_accounting import _checked, IntegrationError
 
 here = Path(__file__).parent
 schema = (here / "schema.json").read_bytes()
-for path in (root / "server/src/duranki_server/integration_schema_v3.json",
-             root / "clients/python/src/duranki_client/integration_schema_v3.json",
+for path in (root / "server/src/ezllmrouter_server/integration_schema_v3.json",
+             root / "clients/python/src/ezllmrouter_client/integration_schema_v3.json",
              root / "clients/js/integration_schema_v3.json"):
     assert path.read_bytes() == schema, path
 example = json.loads((here / "examples.json").read_text())

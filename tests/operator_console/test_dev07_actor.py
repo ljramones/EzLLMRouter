@@ -47,16 +47,16 @@ class ActorOutputTests(unittest.TestCase):
                             "attempts": [{"attempt_id": "attempt.dev07.1", "dispatch_state": "prepared"}],
                             "terminal_failure": {"code": "FDC_REJECTED"}}
 
-            fake = types.ModuleType("duranki_client")
-            fake.DurankiClient = FakeClient
-            fake.DurankiError = type("DurankiError", (Exception,), {})
+            fake = types.ModuleType("ezllmrouter_client")
+            fake.EzLLMRouterClient = FakeClient
+            fake.EzLLMRouterError = type("EzLLMRouterError", (Exception,), {})
             for input_value, expected_kind in (({"token": TOKEN, "configuration_ref": "cfg.dev07.a",
                                                   "step_id": "step.dev07.1", "generation": "gen.dev07.1",
                                                   "mode": "pending_hold"}, "pending_hold"),
                                                  ({"token": TOKEN, "mode": "status",
                                                    "submission_id": "submission.dev07.1"}, "status")):
                 stdout, stderr = io.StringIO(), io.StringIO()
-                with patch.dict(sys.modules, {"duranki_client": fake}), \
+                with patch.dict(sys.modules, {"ezllmrouter_client": fake}), \
                      patch.object(sys, "stdin", io.StringIO(json.dumps(input_value))), \
                      contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                     runpy.run_path(str(target / "dev07_actor.py"), run_name="__main__")

@@ -169,7 +169,7 @@ async function submit(values){const selected=form();assert(selected,"connector f
   assert.equal(creations(),beforeRecovery+1,"retrying discovery must reuse the saved connector");
   assert(text().includes("Q4_K_M"));assert(!text().includes("temporary-test-key"));
   await findButtons("Delete connector")[0].onclick();await syncRoute();assert.equal(items.length,0);
-  assert(requests.filter(request=>request.method!=="GET").every(request=>request.headers["X-Duranki-CSRF"]==="test-csrf"));
+  assert(requests.filter(request=>request.method!=="GET").every(request=>request.headers["X-EzLLMRouter-CSRF"]==="test-csrf"));
   assert(!requests.some(request=>/api\/(pull|generate|chat)|chat\/completions/.test(request.url)));
   context.window.location.hash="#/connections";await syncRoute();const away=requests.length;
   await fireTimers(15000);await fireTimers(2000);assert.equal(requests.length,away,"navigation stops polling");

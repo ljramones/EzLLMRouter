@@ -1,10 +1,10 @@
 "use strict";
 const fs = require("node:fs");
-const { DurankiClient } = require("@cognitivedynamics/ezllmrouter-client");
+const { EzLLMRouterClient } = require("@cognitivedynamics/ezllmrouter-client");
 
 (async () => {
   const input = JSON.parse(fs.readFileSync(0, "utf8"));
-  const client = new DurankiClient({ baseUrl: input.base_url, token: input.token });
+  const client = new EzLLMRouterClient({ baseUrl: input.base_url, token: input.token });
   const runs = [];
   for (const row of input.rows) {
     const run = await client.startRun(row.run);

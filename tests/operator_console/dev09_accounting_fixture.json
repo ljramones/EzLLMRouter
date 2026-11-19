@@ -1,5 +1,5 @@
 {
-  "schema": "duranki.dev09.accounting_example.v1",
+  "schema": "ezllmrouter.dev09.accounting_example.v1",
   "classification": "SYNTHETIC_DATA_ONLY_NOT_PRODUCT_SCHEMA_NOT_RUNTIME_EVIDENCE",
   "notice": "Do not import into the owner store. Costs and actors are invented test values, not provider prices or actual employee/agent measurements. Explicit nulls below are fixture notation, not changes to the strict public contract.",
   "agents": [

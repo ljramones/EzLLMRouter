@@ -50,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
                  self.headers.get("Authorization") == "Bearer " + TEST_KEY and
                  self.headers.get("Content-Type", "").split(";", 1)[0] == "application/json")
         row = {"method": "POST", "path": self.path,
-               "attempt_id": self.headers.get("X-Duranki-Attempt"),
+               "attempt_id": self.headers.get("X-EzLLMRouter-Attempt"),
                "body_sha256": hashlib.sha256(raw).hexdigest(), "body_bytes": len(raw),
                "request_valid": bool(valid), "received_at_ns": time.time_ns()}
         with self.log_path.open("a") as handle:

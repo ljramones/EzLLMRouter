@@ -7,7 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "server/src"), str(ROOT / "tests/development_slice")]
 from dev12_executor import Dev12SyntheticExecutor, receiver_decode  # noqa: E402
-from duranki_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server.canonical import ContractError  # noqa: E402
 
 
 class ReceiverDecodeTests(unittest.TestCase):

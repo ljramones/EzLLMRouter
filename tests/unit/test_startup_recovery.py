@@ -10,11 +10,11 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
-from duranki_server import integration_local
-from duranki_server.integration_bootstrap import BootstrapError, SERVICES, ensure_services
-from duranki_server.private_files import read_private, write_private
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server import integration_local
+from ezllmrouter_server.integration_bootstrap import BootstrapError, SERVICES, ensure_services
+from ezllmrouter_server.private_files import read_private, write_private
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -110,7 +110,7 @@ class StartupRecoveryTests(unittest.TestCase):
 
     def test_file_publication_failure_leaves_no_bound_credential_or_partial_file(self):
         self.open_instance()
-        with patch("duranki_server.private_files.os.link", side_effect=OSError("disk write interrupted")):
+        with patch("ezllmrouter_server.private_files.os.link", side_effect=OSError("disk write interrupted")):
             with self.assertRaisesRegex(OSError, "interrupted"):
                 ensure_services(self.registry, self.directory)
         self.assertEqual(list(self.directory.iterdir()), [])

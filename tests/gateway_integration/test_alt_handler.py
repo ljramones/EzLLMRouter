@@ -3,7 +3,7 @@ import asyncio
 import json
 
 import litellm
-from duranki_server.gateway.adapter import LiteLLMAsgiAdapter
+from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
 
 
 original = litellm.client_session

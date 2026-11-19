@@ -3,14 +3,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vectorPath = fs.existsSync(path.join(__dirname, "vectors.json")) ? path.join(__dirname, "vectors.json") :
-  path.join(__dirname, "../../tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json");
+  path.join(__dirname, "../../tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json");
 const vectors = JSON.parse(fs.readFileSync(vectorPath, "utf8")).examples;
-const { DurankiClient, DurankiError } = process.env.DURANKI_INSTALLED_CLIENT === "1" ?
-  require("@mach33/duranki-client") : require("../../clients/js/index.cjs");
+const { EzLLMRouterClient, EzLLMRouterError } = process.env.EZLLMROUTER_INSTALLED_CLIENT === "1" ?
+  require("@cognitivedynamics/ezllmrouter-client") : require("../../clients/js/index.cjs");
 
 function clientFor(value, status = 200) {
   let calls = 0;
-  const client = new DurankiClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
+  const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
     fetchImpl: async () => {
       calls++;
       return { status, ok: status >= 200 && status < 300,
@@ -30,7 +30,7 @@ function availableUsage(attemptId) {
 async function rejected(promise, code, selector) {
   try { await promise; assert.fail("expected rejection"); }
   catch (error) {
-    assert.ok(error instanceof DurankiError);
+    assert.ok(error instanceof EzLLMRouterError);
     assert.equal(error.code, code);
     if (selector) assert.deepEqual(error.selector, selector);
   }
@@ -101,7 +101,7 @@ async function main() {
       const selected = kind === "by_id" ? { submission_id: "submission.demo" } : { ...byWork };
       const original = { ...selected };
       let requestUrl;
-      const client = new DurankiClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
+      const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
         fetchImpl: async url => {
           requestUrl = url;
           entered();
@@ -126,7 +126,7 @@ async function main() {
   const invalidCaps = clientFor({ ...vectors.capabilities, supported_features: ["bogus"] });
   await rejected(invalidCaps.client.getCapabilities(), "INTERNAL_UNAVAILABLE");
   let lostCalls = 0;
-  const lost = new DurankiClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
+  const lost = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
     fetchImpl: async () => { lostCalls++; throw Error("synthetic transport loss"); } });
   await rejected(lost.submit(vectors.submit_text, { wait_ms: 0 }), "TRANSPORT_OUTCOME_UNKNOWN", selector);
   assert.equal(lostCalls, 1);

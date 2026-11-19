@@ -12,9 +12,9 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 
-from duranki_server.core import usage_revision
-from duranki_server.registry import Registry, RegistryConflict
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.core import usage_revision
+from ezllmrouter_server.registry import Registry, RegistryConflict
+from ezllmrouter_server.store import SQLiteStore
 
 
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",

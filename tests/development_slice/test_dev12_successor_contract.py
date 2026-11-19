@@ -9,8 +9,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server import successor_contract as subject  # noqa: E402
-from duranki_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server import successor_contract as subject  # noqa: E402
+from ezllmrouter_server.canonical import ContractError  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
@@ -26,7 +26,7 @@ class SuccessorContractTests(unittest.TestCase):
                 self.assertEqual(subject.canonical(work).encode(),
                                  base64.b64decode(case["canonical_bytes_base64"], validate=True))
                 self.assertEqual(subject.work_digest(work), case["work_digest"])
-                self.assertEqual(subject.digest("duranki-admission-v1\n", case["admission_snapshot"]),
+                self.assertEqual(subject.digest("ezllmrouter-admission-v1\n", case["admission_snapshot"]),
                                  case["admission_snapshot_digest"])
         for fixture in VECTORS["result_examples"]:
             with self.subTest(result=fixture["id"]):

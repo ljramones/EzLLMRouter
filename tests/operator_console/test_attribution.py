@@ -5,9 +5,9 @@ import tempfile
 import threading
 import unittest
 
-from duranki_server.canonical import ContractError
-from duranki_server.registry import Registry, RegistryConflict
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.registry import Registry, RegistryConflict
+from ezllmrouter_server.store import SQLiteStore
 
 
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",

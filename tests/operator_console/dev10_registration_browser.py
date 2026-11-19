@@ -19,9 +19,9 @@ for relative in ("server/src", "deploy/local", "tests/operator_console"):
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.personal_campaign import PersonalCampaign
 from provider_browser_smoke import NeverRun, counters
 from test_providers import ProviderTests
 
@@ -40,7 +40,7 @@ def main():
         registry.personal_campaign = PersonalCampaign(store, registry)
         registry.mutate("owner.local", {"operation_id": "op.dev10.browser.setup",
             "action": "create_connection", "subject": "conn.dev10-personal", "expected_revision": 0,
-            "data": {"display_name": "Larry — Personal Duranki Testing",
+            "data": {"display_name": "Larry — Personal EzLLMRouter Testing",
                 "adapter_id": "openai.responses.v1", "settings": fixture_test.settings(),
                 "owner": "owner.local", "funding_kind": "personal_testing"}})
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
@@ -54,7 +54,7 @@ def main():
             registry=registry)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         before = counters(store)
-        with tempfile.TemporaryDirectory(prefix="duranki-dev10-browser-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev10-browser-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)
@@ -125,7 +125,7 @@ def main():
                 "screenshot": {"path": str(target.relative_to(ROOT)), "sha256": shot["sha256"]},
                 "source_hashes": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                     for name in ("web/providers_view.js", "web/source_pages.js", "web/crud_view.js",
-                                 "server/src/duranki_server/personal_campaign.py")}}
+                                 "server/src/ezllmrouter_server/personal_campaign.py")}}
             result.write_text(json.dumps(output, indent=2, sort_keys=True)+"\n")
             print(json.dumps(output, sort_keys=True))
     finally:

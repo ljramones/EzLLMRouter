@@ -58,7 +58,7 @@ def main(review, original):
         processes[name] = {"container_id": item["Id"], "running": False,
                            "pid": 0, "exit_code": item["State"]["ExitCode"]}
     owner = subprocess.check_output(("docker", "ps", "--filter",
-        "name=duranki-dev06-local-", "--format", "{{.ID}} {{.Names}} {{.Image}}"),
+        "name=ezllmrouter-dev06-local-", "--format", "{{.ID}} {{.Names}} {{.Image}}"),
         text=True).splitlines()
     gate = read(review / "NO-SEND-GATE.json")
     if owner != gate["running_owner_profile_containers"]:

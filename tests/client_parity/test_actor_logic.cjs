@@ -1,9 +1,9 @@
 "use strict";
 const assert = require("node:assert/strict");
 const { performance } = require("node:perf_hooks");
-process.env.DURANKI_SERVICE_URL = "http://synthetic.invalid";
-process.env.DURANKI_DEV_TOKEN = "synthetic.component.token";
-process.env.DURANKI_RECEIVER_URL = "http://receiver.invalid";
+process.env.EZLLMROUTER_SERVICE_URL = "http://synthetic.invalid";
+process.env.EZLLMROUTER_DEV_TOKEN = "synthetic.component.token";
+process.env.EZLLMROUTER_RECEIVER_URL = "http://receiver.invalid";
 const { noSendDrain, requestFor } = require("./integration_js.cjs");
 const cases = require("./scenarios.json").cases;
 

@@ -127,7 +127,7 @@ def build(commit, export_root, review_root, input_zip, output, repo):
         add(z, "AUDIT-RESULT.json", (json.dumps(result, sort_keys=True, indent=2) + "\n").encode(), manifest)
         add(z, "source.tar", source_tar, manifest)
         add(z, "focused-17fc195-to-successor.diff", focused, manifest)
-        add(z, "review-input/DURANKI-DEV12-COMPLETION-02-CONTINUE-02-PACKAGE.zip",
+        add(z, "review-input/EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-02-PACKAGE.zip",
             input_zip.read_bytes(), manifest)
         for path in sorted(export_root.rglob("*")):
             if path.is_file():

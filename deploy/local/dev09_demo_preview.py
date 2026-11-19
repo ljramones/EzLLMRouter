@@ -13,10 +13,10 @@ import threading
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 
 
 class Authority:
@@ -38,7 +38,7 @@ def main():
         parser.error("port must be between 1024 and 65535")
     credential = secrets.token_urlsafe(36)
     fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
-    with tempfile.TemporaryDirectory(prefix="duranki-dev09-demo-preview-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-demo-preview-") as temporary:
         store = SQLiteStore(Path(temporary) / "preview.sqlite")
         server = None
         try:

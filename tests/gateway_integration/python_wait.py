@@ -9,7 +9,7 @@ import threading
 import time
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -17,7 +17,7 @@ BASE = json.loads(Path(__file__).with_name("request.json").read_text())
 
 def receiver_count():
     with httpx.Client(trust_env=False, timeout=2) as client:
-        return len(client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations").json()["arrivals"])
+        return len(client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations").json()["arrivals"])
 
 
 def request(label, text):
@@ -29,7 +29,7 @@ def request(label, text):
 
 
 def client(token=None):
-    return DurankiClient(os.environ["DURANKI_SERVICE_URL"], token or os.environ["DURANKI_DEV_TOKEN"])
+    return EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], token or os.environ["EZLLMROUTER_DEV_TOKEN"])
 
 
 def submit_pending(label, text):
@@ -61,10 +61,10 @@ def status(sid):
 
 def swapped():
     before = receiver_count()
-    with client(os.environ["DURANKI_DEV_TOKEN"] + ".alternate") as installed:
+    with client(os.environ["EZLLMROUTER_DEV_TOKEN"] + ".alternate") as installed:
         try:
             installed.submit(request("swapped", "Simulate swapped context"), {"wait_ms": 3000})
-        except DurankiError as error:
+        except EzLLMRouterError as error:
             assert (error.code, error.http_status) == ("FDC_REJECTED", 409)
             result = {"actor": "installed-python", "case": "swapped", "code": error.code}
         else:
@@ -89,8 +89,8 @@ def overlap():
                     "attempt_id": reply["candidate"]["attempt_id"]}
 
     with ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(one, "overlap_primary", os.environ["DURANKI_DEV_TOKEN"])
-        second = pool.submit(one, "overlap_alternate", os.environ["DURANKI_DEV_TOKEN"] + ".alternate")
+        first = pool.submit(one, "overlap_primary", os.environ["EZLLMROUTER_DEV_TOKEN"])
+        second = pool.submit(one, "overlap_alternate", os.environ["EZLLMROUTER_DEV_TOKEN"] + ".alternate")
         rows = [first.result(timeout=10), second.result(timeout=10)]
     assert len({row["attempt_id"] for row in rows}) == 2
     assert receiver_count() == before + 2

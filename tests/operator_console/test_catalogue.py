@@ -9,9 +9,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.catalogue import validate_catalogue
-from duranki_server.registry import Registry, RegistryConflict
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.catalogue import validate_catalogue
+from ezllmrouter_server.registry import Registry, RegistryConflict
+from ezllmrouter_server.store import SQLiteStore
 
 
 SEED = json.loads((ROOT / "deploy/local/inputs/catalogue.json").read_text())
@@ -109,7 +109,7 @@ class CatalogueTests(unittest.TestCase):
                                     self.request(SEED["models"][0])["data"])
         self.assertIsNone(record["destination"])
         malformed = self.request(json.loads(json.dumps(SEED["models"][0])))
-        malformed["data"]["entry"]["duranki_registration"]["runtime_ready"] = True
+        malformed["data"]["entry"]["ezllmrouter_registration"]["runtime_ready"] = True
         with self.assertRaises(ValueError):
             validate_catalogue(malformed["subject"], malformed["data"])
 

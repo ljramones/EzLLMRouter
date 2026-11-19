@@ -88,7 +88,7 @@ final class Connection implements AutoCloseable {
                     while (true) { int count = stream.read(chunk, 0, Math.min(chunk.length, limit + 1 - out.size())); if (count < 0) break; if (count == 0) continue; out.write(chunk, 0, count); if (out.size() > limit) throw new IOException("response limit"); }
                     if (length >= 0 && out.size() != length) throw new IOException("response length mismatch");
                     Object parsed = Json.parse(out.toByteArray()); Map<String, Object> value = object(parsed);
-                    String field = header.equals("Duranki-Integration-Version") ? "integration_version" : "contract_version";
+                    String field = header.equals("EzLLMRouter-Integration-Version") ? "integration_version" : "contract_version";
                     if (!(parsed instanceof Map<?, ?>) || !version.equals(value.get(field)) || !version.equals(response.header(header))) throw error("UNSUPPORTED_VERSION", response.status(), "never", selector);
                     return new Reply(value, response.status());
                 }

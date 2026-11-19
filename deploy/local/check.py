@@ -28,7 +28,7 @@ class OperatorClient:
         if self.cookie:
             headers["Cookie"] = self.cookie
         if method == "POST" and self.csrf:
-            headers["X-Duranki-CSRF"] = self.csrf
+            headers["X-EzLLMRouter-CSRF"] = self.csrf
         try:
             connection.request(method, path, body=data, headers=headers)
             response = connection.getresponse()

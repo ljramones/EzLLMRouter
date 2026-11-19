@@ -12,10 +12,10 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, os.environ.get("DURANKI_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.store import SQLiteStore
+sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.store import SQLiteStore
 sys.path.insert(0, str(ROOT / "deploy/local"))
 import check
 import console_ingress
@@ -45,7 +45,7 @@ class WebTests(unittest.TestCase):
         self.server = serve("127.0.0.1", self.port, projection=self.projection,
             runner=self.runner, password="p" * 40, fixture=fixture,
             build={"commit": "test", "dirty": True, "fingerprint": "f" * 64},
-            web_root=Path(os.environ.get("DURANKI_OPERATOR_WEB_ROOT", str(ROOT / "web"))),
+            web_root=Path(os.environ.get("EZLLMROUTER_OPERATOR_WEB_ROOT", str(ROOT / "web"))),
             worker_probe=lambda: {"state": "live"},
             sender_status=lambda: {"state": "live"})
         self.thread = threading.Thread(target=self.server.serve_forever)
@@ -67,7 +67,7 @@ class WebTests(unittest.TestCase):
         if cookie:
             headers["Cookie"] = cookie
         if csrf:
-            headers["X-Duranki-CSRF"] = csrf
+            headers["X-EzLLMRouter-CSRF"] = csrf
         data = None
         if body is not None:
             headers["Content-Type"] = "application/json"

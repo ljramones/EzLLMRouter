@@ -143,12 +143,12 @@ func TestContractParity(t *testing.T) {
 				if version == "" {
 					version = "0.2"
 				}
-				responseHeaders.Set("Duranki-Contract-Version", version)
+				responseHeaders.Set("EzLLMRouter-Contract-Version", version)
 				version = str(test["version"])
 				if version == "" {
 					version = "1"
 				}
-				responseHeaders.Set("Duranki-Integration-Version", version)
+				responseHeaders.Set("EzLLMRouter-Integration-Version", version)
 				for k, v := range field(test, "response_headers") {
 					responseHeaders.Set(k, str(v))
 				}
@@ -361,7 +361,9 @@ func TestLargeEmbeddingUsesRequestProfileAndSuccessorLimit(t *testing.T) {
 	calls := 0
 	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
 		calls++
-		return &http.Response{StatusCode: 200, Header: http.Header{"Duranki-Contract-Version": []string{"0.3"}}, Body: io.NopCloser(bytes.NewReader(content)), ContentLength: int64(len(content))}, nil
+		headers := make(http.Header)
+		headers.Set("EzLLMRouter-Contract-Version", "0.3")
+		return &http.Response{StatusCode: 200, Header: headers, Body: io.NopCloser(bytes.NewReader(content)), ContentLength: int64(len(content))}, nil
 	})
 	c, _ := NewClient("http://synthetic.invalid", "token", WithTransport(transport))
 	defer c.Close()

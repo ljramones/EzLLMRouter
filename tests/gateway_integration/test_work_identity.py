@@ -45,14 +45,14 @@ if (ROOT/'wheels').is_dir():
         sys.path.insert(0,str(matches[0]))
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from duranki_server.canonical import SAFE
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
-from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-from duranki_server.gateway.guard import GuardTransport, Invocation, PROVIDER_URL
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.canonical import SAFE
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
+from ezllmrouter_server.gateway.guard import GuardTransport, Invocation, PROVIDER_URL
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 FIXTURE=json.loads((DATA/'fixture.json').read_text())
 REQUEST=json.loads((DATA/'request.json').read_text())
@@ -75,7 +75,7 @@ class ControlledWorkerAdapter(ChoiceBSenderAdapter):
         self.thread.start();self.mutation=mutation
         self.invocations=[];self.relay_errors=[];self.private_controls=[];self.lower_requests=[]
         def lower(request):
-            self.lower_requests.append({'attempt_id':request.headers['x-duranki-attempt'],
+            self.lower_requests.append({'attempt_id':request.headers['x-ezllmrouter-attempt'],
                 'body':json.loads(request.content),'timeout':deepcopy(request.extensions['timeout'])})
             return httpx.Response(200,json={'choices':[{'message':{'content':'Hello.'},'finish_reason':'stop'}],
                 'usage':{'prompt_tokens':5,'completion_tokens':2}})
@@ -107,11 +107,11 @@ class ControlledWorkerAdapter(ChoiceBSenderAdapter):
         self.loop.close()
 
 def integration(revision=1,mutation=False,fail_commit=False,timeout_ms=1000):
-    with tempfile.TemporaryDirectory(prefix='duranki-run15-') as tmp:
-        env={'DURANKI_DEV04_PROVIDER_KEY':PROVIDER_KEY,
-             'DURANKI_DEV04_GUARD_EVENTS':str(Path(tmp)/'guard.jsonl'),
-             'DURANKI_DEV04_SEND_EVENTS':str(Path(tmp)/'send.jsonl'),
-             'DURANKI_DEV05_TEST_TOOL_MUTATION':'0'}
+    with tempfile.TemporaryDirectory(prefix='ezllmrouter-run15-') as tmp:
+        env={'EZLLMROUTER_DEV04_PROVIDER_KEY':PROVIDER_KEY,
+             'EZLLMROUTER_DEV04_GUARD_EVENTS':str(Path(tmp)/'guard.jsonl'),
+             'EZLLMROUTER_DEV04_SEND_EVENTS':str(Path(tmp)/'send.jsonl'),
+             'EZLLMROUTER_DEV05_TEST_TOOL_MUTATION':'0'}
         with patch.dict(os.environ,env):
             store=CommitStore(Path(tmp)/'store.sqlite',fail_commit)
             adapter=ControlledWorkerAdapter(mutation)

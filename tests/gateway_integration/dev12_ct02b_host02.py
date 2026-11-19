@@ -31,9 +31,9 @@ TARBALL_SHA = "cfe563b1c50a597e6d65876432436b9cf9cb6d9bfeb22dee80520b90a69ac52d"
 PACKAGE_SHA = "5b96826e21909648384e21fe49508161fd6f4094c070bd1e2d7073ed73815954"
 START_SHA = "c89a65a920f7b4383b880793153aba031fe226735c7b80bcc869cba993b67da0"
 PRIOR_ZIP = "dev12-completion02-continue04-failed-b0661be-20261027.zip"
-WORKER = "duranki-dev12-ct02b-supp02-worker"
-SERVICE = "duranki-dev12-ct02b-supp02-service"
-VOLUME = "duranki-dev12-ct02b-supp02-link"
+WORKER = "ezllmrouter-dev12-ct02b-supp02-worker"
+SERVICE = "ezllmrouter-dev12-ct02b-supp02-service"
+VOLUME = "ezllmrouter-dev12-ct02b-supp02-link"
 
 
 def call(*args, check=True, timeout=30):
@@ -64,7 +64,7 @@ def prepare(review, original, predecessor, supplied_package, owner_start, correc
             review.parent.name != "dev12-a2-a4-completion02-20261026-01"):
         raise ValueError("fresh approved review root and unused fixed target required")
     if git("rev-parse", "--abbrev-ref", "HEAD") != "dev12/operation-contract" or \
-            git("remote", "get-url", "origin") != "git@github.com:33fg/duranki.git" or \
+            git("remote", "get-url", "origin") != "git@github.com:33fg/ezllmrouter.git" or \
             git("status", "--porcelain", "--untracked-files=no"):
         raise AssertionError("committed approved feature source required")
     if digest(supplied_package.read_bytes()) != PACKAGE_SHA:
@@ -91,16 +91,16 @@ def prepare(review, original, predecessor, supplied_package, owner_start, correc
     adjudication = REPO / "docs/development/dev-12/LEGACY-ALLOCATION-ADJUDICATION-01.json"
     snapshot = verify_legacy(adjudication, predecessor, original)
     with ZipFile(supplied_package) as z:
-        instruction = z.read("DURANKI-DEV12-COMPLETION-02-CONTINUE-05.md")
-        if z.read("DURANKI-DEV12-COMPLETION-02-CONTINUE-05-START.txt") != owner_start.read_bytes() or \
+        instruction = z.read("EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-05.md")
+        if z.read("EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-05-START.txt") != owner_start.read_bytes() or \
                 z.read("governing/LEGACY-ALLOCATION-ADJUDICATION-01.json") != adjudication.read_bytes() or \
                 z.read("input/" + PRIOR_ZIP) != predecessor_zip.read_bytes():
             raise AssertionError("owner adoption and adjudication package bytes differ")
     if now() >= utc(EXPIRY) - timedelta(minutes=25):
         raise PermissionError("insufficient original deadline before source preparation")
     packages = {
-        "python_wheel": (corrected / "mach33_duranki_client-0.0.4-py3-none-any.whl", WHEEL_SHA),
-        "js_tarball": (corrected / "mach33-duranki-client-0.0.3.tgz", TARBALL_SHA),
+        "python_wheel": (corrected / "cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", WHEEL_SHA),
+        "js_tarball": (corrected / "cognitivedynamics-ezllmrouter-client-0.3.0.tgz", TARBALL_SHA),
     }
     for name, (path, expected) in packages.items():
         if not path.is_file() or path.is_symlink() or digest(path.read_bytes()) != expected:
@@ -204,7 +204,7 @@ def no_send_gate(review, original, predecessor):
         raise AssertionError("fixed Docker volume namespace already used")
     if snapshot["campaign"]["pause_reasons"] != ["authority"]:
         raise AssertionError("original terminal pause differs")
-    owner_profile = call("docker", "ps", "--filter", "name=duranki-dev06-local-",
+    owner_profile = call("docker", "ps", "--filter", "name=ezllmrouter-dev06-local-",
         "--format", "{{.ID}} {{.Names}} {{.Image}}").stdout.splitlines()
     return {"status": "PASS", "kind": "ct02b_no_send_gate_v1",
         "checked_at": now().strftime("%Y-%m-%dT%H:%M:%SZ"),

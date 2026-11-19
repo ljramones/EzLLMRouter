@@ -7,8 +7,8 @@ import unittest
 import httpx
 
 from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError, IntegrationClient, IntegrationClientError
-from duranki_client import _successor_validation as validation
-from duranki_client._http import ResponseReadError, bounded_request
+from ezllmrouter_client import _successor_validation as validation
+from ezllmrouter_client._http import ResponseReadError, bounded_request
 from tests.client_parity import test_python_client as legacy
 from tests.development_slice import test_dev12_sdk as successor
 
@@ -36,8 +36,8 @@ class ClientTransportTests(unittest.TestCase):
         calls = []
         def respond(request):
             calls.append(request)
-            headers = {"Duranki-Contract-Version": "0.3" if kind == "successor" else "0.2",
-                       "Duranki-Integration-Version": "1", **(extra_headers or {})}
+            headers = {"EzLLMRouter-Contract-Version": "0.3" if kind == "successor" else "0.2",
+                       "EzLLMRouter-Integration-Version": "1", **(extra_headers or {})}
             return httpx.Response(200, headers=headers, stream=stream)
         transport = httpx.Client(transport=httpx.MockTransport(respond), trust_env=False)
         self.addCleanup(transport.close)
@@ -216,7 +216,7 @@ class SuccessorResultTests(unittest.TestCase):
         self.assertGreater(len(raw), 65536)
         stream = RecordingStream(raw[index:index + 65536] for index in range(0, len(raw), 65536))
         with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200,
-                headers={"Duranki-Contract-Version": "0.3"}, stream=stream))) as transport:
+                headers={"EzLLMRouter-Contract-Version": "0.3"}, stream=stream))) as transport:
             with EzLLMRouterClient("http://synthetic.invalid", "token", transport=transport) as client:
                 self.assertEqual(client.submit_embedding(request)["result"]["dimensions"], 2048)
         self.assertTrue(stream.closed)

@@ -7,10 +7,10 @@ import threading
 import time
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from duranki_server.canonical import ContractError, digest, jcs, projection, validate_text_request, work_digest
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError, digest, jcs, projection, validate_text_request, work_digest
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
 from recipe import SyntheticDevelopmentRecipe, SyntheticTextRecipe
 
 
@@ -35,7 +35,7 @@ class SignedPlanTests(unittest.TestCase):
         envelope = plan["signature_envelope"]
         unsigned = {k: v for k, v in plan.items() if k != "signature_envelope"}
         assert envelope["signed_plan_digest"] == digest(jcs(unsigned))
-        oracle = ("duranki-plan-v0.2\nEd25519\n" + fixture["policy"]["key_id"] + "\n" +
+        oracle = ("ezllmrouter-plan-v0.2\nEd25519\n" + fixture["policy"]["key_id"] + "\n" +
                   fixture["policy"]["key_version"] + "\n" + envelope["signed_plan_digest"]).encode()
         signature = base64.urlsafe_b64decode(envelope["signature"] + "=" * (-len(envelope["signature"]) % 4))
         private_key.public_key().verify(signature, oracle)

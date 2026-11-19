@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 SOURCES = {
-    "Wire02": ROOT / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
+    "Wire02": ROOT / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
     "Wire03": HERE / "dev12_schemas.json",
     "IntegrationV1": HERE / "integration_schema.json",
     "IntegrationV2": HERE / "integration_schema_v2.json",

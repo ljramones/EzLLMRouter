@@ -6,8 +6,8 @@ import socket
 import threading
 import unittest
 
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from tests.operator_console.test_dev09_reporting import ReportingTests, ROOT
 
 

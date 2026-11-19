@@ -151,7 +151,7 @@ def exercise(path, run_id, client, env, before):
     netns = command(path, "netns-container-id", profile.compose_args("ps", "-q", "netns"), env)
     if not re.fullmatch(r"[0-9a-f]{12,64}", netns):
         raise RuntimeError("one owned netns container required")
-    js_image = "duranki-dev09-jsactor:" + env["DURANKI_SERVICE_IMAGE"].split(":")[-1]
+    js_image = "ezllmrouter-dev09-jsactor:" + env["EZLLMROUTER_SERVICE_IMAGE"].split(":")[-1]
     js = [*profile.DOCKER, "run", "--rm", "--pull=never", "--network", "container:" + netns,
           "--user", "node", "--read-only", "--tmpfs", "/tmp:rw,nosuid,nodev,size=8m",
           "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "-i", js_image]
@@ -224,14 +224,14 @@ def main():
             raise RuntimeError("clean changed DEV-09 source required")
         env = profile.environment(build)
         for kind in ("RECEIVER", "WORKER"):
-            env["DURANKI_" + kind + "_IMAGE"] = old_env["DURANKI_" + kind + "_IMAGE"]
+            env["EZLLMROUTER_" + kind + "_IMAGE"] = old_env["EZLLMROUTER_" + kind + "_IMAGE"]
         stages.append("prepare-clean-source-and-reuse-unchanged-images")
         source = Path(build["build_dir"])
-        service_image = env["DURANKI_SERVICE_IMAGE"]
+        service_image = env["EZLLMROUTER_SERVICE_IMAGE"]
         command(path, "build-service", [*profile.DOCKER, "build", "--pull=false", "--network=none",
                 "--build-arg", "PYTHON_IMAGE=" + profile.BASE, "-t", service_image,
                 "-f", str(source / "service/Dockerfile"), str(source / "service")], env, timeout=900)
-        js_image = "duranki-dev09-jsactor:" + build["fingerprint"][:16]
+        js_image = "ezllmrouter-dev09-jsactor:" + build["fingerprint"][:16]
         command(path, "build-installed-commonjs", [*profile.DOCKER, "build", "--pull=false",
                 "--network=none", "--build-arg", "NODE_IMAGE=" + profile.NODE,
                 "-t", js_image, "-f", str(source / "dev09_js/Dockerfile"),

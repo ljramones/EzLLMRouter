@@ -63,7 +63,7 @@ def validate_corpus(root):
 def prepare(root, run):
     root, run = Path(root).resolve(), Path(run).resolve()
     case_count = validate_corpus(root)
-    previous = Path("/private/tmp/duranki-dev-01/run-20261018-04")
+    previous = Path("/private/tmp/ezllmrouter-dev-01/run-20261018-04")
     old_packet = root / "docs/development/dev-01/DEV-01-RUNTIME-run-20261018-04.zip"
     regular(old_packet)
     if sha(old_packet) != "344826381ed6a5a9dba2a13fac68eeda8ddc980b9a9f2741909478bfaf2d677e":
@@ -91,7 +91,7 @@ def prepare(root, run):
     sums.write_text("".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows[:7]))
     artifacts = json.loads((root / "docs/development/dev-02/ARTIFACTS-CONTINUATION.json").read_text())
     versions = {x["filename"]: x for x in artifacts["artifacts"]}
-    for name in ("mach33_duranki_client-0.0.2-py3-none-any.whl", "mach33-duranki-client-0.0.1.tgz"):
+    for name in ("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "cognitivedynamics-ezllmrouter-client-0.3.0.tgz"):
         item = versions[name]
         src = root / "docs/development/dev-02" / name
         regular(src)
@@ -102,7 +102,7 @@ def prepare(root, run):
     common = {
         "scenarios.json": root / "tests/client_parity/scenarios.json",
         "request.json": root / "tests/development_slice/request.json",
-        "vectors.json": root / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+        "vectors.json": root / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
     }
     python = {**common,
         "integration_python.py": root / "tests/client_parity/integration_python.py",

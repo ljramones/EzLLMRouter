@@ -4,7 +4,7 @@ from __future__ import annotations
 import unittest
 
 from litellm.types.llms.openai import ResponseAPIUsage
-from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter
+from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
 
 
 class FrozenUsagePresenceTests(unittest.TestCase):

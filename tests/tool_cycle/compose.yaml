@@ -1,17 +1,17 @@
 services:
   receiver:
-    image: ${DURANKI_RECEIVER_IMAGE:?}
+    image: ${EZLLMROUTER_RECEIVER_IMAGE:?}
     pull_policy: never
     user: "10001:10001"
     read_only: true
     tmpfs: ["/tmp:rw,nosuid,nodev,size=8m"]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl}
+    environment: {EZLLMROUTER_RECEIVER_LOG: /data/arrivals.jsonl}
     volumes: ["receiver_data:/data"]
     networks: [dev03]
   service:
-    image: ${DURANKI_SERVICE_IMAGE:?}
+    image: ${EZLLMROUTER_SERVICE_IMAGE:?}
     pull_policy: never
     user: "10001:10001"
     read_only: true
@@ -19,14 +19,14 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_data:/data"]
     depends_on: [receiver]
     networks: [dev03]
   service_mutation:
-    image: ${DURANKI_SERVICE_IMAGE:?}
+    image: ${EZLLMROUTER_SERVICE_IMAGE:?}
     pull_policy: never
     user: "10001:10001"
     read_only: true
@@ -34,15 +34,15 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
-      DURANKI_MUTATE_AFTER_BINDING: "1"
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_MUTATE_AFTER_BINDING: "1"
     volumes: ["mutation_data:/data"]
     depends_on: [receiver]
     networks: [dev03]
   python_consumer:
-    image: ${DURANKI_PYTHON_CLIENT_IMAGE:?}
+    image: ${EZLLMROUTER_PYTHON_CLIENT_IMAGE:?}
     pull_policy: never
     user: "10001:10001"
     read_only: true
@@ -50,12 +50,12 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SERVICE_URL: http://service:8765
-      DURANKI_RECEIVER_URL: http://receiver:8766
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SERVICE_URL: http://service:8765
+      EZLLMROUTER_RECEIVER_URL: http://receiver:8766
     networks: [dev03]
   js_consumer:
-    image: ${DURANKI_JS_CLIENT_IMAGE:?}
+    image: ${EZLLMROUTER_JS_CLIENT_IMAGE:?}
     pull_policy: never
     user: node
     read_only: true
@@ -63,9 +63,9 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SERVICE_URL: http://service:8765
-      DURANKI_RECEIVER_URL: http://receiver:8766
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SERVICE_URL: http://service:8765
+      EZLLMROUTER_RECEIVER_URL: http://receiver:8766
     networks: [dev03]
 networks:
   dev03:

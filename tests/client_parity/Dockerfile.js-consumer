@@ -1,11 +1,11 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
-ENV npm_config_cache=/tmp/duranki-npm-cache npm_config_audit=false npm_config_fund=false
-COPY mach33-duranki-client-0.0.1.tgz /opt/duranki/client.tgz
+ENV npm_config_cache=/tmp/ezllmrouter-npm-cache npm_config_audit=false npm_config_fund=false
+COPY cognitivedynamics-ezllmrouter-client-0.3.0.tgz /opt/ezllmrouter/client.tgz
 RUN mkdir -p /app/consumer \
  && cd /app/consumer \
- && npm install /opt/duranki/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
- && rm -rf /opt/duranki/client.tgz /tmp/duranki-npm-cache
+ && npm install /opt/ezllmrouter/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
+ && rm -rf /opt/ezllmrouter/client.tgz /tmp/ezllmrouter-npm-cache
 COPY tests/ /app/consumer/
 USER node
 WORKDIR /app/consumer

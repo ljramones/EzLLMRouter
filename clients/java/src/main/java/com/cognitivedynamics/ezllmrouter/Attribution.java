@@ -34,7 +34,7 @@ final class Attribution {
         return request(client, "POST", "/v1/outcomes", body, true, text(body.get("event_id")));
     }
     static Map<String, Object> request(EzLLMRouterClient client, String method, String path, Map<String, Object> body, boolean receipt, String expectedId) {
-        Connection.Reply response = client.connection.request(method, path, "Duranki-Contract-Version", "0.2", body, Map.of(), 1024 * 1024, null);
+        Connection.Reply response = client.connection.request(method, path, "EzLLMRouter-Contract-Version", "0.2", body, Map.of(), 1024 * 1024, null);
         Map<String, Object> value = response.value(); int status = response.status();
         if (Schema.named(value, "0.2", "ErrorResponse") && status >= 400) throw Protocol.evidence(field(value, "error"), status, null, null, value);
         String version = receipt ? "outcome_version" : "attribution_version", key = receipt ? "receipt" : "run";

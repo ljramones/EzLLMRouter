@@ -141,5 +141,4 @@ export declare class IntegrationClient<V extends IntegrationVersion = "1"> {
   snapshot(datasetId: V extends "1" ? never : string, snapshotId: string): Promise<JsonRecord>;
   exportDataset(datasetId: V extends "1" ? never : string): Promise<JsonRecord>;
 }
-export { EzLLMRouterClient as DurankiClient, EzLLMRouterError as DurankiError };
 export declare const contractVersion: "0.2";

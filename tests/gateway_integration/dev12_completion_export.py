@@ -142,9 +142,9 @@ def export(root: Path, out: Path, packages: Path):
     for path in sorted((root / "screenshots").glob("*.png")):
         copy_public(path, out / "target" / "screenshots" / path.name)
     for name, expected in (
-        ("mach33_duranki_client-0.0.4-py3-none-any.whl",
+        ("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl",
          "d4cdea6ffabd7aa62985040e4a92a4870d73dc8e4240f43d4472d86ce595bb98"),
-        ("mach33-duranki-client-0.0.3.tgz",
+        ("cognitivedynamics-ezllmrouter-client-0.3.0.tgz",
          "b871b64c98e299e031e4a6e11766a06e7a494f6e4b8b787fd70bfb8144694a3f"),
     ):
         source = packages / name

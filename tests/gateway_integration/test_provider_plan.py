@@ -18,15 +18,15 @@ sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator, usage_revision
-from duranki_server.plans import PlanAuthority, PROVIDER_RECIPE_REF
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.registry import Registry
-from duranki_server.reporting import usage_costs
-from duranki_server.store import SQLiteStore
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator, usage_revision
+from ezllmrouter_server.plans import PlanAuthority, PROVIDER_RECIPE_REF
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.reporting import usage_costs
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
 
 
 class Authority:

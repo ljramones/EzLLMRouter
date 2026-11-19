@@ -101,7 +101,7 @@ class IntegrationClient{
     this.version=version;this.schema=schemas[version];this.basePath="/integration/v"+version;
   }
   async _request(method,path,body,expected){
-    const headers={Authorization:"Bearer "+this.token,"Duranki-Integration-Version":this.version,
+    const headers={Authorization:"Bearer "+this.token,"EzLLMRouter-Integration-Version":this.version,
       "Accept-Encoding":"identity"};
     if(body!==undefined)headers["Content-Type"]="application/json";
     let response;
@@ -111,7 +111,7 @@ class IntegrationClient{
     let value;
     try{value=strictDecode(Buffer.from(await response.arrayBuffer()),16777216);}
     catch{throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",response.status,"query_first");}
-    if(response.headers.get("Duranki-Integration-Version")!==this.version||value?.integration_version!==this.version)
+    if(response.headers.get("EzLLMRouter-Integration-Version")!==this.version||value?.integration_version!==this.version)
       throw new IntegrationClientError("UNSUPPORTED_VERSION",response.status);
     if(!response.ok){
       if(!value.error||typeof value.error.code!=="string")

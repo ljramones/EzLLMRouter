@@ -3,11 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const assert = require("node:assert/strict");
-const { DurankiClient, DurankiError } = require("../../clients/js/index.cjs");
-const token = process.env.DURANKI_DEV_TOKEN;
-const service = process.env.DURANKI_SERVICE_URL || "http://service:8765";
-const receiver = process.env.DURANKI_RECEIVER_URL || "http://receiver:8766";
-const client = new DurankiClient({ baseUrl: service, token });
+const { EzLLMRouterClient, EzLLMRouterError } = require("../../clients/js/index.cjs");
+const token = process.env.EZLLMROUTER_DEV_TOKEN;
+const service = process.env.EZLLMROUTER_SERVICE_URL || "http://service:8765";
+const receiver = process.env.EZLLMROUTER_RECEIVER_URL || "http://receiver:8766";
+const client = new EzLLMRouterClient({ baseUrl: service, token });
 
 async function arrivals() {
   const r = await fetch(receiver + "/observations", { redirect: "manual" });
@@ -20,11 +20,11 @@ async function main() {
   assert.equal(caps.contract_version, "0.2");
   assert.deepEqual(caps.supported_features, ["text"]);
   if (mode === "status") {
-    const snapshot = await client.getStatus({ submission_id: process.env.DURANKI_SUBMISSION_ID });
+    const snapshot = await client.getStatus({ submission_id: process.env.EZLLMROUTER_SUBMISSION_ID });
     assert.equal(snapshot.submission_state, "completed");
     assert.equal(snapshot.candidate.output_blocks[0].text, "Hello.");
     assert.equal((await arrivals()).length, 1);
-    console.log(JSON.stringify({ test: "restart_status", submission_id: process.env.DURANKI_SUBMISSION_ID,
+    console.log(JSON.stringify({ test: "restart_status", submission_id: process.env.EZLLMROUTER_SUBMISSION_ID,
       status_revision: snapshot.status_revision, receiver_arrivals: (await arrivals()).length }));
     return;
   }
@@ -34,18 +34,18 @@ async function main() {
     const request = JSON.parse(fs.readFileSync(path.join(__dirname, "request.json"), "utf8"));
     let target = client, code, state;
     if (mode === "unauthorized") {
-      target = new DurankiClient({ baseUrl: service, token: "invalid.synthetic.token" });
+      target = new EzLLMRouterClient({ baseUrl: service, token: "invalid.synthetic.token" });
       code = "AUTHENTICATION_FAILED";
     } else if (mode === "mutation") {
-      target = new DurankiClient({ baseUrl: process.env.DURANKI_MUTANT_URL, token });
+      target = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_MUTANT_URL, token });
       code = "FDC_REJECTED"; state = "failed_before_transmit";
     } else {
-      target = new DurankiClient({ baseUrl: process.env.DURANKI_FAILSTORE_URL, token });
+      target = new EzLLMRouterClient({ baseUrl: process.env.EZLLMROUTER_FAILSTORE_URL, token });
       code = "INTENT_PERSIST_FAILED"; state = "failed_before_transmit";
     }
     let caught;
     try { await target.submit(request, { wait_ms: 3000 }); } catch (err) { caught = err; }
-    assert.ok(caught instanceof DurankiError);
+    assert.ok(caught instanceof EzLLMRouterError);
     assert.equal(caught.code, code);
     if (state) {
       assert.equal(caught.failure_stage, "before_transmit");

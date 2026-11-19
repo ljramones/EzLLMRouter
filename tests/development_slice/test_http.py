@@ -15,9 +15,9 @@ sys.path.insert(0, str(TEST_DIR))
 REPO_SERVER = TEST_DIR.parents[1] / "server/src"
 if REPO_SERVER.exists():
     sys.path.insert(0, str(REPO_SERVER))
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 from recipe import SyntheticDevelopmentRecipe
 
 FIXTURE = json.loads((TEST_DIR / "fixture.json").read_text())
@@ -97,7 +97,7 @@ class BoundaryTests(unittest.TestCase):
     def request(self, method="POST", path="/v1/submissions", body=None):
         req = Request(self.base + path, method=method,
             data=json.dumps(REQUEST if body is None else body, separators=(",", ":")).encode() if method == "POST" else None,
-            headers={"Authorization": "Bearer token.synthetic", "Duranki-Contract-Version": "0.2",
+            headers={"Authorization": "Bearer token.synthetic", "EzLLMRouter-Contract-Version": "0.2",
                      **({"Content-Type": "application/json"} if method == "POST" else {})})
         try:
             response = self.opener.open(req, timeout=3)

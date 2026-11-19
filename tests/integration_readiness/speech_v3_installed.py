@@ -18,10 +18,10 @@ import time
 from datetime import datetime, timezone, timedelta
 from types import SimpleNamespace
 
-from duranki_client.integration import IntegrationClient
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
+from ezllmrouter_client.integration import IntegrationClient
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
 
 ROOT = Path(__file__).resolve().parents[2]
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
@@ -122,7 +122,7 @@ try:
         assert ingest.submit_observation(usage)["event_id"] == usage["event_id"]
 
         js_dir = Path(os.environ.get("SPEECH_V3_CLIENT_DIR", str(ROOT /
-            "deploy/local/.state/integration-v3-js-consumer/node_modules/@mach33/duranki-client")))
+            "deploy/local/.state/integration-v3-js-consumer/node_modules/@cognitivedynamics/ezllmrouter-client")))
         script = ROOT / "tests/integration_readiness/speech_v3_js_actor.cjs"
         env = {**os.environ, "SPEECH_V3_JS_CLIENT": str(js_dir), "SPEECH_V3_BASE": base,
                "SPEECH_V3_TOKEN": ingest_token, "SPEECH_V3_DATASET": dataset_id,
@@ -136,16 +136,16 @@ try:
             token_file.write_text(ingest_token)
             token_file.chmod(0o600)
             platform_env = {**env,
-                "M33_DURANKI_ENABLED": "1", "M33_DURANKI_SYNTHETIC_ONLY": "1",
-                "M33_DURANKI_API_URL": base, "M33_DURANKI_DATASET_ID": dataset_id,
-                "M33_DURANKI_ACCOUNT_ID": account_id,
-                "M33_DURANKI_ACCOUNT_XAI": account_id,
-                "M33_DURANKI_PROVIDER_XAI": "provider.synthetic.xai",
-                "M33_DURANKI_CREDENTIAL_REF_XAI": "credential.synthetic.xai",
-                "M33_DURANKI_CLIENT_MODULE": str(js_dir),
-                "M33_DURANKI_INGEST_TOKEN_FILE": str(token_file),
-                "M33_DURANKI_OUTBOX_FILE": str(RUN / "platform-outbox.sqlite")}
-            platform_script = platform / "tests/duranki-integration/speech-installed.cjs"
+                "M33_EZLLMROUTER_ENABLED": "1", "M33_EZLLMROUTER_SYNTHETIC_ONLY": "1",
+                "M33_EZLLMROUTER_API_URL": base, "M33_EZLLMROUTER_DATASET_ID": dataset_id,
+                "M33_EZLLMROUTER_ACCOUNT_ID": account_id,
+                "M33_EZLLMROUTER_ACCOUNT_XAI": account_id,
+                "M33_EZLLMROUTER_PROVIDER_XAI": "provider.synthetic.xai",
+                "M33_EZLLMROUTER_CREDENTIAL_REF_XAI": "credential.synthetic.xai",
+                "M33_EZLLMROUTER_CLIENT_MODULE": str(js_dir),
+                "M33_EZLLMROUTER_INGEST_TOKEN_FILE": str(token_file),
+                "M33_EZLLMROUTER_OUTBOX_FILE": str(RUN / "platform-outbox.sqlite")}
+            platform_script = platform / "tests/ezllmrouter-integration/speech-installed.cjs"
             platform_run = subprocess.run(("/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node",
                 str(platform_script)), env=platform_env, capture_output=True, text=True, check=True)
             assert json.loads(platform_run.stdout)["delivered"] == 30
@@ -156,10 +156,10 @@ try:
                     "credential_ref": "credential.synthetic." + provider,
                     "allowed_models": [model], "allowed_operations": [], "state": "usable"})
             newton_env = {**platform_env,
-                "M33_DURANKI_ACCOUNT_ANTHROPIC": "account.synthetic.newton.anthropic",
-                "M33_DURANKI_ACCOUNT_XAI": "account.synthetic.newton.xai",
-                "M33_DURANKI_OUTBOX_FILE": str(RUN / "newton-outbox.sqlite")}
-            newton_script = platform / "tests/duranki-integration/newton-installed.cjs"
+                "M33_EZLLMROUTER_ACCOUNT_ANTHROPIC": "account.synthetic.newton.anthropic",
+                "M33_EZLLMROUTER_ACCOUNT_XAI": "account.synthetic.newton.xai",
+                "M33_EZLLMROUTER_OUTBOX_FILE": str(RUN / "newton-outbox.sqlite")}
+            newton_script = platform / "tests/ezllmrouter-integration/newton-installed.cjs"
             newton = subprocess.run(("/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node",
                 str(newton_script)), env=newton_env, capture_output=True, text=True, check=True)
             assert json.loads(newton.stdout)["delivered"] == 12
@@ -170,14 +170,14 @@ try:
                     "credential_ref": "credential.synthetic." + provider,
                     "allowed_models": [model], "allowed_operations": [], "state": "usable"})
             proto_env = {**platform_env,
-                "M33_DURANKI_ACCOUNT_DEEPGRAM": "account.synthetic.proto.deepgram",
-                "M33_DURANKI_PROVIDER_DEEPGRAM": "provider.synthetic.deepgram",
-                "M33_DURANKI_CREDENTIAL_REF_DEEPGRAM": "credential.synthetic.deepgram",
-                "M33_DURANKI_ACCOUNT_ELEVENLABS": "account.synthetic.proto.elevenlabs",
-                "M33_DURANKI_PROVIDER_ELEVENLABS": "provider.synthetic.elevenlabs",
-                "M33_DURANKI_CREDENTIAL_REF_ELEVENLABS": "credential.synthetic.elevenlabs",
-                "M33_DURANKI_OUTBOX_FILE": str(RUN / "proto-outbox.sqlite")}
-            proto_script = platform / "tests/duranki-integration/proto-speech-installed.cjs"
+                "M33_EZLLMROUTER_ACCOUNT_DEEPGRAM": "account.synthetic.proto.deepgram",
+                "M33_EZLLMROUTER_PROVIDER_DEEPGRAM": "provider.synthetic.deepgram",
+                "M33_EZLLMROUTER_CREDENTIAL_REF_DEEPGRAM": "credential.synthetic.deepgram",
+                "M33_EZLLMROUTER_ACCOUNT_ELEVENLABS": "account.synthetic.proto.elevenlabs",
+                "M33_EZLLMROUTER_PROVIDER_ELEVENLABS": "provider.synthetic.elevenlabs",
+                "M33_EZLLMROUTER_CREDENTIAL_REF_ELEVENLABS": "credential.synthetic.elevenlabs",
+                "M33_EZLLMROUTER_OUTBOX_FILE": str(RUN / "proto-outbox.sqlite")}
+            proto_script = platform / "tests/ezllmrouter-integration/proto-speech-installed.cjs"
             proto = subprocess.run(("/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node",
                 str(proto_script)), env=proto_env, capture_output=True, text=True, check=True)
             assert json.loads(proto.stdout)["delivered"] == 12
@@ -198,7 +198,7 @@ try:
         connection = http_client.HTTPConnection("127.0.0.1", port, timeout=5)
         connection.request("GET", "/integration/v3/reports/usage?dataset_id=" + dataset_id + "&export=csv",
                            headers={"Authorization": "Bearer " + admin_token,
-                                    "Duranki-Integration-Version": "3"})
+                                    "EzLLMRouter-Integration-Version": "3"})
         csv_response = connection.getresponse()
         csv_text = csv_response.read().decode("utf-8")
         connection.close()

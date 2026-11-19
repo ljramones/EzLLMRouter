@@ -9,23 +9,23 @@ import time
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
-from duranki_server.web import serve
-from duranki_server.gateway.choice_b_sender import ChoiceBSenderAdapter
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve
+from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 
 def main():
-    token = os.environ["DURANKI_DEV_TOKEN"]
-    provider_key = os.environ["DURANKI_DEV04_PROVIDER_KEY"]
+    token = os.environ["EZLLMROUTER_DEV_TOKEN"]
+    provider_key = os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]
     if len(token) < 32 or not provider_key.startswith("sk-") or len(provider_key) < 36:
         raise ValueError("fresh synthetic credentials required")
     if "litellm" in sys.modules:
         raise RuntimeError("LiteLLM imported into trusted sender")
-    os.environ["DURANKI_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
+    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     trusted = dict(fixture["trusted_context"])
 
@@ -81,7 +81,7 @@ def main():
         "sender_socket": "/link/sender.sock",
     }, indent=2) + "\n")
     coordinator = Coordinator(
-        SQLiteStore(os.environ["DURANKI_DB_PATH"]), identity,
+        SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"]), identity,
         public_destination(fixture), fixture["prompt_blocks"], fixture["allowed_lineages"],
         PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture)), adapter,
         fixture["retention"], fixture["classification"], GatewayProxyRecipe(),

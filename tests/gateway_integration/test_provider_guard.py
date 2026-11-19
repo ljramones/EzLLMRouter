@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
-from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe
+from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe
 
 
 class Lower(httpx.AsyncBaseTransport):

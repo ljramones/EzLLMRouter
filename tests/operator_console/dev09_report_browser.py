@@ -16,8 +16,8 @@ for relative in ("server/src", "deploy/local", "tests/operator_console"):
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from provider_browser_smoke import NeverRun, counters
 from test_dev09_reporting import ReportingTests
 
@@ -44,7 +44,7 @@ def main():
             registry=registry)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        with tempfile.TemporaryDirectory(prefix="duranki-dev09-report-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-report-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)
@@ -54,7 +54,7 @@ def main():
                 wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
                 call(browser, "navigate", "usage")
                 wait(browser, "document.querySelector('#view-title').textContent==='Usage & Costs' && "
-                     "document.querySelector('#view-content').textContent.includes('Recorded through Duranki')",
+                     "document.querySelector('#view-content').textContent.includes('Recorded through EzLLMRouter')",
                      "usage landing")
                 browser.evaluate("document.querySelector('.cost-filters summary').click();true")
                 browser.evaluate("[...document.querySelectorAll('.cost-filter-grid label')]"

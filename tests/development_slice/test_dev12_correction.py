@@ -16,13 +16,13 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
-from duranki_server.canonical import ContractError  # noqa: E402
-from duranki_server.store import SQLiteStore  # noqa: E402
-from duranki_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
-from duranki_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
-from duranki_server.successor_service import SuccessorService  # noqa: E402
-from duranki_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
-from duranki_server.successor_contract import native_usage_row  # noqa: E402
+from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
+from ezllmrouter_server.successor_service import SuccessorService  # noqa: E402
+from ezllmrouter_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
+from ezllmrouter_server.successor_contract import native_usage_row  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 

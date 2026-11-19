@@ -15,7 +15,7 @@ public sealed class EzLLMRouterClient : IDisposable
     private static Dictionary<string, string> Wait(int? waitMs)
     {
         if (waitMs is < 0 or > 30000) throw Protocol.Invalid();
-        return waitMs.HasValue ? new() { ["Duranki-Wait-Ms"] = waitMs.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) } : [];
+        return waitMs.HasValue ? new() { ["EzLLMRouter-Wait-Ms"] = waitMs.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) } : [];
     }
     public Task<JsonObject> SubmitAsync(JsonObject request, int? waitMs = null, CancellationToken cancellationToken = default) => SubmitInRunAsync(request, null, waitMs, cancellationToken);
     public Task<JsonObject> SubmitInRunAsync(JsonObject request, string? runId, int? waitMs = null, CancellationToken cancellationToken = default)
@@ -24,7 +24,7 @@ public sealed class EzLLMRouterClient : IDisposable
         foreach (string key in Protocol.SelectorKeys) selector[key] = At(body, key)?.DeepClone();
         if (!Schema.Named(selector, "0.2", "WorkSelector") || runId is not null && !Id(JsonValue.Create(runId))) throw Protocol.Invalid();
         var headers = Wait(waitMs);
-        if (runId is not null) { headers["Duranki-Attribution-Version"] = "1"; headers["Duranki-Attribution-Run"] = runId; }
+        if (runId is not null) { headers["EzLLMRouter-Attribution-Version"] = "1"; headers["EzLLMRouter-Attribution-Run"] = runId; }
         return WireAsync("POST", "/v1/submissions", "0.2", "submit", body, selector, headers, cancellationToken);
     }
     public Task<JsonObject> GetStatusAsync(JsonObject selector, CancellationToken cancellationToken = default) => StatusAsync(selector, "0.2", cancellationToken);
@@ -50,7 +50,7 @@ public sealed class EzLLMRouterClient : IDisposable
     }
     private async Task<JsonObject> WireAsync(string method, string path, string version, string kind, JsonObject? body, JsonObject? selector, Dictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        var (value, status) = await Connection.RequestAsync(method, path, "Duranki-Contract-Version", version, body, headers, version == "0.3" ? 16 * 1024 * 1024 : 1024 * 1024, selector, cancellationToken).ConfigureAwait(false);
+        var (value, status) = await Connection.RequestAsync(method, path, "EzLLMRouter-Contract-Version", version, body, headers, version == "0.3" ? 16 * 1024 * 1024 : 1024 * 1024, selector, cancellationToken).ConfigureAwait(false);
         var handle = Protocol.MatchingHandle(value, selector, version);
         bool envelopeError = version == "0.3" ? Has(value, "code") : Has(value, "error") && !Has(value, "state");
         if (envelopeError)

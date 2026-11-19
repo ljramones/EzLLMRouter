@@ -1,9 +1,3 @@
-"""CognitiveDynamics EzLLMRouter service entry points.
+"""CognitiveDynamics EzLLMRouter server domain and HTTP boundary."""
 
-The existing implementation namespace remains available for compatibility with
-installed integrations and historical deployment tools.
-"""
-
-from duranki_server import __version__
-
-__all__ = ["__version__"]
+__version__ = "0.3.3"

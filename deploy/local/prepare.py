@@ -26,7 +26,7 @@ SOURCE_ROOTS = ("server/src", "tests/gateway_integration", "tests/development_sl
                 "deploy/local", "tools/gateway", "worker", "web")
 FIXED_INPUTS = ("deploy/local/inputs/gateway/WHEEL-INVENTORY.json",
                 "deploy/local/inputs/gateway/requirements.gateway.lock",
-                "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json")
+                "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json")
 
 
 def package_artifacts(directory):
@@ -95,9 +95,9 @@ def fingerprint():
 
 
 def main():
-    artifact = os.environ.get("DURANKI_ARTIFACT_ROOT")
+    artifact = os.environ.get("EZLLMROUTER_ARTIFACT_ROOT")
     if not artifact:
-        raise SystemExit("DURANKI_ARTIFACT_ROOT is required; see deploy/local/README.md")
+        raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required; see deploy/local/README.md")
     artifact = Path(artifact).resolve()
     if not (artifact / "ARTIFACT-CUSTODY.json").is_file():
         raise SystemExit("declared artifact custody manifest missing")
@@ -137,7 +137,7 @@ def copy_web_assets(source, destination):
 def prepare_work(work, run, source_hash, artifact):
     # Keep failed offline builds outside the fingerprinted cache entry. The
     # source packet moves with the completed context in the final rename.
-    env = dict(os.environ, DURANKI_ARTIFACT_ROOT=str(artifact))
+    env = dict(os.environ, EZLLMROUTER_ARTIFACT_ROOT=str(artifact))
     subprocess.run((sys.executable, "-I", "-B", str(ROOT / "tools/gateway/stage.py"),
                     str(ROOT), str(work), str(work), "DEV-05"),
                    check=True, env=env, stdout=subprocess.DEVNULL)
@@ -175,8 +175,8 @@ def prepare_work(work, run, source_hash, artifact):
         shutil.copy2(ROOT / source, local / name)
     web = build / "service/web"
     copy_web_assets(ROOT / "web", web)
-    # Disposable installed-client actors for the DEV-07 target matrix. The
-    # existing frozen wheel/tarball remain the only SDK inputs.
+    # Disposable installed-client actors for the DEV-07 target matrix use the
+    # current SDK sources, packaged offline by the context builder.
     shutil.copy2(ROOT / "tests/gateway_integration/dev07_actor.py",
                  build / "python/actors/dev07_actor.py")
     shutil.copy2(ROOT / "tests/gateway_integration/dev07_actor.cjs",
@@ -191,8 +191,8 @@ def prepare_work(work, run, source_hash, artifact):
     client_metadata.write_text(json.dumps({"distribution": PYTHON_CLIENT["name"], "version": PYTHON_CLIENT["version"]}) + "\n", encoding="utf-8")
     client_digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
     (build / "service/client-wheel.sha256").write_text(
-        f"{client_digest}  /opt/duranki/client/{DEV09_CLIENT}\n" +
-        f"{hashlib.sha256(client_metadata.read_bytes()).hexdigest()}  /opt/duranki/client/metadata.json\n")
+        f"{client_digest}  /opt/ezllmrouter/client/{DEV09_CLIENT}\n" +
+        f"{hashlib.sha256(client_metadata.read_bytes()).hexdigest()}  /opt/ezllmrouter/client/metadata.json\n")
     target_tests = build / "service/tests/operator_console"
     target_tests.mkdir(parents=True)
     (build / "service/tests/__init__.py").write_text("")
@@ -224,8 +224,8 @@ def prepare_work(work, run, source_hash, artifact):
     js_metadata = dev09_js / "client-metadata.json"
     js_metadata.write_text(json.dumps({"name": JS_CLIENT["name"], "version": JS_CLIENT["version"]}) + "\n", encoding="utf-8")
     js_digest = hashlib.sha256(js_package.read_bytes()).hexdigest()
-    (dev09_js / "client.tgz.sha256").write_text(f"{js_digest}  /opt/duranki/client.tgz\n" +
-        f"{hashlib.sha256(js_metadata.read_bytes()).hexdigest()}  /opt/duranki/client-metadata.json\n")
+    (dev09_js / "client.tgz.sha256").write_text(f"{js_digest}  /opt/ezllmrouter/client.tgz\n" +
+        f"{hashlib.sha256(js_metadata.read_bytes()).hexdigest()}  /opt/ezllmrouter/client-metadata.json\n")
     identity = {"commit": git("rev-parse", "HEAD"), "tree": git("rev-parse", "HEAD^{tree}"),
                 "dirty": source_dirty(),
                 "fingerprint": source_hash, "prepared_at": datetime.now(timezone.utc).isoformat()}

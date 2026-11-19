@@ -6,7 +6,14 @@ Read the [documentation index](docs/README.md), [architecture](docs/ARCHITECTURE
 
 `server/` contains the Coordinator, persistent registry, operator API, and trusted sender. `web/` contains the operator console. `clients/` contains Python, JavaScript/TypeScript, Go, Java, C#/.NET and Rust clients. `deploy/local/inputs/` holds build metadata and the catalogue seed. `tests/fixtures/contracts/` holds machine-readable schemas, examples, vectors and conformance checkers. `docs/` contains current guides; generated evidence belongs outside it, under ignored `.artifacts/` or the configured private artifact store.
 
-Historical project documentation was removed from the active tree at the owner's request; Git history through `1932889` retains the tracked originals. Do not recreate historical documentation trees. Preserve retained runtime records and one-use run namespaces. Keep source Git history separate from frozen-input and artifact backups.
+Use EzLLMRouter consistently in filenames, imports, packages, environment variables,
+HTTP headers, schemas and documentation. Python implementations belong directly in
+`ezllmrouter_server` and `ezllmrouter_client`. Do not retain former product names or
+compatibility aliases for them. Update contract producers, consumers, resource
+copies, canonical hashes and signed fixtures together when changing namespaces.
+
+Do not recreate removed project documentation trees. Keep generated runtime data,
+frozen dependency stores and build artifacts outside the tracked source tree.
 
 ## Build and checks
 

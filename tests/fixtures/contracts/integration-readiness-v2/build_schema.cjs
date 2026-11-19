@@ -5,8 +5,8 @@ const path=require("node:path");
 const source=JSON.parse(fs.readFileSync(path.join(__dirname,"../integration-readiness-v1/schema.json"),"utf8"));
 const s=structuredClone(source), d=s.$defs, ref=name=>({$ref:"#/$defs/"+name});
 const id=ref("id"), utc=ref("utc"), decimal=ref("decimal");
-s.$id="urn:mach33:duranki:external-accounting:2";
-s.title="Duranki external accounting integration v2";
+s.$id="urn:mach33:ezllmrouter:external-accounting:2";
+s.title="EzLLMRouter external accounting integration v2";
 for(const name of ["activity","attempt_started","decision","result"])
   d[name].properties.integration_version.const="2";
 // The lightweight service/client validators apply these cross-field conditions.
@@ -88,7 +88,7 @@ d.event.oneOf=[ref("activity"),ref("attempt_started"),ref("decision"),ref("resul
 const output=JSON.stringify(s,null,2)+"\n";
 for(const target of [
   path.join(__dirname,"schema.json"),
-  path.join(__dirname,"../../../../server/src/duranki_server/integration_schema_v2.json"),
+  path.join(__dirname,"../../../../server/src/ezllmrouter_server/integration_schema_v2.json"),
   path.join(__dirname,"../../../../clients/js/integration_schema_v2.json"),
-  path.join(__dirname,"../../../../clients/python/src/duranki_client/integration_schema_v2.json")])
+  path.join(__dirname,"../../../../clients/python/src/ezllmrouter_client/integration_schema_v2.json")])
   fs.writeFileSync(target,output);

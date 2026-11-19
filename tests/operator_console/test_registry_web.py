@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "deploy/local"))
 
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 import catalogue_import
 
 
@@ -81,7 +81,7 @@ class RegistryWebTests(unittest.TestCase):
         if cookie:
             headers["Cookie"] = cookie
         if csrf:
-            headers["X-Duranki-CSRF"] = csrf
+            headers["X-EzLLMRouter-CSRF"] = csrf
         if body is not None:
             headers["Content-Type"] = "application/json"
         try:

@@ -16,13 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
-from duranki_server.web import serve
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
+from ezllmrouter_server.web import serve
 from dev12_completion_sync_first_owner import synchronized_pair
 
 VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
@@ -70,11 +70,11 @@ class SynchronizedOwnershipTests(unittest.TestCase):
                 connection = http.client.HTTPConnection("127.0.0.1", web.server_address[1], timeout=10)
                 body = json.dumps(value, separators=(",", ":")).encode()
                 connection.request("POST", "/v1/submissions", body,
-                    {"Authorization": "Bearer " + token, "Duranki-Contract-Version": "0.3",
-                     "Content-Type": "application/json", "Duranki-Wait-Ms": "0"})
+                    {"Authorization": "Bearer " + token, "EzLLMRouter-Contract-Version": "0.3",
+                     "Content-Type": "application/json", "EzLLMRouter-Wait-Ms": "0"})
                 response = connection.getresponse()
                 result = {"http_status": response.status, "body": json.loads(response.read()),
-                          "contract_header": response.getheader("Duranki-Contract-Version")}
+                          "contract_header": response.getheader("EzLLMRouter-Contract-Version")}
                 connection.close()
                 return result
 

@@ -318,7 +318,7 @@ def verify_started_limits(campaign, finite_scope):
 
 def request_pair(runtime):
     from dev12_integrated import fixture
-    from duranki_server.successor_contract import work_projection, work_digest
+    from ezllmrouter_server.successor_contract import work_projection, work_digest
     first, _context = fixture("DIRECT_DOCUMENT")
     trusted = runtime.contexts_by_credential[runtime.credentials["DIRECT_DOCUMENT"]]
     first["work_selector"] = {"task_id": "task.demo", "step_id": STEP,
@@ -370,7 +370,7 @@ def read_status(runtime, submission_id):
     try:
         connection.request("GET", "/v1/submissions/" + submission_id,
             headers={"Authorization": "Bearer " + token,
-                     "Duranki-Contract-Version": "0.3"})
+                     "EzLLMRouter-Contract-Version": "0.3"})
         reply = connection.getresponse()
         raw = reply.read()
         return {"http_status": reply.status, "response_headers": dict(reply.getheaders()),
@@ -395,7 +395,7 @@ def run_single_target(runtime, plan, finite_scope):
     from dev12_completion_runner import append_durable
     from dev12_completion_sync_first_owner import synchronized_pair
     from dev12_completion_handlers import _census
-    from duranki_server.successor_contract import work_projection, work_digest
+    from ezllmrouter_server.successor_contract import work_projection, work_digest
     verify_started_limits(runtime.allowance.inspect(), finite_scope)
     first, second, first_digest, second_digest = request_pair(runtime)
     trusted = runtime.contexts_by_credential[runtime.credentials["DIRECT_DOCUMENT"]]
@@ -479,7 +479,7 @@ def run_single_target(runtime, plan, finite_scope):
             owner["submission_id"] != winner[0]["reply"]["handle"]["submission_id"] or
             loser[0]["reply"].get("code") != "WORK_CONFLICT" or
             loser[0]["reply"].get("retry_guidance") != "never" or
-            loser[0]["response_headers"].get("Duranki-Contract-Version") != "0.3" or
+            loser[0]["response_headers"].get("EzLLMRouter-Contract-Version") != "0.3" or
             not boundary["owner_absent_when_both_arrived"] or
             len(transactions) != 2 or
             len({row["thread_id"] for row in transactions}) != 2 or

@@ -15,7 +15,7 @@ impl IntegrationClient {
     pub fn close(&self) { self.connection.close(); }
     pub fn version(&self) -> &str { &self.version }
     fn request(&self, method: &str, endpoint: &str, body: Option<&Value>, expected: &[u16]) -> Result<Value> {
-        let (value, status) = self.connection.request(method, &(self.path.clone() + endpoint), "Duranki-Integration-Version", &self.version, body, BTreeMap::new(), 16 * 1024 * 1024, None)?;
+        let (value, status) = self.connection.request(method, &(self.path.clone() + endpoint), "EzLLMRouter-Integration-Version", &self.version, body, BTreeMap::new(), 16 * 1024 * 1024, None)?;
         if status >= 400 {
             let evidence = at(&value, "error"); let code = text(at(evidence, "code")); let guidance = text(at(evidence, "retry_guidance"));
             if code.is_empty() { return Err(Error::new("TRANSPORT_OUTCOME_UNKNOWN", Some(status), "query_first", None)); }

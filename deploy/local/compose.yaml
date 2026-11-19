@@ -1,8 +1,8 @@
-name: duranki-dev06-local
+name: ezllmrouter-dev06-local
 services:
   credential-init:
     profiles: [setup]
-    image: ${DURANKI_SERVICE_IMAGE:?}
+    image: ${EZLLMROUTER_SERVICE_IMAGE:?}
     pull_policy: never
     network_mode: none
     user: "0:0"
@@ -10,10 +10,10 @@ services:
     cap_drop: [ALL]
     cap_add: [CHOWN]
     security_opt: ["no-new-privileges:true"]
-    volumes: ["credential_data:/run/duranki"]
+    volumes: ["credential_data:/run/ezllmrouter"]
     command: ["python", "-B", "/app/local/initialize_credentials.py"]
   netns:
-    image: ${DURANKI_PYTHON_IMAGE:?}
+    image: ${EZLLMROUTER_PYTHON_IMAGE:?}
     pull_policy: never
     networks: [local_private]
     user: "10001:10001"
@@ -23,7 +23,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     command: ["python", "-c", "import time; time.sleep(999999)"]
   receiver:
-    image: ${DURANKI_RECEIVER_IMAGE:?}
+    image: ${EZLLMROUTER_RECEIVER_IMAGE:?}
     pull_policy: never
     network_mode: service:netns
     user: "10001:10001"
@@ -32,10 +32,10 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     volumes: ["receiver_data:/data"]
-    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl}
+    environment: {EZLLMROUTER_RECEIVER_LOG: /data/arrivals.jsonl}
     depends_on: [netns]
   worker:
-    image: ${DURANKI_WORKER_IMAGE:?}
+    image: ${EZLLMROUTER_WORKER_IMAGE:?}
     pull_policy: never
     network_mode: none
     user: "10001:10001"
@@ -45,7 +45,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     volumes: ["link_data:/link"]
   service:
-    image: ${DURANKI_SERVICE_IMAGE:?}
+    image: ${EZLLMROUTER_SERVICE_IMAGE:?}
     pull_policy: never
     network_mode: service:netns
     user: "10001:10001"
@@ -57,13 +57,13 @@ services:
       - service_data:/data
       - link_data:/link
       - console_link_data:/console
-      - credential_data:/run/duranki:ro
+      - credential_data:/run/ezllmrouter:ro
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV04_POOL_PROBE: ${DURANKI_DEV07_POOL_PROBE:-0}
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV04_POOL_PROBE: ${EZLLMROUTER_DEV07_POOL_PROBE:-0}
     depends_on: [netns, receiver, worker]
   ingress:
-    image: ${DURANKI_PYTHON_IMAGE:?}
+    image: ${EZLLMROUTER_PYTHON_IMAGE:?}
     pull_policy: never
     networks: [console_publish]
     ports: ["127.0.0.1:8780:8780"]
@@ -73,7 +73,7 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     volumes:
-      - "${DURANKI_INGRESS_SCRIPT:?}:/console_ingress.py:ro"
+      - "${EZLLMROUTER_INGRESS_SCRIPT:?}:/console_ingress.py:ro"
       - console_link_data:/console
     command: ["python", "-B", "/console_ingress.py"]
     depends_on: [netns, service]

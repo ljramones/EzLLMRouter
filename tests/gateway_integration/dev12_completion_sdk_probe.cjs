@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const installed = process.argv[2], evidence = process.argv[3];
-const { DurankiClient, DurankiError } = require(installed);
+const { EzLLMRouterClient, EzLLMRouterError } = require(installed);
 const fixtureBytes = fs.readFileSync(evidence);
 const fixture = JSON.parse(fixtureBytes)["payload"]["live_target"]["python_status"];
 const handle = fixture.handle;
@@ -27,18 +27,18 @@ const expected = { positive: "accepted", unknown_version: "UNSUPPORTED_VERSION",
     const requests = [];
     const fetchImpl = async (url, request) => {
       requests.push({ method: request.method, url,
-        contract_version: request.headers["Duranki-Contract-Version"] });
+        contract_version: request.headers["EzLLMRouter-Contract-Version"] });
       return { status: 200, headers: { get: () => header },
         arrayBuffer: async () => raw };
     };
-    const client = new DurankiClient({ baseUrl: "http://127.0.0.1:1",
+    const client = new EzLLMRouterClient({ baseUrl: "http://127.0.0.1:1",
       token: "synthetic-local-only", fetchImpl });
     let observed;
     try {
       const value = await client.getSuccessorStatus(selector);
       observed = JSON.stringify(value) === JSON.stringify(body) ? "accepted" : "wrong_result";
     } catch (error) {
-      observed = error instanceof DurankiError ? error.code : String(error);
+      observed = error instanceof EzLLMRouterError ? error.code : String(error);
     }
     outcomes.push({ case: name, selector: selector.submission_id ? "submission_id" : "work_selector",
       http_status: 200, response_header: header, exact_body_utf8: raw.toString("utf8"),

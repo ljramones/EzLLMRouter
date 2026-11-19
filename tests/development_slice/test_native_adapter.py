@@ -3,7 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
-from duranki_server.canonical import ContractError
+from ezllmrouter_server.canonical import ContractError
 from native_adapter import NativeSyntheticAdapter
 from recipe import SyntheticTextRecipe
 

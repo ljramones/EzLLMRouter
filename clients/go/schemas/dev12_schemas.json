@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://duranki.invalid/contracts/dev12/successor-01/schema-bundle",
+  "$id": "https://ezllmrouter.invalid/contracts/dev12/successor-01/schema-bundle",
   "title": "DEV-12/A1 successor contract candidate 03",
   "contract_status": "CORRECTED_CANDIDATE_READY_FOR_DELTA_REVIEW",
   "entrypoints": {
@@ -522,7 +522,7 @@
       "type": "object",
       "properties": {
         "schema_id": {
-          "const": "duranki-work-v0.3"
+          "const": "ezllmrouter-work-v0.3"
         },
         "profile": {
           "const": "retrieval-synthetic@1"

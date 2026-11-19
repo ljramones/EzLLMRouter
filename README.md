@@ -231,10 +231,10 @@ before choosing a rewrite.
 | Path | Contents |
 | --- | --- |
 | `server/` | Coordinator, registry, persistence, operator API, and trusted service. |
-| `server/src/duranki_server/gateway/` | Guard, owned sender transports, adapter, IPC framing and gateway recipes. |
-| `server/src/duranki_server/repositories/` | Domain-owned, named SQL queries. |
-| `server/src/duranki_server/schema/` | Versioned initial database schema. |
-| `server/src/duranki_server/operator_http/` | Operator transport, authentication, routes and application state. |
+| `server/src/ezllmrouter_server/gateway/` | Guard, owned sender transports, adapter, IPC framing and gateway recipes. |
+| `server/src/ezllmrouter_server/repositories/` | Domain-owned, named SQL queries. |
+| `server/src/ezllmrouter_server/schema/` | Versioned initial database schema. |
+| `server/src/ezllmrouter_server/operator_http/` | Operator transport, authentication, routes and application state. |
 | `worker/` | Isolated worker source, staged separately from the trusted service package. |
 | `clients/python/`, `clients/js/`, `clients/go/`, `clients/java/`, `clients/dotnet/`, `clients/rust/` | Installable network clients. |
 | `web/` | Operator console HTML, CSS, and JavaScript. |
@@ -243,7 +243,7 @@ before choosing a rewrite.
 | `tools/gateway/` | Local synthetic launchers, source staging and evidence export/verification tools. |
 | `docs/` | Current architecture, API, operating and development guides. |
 
-Gateway runtime imports use `duranki_server.gateway`. The older flat imports and
+Gateway runtime imports use `ezllmrouter_server.gateway`. The older flat imports and
 script paths remain compatibility shims, sharing the same guard context and
 exception classes. Local profile staging takes implementations from the runtime
 package and worker source, and takes launch/export tools from `tools/gateway`.

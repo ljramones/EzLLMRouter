@@ -14,4 +14,4 @@ classifiers = ["Private :: Do Not Upload"]
 ezllmrouter = "ezllmrouter_server.integration_local:main"
 
 [tool.uv.build-backend]
-module-name = ["ezllmrouter_server", "duranki_server"]
+module-name = "ezllmrouter_server"

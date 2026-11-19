@@ -1,5 +1,5 @@
 {
-  "schema": "duranki.researched_catalogue_seed.v1",
+  "schema": "ezllmrouter.researched_catalogue_seed.v1",
   "status": "RESEARCHED_DATA_FOR_CODEX_IMPORT_NOT_APPLIED",
   "checked_on": "2026-10-21",
   "scope": "Twelve representative publicly documented models across four vendors; not an exhaustive model inventory.",
@@ -13,7 +13,7 @@
     "source_timestamp_meaning": "Research observation date, not an invented publisher price-effective date.",
     "unsupported_rate_conditions": "Retain as visible reference data; do not flatten into an unconditional billable schedule.",
     "missing_value_policy": "Unknown, not zero.",
-    "capability_policy": "Publisher capabilities remain distinct from supported/enabled Duranki capabilities."
+    "capability_policy": "Publisher capabilities remain distinct from supported/enabled EzLLMRouter capabilities."
   },
   "sources": [
     {
@@ -142,7 +142,7 @@
         "text_output": true,
         "tool_use": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -159,7 +159,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard",
@@ -176,7 +176,7 @@
       },
       "notes": [
         "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
-        "Provider capabilities are metadata, not features implemented or enabled in Duranki."
+        "Provider capabilities are metadata, not features implemented or enabled in EzLLMRouter."
       ],
       "source_refs": [
         "claude-opus",
@@ -203,7 +203,7 @@
         "text_output": true,
         "tool_use": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -220,7 +220,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard",
@@ -237,7 +237,7 @@
       },
       "notes": [
         "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
-        "Provider capabilities are metadata, not features implemented or enabled in Duranki.",
+        "Provider capabilities are metadata, not features implemented or enabled in EzLLMRouter.",
         "Forced tool use is not supported by this published Fable version."
       ],
       "source_refs": [
@@ -265,7 +265,7 @@
         "text_output": true,
         "tool_use": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -282,7 +282,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard",
@@ -299,7 +299,7 @@
       },
       "notes": [
         "Cache-write durations have distinct rates; do not charge a cache-write token again as ordinary uncached input.",
-        "Provider capabilities are metadata, not features implemented or enabled in Duranki."
+        "Provider capabilities are metadata, not features implemented or enabled in EzLLMRouter."
       ],
       "source_refs": [
         "claude-sonnet",
@@ -326,7 +326,7 @@
         "text_output": true,
         "tool_use": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -343,7 +343,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Prompt up to 100,000 tokens",
@@ -401,7 +401,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -418,7 +418,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard; input at most 272,000 tokens",
@@ -478,7 +478,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -495,7 +495,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard; input at most 272,000 tokens",
@@ -555,7 +555,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -572,7 +572,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard; input at most 272,000 tokens",
@@ -604,7 +604,7 @@
         ]
       },
       "notes": [
-        "Published function calling does not establish compatibility with the existing Duranki adapter.",
+        "Published function calling does not establish compatibility with the existing EzLLMRouter adapter.",
         "Rates shown use Standard/global processing, not Fast/Ultrafast, Batch/Flex, or regional uplifts.",
         "Extra hosted-tool and other non-token charges are not included."
       ],
@@ -634,7 +634,7 @@
         "json_output": true,
         "image_input": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -651,7 +651,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Peak",
@@ -722,7 +722,7 @@
         "json_output": true,
         "image_input": false
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -739,7 +739,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Peak",
@@ -813,7 +813,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -830,7 +830,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard paid API reference",
@@ -886,7 +886,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -903,7 +903,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard paid API reference",
@@ -962,7 +962,7 @@
         "text_output": true,
         "function_calling": true
       },
-      "duranki_registration": {
+      "ezllmrouter_registration": {
         "catalogued": true,
         "execution_approved": false,
         "runtime_ready": false,
@@ -979,7 +979,7 @@
         "basis": "direct_provider_public_API_reference",
         "not_customer_invoice_or_negotiated_rate": true,
         "default_processing_tier": "standard",
-        "rates_are_reference_data_not_an_active_Duranki_billing_schedule": true,
+        "rates_are_reference_data_not_an_active_EzLLMRouter_billing_schedule": true,
         "bands": [
           {
             "label": "Standard paid API reference",
@@ -1023,7 +1023,7 @@
     }
   ],
   "other_human_names": {
-    "state": "No approved Duranki user roster supplied to this research pass.",
+    "state": "No approved EzLLMRouter user roster supplied to this research pass.",
     "action": "Use names from an explicitly approved project identity roster if already available to Codex; otherwise leave unregistered. Do not infer grants or authentication from names."
   },
   "fixture_presentation": {

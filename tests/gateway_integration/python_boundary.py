@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 import httpx
-from duranki_client import DurankiClient, DurankiError
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 
 BASE = json.loads(Path(__file__).with_name("request.json").read_text())
@@ -15,7 +15,7 @@ TEXT = {"422": "Simulate 422", "503": "Simulate 503", "close": "Simulate close"}
 
 def arrivals():
     with httpx.Client(trust_env=False, timeout=2) as client:
-        response = client.get(os.environ["DURANKI_RECEIVER_URL"] + "/observations")
+        response = client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations")
         response.raise_for_status()
         return response.json()["arrivals"]
 
@@ -30,12 +30,12 @@ def main():
         raise SystemExit("usage: python_boundary.py 422|503|close|positive LABEL")
     request = deepcopy(BASE)
     request["step_id"] = "step.dev04.boundary." + label
-    if os.environ["DURANKI_SERVICE_URL"].endswith(":8771"):
+    if os.environ["EZLLMROUTER_SERVICE_URL"].endswith(":8771"):
         request["generation_settings"]["total_timeout_ms"] = 30000
     if mode in TEXT:
         request["messages"][1]["blocks"][0]["text"] = TEXT[mode]
     before = arrivals()
-    with DurankiClient(os.environ["DURANKI_SERVICE_URL"], os.environ["DURANKI_DEV_TOKEN"]) as client:
+    with EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], os.environ["EZLLMROUTER_DEV_TOKEN"]) as client:
         if mode == "positive":
             reply = client.submit(request, {"wait_ms": 3000})
             assert reply["state"] == "delivered"
@@ -48,7 +48,7 @@ def main():
         elif mode in ("422", "503"):
             try:
                 client.submit(request, {"wait_ms": 3000})
-            except DurankiError as error:
+            except EzLLMRouterError as error:
                 assert (error.code, error.http_status) == ("REMOTE_EXECUTION_FAILED", 502)
                 assert error.handle and error.attempt_id
                 status = client.getStatus({"submission_id": error.handle["submission_id"]})

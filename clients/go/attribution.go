@@ -75,7 +75,7 @@ func (c *Client) GetOutcomeReceipt(ctx context.Context, eventID string) (Object,
 	return c.attribution(ctx, "GET", "/v1/outcomes/"+url.PathEscape(eventID), nil, true, eventID)
 }
 func (c *Client) attribution(ctx context.Context, method, path string, body Object, receipt bool, expectedID string) (Object, error) {
-	v, status, err := c.conn.request(ctx, method, path, "Duranki-Contract-Version", "0.2", body, nil, 1024*1024, nil)
+	v, status, err := c.conn.request(ctx, method, path, "EzLLMRouter-Contract-Version", "0.2", body, nil, 1024*1024, nil)
 	if err != nil {
 		return nil, err
 	}

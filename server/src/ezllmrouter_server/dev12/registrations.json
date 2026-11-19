@@ -1,0 +1,126 @@
+{
+  "schema_version": "dev12-a1-registrations@1",
+  "status": "FIXED_PUBLIC_SYNTHETIC_ONLY",
+  "handling_profile": "public-synthetic-retained@1",
+  "content_digest_domain": "sha256(UTF8(\"ezllmrouter-content-v1\\n\" + content_version + \"\\n\") || UTF8(text))",
+  "allowed_public_text_sha256": [
+    "sha256:121fd6262cf1cb26a1db57a7f77e755a207af0a211fbbfe9409c816be636a0f3",
+    "sha256:20d37ab719d9040dbe04efa7cf61e2dc2df92bd0469bb317e028673280a4ab31",
+    "sha256:f1dfb3100c14c101ac81694d03e67056292d001599b26c23be73b4af344dc39e",
+    "sha256:f146aad15c25c4adb8626e69351983e848fa1abd5a1333db365d3589a68c245d",
+    "sha256:226d016e0d425364f28e3ead255a06d3a52c77bb6a0c03a5ddbad31d0dbe167b",
+    "sha256:5a128b295bdb74084ec5cf33d5a773663864fe90ddbbe99999c19b8bb571acd7"
+  ],
+  "configurations": [
+    {
+      "configuration_ref": "cfg.embed.synthetic",
+      "operation": {
+        "type": "embedding.create",
+        "version": 1
+      },
+      "embedding_profile": {
+        "profile_id": "space.synthetic.v1",
+        "model_ref": "model.embed.synthetic.v1",
+        "dimensions": 3,
+        "normalization": "none",
+        "parameter_digest": "sha256:adaa85c8ea7142b9a295a1e9546dd154aed2de91c92e4563717ec38adb4c6b1c",
+        "corpus_version": "corpus.v1",
+        "index_version": "index.v1"
+      },
+      "adapter_ref": "adapter.embed.synthetic.v1",
+      "destination_ref": "destination.synthetic.v1",
+      "role_price_refs": {
+        "document": "tariff.synthetic.embed-doc@1",
+        "query": "tariff.synthetic.embed-query@1"
+      }
+    },
+    {
+      "configuration_ref": "cfg.rerank.synthetic",
+      "operation": {
+        "type": "rerank",
+        "version": 1
+      },
+      "ranking_profile_id": "rank.synthetic.v1",
+      "corpus_version": "corpus.v1",
+      "index_version": "index.v1",
+      "adapter_ref": "adapter.rerank.synthetic.v1",
+      "destination_ref": "destination.synthetic.v1",
+      "price_ref": "tariff.synthetic.b@1"
+    },
+    {
+      "configuration_ref": "cfg.rerank.synthetic.a",
+      "operation": {
+        "type": "rerank",
+        "version": 1
+      },
+      "ranking_profile_id": "rank.synthetic.v1",
+      "corpus_version": "corpus.v1",
+      "index_version": "index.v1",
+      "adapter_ref": "adapter.rerank.synthetic.v1",
+      "destination_ref": "destination.synthetic.v1",
+      "price_ref": "tariff.synthetic.a@1"
+    }
+  ],
+  "price_contracts": [
+    {
+      "price_ref": "tariff.synthetic.a@1",
+      "usage_ref": "dev12-native-usage@1",
+      "operation": {
+        "type": "rerank",
+        "version": 1
+      },
+      "role": "rerank",
+      "component": "search_units",
+      "schedule_kind": "tariff_a",
+      "currency": "USD",
+      "minimum_items": 1,
+      "maximum_items": 25,
+      "maximum_bound_decimal": "0.009000000"
+    },
+    {
+      "price_ref": "tariff.synthetic.b@1",
+      "usage_ref": "dev12-native-usage@1",
+      "operation": {
+        "type": "rerank",
+        "version": 1
+      },
+      "role": "rerank",
+      "component": "document_units",
+      "schedule_kind": "tariff_b",
+      "currency": "USD",
+      "minimum_items": 1,
+      "maximum_items": 25,
+      "maximum_bound_decimal": "0.010000013"
+    },
+    {
+      "price_ref": "tariff.synthetic.embed-doc@1",
+      "usage_ref": "dev12-native-usage@1",
+      "operation": {
+        "type": "embedding.create",
+        "version": 1
+      },
+      "role": "document",
+      "component": "document_units",
+      "schedule_kind": "embedding_document",
+      "currency": "USD",
+      "minimum_items": 1,
+      "maximum_items": 25,
+      "maximum_bound_decimal": "0.005000000"
+    },
+    {
+      "price_ref": "tariff.synthetic.embed-query@1",
+      "usage_ref": "dev12-native-usage@1",
+      "operation": {
+        "type": "embedding.create",
+        "version": 1
+      },
+      "role": "query",
+      "component": "query_units",
+      "schedule_kind": "embedding_query",
+      "currency": "USD",
+      "minimum_items": 1,
+      "maximum_items": 1,
+      "maximum_bound_decimal": "0.000200000"
+    }
+  ]
+}

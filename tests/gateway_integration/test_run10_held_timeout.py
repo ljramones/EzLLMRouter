@@ -14,20 +14,20 @@ import socket, sys, tempfile, typing, unittest
 p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True)
 p.add_argument('--runtime',type=Path,required=True);p.add_argument('--timeout-source',type=Path,required=True)
 args, remaining=p.parse_known_args();ROOT=args.repo.resolve();KIT=ROOT/'tests/gateway_integration'
-for d in [ROOT/'server/src',ROOT/'tests/development_slice',KIT,KIT/'inputs/mach33_duranki_client-0.0.3-py3-none-any.whl']:
+for d in [ROOT/'server/src',ROOT/'tests/development_slice',KIT,KIT/'inputs/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl']:
  sys.path.insert(0,str(d))
 for name in ('httpcore','httpx','anyio','h11','certifi','idna','sniffio','typing_extensions'):
  matches=glob.glob(str(ROOT/'gateway-inputs/dev04/wheels'/(name+'-*.whl')))
  if len(matches)!=1: raise RuntimeError('frozen wheel mismatch: '+name)
  sys.path.insert(0,matches[0])
 import httpx
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
-from duranki_server.gateway.guard import ACTIVE, Invocation, provider_expectation
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedSocketStream
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.gateway.guard import ACTIVE, Invocation, provider_expectation
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedSocketStream
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from test_model_identity import BoundAdapter
 FIXTURE=json.loads((ROOT/'tests/development_slice/fixture.json').read_text())

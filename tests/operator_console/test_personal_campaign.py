@@ -11,11 +11,11 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.canonical import ContractError
-from duranki_server.personal_campaign import PersonalCampaign
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore, encode
-from duranki_server.provider_vault import ProviderVault
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore, encode
+from ezllmrouter_server.provider_vault import ProviderVault
 
 
 class Authority:

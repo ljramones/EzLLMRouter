@@ -80,16 +80,16 @@ function canonical(x){if(Array.isArray(x))return '['+x.map(canonical).join(',')+
   if(x&&typeof x==='object')return '{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}';
   if(typeof x==='number'&&!Number.isSafeInteger(x))throw Error('unsafe canonical number');return JSON.stringify(x);}
 const digest=(prefix,obj)=>sha(utf8(prefix+canonical(obj)));
-function workProjection(req,ctx){return {schema_id:'duranki-work-v0.3',profile:req.capability_profile,
+function workProjection(req,ctx){return {schema_id:'ezllmrouter-work-v0.3',profile:req.capability_profile,
   work_key:{principal_id:ctx.identity.principal_id,...req.work_selector},operation:req.operation,
   input:req.input,metadata:req.metadata,trusted:ctx.identity,purpose:req.purpose,
   task_class:req.task_class,requested_configuration_ref:req.requested_configuration_ref,
   deadline:req.deadline,handling_profile:req.handling_profile};}
-function workDigest(work){return digest('duranki-work-v0.3\n'+work.operation.type+'@'+work.operation.version+'\n',work);}
+function workDigest(work){return digest('ezllmrouter-work-v0.3\n'+work.operation.type+'@'+work.operation.version+'\n',work);}
 function utc(s){if(!/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$/.test(s))return false;
   const d=new Date(s);return !Number.isNaN(d.valueOf())&&d.toISOString().replace('.000Z','Z')===s;}
-function contentDigest(c){return sha(utf8('duranki-content-v1\n'+c.content_version+'\n'+c.text));}
-function publicTextDigest(s){return sha(utf8('duranki-public-text-v1\n'+s));}
+function contentDigest(c){return sha(utf8('ezllmrouter-content-v1\n'+c.content_version+'\n'+c.text));}
+function publicTextDigest(s){return sha(utf8('ezllmrouter-public-text-v1\n'+s));}
 function configFor(req,regs){return regs.configurations.find(c=>c.configuration_ref===req.requested_configuration_ref);}
 function priceFor(req,regs){const c=configFor(req,regs);if(!c)return null;
   const ref=req.operation.type==='rerank'?c.price_ref:c.role_price_refs?.[req.input.role];
@@ -158,7 +158,7 @@ function tariff(req,price){let n=req.operation.type==='rerank'?req.input.candida
   return {quantity,raw,settled:format(amount(raw)),bound:format(upper(raw))};}
 function recipeFor(req,workDigestValue,config,descriptor){return {work_digest:workDigestValue,operation:req.operation,adapter_ref:config.adapter_ref,
   route:descriptor.route,handling_profile:req.handling_profile,timeout_ms:descriptor.timeout_ms};}
-function planMessage(plan){const {signature,...unsigned}=plan;return utf8('duranki-plan-v1\n'+canonical(unsigned));}
+function planMessage(plan){const {signature,...unsigned}=plan;return utf8('ezllmrouter-plan-v1\n'+canonical(unsigned));}
 function planValid(plan,req,ex,regs,bundle,allowUnderbound=false){
   if(!schemaValid(plan,bundle.$defs.SignedPlan,bundle))return false;
   const c=configFor(req,regs),p=priceFor(req,regs),d=plan.execution_descriptor,r=plan.reservation;
@@ -168,7 +168,7 @@ function planValid(plan,req,ex,regs,bundle,allowUnderbound=false){
   if(!allowUnderbound&&decimalCompare(r.max_exposure_decimal,tariff(req,p).bound)<0)return false;
   const route=req.operation.type==='rerank'?'/synthetic/v1/rerank':'/synthetic/v1/embeddings';
   if(d.route!==route||d.adapter_ref!==c.adapter_ref||d.handling_profile!==req.handling_profile||d.deadline!==req.deadline||d.host!=='synthetic.invalid'||d.method!=='POST'||d.timeout_ms!==5000||d.max_request_bytes!==262144||d.max_response_bytes!==65536||d.retention_seconds!==604800)return false;
-  if(d.recipe_digest!==digest('duranki-preparation-v1\n',recipeFor(req,ex.work_digest,c,d)))return false;
+  if(d.recipe_digest!==digest('ezllmrouter-preparation-v1\n',recipeFor(req,ex.work_digest,c,d)))return false;
   return utc(plan.expires_at)&&plan.expires_at<=req.deadline;
 }
 function assessmentValid(snapshot,ex,bundle){if(!schemaValid(snapshot,bundle.$defs.AdmissionSnapshot,bundle)||snapshot.work_digest!==ex.work_digest||!utc(snapshot.assessed_at))return false;
@@ -191,7 +191,7 @@ function signatureValid(plan,key) {
 function executionEligible(plan,ex,regs,bundle,context) {
   if(!schemaValid(context,bundle.$defs.ExecutionEligibilityContext,bundle)||!planValid(plan,ex.request,ex,regs,bundle))return false;
   if(!assessmentValid(ex.admission_snapshot,ex,bundle)||
-    digest('duranki-admission-v1\n',ex.admission_snapshot)!==ex.admission_snapshot_digest)return false;
+    digest('ezllmrouter-admission-v1\n',ex.admission_snapshot)!==ex.admission_snapshot_digest)return false;
   if(!utc(context.evaluation_time)||context.evaluation_time>=plan.expires_at||!context.send_permission||context.plan_revoked)return false;
   for(const [expected,actual] of [
     [context.expected_submission_id,plan.submission_id],[context.expected_attempt_id,plan.attempt_id],
@@ -210,12 +210,12 @@ function historicalContextValid(h,ex,plan,regs,bundle) {
   if(!schemaValid(h,bundle.$defs.HistoricalUsageContext,bundle)||!planValid(plan,ex.request,ex,regs,bundle,true))return false;
   if(canonical(workProjection(ex.request,ex.trusted_context))!==canonical(ex.canonical_work)||workDigest(ex.canonical_work)!==ex.work_digest)return false;
   if(!assessmentValid(ex.admission_snapshot,ex,bundle)||
-    digest('duranki-admission-v1\n',ex.admission_snapshot)!==ex.admission_snapshot_digest)return false;
+    digest('ezllmrouter-admission-v1\n',ex.admission_snapshot)!==ex.admission_snapshot_digest)return false;
   const price=priceFor(ex.request,regs);
   return Boolean(price&&h.expected_submission_id===plan.submission_id&&h.expected_attempt_id===plan.attempt_id&&
     canonical(h.expected_work_key)===canonical(ex.canonical_work.work_key)&&h.expected_work_digest===ex.work_digest&&
     h.expected_admission_snapshot_digest===ex.admission_snapshot_digest&&
-    h.stored_signed_plan_digest===digest('duranki-stored-plan-v1\n',plan)&&
+    h.stored_signed_plan_digest===digest('ezllmrouter-stored-plan-v1\n',plan)&&
     canonical(h.expected_reservation)===canonical(plan.reservation)&&
     h.expected_financial_owner_id===plan.financial_owner_id&&
     h.expected_price_ref===plan.price_ref&&h.expected_usage_ref===plan.usage_ref&&

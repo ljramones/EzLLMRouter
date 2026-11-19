@@ -1,5 +1,5 @@
 x-receiver: &receiver_base
-  image: ${DURANKI_RECEIVER_IMAGE:?}
+  image: ${EZLLMROUTER_RECEIVER_IMAGE:?}
   pull_policy: never
   user: "10001:10001"
   read_only: true
@@ -8,7 +8,7 @@ x-receiver: &receiver_base
   security_opt: ["no-new-privileges:true"]
   networks: [dev02]
 x-service: &service_base
-  image: ${DURANKI_SERVICE_IMAGE:?}
+  image: ${EZLLMROUTER_SERVICE_IMAGE:?}
   pull_policy: never
   user: "10001:10001"
   read_only: true
@@ -19,95 +19,95 @@ x-service: &service_base
 services:
   receiver:
     <<: *receiver_base
-    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl}
+    environment: {EZLLMROUTER_RECEIVER_LOG: /data/arrivals.jsonl}
     volumes: ["receiver_data:/data"]
   receiver_delay:
     <<: *receiver_base
-    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl, DURANKI_RECEIVER_MODE: delay}
+    environment: {EZLLMROUTER_RECEIVER_LOG: /data/arrivals.jsonl, EZLLMROUTER_RECEIVER_MODE: delay}
     volumes: ["receiver_delay_data:/data"]
   receiver_fail:
     <<: *receiver_base
-    environment: {DURANKI_RECEIVER_LOG: /data/arrivals.jsonl, DURANKI_RECEIVER_MODE: fail}
+    environment: {EZLLMROUTER_RECEIVER_LOG: /data/arrivals.jsonl, EZLLMROUTER_RECEIVER_MODE: fail}
     volumes: ["receiver_fail_data:/data"]
   service:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_DEV_TOKEN_SECONDARY: ${DURANKI_DEV_TOKEN_SECONDARY:?}
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_DEV_TOKEN_SECONDARY: ${EZLLMROUTER_DEV_TOKEN_SECONDARY:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_data:/data"]
     depends_on: [receiver]
   service_delay:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver_delay:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver_delay:8766/v1/chat/completions
     volumes: ["service_delay_data:/data"]
     depends_on: [receiver_delay]
   service_nostore_delay:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_DEV_NO_STORE: "1"
-      DURANKI_SYNTHETIC_URL: http://receiver_delay:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_DEV_NO_STORE: "1"
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver_delay:8766/v1/chat/completions
     volumes: ["service_nostore_delay_data:/data"]
     depends_on: [receiver_delay]
   service_nostore_live:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_DEV_NO_STORE: "1"
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_DEV_NO_STORE: "1"
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_nostore_live_data:/data"]
     depends_on: [receiver]
   service_mutant:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_MUTATE_AFTER_BINDING: "1"
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_MUTATE_AFTER_BINDING: "1"
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_mutant_data:/data"]
     depends_on: [receiver]
   service_failstore:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_FAIL_INTENT: "1"
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_FAIL_INTENT: "1"
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_failstore_data:/data"]
     depends_on: [receiver]
   service_remote_fail:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver_fail:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver_fail:8766/v1/chat/completions
     volumes: ["service_remote_fail_data:/data"]
     depends_on: [receiver_fail]
   service_serial_a:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_serial_a_data:/data"]
     depends_on: [receiver]
   service_serial_b:
     <<: *service_base
     environment:
-      DURANKI_DB_PATH: /data/store.sqlite
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
+      EZLLMROUTER_DB_PATH: /data/store.sqlite
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SYNTHETIC_URL: http://receiver:8766/v1/chat/completions
     volumes: ["service_serial_b_data:/data"]
     depends_on: [receiver]
   python_consumer:
-    image: ${DURANKI_PYTHON_CLIENT_IMAGE:?}
+    image: ${EZLLMROUTER_PYTHON_CLIENT_IMAGE:?}
     pull_policy: never
     user: "10001:10001"
     read_only: true
@@ -115,13 +115,13 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_DEV_TOKEN_SECONDARY: ${DURANKI_DEV_TOKEN_SECONDARY:?}
-      DURANKI_SERVICE_URL: http://service:8765
-      DURANKI_RECEIVER_URL: http://receiver:8766
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_DEV_TOKEN_SECONDARY: ${EZLLMROUTER_DEV_TOKEN_SECONDARY:?}
+      EZLLMROUTER_SERVICE_URL: http://service:8765
+      EZLLMROUTER_RECEIVER_URL: http://receiver:8766
     networks: [dev02]
   js_consumer:
-    image: ${DURANKI_JS_CLIENT_IMAGE:?}
+    image: ${EZLLMROUTER_JS_CLIENT_IMAGE:?}
     pull_policy: never
     user: node
     read_only: true
@@ -129,10 +129,10 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     environment:
-      DURANKI_DEV_TOKEN: ${DURANKI_DEV_TOKEN:?}
-      DURANKI_SERVICE_URL: http://service:8765
-      DURANKI_RECEIVER_URL: http://receiver:8766
-      DURANKI_INSTALLED_CLIENT: "1"
+      EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
+      EZLLMROUTER_SERVICE_URL: http://service:8765
+      EZLLMROUTER_RECEIVER_URL: http://receiver:8766
+      EZLLMROUTER_INSTALLED_CLIENT: "1"
     networks: [dev02]
 networks:
   dev02:

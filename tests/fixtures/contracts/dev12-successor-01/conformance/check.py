@@ -21,7 +21,7 @@ def project(request, context):
     identity = context["identity"]
     selector = request["work_selector"]
     return {
-        "schema_id": "duranki-work-v0.3",
+        "schema_id": "ezllmrouter-work-v0.3",
         "profile": request["capability_profile"],
         "work_key": {"principal_id": identity["principal_id"],
                      "task_id": selector["task_id"], "step_id": selector["step_id"],
@@ -44,13 +44,13 @@ for ex in vectors["examples"]:
     assert base64.b64decode(ex["canonical_bytes_base64"], validate=True) == raw, ex["id"]
     assert ex["canonical_byte_length"] == len(raw), ex["id"]
     op = work["operation"]
-    prefix = f'duranki-work-v0.3\n{op["type"]}@{op["version"]}\n'.encode()
+    prefix = f'ezllmrouter-work-v0.3\n{op["type"]}@{op["version"]}\n'.encode()
     assert sha(prefix + raw) == ex["work_digest"], ex["id"]
     admission = ex["admission_snapshot"]
     assert admission["work_digest"] == ex["work_digest"], ex["id"]
-    assert sha(b"duranki-admission-v1\n" + canonical(admission)) == ex["admission_snapshot_digest"], ex["id"]
+    assert sha(b"ezllmrouter-admission-v1\n" + canonical(admission)) == ex["admission_snapshot_digest"], ex["id"]
     for c in ex["request"]["input"].get("candidates", []):
-        data = ("duranki-content-v1\n" + c["content_version"] + "\n" + c["text"]).encode()
+        data = ("ezllmrouter-content-v1\n" + c["content_version"] + "\n" + c["text"]).encode()
         assert c["content_digest"] == sha(data)
 assert "commission" not in vectors["examples"][0]["canonical_work"]["metadata"]
 assert "commission" in vectors["examples"][3]["canonical_work"]["metadata"]
@@ -96,7 +96,7 @@ assert all(not isinstance(n, int) or isinstance(n, bool) or n < 1 or n > 25 for 
 assert len(registry["configurations"]) == 3 and len(registry["price_contracts"]) == 4
 plan = vectors["plan_fixture"]
 unsigned = plan["unsigned_plan"]
-message = b"duranki-plan-v1\n" + canonical(unsigned)
+message = b"ezllmrouter-plan-v1\n" + canonical(unsigned)
 assert base64.b64decode(plan["signing_message_base64"], validate=True) == message
 assert sha(message) == plan["signing_message_sha256"]
 assert {k:v for k,v in plan["signed_plan"].items() if k != "signature"} == unsigned
@@ -109,18 +109,18 @@ assert authority["current_authority_revisions"] == signed["authority_revisions"]
 assert datetime.fromisoformat(authority["evaluation_time"].replace("Z", "+00:00")) < datetime.fromisoformat(signed["expires_at"].replace("Z", "+00:00"))
 tagged = vectors["activation_tagged_fixture"]
 assert tagged["signed_plan"]["execution_context"] == tagged["execution_eligibility_context"]["expected_execution_context"]
-assert tagged["signing_message_sha256"] == sha(b"duranki-plan-v1\n" + canonical({k: v for k, v in tagged["signed_plan"].items() if k != "signature"}))
+assert tagged["signing_message_sha256"] == sha(b"ezllmrouter-plan-v1\n" + canonical({k: v for k, v in tagged["signed_plan"].items() if k != "signature"}))
 slow = vectors["nonconforming_timeout_fixture"]
 assert slow["signed_plan"]["execution_descriptor"]["timeout_ms"] == 30000
-assert slow["signing_message_sha256"] == sha(b"duranki-plan-v1\n" + canonical({k: v for k, v in slow["signed_plan"].items() if k != "signature"}))
+assert slow["signing_message_sha256"] == sha(b"ezllmrouter-plan-v1\n" + canonical({k: v for k, v in slow["signed_plan"].items() if k != "signature"}))
 for name, history in vectors["historical_contexts"].items():
-    assert history["stored_signed_plan_digest"] == sha(b"duranki-stored-plan-v1\n" + canonical(signed)), name
+    assert history["stored_signed_plan_digest"] == sha(b"ezllmrouter-stored-plan-v1\n" + canonical(signed)), name
     assert history["expected_reservation"] == signed["reservation"], name
     for number, row in enumerate(history["accepted_revisions"], start=1):
         assert row["attempt_id"] == signed["attempt_id"] and row["revision"] == number, name
         assert ("previous_revision" not in row) if number == 1 else row["previous_revision"] == number - 1
 under = vectors["historical_underbound"]
-assert under["historical_context"]["stored_signed_plan_digest"] == sha(b"duranki-stored-plan-v1\n" + canonical(under["signed_plan"]))
+assert under["historical_context"]["stored_signed_plan_digest"] == sha(b"ezllmrouter-stored-plan-v1\n" + canonical(under["signed_plan"]))
 assert Decimal(under["usage"]["amount_decimal"]) > Decimal(under["signed_plan"]["reservation"]["max_exposure_decimal"])
 assert under["usage"]["cost_status"] == "over_bound"
 retention = vectors["retention_context"]

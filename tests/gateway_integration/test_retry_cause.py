@@ -46,12 +46,12 @@ if (ROOT / 'wheels').is_dir():
         sys.path.insert(0, str(matches[0]))
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.store import SQLiteStore
-from duranki_server.gateway.adapter import LiteLLMAsgiAdapter
-from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 FIXTURE = json.loads((data_dir / 'fixture.json').read_text())
 REQUEST = json.loads((data_dir / 'request.json').read_text())
@@ -94,7 +94,7 @@ class RetryASGIDouble:
             try:
                 response = await self.owner.guarded_client.post(
                     PROVIDER_URL, json=payload, timeout=timeout,
-                    headers={'Authorization': 'Bearer ' + os.environ['DURANKI_DEV04_PROVIDER_KEY']})
+                    headers={'Authorization': 'Bearer ' + os.environ['EZLLMROUTER_DEV04_PROVIDER_KEY']})
                 await send({'type': 'http.response.start', 'status': response.status_code,
                             'headers': [(b'content-type', b'application/json')]})
                 await send({'type': 'http.response.body', 'body': response.content})
@@ -140,9 +140,9 @@ class RetryCauseTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.old_env = {k: os.environ.get(k) for k in
-                       ('DURANKI_DEV04_PROVIDER_KEY', 'DURANKI_DEV04_GUARD_EVENTS')}
-        os.environ['DURANKI_DEV04_PROVIDER_KEY'] = 'sk-' + 'r' * 40
-        os.environ['DURANKI_DEV04_GUARD_EVENTS'] = str(Path(self.temp.name)/'events.jsonl')
+                       ('EZLLMROUTER_DEV04_PROVIDER_KEY', 'EZLLMROUTER_DEV04_GUARD_EVENTS')}
+        os.environ['EZLLMROUTER_DEV04_PROVIDER_KEY'] = 'sk-' + 'r' * 40
+        os.environ['EZLLMROUTER_DEV04_GUARD_EVENTS'] = str(Path(self.temp.name)/'events.jsonl')
         self.coordinator = None
         self.adapter = None
         self.store = None
@@ -252,7 +252,7 @@ class RetryCauseTests(unittest.TestCase):
     def test_provider_field_leak_remains_rejected(self):
         self.execute()
         invocation = deepcopy(self.adapter.invocations[0].projection)
-        from duranki_server.gateway.guard import Invocation, check_request
+        from ezllmrouter_server.gateway.guard import Invocation, check_request
         context = Invocation('submission.test', 'attempt.test',
                              {'plan_id':'plan.test','work_digest':'sha256:test',
                               'per_attempt_total_timeout_ms':1000}, invocation, lambda:None, lambda _:None)
@@ -261,8 +261,8 @@ class RetryCauseTests(unittest.TestCase):
             with self.subTest(field=field):
                 body = {**provider_expectation(invocation), field: value}
                 request = httpx.Request('POST', PROVIDER_URL, json=body,
-                    headers={'Authorization': 'Bearer ' + os.environ['DURANKI_DEV04_PROVIDER_KEY'],
-                             'x-duranki-attempt': 'attempt.test'},
+                    headers={'Authorization': 'Bearer ' + os.environ['EZLLMROUTER_DEV04_PROVIDER_KEY'],
+                             'x-ezllmrouter-attempt': 'attempt.test'},
                     extensions={'timeout': {'read': 1.0}})
                 with self.assertRaises(GuardRejected):
                     check_request(request, context, request.content)
@@ -281,15 +281,15 @@ class RetryCauseTests(unittest.TestCase):
 
     def test_timeout_over_signed_budget_still_rejects(self):
         self.execute()
-        from duranki_server.gateway.guard import Invocation, check_request
+        from ezllmrouter_server.gateway.guard import Invocation, check_request
         context = Invocation('submission.timeout', 'attempt.timeout',
             {'plan_id': 'plan.timeout', 'work_digest': 'sha256:test',
              'per_attempt_total_timeout_ms': 1000},
             self.adapter.invocations[0].projection, lambda: None, lambda _: None)
         request = httpx.Request('POST', PROVIDER_URL,
             json=provider_expectation(context.projection),
-            headers={'Authorization': 'Bearer ' + os.environ['DURANKI_DEV04_PROVIDER_KEY'],
-                     'x-duranki-attempt': context.attempt_id},
+            headers={'Authorization': 'Bearer ' + os.environ['EZLLMROUTER_DEV04_PROVIDER_KEY'],
+                     'x-ezllmrouter-attempt': context.attempt_id},
             extensions={'timeout': dict.fromkeys(('connect', 'read', 'write', 'pool'), 30.0)})
         with self.assertRaises(GuardRejected):
             check_request(request, context, request.content)

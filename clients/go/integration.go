@@ -26,7 +26,7 @@ func NewIntegrationClient(origin, token, version string, options ...Option) (*In
 }
 func (c *IntegrationClient) Close() error { c.conn.close(); return nil }
 func (c *IntegrationClient) request(ctx context.Context, method, path string, body Object, expected ...int) (Object, error) {
-	v, status, err := c.conn.request(ctx, method, c.path+path, "Duranki-Integration-Version", c.version, body, nil, 16*1024*1024, nil)
+	v, status, err := c.conn.request(ctx, method, c.path+path, "EzLLMRouter-Integration-Version", c.version, body, nil, 16*1024*1024, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ impl Connection {
         let mut raw = Vec::new(); response.body.by_ref().take(limit as u64 + 1).read_to_end(&mut raw).map_err(|_| unknown())?;
         if raw.len() > limit || declared.is_some_and(|n| n != raw.len()) { return Err(unknown()); }
         let value = parse_object(&raw).map_err(|_| unknown())?;
-        let field = if header == "Duranki-Integration-Version" { "integration_version" } else { "contract_version" };
+        let field = if header == "EzLLMRouter-Integration-Version" { "integration_version" } else { "contract_version" };
         if !is(at(&value, field), version) || received_version.as_deref() != Some(version) { return Err(Error::new("UNSUPPORTED_VERSION", Some(status), "never", selector)); }
         Ok((value, status))
     }

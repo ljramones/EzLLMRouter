@@ -25,7 +25,7 @@ def exchange(connection, path, body, cookie=None, csrf=None):
     if cookie:
         headers["Cookie"] = cookie
     if csrf:
-        headers["X-Duranki-CSRF"] = csrf
+        headers["X-EzLLMRouter-CSRF"] = csrf
     connection.request("POST", path, body=json.dumps(body, separators=(",", ":")), headers=headers)
     response = connection.getresponse()
     raw = response.read(4096)

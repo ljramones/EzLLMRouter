@@ -12,12 +12,12 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
-from duranki_server.canonical import ContractError, jcs, projection, strict_loads, validate_text_request, work_digest
-from duranki_server.core import Coordinator, usage_revision
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError, jcs, projection, strict_loads, validate_text_request, work_digest
+from ezllmrouter_server.core import Coordinator, usage_revision
+from ezllmrouter_server.store import SQLiteStore
 from recipe import SyntheticTextRecipe
 
-VECTORS = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
 REQUEST = json.loads((ROOT / "tests/development_slice/request.json").read_text())
 

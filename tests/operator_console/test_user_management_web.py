@@ -7,8 +7,8 @@ import unittest
 from unittest.mock import patch
 
 from tests.operator_console.test_user_management import UserFixture, DEFAULT_ADMIN_PASSWORD, PASSWORD, ROOT
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 
 
 class MemoryServer:
@@ -22,7 +22,7 @@ class MemoryServer:
 class UserHTTPFixture(UserFixture):
     def setUp(self):
         super().setUp()
-        with patch("duranki_server.operator_web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer):
             self.server = serve("127.0.0.1", 48761,
                 projection=OperatorProjection(self.store, "svc.demo"), runner=None,
                 password="legacy-operator-credential-0000000000000000", fixture={}, build={},
@@ -46,7 +46,7 @@ class UserHTTPFixture(UserFixture):
         if self.cookie:
             handler.headers["Cookie"] = self.cookie
         if csrf and self.csrf:
-            handler.headers["X-Duranki-CSRF"] = self.csrf
+            handler.headers["X-EzLLMRouter-CSRF"] = self.csrf
         raw = json.dumps(body).encode() if body is not None else b""
         if body is not None:
             handler.headers["Content-Type"] = "application/json"

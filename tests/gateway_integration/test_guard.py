@@ -14,10 +14,10 @@ sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from duranki_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation
-from duranki_server.gateway.adapter import LiteLLMAsgiAdapter
-from duranki_server.gateway.proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation
+from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
+from ezllmrouter_server.store import SQLiteStore
 
 
 def projection(text="Hi"):
@@ -41,11 +41,11 @@ def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
 
 class GuardTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        os.environ["DURANKI_DEV04_PROVIDER_KEY"] = "sk-" + "x" * 40
+        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "x" * 40
         self.arrivals = []
 
         def lower(request):
-            self.arrivals.append((request.headers.get("x-duranki-attempt"), request.content))
+            self.arrivals.append((request.headers.get("x-ezllmrouter-attempt"), request.content))
             return httpx.Response(200, json={"ok": True})
 
         self.client = httpx.AsyncClient(transport=GuardTransport(httpx.MockTransport(lower)),
@@ -53,14 +53,14 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         await self.client.aclose()
-        os.environ.pop("DURANKI_DEV04_PROVIDER_KEY", None)
+        os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
 
     async def send(self, context, body=None, url=PROVIDER_URL):
         token = ACTIVE.set(context)
         try:
             return await self.client.post(url, json=body or provider_expectation(context.projection),
                                           headers={"Authorization": "Bearer " +
-                                                   os.environ["DURANKI_DEV04_PROVIDER_KEY"]})
+                                                   os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]})
         finally:
             ACTIVE.reset(token)
 
@@ -126,7 +126,7 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(GuardRejected) as raised:
             await self.client.post(PROVIDER_URL, json=provider_expectation(projection()),
                                    headers={"Authorization": "Bearer " +
-                                            os.environ["DURANKI_DEV04_PROVIDER_KEY"]})
+                                            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]})
         self.assertEqual(raised.exception.code, "NO_TRUSTED_CONTEXT")
         self.assertEqual(self.arrivals, [])
 

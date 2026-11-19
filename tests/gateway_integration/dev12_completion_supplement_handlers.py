@@ -30,8 +30,8 @@ def _legacy_prewrite_setup(runtime):
     route cannot contact a provider and is counted as one legacy admission.
     """
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from duranki_server.canonical import ContractError
-    from duranki_server.plans import PlanAuthority
+    from ezllmrouter_server.canonical import ContractError
+    from ezllmrouter_server.plans import PlanAuthority
     from recipe import SyntheticDevelopmentRecipe
 
     fixture = json.loads((Path(__file__).resolve().parents[2] /
@@ -169,7 +169,7 @@ def _workkey(runtime, case):
 
 def _recovery(runtime, case):
     """Exact installed SDK status/duplicate recovery under logical retention."""
-    from duranki_client import DurankiClient, DurankiError
+    from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
     variant = case["variant"]
     # A retry of the wheel's status-only recovery must use the original
@@ -259,7 +259,7 @@ def _recovery(runtime, case):
     outcomes = {}
 
     def wheel(duplicate):
-        with DurankiClient(runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"],
+        with EzLLMRouterClient(runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"],
                            timeout=12) as client:
             selected = {"by_id": client.get_successor_status(selector_id),
                         "by_work": client.get_successor_status(selector_work)}
@@ -267,7 +267,7 @@ def _recovery(runtime, case):
                 try:
                     selected["duplicate"] = client.submit_embedding(request,
                         {"wait_ms": 5000})
-                except DurankiError as exc:
+                except EzLLMRouterError as exc:
                     selected["duplicate_error"] = {"code": exc.code,
                         "http_status": exc.http_status,
                         "retry_guidance": exc.retry_guidance,
@@ -303,7 +303,7 @@ def _recovery(runtime, case):
         outcomes["before"] = selected(True) if variant == "wheel" else selected(True, "before")
         outcomes["old_credential_denial"] = _post_status(runtime, selector_id, {
             "Authorization": "Bearer " + old_direct_token,
-            "Duranki-Contract-Version": "0.3"}) if variant == "wheel" else None
+            "EzLLMRouter-Contract-Version": "0.3"}) if variant == "wheel" else None
         identity = record["trusted_identity"]
         runtime.authority.set_historical_access(identity, read=False, write=True,
             resume=True, observed_at=before_cutoff)
@@ -494,7 +494,7 @@ def _failed_unknown(runtime, case):
 
 
 def _revision33(runtime, case):
-    from duranki_server.successor_reporting import usage_report
+    from ezllmrouter_server.successor_reporting import usage_report
 
     with runtime.store._lock:
         rows = runtime.store.db.execute(
@@ -750,7 +750,7 @@ def _reporting(runtime, case):
 
 def _authority_wait(runtime, case):
     """Final lower-wait activation, logical expiry and durable pause controls."""
-    from duranki_server.store import encode
+    from ezllmrouter_server.store import encode
 
     outcomes = {}
     baseline = _census(runtime)
@@ -946,7 +946,7 @@ def _transport(runtime, case):
 
 def _authority_atomic(runtime, case):
     """Commit/publication ordering, definite rollback and fail-closed restart."""
-    from duranki_server.successor_plan import execution_eligible
+    from ezllmrouter_server.successor_plan import execution_eligible
 
     before = _census(runtime)
     control_request = _case_request(runtime, case)
@@ -959,7 +959,7 @@ def _authority_atomic(runtime, case):
     original_revision = runtime.authority.revisions()["grant"]
     original_transaction = runtime.store._transaction
     class DefiniteRollback(RuntimeError):
-        duranki_definite_rollback = True
+        ezllmrouter_definite_rollback = True
     def fail_definitely(_action):
         raise DefiniteRollback("synthetic rollback before durable commit")
     runtime.store._transaction = fail_definitely

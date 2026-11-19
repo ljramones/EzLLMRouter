@@ -24,7 +24,7 @@ public final class EzLLMRouterClient implements AutoCloseable {
     }
     private static Map<String, String> waitHeader(Integer waitMs) {
         if (waitMs == null) return Map.of(); if (waitMs < 0 || waitMs > 30000) throw Protocol.invalid();
-        return Map.of("Duranki-Wait-Ms", waitMs.toString());
+        return Map.of("EzLLMRouter-Wait-Ms", waitMs.toString());
     }
     public Map<String, Object> submit(Map<String, Object> request) { return submit(request, null); }
     public Map<String, Object> submit(Map<String, Object> request, Integer waitMs) { return submitInRun(request, null, waitMs); }
@@ -33,7 +33,7 @@ public final class EzLLMRouterClient implements AutoCloseable {
         for (String key : Protocol.SELECTOR) selector.put(key, body.get(key));
         if (!Schema.named(selector, "0.2", "WorkSelector") || runId != null && !id(runId)) throw Protocol.invalid();
         Map<String, String> headers = new HashMap<>(waitHeader(waitMs));
-        if (runId != null) { headers.put("Duranki-Attribution-Version", "1"); headers.put("Duranki-Attribution-Run", runId); }
+        if (runId != null) { headers.put("EzLLMRouter-Attribution-Version", "1"); headers.put("EzLLMRouter-Attribution-Run", runId); }
         return wire("POST", "/v1/submissions", "0.2", "submit", body, selector, headers);
     }
     public Map<String, Object> getStatus(Map<String, Object> selector) { return status(selector, "0.2"); }
@@ -59,7 +59,7 @@ public final class EzLLMRouterClient implements AutoCloseable {
         return wire("POST", "/v1/submissions", "0.3", "submit", body, field(body, "work_selector"), waitHeader(waitMs));
     }
     private Map<String, Object> wire(String method, String path, String version, String kind, Map<String, Object> body, Map<String, Object> selector, Map<String, String> headers) {
-        Connection.Reply response = connection.request(method, path, "Duranki-Contract-Version", version, body, headers, version.equals("0.3") ? 16 * 1024 * 1024 : 1024 * 1024, selector);
+        Connection.Reply response = connection.request(method, path, "EzLLMRouter-Contract-Version", version, body, headers, version.equals("0.3") ? 16 * 1024 * 1024 : 1024 * 1024, selector);
         Map<String, Object> value = response.value(), handle = Protocol.matchingHandle(value, selector, version); int status = response.status();
         boolean envelopeError = version.equals("0.3") ? value.containsKey("code") : value.containsKey("error") && !value.containsKey("state");
         if (envelopeError) {

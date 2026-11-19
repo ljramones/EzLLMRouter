@@ -67,8 +67,8 @@ class SingleUseSupplementTests(unittest.TestCase):
             supplemental_limits(self.plan, stale)
 
     def test_real_campaign_persists_small_limits_before_listener(self):
-        from duranki_server.store import SQLiteStore
-        from duranki_server.successor_campaign import FiniteSuccessorCampaign
+        from ezllmrouter_server.store import SQLiteStore
+        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
         with TemporaryDirectory(dir=os.environ.get("DEV12_TEST_SCRATCH", ROOT)) as directory:
             store = SQLiteStore(Path(directory) / "finite.sqlite")
             try:

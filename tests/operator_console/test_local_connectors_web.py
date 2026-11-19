@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from tests.operator_console.test_user_management_web import UserHTTPFixture
 from tests.operator_console.test_local_connectors import INVENTORY
 from tests.operator_console.test_user_management import PASSWORD
-from duranki_server.local_connectors import ConnectorError, discover
+from ezllmrouter_server.local_connectors import ConnectorError, discover
 from tests.operator_console.test_connector_availability import drain
 
 

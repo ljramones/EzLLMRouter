@@ -21,8 +21,8 @@ for relative in ("server/src", "deploy/local", "tests/operator_console"):
 
 from browser_cdp import HeadlessChrome
 from crud_browser import HELPERS, call, wait, wait_initial_page, screenshot
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
 from test_dev09_reporting import ReportingTests
 
 
@@ -63,7 +63,7 @@ def main():
             registry=registry)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        with tempfile.TemporaryDirectory(prefix="duranki-dev09-demo-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-demo-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
                 wait_initial_page(browser)
@@ -199,8 +199,8 @@ def main():
                 screenshots.append({"path": str(target.relative_to(ROOT)), "sha256": shot["sha256"]})
             hashes = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in (
                 "web/dev09_demo_fixture.json", "web/demo_workspace_view.js", "web/app.css",
-                "web/usage_costs_view.js", "server/src/duranki_server/demo_workspace.py",
-                "server/src/duranki_server/operator_web.py")}
+                "web/usage_costs_view.js", "server/src/ezllmrouter_server/demo_workspace.py",
+                "server/src/ezllmrouter_server/operator_web.py")}
             record = {"status": "PASS", "identity": "dev09-scripted-cost-demo-v1",
                 "scope": "disposable authenticated Chrome, temporary SQLite, fictional fixed fixture",
                 "main_usd": "0.32", "all_stories_usd": "0.46", "attempts": 9,

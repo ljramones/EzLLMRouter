@@ -19,12 +19,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
-from duranki_server.gateway.guard import ACTIVE, Invocation
-from duranki_server.gateway.owned_sender_transport import LocalSendAuthority
-from duranki_server.gateway.owned_tls_sender_transport import OwnedTLSHTTPTransport
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.gateway.guard import ACTIVE, Invocation
+from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
+from ezllmrouter_server.gateway.owned_tls_sender_transport import OwnedTLSHTTPTransport
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 
 
 class Receiver(BaseHTTPRequestHandler):

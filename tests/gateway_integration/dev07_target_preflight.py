@@ -15,11 +15,11 @@ import threading
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from duranki_server.canonical import ContractError
-from duranki_server.core import Coordinator
-from duranki_server.plans import PlanAuthority
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
 from proxy_recipe import GatewayProxyRecipe, proxy_policy, public_destination
 
 

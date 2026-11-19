@@ -14,13 +14,13 @@ for i in range(100):
   logrun choice-b-worker-identities compose exec -T worker_choice_b python -c \
     'import json,socket; from choice_b_wire import receive,send; s=socket.socket(socket.AF_UNIX); s.settimeout(5); s.connect("/link/worker.sock"); send(s,{"kind":"module_identity"}); print(json.dumps(receive(s))); s.close()'
   logrun choice-b-worker-isolation compose exec -T worker_choice_b python -c \
-    'import json,os,pathlib,socket; routes=pathlib.Path("/proc/net/route").read_text().splitlines(); assert not any(len(x.split())>1 and x.split()[1]=="00000000" for x in routes[1:]); assert "DURANKI_DEV_TOKEN" not in os.environ and "DURANKI_DEV04_PROVIDER_KEY" not in os.environ; assert not any(pathlib.Path(x).exists() for x in ("/app/server","/app/dev_slice","/app/gateway")); s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(("127.0.0.1",8766)); s.close(); assert rc != 0; print(json.dumps({"network_mode":"none","default_route":False,"direct_receiver_connect_errno":rc,"trusted_code_mounted":False,"trusted_credentials_in_environment":False}))'
+    'import json,os,pathlib,socket; routes=pathlib.Path("/proc/net/route").read_text().splitlines(); assert not any(len(x.split())>1 and x.split()[1]=="00000000" for x in routes[1:]); assert "EZLLMROUTER_DEV_TOKEN" not in os.environ and "EZLLMROUTER_DEV04_PROVIDER_KEY" not in os.environ; assert not any(pathlib.Path(x).exists() for x in ("/app/server","/app/dev_slice","/app/gateway")); s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(("127.0.0.1",8766)); s.close(); assert rc != 0; print(json.dumps({"network_mode":"none","default_route":False,"direct_receiver_connect_errno":rc,"trusted_code_mounted":False,"trusted_credentials_in_environment":False}))'
   logrun choice-b-readiness compose exec -T python_choice_b python -c \
-    'import os,time,urllib.request,urllib.error; u=urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"Duranki-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["DURANKI_DEV_TOKEN"]});
+    'import os,time,urllib.request,urllib.error; u=urllib.request.Request("http://127.0.0.1:8773/v1/capabilities",headers={"EzLLMRouter-Contract-Version":"0.2","Authorization":"Bearer "+os.environ["EZLLMROUTER_DEV_TOKEN"]});
 for i in range(60):
  try:
   with urllib.request.urlopen(u,timeout=1) as response:
-   assert response.status==200 and response.headers.get("Duranki-Contract-Version")=="0.2"
+   assert response.status==200 and response.headers.get("EzLLMRouter-Contract-Version")=="0.2"
    print(response.status)
   break
  except urllib.error.HTTPError: raise

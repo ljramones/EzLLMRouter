@@ -12,13 +12,13 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
-from duranki_server.integration_credentials import DatabaseCredentialStore
-from duranki_server.integration_accounting import ExternalAccounting, IntegrationError
-from duranki_server.registry import Registry
-from duranki_server.store import SQLiteStore
-from duranki_server.operator_projection import OperatorProjection
-from duranki_server.operator_web import serve as serve_operator
-from duranki_server.web import serve as serve_api
+from ezllmrouter_server.integration_credentials import DatabaseCredentialStore
+from ezllmrouter_server.integration_accounting import ExternalAccounting, IntegrationError
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve as serve_operator
+from ezllmrouter_server.web import serve as serve_api
 
 
 class Authority:
@@ -278,7 +278,7 @@ class CredentialHTTPTests(unittest.TestCase):
             if cookie:
                 headers["Cookie"] = cookie
             if csrf:
-                headers["X-Duranki-CSRF"] = csrf
+                headers["X-EzLLMRouter-CSRF"] = csrf
             if body is not None:
                 headers["Content-Type"] = "application/json"
             try:
@@ -370,7 +370,7 @@ class CredentialHTTPTests(unittest.TestCase):
                 conn.request("GET", "/integration/v3/credentials/"+pending["account_id"]+
                     "/resolve?dataset_id="+self.dataset+"&purpose=vega-provider-dispatch&"
                     "operation_family=generation&model_id=claude-opus-4-8",
-                    headers={"Authorization": "Bearer "+token, "Duranki-Integration-Version": "3"})
+                    headers={"Authorization": "Bearer "+token, "EzLLMRouter-Integration-Version": "3"})
                 response = conn.getresponse()
                 return response.status, json.loads(response.read())
             finally:

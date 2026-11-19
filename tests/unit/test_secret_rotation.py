@@ -10,12 +10,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from duranki_server.integration_credentials import DatabaseCredentialStore
-from duranki_server.local_connectors import ConnectorError, LocalConnectors
-from duranki_server.private_files import write_private
-from duranki_server.provider_vault import ProviderVault
-from duranki_server.secret_box import SecretBox, SecretBoxError
-from duranki_server.secret_rotation import main as maintenance
+from ezllmrouter_server.integration_credentials import DatabaseCredentialStore
+from ezllmrouter_server.local_connectors import ConnectorError, LocalConnectors
+from ezllmrouter_server.private_files import write_private
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.secret_box import SecretBox, SecretBoxError
+from ezllmrouter_server.secret_rotation import main as maintenance
 from tests.operator_console import test_integration_credentials as credential_fixtures
 from tests.operator_console import test_local_connectors as connector_fixtures
 
@@ -67,7 +67,7 @@ class SecretBoxTests(unittest.TestCase):
 
     def test_failed_key_publication_keeps_previous_keyring(self):
         saved = self.path.read_bytes()
-        with patch("duranki_server.private_files.os.replace", side_effect=OSError("injected")):
+        with patch("ezllmrouter_server.private_files.os.replace", side_effect=OSError("injected")):
             with self.assertRaises(OSError):
                 self.box.rotate()
         self.assertEqual(self.path.read_bytes(), saved)
@@ -142,7 +142,7 @@ class ProviderRotationTests(unittest.TestCase):
             if len(writes) == 2:
                 raise OSError("injected interruption")
             return original_write(path, value, **kwargs)
-        with patch("duranki_server.provider_vault.write_private", side_effect=fail_second):
+        with patch("ezllmrouter_server.provider_vault.write_private", side_effect=fail_second):
             with self.assertRaises(OSError):
                 self.vault.rotate_encryption_key(["conn.test"])
         reopened = ProviderVault(self.vault.root, require_existing=True)

@@ -38,8 +38,8 @@ static class Program
             byte[] raw = fixture.ContainsKey("raw") ? Convert.FromBase64String(Text(fixture["raw"])) : Encoding.UTF8.GetBytes(fixture["response"]!.ToJsonString());
             Body = new TrackedStream(raw);
             var response = new HttpResponseMessage((HttpStatusCode)(fixture.ContainsKey("status") ? Number(fixture["status"]) : 200)) { Content = new StreamContent(Body) };
-            response.Headers.Add("Duranki-Contract-Version", fixture.ContainsKey("wire") ? Text(fixture["wire"]) : "0.2");
-            response.Headers.Add("Duranki-Integration-Version", fixture.ContainsKey("version") ? Text(fixture["version"]) : "1");
+            response.Headers.Add("EzLLMRouter-Contract-Version", fixture.ContainsKey("wire") ? Text(fixture["wire"]) : "0.2");
+            response.Headers.Add("EzLLMRouter-Integration-Version", fixture.ContainsKey("version") ? Text(fixture["version"]) : "1");
             if (fixture["response_headers"] is JsonObject extra)
                 foreach (var (key, value) in extra)
                 {

@@ -59,7 +59,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw)
         except (UnicodeError, ValueError):
             body = None
-        attempt = self.headers.get("X-Duranki-Attempt")
+        attempt = self.headers.get("X-EzLLMRouter-Attempt")
         authorized = (self.headers.get("Authorization") == "Bearer " + TEST_KEY and
                       self.headers.get("Content-Type") == "application/json" and
                       type(body) is dict and type(attempt) is str and

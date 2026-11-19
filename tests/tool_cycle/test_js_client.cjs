@@ -1,17 +1,17 @@
 "use strict";
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { DurankiClient, DurankiError } = require("@mach33/duranki-client");
+const { EzLLMRouterClient, EzLLMRouterError } = require("@cognitivedynamics/ezllmrouter-client");
 const vectors = JSON.parse(fs.readFileSync(__dirname + "/vectors.json", "utf8")).examples;
 const request = JSON.parse(fs.readFileSync(__dirname + "/request.json", "utf8"));
 
 async function check(reply, expectedCode) {
   let sends = 0;
-  const client = new DurankiClient({ baseUrl: "http://synthetic.invalid", token: "synthetic",
+  const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic",
     fetchImpl: async () => { sends++; return { status: 200, ok: true,
       headers: { get: () => "0.2" }, json: async () => reply }; } });
   if (expectedCode) {
-    await assert.rejects(client.submit(request), error => error instanceof DurankiError && error.code === expectedCode);
+    await assert.rejects(client.submit(request), error => error instanceof EzLLMRouterError && error.code === expectedCode);
   } else {
     const result = await client.submit(request);
     assert.equal(result.candidate.output_blocks[0].kind, "tool_call");

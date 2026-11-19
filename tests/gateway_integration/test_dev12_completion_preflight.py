@@ -690,7 +690,7 @@ class CompletionPreflightTests(unittest.TestCase):
 
     def test_representative_old_row_migration_preserves_bytes_and_no_send(self):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server/src"))
-        from duranki_server.store import SQLiteStore
+        from ezllmrouter_server.store import SQLiteStore
         from dev12_completion_operator_handlers import persistence_migration
 
         store = SQLiteStore(self.root / "current.sqlite")

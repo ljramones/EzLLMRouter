@@ -118,7 +118,7 @@ class Run:
 
     def actor(self, label, language, token, mode, configuration_ref=None):
         image = local_profile.environment(self.build)[
-            "DURANKI_DEV07_PYACTOR_IMAGE" if language == "python" else "DURANKI_DEV07_JSACTOR_IMAGE"]
+            "EZLLMROUTER_DEV07_PYACTOR_IMAGE" if language == "python" else "EZLLMROUTER_DEV07_JSACTOR_IMAGE"]
         executable = (["python", "/app/actors/dev07_actor.py"] if language == "python" else
                       ["node", "/app/consumer/dev07_actor.cjs"])
         args = {"token": token, "mode": mode, "configuration_ref": configuration_ref,
@@ -246,7 +246,7 @@ def administration_negatives(run, client, a, b, people):
         headers = {"Host": "127.0.0.1:8780", "Origin": origin,
                    "Content-Type": "application/json", "Cookie": client.cookie}
         if csrf:
-            headers["X-Duranki-CSRF"] = csrf
+            headers["X-EzLLMRouter-CSRF"] = csrf
         try:
             connection.request("POST", "/operator/v1/registry", body=body, headers=headers)
             response = connection.getresponse()
@@ -358,7 +358,7 @@ def revocation(run, client, case, a, b, people):
 def main():
     if len(sys.argv) != 2:
         raise SystemExit("usage: dev07_run.py dev07-FRESH-NAMESPACE")
-    require(os.environ.get("DURANKI_ARTIFACT_ROOT"), "declared frozen artifact root required")
+    require(os.environ.get("EZLLMROUTER_ARTIFACT_ROOT"), "declared frozen artifact root required")
     run = Run(sys.argv[1])
     try:
         # Save older command logs separately before profile.py writes new command names.
@@ -375,7 +375,7 @@ def main():
         backup = profile_summary(run.profile("pre-migration-backup", "backup"))
         require(backup["submissions"] == counts["submissions"],
                 "backup and quiescent profile submission counts differ")
-        env = dict(os.environ, DURANKI_DEV07_POOL_PROBE="1")
+        env = dict(os.environ, EZLLMROUTER_DEV07_POOL_PROBE="1")
         run.profile("offline-prepare", "prepare", env)
         run.build = local_profile.current()
         run.profile("build-scoped-images", "build-images", env)

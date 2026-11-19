@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 import hashlib
 
 import httpx
-from duranki_server.canonical import ContractError
+from ezllmrouter_server.canonical import ContractError
 
 
 class NativeSyntheticAdapter:

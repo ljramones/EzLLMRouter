@@ -25,7 +25,7 @@ public final class IntegrationClient implements AutoCloseable {
     @Override public void close() { connection.close(); }
     private static EzLLMRouterException bad() { return Connection.error("PROTOCOL_INVALID", 0, "query_first", null); }
     private Map<String, Object> request(String method, String endpoint, Map<String, Object> body, int... expected) {
-        Connection.Reply response = connection.request(method, path + endpoint, "Duranki-Integration-Version", version, body, Map.of(), 16 * 1024 * 1024, null);
+        Connection.Reply response = connection.request(method, path + endpoint, "EzLLMRouter-Integration-Version", version, body, Map.of(), 16 * 1024 * 1024, null);
         Map<String, Object> value = response.value(); int status = response.status();
         if (status >= 400) {
             Map<String, Object> error = field(value, "error"); if (text(error.get("code")).isEmpty()) throw Connection.error("TRANSPORT_OUTCOME_UNKNOWN", status, "query_first", null);

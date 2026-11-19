@@ -18,12 +18,12 @@ sys.path[:0] = [str(ROOT / "server/src"), str(Path(__file__).resolve().parent),
 
 import httpx
 from cryptography.hazmat.primitives import serialization
-from duranki_server.core import Coordinator
-from duranki_server.store import SQLiteStore
-from duranki_server.successor_authority import SyntheticSuccessorAuthority
-from duranki_server.successor_campaign import FiniteSuccessorCampaign
-from duranki_server.successor_service import SuccessorService
-from duranki_server.web import serve
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
+from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_service import SuccessorService
+from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_integrated import fixture, observations, runtime_source_identity
 from dev12_tls_receiver import TEST_KEY
@@ -93,7 +93,7 @@ def run():
         executor = Dev12SyntheticExecutor("/link/dev12-worker.sock", receiver_port,
                                           (root / "cert.pem").read_text(), TEST_KEY)
         coordinator = Coordinator(store, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
-        from duranki_server.successor_assembly import attach_standalone_synthetic
+        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
         successor = attach_standalone_synthetic(coordinator, store=store,
             contexts_by_credential={token: context}, authority=authority, executor=executor,
             allowance=allowance, read_allowed=permitted, usage_write_allowed=permitted)
@@ -101,8 +101,8 @@ def run():
         wire = serve("127.0.0.1", service_port, coordinator)
         threading.Thread(target=wire.serve_forever, daemon=True).start()
         url = f"http://127.0.0.1:{service_port}"
-        headers = {"Authorization": "Bearer " + token, "Duranki-Contract-Version": "0.3",
-                   "Content-Type": "application/json", "Duranki-Wait-Ms": "5000"}
+        headers = {"Authorization": "Bearer " + token, "EzLLMRouter-Contract-Version": "0.3",
+                   "Content-Type": "application/json", "EzLLMRouter-Wait-Ms": "5000"}
         baseline_arrivals = len(observations(root / "receiver.jsonl"))
         if baseline_arrivals != len(inventory["cases"]):
             raise RuntimeError("receiver baseline differs")
@@ -131,7 +131,7 @@ def run():
                     raise AssertionError(f"{step} admission failed: {response.status_code} {value}")
                 status = client.get("/v1/submissions/" + value["handle"]["submission_id"],
                                     headers={"Authorization": headers["Authorization"],
-                                             "Duranki-Contract-Version": "0.3"})
+                                             "EzLLMRouter-Contract-Version": "0.3"})
                 status.raise_for_status()
                 for _ in range(100):
                     if status.json()["submission_state"] != "pending":
@@ -139,7 +139,7 @@ def run():
                     time.sleep(.05)
                     status = client.get("/v1/submissions/" + value["handle"]["submission_id"],
                                         headers={"Authorization": headers["Authorization"],
-                                                 "Duranki-Contract-Version": "0.3"})
+                                                 "EzLLMRouter-Contract-Version": "0.3"})
                     status.raise_for_status()
                 return response.status_code, value, status.json()
 

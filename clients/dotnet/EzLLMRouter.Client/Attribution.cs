@@ -30,7 +30,7 @@ internal static class Attribution
     }
     private static async Task<JsonObject> RequestAsync(EzLLMRouterClient client, string method, string path, JsonObject? body, bool receipt, string expectedId, CancellationToken cancellationToken)
     {
-        var (value, status) = await client.Connection.RequestAsync(method, path, "Duranki-Contract-Version", "0.2", body, null, 1024 * 1024, null, cancellationToken).ConfigureAwait(false);
+        var (value, status) = await client.Connection.RequestAsync(method, path, "EzLLMRouter-Contract-Version", "0.2", body, null, 1024 * 1024, null, cancellationToken).ConfigureAwait(false);
         if (Schema.Named(value, "0.2", "ErrorResponse") && status >= 400) throw Protocol.Evidence(At(value, "error"), status, null, null, value);
         string version = receipt ? "outcome_version" : "attribution_version", key = receipt ? "receipt" : "run";
         var item = At(value, key);

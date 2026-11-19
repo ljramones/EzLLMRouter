@@ -78,7 +78,7 @@ class RestrictedProxy:
 
 class Worker:
     def __init__(self):
-        if "DURANKI_DEV_TOKEN" in os.environ or "DURANKI_DEV04_PROVIDER_KEY" in os.environ:
+        if "EZLLMROUTER_DEV_TOKEN" in os.environ or "EZLLMROUTER_DEV04_PROVIDER_KEY" in os.environ:
             raise RuntimeError("trusted credential present in LiteLLM worker")
         os.environ["OPENAI_API_KEY"] = WORKER_KEY
         os.environ["LITELLM_DONT_SHOW_FEEDBACK_BOX"] = "true"
@@ -152,7 +152,7 @@ class Worker:
                     raise RuntimeError("Responses handler relay changed")
                 response = await litellm.aresponses(**body, api_key=WORKER_KEY,
                     client=self.responses_handler,
-                    extra_headers={"X-Duranki-Attempt": attempt})
+                    extra_headers={"X-EzLLMRouter-Attempt": attempt})
                 if (litellm.aclient_session is not self.client or
                         self.responses_handler.client._transport is not self.client._transport):
                     raise RuntimeError("selected LiteLLM session changed")
@@ -179,7 +179,7 @@ class Worker:
                     transport=httpx.AsyncHTTPTransport(retries=0, trust_env=False),
                     trust_env=False, timeout=1) as client:
                 response = await client.post(PROVIDER_URL, json=raw,
-                    headers={"X-Duranki-Attempt": "probe.raw.choice-b"})
+                    headers={"X-EzLLMRouter-Attempt": "probe.raw.choice-b"})
             return {"probe": "raw_worker_direct_provider", "status": response.status_code}
         except Exception as exc:
             return {"probe": "raw_worker_direct_provider", "error_type": type(exc).__name__}
@@ -192,7 +192,7 @@ class Worker:
         if kind == "selected_request":
             coro = self._selected(envelope)
         elif kind == "raw_egress_probe":
-            if os.environ.get("DURANKI_DEV04_B_PROBE") != "1" or set(envelope) != {"kind"}:
+            if os.environ.get("EZLLMROUTER_DEV04_B_PROBE") != "1" or set(envelope) != {"kind"}:
                 raise ValueError("raw probe disabled")
             coro = self._raw_probe()
         else:

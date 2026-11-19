@@ -30,10 +30,10 @@ def main() -> None:
     review.mkdir()
     final = git(repo, "rev-parse", "HEAD").strip()
     source_files = (
-        "docs/plan/DURANKI-INTEGRATION-READINESS.md",
-        "docs/plan/DURANKI-INTEGRATION-CORRECTION-01.md",
-        "docs/plan/DURANKI-INTEGRATION-PROGRESS.md",
-        "docs/plan/DURANKI-INTEGRATION-FEATURE-RETENTION-POLICY.md",
+        "docs/plan/EZLLMROUTER-INTEGRATION-READINESS.md",
+        "docs/plan/EZLLMROUTER-INTEGRATION-CORRECTION-01.md",
+        "docs/plan/EZLLMROUTER-INTEGRATION-PROGRESS.md",
+        "docs/plan/EZLLMROUTER-INTEGRATION-FEATURE-RETENTION-POLICY.md",
         "docs/development/integration-readiness/RESULT.md",
         "docs/development/integration-readiness/RESULT-v1.md",
         "docs/development/integration-readiness/RELEASE.md",
@@ -89,10 +89,10 @@ def main() -> None:
     ):
         (review / "delta" / name).write_text(git(repo, *args))
     packages = (
-        candidate / "duranki-integration-service-0.2.0.zip",
-        candidate / "packages/mach33_duranki_server-0.2.0-py3-none-any.whl",
-        candidate / "packages/mach33_duranki_client-0.2.0-py3-none-any.whl",
-        candidate / "packages/mach33-duranki-client-0.2.0.tgz",
+        candidate / "ezllmrouter-integration-service-0.2.0.zip",
+        candidate / "packages/mach33_ezllmrouter_server-0.2.0-py3-none-any.whl",
+        candidate / "packages/cognitivedynamics_ezllmrouter_client-0.2.0-py3-none-any.whl",
+        candidate / "packages/cognitivedynamics-ezllmrouter-client-0.2.0.tgz",
     )
     (review / "RELEASE-ARTIFACTS.sha256").write_text("".join(
         f"{sha(path)}  {path.stat().st_size} bytes  {path.relative_to(candidate).as_posix()}\n"
@@ -125,7 +125,7 @@ def main() -> None:
     root_manifest.write_text("".join(
         f"{sha(p)}  {p.relative_to(review).as_posix()}\n" for p in entries
     ))
-    archive = candidate / "duranki-integration-correction01-review.zip"
+    archive = candidate / "ezllmrouter-integration-correction01-review.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(p for p in review.rglob("*") if p.is_file()):
             zf.write(path, path.relative_to(review).as_posix())

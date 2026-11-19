@@ -16,17 +16,17 @@ spec.loader.exec_module(runner)
 
 class CollisionOutputTests(unittest.TestCase):
     def test_actual_run01_missing_volume(self):
-        name = "duranki-dev08-integrated-20261021-01-link"
+        name = "ezllmrouter-dev08-integrated-20261021-01-link"
         self.assertTrue(runner.absent_resource(
             "Error response from daemon: get " + name + ": no such volume\n", name))
 
     def test_missing_container_variants(self):
-        name = "duranki-dev08-integrated-20261021-02-worker"
+        name = "ezllmrouter-dev08-integrated-20261021-02-worker"
         self.assertTrue(runner.absent_resource("Error: No such object: " + name, name))
         self.assertTrue(runner.absent_resource("Error: no such container: " + name, name))
 
     def test_access_error_and_other_resource_remain_fatal(self):
-        name = "duranki-dev08-integrated-20261021-02-link"
+        name = "ezllmrouter-dev08-integrated-20261021-02-link"
         self.assertFalse(runner.absent_resource("permission denied", name))
         self.assertFalse(runner.absent_resource("Cannot connect to Docker daemon", name))
         self.assertFalse(runner.absent_resource("no such volume: unrelated", name))

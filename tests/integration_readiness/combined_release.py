@@ -11,7 +11,7 @@ import subprocess
 import sys
 from urllib.request import Request, urlopen
 
-from duranki_client import IntegrationClient
+from ezllmrouter_client import IntegrationClient
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES_PATH = ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json"
@@ -25,8 +25,8 @@ def main():
     admin = (secret_dir / "admin.token").read_text().strip()
     ingest = (secret_dir / "ingest.token").read_text().strip()
     node = "/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node"
-    package = artifacts / "consumer-js/node_modules/@mach33/duranki-client"
-    assert "site-packages" in str(Path(sys.modules["duranki_client"].__file__).resolve())
+    package = artifacts / "consumer-js/node_modules/@cognitivedynamics/ezllmrouter-client"
+    assert "site-packages" in str(Path(sys.modules["ezllmrouter_client"].__file__).resolve())
     assert str(package.resolve()).startswith(str(artifacts.resolve()))
     mode = sys.argv[2] if len(sys.argv) > 2 else "seed"
     with IntegrationClient(base, admin) as owner, IntegrationClient(base, ingest) as sender:
@@ -87,7 +87,7 @@ def main():
         assert sender.recover_receipt(EXAMPLES["dataset"]["dataset_id"], "event.usage.2.2")["kind"] == "usage"
         request = Request(base + "/integration/v1/reports/usage?dataset_id=" +
             EXAMPLES["dataset"]["dataset_id"] + "&export=csv",
-            headers={"Authorization": "Bearer " + admin, "Duranki-Integration-Version": "1"})
+            headers={"Authorization": "Bearer " + admin, "EzLLMRouter-Integration-Version": "1"})
         with urlopen(request, timeout=5) as response:
             rows = list(csv.DictReader(io.StringIO(response.read().decode())))
         assert len(rows) == report["attempt_count"]
