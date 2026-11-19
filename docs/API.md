@@ -26,6 +26,13 @@ and accounting v1/v2/v3, using the same contract resources and recovery rules.
 Client origins and credentials come from
 trusted application configuration.
 
+Server and client packages use `EzLLMRouter-Contract-Version` for controlled
+execution and `EzLLMRouter-Integration-Version` for accounting. The operator
+console uses `X-EzLLMRouter-CSRF`. Python implementations live directly in
+`ezllmrouter_client` and `ezllmrouter_server`; package exports contain only the
+current names. Upgrade the server, worker and consumers together when protocol
+headers or canonical digest domains change.
+
 ## External accounting v2
 
 Use `IntegrationClient(..., version="2")` in Python or `{version: "2"}` in
