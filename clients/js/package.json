@@ -2,16 +2,25 @@
   "name": "@cognitivedynamics/ezllmrouter-client",
   "version": "0.3.0",
   "private": true,
-  "description": "CognitiveDynamics EzLLMRouter CommonJS network client",
+  "description": "CognitiveDynamics EzLLMRouter typed CommonJS and ESM network client",
   "type": "commonjs",
   "main": "./index.cjs",
+  "types": "./index.d.cts",
   "exports": {
-    ".": "./index.cjs"
+    ".": {
+      "import": { "types": "./index.d.mts", "default": "./index.mjs" },
+      "require": { "types": "./index.d.cts", "default": "./index.cjs" },
+      "default": "./index.cjs"
+    }
   },
   "engines": {
     "node": ">=24.22.1 <25"
   },
   "files": [
+    "index.mjs",
+    "index.d.mts",
+    "index.d.cts",
+    "contracts.d.cts",
     "index.cjs",
     "successor.cjs",
     "integration.cjs",

@@ -32,6 +32,8 @@ node_modules/
 *.tsbuildinfo
 
 # Builds, test output, and language caches
+target/
+*.class
 dist/
 build/
 .uv/

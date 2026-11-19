@@ -1,0 +1,21 @@
+[package]
+name = "ezllmrouter-client"
+version = "0.3.0"
+edition = "2021"
+rust-version = "1.85"
+resolver = "3"
+description = "Synchronous execution and external accounting client for CognitiveDynamics EzLLMRouter"
+readme = "README.md"
+publish = false
+
+[dependencies]
+chrono = { version = "=0.4.42", default-features = false, features = ["std"] }
+num-bigint = "=0.4.6"
+regex = "=1.12.2"
+reqwest = { version = "=0.12.24", default-features = false, features = ["blocking", "rustls-tls"] }
+serde = "=1.0.228"
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+
+[dev-dependencies]
+base64 = "=0.22.1"

@@ -42,7 +42,11 @@ The CognitiveDynamics package line starts at **0.3.0**.
 | --- | --- | --- |
 | Python service | `cognitivedynamics-ezllmrouter-server` | `ezllmrouter` command; `ezllmrouter_server` |
 | Python client | `cognitivedynamics-ezllmrouter-client` | `ezllmrouter_client` |
-| JavaScript client | `@cognitivedynamics/ezllmrouter-client` | CommonJS |
+| JavaScript / TypeScript client | `@cognitivedynamics/ezllmrouter-client` | CommonJS / ESM with declarations |
+| Go client | `github.com/ljramones/EzLLMRouter/clients/go` | `ezllmrouter` |
+| Java client | `com.cognitivedynamics:ezllmrouter-client` | `com.cognitivedynamics.ezllmrouter` |
+| C# / .NET client | `CognitiveDynamics.EzLLMRouter.Client` | `CognitiveDynamics.EzLLMRouter` |
+| Rust client | `ezllmrouter-client` | `ezllmrouter_client` |
 
 Python packages require Python `>=3.12,<3.13`. The JavaScript client uses Node
 `>=24.22.1 <25`. Build locally using the pinned `uv` build backend and Node:
@@ -55,6 +59,20 @@ npm pack ./clients/js --offline --ignore-scripts --pack-destination ./dist
 
 These commands build local archives. Packages are private and have not been
 published to a registry. Dependencies must already be available locally.
+
+The [Go client](clients/go/README.md) and [Java client](clients/java/README.md)
+have no external runtime dependencies. They support execution, attribution and
+accounting v1/v2/v3. Go source requires Go 1.22+; Java requires JDK 17+.
+Build the standalone Java JAR with `bash clients/java/build.sh`; the Go client
+is a separate module under `clients/go`. Installation and complete API examples
+are in the language guides.
+
+The [C#/.NET client](clients/dotnet/README.md) targets .NET 10 LTS and uses only
+the base class libraries. The [Rust client](clients/rust/README.md) uses Reqwest
+and Rustls; its development toolchain is declared in the crate. Both expose
+execution, attribution and accounting v1/v2/v3. The JavaScript package includes
+TypeScript declarations and a native ESM entry point. These additions have
+separate compiler, package and conformance checks in CI.
 
 ```python
 from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError, IntegrationClient
@@ -178,14 +196,25 @@ Local HTTP fixtures are a separate explicit check:
 uv run --locked python -m tools.check --http-only
 ```
 
-CI runs both commands. Docker, provider execution and historical evidence
+Go and Java have separate contract, transport and packaging checks:
+
+```sh
+bash tests/client_languages/check.sh
+bash tests/client_languages/check.sh --http
+bash tests/client_languages/check_typescript.sh
+bash clients/dotnet/build.sh test
+bash tests/client_languages/check_rust.sh
+```
+
+CI runs the Python/JavaScript checks and the native-client checks. Docker, provider execution and historical evidence
 scripts remain separate owner-operated workflows with their documented frozen
 inputs. These checks do not establish deployment or production acceptance.
 `--tests-only` omits lint and type checks when diagnosing test failures.
 
 ## Language choice
 
-The service remains in Python, with JavaScript for the client and console.
+The service remains in Python, with JavaScript for the console and client
+libraries in Python, JavaScript/TypeScript, Go, Java, C# and Rust.
 Most work here involves network requests, authorization, database access, and
 accounting. There is no measured performance problem that justifies replacing
 the implementation. Keeping Python preserves the existing validation and
@@ -207,7 +236,7 @@ before choosing a rewrite.
 | `server/src/duranki_server/schema/` | Versioned initial database schema. |
 | `server/src/duranki_server/operator_http/` | Operator transport, authentication, routes and application state. |
 | `worker/` | Isolated worker source, staged separately from the trusted service package. |
-| `clients/python/`, `clients/js/` | Installable network clients. |
+| `clients/python/`, `clients/js/`, `clients/go/`, `clients/java/`, `clients/dotnet/`, `clients/rust/` | Installable network clients. |
 | `web/` | Operator console HTML, CSS, and JavaScript. |
 | `deploy/local/` | Frozen-input Docker profile and lifecycle tools. |
 | `tests/` | Contract fixtures, clients, accounting, gateway, sender, and console checks. |

@@ -10,11 +10,20 @@ in that launcher.
 | Language | Distribution | Import |
 | --- | --- | --- |
 | Python | `cognitivedynamics-ezllmrouter-client` | `ezllmrouter_client` |
-| JavaScript | `@cognitivedynamics/ezllmrouter-client` | CommonJS `require` |
+| JavaScript / TypeScript | `@cognitivedynamics/ezllmrouter-client` | CommonJS / ESM with declarations |
+| Go | `github.com/ljramones/EzLLMRouter/clients/go` | `ezllmrouter` |
+| Java | `com.cognitivedynamics:ezllmrouter-client` | `com.cognitivedynamics.ezllmrouter` |
+| C# / .NET | `CognitiveDynamics.EzLLMRouter.Client` | `CognitiveDynamics.EzLLMRouter` |
+| Rust | `ezllmrouter-client` | `ezllmrouter_client` |
 
 Use Python 3.12 and the Node version declared in `.nvmrc`. See the
-[Python](../clients/python/README.md) and [JavaScript](../clients/js/README.md)
-guides for complete method examples. Client origins and credentials come from
+[Python](../clients/python/README.md), [JavaScript](../clients/js/README.md),
+[Go](../clients/go/README.md), [Java](../clients/java/README.md),
+[C#/.NET](../clients/dotnet/README.md) and [Rust](../clients/rust/README.md)
+guides for method examples, language requirements and local installation.
+Go, Java, .NET and Rust cover wire 0.2 execution, wire 0.3 embedding/rerank, attribution v1
+and accounting v1/v2/v3, using the same contract resources and recovery rules.
+Client origins and credentials come from
 trusted application configuration.
 
 ## External accounting v2
@@ -68,7 +77,8 @@ status records an unknown outcome and preserves any observed usage. Repeating
 the same work identity does not dispatch another request.
 
 The clients validate response shape, correspondence and byte limits. They do not
-follow redirects or retry requests automatically. See the client guides for
+follow redirects or replay an operation automatically. The Java guide describes
+the JDK's connection and idempotent transport retry behavior. See the client guides for
 supported execution profiles and response-recovery methods.
 
 ## Operator API

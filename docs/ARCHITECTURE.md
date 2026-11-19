@@ -20,7 +20,7 @@ Their implementation and validation are staged. Learned routing is future work.
 ## Controlled execution
 
 ```text
-Python / JavaScript client
+Python / JS / TS / Go / Java / C# / Rust client
           |
           v
 Coordinator + registry + persistent work records
@@ -56,7 +56,8 @@ Dataset activation and account permissions are owner controlled.
 ## Implementation
 
 The server uses Python 3.12 and a single SQLite persistence boundary. The browser
-console uses JavaScript, HTML and CSS. Python and CommonJS clients expose service
+console uses JavaScript, HTML and CSS. Python, JavaScript/TypeScript, Go, Java,
+C# and Rust clients expose service
 and accounting interfaces without calling a provider directly.
 
 All tables start from the [initial database schema](DATABASE.md). Repository
