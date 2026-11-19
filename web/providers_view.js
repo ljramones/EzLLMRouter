@@ -117,7 +117,7 @@ async function providerDetail(id){
           if(!window.confirm(`Run ${fixed[0]} ${fixed[1]} against ${c.settings.origin}? This is a non-generation probe.`))return;
           button.disabled=true;try{await api("/operator/v1/provider-probe",{method:"POST",csrf:true,body:{
             operation_id:crypto.randomUUID(),connection_id:id,expected_revision:c.revision,operation}});
-            await providerDetail(id);}catch(error){message("Probe failed: "+error.message,true);}finally{button.disabled=false;}});
+            await providerDetail(id);}catch(error){if(error.staleView)return;message("Probe failed: "+error.message,true);}finally{button.disabled=false;}});
         if(!fixed){button.disabled=true;button.title="No documented operation implemented for this adapter.";}
         actions.append(button);}
       if(c.status!=="disabled")actions.append(crudButton("Disable",()=>providerState(c,"disabled")));
@@ -125,7 +125,7 @@ async function providerDetail(id){
         crudButton("Activate connection",()=>providerState(c,"active")));
       if(c.checks_scheduled)actions.append(crudButton("Stop scheduled checks",async()=>{
         try{await registryChange("probe_schedule",id,c.revision,{enabled:false,operation:null,interval_seconds:null});
-          await providerDetail(id);}catch(error){message("Schedule change failed: "+error.message,true);}}));
+          await providerDetail(id);}catch(error){if(error.staleView)return;message("Schedule change failed: "+error.message,true);}}));
       else if(["draft","active"].includes(c.status)&&["access","inventory","readiness"].some(op=>spec[op]))
         actions.append(crudButton("Schedule checks…",()=>providerScheduleForm(c,spec)));
       actions.append(crudButton("Archive…",()=>providerState(c,"archived")));
@@ -162,7 +162,7 @@ async function providerDetail(id){
       node("p","No changes recorded.","empty"));root.append(history);
     root.append(await sourceConnectionCost(c));
     message("");
-  }catch(error){message("Connection unavailable: "+error.message,true);}
+  }catch(error){if(error.staleView)return;message("Connection unavailable: "+error.message,true);}
 }
 async function providerValidationForm(connection,deployment,campaign=null){
   try{
@@ -227,7 +227,7 @@ async function providerValidationForm(connection,deployment,campaign=null){
       `One fixed 'Say hello.' text request via ${connection.display_name} and ${model.display_name}. Caller ${campaign.principal_id}. Billing ${campaign.currency}; per-request ceiling ${campaign.per_request_decimal}, available ${campaign.available_decimal}. The server reserves the exact admitted upper bound before sending; this action permits one attempt only.`:
       "One fixed 'Say hello.' text request, no tools or streaming. The exact grant and provider price must already be approved; this output cap is not a currency spending cap.","scope-note"),form.box.firstChild);
     crudOpen(form);
-  }catch(error){message("Validation setup unavailable: "+error.message,true);}
+  }catch(error){if(error.staleView)return;message("Validation setup unavailable: "+error.message,true);}
 }
 function providerScheduleForm(c,spec){
   const options=["access","inventory","readiness"].filter(op=>spec[op]).map(op=>[op,
@@ -258,7 +258,7 @@ function providerCredentialForm(c,mode,after=()=>providerDetail(c.connection_id)
 async function providerState(c,status,after=()=>providerDetail(c.connection_id)){
   if(!window.confirm(`${status==="archived"?"Archive":status==="active"?"Activate":"Disable"} ${c.display_name}? Authority changes invalidate queued work; history remains.`))return;
   try{await registryChange("connection_state",c.connection_id,c.revision,{status,reason:"Administrator lifecycle change"});
-    await after();}catch(error){message("State change failed: "+error.message,true);}
+    await after();}catch(error){if(error.staleView)return;message("State change failed: "+error.message,true);}
 }
 function providerConfigurationForm(connection,deployment){
   const form=crudForm("Create selected Responses configuration",[
@@ -283,4 +283,8 @@ async function providerAssociationForm(c,after=()=>providerDetail(c.connection_i
     {name:"site",label:"Region or site",value:c.settings.site}],"Associate",after,
     (v,operation)=>crudMutation("associate_deployment",c.connection_id,c.revision,{...v,status:"catalogued"},operation));
   crudOpen(form);
+}
+
+if(typeof screenFunction==="function"){
+  providerDetail=screenFunction("Provider connection",providerDetail);
 }

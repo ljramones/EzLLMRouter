@@ -78,6 +78,22 @@ See the [Python client](clients/python/README.md) and
 
 ## Local service
 
+From the project folder, start the console with:
+
+```sh
+./start.sh
+```
+
+Open **http://127.0.0.1:48761/integration**. On first sign-in use
+**`admin` / `ChangeMeNow!`**, then change the password. Stop with **Ctrl+C**.
+The launcher uses Python 3.12 through `uv`, keeps data in the ignored
+`local-instance/` directory, and installs the exact dependencies in
+`server/uv.lock`, downloading any that are missing. Install `uv` and Python 3.12
+before starting; initial dependency setup needs internet access. Once the
+dependencies are cached, use `UV_OFFLINE=1 ./start.sh` to require offline startup.
+Run `./start.sh --help` for options, or choose another console port with
+`./start.sh --operator-port 8780`.
+
 After installing the service wheel and its pinned dependencies, the external
 accounting service can run on loopback with a new private state directory:
 
@@ -89,10 +105,23 @@ ezllmrouter \
   --web-root "$PWD/web"
 ```
 
-The defaults are API port `48760` and operator console port `48761`. The launcher
-prints the path to the generated operator credential. Keep that file and the
-state directory private. The optional `--demo-scope` flag reads a separately
+The defaults are API port `48760` and operator console port `48761`. In a fresh
+installation, sign in as **`admin` / `ChangeMeNow!`** and choose a new password
+before continuing. Server version **0.3.1** adds **Users & Permissions** for
+account CRUD, role assignment, password resets, and model grants. See the
+[user management guide](docs/USER-MANAGEMENT.md) for roles, setup overrides,
+and compatibility with existing operator tooling. Keep the state and generated
+credential files private. The optional `--demo-scope` flag reads a separately
 prepared immutable synthetic demo; opening a console page does not run a model.
+
+Server **0.3.3** separates **External Providers** from **Local Connectors**.
+Use Local Connectors for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or another
+OpenAI-compatible server. Availability indicators refresh every 15 seconds while
+the page is visible. Choose **Find local servers** to check common localhost
+ports, including LocalAI on `8081`, or add a published URL directly. Choose
+**Models** to refresh a server's inventory, then select which models to enable.
+See the [local connector guide](docs/LOCAL-CONNECTORS.md)
+for container addresses, inventory details, and execution boundaries.
 
 The older offline Docker profile is described in
 [deploy/local/README.md](deploy/local/README.md). It requires frozen, verified

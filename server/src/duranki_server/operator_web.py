@@ -27,6 +27,8 @@ from .successor_reporting import usage_report
 from .demo_workspace import project_demo
 from .demo_workspace_team import project_team_demo
 from .integration_accounting import IntegrationError, route_id
+from .user_management import UserManager, UserError, LoginThrottle, ROLE_PERMISSIONS
+from .local_connectors import LocalConnectors, ConnectorError
 
 
 SESSION_SECONDS = 1800
@@ -52,6 +54,11 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
         raise ValueError("unsafe operator binding or credential")
     allowed_hosts = allowed_hosts or {f"127.0.0.1:{port}", f"localhost:{port}"}
     allowed_origins = {"http://" + value for value in allowed_hosts}
+    accounts = UserManager(registry) if registry else None
+    local_connectors = LocalConnectors(registry) if registry else None
+    if registry:
+        registry.local_connectors = local_connectors
+    login_throttle = LoginThrottle()
     sessions = {}
     session_lock = threading.Lock()
     jobs = ThreadPoolExecutor(max_workers=2, thread_name_prefix="duranki-operator-demo")
@@ -125,7 +132,88 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         sessions.pop(token, None)
                         return None
                     item["role"] = principal["role"]
+                if accounts:
+                    account = accounts.context(item["principal_id"])
+                    if item.get("user_auth_version") is not None and (
+                            not account or account["auth_version"] != item["user_auth_version"]):
+                        sessions.pop(token, None)
+                        if item.get("wire_token"):
+                            registry.revoke_local_operator_token(item["wire_token"])
+                        return None
+                    if account:
+                        item["username"] = account["username"]
+                        item["display_name"] = account["display_name"]
+                        item["must_change_password"] = bool(item.get("named_login") and account["must_change_password"])
                 return token, item
+
+        def _session_payload(self, item):
+            return {"authenticated": True, "csrf": item["csrf"], "role": item["role"],
+                    "principal_id": item["principal_id"], "username": item.get("username"),
+                    "display_name": item.get("display_name"),
+                    "must_change_password": item.get("must_change_password", False),
+                    "permissions": list(ROLE_PERMISSIONS.get(item["role"], ())),
+                    "user_management": accounts is not None}
+
+        def _user_write(self, body, session, *, delete=False):
+            if not accounts:
+                return self._fail(404, "NOT_FOUND")
+            actor = session[1]["principal_id"]
+            try:
+                if self.path == "/operator/v1/account/password" and not delete:
+                    accounts.change_password(actor, body)
+                    # Auth versions revoke every other session on its next request.
+                    with session_lock:
+                        item = sessions.pop(session[0], None)
+                    if item and item.get("wire_token"):
+                        registry.revoke_local_operator_token(item["wire_token"])
+                    return self._send(200, {"authenticated": False, "password_changed": True},
+                        extra=(("Set-Cookie", "duranki_operator=; Path=/operator; HttpOnly; SameSite=Strict; Max-Age=0"),))
+                if session[1]["role"] != "registry_admin":
+                    return self._fail(403, "ADMIN_REQUIRED")
+                if self.path == "/operator/v1/users" and not delete:
+                    return self._send(201, accounts.create(actor, body))
+                parts = self.path[len("/operator/v1/users/"):].split("/")
+                if len(parts) == 1 and parts[0]:
+                    operation = accounts.delete if delete else accounts.update
+                    return self._send(200, operation(actor, parts[0], body))
+                if len(parts) == 2 and parts[1] == "password" and not delete:
+                    return self._send(200, accounts.reset_password(actor, parts[0], body))
+                return self._fail(404, "NOT_FOUND")
+            except UserError as exc:
+                return self._fail(exc.status, exc.code)
+            except (ValueError, TypeError, KeyError):
+                return self._fail(400, "INVALID_USER_CHANGE")
+            except Exception:
+                return self._fail(503, "USER_MANAGEMENT_UNAVAILABLE")
+
+        def _local_connector_write(self, body, session, *, delete=False):
+            if not local_connectors:
+                return self._fail(404, "NOT_FOUND")
+            actor = session[1]["principal_id"]
+            try:
+                if self.path == "/operator/v1/local-connectors/check" and not delete:
+                    return self._send(200, local_connectors.availability(actor, body))
+                if session[1]["role"] != "registry_admin":
+                    return self._fail(403, "ADMIN_REQUIRED")
+                if self.path == "/operator/v1/local-connectors/find" and not delete:
+                    return self._send(200, local_connectors.nearby(actor, body))
+                if self.path == "/operator/v1/local-connectors" and not delete:
+                    return self._send(201, local_connectors.create(actor, body))
+                parts = self.path[len("/operator/v1/local-connectors/"):].split("/")
+                if len(parts) == 1 and parts[0]:
+                    operation = local_connectors.delete if delete else local_connectors.update
+                    return self._send(200, operation(actor, parts[0], body))
+                if len(parts) == 2 and parts[0] and not delete:
+                    operation = {"discover": local_connectors.discover, "models": local_connectors.configure}.get(parts[1])
+                    if operation:
+                        return self._send(200, operation(actor, parts[0], body))
+                return self._fail(404, "NOT_FOUND")
+            except ConnectorError as exc:
+                return self._fail(exc.status, exc.code)
+            except (ValueError, TypeError, KeyError):
+                return self._fail(400, "INVALID_CONNECTOR_CHANGE")
+            except Exception:
+                return self._fail(503, "CONNECTOR_UNAVAILABLE")
 
         def _registry_read(self, path, session):
             actor = session[1]["principal_id"]
@@ -238,7 +326,9 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             lengths = self.headers.get_all("Content-Length")
             if (self.headers.get_all("Content-Type") != ["application/json"] or
                     len(lengths or []) != 1 or not lengths[0].isdigit() or
-                    not 0 < int(lengths[0]) <= (8192 if self.path == "/operator/v1/provider-credential" or
+                    not 0 < int(lengths[0]) <= (262144 if self.path.startswith("/operator/v1/local-connectors") else
+                        8192 if self.path == "/operator/v1/login" or self.path.startswith("/operator/v1/users") or
+                        self.path == "/operator/v1/account/password" or self.path == "/operator/v1/provider-credential" or
                         self.path.startswith("/operator/v1/integration/connections") else
                         4096 if self.path in ("/operator/v1/registry", "/operator/v1/provider-probe") else 2048) or
                     self.headers.get("Transfer-Encoding")):
@@ -255,11 +345,13 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             path = urlsplit(self.path)
             if path.fragment:
                 return self._fail(400, "INVALID_PATH")
-            if path.path in ("/", "/integration", "/app.js", "/catalogue_view.js", "/activity_usage_view.js", "/crud_view.js", "/providers_view.js", "/source_pages.js", "/usage_costs_view.js", "/demo_workspace_view.js", "/demo_workspace_team_view.js", "/mach33_demo_view.js", "/integration_view.js", "/integration_console.js", "/integration_accounting.js", "/app.css", "/integration_console.css") and not path.query:
+            if path.path in ("/", "/integration", "/app.js", "/users_view.js", "/local_connectors_view.js", "/catalogue_view.js", "/activity_usage_view.js", "/crud_view.js", "/providers_view.js", "/source_pages.js", "/usage_costs_view.js", "/demo_workspace_view.js", "/demo_workspace_team_view.js", "/mach33_demo_view.js", "/integration_view.js", "/integration_console.js", "/integration_accounting.js", "/app.css", "/integration_console.css") and not path.query:
                 filename, content_type = {
                     "/": ("index.html", "text/html; charset=utf-8"),
                     "/integration": ("index.html", "text/html; charset=utf-8"),
                     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+                    "/users_view.js": ("users_view.js", "text/javascript; charset=utf-8"),
+                    "/local_connectors_view.js": ("local_connectors_view.js", "text/javascript; charset=utf-8"),
                     "/integration_view.js": ("integration_view.js", "text/javascript; charset=utf-8"),
                     "/integration_console.js": ("integration_console.js", "text/javascript; charset=utf-8"),
                     "/integration_accounting.js": ("integration_accounting.js", "text/javascript; charset=utf-8"),
@@ -280,8 +372,27 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 return self._fail(401, "AUTH_REQUIRED")
             try:
                 if path.path == "/operator/v1/session" and not path.query:
-                    return self._send(200, {"authenticated": True, "csrf": session[1]["csrf"],
-                        "role": session[1]["role"], "principal_id": session[1]["principal_id"]})
+                    return self._send(200, self._session_payload(session[1]))
+                if session[1].get("must_change_password"):
+                    return self._fail(403, "PASSWORD_CHANGE_REQUIRED")
+                if path.path == "/operator/v1/local-connectors" and not path.query and local_connectors:
+                    return self._send(200, local_connectors.list(session[1]["principal_id"]))
+                if path.path == "/operator/v1/local-connectors/availability" and not path.query and local_connectors:
+                    return self._send(200, local_connectors.availability(session[1]["principal_id"]))
+                if path.path == "/operator/v1/local-connectors/nearby" and not path.query and local_connectors:
+                    return self._send(200, local_connectors.nearby(session[1]["principal_id"]))
+                if path.path.startswith("/operator/v1/local-connectors/") and not path.query and local_connectors:
+                    connector_id = path.path[len("/operator/v1/local-connectors/"):]
+                    if "/" in connector_id or not connector_id:
+                        return self._fail(404, "NOT_FOUND")
+                    return self._send(200, local_connectors.get(session[1]["principal_id"], connector_id))
+                if path.path == "/operator/v1/users" and not path.query and accounts:
+                    return self._send(200, accounts.list(session[1]["principal_id"]))
+                if path.path.startswith("/operator/v1/users/") and not path.query and accounts:
+                    principal_id = path.path[len("/operator/v1/users/"):]
+                    if "/" in principal_id or not principal_id:
+                        return self._fail(404, "NOT_FOUND")
+                    return self._send(200, accounts.get(session[1]["principal_id"], principal_id))
                 if path.path == "/operator/v1/integration/vega-me" and not path.query:
                     if not integration_only or session[1]["role"] != "registry_admin":
                         return self._fail(404, "NOT_FOUND")
@@ -394,11 +505,14 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         return self._send(200, ledger.dataset_export(principal, dataset_id, "3"),
                             extra=(("Content-Disposition", "attachment; filename=duranki-integration-dataset.json"),))
                     return self._fail(404, "NOT_FOUND")
-                if integration_only and path.path not in ("/operator/v1/usage-costs",
+                if integration_only and not (path.path.startswith(("/operator/v1/principals/",
+                        "/operator/v1/models/", "/operator/v1/connections/")) or path.path in ("/operator/v1/usage-costs",
                                                          "/operator/v1/models",
                                                          "/operator/v1/principals",
+                                                         "/operator/v1/connections",
+                                                         "/operator/v1/access/explain",
                                                          "/operator/v1/usage",
-                                                         "/operator/v1/demo-workspace"):
+                                                         "/operator/v1/demo-workspace")):
                     return self._fail(404, "NOT_FOUND")
                 if successor_store is not None and path.path == "/operator/v1/dev12-usage":
                     query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
@@ -559,7 +673,7 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         raise ValueError("invalid launch path")
                     value = projection.launch(identifier)
                     return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
-            except IntegrationError as exc:
+            except (IntegrationError, UserError, ConnectorError) as exc:
                 return self._fail(exc.status, exc.code)
             except (ValueError, KeyError, TypeError):
                 return self._fail(400, "INVALID_SELECTOR")
@@ -575,9 +689,23 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
             except (ValueError, UnicodeError, json.JSONDecodeError):
                 return self._fail(400, "INVALID_BODY")
             if self.path == "/operator/v1/login":
-                if set(body) != {"password"} or type(body["password"]) is not str:
+                if set(body) not in ({"password"}, {"username", "password"}) or type(body["password"]) is not str:
                     return self._fail(400, "INVALID_BODY")
-                if hmac.compare_digest(password, body["password"]):
+                peer = self.client_address[0] if isinstance(self.client_address, tuple) else "local"
+                if not login_throttle.allow(peer):
+                    return self._fail(429, "LOGIN_RATE_LIMITED")
+                account = None
+                named_login = "username" in body
+                if named_login:
+                    if not accounts:
+                        return self._fail(401, "AUTH_FAILED")
+                    try:
+                        account = accounts.authenticate(body["username"], body["password"])
+                    except UserError as exc:
+                        return self._fail(exc.status, exc.code)
+                    principal_id = account["principal_id"]
+                    principal = registry.principal(principal_id)
+                elif hmac.compare_digest(password.encode(), body["password"].encode()):
                     principal = registry.principal("owner.local") if registry else None
                     if registry and (not principal or principal["status"] != "active"):
                         return self._fail(401, "AUTH_FAILED")
@@ -590,6 +718,8 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                         return self._fail(401, "AUTH_FAILED")
                 else:
                     return self._fail(401, "AUTH_FAILED")
+                if accounts and not account:
+                    account = accounts.context(principal_id)
                 token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
                 with session_lock:
                     for key in tuple(sessions):
@@ -600,13 +730,16 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     sessions[token] = {"csrf": csrf, "expires": time.monotonic() + SESSION_SECONDS,
                                        "principal_id": principal_id,
                                        "role": principal["role"] if registry else "registry_admin",
+                                       "named_login": named_login,
+                                       "username": account["username"] if account else None,
+                                       "display_name": principal.get("display_name") if principal else None,
+                                       "user_auth_version": account["auth_version"] if account else None,
+                                       "must_change_password": bool(named_login and account["must_change_password"]),
                                        "wire_token": registry.issue_local_operator_token(principal_id)
                                            if registry and principal_id == "owner.local" and
-                                              getattr(registry, "personal_campaign", None) else None}
-                return self._send(200, {"authenticated": True, "csrf": csrf,
-                    "expires_in_seconds": SESSION_SECONDS,
-                    "role": principal["role"] if registry else "registry_admin",
-                    "principal_id": principal_id},
+                                              getattr(registry, "personal_campaign", None) and
+                                              not (named_login and account["must_change_password"]) else None}
+                return self._send(200, {**self._session_payload(sessions[token]), "expires_in_seconds": SESSION_SECONDS},
                     extra=(("Set-Cookie", "duranki_operator=" + token +
                             "; Path=/operator; HttpOnly; SameSite=Strict; Max-Age=1800"),))
             session = self._session()
@@ -614,6 +747,13 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                 return self._fail(401, "AUTH_REQUIRED")
             if not hmac.compare_digest(self.headers.get("X-Duranki-CSRF", ""), session[1]["csrf"]):
                 return self._fail(403, "CSRF_REJECTED")
+            if session[1].get("must_change_password") and self.path not in (
+                    "/operator/v1/account/password", "/operator/v1/logout"):
+                return self._fail(403, "PASSWORD_CHANGE_REQUIRED")
+            if self.path in ("/operator/v1/users", "/operator/v1/account/password") or self.path.startswith("/operator/v1/users/"):
+                return self._user_write(body, session)
+            if self.path == "/operator/v1/local-connectors" or self.path.startswith("/operator/v1/local-connectors/"):
+                return self._local_connector_write(body, session)
             if registry and self.path.startswith("/operator/v1/integration/"):
                 if session[1]["role"] != "registry_admin":
                     return self._fail(403, "ADMIN_REQUIRED")
@@ -654,7 +794,8 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     return self._fail(exc.status, exc.code)
                 except Exception:
                     return self._fail(503, "INTEGRATION_UNAVAILABLE")
-            if integration_only and self.path != "/operator/v1/logout":
+            if integration_only and self.path != "/operator/v1/logout" and not (
+                    self.path == "/operator/v1/registry" and body.get("action") == "set_grant"):
                 return self._fail(404, "NOT_FOUND")
             if self.path == "/operator/v1/logout":
                 if body:
@@ -670,6 +811,8 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     return self._fail(403, "ADMIN_REQUIRED")
                 try:
                     return self._send(200, registry.mutate(session[1]["principal_id"], body))
+                except UserError as exc:
+                    return self._fail(exc.status, exc.code)
                 except RegistryConflict:
                     return self._fail(409, "REGISTRY_CONFLICT")
                 except ValueError:
@@ -835,6 +978,27 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
                     return self._fail(409, "INVALID_OPERATION")
             return self._fail(404, "NOT_FOUND")
 
+        def do_DELETE(self):
+            path = urlsplit(self.path)
+            if not self._origin_ok(mutation=True) or path.query or path.fragment:
+                return self._fail(403, "ORIGIN_REJECTED")
+            try:
+                body = self._body()
+            except (ValueError, UnicodeError, json.JSONDecodeError):
+                return self._fail(400, "INVALID_BODY")
+            session = self._session()
+            if not session:
+                return self._fail(401, "AUTH_REQUIRED")
+            if not hmac.compare_digest(self.headers.get("X-Duranki-CSRF", ""), session[1]["csrf"]):
+                return self._fail(403, "CSRF_REJECTED")
+            if session[1].get("must_change_password"):
+                return self._fail(403, "PASSWORD_CHANGE_REQUIRED")
+            if path.path.startswith("/operator/v1/users/"):
+                return self._user_write(body, session, delete=True)
+            if path.path.startswith("/operator/v1/local-connectors/"):
+                return self._local_connector_write(body, session, delete=True)
+            return self._fail(404, "NOT_FOUND")
+
     if socket_path is None:
         server = ThreadingHTTPServer((host, port), Handler)
     else:
@@ -887,6 +1051,8 @@ def serve(host, port, *, projection, runner, password, fixture, build, web_root,
     def close_with_scheduler():
         scheduler_stop.set()
         scheduler_thread.join(timeout=4)
+        if local_connectors:
+            local_connectors.close()
         original_close()
     server.server_close = close_with_scheduler
     return server

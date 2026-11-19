@@ -1,10 +1,12 @@
 "use strict";
 // Administrator controls use the same authenticated registry endpoint as the original console.
-const crudState={archivedModels:false,archivedUsers:false,dirty:false};
+const crudState={archivedModels:false,archivedUsers:false,dirty:false,saving:false};
 const crudAuditFacts=value=>value?Object.entries(value).map(([key,item])=>key.replaceAll("_"," ")+": "+item).join(" · "):"Earlier record · details not retained";
 const crudIsFixtureUser=principal=>principal.record_origin!=="operator_entered"&&principal.principal_id!=="owner.local";
 function crudButton(label,callback,style="quiet"){
-  const button=node("button",label,style);button.type="button";button.onclick=callback;return button;
+  const button=node("button",label,style);button.type="button";
+  button.onclick=async event=>{try{return await callback(event);}catch(error){if(!error.staleView)throw error;}};
+  return button;
 }
 function crudActions(...buttons){const row=node("div",undefined,"actions");row.append(...buttons);return row;}
 function crudRowActions(...buttons){const row=crudActions(...buttons);row.classList.add("crud-row-actions");return row;}
@@ -13,11 +15,8 @@ function crudDeletePrincipalButton(principal,impact,after,lastAdmin){
   if(lastAdmin){button.disabled=true;button.title="The last active registry administrator cannot be deleted.";}
   return button;
 }
-function crudConfirmLeave(){return !crudState.dirty||window.confirm("Discard unsaved changes?");}
-for(const button of [...document.querySelectorAll("#navigation button"),$("refresh"),$("logout")]){
-  button.addEventListener("click",event=>{if(!crudConfirmLeave()){event.preventDefault();event.stopImmediatePropagation();}else crudState.dirty=false;},true);
-}
-window.addEventListener("beforeunload",event=>{if(crudState.dirty){event.preventDefault();event.returnValue="";}});
+function crudConfirmLeave(){return typeof confirmViewLeave==="function"?confirmViewLeave():!crudState.dirty||window.confirm("Discard unsaved changes?");}
+window.addEventListener("beforeunload",event=>{if(typeof viewHasChanges==="function"?viewHasChanges():crudState.dirty){event.preventDefault();event.returnValue="";}});
 function crudForm(title,fields,save,onCancel,onSave){
   const box=panel(title),form=node("form",undefined,"registry-form"),controls={};
   for(const field of fields){
@@ -29,6 +28,8 @@ function crudForm(title,fields,save,onCancel,onSave){
       else for(const option of field.options){const [value,name]=Array.isArray(option)?option:[option,option];const item=node("option",name);item.value=value;control.append(item);}
       control.value=field.value??(field.groups?field.groups[0].options[0][0]:field.options[0][0]);}
     else{if(!field.textarea)control.type=field.type||"text";control.maxLength=field.maxLength||160;
+      if(field.minLength)control.minLength=field.minLength;
+      if(field.type==="password")control.autocomplete="new-password";
       if(field.type==="checkbox")control.checked=field.value===true;else control.value=field.value??"";
       if(field.step)control.step=field.step;if(field.min!==undefined)control.min=field.min;}
     control.oninput=()=>{crudState.dirty=true;error.textContent="";};control.onchange=control.oninput;
@@ -41,19 +42,26 @@ function crudForm(title,fields,save,onCancel,onSave){
   const error=node("p","","error");error.setAttribute("role","alert");form.append(error);
   let pending=null;
   form.onsubmit=async event=>{
-    event.preventDefault();if(!form.reportValidity())return;
+    event.preventDefault();if(crudState.saving||!form.reportValidity())return;
     const values=Object.fromEntries(Object.entries(controls).map(([key,input])=>
-      [key,input.type==="checkbox"?input.checked:input.value.trim()]));
+      [key,input.type==="checkbox"?input.checked:input.type==="password"?input.value:input.value.trim()]));
     const signature=JSON.stringify(values);
     if(!pending||pending.signature!==signature)pending={signature,id:crypto.randomUUID()};
-    saveButton.disabled=true;cancel.disabled=true;error.textContent="";message("Saving registry change…");
-    try{await onSave(values,pending.id);pending=null;crudState.dirty=false;message("Registry change committed.");await onCancel(true);}
-    catch(exc){error.textContent=exc.message==="REGISTRY_CONFLICT"?"This record changed. Copy your edits and refresh before retrying.":"Change rejected: "+exc.message;message("Registry change was not confirmed.",true);}
-    finally{clearSecrets();saveButton.disabled=false;cancel.disabled=false;}
+    const saving={};crudState.saving=saving;saveButton.disabled=true;cancel.disabled=true;error.textContent="";message("Saving changes…");
+    try{const result=await onSave(values,pending.id);pending=null;crudState.dirty=false;if(crudState.saving===saving)crudState.saving=false;
+      const after=onCancel(true),generation=viewUi.generation;await after;
+      if(generation===viewUi.generation){const notice=result?.notice;notify(notice?.value||save+" completed.",notice?.error||false);}}
+    catch(exc){if(exc.staleView)return;error.textContent=exc.message==="REGISTRY_CONFLICT"?"This record changed. Copy your edits and refresh before retrying.":"Change rejected: "+exc.message;message("Registry change was not confirmed.",true);}
+    finally{clearSecrets();if(crudState.saving===saving)crudState.saving=false;saveButton.disabled=false;cancel.disabled=false;}
   };
-  box.append(form);return {box,first:Object.values(controls)[0]};
+  box.append(form);return {box,first:Object.values(controls)[0],title};
 }
-function crudOpen(form){clean($("view-content"));$("view-content").append(form.box);form.first.focus();}
+function crudOpen(form){
+  if(!crudConfirmLeave())return;
+  if(typeof beginView==="function"){viewUi.notice=null;beginView(form.title);$("view-content").setAttribute("aria-busy","false");message("");}
+  else clean($("view-content"));
+  $("view-content").append(form.box);form.first.focus();
+}
 async function crudMutation(action,subject,revision,data,operation){
   return api("/operator/v1/registry",{method:"POST",csrf:true,body:{operation_id:operation,action,subject,expected_revision:revision,data}});
 }
@@ -63,8 +71,8 @@ async function crudRetire(kind,record,impact,after){
   if(!window.confirm(`Delete ${name} (${id})? ${effect} ${impact} History remains retained. This cannot be undone.`))return;
   try{await registryChange(isModel?"archive_model":"principal_state",id,record.revision,
     isModel?{reason:"Administrator archive"}:{status:"revoked",reason:"Administrator deletion"});
-    crudState.dirty=false;message("Deletion committed; history retained.");await after();}
-  catch(error){message(error.message==="REGISTRY_CONFLICT"?"Record changed. Refresh before deleting.":"Deletion rejected: "+error.message,true);}
+    crudState.dirty=false;await after();notify("Deletion completed; history retained.");}
+  catch(error){if(error.staleView)return;message(error.message==="REGISTRY_CONFLICT"?"Record changed. Refresh before deleting.":"Deletion rejected: "+error.message,true);}
 }
 function crudPriceFields(price){
   const current=price?.bands||[{label:"Standard test reference",conditions:{},rates_usd_per_1000000_tokens:{input_uncached:"0",output:"0",input_cached:null}}];
@@ -268,7 +276,7 @@ catalogueModelDetail=async function crudModelDetail(ref){
         crudButton("Delete…",()=>crudRetire("model",m,`${data.grants.length} linked grants and ${data.history.length} audit events remain retained.`,()=>catalogueModelDetail(ref))));
       if(!c)for(const status of ["enabled","disabled"]){if(status!==m.status){const stateButton=crudButton(status==="enabled"?"Enable":"Disable",async()=>{
         if(!window.confirm(`Set ${m.display_name} to ${status}?`))return;
-        try{await registryChange("model_state",ref,m.revision,{status,reason:"Administrator lifecycle change"});await catalogueModelDetail(ref);}catch(e){message(e.message,true);}});
+        try{await registryChange("model_state",ref,m.revision,{status,reason:"Administrator lifecycle change"});await catalogueModelDetail(ref);}catch(e){if(e.staleView)return;message(e.message,true);}});
         if(provider&&status==="enabled"&&!providerReady){stateButton.disabled=true;stateButton.title="Selected HTTPS worker and sender target validation is pending.";}
         actions.append(stateButton);}}
     }root.append(actions);
@@ -319,7 +327,7 @@ catalogueModelDetail=async function crudModelDetail(ref){
       [p.price_version,money(p.rates.input_uncached),money(p.rates.output_text),p.source])):
       node("p",provider?"No approved price schedule. Configuration cannot be enabled.":"No published synthetic price.","empty"));root.append(prices);}
     const history=panel("Change history");history.id="model-history";history.tabIndex=-1;history.append(data.history.length?table(["Action","Actor","Time","Before","After"],data.history.map(h=>[h.action,h.actor,h.at,crudAuditFacts(h.before),crudAuditFacts(h.after)])):node("p","No changes recorded.","empty"));root.append(history);
-  }catch(e){message("Model detail unavailable: "+e.message,true);}
+  }catch(e){if(e.staleView)return;message("Model detail unavailable: "+e.message,true);}
 };
 function crudSyntheticEdit(m){const form=crudForm("Edit synthetic fixture label",[{name:"display_name",label:"Display name",value:m.display_name}],"Save",()=>catalogueModelDetail(m.configuration_ref),
   (v,id)=>crudMutation("edit_model",m.configuration_ref,m.revision,{display_name:v.display_name},id));crudOpen(form);}
@@ -390,12 +398,12 @@ catalogueUserDetail=async function crudUserDetail(id){
         (v,op)=>crudMutation("set_role",id,p.revision,{role:v.role},op));crudOpen(form);}));
       for(const status of ["active","suspended"]){if(status!==p.status)actions.append(crudButton(status==="active"?"Activate":"Suspend",async()=>{
         if(!window.confirm(`Set ${p.display_name} to ${status}?`))return;
-        try{await registryChange("principal_state",id,p.revision,{status,reason:"Administrator lifecycle change"});await catalogueUserDetail(id);}catch(e){message(e.message,true);}}));}
+        try{await registryChange("principal_state",id,p.revision,{status,reason:"Administrator lifecycle change"});await catalogueUserDetail(id);}catch(e){if(e.staleView)return;message(e.message,true);}}));}
       if(p.credential_state!=="local_operator")actions.append(crudButton("Provision one-time credential",async()=>{
         if(!window.confirm(`Generate a new one-time credential for ${p.display_name}? Existing binding will be replaced.`))return;
         try{const result=await api("/operator/v1/provision",{method:"POST",csrf:true,body:{operation_id:crypto.randomUUID(),principal_id:id,expected_revision:p.revision}});
           if(result.one_time_credential){const output=node("p","One-time credential (store privately): "+result.one_time_credential,"credential-once mono");output.tabIndex=-1;root.append(output);output.focus();}
-        }catch(e){message("Provisioning failed: "+e.message,true);}}));
+        }catch(e){if(e.staleView)return;message("Provisioning failed: "+e.message,true);}}));
     }root.append(actions);
     const links=crudActions(crudButton("View activity",()=>{state.activityPrincipal=id;state.view="activity";render();}),
       crudButton("View usage",()=>{state.usagePrincipal=id;state.view="usage";render();}));root.append(links);
@@ -424,5 +432,10 @@ catalogueUserDetail=async function crudUserDetail(id){
       {name:"purpose",label:"Purpose",value:"execution"},{name:"task_class",label:"Task class",value:"class.demo"}],"Explain",async v=>{
       const result=await api("/operator/v1/access/explain?"+new URLSearchParams({principal_id:id,...v}));message((result.allowed?"Allowed":"Denied")+": "+result.reason+" · authority revision "+result.authority_revision);return false;});root.append(explain);
     const history=panel("Registry history");history.id="user-history";history.tabIndex=-1;history.append(data.history.length?table(["Action","Actor","Time","Revision"],data.history.map(h=>[h.action,h.actor,h.at,h.new_revision])):node("p","No changes recorded.","empty"));root.append(history);
-  }catch(e){message("Identity detail unavailable: "+e.message,true);}
+  }catch(e){if(e.staleView)return;message("Identity detail unavailable: "+e.message,true);}
 };
+
+if(typeof screenFunction==="function"){
+  catalogueModelDetail=screenFunction("Model & pricing detail",catalogueModelDetail);
+  catalogueUserDetail=screenFunction("User & access detail",catalogueUserDetail);
+}

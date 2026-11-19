@@ -65,16 +65,16 @@ function demoChart(snap){
   const x=value=>45+750*value/Math.max(1,demoUi.data.end),y=value=>180-145*Number(value||0)/maximum;
   const line=(tag,attrs)=>{const item=document.createElementNS("http://www.w3.org/2000/svg",tag);
     for(const [key,value] of Object.entries(attrs))item.setAttribute(key,String(value));svg.append(item);return item;};
-  line("path",{d:"M45 35 V180 H795",fill:"none",stroke:"#7894a1","stroke-width":1});
+  line("path",{d:"M45 35 V180 H795",fill:"none",stroke:"var(--border-strong)","stroke-width":1});
   const points=demoUi.data.snapshots.filter(item=>item.at<=demoUi.time);
   let path="M45 180",prior=0;
   for(const point of points){const cost=Number(point.total.known_subtotals.USD||0);
     path+=` H${x(point.at)} V${y(cost)}`;prior=cost;}
   path+=` H${x(demoUi.time)}`;
-  line("path",{d:path,fill:"none",stroke:"#5bd4bc","stroke-width":4,"stroke-linejoin":"round"});
-  line("circle",{cx:x(demoUi.time),cy:y(prior),r:6,fill:"#ffd887"});
+  line("path",{d:path,fill:"none",stroke:"var(--accent)","stroke-width":4,"stroke-linejoin":"round"});
+  line("circle",{cx:x(demoUi.time),cy:y(prior),r:6,fill:"var(--chart-cursor)"});
   for(const [label,tx,ty] of [["USD "+maximum.toFixed(2),5,38],["USD 0.00",5,185],["00:00",45,208],[demoStamp(demoUi.data.end),752,208]]){
-    const item=line("text",{x:tx,y:ty,fill:"#d7e7ed","font-size":12});item.textContent=label;}
+    const item=line("text",{x:tx,y:ty,fill:"var(--text)","font-size":12});item.textContent=label;}
   box.append(svg,node("p","The line changes only when a scripted model attempt completes. Parent spans and messages add no charge.","scope-note"));
   box.append(table(["Elapsed","Cumulative simulated USD","Completed calls"],points.map(point=>[
     demoStamp(point.at),demoMoney(point.total.known_subtotals.USD),point.total.attempts])));

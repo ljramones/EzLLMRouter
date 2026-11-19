@@ -74,7 +74,7 @@ function costExportActions(root){const box=crudActions();
       const blob=await response.blob(),url=URL.createObjectURL(blob),link=node("a");
       link.href=url;link.download="ezllmrouter-usage-costs."+format;document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }catch(error){message("Export unavailable: "+error.message,true);}}));}
+    }catch(error){if(error.staleView)return;message("Export unavailable: "+error.message,true);}}));}
   root.append(box);
 }
 function costGroupTable(title,rows,open){const box=panel(title);
@@ -112,7 +112,7 @@ function costAgentDetail(root,report,labels){const agent=report.agents.items.fin
       if(!window.confirm(`${target==="archived"?"Archive":"Restore"} ${agent.display_name}? Current permissions are still checked at send time.`))return;
       try{await registryChange("agent_state",agent.agent_id,agent.revision,
         {status:target,reason:"Operator change"});costUi.agent=null;render();}
-      catch(error){message("Agent change rejected: "+error.message,true);}})));
+      catch(error){if(error.staleView)return;message("Agent change rejected: "+error.message,true);}})));
   const use=panel("Usage & Costs");use.append(definition([["Direct",costAmounts(agent.direct)],
     ["Delegated",costAmounts(agent.delegated)],["Inclusive workflow",costAmounts(agent.inclusive_workflow)],
     ["Runs",agent.runs]]));root.append(use);
@@ -191,7 +191,7 @@ async function dev12SyntheticUsage(root){let report;try{report=await api("/opera
       const blob=await response.blob(),url=URL.createObjectURL(blob),link=node("a");
       link.href=url;link.download="ezllmrouter-synthetic-usage."+format;document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }catch(error){message("Synthetic export unavailable: "+error.message,true);}}));}box.append(actions);
+    }catch(error){if(error.staleView)return;message("Synthetic export unavailable: "+error.message,true);}}));}box.append(actions);
   const rows=report.attempts.slice().reverse(),selected=rows.find(item=>item.attempt_id===dev12Ui.selected);
   const costText=item=>item.cost_status==="unknown"?"Unknown cost":item.cost_status==="not_sent"?"No send":
       "fictional USD "+item.amount_decimal+(item.cost_status==="over_bound"?" · over bound":"");
@@ -224,7 +224,7 @@ usage=async function dev09UsageCosts({embedded=false}={}){
   const root=$("view-content");if(!embedded)$("view-title").textContent="Usage & Costs";
   if(!embedded&&demoUi.open)return demoWorkspace();
   const hasDev12=embedded?false:await dev12SyntheticUsage(root);
-  if(hasDev12){try{await api("/operator/v1/usage-costs?page=1&limit=1");}catch(error){if(error.message==="NOT_FOUND")return;throw error;}}
+  if(hasDev12){try{await api("/operator/v1/usage-costs?page=1&limit=1");}catch(error){if(error.staleView)return;if(error.message==="NOT_FOUND")return;throw error;}}
   root.append(node("p","Recorded through EzLLMRouter · synthetic activity is labelled. Known amounts are subtotals; unknown costs are never treated as zero. All dates and revision cutoffs are UTC.","scope-note"));
   if(!embedded){root.append(crudActions(crudButton("Open demo workspace",()=>{demoUi.open=true;demoUi.collection="team";demoUi.story="oren_opportunity";demoUi.time=null;demoUi.revision++;render();},"action")));
   const tabs=crudActions();for(const [key,label] of [["overview","Overview"],["providers","Providers"],

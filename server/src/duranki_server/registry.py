@@ -988,6 +988,8 @@ class Registry:
                     raise ValueError("invalid role")
                 if record["kind"] != "human" and data["role"] != "ordinary":
                     raise ValueError("service identity cannot receive console authority")
+                if getattr(self, "users", None):
+                    self.users.validate_principal_change(db, record, data["role"], record["status"])
                 if record["role"] == "registry_admin" and data["role"] != "registry_admin":
                     active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
                     if active <= 1:
@@ -999,11 +1001,16 @@ class Registry:
                 nonempty(data["reason"])
                 if data["status"] == "active" and record["credential_state"] == "unbound":
                     raise ValueError("principal credential not provisioned")
+                if getattr(self, "users", None):
+                    self.users.validate_principal_change(db, record, record["role"], data["status"])
                 if record["role"] == "registry_admin" and data["status"] != "active":
                     active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
                     if active <= 1:
                         raise ValueError("last active administrator")
                 record["status"], record["state_reason"] = data["status"], data["reason"]
+            if action in ("set_role", "principal_state") and getattr(self, "users", None):
+                db.execute("UPDATE console_users SET auth_version=auth_version+1,updated_at=? WHERE principal_id=?",
+                           (timestamp(), subject))
             record["revision"] += 1
             db.execute("UPDATE registry_principals SET record=? WHERE id=?", (encode(record), subject))
             return record

@@ -406,6 +406,7 @@ async function integrationAccounting(){
       api("/operator/v1/integration/connections?dataset_id="+encodeURIComponent(source.dataset_id)),
       api("/operator/v1/integration/vega-me")
     ]);
+    if(metadata.some(item=>item.status==="rejected"&&item.reason.staleView))return;
     if(window.location.hash!==routeHash)return;
     if(metadata[0].status==="fulfilled")for(const item of metadata[0].value.items){
       names.set(item.account_id,(item.friendly_name||integrationProvider(item.provider))+
@@ -433,7 +434,7 @@ async function integrationAccounting(){
   for(const format of ["csv","json"])exportActions.append(integrationButton("Export "+format.toUpperCase(),async()=>{
     try{await integrationDownload("/operator/v1/integration/report?"+
       integrationReportQuery(integrationRoute(),datasetId,{export:format}),"ezllmrouter-integration-report."+format);}
-    catch(error){message(error.message,true);}
+    catch(error){if(error.staleView)return;message(error.message,true);}
   }));
   exports.append(exportActions);root.append(exports);
   if(!report.attempt_count){

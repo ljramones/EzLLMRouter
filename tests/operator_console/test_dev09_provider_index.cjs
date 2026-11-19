@@ -20,7 +20,7 @@ const context=vm.createContext({state:{role:"registry_admin",view:"source_provid
 vm.runInContext(fs.readFileSync(path.join(root,"web/source_pages.js"),"utf8"),context);
 (async()=>{
   await context.sourceIndex();
-  assert.equal(title.textContent,"Providers");
+  assert.equal(title.textContent,"External Providers");
   assert.equal(view.children[1].children[0].value,"Add provider");
   const inventory=view.children.find(item=>item.tag==="panel").children[0].value;
   assert.deepEqual([...inventory.headers],["Provider","API setups","API access"]);

@@ -62,7 +62,7 @@ function mach33Exports(root,route){const actions=node("div",undefined,"actions a
   for(const format of ["csv","json"])actions.append(integrationButton("Export demo "+format.toUpperCase(),async()=>{
     try{const query=mach33Query(route.params,{export:format});
       await integrationDownload("/operator/v1/mach33-demo/report?"+query,
-        "ezllmrouter-demo-report."+format);}catch(error){message("Demo export unavailable: "+error.message,true);}
+        "ezllmrouter-demo-report."+format);}catch(error){if(error.staleView)return;message("Demo export unavailable: "+error.message,true);}
   }));root.append(actions);
 }
 function mach33Cards(root,report){const counts=report.counts,cards=node("div",undefined,"cards");
@@ -143,11 +143,11 @@ function mach33TraceDraw(){const detail=mach33Ui.detail,holder=$("mach33-demo-tr
   let d="M 0 198",last=198;
   for(const [x,y] of positions){d+=` H ${x.toFixed(2)} V ${y.toFixed(2)}`;last=y;}
   d+=` H 1000`;const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-  path.setAttribute("d",d);path.setAttribute("fill","none");path.setAttribute("stroke","#8ae4d1");
+  path.setAttribute("d",d);path.setAttribute("fill","none");path.setAttribute("stroke","var(--accent)");
   path.setAttribute("stroke-width","3");svg.append(path);
   const line=document.createElementNS("http://www.w3.org/2000/svg","line");
   line.setAttribute("x1",String(1000*now/end));line.setAttribute("x2",String(1000*now/end));
-  line.setAttribute("y1","12");line.setAttribute("y2","205");line.setAttribute("stroke","#ffd887");svg.append(line);
+  line.setAttribute("y1","12");line.setAttribute("y2","205");line.setAttribute("stroke","var(--chart-cursor)");svg.append(line);
   curve.append(svg,node("p",`Final known subtotal USD ${detail.counts.known_cost_subtotal_usd}; ${steps.length} usage revisions; ${steps.length-detail.attempts.length} replacements. Unknown costs are separate.`,"scope-note"));holder.append(curve);
   const selected=mach33Selected(),inspector=panel("Selected event and linked records");
   if(selected){inspector.append(definition(Object.entries(selected).map(([key,value])=>

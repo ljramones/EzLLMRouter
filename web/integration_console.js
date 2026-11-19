@@ -1,8 +1,8 @@
 "use strict";
 // The integration-only console reads stored data. Provider metadata calls and policy changes require explicit clicks.
 const integrationUi={drafts:new Map(),add:false,addProvider:"openai",addName:"",setupDirty:false,
-  allowNextHash:false,lastHash:window.location.hash,demoReturnParams:null};
-const integrationViews=new Set(["connections","accounting","diagnostics"]);
+  demoReturnParams:null};
+const integrationViews=new Set(["connections","local_connectors","accounting","diagnostics","users"]);
 function integrationRoute(){
   const raw=window.location.hash.startsWith("#/")?window.location.hash.slice(2):"connections";
   const [path,query=""]=raw.split("?",2),parts=path.split("/");
@@ -15,12 +15,8 @@ function integrationHash(view,item=null,params=null){
   const path="#/"+view+(item?"/"+encodeURIComponent(item):"");
   return path+(query.size?"?"+query.toString():"");
 }
-function integrationDiscardSetup(){
-  if(!integrationUi.add||!integrationUi.setupDirty)return true;
-  if(!window.confirm("Discard unsaved provider setup?"))return false;
-  const key=document.querySelector(".connection-add input[type=password]");if(key)key.value="";
-  integrationUi.add=false;integrationUi.addName="";integrationUi.setupDirty=false;return true;
-}
+function integrationDiscardSetup(){return confirmViewLeave();}
+
 function integrationGo(view,item=null,params=null){
   let targetParams=params;
   if(view!=="accounting"&&integrationRoute().view==="accounting"&&
@@ -31,11 +27,7 @@ function integrationGo(view,item=null,params=null){
     if(targetParams.get("source")==="demo")targetParams.set("source","external");
   }
   const hash=integrationHash(view,item,targetParams);
-  if(hash!==window.location.hash){
-    if(!integrationDiscardSetup())return;
-    integrationUi.add=false;integrationUi.addName="";integrationUi.setupDirty=false;
-  }
-  integrationUi.allowNextHash=hash!==window.location.hash;sourceGo(hash);
+  return sourceGo(hash);
 }
 function integrationFixture(item){return String(item.discovery?.reason||"").startsWith("controlled_fixture_");}
 function integrationStatus(item){
@@ -98,11 +90,11 @@ async function integrationConnections(){
     if(!item){root.append(node("p","Connection not found in this collection.","empty"));return;}
     integrationEditor(root,datasetId,item,"connections");return;}
   const heading=node("div",undefined,"integration-head");
-  heading.append(node("p","Manage provider connections and the models each may use.","scope-note"),
-    integrationButton("Add provider",()=>{if(integrationUi.add){if(!integrationDiscardSetup())return;
+  heading.append(node("p","Connect third-party cloud APIs here. Ollama and other self-hosted servers are on the Local Connectors page.","scope-note"),
+    integrationButton("Add external provider",()=>{if(integrationUi.add){if(!integrationDiscardSetup())return;
       integrationUi.add=false;}else integrationUi.add=true;render();},"action"));root.append(heading);
   if(integrationUi.add)integrationAdd(root,datasetId);
-  const box=panel("Connections");box.classList.add("connection-list");
+  const box=panel("External provider connections");box.classList.add("connection-list");
   if(!ordinary.length)box.append(node("p","No ordinary provider connections in this collection.","empty"));
   for(const item of ordinary){
     const row=node("div",undefined,"connection-row"),copy=node("div",undefined,"connection-row-copy");
@@ -118,7 +110,7 @@ async function integrationConnections(){
   root.append(integrationButton("Test connections in Diagnostics →",()=>integrationGo("diagnostics")));
 }
 function integrationAdd(root,datasetId){
-  const box=panel("Add provider"),form=node("form",undefined,"connection-add");
+  const box=panel("Add external provider"),form=node("form",undefined,"connection-add");
   const providerLabel=node("label","Provider"),provider=node("select");
   for(const [id,name] of [["openai","OpenAI"],["anthropic","Anthropic"],["xai","xAI"]]){
     const option=node("option",name);option.value=id;provider.append(option);
@@ -141,7 +133,7 @@ function integrationAdd(root,datasetId){
         operation_id:"op."+crypto.randomUUID()}});
       key.value="";integrationUi.add=false;integrationUi.addName="";integrationUi.setupDirty=false;
       integrationGo("connections",item.account_id);
-    }catch(error){key.value="";feedback.textContent="Connection check failed: "+error.message;
+    }catch(error){if(error.staleView)return;key.value="";feedback.textContent="Connection check failed: "+error.message;
       feedback.className="connection-error";connect.disabled=false;}};
   box.append(form);root.append(box);
 }
@@ -169,12 +161,12 @@ function integrationKeyForm(item,datasetId){
       const draft=integrationUi.drafts.get(item.account_id);
       if(draft&&draft.dirty)draft.revision=reply.revision;
       await render();
-    }catch(error){key.value="";feedback.textContent="Key change failed: "+error.message;
+    }catch(error){if(error.staleView)return;key.value="";feedback.textContent="Key change failed: "+error.message;
       feedback.className="connection-error";save.disabled=false;}};
   return [open,form];
 }
 function integrationEditor(root,datasetId,item,section){
-  const back=integrationButton("← "+(section==="diagnostics"?"Test connections":"Connections"),()=>integrationGo(section));
+  const back=integrationButton("← "+(section==="diagnostics"?"Test connections":"External Providers"),()=>integrationGo(section));
   root.append(back);
   const box=panel(item.friendly_name+" · "+integrationProvider(item.provider));box.classList.add("connection-editor");
   const status=node("p",integrationStatus(item),"connection-state");box.append(status);
@@ -192,7 +184,7 @@ function integrationEditor(root,datasetId,item,section){
       feedback.textContent="Checking provider model list…";
       try{await api("/operator/v1/integration/connections/"+encodeURIComponent(item.account_id)+"/refresh",
         {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision}});
-        render();}catch(error){feedback.textContent="Retry failed: "+error.message;feedback.className="connection-error";}
+        render();}catch(error){if(error.staleView)return;feedback.textContent="Retry failed: "+error.message;feedback.className="connection-error";}
     }));
     const [changeKey,keyForm]=integrationKeyForm(item,datasetId);
     actions.append(changeKey);
@@ -243,8 +235,8 @@ function integrationEditor(root,datasetId,item,section){
       {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision,
         selected_models:[...draft.models],allowed_operations:[...draft.operations]}});
       integrationUi.drafts.delete(item.account_id);feedback.textContent="Saved "+result.selected_models.length+" model choices.";
-      integrationGo(section);
-    }catch(error){feedback.textContent="Save failed: "+error.message+". Your choices remain here.";
+      integrationGo(section);notify("Saved "+result.selected_models.length+" model choices.");
+    }catch(error){if(error.staleView)return;feedback.textContent="Save failed: "+error.message+". Your choices remain here.";
       feedback.className="connection-error";save.disabled=false;}} ,"action");
   save.disabled=item.state==="disabled"||item.discovery?.state!=="observed"||item.discovery?.has_more;
   actions.append(save,integrationButton("Cancel",()=>{
@@ -258,7 +250,7 @@ function integrationEditor(root,datasetId,item,section){
     try{const updated=await api("/operator/v1/integration/connections/"+encodeURIComponent(item.account_id)+"/refresh",
       {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision}});
       draft.revision=updated.revision;draft.dirty=true;render();
-    }catch(error){feedback.textContent="Refresh failed: "+error.message;feedback.className="connection-error";}
+    }catch(error){if(error.staleView)return;feedback.textContent="Refresh failed: "+error.message;feedback.className="connection-error";}
   }));
   if(item.state==="connected"){
     const [changeKey,keyForm]=integrationKeyForm(item,datasetId);
@@ -267,7 +259,7 @@ function integrationEditor(root,datasetId,item,section){
       try{await api("/operator/v1/integration/connections/"+encodeURIComponent(item.account_id)+"/disable",
         {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision}});
         integrationUi.drafts.delete(item.account_id);render();}
-      catch(error){feedback.textContent="Disable failed: "+error.message;feedback.className="connection-error";}
+      catch(error){if(error.staleView)return;feedback.textContent="Disable failed: "+error.message;feedback.className="connection-error";}
     }));
   }
   box.append(settings,technical);root.append(box);

@@ -197,18 +197,18 @@ function demoChart(){
     for(const [key,value] of Object.entries(attrs))item.setAttribute(key,String(value));
     if(textValue!==undefined)item.textContent=textValue;svg.append(item);return item;};
   for(let i=0;i<=4;i++)add("line",{x1:x(demoUi.data.end*i/4),x2:x(demoUi.data.end*i/4),y1:18,y2:140,
-    stroke:"#244553","stroke-width":1});
+    stroke:"var(--border)","stroke-width":1});
   const points=demoUi.data.snapshots.filter(item=>item.at<=demoUi.time);
   let d="M0 135",last=0;for(const point of points){last=Number(point.total.known_subtotals.USD||0);
     d+=` H${x(point.at)} V${y(last)}`;}d+=` H${x(demoUi.time)}`;
-  add("path",{d,fill:"none",stroke:"#69dfc5","stroke-width":4,"stroke-linejoin":"round"});
-  add("line",{x1:x(demoUi.time),x2:x(demoUi.time),y1:16,y2:141,stroke:"#ffd887","stroke-width":2});
+  add("path",{d,fill:"none",stroke:"var(--accent)","stroke-width":4,"stroke-linejoin":"round"});
+  add("line",{x1:x(demoUi.time),x2:x(demoUi.time),y1:16,y2:141,stroke:"var(--chart-cursor)","stroke-width":2});
   const selected=demoUi.data.events.find(item=>item.id===demoUi.selected);
   add("line",{class:"demo-selected-line",x1:selected?x(selected.at):-1,x2:selected?x(selected.at):-1,
-    y1:16,y2:141,stroke:"#ffad78","stroke-width":2,"stroke-dasharray":"4 4"});
-  add("circle",{cx:x(demoUi.time),cy:y(last),r:6,fill:"#ffd887"});
-  add("text",{x:8,y:18,fill:"#d7e7ed","font-size":15},demoMoney(max));
-  add("text",{x:8,y:158,fill:"#abc2cb","font-size":13},"USD 0.00");
+    y1:16,y2:141,stroke:"var(--event-review)","stroke-width":2,"stroke-dasharray":"4 4"});
+  add("circle",{cx:x(demoUi.time),cy:y(last),r:6,fill:"var(--chart-cursor)"});
+  add("text",{x:8,y:18,fill:"var(--text)","font-size":15},demoMoney(max));
+  add("text",{x:8,y:158,fill:"var(--text-muted)","font-size":13},"USD 0.00");
   box.append(svg,node("p","Cost steps at usage observation, including simultaneous calls. Messages, handoffs and acceptance leave plateaus.","demo-chart-note"));
   return box;
 }

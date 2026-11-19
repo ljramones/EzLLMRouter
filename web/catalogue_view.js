@@ -31,7 +31,7 @@ function namedButton(label,subtitle,callback){
 }
 function copyControl(label,value){
   const row=node("div",undefined,"copy-row"),button=node("button","Copy","quiet");button.type="button";
-  button.onclick=async()=>{try{await navigator.clipboard.writeText(value);message(label+" copied.");}catch(error){message("Copy unavailable: "+error.message,true);}};
+  button.onclick=async()=>{try{await navigator.clipboard.writeText(value);message(label+" copied.");}catch(error){if(error.staleView)return;message("Copy unavailable: "+error.message,true);}};
   row.append(node("span",label+": "+value,"mono"),button);return row;
 }
 models = async function catalogueModels(){
@@ -95,7 +95,7 @@ async function catalogueModelDetail(ref){
       }
     }
     const history=panel("Change history");history.append(data.history.length?table(["Actor","Action","Authority","Time"],data.history.map(h=>[h.actor,h.action,h.authority_revision,h.at])):node("p","No changes recorded.","empty"));root.append(history);message("");
-  }catch(error){message("Catalogue record unavailable: "+error.message,true);}
+  }catch(error){if(error.staleView)return;message("Catalogue record unavailable: "+error.message,true);}
 }
 users = async function catalogueUsers(){
   const root=$("view-content"),data=await api("/operator/v1/principals"),all=data.items,tests=all.filter(isTestUser).length;
@@ -124,10 +124,10 @@ async function catalogueUserDetail(id){
       if(p.kind==="human")root.append(entryForm("Console role",[{name:"role",label:"Role",options:["ordinary","read_only_operator","registry_admin"]}],"Change role",v=>registryChange("set_role",id,p.revision,{role:v.role})));
       root.append(entryForm("Set exact model grant",[{name:"configuration_ref",label:"Configuration reference",value:"cfg.demo"},{name:"status",label:"Grant state",options:["active","removed"]},{name:"expected",label:"Current grant revision (0 if absent)",value:"0"},{name:"purposes",label:"Permitted purposes",value:"execution"},{name:"task_classes",label:"Task classes",value:"class.demo"}],"Commit grant",v=>registryChange("set_grant",id,Number(v.expected),{configuration_ref:v.configuration_ref,status:v.status,purposes:listValue(v.purposes),task_classes:listValue(v.task_classes)})));
       const actions=node("div",undefined,"actions");if(p.credential_state!=="local_operator"&&p.status!=="revoked"){
-        const provision=node("button","Generate one-time credential","quiet");provision.type="button";provision.onclick=async()=>{if(!window.confirm("Replace the existing credential for "+id+"?"))return;provision.disabled=true;try{const result=await api("/operator/v1/provision",{method:"POST",csrf:true,body:{operation_id:crypto.randomUUID(),principal_id:id,expected_revision:p.revision}});if(result.one_time_credential){const output=node("p","One-time credential (copy to a private file now): "+result.one_time_credential,"credential-once mono");output.tabIndex=-1;root.append(output);output.focus();}}catch(error){message("Provisioning failed: "+error.message,true);}finally{provision.disabled=false;}};actions.append(provision);
+        const provision=node("button","Generate one-time credential","quiet");provision.type="button";provision.onclick=async()=>{if(!window.confirm("Replace the existing credential for "+id+"?"))return;provision.disabled=true;try{const result=await api("/operator/v1/provision",{method:"POST",csrf:true,body:{operation_id:crypto.randomUUID(),principal_id:id,expected_revision:p.revision}});if(result.one_time_credential){const output=node("p","One-time credential (copy to a private file now): "+result.one_time_credential,"credential-once mono");output.tabIndex=-1;root.append(output);output.focus();}}catch(error){if(error.staleView)return;message("Provisioning failed: "+error.message,true);}finally{provision.disabled=false;}};actions.append(provision);
       }
       for(const status of ["active","suspended","revoked"]){if(status===p.status||p.status==="revoked")continue;actions.append(actionButton(status==="active"?"Activate":status==="suspended"?"Suspend":"Revoke",()=>registryChange("principal_state",id,p.revision,{status,reason:"Local administrator change"}),status==="active"?"":"Confirm "+status+" for "+id+"?"));}root.append(actions);
     }
     message("");
-  }catch(error){message("Identity unavailable: "+error.message,true);}
+  }catch(error){if(error.staleView)return;message("Identity unavailable: "+error.message,true);}
 }

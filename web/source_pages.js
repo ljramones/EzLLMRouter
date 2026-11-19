@@ -1,13 +1,14 @@
 "use strict";
 // Source pages read stored inventory. Only named actions call discovery or change authority.
 const sourceUi={tabs:new Map(),filters:new Map(),searches:new Map()};
-const sourceSections={source_providers:"Providers",source_private:"Private Hosting",source_labs:"Office Labs"};
+const sourceSections={source_providers:"External Providers",source_private:"Private Hosting",source_labs:"Office Labs"};
 const sourceVendor={openai:"OpenAI",anthropic:"Anthropic",google:"Google",xai:"xAI",deepseek:"DeepSeek"};
 function sourceKind(connection){return connection.settings.location==="office_lab"?"source_labs":
   connection.settings.location==="private_cloud"?"source_private":"source_providers";}
 function sourceRoute(hash=window.location.hash){
   if(!hash.startsWith("#/"))return null;
   const parts=hash.slice(2).split("/").map(value=>{try{return decodeURIComponent(value);}catch{return "";}});
+  if(parts[0]==="local_connectors"&&parts.length<=2)return {view:"local_connectors",section:"local_connectors",item:parts[1]||null};
   if(parts.length===1&&titles[parts[0]])return {view:parts[0],section:parts[0]};
   if(parts[0]==="providers"&&parts[1]&&parts.length<=4&&
       (parts.length===2||(parts.length===4&&parts[2]==="connections")))
@@ -19,8 +20,12 @@ function sourceRoute(hash=window.location.hash){
     return {view:"source_detail",section:"source_labs",site:parts[1],connectionId:parts[3]||null};
   return null;
 }
-function sourceGo(hash){if(window.location.hash===hash){const route=sourceRoute();state.view=route?.view||state.view;render();}
-  else window.location.hash=hash;}
+function sourceGo(hash){
+  if(!confirmViewLeave())return false;
+  viewUi.notice=null;invalidateView();
+  if(window.location.hash===hash){const route=window.location.pathname==="/integration"?integrationRoute():sourceRoute();state.view=route?.view||state.view;return render();}
+  viewUi.approvedHash=hash;window.location.hash=hash;return true;
+}
 function sourceConnectionRoute(connection){const id=encodeURIComponent(connection.connection_id),kind=sourceKind(connection);
   return kind==="source_providers"?"#/providers/"+encodeURIComponent(connection.provider_id)+"/connections/"+id:
     kind==="source_private"?"#/private-hosting/"+id:
@@ -96,8 +101,8 @@ async function sourceSetPermission(connection,items,allowed){
   if(!window.confirm(`${allowed?"Allow":"Disallow"} ${items.length} existing model(s) on ${connection.display_name} (${connection.connection_id})? ${names}. This does not grant a user or start model work.`))return;
   try{await crudMutation("set_source_permissions",connection.connection_id,0,{allowed,
     items:items.map(item=>({serving_id:item.serving_id,expected_revision:item.permission_revision}))},crypto.randomUUID());
-    await sourceDetail();message(`${allowed?"Allowed":"Disallowed"} ${items.length} model(s) on ${connection.display_name}. No user grant was created.`);
-  }catch(error){message("Source permission rejected: "+error.message,true);}
+    await render();message(`${allowed?"Allowed":"Disallowed"} ${items.length} model(s) on ${connection.display_name}. No user grant was created.`);
+  }catch(error){if(error.staleView)return;message("Source permission rejected: "+error.message,true);}
 }
 function sourceModelsPanel(inventory,{compact=false}={}){
   const c=inventory.connection,box=panel(compact?c.display_name+" · models":"Models · "+c.display_name),key=c.connection_id;
@@ -142,7 +147,7 @@ async function sourceRefresh(connection){
   if(!window.confirm(`Refresh inventory for ${connection.display_name} (${connection.connection_id}) using ${connection.adapter_id}? This calls its documented listing API and does not generate model work.`))return;
   try{await api("/operator/v1/provider-probe",{method:"POST",csrf:true,body:{operation_id:crypto.randomUUID(),
     connection_id:connection.connection_id,expected_revision:connection.revision,operation:"inventory"}});
-    await sourceDetail();}catch(error){message("Inventory refresh rejected: "+error.message,true);}
+    await render();}catch(error){if(error.staleView)return;message("Inventory refresh rejected: "+error.message,true);}
 }
 function sourceConnectionSummary(inventory){const c=inventory.connection,box=panel("Connection & credentials · "+c.display_name);
   box.append(definition([["Connection",c.connection_id],["Provider / adapter",c.provider_name+" · "+c.adapter_id],
@@ -256,13 +261,13 @@ async function sourceCampaignAction(action){
   if(!window.confirm(`${action==="active"?"Activate":action==="paused"?"Pause":
     action==="reconcile"?"Reconcile recorded usage for":action==="revalidate"?"Revalidate":"Close"} this finite allowance? This operation sends no provider request; each live test needs a separate explicit action.`))return;
   try{await api("/operator/v1/personal-campaign",{method:"POST",csrf:true,body:{action}});
-    await sourceDetail();}catch(error){message("Allowance action rejected: "+error.message,true);}
+    await render();}catch(error){if(error.staleView)return;message("Allowance action rejected: "+error.message,true);}
 }
 async function sourceCheck(connection,operation){
   if(!window.confirm(`Run ${operation} check for ${connection.display_name} (${connection.connection_id}) via ${connection.adapter_id}? This makes an authenticated model-list GET, with possible provider quota or account effects. It performs no generation; EzLLMRouter records no model charge for it.`))return;
   try{await api("/operator/v1/provider-probe",{method:"POST",csrf:true,body:{operation_id:crypto.randomUUID(),
     connection_id:connection.connection_id,expected_revision:connection.revision,operation}});
-    await sourceDetail();}catch(error){message("Check rejected: "+error.message,true);}
+    await render();}catch(error){if(error.staleView)return;message("Check rejected: "+error.message,true);}
 }
 function sourceHealth(detail){const box=panel("Health · stored observations");box.append(node("p","Provider incident status, credential acceptance, service reachability and model readiness are separate. Missing or stale telemetry is unknown.","scope-note"));
   box.append(detail.observations.length?table(["Operation / scope","State / reason","Observed","Expires"],
@@ -290,7 +295,7 @@ async function sourceConnectionPage(connectionId,compact=false){
   const tabs=crudActions(),tab=sourceUi.tabs.get(connectionId)||
     (sourceKind(c)==="source_providers"?"api_setup":"models");
   for(const [key,label] of [["api_setup","API setup"],["models","Models"],["usage","Usage & Costs"],["connection","Connection & Credentials"],["health","Health"],["history","History"]]){
-    const button=crudButton(label,()=>{sourceUi.tabs.set(connectionId,key);sourceDetail();},key===tab?"action":"quiet");
+    const button=crudButton(label,()=>{if(!confirmViewLeave())return;sourceUi.tabs.set(connectionId,key);render();},key===tab?"action":"quiet");
     button.setAttribute("aria-current",key===tab?"page":"false");tabs.append(button);}root.append(tabs);
   if(tab==="api_setup")root.append(await sourceApiSetup(detail));
   else if(tab==="models"){

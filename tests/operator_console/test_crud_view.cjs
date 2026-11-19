@@ -56,7 +56,7 @@ const context=vm.createContext({Node:Element,window:{confirm:()=>true,addEventLi
   definition:rows=>{const x=new Element("dl");x.rows=rows;return x;},
   actionButton:(label,callback)=>{const x=new Element("button",label);x.onclick=callback;return x;},
   entryForm:()=>new Element("form"),registryChange:async(action,subject,expected_revision,data)=>api("/operator/v1/registry",{body:{action,subject,expected_revision,data}}),
-  api,message:()=>{},state:{role:"registry_admin",view:"models",modelSearch:"",userSearch:""},
+  api,message:()=>{},notify:()=>{},viewUi:{generation:0},state:{role:"registry_admin",view:"models",modelSearch:"",userSearch:""},
   models:null,users:null,render:async()=>{elements["view-content"].replaceChildren();await context[context.state.view]();},
   crypto:{randomUUID:()=>"operation.test."+operations.length},navigator:{clipboard:{writeText:async()=>{}}},URLSearchParams,
   listValue:value=>value.split(",").map(x=>x.trim()).filter(Boolean)});

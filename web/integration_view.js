@@ -23,7 +23,7 @@ function connectionRegistration(root,datasetId,connections,refreshView){
       body:{dataset_id:datasetId,provider:provider.value,api_key:key.value,
         friendly_name:name.value,operation_id:"op."+crypto.randomUUID()}});
     key.value="";await refreshView();message("Connection check finished. Select permitted models or operations and Save.");
-  }catch(error){key.value="";message("Connection check failed: "+error.message,true);connect.disabled=false;}};
+  }catch(error){if(error.staleView)return;key.value="";message("Connection check failed: "+error.message,true);connect.disabled=false;}};
   box.append(form);
   const normal=connections.filter(item=>!String(item.discovery?.reason||"").startsWith("controlled_fixture_"));
   const fixtures=connections.filter(item=>String(item.discovery?.reason||"").startsWith("controlled_fixture_"));
@@ -97,13 +97,13 @@ function connectionRegistration(root,datasetId,connections,refreshView){
           selected_models:[...chosen],
           allowed_operations:Object.keys(speech).filter(op=>speech[op].checked)}});
       await refreshView();message("Selections saved. Restart Vega to adopt the new policy revision; execution remains separately gated.");
-    }catch(error){message("Save failed: "+error.message,true);save.disabled=false;}};actions.append(save);
+    }catch(error){if(error.staleView)return;message("Save failed: "+error.message,true);save.disabled=false;}};actions.append(save);
     const refresh=node("button","Refresh models","quiet");refresh.type="button";
     refresh.onclick=async()=>{refresh.disabled=true;try{
       await api("/operator/v1/integration/connections/"+encodeURIComponent(item.account_id)+"/refresh",
         {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision}});
       await refreshView();message("Model listing refreshed. New models remain unselected.");
-    }catch(error){message("Refresh failed: "+error.message,true);refresh.disabled=false;}};actions.append(refresh);
+    }catch(error){if(error.staleView)return;message("Refresh failed: "+error.message,true);refresh.disabled=false;}};actions.append(refresh);
     if(item.state==="connected"){
       const replacement=node("input");replacement.type="password";replacement.autocomplete="new-password";
       replacement.placeholder="Replacement API key";actions.append(replacement);
@@ -114,14 +114,14 @@ function connectionRegistration(root,datasetId,connections,refreshView){
         replacement.value="";await refreshView();message(result.replacement?.state!==undefined?
           "Replacement failed validation; the working key remains selected.":"Replacement validated. Restart Vega to adopt the new version.",
           result.replacement?.state!==undefined);
-      }catch(error){replacement.value="";message("Replacement failed: "+error.message,true);replace.disabled=false;}};
+      }catch(error){if(error.staleView)return;replacement.value="";message("Replacement failed: "+error.message,true);replace.disabled=false;}};
       actions.append(replace);
       const disable=node("button","Disable","quiet");disable.type="button";
       disable.onclick=async()=>{disable.disabled=true;try{
         await api("/operator/v1/integration/connections/"+encodeURIComponent(item.account_id)+"/disable",
           {method:"POST",csrf:true,body:{dataset_id:datasetId,expected_revision:item.revision}});
         await refreshView();message("Connection disabled. New sends are denied.");
-      }catch(error){message("Disable failed: "+error.message,true);disable.disabled=false;}};actions.append(disable);
+      }catch(error){if(error.staleView)return;message("Disable failed: "+error.message,true);disable.disabled=false;}};actions.append(disable);
     }
     detail.append(actions);target.append(detail);
   }
@@ -199,7 +199,7 @@ async function integrationView(){
   selector.onchange=()=>{
     const url=new URL(window.location.href);url.searchParams.set("dataset_id",selector.value);
     window.history.replaceState(null,"",url.toString());
-    show().catch(error=>message("Collection unavailable: "+error.message,true));
+    render();
   };
   await show();
 }

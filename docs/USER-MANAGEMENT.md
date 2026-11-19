@@ -1,0 +1,109 @@
+# Users and permissions
+
+Server version **0.3.1** adds named browser accounts to both the main console and
+the standalone accounting console. Accounts use the existing SQLite identity
+registry, so model grants and historical attribution keep their stable IDs.
+
+## First sign-in
+
+Run `./start.sh` from the project folder, then open
+**http://127.0.0.1:48761/integration**. Stop the service with **Ctrl+C**.
+
+For a database without console accounts:
+
+- Username: **`admin`**
+- Temporary password: **`ChangeMeNow!`**
+
+The initial account is bound to the existing active human administrator, normally
+`owner.local`. It cannot use the console until its temporary password is changed.
+Passwords must contain 12–256 characters. Password changes sign out existing
+sessions; sign in again with the new password.
+
+To choose different initial credentials, set `EZLLMROUTER_ADMIN_USERNAME` and
+`EZLLMROUTER_ADMIN_PASSWORD` in the service environment before its first start.
+These values only seed an empty account table. Restarting the service or changing
+the environment does not overwrite an existing account or password.
+
+## Roles
+
+| Role | Permissions |
+| --- | --- |
+| Administrator | Manage users, roles, identities, model grants, and connections; read activity, reports, and settings. |
+| Read-only | Inspect activity, reports, registered resources, and settings; cannot change users, permissions, or connections. |
+| User | Inspect their own activity and permitted models; model execution requires explicit grants. |
+
+Permissions are enforced by the server. Hiding a console button is not the
+authorization check. A console role does not create a model grant or authorize
+provider spending by itself. External accounting data retains its existing
+dataset and owner access checks.
+
+## Managing accounts
+
+Open **Users & Permissions** as an administrator to search, create, edit,
+disable, delete, or reset a user's password. New accounts default to the User
+role. Usernames contain 3–64 letters, digits, dots, underscores, or hyphens and
+are case-insensitive. Each user has a stable internal principal ID; renaming a
+username does not change recorded attribution.
+
+- **Create user** sets a temporary password that the user must change at sign-in.
+- **Edit** changes the name, username, role, or enabled/disabled state. Role,
+  username, and status changes invalidate existing sessions.
+- **Reset password** replaces the password, invalidates sessions, and requires
+  another password change at sign-in. Passwords cannot be retrieved.
+- **Model access** opens the existing exact model-grant editor.
+- **Delete** revokes access, removes API credential bindings, and replaces the
+  password verifier. The identity and audit/accounting history remain retained;
+  deleted usernames cannot be reused.
+
+The last enabled administrator with a console account cannot be disabled,
+deleted, or demoted. This rule also applies through the older identity-management
+API. Disabled users cannot sign in. Re-enabling an account does not restore its
+old sessions. Updates use record revisions to reject stale edits.
+
+Every named user can change their own password using the header account button.
+Non-administrators see their own account and effective permissions on the users
+page, without access to other accounts.
+
+## Storage and compatibility
+
+Passwords are stored as salted scrypt verifiers, separately from public identity
+records. They are excluded from API responses and audit entries. Browser sessions
+use HttpOnly, SameSite cookies, expire after 30 minutes, and recheck the current
+account state on each request. Writes require both the allowed Origin and a CSRF
+token. Login attempts are limited to 20 per minute per client address.
+
+The generated high-entropy operator credential and previously provisioned human
+credentials remain accepted by the password-only login API for existing local
+tooling. They are separate credentials, not the temporary account password.
+Browser sign-in uses username/password. Service identities continue to use API
+credentials and cannot sign in as named human users. The legacy tooling path
+retains the current principal's role and status checks; sessions tied to a
+console account also obey its authentication-version revocation.
+
+No running profile or existing database is changed by editing or building this
+source. Install the new service wheel, use the matching `web/` assets, and start
+the service normally to enable this capability. The new account table is
+additive; it does not rewrite historical work or provider records.
+
+## Operator API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/operator/v1/login` | Named sign-in with `username` and `password`. |
+| GET | `/operator/v1/session` | Own identity, role, effective permissions, and password-change requirement. |
+| POST | `/operator/v1/account/password` | Change own password using `current_password` and `new_password`. |
+| GET / POST | `/operator/v1/users` | Administrator list / create. |
+| GET / POST / DELETE | `/operator/v1/users/{principal_id}` | Administrator read / update / delete. |
+| POST | `/operator/v1/users/{principal_id}/password` | Administrator password reset. |
+
+Create accepts `username`, `display_name`, `role`, `status`, and `password`.
+Update accepts `username`, `display_name`, `role`, `status`, and
+`expected_revision`. Reset accepts `password` and `expected_revision`; delete
+accepts `expected_revision`. Roles are `registry_admin`, `read_only_operator`,
+and `ordinary`; writable states are `active` and `suspended`. The response to a
+delete uses `revoked` for the retained identity. Password-changing accounts can
+only read their session, change their password, or sign out until that change
+is complete.
+
+The [development result](development/USER-MANAGEMENT.md) records the tested
+source, build artifact, checks, and remaining verification limits.

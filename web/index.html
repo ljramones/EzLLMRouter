@@ -18,50 +18,86 @@
   <script src="/integration_console.js" defer></script>
   <script src="/mach33_demo_view.js" defer></script>
   <script src="/integration_accounting.js" defer></script>
+  <script src="/local_connectors_view.js" defer></script>
+  <script src="/users_view.js" defer></script>
 </head>
 <body>
+  <a id="skip-link" class="skip-link" href="#view-title" hidden>Skip to content</a>
   <header class="masthead">
     <div class="brand"><span class="mark" aria-hidden="true">Ez</span><div><strong>EzLLMRouter</strong><small>CognitiveDynamics · Local operations</small></div></div>
     <div class="environment"><span class="pulse" aria-hidden="true"></span> LOCAL DEVELOPMENT</div>
+    <button id="account-button" class="quiet" type="button" hidden>Change password</button>
     <button id="logout" class="quiet" type="button" hidden>Sign out</button>
   </header>
   <main>
     <section id="login-view" class="login-card" aria-labelledby="login-title">
       <p class="eyebrow">Protected local console</p>
-      <h1 id="login-title">Sign in to inspect this profile</h1>
-      <p>Use the generated operator credential from the private local file shown by the launcher. The credential stays in this session only.</p>
+      <h1 id="login-title">Sign in to EzLLMRouter</h1>
+      <p>Use your username and password. New accounts must change their temporary password before continuing.</p>
       <form id="login-form">
-        <label for="password">Operator credential</label>
-        <input id="password" type="password" autocomplete="off" required minlength="32">
+        <label for="username">Username</label>
+        <input id="username" type="text" autocomplete="username" required maxlength="64" autocapitalize="none" spellcheck="false" value="admin">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required maxlength="256">
         <button type="submit">Sign in</button>
       </form>
       <p id="login-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="password-view" class="login-card" aria-labelledby="password-title" hidden>
+      <p class="eyebrow">Account security</p>
+      <h1 id="password-title">Change your password</h1>
+      <p id="password-note">Choose a new password of 12 to 256 characters.</p>
+      <form id="password-form">
+        <label for="current-password">Current password</label>
+        <input id="current-password" type="password" autocomplete="current-password" required maxlength="256">
+        <label for="new-password">New password</label>
+        <input id="new-password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+        <label for="confirm-password">Confirm new password</label>
+        <input id="confirm-password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+        <button type="submit">Update password</button>
+        <button id="password-cancel" class="quiet" type="button">Cancel</button>
+      </form>
+      <p id="password-error" class="error" role="alert" hidden></p>
     </section>
 
     <div id="workspace" hidden>
       <aside class="sidebar" aria-label="Console views">
         <p class="eyebrow">Workspace</p>
         <nav id="navigation" aria-label="Primary">
-          <button type="button" data-view="overview" aria-current="page">Overview</button>
-          <button type="button" data-view="activity">Activity</button>
-          <button type="button" data-view="usage">Usage &amp; Costs</button>
-          <button type="button" data-view="integration">External accounting</button>
-          <button type="button" data-view="connections" hidden>Connections</button>
-          <button type="button" data-view="accounting" hidden>Accounting</button>
-          <button type="button" data-view="diagnostics" hidden>Diagnostics</button>
-          <button type="button" data-view="configuration">Configuration</button>
-          <button type="button" data-view="source_providers">Providers</button>
-          <button type="button" data-view="source_private">Private Hosting</button>
-          <button type="button" data-view="source_labs">Office Labs</button>
-          <button type="button" data-view="users">Users &amp; Access</button>
-          <button type="button" data-view="models">All Models</button>
-          <button type="button" data-view="providers">Connections &amp; Credentials</button>
-          <button type="button" data-view="build">Build &amp; context</button>
+          <div class="nav-group" role="group" aria-label="Monitoring">
+            <p class="nav-heading" aria-hidden="true">Monitoring</p>
+            <button type="button" data-view="overview" aria-current="page">Overview</button>
+            <button type="button" data-view="activity">Activity</button>
+            <button type="button" data-view="usage">Usage &amp; Costs</button>
+            <button type="button" data-view="integration">External accounting</button>
+            <button type="button" data-view="accounting" hidden>Accounting</button>
+          </div>
+          <div class="nav-group" role="group" aria-label="Connections">
+            <p class="nav-heading" aria-hidden="true">Connections</p>
+            <button type="button" data-view="connections" hidden>External Providers</button>
+            <button type="button" data-view="source_providers">External Providers</button>
+            <button type="button" data-view="local_connectors">Local Connectors</button>
+            <button type="button" data-view="source_private">Private Hosting</button>
+            <button type="button" data-view="source_labs">Office Labs</button>
+            <button type="button" data-view="models">All Models</button>
+          </div>
+          <div class="nav-group" role="group" aria-label="Administration">
+            <p class="nav-heading" aria-hidden="true">Administration</p>
+            <button type="button" data-view="users">Users &amp; Permissions</button>
+            <button type="button" data-view="providers">Connections &amp; Credentials</button>
+            <button type="button" data-view="configuration">Configuration</button>
+          </div>
+          <div class="nav-group" role="group" aria-label="Advanced">
+            <p class="nav-heading" aria-hidden="true">Advanced</p>
+            <button type="button" data-view="diagnostics" hidden>Diagnostics</button>
+            <button type="button" data-view="build">Build &amp; context</button>
+          </div>
         </nav>
-        <div class="side-note">Synthetic demos and selected provider validation require explicit actions.<br>Connection checks never run on page load.</div>
+        <div class="side-note">Local Connectors can check availability automatically while open. Model discovery and provider validation require explicit actions.</div>
       </aside>
       <div class="content">
-        <div class="view-heading"><div><p class="eyebrow">Current profile</p><h1 id="view-title">Overview</h1></div><button id="refresh" class="quiet" type="button">Refresh</button></div>
+        <div class="view-heading"><div><p class="eyebrow">Current profile</p><h1 id="view-title" tabindex="-1">Overview</h1></div><button id="refresh" class="quiet" type="button">Refresh</button></div>
         <p id="view-message" class="message" role="status">Loading current service data…</p>
         <section id="view-content" aria-live="polite"></section>
         <footer>EzLLMRouter local development · metadata only · <span id="last-update">Not updated</span></footer>
