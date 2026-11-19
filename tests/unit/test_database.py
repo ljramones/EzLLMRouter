@@ -39,8 +39,12 @@ class DatabaseTests(unittest.TestCase):
         with sqlite3.connect(self.path) as connection:
             connection.execute("CREATE TABLE unrelated (value TEXT)")
             connection.execute("INSERT INTO unrelated VALUES ('retained')")
+        before = self.path.read_bytes()
         with self.assertRaisesRegex(RuntimeError, "fresh"):
             SQLiteStore(self.path)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertFalse(Path(str(self.path) + "-wal").exists())
+        self.assertFalse(Path(str(self.path) + "-shm").exists())
         with sqlite3.connect(self.path) as connection:
             self.assertEqual(connection.execute("SELECT * FROM unrelated").fetchall(), [("retained",)])
             self.assertEqual(connection.execute("PRAGMA user_version").fetchone(), (0,))

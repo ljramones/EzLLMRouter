@@ -38,13 +38,13 @@ class SQLiteStore:
         self.path = str(path)
         self._lock = threading.RLock()
         self.db = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
-        self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.execute("PRAGMA synchronous=FULL")
-        self.db.execute("PRAGMA foreign_keys=ON")
         self.database = Database(self.db, self._lock, self._transaction)
         from .schema import initialize
         try:
             initialize(self.db)
+            self.db.execute("PRAGMA journal_mode=WAL")
+            self.db.execute("PRAGMA synchronous=FULL")
+            self.db.execute("PRAGMA foreign_keys=ON")
         except BaseException:
             self.db.close()
             raise

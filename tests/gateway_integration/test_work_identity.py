@@ -131,6 +131,8 @@ def integration(revision=1,mutation=False,fail_commit=False,timeout_ms=1000):
                 inv=adapter.invocations[0]
                 signer.verify(inv.plan,record['work_digest'],signer.policy['policy_version'])
                 def rows(name):
+                    from ezllmrouter_server.gateway.guard import flush_events
+                    assert flush_events(timeout=2), "diagnostic test events did not drain"
                     p=Path(tmp)/name
                     return [json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
                 return {'http_status':code,'reply_state':reply['state'],

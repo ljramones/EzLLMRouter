@@ -1,9 +1,25 @@
 """Small bounded JSON record used only by the DEV-04 Choice B Unix sockets."""
 import json
 import struct
+from datetime import datetime, timezone
 
 
 LIMIT = 262144
+MAX_ATTEMPT_TIMEOUT_MS = 300_000
+
+
+def remaining_seconds(timeout_ms, deadline):
+    if type(timeout_ms) is not int or not 1 <= timeout_ms <= MAX_ATTEMPT_TIMEOUT_MS:
+        raise ValueError("attempt timeout outside supported limits")
+    if type(deadline) is not str:
+        raise ValueError("attempt deadline required")
+    expires = datetime.fromisoformat(deadline.replace("Z", "+00:00"))
+    if expires.tzinfo is None:
+        raise ValueError("attempt deadline must include its timezone")
+    remaining = min(timeout_ms / 1000, (expires - datetime.now(timezone.utc)).total_seconds())
+    if remaining <= 0:
+        raise TimeoutError("attempt deadline expired")
+    return remaining
 
 
 def _read_exact(stream, count):

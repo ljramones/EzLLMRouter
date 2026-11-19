@@ -1,6 +1,7 @@
 """The frozen worker discriminator reports an early failure without request data."""
 import asyncio
 import base64
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sys
@@ -30,6 +31,7 @@ class WorkerDiagnosticTests(unittest.TestCase):
         body = {"model": "openai/test-response-model", "input": "Hi", "store": False,
                 "stream": False, "max_retries": 0, "api_base": "https://api.openai.com/v1"}
         envelope = {"kind": "selected_request", "route": "responses",
+                    "timeout_ms": 3000, "deadline": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
                     "attempt_id": "attempt.selected.test", "prepared_b64":
                         base64.b64encode(json.dumps(body).encode()).decode()}
         with patch.dict(sys.modules, {"litellm": fake_litellm}):

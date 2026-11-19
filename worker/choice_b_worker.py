@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from collections import OrderedDict
 from contextvars import ContextVar
 import hashlib
 import json
@@ -14,7 +15,7 @@ import threading
 
 import httpx
 
-from choice_b_wire import receive, send
+from choice_b_wire import receive, remaining_seconds, send
 
 
 PROVIDER_URL = "http://127.0.0.1:8766/v1/chat/completions"
@@ -22,20 +23,34 @@ PROXY_MODEL = "openai/model.demo"
 WORKER_KEY = "sk-dev04-worker-placeholder-not-provider-000000"
 LINK = Path("/link")
 ACTIVE: ContextVar[str | None] = ContextVar("dev04_worker_attempt", default=None)
+ACTIVE_BUDGET: ContextVar[tuple[int, str] | None] = ContextVar("ezllmrouter_worker_budget", default=None)
+RECENT_ATTEMPTS = 512
 
 
 class RelayTransport(httpx.AsyncBaseTransport):
     def __init__(self):
         self.seen = set()
-        self.attempt_counts = {}
+        self.attempt_counts = OrderedDict()
+
+    def claim(self, attempt):
+        if (type(attempt) is not str or not attempt.startswith("attempt.") or len(attempt) > 160 or
+                any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:-" for char in attempt)):
+            raise httpx.TransportError("worker request has no valid attempt reference")
+        self.attempt_counts[attempt] = min(self.attempt_counts.get(attempt, 0) + 1, 2)
+        self.attempt_counts.move_to_end(attempt)
+        if len(self.attempt_counts) > RECENT_ATTEMPTS:
+            expired, _ = self.attempt_counts.popitem(last=False)
+            self.seen.discard(expired)
+        if attempt in self.seen:
+            raise httpx.TransportError("worker request has no unused trusted attempt reference")
+        self.seen.add(attempt)
 
     async def handle_async_request(self, request):
         attempt = ACTIVE.get()
-        if attempt is not None:
-            self.attempt_counts[attempt] = self.attempt_counts.get(attempt, 0) + 1
-        if attempt is None or attempt in self.seen:
-            raise httpx.TransportError("worker request has no unused trusted attempt reference")
-        self.seen.add(attempt)
+        self.claim(attempt)
+        budget = ACTIVE_BUDGET.get()
+        if budget is None:
+            raise httpx.TransportError("worker request has no deadline")
         raw = await request.aread()
         if len(raw) > 65536:
             raise httpx.TransportError("worker request exceeds proof limit")
@@ -47,7 +62,7 @@ class RelayTransport(httpx.AsyncBaseTransport):
 
         def exchange():
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
-                stream.settimeout(35)
+                stream.settimeout(remaining_seconds(*budget) + 2)
                 stream.connect(str(LINK / "sender.sock"))
                 send(stream, envelope)
                 return receive(stream)
@@ -130,8 +145,9 @@ class Worker:
             "selected_transport": type(self.client._transport).__name__}
 
     async def _selected(self, envelope):
-        if set(envelope) != {"kind", "attempt_id", "prepared_b64", "route"} or envelope["route"] not in ("chat", "responses"):
+        if set(envelope) != {"kind", "attempt_id", "prepared_b64", "route", "timeout_ms", "deadline"} or envelope["route"] not in ("chat", "responses"):
             raise ValueError("worker command shape")
+        remaining_seconds(envelope["timeout_ms"], envelope["deadline"])
         attempt = envelope["attempt_id"]
         if type(attempt) is not str or not attempt.startswith("attempt."):
             raise ValueError("worker attempt reference")
@@ -139,6 +155,7 @@ class Worker:
         if not prepared or len(prepared) > 65536:
             raise ValueError("worker prepared size")
         token = ACTIVE.set(attempt)
+        budget_token = ACTIVE_BUDGET.set((envelope["timeout_ms"], envelope["deadline"]))
         try:
             if envelope["route"] == "responses":
                 import litellm
@@ -162,12 +179,14 @@ class Worker:
                 return {"status": 200, "body": response.model_dump(mode="json", exclude_unset=True)}
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.proxy),
                     base_url="http://127.0.0.1:8767", follow_redirects=False,
-                    trust_env=False, timeout=httpx.Timeout(3.0)) as client:
+                    trust_env=False, timeout=httpx.Timeout(remaining_seconds(
+                        envelope["timeout_ms"], envelope["deadline"]))) as client:
                 response = await client.post("/v1/chat/completions", content=prepared,
                                              headers={"Content-Type": "application/json"})
             return {"status": response.status_code,
                     "body": response.json() if response.status_code == 200 else None}
         finally:
+            ACTIVE_BUDGET.reset(budget_token)
             ACTIVE.reset(token)
 
     async def _raw_probe(self):
@@ -190,14 +209,21 @@ class Worker:
             return {**self.module_identities,
                     "relay_attempt_counts": dict(self.client._transport.attempt_counts)}
         if kind == "selected_request":
+            timeout = remaining_seconds(envelope["timeout_ms"], envelope["deadline"]) + 2
             coro = self._selected(envelope)
         elif kind == "raw_egress_probe":
             if os.environ.get("EZLLMROUTER_DEV04_B_PROBE") != "1" or set(envelope) != {"kind"}:
                 raise ValueError("raw probe disabled")
             coro = self._raw_probe()
+            timeout = 5
         else:
             raise ValueError("unknown worker command")
-        return asyncio.run_coroutine_threadsafe(coro, self.loop).result(timeout=40)
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        try:
+            return future.result(timeout=timeout)
+        except BaseException:
+            future.cancel()
+            raise
 
 
 class _ThreadingUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):

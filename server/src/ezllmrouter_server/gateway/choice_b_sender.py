@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import base64
 from concurrent.futures import Future
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -15,9 +16,10 @@ import time
 
 import httpx
 
-from .choice_b_wire import receive, send
+from .choice_b_wire import receive, remaining_seconds, send
 from ezllmrouter_server.canonical import ContractError, SAFE
-from .guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL
+from .guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, enqueue_event, flush_events
+from ezllmrouter_server.observability import log_failure
 from .owned_sender_transport import OwnedHTTPTransport
 from .owned_tls_sender_transport import OwnedTLSHTTPTransport
 from .proxy_recipe import require_public_destination
@@ -26,6 +28,24 @@ from .proxy_recipe import require_public_destination
 PROXY_URL = "http://127.0.0.1:8767/v1/chat/completions"
 WORKER_KEY = "sk-dev04-worker-placeholder-not-provider-000000"
 LINK = Path("/link")
+RESPONSE_LIMIT = 65536
+
+
+async def read_response(response):
+    """Stop at the response limit without buffering an unbounded provider body."""
+    try:
+        length = response.headers.get("content-length")
+        if length is not None and (not length.isdigit() or int(length) > RESPONSE_LIMIT):
+            raise ValueError("provider response size")
+        chunks, size = [], 0
+        async for chunk in response.aiter_bytes(chunk_size=8192):
+            size += len(chunk)
+            if size > RESPONSE_LIMIT:
+                raise ValueError("provider response size")
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        await response.aclose()
 
 
 class _ThreadingUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
@@ -60,6 +80,7 @@ class ChoiceBSenderAdapter:
                     envelope = receive(self.request)
                     result = adapter.process_relay(envelope)
                 except Exception as exc:
+                    log_failure("gateway.relay.command_failed")
                     result = {"error_type": type(exc).__name__}
                 send(self.request, result)
 
@@ -99,9 +120,7 @@ class ChoiceBSenderAdapter:
                     connection["settings"], controlled=adapter.controlled_provider_proof)
                 try:
                     response = await lower.handle_async_request(request)
-                    body = await response.aread()
-                    if len(body) > 65536:
-                        raise ValueError("provider response size")
+                    body = await read_response(response)
                     return httpx.Response(response.status_code, headers=response.headers,
                                           content=body, request=request)
                 finally:
@@ -143,14 +162,7 @@ class ChoiceBSenderAdapter:
                    "FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET")),
                "lower_error": invocation.lower_error,
                "monotonic_ns": time.monotonic_ns()}
-        try:
-            with Path(target).open("a") as handle:
-                handle.write(json.dumps(row) + "\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-        except OSError:
-            # This diagnostic is downstream of the in-memory first-byte fact.
-            pass
+        enqueue_event(target, row)
 
     @staticmethod
     def prepare(body):
@@ -184,6 +196,11 @@ class ChoiceBSenderAdapter:
         if actual != expected:
             raise ContractError("FDC_REJECTED", 409)
         invocation = Invocation(**guard_context)
+        budget = remaining_seconds(timeout_ms, invocation.deadline)
+        invocation.execution_deadline = min(
+            datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")),
+            datetime.now(timezone.utc) + timedelta(seconds=budget)).isoformat()
+        invocation.authority_gate = self.authority.gate
         try:
             invocation.authority_epoch = self.authority.snapshot_epoch()
         except GuardRejected as exc:
@@ -194,36 +211,53 @@ class ChoiceBSenderAdapter:
             self.registry[invocation.attempt_id] = invocation
         try:
             try:
-                result = self._worker_command({"kind": "selected_request",
+                self._worker_command({"kind": "selected_request",
                     "route": "responses" if invocation.plan["destination"].get("service") == "openai.responses.v1" else "chat",
                     "attempt_id": invocation.attempt_id,
-                    "prepared_b64": base64.b64encode(prepared).decode("ascii")},
-                    timeout_ms / 1000 + 5)
+                    "prepared_b64": base64.b64encode(prepared).decode("ascii"),
+                    "timeout_ms": timeout_ms, "deadline": invocation.deadline},
+                    remaining_seconds(timeout_ms, invocation.deadline) + 5)
             except Exception as exc:
-                if invocation.released:
-                    raise OSError("trusted sender outcome uncertain") from exc
-                raise ContractError("FDC_REJECTED", 409) from exc
-            if invocation.guard_error and not invocation.released:
-                code = ("INTENT_PERSIST_FAILED" if invocation.guard_error == "INTENT_PERSIST_FAILED"
-                        else "FDC_REJECTED")
-                raise ContractError(code, 503 if code == "INTENT_PERSIST_FAILED" else 409)
-            if not invocation.released:
-                raise ContractError("FDC_REJECTED", 409)
-            if invocation.lower_error and not invocation.first_bytes_accepted:
-                raise ContractError("FDC_REJECTED", 409)
-            if invocation.lower_error or "error_type" in result:
-                raise OSError("trusted sender outcome uncertain")
+                # An untrusted worker failure does not settle a trusted relay.
+                worker_failure = exc
+            else:
+                worker_failure = None
+            with invocation.authority_gate:
+                future = invocation.relay_future
+            if future is None:
+                self._reject_or_unknown(invocation, worker_failure)
+            try:
+                timeout = 0 if future.done() else remaining_seconds(timeout_ms, invocation.deadline) + 1
+                result = future.result(timeout=timeout)
+            except Exception as exc:
+                self._reject_or_unknown(invocation, exc)
             status = result.get("status")
             if type(status) is not int:
-                raise OSError("worker response missing status")
+                raise OSError("trusted relay response missing status")
             if status != 200:
                 return {"status": status, "body": None}
-            return {"status": 200, "body": self._candidate(result["body"],
+            raw = base64.b64decode(result["body_b64"], validate=True)
+            return {"status": 200, "body": self._candidate(json.loads(raw),
                 invocation.plan["destination"].get("service") == "openai.responses.v1")}
         finally:
+            with invocation.authority_gate:
+                invocation.abandoned = True
+                future = invocation.relay_future
+            if future is not None and not future.done():
+                future.cancel()
             with self.lock:
                 self.registry.pop(invocation.attempt_id, None)
                 self.claimed.discard(invocation.attempt_id)
+
+    @staticmethod
+    def _reject_or_unknown(invocation, cause):
+        with invocation.authority_gate:
+            invocation.abandoned = True
+            possible_send = invocation.first_bytes_accepted
+        if possible_send:
+            raise OSError("trusted sender outcome uncertain") from cause
+        code = "INTENT_PERSIST_FAILED" if invocation.guard_error == "INTENT_PERSIST_FAILED" else "FDC_REJECTED"
+        raise ContractError(code, 503 if code == "INTENT_PERSIST_FAILED" else 409) from cause
 
     def process_relay(self, envelope):
         if set(envelope) != {"kind", "attempt_id", "method", "url", "headers", "body_b64", "timeout"}:
@@ -288,9 +322,15 @@ class ChoiceBSenderAdapter:
         header_map["authorization"] = "Bearer " + provider_key
         request = httpx.Request("POST", expected_url, headers=header_map,
                                 content=body, extensions={"timeout": timeout})
-        future = self._call(self._send(request, invocation))
+        with invocation.authority_gate:
+            if invocation.abandoned:
+                raise GuardRejected("ATTEMPT_ABANDONED")
+            future = self._call(self._send(request, invocation))
+            invocation.relay_future = future
         try:
-            return future.result(timeout=invocation.plan["per_attempt_total_timeout_ms"] / 1000 + 3)
+            timeout = 0 if future.done() else remaining_seconds(
+                invocation.plan["per_attempt_total_timeout_ms"], invocation.deadline) + 1
+            return future.result(timeout=timeout)
         except Exception:
             future.cancel()
             raise
@@ -320,10 +360,10 @@ class ChoiceBSenderAdapter:
                         "same_length": len(original) == len(request.content)}) + "\n")
                     handle.flush()
                     os.fsync(handle.fileno())
-            response = await self.guard.handle_async_request(request)
-            raw = await response.aread()
-            if len(raw) > 65536:
-                raise ValueError("provider response size")
+            async with asyncio.timeout(remaining_seconds(
+                    invocation.plan["per_attempt_total_timeout_ms"], invocation.deadline)):
+                response = await self.guard.handle_async_request(request)
+                raw = await read_response(response)
             return {"status": response.status_code,
                     "body_b64": base64.b64encode(raw).decode("ascii"),
                     "headers": [["content-type", response.headers.get("content-type", "application/json")]]}
@@ -383,3 +423,4 @@ class ChoiceBSenderAdapter:
         self._call(self.guard.aclose()).result(timeout=5)
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.thread.join(timeout=5)
+        flush_events()

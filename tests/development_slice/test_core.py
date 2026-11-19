@@ -2,12 +2,14 @@
 import copy
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 import sys
 import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
@@ -175,6 +177,17 @@ class CoreTests(unittest.TestCase):
         finally:
             other.close()
 
+    def test_execution_timeout_limit_is_enforced_before_admission(self):
+        request = copy.deepcopy(REQUEST)
+        request["generation_settings"]["total_timeout_ms"] = 300000
+        validate_text_request(request, self.trusted, FIXTURE["destination"],
+                              FIXTURE["prompt_blocks"], FIXTURE["allowed_lineages"])
+        request["generation_settings"]["total_timeout_ms"] += 1
+        with self.assertRaises(ContractError) as raised:
+            self.coordinator().submit(request, self.trusted)
+        self.assertEqual((raised.exception.status, raised.exception.code), (422, "LIMIT_EXCEEDED"))
+        self.assertEqual(self.adapter.sent, [])
+
     def test_unauthorized_and_mutated_never_send(self):
         c = self.coordinator(faults={"mutate_after_binding": lambda b: b.replace(b'"model":"model.demo"', b'"model":"model.other"')})
         with self.assertRaises(ContractError): c.authenticate("not-a-token")
@@ -225,6 +238,31 @@ class CoreTests(unittest.TestCase):
                     self.assertEqual((status, reply["error"]["code"]), (502, "REMOTE_EXECUTION_FAILED"))
                 else:
                     self.assertEqual(status, 202)
+
+    def test_unexpected_last_check_failure_is_terminal_without_a_send(self):
+        for error_type in (RuntimeError, sqlite3.OperationalError, TypeError):
+            with self.subTest(error=error_type.__name__):
+                store = SQLiteStore(Path(self.tmp.name) / (error_type.__name__ + ".sqlite"))
+                self.addCleanup(store.close)
+                adapter = FakeAdapter()
+                coordinator = self.coordinator(store=store, adapter=adapter)
+                original = coordinator._assert_current_dispatch
+                def check(*args, **kwargs):
+                    if store.db.execute("SELECT COUNT(*) FROM intents").fetchone()[0]:
+                        raise error_type("synthetic unavailable authority")
+                    return original(*args, **kwargs)
+                with patch.object(coordinator, "_assert_current_dispatch", side_effect=check):
+                    status, reply = coordinator.submit(REQUEST, self.trusted, wait_ms=3000)
+                self.assertEqual((status, reply["state"]), (409, "failed"))
+                self.assertEqual(reply["failure_stage"], "before_transmit")
+                self.assertEqual(len(adapter.sent), 0)
+                sid = reply["handle"]["submission_id"]
+                self.assertEqual(store.get(sid)["submission_state"], "failed_before_transmit")
+                again, recovered = coordinator.submit(REQUEST, self.trusted, wait_ms=3000)
+                self.assertEqual((again, recovered["state"]), (202, "pending"))
+                self.assertEqual(coordinator.status(sid, self.trusted)["submission_state"], "failed_before_transmit")
+                self.assertEqual(store.intent_count(sid), 1)
+                self.assertEqual(len(adapter.sent), 0)
 
     def test_usage_replacement_not_additive(self):
         c = self.coordinator()

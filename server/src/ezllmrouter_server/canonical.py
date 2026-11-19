@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import re
+from .gateway.choice_b_wire import MAX_ATTEMPT_TIMEOUT_MS
 
 PREFIX = b"ezllmrouter-work-v0.2\n"
 SAFE = 9007199254740991
@@ -249,6 +250,8 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     exact_keys(settings, ("max_output_tokens", "temperature_decimal", "total_timeout_ms"))
     if type(settings["max_output_tokens"]) is not int or type(settings["total_timeout_ms"]) is not int or min(settings["max_output_tokens"], settings["total_timeout_ms"]) < 1:
         raise ContractError("SCHEMA_INVALID", 400)
+    if settings["total_timeout_ms"] > MAX_ATTEMPT_TIMEOUT_MS:
+        raise ContractError("LIMIT_EXCEEDED", 422)
     settings = {**settings, "temperature_decimal": decimal_lexical(settings["temperature_decimal"])}
     if settings["temperature_decimal"] != "0":
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)

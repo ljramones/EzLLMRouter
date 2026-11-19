@@ -82,9 +82,8 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
                     if request and not self.request_bytes_accepted:
                         invocation.fresh_check()
                     if request and not self.request_bytes_accepted and (
-                        self.authority.revoked or invocation.authority_epoch != self.authority.epoch or
-                        time.time() >= datetime.fromisoformat(invocation.plan.get(
-                            "deadline", invocation.plan.get("expires_at")).replace("Z", "+00:00")).timestamp()
+                        invocation.abandoned or self.authority.revoked or invocation.authority_epoch != self.authority.epoch or
+                        time.time() >= datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")).timestamp()
                     ):
                         raise GuardRejected("FDC_REJECTED")
                     try:

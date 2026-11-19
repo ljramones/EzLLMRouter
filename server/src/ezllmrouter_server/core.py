@@ -572,7 +572,8 @@ class Coordinator:
                   admitted_scope, admitted_projection, decision=None):
         try:
             self._assert_current_dispatch(plan, credential, admitted_scope, admitted_projection, decision)
-        except (ContractError, KeyError, ValueError):
+        except Exception:
+            log_failure("core.dispatch.before_transmit_check_failed")
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
             return {"kind": "failed", "code": "FDC_REJECTED", "stage": "before_transmit"}
         try:

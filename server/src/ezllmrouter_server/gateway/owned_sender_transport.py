@@ -106,7 +106,7 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
 
         loop = asyncio.get_running_loop()
         deadline = None if timeout is None else loop.time() + timeout
-        plan_deadline = datetime.fromisoformat(invocation.plan["deadline"].replace("Z", "+00:00")).timestamp()
+        plan_deadline = datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")).timestamp()
         data = memoryview(buffer)
         offset = 0
         while offset < len(data):
@@ -118,7 +118,7 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
                 # Only fixed local authority changes through this gate. No await,
                 # disk work or callback intervenes before the nonblocking send.
                 if not self.first_bytes_accepted and (
-                    self.authority.revoked or
+                    invocation.abandoned or self.authority.revoked or
                     invocation.authority_epoch != self.authority.epoch or
                     time.time() >= plan_deadline
                 ):

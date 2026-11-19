@@ -36,8 +36,8 @@ def initialize(payload: bytes, directory: Path) -> None:
             with os.fdopen(descriptor, "wb") as stream:
                 stream.write(content.encode("ascii"))
                 stream.flush()
-                os.fchown(stream.fileno(), 10001, 10001)
                 os.fchmod(stream.fileno(), 0o400)
+                os.fchown(stream.fileno(), 10001, 10001)
                 os.fsync(stream.fileno())
             os.replace(temporary, directory / name)
         finally:

@@ -1,11 +1,13 @@
 """Component controls for final-request binding and the single-use commit."""
 import asyncio
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import httpx
 
@@ -32,6 +34,7 @@ def projection(text="Hi"):
 def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
     return Invocation("submission.one", aid,
                       {"plan_id": "plan.one", "work_digest": "sha256:test",
+                       "deadline": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
                        "per_attempt_total_timeout_ms": 1000,
                        "work_key": {"principal_id": "principal.test", "task_id": "task.test",
                                     "step_id": "step.test", "step_revision": 1,
@@ -41,7 +44,9 @@ def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
 
 class GuardTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "x" * 40
+        environment = patch.dict(os.environ, {"EZLLMROUTER_DEV04_PROVIDER_KEY": "sk-" + "x" * 40})
+        environment.start()
+        self.addCleanup(environment.stop)
         self.arrivals = []
 
         def lower(request):
@@ -53,7 +58,6 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         await self.client.aclose()
-        os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
 
     async def send(self, context, body=None, url=PROVIDER_URL):
         token = ACTIVE.set(context)

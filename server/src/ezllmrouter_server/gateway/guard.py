@@ -2,16 +2,20 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
+import atexit
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
 import json
 import os
 import time
+import threading
+import queue
 from pathlib import Path
 from typing import Callable
 
 import httpx
+from ezllmrouter_server.observability import log_failure
 from .proxy_recipe import PUBLIC_MODEL, require_public_destination
 
 
@@ -42,11 +46,70 @@ class Invocation:
     response_received: bool = False
     guard_error: str | None = None
     lower_error: str | None = None
-    provider_key: str | None = None
+    provider_key: str | None = field(default=None, repr=False)
+    abandoned: bool = False
+    execution_deadline: str | None = None
+    authority_gate: object = field(default_factory=threading.RLock, repr=False)
+    relay_future: object | None = field(default=None, repr=False)
     observations: list[str] = field(default_factory=list)
+
+    @property
+    def deadline(self):
+        return self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
 
 
 ACTIVE: ContextVar[Invocation | None] = ContextVar("ezllmrouter_dev04_gateway_invocation", default=None)
+_EVENT_QUEUE = queue.Queue(maxsize=1024)
+_EVENT_START = threading.Lock()
+_EVENT_WRITER = None
+
+
+def _write_events():
+    while True:
+        target, row = _EVENT_QUEUE.get()
+        try:
+            if target is None:
+                row.set()
+                continue
+            with Path(target).open("a") as handle:
+                handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        except (OSError, ValueError):
+            log_failure("gateway.diagnostic_write_failed")
+        finally:
+            _EVENT_QUEUE.task_done()
+
+
+def enqueue_event(target, row):
+    global _EVENT_WRITER
+    if not target:
+        return
+    try:
+        with _EVENT_START:
+            if _EVENT_WRITER is None:
+                writer = threading.Thread(target=_write_events, daemon=True,
+                                          name="ezllmrouter-gateway-diagnostics")
+                writer.start()
+                _EVENT_WRITER = writer
+        _EVENT_QUEUE.put_nowait((target, row))
+    except (queue.Full, RuntimeError):
+        # Diagnostics neither authorize nor settle work.
+        return
+
+
+def flush_events(timeout=1):
+    if _EVENT_WRITER is None:
+        return True
+    done = threading.Event()
+    try:
+        _EVENT_QUEUE.put_nowait((None, done))
+    except queue.Full:
+        return False
+    return done.wait(timeout)
+
+
+atexit.register(flush_events)
 
 
 def _event(invocation: Invocation | None, stage: str, code: str | None = None):
@@ -57,10 +120,7 @@ def _event(invocation: Invocation | None, stage: str, code: str | None = None):
            "stage": stage, "code": code,
            "at": datetime.now(timezone.utc).isoformat(),
            "monotonic_ns": time.monotonic_ns()}
-    with Path(target).open("a") as handle:
-        handle.write(json.dumps(row, separators=(",", ":")) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
+    enqueue_event(target, row)
 
 
 def _text(blocks):
@@ -225,15 +285,19 @@ class GuardTransport(httpx.AsyncBaseTransport):
             request.headers["x-ezllmrouter-attempt"] = invocation.attempt_id
             receipt = check_request(request, invocation, body)
             invocation.fresh_check()
-            try:
-                invocation.commit(receipt)
-            except Exception as exc:
-                raise GuardRejected("INTENT_PERSIST_FAILED") from exc
-            invocation.committed = True
-            invocation.observations.append("guard_commit_acknowledged")
-            _event(invocation, "commit_acknowledged")
-            invocation.released = True
-            _event(invocation, "released_to_lower_transport")
+            with invocation.authority_gate:
+                if invocation.abandoned:
+                    raise GuardRejected("ATTEMPT_ABANDONED")
+                try:
+                    invocation.commit(receipt)
+                except Exception as exc:
+                    log_failure("gateway.guard.intent_commit_failed")
+                    raise GuardRejected("INTENT_PERSIST_FAILED") from exc
+                invocation.committed = True
+                invocation.observations.append("guard_commit_acknowledged")
+                _event(invocation, "commit_acknowledged")
+                invocation.released = True
+                _event(invocation, "released_to_lower_transport")
             trace_file = os.environ.get("EZLLMROUTER_DEV04_LOWER_TRACE")
             if trace_file:
                 async def trace(name, _info):

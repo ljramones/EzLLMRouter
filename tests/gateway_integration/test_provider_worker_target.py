@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import sys
@@ -39,6 +40,7 @@ def main():
         "max_output_tokens": 32, "temperature": 0, "store": False, "stream": False,
         "api_base": "https://api.openai.com/v1", "timeout": 3.0, "max_retries": 0}
     envelope = {"kind": "selected_request", "route": "responses",
+        "timeout_ms": 3000, "deadline": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
         "attempt_id": "attempt.dev08.target", "prepared_b64":
             base64.b64encode(json.dumps(body, separators=(",", ":")).encode()).decode()}
     failure = None

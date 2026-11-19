@@ -50,7 +50,8 @@ class FirstWriteTests(unittest.TestCase):
         vectors = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
         example = deepcopy(next(row for row in vectors["examples"] if row["id"] == "DIRECT_DOCUMENT"))
         for change in ("none", "plan_revoked", "campaign_paused", "campaign_expired",
-                       "would_block_then_revoked"):
+                       "would_block_then_revoked", "abandoned", "would_block_then_abandoned",
+                       "execution_expired"):
             with self.subTest(change=change), TemporaryDirectory() as temporary:
                 store = SQLiteStore(Path(temporary) / "gate.sqlite")
                 clock = [datetime(2030, 1, 1, tzinfo=timezone.utc)]
@@ -75,8 +76,9 @@ class FirstWriteTests(unittest.TestCase):
                 store.successor_guard_commit("submission.gate", "attempt.gate", {
                     "attempt_id": "attempt.gate", "plan_id": plan["plan_id"],
                     "work_digest": record["work_digest"]}, "2030-01-01T00:00:02Z", campaign)
-                invocation = SimpleNamespace(committed=True, authority_epoch=authority.snapshot_epoch(),
-                                             first_bytes_accepted=False, observations=[], plan=plan)
+                invocation = SimpleNamespace(committed=True, abandoned=False, authority_epoch=authority.snapshot_epoch(),
+                                             first_bytes_accepted=False, observations=[], plan=plan,
+                                             deadline=plan["expires_at"])
                 def fresh_check():
                     current, epoch = authority.current_snapshot(record, "2030-01-01T00:00:02Z")
                     if not execution_eligible(plan, record["request"], record["canonical_work"],
@@ -97,15 +99,20 @@ class FirstWriteTests(unittest.TestCase):
                             store.database.transaction(lambda: campaign.pause_in_transaction(store.database, "unknown_cost"))
                     elif change == "campaign_expired":
                         clock[0] += timedelta(hours=2)
+                    elif change in ("abandoned", "would_block_then_abandoned"):
+                        with authority.gate:
+                            invocation.abandoned = True
+                    elif change == "execution_expired":
+                        invocation.deadline = "2000-01-01T00:00:00Z"
                 async def first_wait():
-                    if change != "would_block_then_revoked":
+                    if not change.startswith("would_block_then_"):
                         prohibit()
                 async def fake_writable(_sock, _remaining):
                     prohibit()
                 original_writable = tls_sender._writable
                 tls_sender._writable = fake_writable
                 try:
-                    sock = _Socket(block=change == "would_block_then_revoked")
+                    sock = _Socket(block=change.startswith("would_block_then_"))
                     stream = tls_sender.OwnedTLSStream(sock, authority, first_write_wait=first_wait)
                     stream.invocation, stream.outgoing = invocation, _BIO()
                     if change == "none":

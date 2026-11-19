@@ -2,6 +2,7 @@
 from html.parser import HTMLParser
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -83,6 +84,27 @@ class SecretCustodyTests(unittest.TestCase):
         compose = (ROOT / "deploy/local/compose.yaml").read_text()
         self.assertNotIn("./.state/credentials.json:", compose)
         self.assertIn("credential_data:/run/ezllmrouter:ro", compose)
+
+    def test_file_mode_is_set_before_ownership_is_transferred(self):
+        credentials, password = profile.secrets_on_disk()
+        payload = json.dumps({"credentials": credentials, "operator_password": password}).encode()
+        transferred = set()
+        fchmod = os.fchmod
+        def identity(descriptor):
+            info = os.fstat(descriptor)
+            return info.st_dev, info.st_ino
+        def transfer(descriptor, uid, gid):
+            self.assertEqual((uid, gid), (10001, 10001))
+            transferred.add(identity(descriptor))
+        def chmod(descriptor, mode):
+            if identity(descriptor) in transferred:
+                raise PermissionError("CHOWN alone cannot chmod a file owned by the service UID")
+            fchmod(descriptor, mode)
+        with patch.object(initialize_credentials.os, "chown"), \
+                patch.object(initialize_credentials.os, "fchown", side_effect=transfer), \
+                patch.object(initialize_credentials.os, "fchmod", side_effect=chmod):
+            initialize_credentials.initialize(payload, self.directory / "volume")
+        self.assertEqual(len(transferred), 2)
 
     def test_invalid_container_input_creates_no_files(self):
         destination = self.directory / "volume"
