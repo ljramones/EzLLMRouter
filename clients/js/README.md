@@ -7,8 +7,8 @@ describe when each capability was introduced.
 ## External accounting integration (0.2.3)
 
 Node `>=24.22.1 <25` is supported, matching the inspected Vega platform Node 24
-declaration. The [v2 contract](../../docs/contracts/integration-readiness-v2/CONTRACT.md)
-and [examples](../../docs/contracts/integration-readiness-v2/examples.json) define
+declaration. The [v2 contract](../../docs/API.md#external-accounting-v2)
+and [examples](../../tests/fixtures/contracts/integration-readiness-v2/examples.json) define
 the successor event shapes. Install the private `0.3.0` tarball locally. No hosted
 registry or provider SDK is needed.
 
@@ -89,4 +89,4 @@ receipt; a changed event with the same ID conflicts.
 
 ## Speech-operation eligibility (integration v3)
 
-Release `0.2.4` adds `version: "3"` for the [v3 speech contract](../../docs/contracts/integration-readiness-v3/CONTRACT.md). `operationEligibility(datasetId, accountId, {operation_family, capability, selection_kind, model_id?})` reads a digest-bound decision. Use `selection_kind: "provider_selected"` only when the actual speech request omits a model selector and the provider may choose it; `not_applicable` requires independent knowledge that no model identity applies. `setAccountPermissions(accountId, {dataset_id, expected_revision, allowed_models, allowed_operations})` is an owner/admin operation. Empty permission lists deny new selection. Existing v1/v2 methods remain version-specific. Telemetry delivery never authorizes repeating a provider call.
+Release `0.2.4` adds `version: "3"` for the [v3 speech contract](../../docs/API.md#external-accounting-v3). `operationEligibility(datasetId, accountId, {operation_family, capability, selection_kind, model_id?})` reads a digest-bound decision. Use `selection_kind: "provider_selected"` only when the actual speech request omits a model selector and the provider may choose it; `not_applicable` requires independent knowledge that no model identity applies. `setAccountPermissions(accountId, {dataset_id, expected_revision, allowed_models, allowed_operations})` is an owner/admin operation. Empty permission lists deny new selection. Existing v1/v2 methods remain version-specific. Telemetry delivery never authorizes repeating a provider call.

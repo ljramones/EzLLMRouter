@@ -33,13 +33,13 @@ the repository root:
 
 ```sh
 uv run --project server --frozen --no-python-downloads \
-  python -m duranki_server.secret_rotation rotate \
+  python -m ezllmrouter_server.secret_rotation rotate \
   --scope integration \
   --db "$PWD/local-instance/service.sqlite" \
   --keyring "$PWD/local-instance/secrets/integration.keys.json"
 
 uv run --project server --frozen --no-python-downloads \
-  python -m duranki_server.secret_rotation rotate \
+  python -m ezllmrouter_server.secret_rotation rotate \
   --scope connectors \
   --db "$PWD/local-instance/service.sqlite"
 ```
@@ -48,7 +48,7 @@ The provider vault belongs to the execution profile. Run its maintenance inside
 the service environment, with that service stopped and its data volume available:
 
 ```sh
-python -m duranki_server.secret_rotation rotate \
+python -m ezllmrouter_server.secret_rotation rotate \
   --scope provider --db /data/store.sqlite --vault /data/provider-vault
 ```
 

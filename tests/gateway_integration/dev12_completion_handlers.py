@@ -1461,7 +1461,7 @@ def native_accounting(runtime, case):
             after = _census(runtime)
             usage = (positive["status"] or {}).get("attempts", [{}])[0].get("usage_revision", {})
             prices = json.loads((Path(__file__).resolve().parents[2] /
-                "docs/contracts/dev12-successor-01/tariffs.json").read_text())
+                "tests/fixtures/contracts/dev12-successor-01/tariffs.json").read_text())
             consistent = bool(usage.get("cost_status") == "calculated" and
                 usage.get("components", [{}])[0].get("quantity") == 1 and
                 all(Decimal(row["tariff_b"]["raw_usd"]) > 0 and
@@ -1682,7 +1682,7 @@ def native_accounting(runtime, case):
             "t48_a", "t48_b", "t48_c", "t48_d", "t48_e"}:
         raise NotImplementedError("native target/evidence branch is not implemented")
     table = json.loads((Path(__file__).resolve().parents[2] /
-        "docs/contracts/dev12-successor-01/tariffs.json").read_text())
+        "tests/fixtures/contracts/dev12-successor-01/tariffs.json").read_text())
     quantum = Decimal("0.000000001")
     assert table["fictional"] is True and table["currency"] == "USD"
     calculated = []
@@ -1780,7 +1780,7 @@ def native_accounting(runtime, case):
         {"accounting": {"fictional_currency": "USD", "checked_rows": 25,
                         "four_price_bindings": len(bindings)}}, checks,
         {"tariffs_sha256": sha256((Path(__file__).resolve().parents[2] /
-            "docs/contracts/dev12-successor-01/tariffs.json").read_bytes()).hexdigest(),
+            "tests/fixtures/contracts/dev12-successor-01/tariffs.json").read_bytes()).hexdigest(),
          "independent_rows": calculated_data,
          "fixture_rows": table["rows"], "operation_bindings": bindings},
         case["attempt_group"])
@@ -1994,11 +1994,11 @@ def client_contract(runtime, case):
     js = _offline_command(runtime, "installed-commonjs-successor",
         ["/dev12-node", str(root / "tests/development_slice/test_dev12_sdk.cjs")],
         env={"DEV12_JS_CLIENT_DIR": str(runtime.installed_js_root)})
-    source_schemas = (root / "docs/contracts/dev12-successor-01/schemas.json").read_bytes()
+    source_schemas = (root / "tests/fixtures/contracts/dev12-successor-01/schemas.json").read_bytes()
     py_schemas = (runtime.installed_python_root /
                   "duranki_client/dev12_schemas.json").read_bytes()
     js_schemas = (runtime.installed_js_root / "dev12_schemas.json").read_bytes()
-    source_registry = (root / "docs/contracts/dev12-successor-01/registrations.json").read_bytes()
+    source_registry = (root / "tests/fixtures/contracts/dev12-successor-01/registrations.json").read_bytes()
     py_registry = (runtime.installed_python_root /
                    "duranki_client/dev12_registrations.json").read_bytes()
     js_registry = (runtime.installed_js_root / "dev12_registrations.json").read_bytes()
@@ -2066,10 +2066,10 @@ def client_contract(runtime, case):
     elif scenario == "t47_b":
         py_a1 = _offline_command(runtime, "independent-a1-python",
             [sys.executable, "-I", "-B", str(root /
-                "docs/contracts/dev12-successor-01/conformance/check.py")])
+                "tests/fixtures/contracts/dev12-successor-01/conformance/check.py")])
         js_a1 = _offline_command(runtime, "a1-javascript-conformance",
             ["/dev12-node", str(root /
-                "docs/contracts/dev12-successor-01/conformance/check.cjs")])
+                "tests/fixtures/contracts/dev12-successor-01/conformance/check.cjs")])
         runs.extend((py_a1, js_a1))
         checks = {
             "t47_b.domain_goldens": (py_a1["exit"] == 0 and js_a1["exit"] == 0 and

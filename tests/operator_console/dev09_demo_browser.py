@@ -43,7 +43,7 @@ def check(condition, message):
 
 def main():
     suffix = sys.argv[1] if len(sys.argv) == 2 and sys.argv[1] in ("01", "02", "03") else "01"
-    destination = ROOT / ("docs/development/dev-09/DEMO-BROWSER-RESULT-" + suffix + ".json")
+    destination = ROOT / (".artifacts/browser/dev-09/DEMO-BROWSER-RESULT-" + suffix + ".json")
     if destination.exists():
         raise SystemExit("demo browser result already exists; preserve one-use evidence")
     test = ReportingTests("test_fixture_conservation_replacement_and_cohorts")

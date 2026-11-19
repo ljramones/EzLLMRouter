@@ -131,10 +131,10 @@ session, allowed Origin, and CSRF token. Record changes and full discovery also
 require the expected revision and are audited. Availability is cached in memory;
 checks do not change record revisions, selections, audit history, or permissions.
 
-Optional API keys use authenticated encryption with the existing protected
-credential-store key. They are not returned by the API or included in model
-metadata. Retain the database and its original credential keys together for
-recovery. Missing keys fail closed. Replacing an endpoint or server type clears
+Optional API keys use authenticated encryption with a dedicated connector
+keyring. They are not returned by the API or included in model metadata. Retain
+the database and its keyrings together for recovery; see [encryption and rotation](ENCRYPTION.md).
+Missing keys fail closed. Replacing an endpoint or server type clears
 its previous key unless a key for the new endpoint is explicitly supplied.
 Deleting a connector clears its key while retaining its audit identity.
 
@@ -183,6 +183,4 @@ include `state`, safe `reason`, `checked_at`, `latency_ms`, `reachable` (possibl
 unknown), `stale`, and a configuration digest; compatible inventories may also
 report `model_count`. Observations are lost on service restart.
 
-See the [availability development result](development/LOCAL-AVAILABILITY.md)
-and the [original connector result](development/LOCAL-CONNECTORS.md) for
-validation and live-runtime limits.
+See [development checks](DEVELOPMENT.md) for the maintained test commands.

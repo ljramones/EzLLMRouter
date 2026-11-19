@@ -2,7 +2,7 @@
 
 ## Initial schema
 
-`duranki_server.schema` owns database initialization. A new installation applies
+The service's schema module owns database initialization. A new installation applies
 `schema/v001_initial.sql` in one `BEGIN IMMEDIATE` transaction, records its SHA-256
 in `schema_revisions`, and sets the application identifier and `user_version=1`.
 All credential, accounting, authority, campaign and console tables exist before

@@ -25,7 +25,7 @@ from test_providers import ProviderTests
 
 def main():
     suffix = sys.argv[1] if len(sys.argv) == 2 and sys.argv[1] in ("01", "02") else "02"
-    result = ROOT / ("docs/development/dev-08/SOURCE-ONBOARDING-BROWSER-RESULT-" + suffix + ".json")
+    result = ROOT / (".artifacts/browser/dev-08/SOURCE-ONBOARDING-BROWSER-RESULT-" + suffix + ".json")
     if result.exists():
         raise SystemExit("source onboarding result already exists; preserve prior proof")
     fixture_test = ProviderTests("test_distinct_native_tls_inventory_and_readiness")

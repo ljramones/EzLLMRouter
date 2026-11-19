@@ -72,7 +72,7 @@ def _tree() -> str:
 
 def _clean_relevant_source() -> bool:
     paths = ("server/src", "clients", "tools/gateway", "worker", "tests/gateway_integration",
-             "tests/operator_console", "web", "docs/contracts/dev12-successor-01")
+             "tests/operator_console", "web", "tests/fixtures/contracts/dev12-successor-01")
     changed = subprocess.run(("git", "diff", "--quiet", "HEAD", "--", *paths),
                              cwd=ROOT, check=False)
     untracked = subprocess.run(("git", "ls-files", "--others", "--exclude-standard",
@@ -172,8 +172,8 @@ def build_plan(*, root: Path, wheel: Path, js_package: Path,
     for path in (wheel, js_package):
         if not path.is_file() or path.is_symlink():
             raise ValueError("exact installed-client package absent")
-    vectors = ROOT / "docs/contracts/dev12-successor-01/vectors.json"
-    tariffs = ROOT / "docs/contracts/dev12-successor-01/tariffs.json"
+    vectors = ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json"
+    tariffs = ROOT / "tests/fixtures/contracts/dev12-successor-01/tariffs.json"
     completion_receiver = HERE / "dev12_completion_receiver.py"
     artifacts = [
         {"kind": "python_wheel", "path": str(wheel.resolve()),

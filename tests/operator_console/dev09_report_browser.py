@@ -24,7 +24,7 @@ from test_dev09_reporting import ReportingTests
 
 def main():
     suffix = sys.argv[1] if len(sys.argv) == 2 and sys.argv[1] in ("01", "02", "03", "04") else "01"
-    destination = ROOT / ("docs/development/dev-09/REPORT-BROWSER-RESULT-" + suffix + ".json")
+    destination = ROOT / (".artifacts/browser/dev-09/REPORT-BROWSER-RESULT-" + suffix + ".json")
     if destination.exists():
         raise SystemExit("DEV-09 report browser result already exists; preserve it")
     test = ReportingTests("test_fixture_conservation_replacement_and_cohorts")

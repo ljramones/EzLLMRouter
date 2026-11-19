@@ -57,7 +57,7 @@ def audit(root, source):
     lineage = root / "evidence/source-lineage"
     assert verify_manifest(export) == 177
     assert verify_manifest(lineage) == 23
-    base = successor_audit(export, source / "docs/contracts/dev12-successor-01/registrations.json")
+    base = successor_audit(export, source / "tests/fixtures/contracts/dev12-successor-01/registrations.json")
     custody = source_audit(lineage, export)
     assert (base["status"], base["admissions"], base["possible_sends"],
             base["receiver_arrivals"], base["usage_revision_rows"],

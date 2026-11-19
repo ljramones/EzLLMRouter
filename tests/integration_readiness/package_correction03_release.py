@@ -40,11 +40,11 @@ def main() -> None:
         "docs/development/integration-readiness/RELEASE-v2.md",
         "docs/development/integration-readiness/RELEASE-v3.md",
         "docs/plan/DURANKI-INTEGRATION-FEATURE-RETENTION-POLICY.md",
-        "docs/contracts/integration-readiness-v1/CONTRACT.md",
-        "docs/contracts/integration-readiness-v2/CONTRACT.md",
-        "docs/contracts/integration-readiness-v2/schema.json",
-        "docs/contracts/integration-readiness-v2/examples.json",
-        "docs/contracts/integration-readiness-v2/check.py",
+        "tests/fixtures/contracts/integration-readiness-v1/CONTRACT.md",
+        "tests/fixtures/contracts/integration-readiness-v2/CONTRACT.md",
+        "tests/fixtures/contracts/integration-readiness-v2/schema.json",
+        "tests/fixtures/contracts/integration-readiness-v2/examples.json",
+        "tests/fixtures/contracts/integration-readiness-v2/check.py",
     ):
         dest = release / rel
         dest.parent.mkdir(parents=True, exist_ok=True)

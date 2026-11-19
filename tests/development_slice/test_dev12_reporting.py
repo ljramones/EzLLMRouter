@@ -14,7 +14,7 @@ from duranki_server.store import SQLiteStore  # noqa: E402
 from duranki_server.successor_contract import native_usage_row, price_for, work_projection, work_digest  # noqa: E402
 from duranki_server.successor_reporting import usage_report  # noqa: E402
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class SyntheticReportingTests(unittest.TestCase):

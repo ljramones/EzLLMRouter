@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SEED = ROOT / "docs/development/dev-07/DURANKI-REAL-MODEL-CATALOGUE-20261021.json"
+SEED = ROOT / "deploy/local/inputs/catalogue.json"
 PASSWORD = ROOT / "deploy/local/.state/operator-password"
 SEED_SHA256 = "3a185d480e0c4552fab7a6a8c391a818f31db2a29676ee743ec3aaa93b5f476b"
 

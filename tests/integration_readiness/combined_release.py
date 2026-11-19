@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 from duranki_client import IntegrationClient
 
 ROOT = Path(__file__).resolve().parents[2]
-EXAMPLES_PATH = ROOT / "docs/contracts/integration-readiness-v1/examples.json"
+EXAMPLES_PATH = ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json"
 EXAMPLES = json.loads(EXAMPLES_PATH.read_text())
 
 

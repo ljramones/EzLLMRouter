@@ -31,7 +31,7 @@ class NoValidationSend:
 
 def main():
     suffix = sys.argv[1] if len(sys.argv) == 2 and sys.argv[1] in ("01", "02") else "02"
-    result = ROOT / ("docs/development/dev-08/PROVIDER-VALIDATION-BROWSER-RESULT-" + suffix + ".json")
+    result = ROOT / (".artifacts/browser/dev-08/PROVIDER-VALIDATION-BROWSER-RESULT-" + suffix + ".json")
     if result.exists():
         raise SystemExit("validation browser result already exists; preserve prior proof")
     fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())

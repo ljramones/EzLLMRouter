@@ -36,7 +36,7 @@ def counters(store):
 
 def main():
     suffix = sys.argv[1] if len(sys.argv) == 2 and sys.argv[1] in ("01", "04", "05", "06") else "01"
-    result_path = ROOT / ("docs/development/dev-08/PROVIDER-LOCAL-BROWSER-RESULT-" + suffix + ".json")
+    result_path = ROOT / (".artifacts/browser/dev-08/PROVIDER-LOCAL-BROWSER-RESULT-" + suffix + ".json")
     if result_path.exists():
         raise SystemExit("provider browser result already exists; preserve prior proof")
     fixture_test = ProviderTests("test_distinct_native_tls_inventory_and_readiness")

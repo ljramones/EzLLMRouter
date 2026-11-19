@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vectorPath = fs.existsSync(path.join(__dirname, "vectors.json")) ? path.join(__dirname, "vectors.json") :
-  path.join(__dirname, "../../docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json");
+  path.join(__dirname, "../../tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json");
 const vectors = JSON.parse(fs.readFileSync(vectorPath, "utf8")).examples;
 const { DurankiClient, DurankiError } = process.env.DURANKI_INSTALLED_CLIENT === "1" ?
   require("@mach33/duranki-client") : require("../../clients/js/index.cjs");

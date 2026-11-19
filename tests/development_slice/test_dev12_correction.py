@@ -24,7 +24,7 @@ from duranki_server.successor_service import SuccessorService  # noqa: E402
 from duranki_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
 from duranki_server.successor_contract import native_usage_row  # noqa: E402
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class ObservedExecutor:

@@ -100,11 +100,12 @@ def source_mapping(root, dev05=False):
         ("tests/development_slice/fixture.json", "service/dev_slice/fixture.json"),
         ("tools/gateway/compat/recipe.py", "service/dev_slice/recipe.py"),
     ]
-    server_source = root / "server/src/duranki_server"
-    source_files.extend((str(path.relative_to(root)),
-                         "service/server/duranki_server/" + str(path.relative_to(server_source)))
-                        for path in sorted(server_source.rglob("*"))
-                        if path.is_file() and path.suffix in {".py", ".json", ".sql"})
+    server_source = root / "server/src"
+    for package in ("duranki_server", "ezllmrouter_server"):
+        source_files.extend((str(path.relative_to(root)),
+                             "service/server/" + str(path.relative_to(server_source)))
+                            for path in sorted((server_source / package).rglob("*"))
+                            if path.is_file() and path.suffix in {".py", ".json", ".sql"})
     if dev05:
         source_files = [("tests/gateway_integration/dev05_fixture.json", target)
                         if target == "service/dev_slice/fixture.json" else (source, target)
@@ -123,9 +124,9 @@ def source_mapping(root, dev05=False):
             ("tests/gateway_integration/test_dev05_js_actor.cjs", "harness/test_dev05_js_actor.cjs"),
             ("tests/tool_cycle/test_python_client.py", "python/actors/test_python_client.py"),
             ("tests/tool_cycle/test_js_client.cjs", "js/actors/test_js_client.cjs"),
-            ("docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+            ("tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
              "python/actors/vectors.json"),
-            ("docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+            ("tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
              "js/actors/vectors.json"),
         ])
     return source_files
@@ -135,7 +136,7 @@ def main():
     if len(sys.argv) not in (3, 4, 5):
         raise SystemExit("usage: stage.py ROOT RUN_DIR [SOURCE_OUTPUT_DIR [DEV-05]]")
     root, run = map(Path, sys.argv[1:3])
-    source_output = Path(sys.argv[3]) if len(sys.argv) >= 4 else root / "docs/development/dev-04"
+    source_output = Path(sys.argv[3]) if len(sys.argv) >= 4 else root / ".artifacts/gateway"
     dev05 = len(sys.argv) == 5 and sys.argv[4] == "DEV-05"
     if len(sys.argv) == 5 and not dev05:
         raise ValueError("unsupported source packet prefix")
@@ -145,11 +146,11 @@ def main():
     artifact_root = os.environ.get("DURANKI_ARTIFACT_ROOT")
     wheel_dir = ((Path(artifact_root) / "inputs/gateway-inputs/dev04/wheels")
                  if artifact_root else root / "gateway-inputs/dev04/wheels")
-    inventory = json.loads((root / "docs/development/dev-04/WHEEL-INVENTORY.json").read_text())
+    inventory = json.loads((root / "deploy/local/inputs/gateway/WHEEL-INVENTORY.json").read_text())
     wheels = inventory["wheels"]
     if len(wheels) != 117:
         raise ValueError("unexpected wheel count")
-    verify_lock_inventory(root / "docs/development/dev-04/requirements.gateway.lock", wheels)
+    verify_lock_inventory(root / "deploy/local/inputs/gateway/requirements.gateway.lock", wheels)
     for row in wheels:
         path = wheel_dir / row["filename"]
         if not path.is_file() or path.stat().st_size != row["bytes"] or sha(path) != row["sha256"]:
@@ -176,9 +177,9 @@ def main():
     (build / "service/wheelhouse.sha256").write_text(
         "".join(f"{row['sha256']}  {row['filename']}\n" for row in wheels))
     shutil.copy2(build / "service/wheelhouse.sha256", build / "worker/wheelhouse.sha256")
-    shutil.copy2(root / "docs/development/dev-04/requirements.gateway.lock",
+    shutil.copy2(root / "deploy/local/inputs/gateway/requirements.gateway.lock",
                  build / "service/requirements.gateway.lock")
-    shutil.copy2(root / "docs/development/dev-04/requirements.gateway.lock",
+    shutil.copy2(root / "deploy/local/inputs/gateway/requirements.gateway.lock",
                  build / "worker/requirements.gateway.lock")
     client_rows = [row for row in wheels if row["name"].lower().replace("_", "-") in CLIENT_DEPS]
     if len(client_rows) != 7:
@@ -207,6 +208,7 @@ def main():
                 "client_artifacts": {CLIENT_WHEEL: CLIENT_WHEEL_SHA,
                                      CLIENT_TARBALL: CLIENT_TARBALL_SHA}}
     (run / "source-build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    source_output.mkdir(parents=True, exist_ok=True, mode=0o700)
     source_zip = source_output / f"{'DEV-05' if dev05 else 'DEV-04'}-SOURCE-{run.name}.zip"
     if source_zip.exists():
         raise ValueError("source packet collision")

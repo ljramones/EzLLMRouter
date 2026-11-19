@@ -6,8 +6,8 @@ describe when each capability was introduced.
 
 ## External accounting integration (0.2.2)
 
-Python `>=3.12,<3.13` is supported. The [v2 contract](../../docs/contracts/integration-readiness-v2/CONTRACT.md)
-and [examples](../../docs/contracts/integration-readiness-v2/examples.json)
+Python `>=3.12,<3.13` is supported. The [v2 contract](../../docs/API.md#external-accounting-v2)
+and [examples](../../tests/fixtures/contracts/integration-readiness-v2/examples.json)
 define complete successor event records. Install the private `0.3.0` wheel with
 its frozen HTTPX dependencies.
 
@@ -121,4 +121,4 @@ read-only lost-ACK recovery path. Delivery alone never records acceptance.
 
 ## Speech-operation eligibility (integration v3)
 
-Release `0.2.4` adds `version="3"` for the [v3 speech contract](../../docs/contracts/integration-readiness-v3/CONTRACT.md). `operation_eligibility(dataset_id, account_id, {"operation_family": ..., "capability": ..., "selection_kind": ..., "model_id": ...})` reads the digest-bound decision. Include `model_id` exactly for `known_model`; an omitted provider selector is `provider_selected`, not automatically `not_applicable`. Owner/admin `set_account_permissions(account_id, {"dataset_id": ..., "expected_revision": ..., "allowed_models": [...], "allowed_operations": [...]})` replaces explicit permissions. Empty lists deny new selection. Existing v1/v2 methods remain version-specific. Observation retry never repeats model work.
+Release `0.2.4` adds `version="3"` for the [v3 speech contract](../../docs/API.md#external-accounting-v3). `operation_eligibility(dataset_id, account_id, {"operation_family": ..., "capability": ..., "selection_kind": ..., "model_id": ...})` reads the digest-bound decision. Include `model_id` exactly for `known_model`; an omitted provider selector is `provider_selected`, not automatically `not_applicable`. Owner/admin `set_account_permissions(account_id, {"dataset_id": ..., "expected_revision": ..., "allowed_models": [...], "allowed_operations": [...]})` replaces explicit permissions. Empty lists deny new selection. Existing v1/v2 methods remain version-specific. Observation retry never repeats model work.

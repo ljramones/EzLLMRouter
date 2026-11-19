@@ -75,7 +75,7 @@ def build(commit, export_root, review_root, input_zip, output, repo):
     source_tar = git("archive", "--format=tar", "--prefix=source/", commit)
     focused = git("diff", "--binary", "17fc195d8eda462ce38624a81c47dd5406d97a42", commit,
                   "--", "server", "clients", "web", "tests", "docs/development/dev-12")
-    result = audit(export_root, repo / "docs/contracts/dev12-successor-01/registrations.json")
+    result = audit(export_root, repo / "tests/fixtures/contracts/dev12-successor-01/registrations.json")
     assert (result["status"] == "PASS" and result["original_pass_pairs"] == 80 and
             result["qualified_supplement_pairs"] == 16 and
             result["admissions"] == 123 and result["possible_sends"] == 108 and
@@ -115,7 +115,7 @@ def build(commit, export_root, review_root, input_zip, output, repo):
         "After extracting this ZIP, run:\n\n"
         "  tar -xf source.tar\n"
         "  python3 -I -B source/tests/gateway_integration/dev12_completion_packet_audit.py "
-        "evidence/final source/docs/contracts/dev12-successor-01/registrations.json\n\n"
+        "evidence/final source/tests/fixtures/contracts/dev12-successor-01/registrations.json\n\n"
         "The self-excluding MANIFEST.sha256 lists every other ZIP member.\n"
         "The result and handoff are in source/docs/development/dev-12/.\n"
     )

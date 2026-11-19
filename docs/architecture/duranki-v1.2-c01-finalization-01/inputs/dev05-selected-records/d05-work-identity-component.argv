@@ -1,1 +1,0 @@
-compose exec -T service_choice_b python -B /app/gateway/test_work_identity.py --source-root /app -q 

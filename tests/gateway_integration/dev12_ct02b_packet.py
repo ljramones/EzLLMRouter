@@ -358,7 +358,7 @@ def audit(root):
             len(rows["dev12_send_ownership"]) !=
                 observation["after"]["campaign"]["possible_send_count"]):
         raise AssertionError("receiver/guard ownership correlation differs")
-    tariff = document_bytes(files["docs/contracts/dev12-successor-01/tariffs.json"])
+    tariff = document_bytes(files["tests/fixtures/contracts/dev12-successor-01/tariffs.json"])
     rate = Decimal(tariff["embedding_document"]["per_item_usd"])
     known = Decimal(0)
     latest = max(rows["dev12_usage_revisions"], key=lambda row: row["revision"],

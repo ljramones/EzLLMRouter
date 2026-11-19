@@ -14,13 +14,13 @@ elif [[ "$phase" == dev05 ]]; then
 fi
 packet_prefix=DEV-04
 run_dir="/private/tmp/duranki-dev-04/$run_name"
-result_dir="$root/docs/development/dev-04"
+result_dir="$root/.artifacts/gateway/dev-04"
 if [[ "$phase" == dev05 ]]; then
   packet_prefix=DEV-05
   run_dir="/private/tmp/duranki-dev-05/$run_name"
-  result_dir="$root/docs/development/dev-05"
+  result_dir="$root/.artifacts/gateway/dev-05"
 fi
-frozen_dir="$root/docs/development/dev-04"
+frozen_dir="$root/.artifacts/gateway/dev-04"
 wheel_dir="$root/gateway-inputs/dev04/wheels"
 compose_file="$root/tests/gateway_integration/compose.yaml"
 project="duranki-dev04-${run_name#run-}"

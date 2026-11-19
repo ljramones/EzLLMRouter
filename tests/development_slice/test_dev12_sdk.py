@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, os.environ.get("DEV12_PY_CLIENT_TARGET", str(ROOT / "clients/python/src")))
 from duranki_client import DurankiClient, DurankiError  # noqa: E402
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 REQUEST = next(item["request"] for item in VECTORS["examples"] if item["id"] == "DELEGATED_RERANK")
 COMPLETED = next(item["value"] for item in VECTORS["protocol_fixtures"] if item["id"] == "COMPLETED")
 STATUS = next(item["value"] for item in VECTORS["protocol_fixtures"]

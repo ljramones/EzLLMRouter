@@ -17,10 +17,10 @@ def main():
     if len(sys.argv) != 3:
         raise SystemExit("usage: review_gate.py ROOT RUN_DIR")
     root, run = map(Path, sys.argv[1:])
-    inventory = json.loads((root / "docs/development/dev-04/WHEEL-INVENTORY.json").read_text())
+    inventory = json.loads((root / "deploy/local/inputs/gateway/WHEEL-INVENTORY.json").read_text())
     advisories = json.loads((run / "PYPI-ADVISORIES.json").read_text())
     current = json.loads((run / "GITHUB-ADVISORIES.json").read_text())
-    reviewed = json.loads((root / "docs/gateway/review-evidence-02/github-advisories.json").read_text())
+    reviewed = json.loads((root / "deploy/local/inputs/gateway/github-advisories.json").read_text())
     wheels = inventory["wheels"]
     if (len(wheels) != 117 or len(advisories["packages"]) != 117 or
         any(row["status"] != "queried" or row["vulnerabilities"] for row in advisories["packages"])):

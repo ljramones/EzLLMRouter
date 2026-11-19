@@ -13,7 +13,7 @@ from tests.client_parity import test_python_client as legacy
 from tests.development_slice import test_dev12_sdk as successor
 
 ROOT = Path(__file__).resolve().parents[2]
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class RecordingStream(httpx.SyncByteStream):

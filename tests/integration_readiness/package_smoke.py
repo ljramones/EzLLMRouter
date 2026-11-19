@@ -8,7 +8,7 @@ import sys
 from duranki_client import IntegrationClient
 
 ROOT = Path(__file__).resolve().parents[2]
-EXAMPLES = json.loads((ROOT / "docs/contracts/integration-readiness-v1/examples.json").read_text())
+EXAMPLES = json.loads((ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json").read_text())
 
 
 def main():

@@ -93,7 +93,7 @@ def check_plot(data, seconds, differences, *, participant=False, event=False):
 
 
 def main():
-    destination = ROOT / "docs/development/dev-09/TEAM-DEMO-ALIGNMENT-RESULT-02.json"
+    destination = ROOT / ".artifacts/browser/dev-09/TEAM-DEMO-ALIGNMENT-RESULT-02.json"
     if destination.exists():
         raise SystemExit("alignment result exists; preserve one-use evidence")
     fixture_test = ReportingTests("test_fixture_conservation_replacement_and_cohorts")

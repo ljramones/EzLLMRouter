@@ -1,8 +1,8 @@
 # Users and permissions
 
-Server version **0.3.1** adds named browser accounts to both the main console and
-the standalone accounting console. Accounts use the existing SQLite identity
-registry, so model grants and historical attribution keep their stable IDs.
+Named browser accounts are available in the main console and the standalone
+accounting console. Accounts share the SQLite identity registry, keeping model
+grants and recorded attribution attached to stable principal IDs.
 
 ## First sign-in
 
@@ -71,7 +71,7 @@ Every named user can change their own password using the header account button.
 Non-administrators see their own account and effective permissions on the users
 page, without access to other accounts.
 
-## Storage and compatibility
+## Storage and sessions
 
 Passwords are stored as salted scrypt verifiers, separately from public identity
 records. They are excluded from API responses and audit entries. Browser sessions
@@ -79,18 +79,9 @@ use HttpOnly, SameSite cookies, expire after 30 minutes, and recheck the current
 account state on each request. Writes require both the allowed Origin and a CSRF
 token. Login attempts are limited to 20 per minute per client address.
 
-The generated high-entropy operator credential and previously provisioned human
-credentials remain accepted by the password-only login API for existing local
-tooling. They are separate credentials, not the temporary account password.
-Browser sign-in uses username/password. Service identities continue to use API
-credentials and cannot sign in as named human users. The legacy tooling path
-retains the current principal's role and status checks; sessions tied to a
-console account also obey its authentication-version revocation.
-
-No running profile or existing database is changed by editing or building this
-source. Install the new service wheel, use the matching `web/` assets, and start
-the service normally to enable this capability. The new account table is
-additive; it does not rewrite historical work or provider records.
+Service identities use API credentials and cannot sign in as named human users.
+Start a new instance using the [database guide](DATABASE.md) and use the matching
+browser assets from `web/`.
 
 ## Operator API
 
@@ -112,5 +103,4 @@ delete uses `revoked` for the retained identity. Password-changing accounts can
 only read their session, change their password, or sign out until that change
 is complete.
 
-The [development result](development/USER-MANAGEMENT.md) records the tested
-source, build artifact, checks, and remaining verification limits.
+See [development checks](DEVELOPMENT.md) for verification commands.

@@ -7,7 +7,7 @@ run_name=${2:-run-20261018-02}
 run_dir="/private/tmp/duranki-dev-01/$run_name"
 project="duranki-dev01-${run_name#run-}"
 compose_file="$root/tests/development_slice/compose.yaml"
-result_dir="$root/docs/development/dev-01"
+result_dir="$root/.artifacts/development-slice"
 python_tool=/opt/homebrew/bin/python3.12
 node_tag=docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
 python_digest=docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163
@@ -181,7 +181,7 @@ PY
   cp "$root/tests/development_slice/receiver.py" "$run_dir/build/receiver/"
   cp "$root/clients/js/index.cjs" "$run_dir/build/driver/"
   cp "$root/tests/development_slice/"{driver.cjs,test_client.cjs,request.json,expected_request.txt} "$run_dir/build/driver/"
-  cp "$root/docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json" "$run_dir/build/driver/vectors.json"
+  cp "$root/tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json" "$run_dir/build/driver/vectors.json"
   "$python_tool" -I -B - "$run_dir/build" "$root" > "$run_dir/source-build-manifest.json" <<'PY'
 import hashlib,json,sys
 from pathlib import Path

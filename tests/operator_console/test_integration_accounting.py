@@ -21,7 +21,7 @@ from duranki_server.registry import Registry
 from duranki_server.store import SQLiteStore
 from duranki_server.web import serve
 
-EXAMPLES = json.loads((ROOT / "docs/contracts/integration-readiness-v1/examples.json").read_text())
+EXAMPLES = json.loads((ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json").read_text())
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
         "model": "model.demo", "model_version": "v1", "processing_region": "local"}
 TRUSTED = {"principal_id": "svc.demo", "charging_owner_id": "team.demo"}

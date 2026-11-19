@@ -14,7 +14,7 @@ from duranki_server.registry import Registry, RegistryConflict
 from duranki_server.store import SQLiteStore
 
 
-SEED = json.loads((ROOT / "docs/development/dev-07/DURANKI-REAL-MODEL-CATALOGUE-20261021.json").read_text())
+SEED = json.loads((ROOT / "deploy/local/inputs/catalogue.json").read_text())
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
         "model": "model.demo", "model_version": "v1", "processing_region": "local"}
 TRUSTED = {"principal_id": "svc.demo", "charging_owner_id": "team.demo"}

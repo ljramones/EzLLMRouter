@@ -13,7 +13,7 @@ from duranki_server.store import SQLiteStore  # noqa: E402
 from duranki_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
 from duranki_server.successor_contract import native_usage_row, work_projection, work_digest  # noqa: E402
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class SuccessorStoreTests(unittest.TestCase):

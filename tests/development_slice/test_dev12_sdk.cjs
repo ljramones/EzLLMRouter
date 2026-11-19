@@ -5,7 +5,7 @@ const path=require("node:path");
 const root=path.resolve(__dirname,"../..");
 const source=process.env.DEV12_JS_CLIENT_DIR||path.join(root,"clients/js");
 const {DurankiClient,DurankiError}=require(path.join(source,"index.cjs"));
-const vectors=require(path.join(root,"docs/contracts/dev12-successor-01/vectors.json"));
+const vectors=require(path.join(root,"tests/fixtures/contracts/dev12-successor-01/vectors.json"));
 const request=vectors.examples.find(item=>item.id==="DELEGATED_RERANK").request;
 const completed=vectors.protocol_fixtures.find(item=>item.id==="COMPLETED").value;
 const status=vectors.protocol_fixtures.find(item=>item.id==="STATUS_VALID_UNKNOWN_COST").value;

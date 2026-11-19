@@ -31,8 +31,8 @@ repeats a model call.
 These responsibilities are delivered in stages. Rule-based routing, synthetic
 execution, accounting, and evaluation interfaces have different levels of
 verification; learned routing and production qualification remain future work.
-See the [architecture](docs/architecture/EZLLMROUTER.md) and the existing
-[development records](docs/development/HISTORY.md) for implementation evidence.
+See the [architecture](docs/ARCHITECTURE.md) and [documentation index](docs/README.md)
+for the current design and operating guides.
 
 ## Packages
 
@@ -145,10 +145,9 @@ ports, including LocalAI on `8081`, or add a published URL directly. Choose
 See the [local connector guide](docs/LOCAL-CONNECTORS.md)
 for container addresses, inventory details, and execution boundaries.
 
-The older offline Docker profile is described in
+The optional isolated Docker execution profile is described in
 [deploy/local/README.md](deploy/local/README.md). It requires frozen, verified
-artifacts in addition to this source checkout. Its existing environment
-variables, artifact names, and stored identities remain compatible.
+artifacts in addition to this source checkout and initializes a fresh database.
 
 ## Development checks
 
@@ -211,9 +210,9 @@ before choosing a rewrite.
 | `clients/python/`, `clients/js/` | Installable network clients. |
 | `web/` | Operator console HTML, CSS, and JavaScript. |
 | `deploy/local/` | Frozen-input Docker profile and lifecycle tools. |
-| `tests/` | Contracts, clients, accounting, gateway, sender, and console checks. |
+| `tests/` | Contract fixtures, clients, accounting, gateway, sender, and console checks. |
 | `tools/gateway/` | Local synthetic launchers, source staging and evidence export/verification tools. |
-| `docs/` | Current architecture, contracts, plans, and historical evidence. |
+| `docs/` | Current architecture, API, operating and development guides. |
 
 Gateway runtime imports use `duranki_server.gateway`. The older flat imports and
 script paths remain compatibility shims, sharing the same guard context and
@@ -229,18 +228,11 @@ covers the runtime implementation and active staging, launch and export tools.
 See [database and operator server structure](docs/DATABASE.md) for schema
 ownership, shared transactions, dispatch boundaries and verification.
 
-## Compatibility and development status
+## Development status
 
-The new names change package and product branding. Existing protocol versions,
-wire headers, schema IDs, frozen artifacts, and legacy Python imports retain
-their identifiers. The current database design starts with one fresh initial
-schema; earlier development databases are not automatically adopted or migrated.
-Earlier names in dated contracts and evidence identify those
-historical versions. Current component names are the functional names above.
+The current database starts from one fresh initial schema. The local test suite
+covers accounting, credential recovery, authorization and operator workflows.
+Docker deployment, live-provider execution and production qualification require
+their own validation. Learned routing remains future work.
 
-This source contains controlled synthetic checks and later provider/accounting
-development. A package build does not establish production readiness or upgrade
-an existing running profile. Live provider execution, deployment acceptance, and
-learned routing require their own evidence. See the
-[rebranding record](docs/development/EZLLMROUTER-REBRANDING.md) for the scope and
-validation of this change.
+Current guidance is in the [documentation index](docs/README.md).

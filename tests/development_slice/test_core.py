@@ -17,7 +17,7 @@ from duranki_server.core import Coordinator, usage_revision
 from duranki_server.store import SQLiteStore
 from recipe import SyntheticTextRecipe
 
-VECTORS = json.loads((ROOT / "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
 REQUEST = json.loads((ROOT / "tests/development_slice/request.json").read_text())
 

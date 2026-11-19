@@ -29,7 +29,7 @@ class _URL:
 
 class FinalTimeoutTests(unittest.TestCase):
     def test_exact_four_phase_five_second_controls(self):
-        vectors = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+        vectors = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
         example = deepcopy(next(row for row in vectors["examples"] if row["id"] == "DIRECT_DOCUMENT"))
         admitted = example["request"]
         expected = {"operation": "embedding.create@1",

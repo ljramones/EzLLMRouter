@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "server/src"))
 from duranki_server import successor_contract as subject  # noqa: E402
 from duranki_server.canonical import ContractError  # noqa: E402
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class SuccessorContractTests(unittest.TestCase):

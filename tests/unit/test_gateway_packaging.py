@@ -97,6 +97,7 @@ import importlib, json
 from pathlib import Path
 import duranki_server
 from duranki_server import registry, operator_web
+from ezllmrouter_server import secret_rotation
 from duranki_server.store import SQLiteStore
 from duranki_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
 import guard as old_guard
@@ -104,6 +105,7 @@ import recipe as old_recipe
 assert old_guard is guard
 assert old_recipe.SyntheticDevelopmentRecipe is synthetic_recipe.SyntheticDevelopmentRecipe
 assert 'service/server' in str(Path(duranki_server.__file__))
+assert 'service/server' in secret_rotation.__file__
 store = SQLiteStore('staged.sqlite')
 assert store.db.execute('PRAGMA user_version').fetchone() == (1,)
 store.close()
@@ -129,6 +131,7 @@ print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}
 import importlib.util, json
 import choice_b_worker, choice_b_wire
 assert importlib.util.find_spec('duranki_server') is None
+assert importlib.util.find_spec('ezllmrouter_server') is None
 assert 'litellm' not in sys.modules
 assert choice_b_wire.LIMIT == 262144
 print(json.dumps({'worker': 'isolated', 'service_importable': False}))

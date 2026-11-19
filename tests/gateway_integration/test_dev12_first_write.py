@@ -47,7 +47,7 @@ class _Socket:
 
 class FirstWriteTests(unittest.TestCase):
     def test_first_write_rechecks_after_wait_and_would_block(self):
-        vectors = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+        vectors = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
         example = deepcopy(next(row for row in vectors["examples"] if row["id"] == "DIRECT_DOCUMENT"))
         for change in ("none", "plan_revoked", "campaign_paused", "campaign_expired",
                        "would_block_then_revoked"):

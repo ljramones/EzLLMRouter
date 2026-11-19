@@ -27,8 +27,8 @@ from duranki_server.successor_campaign import FiniteSuccessorCampaign
 from duranki_server.successor_service import SuccessorService
 
 ROOT = Path(__file__).resolve().parents[2]
-EXTERNAL = json.loads((ROOT / "docs/contracts/integration-readiness-v2/examples.json").read_text())
-SUCCESSOR = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+EXTERNAL = json.loads((ROOT / "tests/fixtures/contracts/integration-readiness-v2/examples.json").read_text())
+SUCCESSOR = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class RetentionReadTests(unittest.TestCase):

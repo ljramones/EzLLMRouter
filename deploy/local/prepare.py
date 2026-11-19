@@ -24,9 +24,9 @@ JS_ARCHIVE = JS_CLIENT["name"].lstrip("@").replace("/", "-") + "-" + JS_CLIENT["
 SOURCE_ROOTS = ("server/src", "tests/gateway_integration", "tests/development_slice",
                 "tests/tool_cycle", "tests/operator_console", "clients/python", "clients/js",
                 "deploy/local", "tools/gateway", "worker", "web")
-FIXED_INPUTS = ("docs/development/dev-04/WHEEL-INVENTORY.json",
-                "docs/development/dev-04/requirements.gateway.lock",
-                "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json")
+FIXED_INPUTS = ("deploy/local/inputs/gateway/WHEEL-INVENTORY.json",
+                "deploy/local/inputs/gateway/requirements.gateway.lock",
+                "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json")
 
 
 def package_artifacts(directory):

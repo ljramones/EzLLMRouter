@@ -54,7 +54,7 @@ def prepare(root, run):
     for target in ("python", "js"):
         rows.append(copy(root / "tests/development_slice/request.json", run / "build" / target / "tests/request.json"))
         rows.append(copy(root / "tests/tool_cycle/scenarios.json", run / "build" / target / "tests/scenarios.json"))
-        rows.append(copy(root / "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+        rows.append(copy(root / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
                          run / "build" / target / "tests/vectors.json"))
     for src in sorted((root / "server/src").rglob("*")):
         if src.is_dir() or "__pycache__" in src.parts or src.name == ".DS_Store":

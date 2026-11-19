@@ -5,7 +5,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname,"../..");
-const seed = JSON.parse(fs.readFileSync(path.join(root,"docs/development/dev-07/DURANKI-REAL-MODEL-CATALOGUE-20261021.json")));
+const seed = JSON.parse(fs.readFileSync(path.join(root,"deploy/local/inputs/catalogue.json")));
 const sources = Object.fromEntries(seed.sources.map(source=>[source.id,source]));
 const records = seed.models.map(entry=>({configuration_ref:"catalogue."+entry.catalogue_key,
   display_name:entry.display_name,kind:"real_catalogue",status:"catalogued",readiness:"not_connected",

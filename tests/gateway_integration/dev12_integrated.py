@@ -82,7 +82,7 @@ def runtime_source_identity():
     """Hash mounted runtime inputs independently of Git availability in the image."""
     roots = (ROOT / "server/src", ROOT / "clients/python/src", ROOT / "clients/js",
              ROOT / "tools/gateway", ROOT / "worker",
-             ROOT / "tests/gateway_integration", ROOT / "docs/contracts/dev12-successor-01")
+             ROOT / "tests/gateway_integration", ROOT / "tests/fixtures/contracts/dev12-successor-01")
     files = sorted(path for directory in roots for path in directory.rglob("*")
                    if path.is_file() and "__pycache__" not in path.parts and
                    path.suffix in (".py", ".cjs", ".json", ".md"))
@@ -107,7 +107,7 @@ def independent_amount(name, request):
 
 
 def fixture(case):
-    vectors = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+    vectors = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
     entry = next(row for row in vectors["examples"] if row["id"] == case)
     request, context = deepcopy(entry["request"]), deepcopy(entry["trusted_context"])
     now = datetime.now(timezone.utc).replace(microsecond=0)

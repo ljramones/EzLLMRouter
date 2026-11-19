@@ -46,7 +46,7 @@ def main() -> None:
         "docs/development/integration-readiness/client-requirements-v4.lock",
     )
     source_files += tuple(p.relative_to(repo).as_posix() for p in
-                          sorted((repo / "docs/contracts/integration-readiness-v2").iterdir()) if p.is_file())
+                          sorted((repo / "tests/fixtures/contracts/integration-readiness-v2").iterdir()) if p.is_file())
     for rel in source_files:
         target = review / rel
         target.parent.mkdir(parents=True, exist_ok=True)

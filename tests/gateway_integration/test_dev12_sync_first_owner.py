@@ -25,7 +25,7 @@ from duranki_server.successor_service import SuccessorService
 from duranki_server.web import serve
 from dev12_completion_sync_first_owner import synchronized_pair
 
-VECTORS = json.loads((ROOT / "docs/contracts/dev12-successor-01/vectors.json").read_text())
+VECTORS = json.loads((ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text())
 
 
 class NoSendExecutor:

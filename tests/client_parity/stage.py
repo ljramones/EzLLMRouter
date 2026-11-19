@@ -102,7 +102,7 @@ def prepare(root, run):
     common = {
         "scenarios.json": root / "tests/client_parity/scenarios.json",
         "request.json": root / "tests/development_slice/request.json",
-        "vectors.json": root / "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+        "vectors.json": root / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json",
     }
     python = {**common,
         "integration_python.py": root / "tests/client_parity/integration_python.py",

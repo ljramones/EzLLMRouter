@@ -11,7 +11,7 @@ from duranki_client import DurankiClient, DurankiError
 HERE = Path(__file__).resolve().parent
 VECTOR_FILE = HERE / "vectors.json"
 if not VECTOR_FILE.exists():
-    VECTOR_FILE = HERE.parents[1] / "docs/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    VECTOR_FILE = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/DURANKI-WP-A-VECTORS-v0.3-CORRECTION-01.json"
 EXAMPLES = json.loads(VECTOR_FILE.read_text())["examples"]
 
 

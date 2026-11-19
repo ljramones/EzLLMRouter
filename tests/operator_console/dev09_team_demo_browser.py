@@ -55,7 +55,7 @@ def choose(browser, label, value):
 
 
 def main():
-    destination = ROOT / "docs/development/dev-09/TEAM-DEMO-BROWSER-RESULT-04.json"
+    destination = ROOT / ".artifacts/browser/dev-09/TEAM-DEMO-BROWSER-RESULT-04.json"
     if destination.exists():
         raise SystemExit("team browser result exists; preserve one-use evidence")
     fixture_test = ReportingTests("test_fixture_conservation_replacement_and_cohorts")

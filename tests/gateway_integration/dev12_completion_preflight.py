@@ -96,10 +96,10 @@ def _fixture_path_for_scenario(scenario):
     if scenario == "t03":
         return root / "tests/development_slice/request.json"
     if scenario.startswith("t48_"):
-        return root / "docs/contracts/dev12-successor-01/tariffs.json"
+        return root / "tests/fixtures/contracts/dev12-successor-01/tariffs.json"
     if scenario in {"t49_d", "t51", "t52", "t53", "t54"}:
         return Path(__file__).with_name("dev12_completion_receiver.py")
-    return root / "docs/contracts/dev12-successor-01/vectors.json"
+    return root / "tests/fixtures/contracts/dev12-successor-01/vectors.json"
 
 
 def mounted_source_identity(root=None):
@@ -108,7 +108,7 @@ def mounted_source_identity(root=None):
     roots = tuple(root / name for name in (
         "server/src", "clients/python/src", "clients/js", "tools/gateway", "worker",
         "tests/gateway_integration", "tests/operator_console", "web",
-        "docs/contracts/dev12-successor-01"))
+        "tests/fixtures/contracts/dev12-successor-01"))
     fixed = tuple(root / name for name in (
         "tests/development_slice/request.json",
         "tests/tool_cycle/scenarios.json"))
@@ -959,7 +959,7 @@ def main():
     tracked = subprocess.run(["git", "diff", "--quiet", "HEAD", "--"],
         capture_output=True, text=True)
     extras = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
-        "server/src", "clients", "tools/gateway", "worker", "tests/gateway_integration", "docs/contracts/dev12-successor-01"],
+        "server/src", "clients", "tools/gateway", "worker", "tests/gateway_integration", "tests/fixtures/contracts/dev12-successor-01"],
         capture_output=True, text=True)
     if (source.returncode != 0 or tracked.returncode != 0 or
             extras.returncode != 0 or extras.stdout.strip() or

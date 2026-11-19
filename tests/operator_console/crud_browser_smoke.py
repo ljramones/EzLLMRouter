@@ -47,8 +47,8 @@ def main():
         raise SystemExit("usage: crud_browser_smoke.py [02|03]")
     suffix = "-" + sys.argv[1] if len(sys.argv) == 2 else ""
     identity = "crud-local-proof" + suffix
-    evidence = ROOT / "docs/development/dev-07/screenshots"
-    result_path = ROOT / ("docs/development/dev-07/CRUD-LOCAL-BROWSER-RESULT" + suffix + ".json")
+    evidence = ROOT / ".artifacts/browser/dev-07/screenshots"
+    result_path = ROOT / (".artifacts/browser/dev-07/CRUD-LOCAL-BROWSER-RESULT" + suffix + ".json")
     if result_path.exists():
         raise SystemExit("local browser result already exists; preserve prior proof")
     with tempfile.TemporaryDirectory(prefix="duranki-crud-browser-") as scratch:

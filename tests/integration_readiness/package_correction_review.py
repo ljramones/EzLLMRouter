@@ -49,7 +49,7 @@ def main() -> None:
         "tests/operator_console/test_integration_accounting.py",
     )
     source_files += tuple(p.relative_to(repo).as_posix() for p in
-                          sorted((repo / "docs/contracts/integration-readiness-v2").iterdir()) if p.is_file())
+                          sorted((repo / "tests/fixtures/contracts/integration-readiness-v2").iterdir()) if p.is_file())
     for rel in source_files:
         target = review / rel
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -103,7 +103,7 @@ def main() -> None:
         f"Baseline `{START}`; tested product/client source `{PRODUCT}`; final record `{final}`. "
         "The package bytes were installed from candidate 3 before final documentation commits.\n\n"
         "| Review question | Evidence |\n| --- | --- |\n"
-        "| IR01–IR09 implementation and cases | `docs/contracts/integration-readiness-v2/`, "
+        "| IR01–IR09 implementation and cases | `tests/fixtures/contracts/integration-readiness-v2/`, "
         "`delta/source-to-product.patch`, `tests/operator_console/test_integration_accounting.py` |\n"
         "| Exact installed client/service and reconciliation | `tests/integration_readiness/correction_*`, "
         "`retained/evidence/installed-*.log`, `retained/instance/evidence/final-report.json`, "

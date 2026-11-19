@@ -80,6 +80,7 @@ operator-password
 .console-secrets/
 
 # Runtime state, databases, diagnostics, and local backups
+/.artifacts/
 /deploy/local/.state/
 /local-instance/
 /backups/
