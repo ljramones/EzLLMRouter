@@ -43,8 +43,12 @@ static class Program
             if (fixture["response_headers"] is JsonObject extra)
                 foreach (var (key, value) in extra)
                 {
-                    response.Headers.Remove(key); response.Content.Headers.Remove(key);
-                    if (!response.Headers.TryAddWithoutValidation(key, Text(value))) response.Content.Headers.TryAddWithoutValidation(key, Text(value));
+                    // Remove only existing entries: Remove rejects known header names
+                    // that belong to the other header collection.
+                    if (response.Headers.Any(header => header.Key.Equals(key, StringComparison.OrdinalIgnoreCase))) response.Headers.Remove(key);
+                    if (response.Content.Headers.Any(header => header.Key.Equals(key, StringComparison.OrdinalIgnoreCase))) response.Content.Headers.Remove(key);
+                    Check(response.Headers.TryAddWithoutValidation(key, Text(value)) ||
+                          response.Content.Headers.TryAddWithoutValidation(key, Text(value)), "Invalid response fixture header: " + key);
                 }
             return response;
         }
