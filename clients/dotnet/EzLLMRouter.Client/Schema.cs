@@ -28,6 +28,7 @@ internal static class Schema
             string reference = Text(At(shape, "$ref"));
             if (!reference.StartsWith("#/$defs/", StringComparison.Ordinal)) return false;
             string name = reference[8..];
+            if (name == "PublicText" && value?.GetValueKind() == System.Text.Json.JsonValueKind.String && Text(value).Any(c => c < 32 || c == 127)) return false;
             return defs[name] is JsonNode target && (name is not ("utc" or "UtcSecond") || Utc(value)) && Match(value, target, defs);
         }
         if (Items(At(shape, "allOf")).Any(part => !Match(value, part, defs))) return false;
@@ -62,7 +63,8 @@ internal static class Schema
             case "string":
                 string text = Text(value); int length = text.EnumerateRunes().Count();
                 return value?.GetValueKind() == System.Text.Json.JsonValueKind.String && ProtocolJson.Scalar(text) && length >= Bound(shape, "minLength", 0) && length <= Bound(shape, "maxLength", ProtocolJson.MaxInteger)
-                    && (!Has(shape, "pattern") || Patterns.GetOrAdd(Text(At(shape, "pattern")), pattern => new Regex(pattern, RegexOptions.CultureInvariant)).IsMatch(text));
+                    && (!Has(shape, "pattern") || Patterns.GetOrAdd(Text(At(shape, "pattern")),
+                        pattern => new Regex(pattern.EndsWith('$') ? pattern[..^1] + @"\z" : pattern, RegexOptions.CultureInvariant)).IsMatch(text));
             case "integer": return value?.GetValueKind() == System.Text.Json.JsonValueKind.Number && Number(value) >= Bound(shape, "minimum", -ProtocolJson.MaxInteger) && Number(value) <= Bound(shape, "maximum", ProtocolJson.MaxInteger);
             case "boolean": return value?.GetValueKind() is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False;
             case "null": return value is null;

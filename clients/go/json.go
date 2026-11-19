@@ -51,7 +51,7 @@ func scalar(s string) bool {
 		return false
 	}
 	for _, r := range s {
-		if r < 32 || r == 127 {
+		if r == 0 {
 			return false
 		}
 	}
@@ -195,8 +195,22 @@ func quoteJSON(s string) string {
 			b.WriteString("\\\"")
 		case '\\':
 			b.WriteString("\\\\")
+		case '\b':
+			b.WriteString("\\b")
+		case '\f':
+			b.WriteString("\\f")
+		case '\n':
+			b.WriteString("\\n")
+		case '\r':
+			b.WriteString("\\r")
+		case '\t':
+			b.WriteString("\\t")
 		default:
-			b.WriteRune(r)
+			if r < 32 {
+				fmt.Fprintf(&b, "\\u%04x", r)
+			} else {
+				b.WriteRune(r)
+			}
 		}
 	}
 	b.WriteByte('"')

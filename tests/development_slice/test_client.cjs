@@ -36,6 +36,17 @@ async function rejected(promise, code, selector) {
   }
 }
 async function main() {
+  const multiline = "Sure:\n1. item\n\tUnicode α 🔐\r\n";
+  for (const [name, action] of [
+    ["reply_delivered", c => c.submit(vectors.submit_text)],
+    ["status_present", c => c.getStatus({submission_id: "submission.demo"})],
+  ]) {
+    const value = structuredClone(vectors[name]);
+    value.candidate.output_blocks[0].text = multiline;
+    const {client, calls} = clientFor(value);
+    assert.equal((await action(client)).candidate.output_blocks[0].text, multiline);
+    assert.equal(calls(), 1);
+  }
   const good = [
     [vectors.capabilities, c => c.getCapabilities()],
     [vectors.reply_delivered, c => c.submit(vectors.submit_text)],

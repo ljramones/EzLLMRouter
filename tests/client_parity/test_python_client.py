@@ -55,6 +55,19 @@ class ClientTests(unittest.TestCase):
         transport = Transport(Response(response, status, version), callback, lost)
         return EzLLMRouterClient("http://synthetic.invalid", "token.synthetic", transport=transport), transport
 
+    def test_multiline_text_is_preserved_on_submit_and_status_recovery(self):
+        text = "Sure:\n1. item\n\tUnicode α 🔐\r\n"
+        for name, action in (("reply_delivered", lambda c: c.submit(EXAMPLES["submit_text"])),
+                             ("status_present", lambda c: c.get_status(selected()))):
+            with self.subTest(action=name):
+                value = copy.deepcopy(EXAMPLES[name])
+                value["candidate"]["output_blocks"][0]["text"] = text
+                client, transport = self.client(value)
+                with client:
+                    result = action(client)
+                self.assertEqual(result["candidate"]["output_blocks"][0]["text"], text)
+                self.assertEqual(len(transport.calls), 1)
+
     def test_enabled_controls_and_wait_header(self):
         for name, action, status in [
             ("reply_delivered", lambda c: c.submit(EXAMPLES["submit_text"], {"wait_ms": 0}), 200),

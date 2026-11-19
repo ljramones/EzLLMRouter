@@ -53,7 +53,7 @@ public static class ProtocolJson
         for (int i = 0; i < text.Length; i++)
         {
             char c = text[i];
-            if (c < 32 || c == 127) return false;
+            if (c == 0) return false;
             if (char.IsHighSurrogate(c))
             {
                 if (++i >= text.Length || !char.IsLowSurrogate(text[i])) return false;
@@ -74,7 +74,22 @@ public static class ProtocolJson
     {
         if (!Scalar(text)) throw new JsonException("Invalid JSON scalar");
         output.Append('"');
-        foreach (char c in text) { if (c is '"' or '\\') output.Append('\\'); output.Append(c); }
+        foreach (char c in text)
+        {
+            switch (c)
+            {
+                case '"': case '\\': output.Append('\\').Append(c); break;
+                case '\b': output.Append("\\b"); break;
+                case '\f': output.Append("\\f"); break;
+                case '\n': output.Append("\\n"); break;
+                case '\r': output.Append("\\r"); break;
+                case '\t': output.Append("\\t"); break;
+                default:
+                    if (c < 32) output.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                    else output.Append(c);
+                    break;
+            }
+        }
         output.Append('"');
     }
 
@@ -130,7 +145,7 @@ internal static class Values
     internal static IEnumerable<JsonNode?> Items(JsonNode? value) => value is JsonArray array ? array : Enumerable.Empty<JsonNode?>();
     internal static bool Eq(JsonNode? a, JsonNode? b) => JsonNode.DeepEquals(a, b);
     internal static bool Is(JsonNode? value, string text) => Text(value) == text;
-    internal static bool Id(JsonNode? value) => value?.GetValueKind() == JsonValueKind.String && Regex.IsMatch(Text(value), @"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$", RegexOptions.CultureInvariant);
+    internal static bool Id(JsonNode? value) => value?.GetValueKind() == JsonValueKind.String && Regex.IsMatch(Text(value), @"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}\z", RegexOptions.CultureInvariant);
     internal static bool Positive(JsonNode? value) => value?.GetValueKind() == JsonValueKind.Number && Number(value) > 0 && Number(value) <= ProtocolJson.MaxInteger;
     internal static bool Utc(JsonNode? value) => DateTimeOffset.TryParseExact(Text(value), "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out _);
     internal static bool One(JsonNode? value, params string[] choices) => choices.Contains(Text(value), StringComparer.Ordinal);

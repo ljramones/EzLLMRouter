@@ -6,7 +6,7 @@ use std::fmt;
 
 pub(crate) const MAX_INTEGER: i64 = 9_007_199_254_740_991;
 pub(crate) fn scalar(value: &str) -> bool {
-    !value.chars().any(|c| c < ' ' || c == '\u{7f}')
+    !value.contains('\0')
 }
 struct Strict(Value);
 impl<'de> Deserialize<'de> for Strict {

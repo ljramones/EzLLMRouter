@@ -49,6 +49,7 @@ fn bound(shape: &Value, key: &str, fallback: i64) -> i64 { at(shape, key).as_i64
 fn matches(value: &Value, shape: &Value, defs: &Value) -> bool {
     if let Some(reference) = at(shape, "$ref").as_str() {
         let Some(name) = reference.strip_prefix("#/$defs/") else { return false; };
+        if name == "PublicText" && text(value).chars().any(|c| c < ' ' || c == '\u{7f}') { return false; }
         return defs.get(name).is_some_and(|target| (!matches!(name, "utc" | "UtcSecond") || utc(value)) && matches(value, target, defs));
     }
     if items(at(shape, "allOf")).iter().any(|part| !matches(value, part, defs)) { return false; }

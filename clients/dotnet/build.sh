@@ -10,7 +10,10 @@ dotnet restore "$project" --configfile "$client_root/NuGet.Config"
 dotnet pack "$project" --no-restore --configuration Release --output "$packages"
 if [[ "${1:-}" == "test" ]]; then
   tests="$client_root/EzLLMRouter.Client.Tests/EzLLMRouter.Client.Tests.csproj"
-  dotnet restore "$tests" --source "$packages" -p:ClientPackageDirectory="$packages"
+  test_packages="$(mktemp -d "$client_root/build/test-packages-XXXXXX")"
+  trap 'rm -rf "$test_packages"' EXIT
+  dotnet restore "$tests" --source "$packages" --packages "$test_packages" --force \
+    -p:ClientPackageDirectory="$packages"
   dotnet build "$tests" --no-restore --configuration Release -p:ClientPackageDirectory="$packages"
   dotnet "$client_root/EzLLMRouter.Client.Tests/bin/Release/net10.0/EzLLMRouter.Client.Tests.dll" \
     "$repo_root/tests/client_languages/cases.json"

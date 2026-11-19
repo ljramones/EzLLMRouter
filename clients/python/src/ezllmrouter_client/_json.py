@@ -35,7 +35,7 @@ def strict_reply(data: bytes) -> Any:
         if type(item) is int and abs(item) > 9007199254740991:
             raise ValueError("unsafe response integer")
         if type(item) is str and any(
-            ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF for char in item
+            char == "\0" or 0xD800 <= ord(char) <= 0xDFFF for char in item
         ):
             raise ValueError("invalid response scalar")
         if type(item) is dict:

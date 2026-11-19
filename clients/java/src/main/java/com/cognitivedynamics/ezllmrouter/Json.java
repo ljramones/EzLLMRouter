@@ -57,7 +57,7 @@ public final class Json {
     static boolean scalar(String value) {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-            if (c < 32 || c == 127) return false;
+            if (c == 0) return false;
             if (Character.isHighSurrogate(c)) {
                 if (++i >= value.length() || !Character.isLowSurrogate(value.charAt(i))) return false;
             } else if (Character.isLowSurrogate(c)) return false;
@@ -76,7 +76,19 @@ public final class Json {
         if (!scalar(value)) throw invalid();
         out.append('"');
         for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i); if (c == '"' || c == '\\') out.append('\\'); out.append(c);
+            char c = value.charAt(i);
+            switch (c) {
+                case '"', '\\' -> { out.append('\\'); out.append(c); }
+                case '\b' -> out.append("\\b");
+                case '\f' -> out.append("\\f");
+                case '\n' -> out.append("\\n");
+                case '\r' -> out.append("\\r");
+                case '\t' -> out.append("\\t");
+                default -> {
+                    if (c < 32) out.append("\\u00").append(Character.forDigit(c >> 4, 16)).append(Character.forDigit(c & 15, 16));
+                    else out.append(c);
+                }
+            }
         }
         out.append('"');
     }

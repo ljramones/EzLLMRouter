@@ -64,6 +64,9 @@ func matches(v any, shape Object, defs Object) bool {
 		if name == ref || !has(defs, name) {
 			return false
 		}
+		if name == "PublicText" && strings.ContainsFunc(str(v), func(r rune) bool { return r < 32 || r == 127 }) {
+			return false
+		}
 		if (name == "utc" || name == "UtcSecond") && !utc(v) {
 			return false
 		}

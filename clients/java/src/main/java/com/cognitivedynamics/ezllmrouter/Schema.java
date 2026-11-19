@@ -33,6 +33,7 @@ final class Schema {
     private static boolean matches(Object value, Map<String, Object> shape, Map<String, Object> defs) {
         if (shape.get("$ref") instanceof String ref) {
             String name = ref.replaceFirst("^#/\\$defs/", "");
+            if (name.equals("PublicText") && value instanceof String string && string.chars().anyMatch(c -> c < 32 || c == 127)) return false;
             return !name.equals(ref) && defs.containsKey(name) && (!(name.equals("utc") || name.equals("UtcSecond")) || utc(value)) && matches(value, object(defs.get(name)), defs);
         }
         for (Object part : array(shape.get("allOf"))) if (!matches(value, object(part), defs)) return false;
@@ -63,7 +64,8 @@ final class Schema {
                 return !shape.containsKey("items") || list.stream().allMatch(item -> matches(item, object(shape.get("items")), defs));
             case "string":
                 if (!(value instanceof String string) || !Json.scalar(string) || string.codePointCount(0, string.length()) < bound(shape, "minLength", 0) || string.codePointCount(0, string.length()) > bound(shape, "maxLength", Json.MAX_INTEGER)) return false;
-                return !shape.containsKey("pattern") || PATTERNS.computeIfAbsent(text(shape.get("pattern")), Pattern::compile).matcher(string).find();
+                return !shape.containsKey("pattern") || PATTERNS.computeIfAbsent(text(shape.get("pattern")),
+                    expression -> Pattern.compile(expression.endsWith("$") ? expression.substring(0, expression.length() - 1) + "\\z" : expression)).matcher(string).find();
             case "integer": return value instanceof Long n && n >= bound(shape, "minimum", -Json.MAX_INTEGER) && n <= bound(shape, "maximum", Json.MAX_INTEGER);
             case "boolean": return value instanceof Boolean;
             case "null": return value == null;

@@ -35,10 +35,15 @@ class NativeClientContracts(unittest.TestCase):
         stored = json.loads((ROOT / "tests/client_languages/cases.json").read_text())
         self.assertEqual(stored, cases())
         indexed = {case["name"]: case for case in stored}
-        for name in ("embedding", "v3_speech_eligibility", "v3_permissions", "start_run", "recover_outcome"):
+        for name in ("embedding", "v3_speech_eligibility", "v3_permissions", "start_run", "recover_outcome",
+                     "multiline_assistant", "multiline_status", "escaped_text_assistant",
+                     "escaped_text_status", "multiline_tool_arguments", "multiline_request", "escaped_text_request"):
             self.assertTrue(indexed[name]["expected"]["ok"])
         for name in ("foreign_handle", "foreign_ranking", "v2_foreign_digest", "v3_foreign_digest"):
             self.assertEqual(indexed[name]["expected"]["retry_guidance"], "query_first")
+        for name in ("newline_identifier", "newline_public_text", "tab_public_text"):
+            self.assertEqual(indexed[name]["expected"]["code"], "SCHEMA_INVALID")
+            self.assertEqual(indexed[name]["expected"]["calls"], [])
 
 
 if __name__ == "__main__":

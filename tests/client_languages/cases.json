@@ -3912,6 +3912,1517 @@
     }
   },
   {
+    "name": "multiline_assistant",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Sure:\n1. item\n2. item",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Hi",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "multiline_status",
+    "action": "get_status",
+    "args": [
+      {
+        "task_id": "task.demo",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "status_revision": 3,
+      "submission_state": "completed",
+      "attempts": [
+        {
+          "attempt_id": "attempt.demo",
+          "execution_generation": "gen.1",
+          "attempt_revision": 4,
+          "dispatch_state": "response_observed",
+          "delivery_state": "candidate_delivered",
+          "cancel_state": "none",
+          "settlement_state": "unsettled",
+          "generation_state": "current",
+          "usage": {
+            "state": "not_recorded"
+          }
+        }
+      ],
+      "candidate_access": "present",
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Sure:\n1. item\n2. item",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      },
+      "updated_at": "2029-12-31T23:59:04Z"
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "multiline_request",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Sure:\n1. item\n2. item",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Sure:\n1. item\n2. item",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Sure:\n1. item\n2. item",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "escaped_text_assistant",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Columns:\t\u03b1\t\ud83d\udd10\r\nControl: \b\f\u0001\u007f",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Hi",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "escaped_text_status",
+    "action": "get_status",
+    "args": [
+      {
+        "task_id": "task.demo",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "status_revision": 3,
+      "submission_state": "completed",
+      "attempts": [
+        {
+          "attempt_id": "attempt.demo",
+          "execution_generation": "gen.1",
+          "attempt_revision": 4,
+          "dispatch_state": "response_observed",
+          "delivery_state": "candidate_delivered",
+          "cancel_state": "none",
+          "settlement_state": "unsettled",
+          "generation_state": "current",
+          "usage": {
+            "state": "not_recorded"
+          }
+        }
+      ],
+      "candidate_access": "present",
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Columns:\t\u03b1\t\ud83d\udd10\r\nControl: \b\f\u0001\u007f",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      },
+      "updated_at": "2029-12-31T23:59:04Z"
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/submissions/by-work/task.demo/step.demo/1/gen.1",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "escaped_text_request",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Columns:\t\u03b1\t\ud83d\udd10\r\nControl: \b\f\u0001\u007f",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Columns:\t\u03b1\t\ud83d\udd10\r\nControl: \b\f\u0001\u007f",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Columns:\t\u03b1\t\ud83d\udd10\r\nControl: \b\f\u0001\u007f",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "multiline_tool_arguments",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.tool",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.tool",
+        "attempt_id": "attempt.tool",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.call.1",
+            "kind": "tool_call",
+            "call_id": "call.1",
+            "tool_name": "lookup",
+            "arguments": {
+              "key": "line\nnext\tindent"
+            },
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.tool"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "tool_calls",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "ok": true,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Hi",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "newline_identifier",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo\n",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Hello.",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "newline_response_handle",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z"
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo\n",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Hello.",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 200,
+      "selector": {
+        "task_id": "task.demo",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1"
+      },
+      "handle": null,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Content-Type": "application/json",
+            "Accept-Encoding": "identity"
+          },
+          "body": {
+            "contract_version": "0.2",
+            "profile": "initial_1a@1",
+            "task_id": "task.demo",
+            "task_class": "class.demo",
+            "step_class": "generic",
+            "step_id": "step.demo",
+            "step_revision": 1,
+            "execution_generation": "gen.1",
+            "purpose": "execution",
+            "requested_configuration_ref": "cfg.demo",
+            "requested_features": [
+              "text"
+            ],
+            "resolved_prompt": {
+              "prompt_id": "prompt.demo",
+              "prompt_version": "v1",
+              "block_ids": [
+                "block.system.1"
+              ],
+              "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+            },
+            "messages": [
+              {
+                "role": "system",
+                "blocks": [
+                  {
+                    "block_id": "block.system.1",
+                    "kind": "system_text",
+                    "text": "Answer briefly.",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.prompt.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "blocks": [
+                  {
+                    "block_id": "block.user.1",
+                    "kind": "content_text",
+                    "text": "Hi",
+                    "source_labels": {
+                      "lineage_ids": [
+                        "src.user.1"
+                      ],
+                      "sensitivity": "internal",
+                      "restrictions": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "generation_settings": {
+              "max_output_tokens": 32,
+              "temperature_decimal": "0",
+              "total_timeout_ms": 1000
+            },
+            "deadline": "2030-01-01T00:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  {
     "name": "foreign_handle",
     "action": "submit",
     "args": [
@@ -6587,6 +8098,262 @@
           }
         }
       ]
+    }
+  },
+  {
+    "name": "newline_public_text",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "Requester supplied reference"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "reason\n",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "tab_public_text",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "Requester supplied reference"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "reason\tvalue",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
     }
   },
   {

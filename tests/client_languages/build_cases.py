@@ -88,6 +88,26 @@ def cases():
     add("bad_wait", "submit", legacy["reply_delivered"], [request], wait_ms=30001)
     add("bad_selector", "get_status", legacy["status_present"], [{"submission_id": ""}])
     add("lost_ack", "submit", legacy["reply_delivered"], [request], lost=True)
+    for name, text in (("multiline", "Sure:\n1. item\n2. item"),
+                       ("escaped_text", "Columns:\tα\t🔐\r\nControl: \b\f\u0001\u007f")):
+        response = deepcopy(legacy["reply_delivered"])
+        response["candidate"]["output_blocks"][0]["text"] = text
+        add(name + "_assistant", "submit", response, [request])
+        status_reply = deepcopy(legacy["status_present"])
+        status_reply["candidate"]["output_blocks"][0]["text"] = text
+        add(name + "_status", "get_status", status_reply, [selector])
+        multiline_request = deepcopy(request)
+        multiline_request["messages"][-1]["blocks"][0]["text"] = text
+        add(name + "_request", "submit", response, [multiline_request])
+    tool = deepcopy(legacy["reply_tool"])
+    tool["candidate"]["output_blocks"][0]["arguments"]["key"] = "line\nnext\tindent"
+    add("multiline_tool_arguments", "submit", tool, [request])
+    bad_id = deepcopy(request)
+    bad_id["task_id"] += "\n"
+    add("newline_identifier", "submit", legacy["reply_delivered"], [bad_id])
+    bad_handle = deepcopy(legacy["reply_delivered"])
+    bad_handle["handle"]["submission_id"] += "\n"
+    add("newline_response_handle", "submit", bad_handle, [request])
     for name, mutation in (("foreign_handle", {"task_id": "task.foreign"}), ("wrong_generation", {"execution_generation": "gen.foreign"})):
         response = deepcopy(legacy["reply_delivered"])
         response["handle"]["work_key"].update(mutation)
@@ -105,6 +125,10 @@ def cases():
     add("redirect", "submit", legacy["reply_delivered"], [request], status=307, response_headers={"Location": "https://foreign.invalid"})
     rerank = next(x["request"] for x in successor["examples"] if x["id"] == "DELEGATED_RERANK")
     completed = next(x["value"] for x in successor["protocol_fixtures"] if x["id"] == "COMPLETED")
+    for name, text in (("newline", "reason\n"), ("tab", "reason\tvalue")):
+        bad_public = deepcopy(rerank)
+        bad_public["input"]["query"] = text
+        add(name + "_public_text", "submit_rerank", completed, [bad_public], wire="0.3")
     for fixture in successor["protocol_fixtures"]:
         value = fixture["value"]
         action = "get_successor_status" if fixture["id"].startswith("STATUS_") else "submit_rerank"
