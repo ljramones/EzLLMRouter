@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
@@ -20,14 +21,18 @@ from dev12_ct02b_supplement import (
 
 class SingleUseSupplementTests(unittest.TestCase):
     def setUp(self):
+        self.expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        expiry = patch("dev12_ct02b_supplement.EXPIRY", self.expiry)
+        expiry.start()
+        self.addCleanup(expiry.stop)
         self.plan = {"envelope": {"campaign_id": CAMPAIGN,
             "budget_account_id": BUDGET, "financial_owner_id": OWNER,
             "currency": "USD", "max_admissions": 1,
             "max_possible_sends": 1, "max_inflight": 1,
-            "ceiling_decimal": "0.010000000", "absolute_expiry": EXPIRY}}
+            "ceiling_decimal": "0.010000000", "absolute_expiry": self.expiry}}
         self.scope = {"resource_started_at":
             datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "original_expiry": EXPIRY}
+            "original_expiry": self.expiry}
 
     def test_exact_narrow_limits_and_persisted_readback(self):
         self.assertEqual(supplemental_limits(self.plan, self.scope),
@@ -45,7 +50,7 @@ class SingleUseSupplementTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(AssertionError):
                 verify_started_limits({**campaign, field: invalid}, self.scope)
         with self.assertRaises(AssertionError):
-            verify_started_limits({**campaign, "expires_at": EXPIRY}, self.scope)
+            verify_started_limits({**campaign, "expires_at": self.expiry}, self.scope)
 
     def test_changed_identity_or_expired_resource_start_rejected(self):
         with self.assertRaises(AssertionError):

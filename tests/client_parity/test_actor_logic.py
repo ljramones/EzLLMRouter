@@ -1,9 +1,27 @@
 """Installed-client actor controls for explicit attempt budget and drain time."""
+import ast
+import copy
+import json
+from pathlib import Path
 import time
+import types
 import unittest
 from unittest import mock
 
-import integration_python as actor
+# Exercise the actor's actual pure helpers without importing its installed-only
+# deployment assertions or constructing network clients in the development tree.
+ROOT = Path(__file__).resolve().parents[2]
+source = Path(__file__).with_name("integration_python.py")
+tree = ast.parse(source.read_text())
+actor = types.ModuleType("actor_logic_under_test")
+actor.copy, actor.time = copy, time
+actor.BASE = json.loads((ROOT / "tests/development_slice/request.json").read_text())
+actor.CORPUS = {item["id"]: item for item in json.loads(source.with_name("scenarios.json").read_text())["cases"]}
+def no_network():
+    raise AssertionError("Actor helper tests must inject receiver observations")
+actor.arrivals = no_network
+helpers = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {"case_request", "no_send_drain"}]
+exec(compile(ast.Module(body=helpers, type_ignores=[]), str(source), "exec"), actor.__dict__)
 
 
 class ActorLogic(unittest.TestCase):

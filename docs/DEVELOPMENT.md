@@ -16,6 +16,32 @@ listener binds; local IPC pairs support framing checks. The second check runs
 HTTP and TLS fixtures against localhost and requires permission to bind sockets.
 These commands use temporary stores and controlled fixtures, with no model calls.
 
+`tools.check` inventories Git-tracked and non-ignored `test_*.py` files under
+`tests/` and `deploy/local/` before running. Every file must have an offline,
+loopback or standalone-script registration, or an explicit reason in
+`EXCLUDED_TESTS`. Missing classifications fail the check. The current exclusions
+need the frozen gateway runtime or retained run evidence; they are not passing
+development tests. In particular, the AnyIO counterexamples require the frozen
+4.15.1 wheels, while the development lock uses 4.16.0.
+
+Loopback modules allow localhost and local IPC only. Per-module interpreters
+isolate fixture imports and environment changes. The network guard applies to
+Python socket operations in those interpreters; subprocess consumers and
+deployment containers have their own fixture and isolation checks.
+
+JavaScript runtime checks install a fresh local npm package and exercise the
+installed consumer. The HTTP variant uses actual Node fetch against a disposable
+localhost fixture:
+
+```sh
+python3 -I -S tests/client_languages/check_javascript.py
+python3 -I -S tests/client_languages/check_javascript.py --http
+```
+
+The JavaScript HTTP deadline is supplied by the fixture's caller. This check does
+not establish a default total deadline or complete response-size parity with
+Python. See the [review follow-up](CODE-REVIEW-FOLLOWUP.md) for remaining work.
+
 Go and Java clients are independent packages with no external runtime dependencies.
 Use the Go version in `clients/go/.go-version` and JDK 17+:
 
@@ -53,6 +79,18 @@ After building the native packages, run their explicit HTTP fixtures with
 `--client rust`. CI has separate jobs for .NET, Rust and TypeScript. A missing
 SDK, incompatible compiler or denied localhost bind must be reported as an
 unverified check rather than a passing result.
+
+Credential initialization has a separate Linux capability check:
+
+```sh
+python3 -I -S tests/security/check_credential_init.py
+```
+
+It runs only the initializer in the digest-pinned Python base image with
+`CAP_CHOWN`, a read-only root filesystem, no network and a temporary credentials
+filesystem. It checks initial creation and replacement, service ownership and
+mode `0400`. It does not start or restart a deployment. This requires Docker;
+the `credential-init` CI job runs the same check.
 
 ## Browser journeys
 

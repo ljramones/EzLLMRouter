@@ -688,24 +688,18 @@ class CompletionPreflightTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             mounted_source_identity(self.root)
 
-    def test_representative_old_row_migration_preserves_bytes_and_no_send(self):
+    def test_unversioned_database_is_refused_without_adoption_or_mutation(self):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server/src"))
         from ezllmrouter_server.store import SQLiteStore
-        from dev12_completion_operator_handlers import persistence_migration
-
-        store = SQLiteStore(self.root / "current.sqlite")
-        allowance = SimpleNamespace(inspect=lambda: {"attempt_count": 0,
-            "possible_send_count": 0})
-        runtime = SimpleNamespace(root=self.root, store=store, allowance=allowance,
-            receiver_log=self.root / "receiver.jsonl")
-        try:
-            case = self.case(self.plan, "t66")
-            result = persistence_migration(runtime, case)
-            self.assertEqual(result["status"], "PASS", result["assertions"])
-            self.assertEqual(verify_case_result(case, result, self.root)["status"], "PASS")
-            self.assertEqual(store.db.execute("SELECT COUNT(*) FROM submissions").fetchone()[0], 0)
-        finally:
-            store.close()
+        path = self.root / "unversioned.sqlite"
+        with sqlite3.connect(path) as connection:
+            connection.execute("CREATE TABLE submissions (record TEXT)")
+            connection.execute("INSERT INTO submissions VALUES (?)", ('{"attempt":"retained"}',))
+        before = path.read_bytes()
+        with self.assertRaisesRegex(RuntimeError, "unversioned database"):
+            SQLiteStore(path)
+        self.assertEqual(path.read_bytes(), before)
+        self.assertFalse(Path(str(path) + "-wal").exists())
 
     def test_browser_attestation_requires_exact_target_or_retained_port_forward(self):
         from dev12_completion_operator_handlers import _browser_attestation

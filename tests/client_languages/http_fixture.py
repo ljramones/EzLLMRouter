@@ -62,7 +62,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--client", choices=("go", "java", "dotnet", "rust"), action="append")
+    parser.add_argument("--client", choices=("go", "java", "dotnet", "rust", "js"), action="append")
     args = parser.parse_args()
     clients = args.client or ["go", "java"]
     with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
@@ -84,13 +84,16 @@ def main():
             if "rust" in clients:
                 subprocess.run(["cargo", "test", "--manifest-path", str(ROOT / "clients/rust/Cargo.toml"), "--test", "contracts", "native_http", "--", "--exact"],
                     env=env, check=True, timeout=120)
+            if "js" in clients:
+                subprocess.run(["node", str(ROOT / "tests/client_languages/javascript_http.cjs")],
+                               env=env, check=True, timeout=60)
         finally:
             server.shutdown()
             thread.join(timeout=5)
     expected = Counter({mode: len(clients) for mode in ("success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow")})
     if COUNTS != expected:
         raise AssertionError(f"Unexpected request delivery or replay: {COUNTS}")
-    print("Native HTTP: bounded reads, redirects, chunking, truncation and body deadlines passed; no request replay.")
+    print("HTTP fixture: valid replies preserved, expected transport faults rejected, and no request replay.")
 
 
 if __name__ == "__main__":

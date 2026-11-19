@@ -1,6 +1,7 @@
 """Public/private model mapping against actual DEV-04 configuration and packaged clients."""
 from copy import deepcopy
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -26,7 +27,6 @@ from ezllmrouter_server.gateway.proxy_recipe import (GatewayProxyRecipe, PROXY_M
 
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
 REQUEST = json.loads((ROOT / "tests/development_slice/request.json").read_text())
-JS_TARBALL = ROOT / "tests/gateway_integration/inputs/cognitivedynamics-ezllmrouter-client-0.3.0.tgz"
 
 
 class BoundAdapter:
@@ -152,10 +152,14 @@ class ModelIdentityTests(unittest.TestCase):
                 GatewayProxyRecipe().expected(changed, 1000)
 
     def _check_js_package(self, temp, request, reply, status, reject=False):
-        with tarfile.open(JS_TARBALL, "r:gz") as archive:
-            source = archive.extractfile("package/index.cjs").read()
-        package = Path(temp) / "index.cjs"
-        package.write_bytes(source)
+        package = Path(temp) / "package/index.cjs"
+        if not package.exists():
+            packed = subprocess.check_output(["npm", "pack", str(ROOT / "clients/js"),
+                "--offline", "--ignore-scripts", "--pack-destination", temp, "--json"],
+                text=True, timeout=60,
+                env={**os.environ, "npm_config_cache": str(ROOT / ".cache/npm")})
+            with tarfile.open(Path(temp) / json.loads(packed)[0]["filename"], "r:gz") as archive:
+                archive.extractall(temp, filter="data")
         script = r'''
 const fs = require("node:fs");
 const {EzLLMRouterClient} = require(process.argv[1]);

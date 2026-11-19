@@ -77,6 +77,12 @@ limits. The isolated worker prepares a request; the trusted service validates
 the final request and owns transmission. A client response does not itself prove
 task acceptance.
 
+Text execution accepts `generation_settings.total_timeout_ms` from 1 through
+300,000 milliseconds. A larger value is rejected with HTTP 422 and
+`LIMIT_EXCEEDED` before admission. The trusted sender uses one attempt deadline
+bounded by that timeout and the signed plan's expiry; worker preparation and
+provider response reading share that budget.
+
 After a transport timeout or uncertain response, query existing work using its
 submission handle or work identity. Do not repeat a model call to repair telemetry
 delivery. A post-send persistence failure can return `202 pending` while durable
@@ -87,6 +93,11 @@ The clients validate response shape, correspondence and byte limits. They do not
 follow redirects or replay an operation automatically. The Java guide describes
 the JDK's connection and idempotent transport retry behavior. See the client guides for
 supported execution profiles and response-recovery methods.
+
+Free text in model results and tool arguments preserves escaped newlines, tabs
+and other valid Unicode content. NUL and lone surrogate code points are rejected.
+Identifiers, timestamps and fields with explicit text restrictions still use
+their schema rules.
 
 ## Operator API
 

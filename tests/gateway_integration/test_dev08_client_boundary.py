@@ -76,7 +76,7 @@ class ClientBoundaryTests(unittest.TestCase):
                       try{const r=await c.submit(v.request,{wait_ms:10000});
                         process.stdout.write(JSON.stringify({state:r.state,cost:r.candidate.usage.revision.cost}));}
                       catch(e){process.stderr.write(e.code||String(e));process.exitCode=1;}});"""
-                result = subprocess.run(["/opt/homebrew/bin/node", "-e", script,
+                result = subprocess.run(["node", "-e", script,
                     str(ROOT / "clients/js/index.cjs")], input=json.dumps({
                     "url": "http://127.0.0.1:" + str(wire.server_port), "token": token,
                     "request": request}), text=True, capture_output=True, timeout=20)

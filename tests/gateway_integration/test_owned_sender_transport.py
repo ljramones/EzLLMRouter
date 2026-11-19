@@ -1,7 +1,6 @@
 """Local deterministic controls for the bounded owned-socket sender."""
 import asyncio
 from datetime import datetime, timedelta, timezone
-import glob
 import json
 import os
 from pathlib import Path
@@ -14,13 +13,6 @@ ROOT = Path(__file__).resolve().parents[2]
 for source in (ROOT / "tests/gateway_integration", ROOT / "server/src",
                ROOT / "tests/development_slice"):
     sys.path.insert(0, str(source))
-for name in ("httpcore", "httpx", "anyio", "h11", "certifi", "idna",
-             "sniffio", "typing_extensions"):
-    matches = glob.glob(str(ROOT / "gateway-inputs/dev04/wheels" / (name + "-*.whl")))
-    if len(matches) != 1:
-        raise RuntimeError("frozen wheel mismatch: " + name)
-    sys.path.insert(0, matches[0])
-
 import httpcore  # noqa: E402
 import httpx  # noqa: E402
 from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402

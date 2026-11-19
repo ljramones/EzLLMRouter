@@ -1,7 +1,9 @@
 # Testing roadmap
 
-This plan follows the browser suite. It does not incorporate the separate Claude
-review; assess those findings after the browser baseline is verified.
+The browser baseline passed all 381 cases across Chromium, Firefox and WebKit
+in the owner Terminal. The subsequent Claude review is being addressed in the
+[review follow-up](CODE-REVIEW-FOLLOWUP.md). The longer-term priorities below
+still apply; measured coverage and deployment qualification remain outstanding.
 
 ## First gate: browser baseline
 
@@ -53,6 +55,7 @@ browser fixture and do not treat it as permission to restart an existing profile
 or contact a paid provider. Any live-provider qualification remains an explicit,
 bounded operation with separate credentials and spending authorization.
 
-After the browser gate, triage the Claude review by affected behavior and
-severity. Confirm findings against the current source and add a regression test
-with each accepted fix. Do not treat unreviewed findings as established defects.
+Continue review work by affected behavior and severity, with a regression test
+for each confirmed defect. The explicit inventory and JavaScript CI jobs address
+the discovery portion of priority 1; they do not establish coverage percentages
+or complete the later test layers.
