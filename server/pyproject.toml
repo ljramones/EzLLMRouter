@@ -7,7 +7,7 @@ name = "cognitivedynamics-ezllmrouter-server"
 version = "0.3.3"
 description = "CognitiveDynamics EzLLMRouter server foundation package"
 requires-python = ">=3.12,<3.13"
-dependencies = ["cryptography==48.0.1"]
+dependencies = ["cryptography==50.0.0"]
 classifiers = ["Private :: Do Not Upload"]
 
 [project.scripts]
