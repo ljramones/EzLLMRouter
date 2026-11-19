@@ -291,8 +291,10 @@ def revocation(run, client, case, a, b, people):
     queued_detail = run.wait_for("queued attempt", queued_record)
     attempt = queued_detail["attempt_id"]
     require(attempt is not None, "queued attempt identity unavailable")
-    run.wait_for("actual owned pool queue", lambda: any(row.get("attempt_id") == attempt
-                 for row in run.metadata("pool-" + case, "/data/pool-observations.jsonl", "service")))
+    # A durable guard receipt and an existing held receiver request establish
+    # the before-first-write boundary without inspecting httpcore internals.
+    run.wait_for("guarded attempt awaiting first write", lambda:
+                 run.detail(client, queued_sid)["dispatch_receipt"]["present"])
     require(len(run.arrivals("receiver-queued-" + case)) == len(before) + 1,
             "queued request reached receiver before revocation")
     if case == "grant":
@@ -375,7 +377,7 @@ def main():
         backup = profile_summary(run.profile("pre-migration-backup", "backup"))
         require(backup["submissions"] == counts["submissions"],
                 "backup and quiescent profile submission counts differ")
-        env = dict(os.environ, EZLLMROUTER_DEV07_POOL_PROBE="1")
+        env = dict(os.environ)
         run.profile("offline-prepare", "prepare", env)
         run.build = local_profile.current()
         run.profile("build-scoped-images", "build-images", env)

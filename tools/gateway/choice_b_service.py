@@ -18,7 +18,7 @@ from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
 from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 
-def main():
+def main(*, adapter_factory=ChoiceBSenderAdapter):
     token = os.environ["EZLLMROUTER_DEV_TOKEN"]
     provider_key = os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]
     if len(token) < 32 or not provider_key.startswith("sk-") or len(provider_key) < 36:
@@ -42,7 +42,7 @@ def main():
 
 
     identity = LiveIdentity({token: trusted})
-    adapter = ChoiceBSenderAdapter(authority)
+    adapter = adapter_factory(authority)
 
 
     class AuthorityControl(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):

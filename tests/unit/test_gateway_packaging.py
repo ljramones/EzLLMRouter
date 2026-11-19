@@ -135,17 +135,17 @@ print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}
             result = self.child(script, paths, build)
             self.assertEqual(json.loads(result.stdout)["runtime"], "staged package")
 
-    def test_staged_worker_needs_only_its_two_modules(self):
+    def test_staged_worker_needs_only_runtime_wire_and_safe_logger(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             for source, target in source_mapping(ROOT):
                 if target.startswith("worker/") and target.endswith(".py"):
                     shutil.copy2(ROOT / source, directory / Path(target).name)
             self.assertEqual(sorted(path.name for path in directory.iterdir()),
-                             ["choice_b_wire.py", "choice_b_worker.py"])
+                             ["choice_b_wire.py", "choice_b_worker.py", "worker_logging.py"])
             script = """
 import importlib.util, json
-import choice_b_worker, choice_b_wire
+import choice_b_worker, choice_b_wire, worker_logging
 assert importlib.util.find_spec('ezllmrouter_server') is None
 assert 'litellm' not in sys.modules
 assert choice_b_wire.LIMIT == 262144
@@ -154,6 +154,18 @@ print(json.dumps({'worker': 'isolated', 'service_importable': False}))
             dependencies = self.worker_dependencies(directory)
             result = self.child(script, [directory, dependencies], directory)
             self.assertFalse(json.loads(result.stdout)["service_importable"])
+
+    def test_fault_fixtures_require_explicit_staging_and_are_absent_from_runtime(self):
+        for dev05 in (False, True):
+            normal = {target for _, target in source_mapping(ROOT, dev05)}
+            fixture = {target for _, target in source_mapping(ROOT, dev05, fixtures=True)}
+            extras = {"service/gateway/fixture_adapters.py", "service/gateway/service_fixture.py",
+                      "worker/fixture/worker_fixture.py"}
+            self.assertTrue(extras.isdisjoint(normal))
+            self.assertEqual(fixture - normal, extras)
+        self.assertEqual((ROOT / "server/src/ezllmrouter_server/observability.py").read_bytes(),
+                         next((ROOT / source).read_bytes() for source, target in source_mapping(ROOT)
+                              if target == "worker/worker_logging.py"))
 
     def test_staged_runtime_implementation_inputs_are_not_test_sources(self):
         mappings = dict((target, source) for source, target in source_mapping(ROOT, True))

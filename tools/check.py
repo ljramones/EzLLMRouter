@@ -72,6 +72,7 @@ MODULES = (
     "tests.playwright.test_server",
     "tests.unit.test_check_inventory",
     "tests.unit.test_gateway_lifecycle",
+    "tests.unit.test_gateway_runtime_safety",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",

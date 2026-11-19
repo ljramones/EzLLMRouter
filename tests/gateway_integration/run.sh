@@ -249,9 +249,9 @@ logrun pypi-advisories cp "$frozen_dir/PYPI-ADVISORIES.json" "$run_dir/PYPI-ADVI
 logrun publisher-advisories cp "$frozen_dir/GITHUB-ADVISORIES.json" "$run_dir/GITHUB-ADVISORIES.json"
 logrun artifact-review "$python_tool" -I -B "$root/tests/gateway_integration/review_gate.py" "$root" "$run_dir"
 if [[ "$phase" == dev05 ]]; then
-  logrun stage "$python_tool" -I -B "$root/tests/gateway_integration/stage.py" "$root" "$run_dir" "$result_dir" DEV-05
+  logrun stage "$python_tool" -I -B "$root/tests/gateway_integration/stage.py" "$root" "$run_dir" "$result_dir" DEV-05 --fixtures
 else
-  logrun stage "$python_tool" -I -B "$root/tests/gateway_integration/stage.py" "$root" "$run_dir"
+  logrun stage "$python_tool" -I -B "$root/tests/gateway_integration/stage.py" "$root" "$run_dir" --fixtures
 fi
 logrun model-identity-regression "$python_tool" -I -B "$root/tests/gateway_integration/test_model_identity.py" -q
 logrun boundary-readiness-regression "$python_tool" -I -B "$root/tests/gateway_integration/test_readiness.py" -q

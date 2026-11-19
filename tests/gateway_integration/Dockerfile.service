@@ -21,4 +21,4 @@ RUN find /app/server /app/gateway /app/dev_slice -type d -exec chmod 0555 {} + \
 USER 10001:10001
 WORKDIR /app
 RUN test -r /app/server/ezllmrouter_server/core.py && test -r /app/server/ezllmrouter_server/gateway/guard.py
-CMD ["python", "/app/gateway/service_main.py"]
+CMD ["python", "/app/gateway/service_fixture.py", "asgi"]

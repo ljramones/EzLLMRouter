@@ -110,8 +110,7 @@ def integration(revision=1,mutation=False,fail_commit=False,timeout_ms=1000):
     with tempfile.TemporaryDirectory(prefix='ezllmrouter-run15-') as tmp:
         env={'EZLLMROUTER_DEV04_PROVIDER_KEY':PROVIDER_KEY,
              'EZLLMROUTER_DEV04_GUARD_EVENTS':str(Path(tmp)/'guard.jsonl'),
-             'EZLLMROUTER_DEV04_SEND_EVENTS':str(Path(tmp)/'send.jsonl'),
-             'EZLLMROUTER_DEV05_TEST_TOOL_MUTATION':'0'}
+             'EZLLMROUTER_DEV04_SEND_EVENTS':str(Path(tmp)/'send.jsonl')}
         with patch.dict(os.environ,env):
             store=CommitStore(Path(tmp)/'store.sqlite',fail_commit)
             adapter=ControlledWorkerAdapter(mutation)

@@ -1,8 +1,10 @@
 """DEV-04 final HTTPX guard for the selected LiteLLM/OpenAI SDK path."""
+
 from __future__ import annotations
 
 from contextvars import ContextVar
 import atexit
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
@@ -16,6 +18,7 @@ from typing import Callable
 
 import httpx
 from ezllmrouter_server.observability import log_failure
+from ezllmrouter_server.canonical import ContractError
 from .proxy_recipe import PUBLIC_MODEL, require_public_destination
 
 
@@ -58,7 +61,9 @@ class Invocation:
         return self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
 
 
-ACTIVE: ContextVar[Invocation | None] = ContextVar("ezllmrouter_dev04_gateway_invocation", default=None)
+ACTIVE: ContextVar[Invocation | None] = ContextVar(
+    "ezllmrouter_dev04_gateway_invocation", default=None
+)
 _EVENT_QUEUE = queue.Queue(maxsize=1024)
 _EVENT_START = threading.Lock()
 _EVENT_WRITER = None
@@ -88,8 +93,9 @@ def enqueue_event(target, row):
     try:
         with _EVENT_START:
             if _EVENT_WRITER is None:
-                writer = threading.Thread(target=_write_events, daemon=True,
-                                          name="ezllmrouter-gateway-diagnostics")
+                writer = threading.Thread(
+                    target=_write_events, daemon=True, name="ezllmrouter-gateway-diagnostics"
+                )
                 writer.start()
                 _EVENT_WRITER = writer
         _EVENT_QUEUE.put_nowait((target, row))
@@ -116,10 +122,13 @@ def _event(invocation: Invocation | None, stage: str, code: str | None = None):
     target = os.environ.get("EZLLMROUTER_DEV04_GUARD_EVENTS")
     if not target:
         return
-    row = {"attempt_id": invocation.attempt_id if invocation else None,
-           "stage": stage, "code": code,
-           "at": datetime.now(timezone.utc).isoformat(),
-           "monotonic_ns": time.monotonic_ns()}
+    row = {
+        "attempt_id": invocation.attempt_id if invocation else None,
+        "stage": stage,
+        "code": code,
+        "at": datetime.now(timezone.utc).isoformat(),
+        "monotonic_ns": time.monotonic_ns(),
+    }
     enqueue_event(target, row)
 
 
@@ -140,30 +149,65 @@ def provider_expectation(projected: dict) -> dict:
         if role in ("system", "user"):
             messages.append({"role": role, "content": _text(blocks)})
         elif role == "assistant":
-            calls = [{"id": block["call_id"], "type": "function",
-                      "function": {"name": block["tool_name"],
-                                   "arguments": json.dumps(block["arguments"], ensure_ascii=False,
-                                                           sort_keys=True, separators=(",", ":"))}}
-                     for block in blocks if block["kind"] == "tool_call"]
-            item = {"role": "assistant", "content": _text(
-                [block for block in blocks if block["kind"] == "assistant_text"])}
+            calls = [
+                {
+                    "id": block["call_id"],
+                    "type": "function",
+                    "function": {
+                        "name": block["tool_name"],
+                        "arguments": json.dumps(
+                            block["arguments"],
+                            ensure_ascii=False,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                    },
+                }
+                for block in blocks
+                if block["kind"] == "tool_call"
+            ]
+            item = {
+                "role": "assistant",
+                "content": _text([block for block in blocks if block["kind"] == "assistant_text"]),
+            }
             if calls:
                 item["tool_calls"] = calls
             messages.append(item)
         elif role == "tool":
             for block in blocks:
-                content = block["result_text"] if "result_text" in block else json.dumps(
-                    block["result_value"], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-                messages.append({"role": "tool", "tool_call_id": block["call_id"], "content": content})
+                content = (
+                    block["result_text"]
+                    if "result_text" in block
+                    else json.dumps(
+                        block["result_value"],
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                )
+                messages.append(
+                    {"role": "tool", "tool_call_id": block["call_id"], "content": content}
+                )
         else:
             raise GuardRejected()
-    expected = {"model": destination["model"], "messages": messages,
-                "max_tokens": work["generation_settings"]["max_output_tokens"],
-                "temperature": 0}
+    expected = {
+        "model": destination["model"],
+        "messages": messages,
+        "max_tokens": work["generation_settings"]["max_output_tokens"],
+        "temperature": 0,
+    }
     if "tools" in work["requested_features"]:
-        expected["tools"] = [{"type": "function", "function": {
-            "name": tool["name"], "description": tool["description"],
-            "parameters": tool["input_schema"]}} for tool in work["tool_definitions"]]
+        expected["tools"] = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["input_schema"],
+                },
+            }
+            for tool in work["tool_definitions"]
+        ]
         expected["tool_choice"] = work["tool_choice"]
     return expected
 
@@ -171,54 +215,102 @@ def provider_expectation(projected: dict) -> dict:
 def responses_expectation(projected: dict) -> dict:
     """Independent selected Responses map; reject every unsupported message/feature."""
     destination, work = projected["destination"], projected["work"]
-    if (destination.get("service") != "openai.responses.v1" or
-            destination.get("adapter_id") != "openai.responses.v1" or
-            set(work["requested_features"]) != {"text"} or
-            work["generation_settings"]["temperature_decimal"] != "0"):
+    if (
+        destination.get("service") != "openai.responses.v1"
+        or destination.get("adapter_id") != "openai.responses.v1"
+        or set(work["requested_features"]) != {"text"}
+        or work["generation_settings"]["temperature_decimal"] != "0"
+    ):
         raise GuardRejected()
     messages = []
     for item in work["messages"]:
         role = item["role"]
         if role not in ("system", "user") or any(
-                block.get("kind") != ("system_text" if role == "system" else "content_text")
-                for block in item["blocks"]):
+            block.get("kind") != ("system_text" if role == "system" else "content_text")
+            for block in item["blocks"]
+        ):
             raise GuardRejected()
-        messages.append({"role": role, "content": [{"type": "input_text",
-            "text": "\n".join(block["text"] for block in item["blocks"])}]})
-    return {"model": destination["model"], "input": messages,
-            "max_output_tokens": work["generation_settings"]["max_output_tokens"],
-            "temperature": 0, "store": False}
+        messages.append(
+            {
+                "role": role,
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": "\n".join(block["text"] for block in item["blocks"]),
+                    }
+                ],
+            }
+        )
+    return {
+        "model": destination["model"],
+        "input": messages,
+        "max_output_tokens": work["generation_settings"]["max_output_tokens"],
+        "temperature": 0,
+        "store": False,
+    }
 
 
 def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -> dict:
     plan = invocation.plan
     if plan.get("plan_version") == "dev12-plan@1":
         from .dev12_guard import check_synthetic_request
+
         return check_synthetic_request(request, invocation, body)
     provider_route = plan.get("destination", {}).get("service") == "openai.responses.v1"
-    expected = (responses_expectation(invocation.projection) if provider_route else
-                provider_expectation(invocation.projection))
-    expected_url = (plan["destination"]["endpoint"].rstrip("/") + "/v1/responses"
-                    if provider_route else PROVIDER_URL)
+    expected = (
+        responses_expectation(invocation.projection)
+        if provider_route
+        else provider_expectation(invocation.projection)
+    )
+    expected_url = (
+        plan["destination"]["endpoint"].rstrip("/") + "/v1/responses"
+        if provider_route
+        else PROVIDER_URL
+    )
     if request.method != "POST" or str(request.url) != expected_url:
         raise GuardRejected()
     headers = request.headers
-    provider_key = (invocation.provider_key if provider_route else
-                    os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY", ""))
-    if type(provider_key) is not str or len(provider_key) < (16 if provider_route else 36) or (
-            not provider_route and not provider_key.startswith("sk-")):
+    provider_key = (
+        invocation.provider_key
+        if provider_route
+        else os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY", "")
+    )
+    if (
+        type(provider_key) is not str
+        or len(provider_key) < (16 if provider_route else 36)
+        or (not provider_route and not provider_key.startswith("sk-"))
+    ):
         raise GuardRejected()
-    if (headers.get("host") != request.url.netloc.decode() or
-        headers.get("content-type", "").split(";", 1)[0] != "application/json" or
-        headers.get("authorization") != "Bearer " + provider_key or
-        headers.get("x-ezllmrouter-attempt") != invocation.attempt_id or
-        headers.get("x-stainless-retry-count", "0") != "0"):
+    if (
+        headers.get("host") != request.url.netloc.decode()
+        or headers.get("content-type", "").split(";", 1)[0] != "application/json"
+        or headers.get("authorization") != "Bearer " + provider_key
+        or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
+        or headers.get("x-stainless-retry-count", "0") != "0"
+    ):
         raise GuardRejected()
-    if any(name in headers for name in ("proxy-authorization", "cookie", "idempotency-key",
-                                        "openai-organization", "openai-project")):
+    if any(
+        name in headers
+        for name in (
+            "proxy-authorization",
+            "cookie",
+            "idempotency-key",
+            "openai-organization",
+            "openai-project",
+        )
+    ):
         raise GuardRejected()
-    allowed_headers = {"host", "content-type", "authorization", "content-length", "accept",
-                       "accept-encoding", "user-agent", "connection", "x-ezllmrouter-attempt"}
+    allowed_headers = {
+        "host",
+        "content-type",
+        "authorization",
+        "content-length",
+        "accept",
+        "accept-encoding",
+        "user-agent",
+        "connection",
+        "x-ezllmrouter-attempt",
+    }
     if any(name not in allowed_headers and not name.startswith("x-stainless-") for name in headers):
         raise GuardRejected()
     if headers.get("content-length") and headers["content-length"] != str(len(body)):
@@ -234,7 +326,11 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
     actual = dict(actual)
     if actual.pop("stream", False) is not False:
         raise GuardRejected()
-    if not provider_route and "tools" not in expected and actual.pop("tool_choice", "none") != "none":
+    if (
+        not provider_route
+        and "tools" not in expected
+        and actual.pop("tool_choice", "none") != "none"
+    ):
         raise GuardRejected()
     if actual != expected:
         raise GuardRejected()
@@ -242,21 +338,33 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
     limit = plan["per_attempt_total_timeout_ms"] / 1000
     read_timeout_header = headers.get("x-stainless-read-timeout")
     try:
-        read_timeout_ok = (read_timeout_header is None or
-                           0 < float(read_timeout_header) <= limit)
+        read_timeout_ok = read_timeout_header is None or 0 < float(read_timeout_header) <= limit
     except ValueError:
         read_timeout_ok = False
-    if (type(timeout) is not dict or not timeout or
-        not read_timeout_ok or
-        any(type(value) not in (int, float) or value <= 0 or value > limit
-            for value in timeout.values())):
+    if (
+        type(timeout) is not dict
+        or not timeout
+        or not read_timeout_ok
+        or any(
+            type(value) not in (int, float) or value <= 0 or value > limit
+            for value in timeout.values()
+        )
+    ):
         raise GuardRejected()
-    return {"attempt_id": invocation.attempt_id, "plan_id": plan["plan_id"],
-            "work_digest": plan["work_digest"], "recipe_version":
-                "recipe.dev08.openai.responses.text.v1" if provider_route else RECIPE_VERSION,
-            "method": request.method, "url": str(request.url),
-            "body_sha256": hashlib.sha256(body).hexdigest(), "body_bytes": len(body),
-            "timeout_seconds": timeout, "committed_at": datetime.now(timezone.utc).isoformat()}
+    return {
+        "attempt_id": invocation.attempt_id,
+        "plan_id": plan["plan_id"],
+        "work_digest": plan["work_digest"],
+        "recipe_version": "recipe.dev08.openai.responses.text.v1"
+        if provider_route
+        else RECIPE_VERSION,
+        "method": request.method,
+        "url": str(request.url),
+        "body_sha256": hashlib.sha256(body).hexdigest(),
+        "body_bytes": len(body),
+        "timeout_seconds": timeout,
+        "committed_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 class GuardTransport(httpx.AsyncBaseTransport):
@@ -298,31 +406,23 @@ class GuardTransport(httpx.AsyncBaseTransport):
                 _event(invocation, "commit_acknowledged")
                 invocation.released = True
                 _event(invocation, "released_to_lower_transport")
-            trace_file = os.environ.get("EZLLMROUTER_DEV04_LOWER_TRACE")
-            if trace_file:
-                async def trace(name, _info):
-                    if name.endswith(("connect_tcp.started", "connect_tcp.complete",
-                                      "send_request_headers.started", "send_request_headers.complete",
-                                      "send_request_body.complete")):
-                        row = {"attempt_id": invocation.attempt_id,
-                               "event": name, "monotonic_ns": time.monotonic_ns()}
-                        authority_file = os.environ.get("EZLLMROUTER_DEV04_AUTHORITY_TOGGLE")
-                        if authority_file and Path(authority_file).is_file():
-                            row["authority_state"] = Path(authority_file).read_text()
-                        with Path(trace_file).open("a") as handle:
-                            handle.write(json.dumps(row) + "\n")
-                            handle.flush()
-                            os.fsync(handle.fileno())
-                request.extensions["trace"] = trace
             response = await self.lower.handle_async_request(request)
             invocation.response_received = True
             return response
         except BaseException as exc:
+            if not isinstance(exc, (GuardRejected, ContractError, asyncio.CancelledError)):
+                log_failure(
+                    "gateway.guard.lower_failed"
+                    if invocation.released
+                    else "gateway.guard.check_failed"
+                )
             if invocation.released:
                 invocation.lower_error = type(exc).__name__
                 _event(invocation, "lower_error", invocation.lower_error)
             else:
-                invocation.guard_error = exc.code if isinstance(exc, GuardRejected) else "FDC_REJECTED"
+                invocation.guard_error = (
+                    exc.code if isinstance(exc, GuardRejected) else "FDC_REJECTED"
+                )
                 _event(invocation, "blocked", invocation.guard_error)
             raise
 

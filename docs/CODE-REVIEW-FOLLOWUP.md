@@ -19,6 +19,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.2.3: Worker identity grows indefinitely | Keep a bounded 512-attempt diagnostic window, with duplicate counts saturated at two. A 10,000-attempt regression verifies bounded state and socket-frame size. Trusted sender registration remains the one-use authority. |
 | 4.2.4: Sender checks size after buffering | Check declared length and incrementally stop at 64 KiB, closing the response on success or failure. Declared-length and unknown-length stream regressions verify early termination. |
 | 4.2.5: Diagnostic fsync blocks or fails execution | Use a bounded best-effort queue and background writer. Tests block fsync and simulate a disk failure while guarded requests complete. Durable intent/accounting commits remain synchronous. |
+| 4.2.6: Fault hooks and missing gateway/worker logging | Runtime adapters no longer read mutation, context-swap, bypass, destination-override, trace-file or pool-probe switches. Explicit fixture adapters retain the negative controls under `tools/gateway/` and require opt-in staging. Worker raw egress probes exist only in the fixture entry point. The isolated worker receives the same standard-library-only, secret-safe logger as the server. Command, relay, reply, transport and worker startup failures log exception types and stack locations without messages or payloads. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -26,7 +27,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 529 unittest cases plus
+The expanded offline Python/component runner passes: 545 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -38,6 +39,19 @@ frozen-worker integration are **unverified here**. CI jobs are configured for th
 first three; the reviewed frozen worker needs its own isolated qualification.
 The browser run above is evidence for its saved baseline, not a rerun after
 these server changes.
+
+The gateway follow-up adds 14 focused runtime/logging checks, including exact
+bound requests with every former fixture switch enabled, fixed startup
+destination/timeout, probe rejection, coroutine cancellation, secret canaries
+and reply failures without retry. Packaging tests verify that the minimal worker
+needs only its runtime, wire codec and standalone logger; fixture scripts
+require an explicit harness source map. The frozen Docker/worker and real HTTP
+checks still require their target environment.
+
+The local deployment evidence driver now observes the durable guard receipt
+and held receiver request before revocation. It no longer reads private pool
+queues; any new deployment run must validate this before-first-write evidence
+against its actual receiver and sender observations.
 
 Run the pending development checks from the repository root in a Terminal with
 the required runtimes and socket/Docker access:
@@ -60,18 +74,20 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Remove fault-injection environment hooks from trusted modules and finish
-   secret-safe gateway/worker logging (4.2.6). Complete JavaScript parity for
+1. Complete JavaScript parity for
    response limits, configuration validation and matching handles (4.3.4).
 2. Bound registry observation retention and select only relevant observations;
    add indexes through a new migration rather than editing the adopted initial
    schema (4.1.2). Resolve lock-held provider discovery and dataset-purge races.
-3. Pin remaining CI bootstrap artifacts/actions with reviewed hashes (4.3.3).
-   Widen lint/type coverage incrementally; the current strict mypy gate still
+3. Widen lint/type coverage incrementally; the current strict mypy gate still
    covers only its explicit file list (4.3.2).
 4. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
    large functions with focused behavior tests. Continue the platform, process
    recovery, generated-input and performance work in the testing roadmap.
+
+GitHub Actions hardening is deferred to a separate activity at the owner's
+request. This includes reviewing and pinning the remaining CI bootstrap artifacts
+and action revisions (4.3.3).
 
 Other lower-severity findings and carried-forward structural items remain open
 unless explicitly listed as fixed above. Added coverage is not a substitute for

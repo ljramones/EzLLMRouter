@@ -22,12 +22,12 @@ from choice_b_wire import LIMIT, receive, send  # noqa: E402
 from tools.gateway.stage import source_mapping
 
 
-WORKER_SOURCE_FILES = {"choice_b_worker.py", "choice_b_wire.py"}
+WORKER_SOURCE_FILES = {"choice_b_worker.py", "choice_b_wire.py", "worker_logging.py"}
 
 
-def stage_worker_source_context(root, destination):
+def stage_worker_source_context(root, destination, *, fixtures=False):
     """Replay the worker source map without frozen wheels or Docker."""
-    mappings = source_mapping(root)
+    mappings = source_mapping(root, fixtures=fixtures)
     targets = set()
     for source, target in mappings:
         if not target.startswith("worker/"):
@@ -42,8 +42,8 @@ def stage_worker_source_context(root, destination):
     return destination
 
 
-def validate_worker_source_context(context):
-    """Fixed two-module worker check, not a general Dockerfile interpreter."""
+def validate_worker_source_context(context, *, fixtures=False):
+    """Check the runtime worker modules; fixture probes are staged separately."""
     dockerfile = (context / "Dockerfile").read_text()
     app_copies = []
     for line in dockerfile.splitlines():
@@ -58,16 +58,27 @@ def validate_worker_source_context(context):
     for name in sources:
         if not (context / name).is_file():
             raise AssertionError("worker COPY source is not a staged file: " + name)
-    if len(sources) != 2 or set(sources) != WORKER_SOURCE_FILES:
-        raise AssertionError("worker COPY must name exactly the two worker modules")
+    if len(sources) != 3 or set(sources) != WORKER_SOURCE_FILES:
+        raise AssertionError("worker COPY must name exactly the runtime, wire and safe logger")
     observed = {path.relative_to(context).as_posix()
                 for path in context.rglob("*") if path.is_file()}
-    if observed != WORKER_SOURCE_FILES | {"Dockerfile"}:
+    expected = WORKER_SOURCE_FILES | {"Dockerfile"}
+    if fixtures:
+        expected.add("fixture/worker_fixture.py")
+    if observed != expected:
         raise AssertionError("unexpected worker source content")
     return dockerfile
 
 
 class ChoiceBComponentTests(unittest.TestCase):
+    def test_worker_probe_requires_an_explicit_fixture_context(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = stage_worker_source_context(ROOT, Path(directory), fixtures=True)
+            validate_worker_source_context(context, fixtures=True)
+            self.assertTrue((context / "fixture/worker_fixture.py").is_file())
+            with self.assertRaisesRegex(AssertionError, "unexpected worker source content"):
+                validate_worker_source_context(context)
+
     def test_verifier_parses_pretty_single_document_and_jsonl_rows(self):
         from verify_choice_b import one, rows
 
@@ -128,7 +139,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             context = stage_worker_source_context(ROOT, Path(tmp))
             path = context / "Dockerfile"
             current = path.read_text()
-            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py /app/worker/",
+            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
                                       "COPY worker/ /app/worker/")
             self.assertNotEqual(current, changed)
             path.write_text(changed)
@@ -140,7 +151,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             context = stage_worker_source_context(ROOT, Path(tmp))
             path = context / "Dockerfile"
             current = path.read_text()
-            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py /app/worker/",
+            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
                                       "COPY . /app/worker/")
             self.assertNotEqual(current, changed)
             path.write_text(changed)
@@ -301,10 +312,14 @@ class ChoiceBComponentTests(unittest.TestCase):
                 "headers": [[key, value] for key, value in tool_request.headers.items()],
                 "body_b64": base64.b64encode(tool_request.content).decode("ascii")}
             with tempfile.TemporaryDirectory() as tmp:
-                with patch.dict(os.environ, {"EZLLMROUTER_DEV05_TEST_TOOL_MUTATION": "1"}), \
-                     patch("choice_b_sender.Path", side_effect=lambda _path: Path(tmp) / "mutation.jsonl"):
+                from tools.gateway.fixture_adapters import ToolMutationTransport
+                guard = adapter.guard
+                adapter.guard = ToolMutationTransport(guard, Path(tmp) / "mutation.jsonl")
+                try:
                     with self.assertRaises(GuardRejected):
                         adapter.process_relay(mutation_envelope)
+                finally:
+                    adapter.guard = guard
                 event = json.loads((Path(tmp) / "mutation.jsonl").read_text())
                 self.assertEqual(event["attempt_id"], mutation.attempt_id)
                 self.assertTrue(event["same_length"])

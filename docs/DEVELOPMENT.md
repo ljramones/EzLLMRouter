@@ -131,6 +131,23 @@ traces, a JSON result file and an HTML report under ignored
 include entered values and HTTP bodies.
 Run `npm run report` to inspect the local HTML report.
 
+## Gateway negative controls
+
+Runtime adapters use fixed request checks and destinations. Mutation, bypass,
+context-swap, trace-file and private-pool inspection controls live in explicit
+fixtures under `tools/gateway/fixture_adapters.py` and `worker_fixture.py`.
+The disposable gateway harness requests these with the staging command's
+`--fixtures` flag. Normal local-profile staging omits the fixture adapters and
+entry points, and the worker's normal command interface rejects raw egress probes.
+
+The worker's standalone `worker_logging.py` is copied from the server's
+standard-library-only `observability.py`. It has no server-package dependency.
+Both processes log exception types and stack locations, excluding exception
+messages, source text, credentials and request/response bodies. Offline
+regressions exercise legacy switches and secret canaries without importing
+LiteLLM, making model calls or binding network listeners. The frozen worker
+and Docker harness require separate qualification with the reviewed inputs.
+
 ## Test and build inputs
 
 | Location | Purpose |

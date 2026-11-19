@@ -10,9 +10,10 @@ RUN cd /opt/ezllmrouter/wheels && sha256sum -c /opt/ezllmrouter/wheelhouse.sha25
       --require-hashes -r /opt/ezllmrouter/requirements.gateway.lock \
  && python -m pip check \
  && rm -rf /opt/ezllmrouter/wheels
-COPY choice_b_worker.py choice_b_wire.py /app/worker/
-RUN find /app/worker -type d -exec chmod 0555 {} + \
- && find /app/worker -type f -exec chmod 0444 {} + \
+COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/
+COPY fixture/ /app/fixture/
+RUN find /app/worker /app/fixture -type d -exec chmod 0555 {} + \
+ && find /app/worker /app/fixture -type f -exec chmod 0444 {} + \
  && chmod 0555 /app \
  && mkdir -p /link && chown 10001:10001 /link
 USER 10001:10001

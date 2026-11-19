@@ -55,7 +55,7 @@ def verify_lock_inventory(lock, wheels):
         raise ValueError("frozen gateway lock/inventory mismatch: " + ", ".join(names))
 
 
-def source_mapping(root, dev05=False):
+def source_mapping(root, dev05=False, *, fixtures=False):
     source_files = [
         ("tests/gateway_integration/run.sh", "harness/run.sh"),
         ("tests/gateway_integration/boundary_steps.sh", "harness/boundary_steps.sh"),
@@ -95,6 +95,7 @@ def source_mapping(root, dev05=False):
         ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "service/gateway/choice_b_wire.py"),
         ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "worker/choice_b_wire.py"),
         ("worker/choice_b_worker.py", "worker/choice_b_worker.py"),
+        ("server/src/ezllmrouter_server/observability.py", "worker/worker_logging.py"),
         ("tools/gateway/compat/proxy_recipe.py", "service/gateway/proxy_recipe.py"),
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
         ("tools/gateway/receiver.py", "receiver/receiver.py"),
@@ -114,6 +115,12 @@ def source_mapping(root, dev05=False):
         ("tests/development_slice/fixture.json", "service/dev_slice/fixture.json"),
         ("tools/gateway/compat/recipe.py", "service/dev_slice/recipe.py"),
     ]
+    if fixtures:
+        source_files.extend([
+            ("tools/gateway/fixture_adapters.py", "service/gateway/fixture_adapters.py"),
+            ("tools/gateway/service_fixture.py", "service/gateway/service_fixture.py"),
+            ("tools/gateway/worker_fixture.py", "worker/fixture/worker_fixture.py"),
+        ])
     server_source = root / "server/src"
     for package in ("ezllmrouter_server",):
         source_files.extend((str(path.relative_to(root)),
@@ -147,12 +154,16 @@ def source_mapping(root, dev05=False):
 
 
 def main():
-    if len(sys.argv) not in (3, 4, 5):
-        raise SystemExit("usage: stage.py ROOT RUN_DIR [SOURCE_OUTPUT_DIR [DEV-05]]")
-    root, run = map(Path, sys.argv[1:3])
-    source_output = Path(sys.argv[3]) if len(sys.argv) >= 4 else root / ".artifacts/gateway"
-    dev05 = len(sys.argv) == 5 and sys.argv[4] == "DEV-05"
-    if len(sys.argv) == 5 and not dev05:
+    arguments = list(sys.argv[1:])
+    fixtures = "--fixtures" in arguments
+    if fixtures:
+        arguments.remove("--fixtures")
+    if len(arguments) not in (2, 3, 4):
+        raise SystemExit("usage: stage.py ROOT RUN_DIR [SOURCE_OUTPUT_DIR [DEV-05]] [--fixtures]")
+    root, run = map(Path, arguments[:2])
+    source_output = Path(arguments[2]) if len(arguments) >= 3 else root / ".artifacts/gateway"
+    dev05 = len(arguments) == 4 and arguments[3] == "DEV-05"
+    if len(arguments) == 4 and not dev05:
         raise ValueError("unsupported source packet prefix")
     build = run / "build"
     if build.exists():
@@ -171,7 +182,7 @@ def main():
             raise ValueError("wheel mismatch: " + row["filename"])
     if {path.name for path in wheel_dir.glob("*.whl")} != {row["filename"] for row in wheels}:
         raise ValueError("unexpected wheel in input directory")
-    source_files = source_mapping(root, dev05)
+    source_files = source_mapping(root, dev05, fixtures=fixtures)
     rows = []
     for source, target in source_files:
         src, dest = root / source, build / target

@@ -13,7 +13,7 @@ from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
 
 
-def main():
+def main(*, adapter_factory=LiteLLMAsgiAdapter):
     token = os.environ["EZLLMROUTER_DEV_TOKEN"]
     provider_key = os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]
     if len(token) < 32 or not provider_key.startswith("sk-") or len(provider_key) < 36:
@@ -61,7 +61,7 @@ def main():
 
         store = FailGuardCommit(store)
 
-    adapter = LiteLLMAsgiAdapter()
+    adapter = adapter_factory()
     Path("/data/module-identities.json").write_text(json.dumps(adapter.module_identities, indent=2) + "\n")
     coordinator = Coordinator(
         store, identity, config, fixture["prompt_blocks"], fixture["allowed_lineages"],

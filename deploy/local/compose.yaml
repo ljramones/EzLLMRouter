@@ -60,7 +60,6 @@ services:
       - credential_data:/run/ezllmrouter:ro
     environment:
       EZLLMROUTER_DB_PATH: /data/store.sqlite
-      EZLLMROUTER_DEV04_POOL_PROBE: ${EZLLMROUTER_DEV07_POOL_PROBE:-0}
     depends_on: [netns, receiver, worker]
   ingress:
     image: ${EZLLMROUTER_PYTHON_IMAGE:?}

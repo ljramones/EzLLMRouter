@@ -135,7 +135,7 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     volumes: ["choice_b_link:/link"]
-    environment: {EZLLMROUTER_DEV04_B_PROBE: "1"}
+    command: ["python", "/app/fixture/worker_fixture.py"]
   service_choice_b:
     image: ${EZLLMROUTER_DEV04_SERVICE_IMAGE:?}
     pull_policy: never
@@ -154,7 +154,7 @@ services:
       EZLLMROUTER_DEV04_SEND_EVENTS: /data/send-events.jsonl
       EZLLMROUTER_DEV05_TEST_TOOL_MUTATION: ${EZLLMROUTER_DEV05_TEST_TOOL_MUTATION:-0}
       PORT: "8773"
-    command: ["python", "/app/gateway/choice_b_service.py"]
+    command: ["python", "/app/gateway/service_fixture.py", "sender"]
     depends_on: [netns, receiver, worker_choice_b]
   python_choice_b:
     image: ${EZLLMROUTER_DEV04_PYCLIENT_IMAGE:?}

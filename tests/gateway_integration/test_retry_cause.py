@@ -132,6 +132,12 @@ class TestAdapter(LiteLLMAsgiAdapter):
         self.guarded_client = httpx.AsyncClient(
             transport=GuardTransport(httpx.MockTransport(lower)), trust_env=False, timeout=1.0)
         self.proxy = RetryASGIDouble(self, forced_retries)
+    async def _send(self, prepared, timeout_ms, invocation):
+        if self.proxy_mutation:
+            changed = json.loads(prepared)
+            changed['messages'][1]['content'] = 'Changed after binding.'
+            prepared = self.prepare(changed)
+        return await super()._send(prepared, timeout_ms, invocation)
     def close(self):
         super().close()
         self.loop.close()
