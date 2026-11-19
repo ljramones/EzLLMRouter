@@ -2,7 +2,6 @@
 import base64
 import asyncio
 from concurrent.futures import Future
-import glob
 import json
 import os
 from pathlib import Path
@@ -179,11 +178,6 @@ class ChoiceBComponentTests(unittest.TestCase):
     def test_sender_claims_one_registered_attempt_and_rejects_forgery(self):
         for source in (ROOT / "server/src", ROOT / "tests/development_slice"):
             sys.path.insert(0, str(source))
-        for name in ("httpx", "httpcore", "anyio", "h11", "certifi", "idna",
-                     "sniffio", "typing_extensions"):
-            matches = glob.glob(str(ROOT / "gateway-inputs/dev04/wheels" / (name + "-*.whl")))
-            self.assertEqual(len(matches), 1, name)
-            sys.path.insert(0, matches[0])
         from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
         from ezllmrouter_server.gateway.guard import Invocation
 
@@ -227,11 +221,6 @@ class ChoiceBComponentTests(unittest.TestCase):
     def test_trusted_relay_checks_and_commits_one_exact_request(self):
         for source in (ROOT / "server/src", ROOT / "tests/development_slice"):
             sys.path.insert(0, str(source))
-        for name in ("httpx", "httpcore", "anyio", "h11", "certifi", "idna",
-                     "sniffio", "typing_extensions"):
-            matches = glob.glob(str(ROOT / "gateway-inputs/dev04/wheels" / (name + "-*.whl")))
-            self.assertEqual(len(matches), 1, name)
-            sys.path.insert(0, matches[0])
         import httpx
         from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
         from ezllmrouter_server.gateway.guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
