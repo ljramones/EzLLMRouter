@@ -1,6 +1,8 @@
 """Offline encryption maintenance. Stop services using the database before running."""
 from __future__ import annotations
 
+from .repositories import secret_rotation as _queries
+
 import argparse
 from contextlib import closing
 import json
@@ -38,19 +40,19 @@ def main(argv=None):
     try:
         with closing(SQLiteStore.open_existing(args.db)) as store:
             if args.scope == "provider":
-                identifiers = [json.loads(row[0])["connection_id"] for row in store.db.execute(
-                    "SELECT record FROM registry_connections")]
+                identifiers = [json.loads(row[0])["connection_id"] for row in store.database.execute(
+                    _queries.MAIN_SELECT_REGISTRY_CONNECTIONS)]
                 vault = ProviderVault(args.vault, require_existing=True)
                 box = vault.box
                 rewrite = lambda: vault.reencrypt_secrets(identifiers)
             elif args.scope == "integration":
-                known = {row[0] for row in store.db.execute(
-                    "SELECT DISTINCT key_id FROM integration_credential_versions")}
+                known = {row[0] for row in store.database.execute(
+                    _queries.MAIN_SELECT_INTEGRATION_CREDENTIAL_VERSIONS)}
                 box = SecretBox(args.keyring, "integration-credentials", required_ids=known, required=True)
                 rewrite = lambda: reencrypt_credentials(store, box)
             else:
-                known = {json.loads(row[0])["key_id"] for row in store.db.execute(
-                    "SELECT secret FROM local_connectors WHERE secret IS NOT NULL")}
+                known = {json.loads(row[0])["key_id"] for row in store.database.execute(
+                    _queries.MAIN_SELECT_LOCAL_CONNECTORS)}
                 path = args.keyring or connector_key_path(store.path)
                 box = SecretBox(path, "local-connector-credentials", required_ids=known, required=True)
                 rewrite = lambda: reencrypt_connectors(store, box)

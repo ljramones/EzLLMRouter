@@ -162,16 +162,22 @@ class BoundaryTests(unittest.TestCase):
 
     def test_post_response_store_failure_is_recoverable_without_false_terminal(self):
         self.coordinator.store = FailFinalStore(self.store)
-        code, error = self.request()
-        self.assertEqual((code, error["error"]["code"], len(self.adapter.sent)),
-                         (503, "INTERNAL_UNAVAILABLE", 1))
+        code, pending = self.request()
+        self.assertEqual((code, pending["state"], len(self.adapter.sent)), (202, "pending", 1))
         selector = REQUEST
         path = (f"/v1/submissions/by-work/{selector['task_id']}/{selector['step_id']}/"
                 f"{selector['step_revision']}/{selector['execution_generation']}")
         snapshot = self.request("GET", path)[1]
         self.assertEqual((snapshot["submission_state"], snapshot["attempts"][0]["dispatch_state"]),
-                         ("admitted", "intent_persisted"))
+                         ("outcome_unknown", "outcome_unknown"))
+        self.assertEqual(snapshot["handle"], pending["handle"])
+        self.assertEqual(snapshot["attempts"][0]["usage"]["state"], "available")
         self.assertNotIn("terminal_failure", snapshot)
+        self.assertNotIn("candidate", snapshot)
+        repeated_code, repeated = self.request()
+        self.assertEqual((repeated_code, repeated["state"], repeated["handle"]),
+                         (202, "pending", pending["handle"]))
+        self.assertEqual(len(self.adapter.sent), 1)
 
     def test_http_live_no_store_tool_source_and_forgery(self):
         self.assertIsNotNone(TOOL_CASE)

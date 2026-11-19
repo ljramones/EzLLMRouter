@@ -3,6 +3,7 @@
 Run `uv run --locked python -m tools.check`. Network/Docker evidence scripts
 remain explicit owner-operated workflows, outside this regression command.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,7 +32,7 @@ DEVELOPMENT_TESTS = (
 ).split()
 GATEWAY_TESTS = (
     "guard provider_guard provider_plan dev12_guard_timeout core_bridge choice_b "
-    "dev05 dev05_capture provider_worker_diagnostic"
+    "dev05 dev05_capture provider_worker_diagnostic dev12_first_write"
 ).split()
 SCRIPT_TESTS = (
     "tests/gateway_integration/test_retry_cause.py",
@@ -53,6 +54,8 @@ MODULES = (
     "tests.tool_cycle.test_python_client",
     "tests.unit.test_gateway_packaging",
     "tests.unit.test_secret_rotation",
+    "tests.unit.test_database",
+    "tests.unit.test_operator_routes",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
@@ -76,6 +79,8 @@ FRONTEND_TESTS = (
 TYPED_FILES = (
     "server/src/duranki_server/private_files.py",
     "server/src/duranki_server/observability.py",
+    "server/src/duranki_server/database.py",
+    "server/src/duranki_server/schema.py",
     "tools/check.py",
     "clients/python/src/duranki_client/_http.py",
     "clients/python/src/duranki_client/_json.py",
@@ -145,7 +150,19 @@ def main() -> int:
             print("Use the Node version in .nvmrc (for example, run `nvm use`).", file=sys.stderr)
             return 1
         if not args.tests_only and not args.http_only:
-            run([sys.executable, "-m", "ruff", "check", "server/src", "clients/python/src", "deploy/local", "worker", "tools"])
+            run(
+                [
+                    sys.executable,
+                    "-m",
+                    "ruff",
+                    "check",
+                    "server/src",
+                    "clients/python/src",
+                    "deploy/local",
+                    "worker",
+                    "tools",
+                ]
+            )
             run([sys.executable, "-m", "ruff", "format", "--check", *TYPED_FILES])
             run([sys.executable, "-m", "mypy", *TYPED_FILES])
         # Check all application JavaScript syntax, not only modules reached by a view fixture.
@@ -153,7 +170,11 @@ def main() -> int:
             for path in sorted((ROOT / "web").glob("*.js")):
                 run(["node", "--check", str(path.relative_to(ROOT))])
             run(["bash", "-n", "start.sh"])
-        modules = LOOPBACK_MODULES if args.http_only else MODULES + (LOOPBACK_MODULES if args.loopback else ())
+        modules = (
+            LOOPBACK_MODULES
+            if args.http_only
+            else MODULES + (LOOPBACK_MODULES if args.loopback else ())
+        )
         failures = []
         for name in modules:
             command = [sys.executable, "-B", "-m", "tools.check", "--test-module", name]

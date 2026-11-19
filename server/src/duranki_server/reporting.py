@@ -1,6 +1,8 @@
 """Read-only, scope-first reporting over unique durable attempts and revisions."""
 from __future__ import annotations
 
+from .repositories import reporting as _queries
+
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 import json
@@ -95,8 +97,7 @@ def _descendants(items, runs):
 
 
 def _latest_outcomes(db, cutoff):
-    rows = db.execute("SELECT event,recorded_at FROM attribution_outcomes WHERE recorded_at<=? "
-                      "ORDER BY recorded_at,revision", (cutoff,)).fetchall()
+    rows = db.execute(_queries.LATEST_OUTCOMES_SELECT_ATTRIBUTION_OUTCOMES, (cutoff,)).fetchall()
     latest = {}
     for raw, at in rows:
         event = json.loads(raw)
@@ -127,13 +128,11 @@ def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
         raise ValueError("invalid report interval")
     cutoff = _utc(filters.get("cutoff")) or datetime.now(timezone.utc).replace(microsecond=0)
     cutoff_text = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
-    with registry.store._lock:
-        db = registry.store.db
-        raw = db.execute("SELECT s.record,i.intent FROM submissions s LEFT JOIN intents i "
-                         "ON i.submission_id=s.submission_id ORDER BY s.rowid").fetchall()
-        revisions = db.execute("SELECT attempt_id,usage FROM usage_revisions WHERE "
-            "json_extract(usage,'$.recorded_at')<=? ORDER BY attempt_id,revision", (cutoff_text,)).fetchall()
-        runs = {r["run_id"]: r for (value,) in db.execute("SELECT record FROM attribution_runs").fetchall()
+    with registry.store.database.read():
+        db = registry.store.database
+        raw = db.execute(_queries.USAGE_COSTS_SELECT_SUBMISSIONS).fetchall()
+        revisions = db.execute(_queries.USAGE_COSTS_SELECT_USAGE_REVISIONS, (cutoff_text,)).fetchall()
+        runs = {r["run_id"]: r for (value,) in db.execute(_queries.USAGE_COSTS_SELECT_ATTRIBUTION_RUNS).fetchall()
                 for r in (json.loads(value),) if r["created_at"] <= cutoff_text}
         outcomes = _latest_outcomes(db, cutoff_text)
     latest = {attempt: json.loads(value) for attempt, value in revisions}

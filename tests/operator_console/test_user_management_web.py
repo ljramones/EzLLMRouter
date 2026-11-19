@@ -34,6 +34,7 @@ class UserHTTPFixture(UserFixture):
 
     def request(self, method, path, body=None, *, csrf=True, origin="http://127.0.0.1:48761"):
         handler = self.server.handler.__new__(self.server.handler)
+        handler.server = self.server
         handler.path, handler.command = path, method
         handler.request_version = "HTTP/1.1"
         handler.requestline = method + " " + path + " HTTP/1.1"

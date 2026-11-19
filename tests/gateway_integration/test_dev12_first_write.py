@@ -94,7 +94,7 @@ class FirstWriteTests(unittest.TestCase):
                         authority.revoke_plan(plan["plan_id"], "2030-01-01T00:00:02Z")
                     elif change == "campaign_paused":
                         with authority.gate:
-                            store._transaction(lambda: campaign.pause_in_transaction(store.db, "unknown_cost"))
+                            store.database.transaction(lambda: campaign.pause_in_transaction(store.database, "unknown_cost"))
                     elif change == "campaign_expired":
                         clock[0] += timedelta(hours=2)
                 async def first_wait():

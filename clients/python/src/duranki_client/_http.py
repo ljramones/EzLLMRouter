@@ -1,4 +1,5 @@
 """Shared synchronous HTTP response bounds; no redirects or automatic retries."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -29,8 +30,9 @@ class BufferedResponse:
 
 
 @contextmanager
-def _response(transport: Any, method: str, url: str, headers: dict[str, str],
-              content: bytes | None) -> Iterator[Any]:
+def _response(
+    transport: Any, method: str, url: str, headers: dict[str, str], content: bytes | None
+) -> Iterator[Any]:
     options: dict[str, Any] = {"headers": headers}
     if content is not None:
         options["content"] = content
@@ -50,8 +52,15 @@ def _response(transport: Any, method: str, url: str, headers: dict[str, str],
                 close()
 
 
-def bounded_request(transport: Any, method: str, url: str, *, headers: Mapping[str, str],
-                    limit: int, content: bytes | None = None) -> BufferedResponse:
+def bounded_request(
+    transport: Any,
+    method: str,
+    url: str,
+    *,
+    headers: Mapping[str, str],
+    limit: int,
+    content: bytes | None = None,
+) -> BufferedResponse:
     headers = {**headers, "Accept-Encoding": "identity"}
     with _response(transport, method, url, headers, content) as response:
         status = response.status_code
@@ -60,8 +69,9 @@ def bounded_request(transport: Any, method: str, url: str, *, headers: Mapping[s
             if received_headers.get("Content-Encoding", "identity").strip().lower() != "identity":
                 raise ValueError("encoded responses are not supported")
             declared = received_headers.get("Content-Length")
-            if declared is not None and (not declared.isascii() or not declared.isdecimal() or
-                                         int(declared) > limit):
+            if declared is not None and (
+                not declared.isascii() or not declared.isdecimal() or int(declared) > limit
+            ):
                 raise ValueError("invalid or excessive content length")
             raw = getattr(response, "iter_raw", None)
             if callable(raw) and not getattr(response, "is_stream_consumed", False):

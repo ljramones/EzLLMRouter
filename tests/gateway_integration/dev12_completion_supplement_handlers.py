@@ -781,7 +781,7 @@ def _authority_wait(runtime, case):
             else:
                 with runtime.authority.gate:
                     def pause(db):
-                        runtime.allowance.pause_in_transaction(db, "authority")
+                        runtime.allowance.pause_in_transaction(runtime.store.database, "authority")
                         db.execute("INSERT INTO dev12_campaign_audit(campaign_id,record) "
                             "VALUES (?,?)", (runtime.allowance.campaign_id,
                             encode({"kind": "ct02_authority_pause_after_lower_wait",

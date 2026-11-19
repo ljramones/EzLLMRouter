@@ -189,7 +189,7 @@ class CredentialTests(unittest.TestCase):
         self.assertEqual(self.store.db.execute(
             "SELECT COUNT(*) FROM integration_account_history WHERE id=?", (account_id,)).fetchone()[0], 3)
 
-    def test_v2_account_schema_migrates_without_changing_saved_binding(self):
+    def test_initial_schema_reopen_preserves_saved_binding(self):
         pending = self.connect()
         saved = self.credentials.save(self.owner, pending["account_id"], {
             "dataset_id": self.dataset, "expected_revision": pending["revision"],
@@ -197,21 +197,8 @@ class CredentialTests(unittest.TestCase):
         account_id = saved["account_id"]
         before = self.store.db.execute("SELECT record FROM integration_accounts WHERE id=?",
                                        (account_id,)).fetchone()[0]
-        def old_schema():
-            db = self.store.db
-            db.execute("ALTER TABLE integration_accounts RENAME TO integration_accounts_new")
-            db.execute("ALTER TABLE integration_account_history RENAME TO integration_account_history_new")
-            db.execute("CREATE TABLE integration_accounts (id TEXT PRIMARY KEY,dataset_id TEXT NOT NULL,record TEXT NOT NULL)")
-            db.execute("CREATE TABLE integration_account_history (id TEXT NOT NULL,revision INTEGER NOT NULL,record TEXT NOT NULL,PRIMARY KEY(id,revision))")
-            db.execute("INSERT INTO integration_accounts SELECT id,dataset_id,record FROM integration_accounts_new")
-            db.execute("INSERT INTO integration_account_history SELECT id,revision,record FROM integration_account_history_new")
-            db.execute("DROP TABLE integration_accounts_new")
-            db.execute("DROP TABLE integration_account_history_new")
-            db.execute("UPDATE integration_meta SET value='2' WHERE key='schema_version'")
-        self.store._transaction(old_schema)
         self.registry.integration = ExternalAccounting(self.registry)
-        self.assertEqual(self.store.db.execute(
-            "SELECT value FROM integration_meta WHERE key='schema_version'").fetchone()[0], "3")
+        self.assertEqual(self.store.db.execute("PRAGMA user_version").fetchone()[0], 1)
         self.assertEqual(self.store.db.execute("SELECT record FROM integration_accounts WHERE id=?",
                                         (account_id,)).fetchone()[0], before)
         self.assertEqual(self.credentials.resolve_for(self.consumer, self.dataset, account_id,

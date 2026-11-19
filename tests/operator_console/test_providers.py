@@ -19,6 +19,7 @@ from duranki_server.provider_adapters import probe, validate_settings
 from duranki_server.registry import Registry, RegistryConflict
 from duranki_server.store import SQLiteStore
 from duranki_server.provider_vault import ProviderVault
+from duranki_server.secret_box import SecretBoxError
 
 
 DEST = {"configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
@@ -250,7 +251,8 @@ class ProviderTests(unittest.TestCase):
         second = self.registry.set_provider_credential("owner.local", "conn.lab", 2, "op.cred.2",
             "replace", "test-provider-key-654321")
         self.assertEqual(second["record"]["credential_version"], 2)
-        with self.assertRaises(FileNotFoundError):
+        self.assertFalse(self.vault._path("conn.lab", 1).exists())
+        with self.assertRaisesRegex(SecretBoxError, "PROVIDER_CREDENTIAL_UNAVAILABLE"):
             self.vault.resolve("conn.lab", 1)
         self.assertNotIn("test-provider-key", " ".join(self.store.db.iterdump()))
         self.assertEqual(self.registry.probe_connection("owner.local", "conn.lab", 3,
@@ -263,7 +265,8 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM submissions").fetchone()[0], 0)
         self.registry.set_provider_credential("owner.local", "conn.lab", 3, "op.cred.remove", "remove")
         self.assertEqual(self.registry.connection("conn.lab")["credential_state"], "absent")
-        with self.assertRaises(FileNotFoundError):
+        self.assertFalse(self.vault._path("conn.lab", 2).exists())
+        with self.assertRaisesRegex(SecretBoxError, "PROVIDER_CREDENTIAL_UNAVAILABLE"):
             self.vault.resolve("conn.lab", 2)
         self.change("connection_state", "conn.lab", 4,
             {"status": "archived", "reason": "Disposable test"}, "op.conn.archive")

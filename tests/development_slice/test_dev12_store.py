@@ -43,7 +43,7 @@ class SuccessorStoreTests(unittest.TestCase):
                                              "2026-10-26T12:00:02Z", campaign)
             campaign.finish("attempt.one")
             campaign.store._transaction(lambda: campaign.pause_in_transaction(
-                campaign.store.db, "unknown_cost"))
+                campaign.store.database, "unknown_cost"))
             self.assertTrue(campaign.inspect()["paused"])
             self.assertEqual(campaign.inspect()["pause_reason"], "unknown_cost")
             self.assertEqual(campaign.inspect()["attempt_count"], 1)

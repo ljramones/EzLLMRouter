@@ -6,6 +6,8 @@ complete. A failed commit leaves the old epoch and records untouched.
 """
 from __future__ import annotations
 
+from .repositories import registry as _queries
+
 from .observability import log_failure
 
 from copy import deepcopy
@@ -91,7 +93,7 @@ class Registry:
         self.controlled_provider_proof = controlled_provider_proof
         self._probe_lock = threading.Lock()
         self._operator_tokens = {}
-        self._migrate(legacy_destination, legacy_token, legacy_trusted)
+        self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
         self.attribution = AttributionLedger(self)
         self.integration = ExternalAccounting(self)
         self.integration.feature_policy = integration_feature_policy
@@ -123,44 +125,16 @@ class Registry:
             log_failure('registry.Registry.readiness.failed')
             return "transport_unavailable"
 
-    def _migrate(self, destination, token, trusted):
+    def _bootstrap(self, destination, token, trusted):
         with self.send_authority.gate:
             def action():
-                db = self.store.db
-                version = db.execute("PRAGMA user_version").fetchone()[0]
-                if version not in (0, 7):
-                    raise RuntimeError("unknown database schema version")
-                for sql in (
-                    "CREATE TABLE IF NOT EXISTS registry_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_models (ref TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_principals (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_grants (principal_id TEXT NOT NULL, config_ref TEXT NOT NULL, record TEXT NOT NULL, PRIMARY KEY(principal_id,config_ref))",
-                    "CREATE TABLE IF NOT EXISTS registry_prices (config_ref TEXT NOT NULL, price_version TEXT NOT NULL, record TEXT NOT NULL, PRIMARY KEY(config_ref,price_version))",
-                    "CREATE TABLE IF NOT EXISTS registry_credentials (verifier TEXT PRIMARY KEY, principal_id TEXT NOT NULL, credential_id TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_operations (operation_id TEXT PRIMARY KEY, actor TEXT NOT NULL, request_hash TEXT NOT NULL, result TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_connections (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_deployments (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_observations (operation_id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_source_permissions (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL, subject TEXT NOT NULL, old_revision INTEGER, new_revision INTEGER NOT NULL, authority_revision INTEGER NOT NULL, at TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_audit_values (seq INTEGER PRIMARY KEY REFERENCES registry_audit(seq), before_json TEXT, after_json TEXT)",
-                    "CREATE TABLE IF NOT EXISTS registry_agents (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS registry_agent_permissions (id TEXT PRIMARY KEY, caller_id TEXT NOT NULL, agent_id TEXT NOT NULL, user_id TEXT NOT NULL, record TEXT NOT NULL, UNIQUE(caller_id,agent_id,user_id))",
-                    "CREATE TABLE IF NOT EXISTS registry_outcome_authorities (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS attribution_runs (id TEXT PRIMARY KEY, record TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS attribution_outcomes (principal_id TEXT NOT NULL, event_id TEXT NOT NULL, subject TEXT NOT NULL, revision INTEGER NOT NULL, digest TEXT NOT NULL, event TEXT NOT NULL, recorded_at TEXT NOT NULL, receipt TEXT NOT NULL, PRIMARY KEY(principal_id,event_id), UNIQUE(subject,revision))"
-                ):
-                    db.execute(sql)
-                row = db.execute("SELECT value FROM registry_meta WHERE key='schema_version'").fetchone()
-                if row and row[0] not in ("1", "2"):
-                    raise RuntimeError("unknown registry schema version")
-                if row and row[0] == "1":
-                    db.execute("UPDATE registry_meta SET value='2' WHERE key='schema_version'")
+                db = self.store.database
+                row = db.execute(_queries.ACTION_SELECT_REGISTRY_META).fetchone()
+                if row and row[0] != "1":
+                    raise RuntimeError("invalid registry bootstrap version")
                 if not row:
-                    if version == 7:
-                        raise RuntimeError("registry marker missing")
                     if destination is None or token is None or trusted is None:
-                        raise RuntimeError("private legacy bootstrap inputs required")
+                        raise RuntimeError("private bootstrap inputs required")
                     at = timestamp()
                     model = {"configuration_ref": destination["configuration_ref"],
                              "display_name": "Legacy synthetic demo", "status": "enabled",
@@ -179,34 +153,33 @@ class Registry:
                     grant = {"principal_id": demo["principal_id"], "configuration_ref": model["configuration_ref"],
                              "status": "active", "revision": 1, "purposes": ["execution"],
                              "task_classes": ["class.demo"], "actor": "owner.local", "at": at}
-                    db.execute("INSERT INTO registry_models VALUES (?,?)", (model["configuration_ref"], encode(model)))
+                    db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (model["configuration_ref"], encode(model)))
                     for principal in (owner, demo):
-                        db.execute("INSERT INTO registry_principals VALUES (?,?)",
+                        db.execute(_queries.APPLY_INSERT_REGISTRY_PRINCIPALS,
                                    (principal["principal_id"], encode(principal)))
-                    db.execute("INSERT INTO registry_grants VALUES (?,?,?)",
+                    db.execute(_queries.ACTION_INSERT_REGISTRY_GRANTS,
                                (demo["principal_id"], model["configuration_ref"], encode(grant)))
-                    db.execute("INSERT INTO registry_credentials VALUES (?,?,?)",
+                    db.execute(_queries.ACTION_INSERT_REGISTRY_CREDENTIALS,
                                (hashlib.sha256(token.encode()).hexdigest(), demo["principal_id"], "legacy.demo"))
-                    for key, value in (("schema_version", "2"), ("authority_revision", "1"),
+                    for key, value in (("bootstrap_version", "1"), ("authority_revision", "1"),
                                        ("bootstrap_source", "private-dev06-local")):
-                        db.execute("INSERT INTO registry_meta VALUES (?,?)", (key, value))
-                    db.execute("INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES (?,?,?,?,?,?,?)",
-                               ("owner.local", "migrate_dev06", "local.synthetic", None, 1, 1, at))
-                    db.execute("PRAGMA user_version=7")
-                return int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0])
-            revision = self.store._transaction(action)
+                        db.execute(_queries.ACTION_INSERT_REGISTRY_META, (key, value))
+                    db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT,
+                               ("owner.local", "bootstrap", "local.synthetic", None, 1, 1, at))
+                return int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
+            revision = self.store.database.transaction(action)
             self.send_authority.epoch = revision
 
     def version(self):
-        with self.store._lock:
-            row = self.store.db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()
             if not row:
                 raise RuntimeError("authority unavailable")
             return int(row[0])
 
     def _record(self, table, where, args):
-        with self.store._lock:
-            row = self.store.db.execute(f"SELECT record FROM {table} WHERE {where}", args).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.RECORD_SELECT_RECORD(table=table, where=where), args).fetchone()
         return json.loads(row[0]) if row else None
 
     def model(self, ref):
@@ -222,19 +195,19 @@ class Registry:
 
     def prices(self, ref):
         identifier(ref)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_prices WHERE config_ref=? ORDER BY rowid",
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.PRICES_SELECT_REGISTRY_PRICES,
                                          (ref,)).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def list_models(self):
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_models ORDER BY ref").fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.LIST_MODELS_SELECT_REGISTRY_MODELS).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def list_principals(self):
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_principals ORDER BY id").fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.LIST_PRINCIPALS_SELECT_REGISTRY_PRINCIPALS).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def connection(self, connection_id):
@@ -242,14 +215,14 @@ class Registry:
         return self._record("registry_connections", "id=?", (connection_id,))
 
     def list_connections(self):
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_connections ORDER BY id").fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.LIST_CONNECTIONS_SELECT_REGISTRY_CONNECTIONS).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def deployments(self, connection_id):
         identifier(connection_id)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_deployments WHERE json_extract(record,'$.connection_id')=? ORDER BY id", (connection_id,)).fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.DEPLOYMENTS_SELECT_REGISTRY_DEPLOYMENTS, (connection_id,)).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     @staticmethod
@@ -276,14 +249,11 @@ class Registry:
         connection = self.connection(connection_id)
         if not connection:
             raise ValueError("unknown connection")
-        with self.store._lock:
-            observations = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM registry_observations WHERE connection_id=? AND "
-                "json_extract(record,'$.operation')='inventory' "
-                "ORDER BY rowid DESC", (connection_id,)).fetchall()]
+        with self.store.database.read():
+            observations = [json.loads(row[0]) for row in self.store.database.execute(
+                _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (connection_id,)).fetchall()]
             permissions = {json.loads(row[0])["serving_id"]: json.loads(row[0]) for row in
-                self.store.db.execute("SELECT record FROM registry_source_permissions WHERE "
-                    "json_extract(record,'$.connection_id')=?", (connection_id,)).fetchall()}
+                self.store.database.execute(_queries.SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (connection_id,)).fetchall()}
         latest = observations[0] if observations else None
         saved = next((item for item in observations if item["state"] in ("observed", "partial")), None)
         prior_complete = (next((item for item in observations[observations.index(saved) + 1:]
@@ -339,12 +309,12 @@ class Registry:
 
     def observations(self, connection_id):
         identifier(connection_id)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_observations WHERE connection_id=? ORDER BY rowid DESC LIMIT 20", (connection_id,)).fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.OBSERVATIONS_SELECT_REGISTRY_OBSERVATIONS, (connection_id,)).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def _require_admin(self, db, actor):
-        row = db.execute("SELECT record FROM registry_principals WHERE id=?", (actor,)).fetchone()
+        row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
         principal = json.loads(row[0]) if row else None
         if not principal or principal["status"] != "active" or principal["role"] != "registry_admin":
             raise PermissionError("ADMIN_REQUIRED")
@@ -364,16 +334,16 @@ class Registry:
             encode({"connection_id": connection_id, "expected_revision": expected_revision,
                     "mode": mode, "secret": secret}).encode())
         with self.send_authority.gate:
-            db = self.store.db
-            with self.store._lock:
+            db = self.store.database
+            with self.store.database.read():
                 self._require_admin(db, actor)
-                prior = db.execute("SELECT actor,request_hash,result FROM registry_operations WHERE operation_id=?",
+                prior = db.execute(_queries.SET_PROVIDER_CREDENTIAL_SELECT_REGISTRY_OPERATIONS,
                                    (operation_id,)).fetchone()
                 if prior:
                     if prior[0] != actor or prior[1] != digest:
                         raise RegistryConflict("operation reuse conflict")
                     return json.loads(prior[2])
-                row = db.execute("SELECT record FROM registry_connections WHERE id=?", (connection_id,)).fetchone()
+                row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)).fetchone()
                 record = json.loads(row[0]) if row else None
                 if not record or record["revision"] != expected_revision or record["status"] == "archived":
                     raise RegistryConflict("connection revision changed")
@@ -384,7 +354,7 @@ class Registry:
                 sealed = self.provider_vault.seal(connection_id, next_version, secret)
             try:
                 def action():
-                    current = json.loads(db.execute("SELECT record FROM registry_connections WHERE id=?",
+                    current = json.loads(db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS,
                         (connection_id,)).fetchone()[0])
                     if current["revision"] != expected_revision:
                         raise RegistryConflict("connection revision changed")
@@ -393,19 +363,19 @@ class Registry:
                             if mode == "replace" else None,
                         credential_state="present" if mode == "replace" else "absent")
                     current["revision"] += 1
-                    db.execute("UPDATE registry_connections SET record=? WHERE id=?", (encode(current), connection_id))
-                    revision = int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0]) + 1
-                    db.execute("UPDATE registry_meta SET value=? WHERE key='authority_revision'", (str(revision),))
-                    audit = db.execute("INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES (?,?,?,?,?,?,?)",
+                    db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(current), connection_id))
+                    revision = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0]) + 1
+                    db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
+                    audit = db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT,
                         (actor, "provider_credential_" + mode, connection_id, expected_revision,
                          current["revision"], revision, timestamp()))
-                    db.execute("INSERT INTO registry_audit_values VALUES (?,?,?)", (audit.lastrowid,
+                    db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT_VALUES, (audit.lastrowid,
                         encode(safe_audit_values(record)), encode(safe_audit_values(current))))
                     reply = {"record": current, "authority_revision": revision}
-                    db.execute("INSERT INTO registry_operations VALUES (?,?,?,?)",
+                    db.execute(_queries.ACTION_INSERT_REGISTRY_OPERATIONS,
                                (operation_id, actor, digest, encode(reply)))
                     return reply, revision
-                reply, revision = self.store._transaction(action)
+                reply, revision = self.store.database.transaction(action)
             except BaseException:
                 if sealed:
                     sealed.unlink(missing_ok=True)
@@ -422,9 +392,9 @@ class Registry:
         # Serialize probes, including duplicate operation IDs, without holding the send gate
         # over DNS, TLS or provider waits.
         with self._probe_lock:
-            with self.store._lock:
-                self._require_admin(self.store.db, actor)
-                old = self.store.db.execute("SELECT record FROM registry_observations WHERE operation_id=?",
+            with self.store.database.read():
+                self._require_admin(self.store.database, actor)
+                old = self.store.database.execute(_queries.PROBE_CONNECTION_SELECT_REGISTRY_OBSERVATIONS,
                                             (operation_id,)).fetchone()
                 if old:
                     saved = json.loads(old[0])
@@ -461,18 +431,15 @@ class Registry:
             if current["revision"] != connection["revision"]:
                 observation.update(state="stale", reason="connection_changed_during_probe", models=[])
             def save():
-                self.store.db.execute("INSERT INTO registry_observations VALUES (?,?,?)",
+                self.store.database.execute(_queries.SAVE_INSERT_REGISTRY_OBSERVATIONS,
                     (operation_id, connection_id, encode(observation)))
-            self.store._transaction(save)
+            self.store.database.transaction(save)
             return observation
 
     def history(self, subject):
         identifier(subject)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT a.actor,a.action,a.old_revision,a.new_revision,"
-                                         "a.authority_revision,a.at,v.before_json,v.after_json "
-                                         "FROM registry_audit a LEFT JOIN registry_audit_values v ON v.seq=a.seq "
-                                         "WHERE a.subject=? ORDER BY a.seq DESC LIMIT 100",
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.HISTORY_SELECT_REGISTRY_AUDIT,
                                          (subject,)).fetchall()
         return [{**dict(zip(("actor", "action", "old_revision", "new_revision", "authority_revision", "at"), row[:6])),
                  "before": json.loads(row[6]) if row[6] else None,
@@ -482,13 +449,13 @@ class Registry:
         if type(token) is not str or len(token) < 32:
             raise ContractError("AUTHENTICATION_FAILED", 401)
         verifier = hashlib.sha256(token.encode()).hexdigest()
-        with self.store._lock:
+        with self.store.database.read():
             ephemeral = self._operator_tokens.get(verifier)
             if ephemeral and ephemeral[1] > time.monotonic():
                 principal = self.principal(ephemeral[0])
                 if principal and principal["status"] == "active" and (not kind or principal["kind"] == kind):
                     return principal
-            row = self.store.db.execute("SELECT principal_id FROM registry_credentials WHERE verifier=?",
+            row = self.store.database.execute(_queries.CREDENTIAL_PRINCIPAL_SELECT_REGISTRY_CREDENTIALS,
                                         (verifier,)).fetchone()
         principal = self.principal(row[0]) if row else None
         if not principal or principal["status"] != "active" or (kind and principal["kind"] != kind):
@@ -501,13 +468,13 @@ class Registry:
         if not principal or principal["status"] != "active" or principal["role"] != "registry_admin":
             raise PermissionError("ADMIN_REQUIRED")
         token = secrets.token_urlsafe(48)
-        with self.store._lock:
+        with self.store.database.read():
             self._operator_tokens[hashlib.sha256(token.encode()).hexdigest()] = (
                 principal_id, time.monotonic() + 1800)
         return token
 
     def revoke_local_operator_token(self, token):
-        with self.store._lock:
+        with self.store.database.read():
             self._operator_tokens.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
     def authenticate(self, token, template):
@@ -572,12 +539,12 @@ class Registry:
         request_hash = hashlib.sha256(encode(request).encode()).hexdigest()
         with self.send_authority.gate:
             def action():
-                db = self.store.db
-                actor_row = db.execute("SELECT record FROM registry_principals WHERE id=?", (actor,)).fetchone()
+                db = self.store.database
+                actor_row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
                 actor_record = json.loads(actor_row[0]) if actor_row else None
                 if not actor_record or actor_record["status"] != "active" or actor_record["role"] != "registry_admin":
                     raise PermissionError("ADMIN_REQUIRED")
-                prior = db.execute("SELECT actor,request_hash,result FROM registry_operations WHERE operation_id=?",
+                prior = db.execute(_queries.SET_PROVIDER_CREDENTIAL_SELECT_REGISTRY_OPERATIONS,
                                    (op,)).fetchone()
                 if prior:
                     if prior[0] != actor or prior[1] != request_hash:
@@ -587,13 +554,13 @@ class Registry:
                     if expected != 0:
                         raise RegistryConflict("catalogue creation requires revision zero")
                     candidate = validate_catalogue(subject, data)
-                    row = db.execute("SELECT record FROM registry_models WHERE ref=?", (subject,)).fetchone()
+                    row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (subject,)).fetchone()
                     if row:
                         existing = json.loads(row[0])
                         if (existing.get("kind") == "real_catalogue" and
                                 existing.get("catalogue") == candidate["catalogue"] and
                                 existing.get("source_links") == candidate["source_links"]):
-                            current = int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0])
+                            current = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
                             return {"record": existing, "authority_revision": current}, None
                         raise RegistryConflict("catalogue import conflicts with existing record")
                 table = ("registry_models" if action_name in ("edit_model", "edit_catalogue_model", "model_state",
@@ -602,22 +569,22 @@ class Registry:
                     "probe_schedule", "associate_deployment") else
                     "registry_principals" if action_name in ("edit_principal", "principal_state", "set_role") else
                     "registry_agents" if action_name in ("register_agent", "agent_state", "agent_instrumentation") else None)
-                prior_row = db.execute(f"SELECT record FROM {table} WHERE {('ref' if table == 'registry_models' else 'id')}=?",
+                prior_row = db.execute(_queries.ACTION_SELECT_RECORD(table=table),
                     (subject,)).fetchone() if table else None
                 before = safe_audit_values(json.loads(prior_row[0])) if prior_row else None
                 result = self._apply(db, actor, action_name, subject, expected, data)
-                current = int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0])
+                current = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
                 revision = current + 1
-                db.execute("UPDATE registry_meta SET value=? WHERE key='authority_revision'", (str(revision),))
-                audit = db.execute("INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES (?,?,?,?,?,?,?)",
+                db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
+                audit = db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT,
                            (actor, action_name, subject, expected or None, result["revision"], revision, timestamp()))
-                db.execute("INSERT INTO registry_audit_values VALUES (?,?,?)", (audit.lastrowid,
+                db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT_VALUES, (audit.lastrowid,
                     encode(before), encode(safe_audit_values(result))))
                 reply = {"record": result, "authority_revision": revision}
-                db.execute("INSERT INTO registry_operations VALUES (?,?,?,?)",
+                db.execute(_queries.ACTION_INSERT_REGISTRY_OPERATIONS,
                            (op, actor, request_hash, encode(reply)))
                 return reply, revision
-            reply, revision = self.store._transaction(action)
+            reply, revision = self.store.database.transaction(action)
             if revision is not None:
                 self.send_authority.epoch = revision
             return reply
@@ -631,13 +598,12 @@ class Registry:
                     type(data["allowed"]) is not bool or type(data["items"]) is not list or
                     not 1 <= len(data["items"]) <= 100):
                 raise ValueError("invalid source-model selection")
-            row = db.execute("SELECT record FROM registry_connections WHERE id=?", (subject,)).fetchone()
+            row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (subject,)).fetchone()
             connection = json.loads(row[0]) if row else None
             if not connection or connection["status"] == "archived":
                 raise ValueError("source connection unavailable")
             discoveries = [json.loads(item[0]) for item in db.execute(
-                "SELECT record FROM registry_observations WHERE connection_id=? AND "
-                "json_extract(record,'$.operation')='inventory' ORDER BY rowid DESC", (subject,)).fetchall()]
+                _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (subject,)).fetchall()]
             saved = next((item for item in discoveries if item["state"] in ("observed", "partial")), None)
             observed = set(saved["models"]) if saved else set()
             if saved and saved["state"] == "partial":
@@ -646,7 +612,7 @@ class Registry:
                 if prior:
                     observed.update(prior["models"])
             associated = {json.loads(item[0])["serving_id"] for item in db.execute(
-                "SELECT record FROM registry_deployments WHERE json_extract(record,'$.connection_id')=?",
+                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_2,
                 (subject,)).fetchall()}
             changed = []
             seen = set()
@@ -661,15 +627,14 @@ class Registry:
                     raise ValueError("unknown or duplicate source-model row")
                 seen.add(serving_id)
                 key = self._source_key(subject, serving_id)
-                prior = db.execute("SELECT record FROM registry_source_permissions WHERE id=?", (key,)).fetchone()
+                prior = db.execute(_queries.APPLY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (key,)).fetchone()
                 old = json.loads(prior[0]) if prior else None
                 if revision != (old["revision"] if old else 0):
                     raise RegistryConflict("stale source-model permission")
                 record = {"connection_id": subject, "serving_id": serving_id,
                           "allowed": data["allowed"], "revision": revision + 1,
                           "actor": actor, "at": timestamp()}
-                db.execute("INSERT INTO registry_source_permissions VALUES (?,?) ON CONFLICT(id) "
-                           "DO UPDATE SET record=excluded.record", (key, encode(record)))
+                db.execute(_queries.APPLY_INSERT_REGISTRY_SOURCE_PERMISSIONS, (key, encode(record)))
                 changed.append(record)
             return {"revision": 1, "connection_id": subject, "allowed": data["allowed"],
                     "items": changed}
@@ -677,21 +642,21 @@ class Registry:
             if expected or not subject.startswith("cfg.provider.") or set(data) != {
                     "display_name", "deployment_id", "owner", "purposes", "task_classes"}:
                 raise ValueError("invalid provider configuration")
-            if db.execute("SELECT 1 FROM registry_models WHERE ref=?", (subject,)).fetchone():
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
                 raise RegistryConflict("configuration exists")
             deployment_id = identifier(data["deployment_id"])
-            row = db.execute("SELECT record FROM registry_deployments WHERE id=?", (deployment_id,)).fetchone()
+            row = db.execute(_queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS, (deployment_id,)).fetchone()
             deployment = json.loads(row[0]) if row else None
             if not deployment or deployment["status"] != "catalogued" or deployment.get("configuration_ref"):
                 raise ValueError("deployment unavailable")
-            row = db.execute("SELECT record FROM registry_connections WHERE id=?", (deployment["connection_id"],)).fetchone()
+            row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (deployment["connection_id"],)).fetchone()
             connection = json.loads(row[0]) if row else None
             if (not connection or connection["status"] != "active" or
                     connection["adapter_id"] != "openai.responses.v1" or
                     connection["credential_state"] != "present" or
                     connection["settings"].get("project")):
                 raise ValueError("selected connection unavailable")
-            model = json.loads(db.execute("SELECT record FROM registry_models WHERE ref=?",
+            model = json.loads(db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2,
                 (deployment["model_ref"],)).fetchone()[0])
             if model["status"] != "catalogued" or "text" not in model["catalogue"]["provider_published_capabilities"]:
                 raise ValueError("catalogue model does not support selected text profile")
@@ -713,15 +678,15 @@ class Registry:
                 "legacy_unpriced": False, "catalogue_ref": deployment["model_ref"]}
             deployment["configuration_ref"] = subject
             deployment["revision"] += 1
-            db.execute("INSERT INTO registry_models VALUES (?,?)", (subject, encode(record)))
-            db.execute("UPDATE registry_deployments SET record=? WHERE id=?", (encode(deployment), deployment_id))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
+            db.execute(_queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS, (encode(deployment), deployment_id))
             return record
         if action == "create_connection":
             if (expected or set(data) not in ({"display_name", "adapter_id", "settings", "owner"},
                                                {"display_name", "adapter_id", "settings", "owner", "funding_kind"})
                     or not subject.startswith("conn.")):
                 raise ValueError("invalid connection creation")
-            if db.execute("SELECT 1 FROM registry_connections WHERE id=?", (subject,)).fetchone():
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_2, (subject,)).fetchone():
                 raise RegistryConflict("connection exists")
             adapter_id = identifier(data["adapter_id"])
             settings = data["settings"]
@@ -741,7 +706,7 @@ class Registry:
                       "credential_version": 0, "credential_state": "absent", "created_at": timestamp(),
                       "network_policy": "commercial_public_only" if provider != "vllm" else "approved_private_lab",
                       "checks_scheduled": False, "scheduled_operation": None, "check_interval_seconds": None}
-            db.execute("INSERT INTO registry_connections VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_CONNECTIONS, (subject, encode(record)))
             return record
         if action in ("edit_connection", "connection_state", "associate_deployment", "probe_schedule"):
             record = self._load_for_update(db, "registry_connections", "id", subject, expected)
@@ -768,7 +733,7 @@ class Registry:
                             not 300 <= data["interval_seconds"] <= 86400):
                         raise ValueError("unsupported scheduled probe")
                     if not record["checks_scheduled"] and db.execute(
-                        "SELECT COUNT(*) FROM registry_connections WHERE json_extract(record,'$.checks_scheduled')=1").fetchone()[0] >= 16:
+                        _queries.APPLY_SELECT_REGISTRY_CONNECTIONS_3).fetchone()[0] >= 16:
                         raise ValueError("scheduled connection limit")
                 elif data["operation"] is not None or data["interval_seconds"] is not None:
                     raise ValueError("disabled schedule must be empty")
@@ -780,31 +745,31 @@ class Registry:
                     raise ValueError("invalid model association")
                 deployment_id = identifier(data["deployment_id"])
                 model_ref = identifier(data["model_ref"])
-                model_row = db.execute("SELECT record FROM registry_models WHERE ref=?", (model_ref,)).fetchone()
+                model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (model_ref,)).fetchone()
                 if not model_row or json.loads(model_row[0]).get("kind") != "real_catalogue":
                     raise ValueError("association requires existing real catalogue model")
-                if db.execute("SELECT 1 FROM registry_deployments WHERE id=?", (deployment_id,)).fetchone():
+                if db.execute(_queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_3, (deployment_id,)).fetchone():
                     raise RegistryConflict("deployment identity exists")
                 deployment = {"deployment_id": deployment_id, "connection_id": subject,
                               "model_ref": model_ref, "serving_id": identifier(data["serving_id"]),
                               "site": nonempty(data["site"]), "status": "catalogued", "revision": 1,
                               "execution_approved": False, "created_at": timestamp()}
-                db.execute("INSERT INTO registry_deployments VALUES (?,?)", (deployment_id, encode(deployment)))
+                db.execute(_queries.APPLY_INSERT_REGISTRY_DEPLOYMENTS, (deployment_id, encode(deployment)))
             record["revision"] += 1
-            db.execute("UPDATE registry_connections SET record=? WHERE id=?", (encode(record), subject))
+            db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(record), subject))
             return record
         if action == "import_catalogue":
             if expected != 0:
                 raise RegistryConflict("catalogue creation requires revision zero")
             record = validate_catalogue(subject, data)
-            db.execute("INSERT INTO registry_models VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
             return record
         if action == "register_catalogue":
             required = {"display_name", "vendor", "family", "api_model_id", "model_version",
                         "owner", "capabilities", "context_window", "max_output", "notes", "price"}
             if expected or set(data) != required or not subject.startswith("catalogue.operator."):
                 raise ValueError("invalid manual catalogue registration")
-            if db.execute("SELECT 1 FROM registry_models WHERE ref=?", (subject,)).fetchone():
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
                 raise RegistryConflict("model exists")
             capabilities = data["capabilities"]
             if type(capabilities) is not list or any(item not in
@@ -841,13 +806,13 @@ class Registry:
                       "catalogue": catalogue, "source_links": [source],
                       "reference_price_history": [], "price_version": price["snapshot_id"],
                       "record_origin": "operator_entered"}
-            db.execute("INSERT INTO registry_models VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
             return record
         if action == "create_model":
             if expected or set(data) != {"display_name", "model", "model_version", "owner",
                                                  "capabilities", "purposes", "task_classes"}:
                 raise ValueError("invalid model creation")
-            if db.execute("SELECT 1 FROM registry_models WHERE ref=?", (subject,)).fetchone():
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
                 raise RegistryConflict("model exists")
             model_name = data["model"]
             # A non-synthetic name may be catalogued only as unsupported draft.
@@ -868,7 +833,7 @@ class Registry:
                       "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
                       "handling": ["no.content.store"], "approved_by": None,
                       "approved_at": None, "legacy_unpriced": False}
-            db.execute("INSERT INTO registry_models VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
             return record
         if action in ("edit_model", "edit_catalogue_model", "model_state", "archive_model",
                       "publish_reference_price", "correct_reference_price"):
@@ -930,25 +895,25 @@ class Registry:
                         if not self.provider_execution_ready:
                             raise ValueError("selected provider execution path not validated")
                         destination = record["destination"]
-                        row = db.execute("SELECT record FROM registry_connections WHERE id=?",
+                        row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS,
                                          (destination["connection_id"],)).fetchone()
                         connection = json.loads(row[0]) if row else None
                         if (not connection or connection["status"] != "active" or
                                 connection["revision"] != destination["connection_revision"] or
                                 connection["credential_version"] != destination["credential_version"]):
                             raise ValueError("provider binding stale")
-                        deployment = json.loads(db.execute("SELECT record FROM registry_deployments WHERE id=?",
+                        deployment = json.loads(db.execute(_queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS,
                             (destination["deployment_id"],)).fetchone()[0])
                         deployment["execution_approved"] = True
                         deployment["approved_by"] = actor
                         deployment["approved_at"] = timestamp()
                         deployment["revision"] += 1
-                        db.execute("UPDATE registry_deployments SET record=? WHERE id=?",
+                        db.execute(_queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS,
                             (encode(deployment), destination["deployment_id"]))
                     elif record["destination"]["model"] not in MODELS:
                         raise ValueError("unsupported synthetic transport")
                     if not record["legacy_unpriced"] and not db.execute(
-                            "SELECT 1 FROM registry_prices WHERE config_ref=?", (subject,)).fetchone():
+                            _queries.APPLY_SELECT_REGISTRY_PRICES_2, (subject,)).fetchone():
                         raise ValueError("price required before enable")
                     record["approved_by"], record["approved_at"] = actor, timestamp()
                 if record.get("kind") == "real_catalogue" and data["status"] != "revoked":
@@ -956,7 +921,7 @@ class Registry:
                 record["status"] = data["status"]
                 record["state_reason"] = data["reason"]
             record["revision"] += 1
-            db.execute("UPDATE registry_models SET record=? WHERE ref=?", (encode(record), subject))
+            db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(record), subject))
             return record
         if action == "create_principal":
             if expected or set(data) not in ({"display_name", "kind", "owner"},
@@ -966,13 +931,13 @@ class Registry:
             if role not in ("ordinary", "read_only_operator", "registry_admin") or (
                     data["kind"] == "service" and role != "ordinary"):
                 raise ValueError("invalid principal role")
-            if db.execute("SELECT 1 FROM registry_principals WHERE id=?", (subject,)).fetchone():
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS, (subject,)).fetchone():
                 raise RegistryConflict("principal exists")
             record = {"principal_id": subject, "display_name": nonempty(data["display_name"]),
                       "kind": data["kind"], "owner": identifier(data["owner"]),
                       "status": "inactive", "role": role, "revision": 1,
                       "credential_state": "unbound", "record_origin": "operator_entered"}
-            db.execute("INSERT INTO registry_principals VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_PRINCIPALS, (subject, encode(record)))
             return record
         if action in ("edit_principal", "principal_state", "set_role"):
             record = self._load_for_update(db, "registry_principals", "id", subject, expected)
@@ -993,7 +958,7 @@ class Registry:
                 if getattr(self, "users", None):
                     self.users.validate_principal_change(db, record, data["role"], record["status"])
                 if record["role"] == "registry_admin" and record["status"] == "active" and data["role"] != "registry_admin":
-                    active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
+                    active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
                     if active <= 1:
                         raise ValueError("last active administrator")
                 record["role"] = data["role"]
@@ -1006,22 +971,22 @@ class Registry:
                 if getattr(self, "users", None):
                     self.users.validate_principal_change(db, record, record["role"], data["status"])
                 if record["role"] == "registry_admin" and record["status"] == "active" and data["status"] != "active":
-                    active = db.execute("SELECT COUNT(*) FROM registry_principals WHERE json_extract(record,'$.role')='registry_admin' AND json_extract(record,'$.status')='active'").fetchone()[0]
+                    active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
                     if active <= 1:
                         raise ValueError("last active administrator")
                 record["status"], record["state_reason"] = data["status"], data["reason"]
             if action in ("set_role", "principal_state") and getattr(self, "users", None):
-                db.execute("UPDATE console_users SET auth_version=auth_version+1,updated_at=? WHERE principal_id=?",
+                db.execute(_queries.APPLY_UPDATE_CONSOLE_USERS,
                            (timestamp(), subject))
             record["revision"] += 1
-            db.execute("UPDATE registry_principals SET record=? WHERE id=?", (encode(record), subject))
+            db.execute(_queries.APPLY_UPDATE_REGISTRY_PRINCIPALS, (encode(record), subject))
             return record
         if action == "set_grant":
             if set(data) != {"configuration_ref", "status", "purposes", "task_classes"} or data["status"] not in ("active", "removed"):
                 raise ValueError("invalid grant")
             ref = identifier(data["configuration_ref"])
-            principal_row = db.execute("SELECT record FROM registry_principals WHERE id=?", (subject,)).fetchone()
-            model_row = db.execute("SELECT record FROM registry_models WHERE ref=?", (ref,)).fetchone()
+            principal_row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (subject,)).fetchone()
+            model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (ref,)).fetchone()
             if not principal_row or not model_row:
                 raise ValueError("unregistered grant target")
             principal, model = json.loads(principal_row[0]), json.loads(model_row[0])
@@ -1036,14 +1001,14 @@ class Registry:
                 raise ValueError("source model disallowed")
             if data["status"] == "active" and model.get("kind") == "provider_deployment":
                 destination = model["destination"]
-                connection_row = db.execute("SELECT record FROM registry_connections WHERE id=?",
+                connection_row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS,
                                             (destination["connection_id"],)).fetchone()
                 connection = json.loads(connection_row[0]) if connection_row else None
                 if (not connection or connection["status"] != "active" or
                         connection["revision"] != destination["connection_revision"] or
                         connection["credential_version"] != destination["credential_version"]):
                     raise ValueError("provider connection unavailable for new grant")
-            row = db.execute("SELECT record FROM registry_grants WHERE principal_id=? AND config_ref=?",
+            row = db.execute(_queries.APPLY_SELECT_REGISTRY_GRANTS,
                              (subject, ref)).fetchone()
             old = json.loads(row[0]) if row else None
             if expected != (old["revision"] if old else 0):
@@ -1055,7 +1020,7 @@ class Registry:
                       "revision": expected + 1, "purposes": sorted({identifier(x) for x in data["purposes"]}),
                       "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
                       "actor": actor, "at": timestamp()}
-            db.execute("INSERT INTO registry_grants VALUES (?,?,?) ON CONFLICT(principal_id,config_ref) DO UPDATE SET record=excluded.record",
+            db.execute(_queries.APPLY_INSERT_REGISTRY_GRANTS,
                        (subject, ref, encode(record)))
             return record
         if action == "publish_price":
@@ -1068,7 +1033,7 @@ class Registry:
             if set(data) not in (base_fields, base_fields | {"contract"}):
                 raise ValueError("invalid price")
             version = identifier(data["price_version"])
-            if db.execute("SELECT 1 FROM registry_prices WHERE config_ref=? AND price_version=?",
+            if db.execute(_queries.APPLY_SELECT_REGISTRY_PRICES,
                           (subject, version)).fetchone():
                 raise RegistryConflict("price version exists")
             provider_schedule = model.get("kind") == "provider_deployment"
@@ -1092,16 +1057,16 @@ class Registry:
                       "unsupported_categories": [x for x in RATE_CATEGORIES if x not in rates]}
             if contract is not None:
                 record["contract"] = contract
-            db.execute("INSERT INTO registry_prices VALUES (?,?,?)", (subject, version, encode(record)))
+            db.execute(_queries.APPLY_INSERT_REGISTRY_PRICES, (subject, version, encode(record)))
             model["revision"] += 1
             model["price_version"] = version
-            db.execute("UPDATE registry_models SET record=? WHERE ref=?", (encode(model), subject))
+            db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(model), subject))
             return {**record, "revision": model["revision"]}
         raise ValueError("unsupported management action")
 
     @staticmethod
     def _load_for_update(db, table, column, subject, expected):
-        row = db.execute(f"SELECT record FROM {table} WHERE {column}=?", (subject,)).fetchone()
+        row = db.execute(_queries.LOAD_FOR_UPDATE_SELECT_RECORD(column=column, table=table), (subject,)).fetchone()
         if not row:
             raise ValueError("unknown subject")
         record = json.loads(row[0])
@@ -1114,9 +1079,9 @@ class Registry:
         if type(token) is not str or not 32 <= len(token) <= 4096:
             return False
         verifier = hashlib.sha256(token.encode()).hexdigest()
-        with self.store._lock:
-            return self.store.db.execute(
-                "SELECT 1 FROM registry_credentials WHERE principal_id=? AND verifier=?",
+        with self.store.database.read():
+            return self.store.database.execute(
+                _queries.CREDENTIAL_BOUND_TO_SELECT_REGISTRY_CREDENTIALS,
                 (principal_id, verifier)).fetchone() is not None
 
     def provision_credential(self, actor, principal_id, expected_revision, operation_id,
@@ -1133,14 +1098,14 @@ class Registry:
             raise ValueError("invalid expected revision")
         with self.send_authority.gate:
             def action():
-                db = self.store.db
-                actor_row = db.execute("SELECT record FROM registry_principals WHERE id=?", (actor,)).fetchone()
+                db = self.store.database
+                actor_row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
                 admin = json.loads(actor_row[0]) if actor_row else None
                 if not admin or admin["status"] != "active" or admin["role"] != "registry_admin":
                     raise PermissionError("ADMIN_REQUIRED")
                 request_hash = hashlib.sha256(encode({"principal_id": principal_id,
                     "expected_revision": expected_revision, "action": "provision_credential"}).encode()).hexdigest()
-                prior = db.execute("SELECT actor,request_hash,result FROM registry_operations WHERE operation_id=?",
+                prior = db.execute(_queries.SET_PROVIDER_CREDENTIAL_SELECT_REGISTRY_OPERATIONS,
                                    (operation_id,)).fetchone()
                 if prior:
                     if prior[0] != actor or prior[1] != request_hash:
@@ -1154,20 +1119,20 @@ class Registry:
                         any(not 33 <= ord(character) <= 126 for character in secret)):
                     raise ValueError("invalid generated credential")
                 verifier = hashlib.sha256(secret.encode()).hexdigest()
-                db.execute("DELETE FROM registry_credentials WHERE principal_id=?", (principal_id,))
-                db.execute("INSERT INTO registry_credentials VALUES (?,?,?)",
+                db.execute(_queries.ACTION_DELETE_REGISTRY_CREDENTIALS, (principal_id,))
+                db.execute(_queries.ACTION_INSERT_REGISTRY_CREDENTIALS,
                            (verifier, principal_id, "cred." + verifier[:16]))
                 record["credential_state"] = "bound"
                 record["revision"] += 1
-                db.execute("UPDATE registry_principals SET record=? WHERE id=?", (encode(record), principal_id))
-                revision = int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0]) + 1
-                db.execute("UPDATE registry_meta SET value=? WHERE key='authority_revision'", (str(revision),))
-                db.execute("INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES (?,?,?,?,?,?,?)",
+                db.execute(_queries.APPLY_UPDATE_REGISTRY_PRINCIPALS, (encode(record), principal_id))
+                revision = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0]) + 1
+                db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
+                db.execute(_queries.ACTION_INSERT_REGISTRY_AUDIT,
                            (actor, "provision_credential", principal_id, expected_revision, record["revision"], revision, timestamp()))
-                db.execute("INSERT INTO registry_operations VALUES (?,?,?,?)",
+                db.execute(_queries.ACTION_INSERT_REGISTRY_OPERATIONS,
                            (operation_id, actor, request_hash, encode({"record": record, "authority_revision": revision})))
                 return record, revision, secret
-            record, revision, secret = self.store._transaction(action)
+            record, revision, secret = self.store.database.transaction(action)
             if revision is not None:
                 self.send_authority.epoch = revision
         return record, secret

@@ -1,6 +1,8 @@
 """Explicit wire-0.3 standalone service over authenticated synthetic contexts."""
 from __future__ import annotations
 
+from .repositories import successor_service as _queries
+
 from .observability import log_failure
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -63,10 +65,9 @@ class SuccessorService:
     def recover_incomplete(self):
         """Never replay after restart; retain possible-send exposure durably."""
         with self.authority.gate:
-            with self.store._lock:
-                rows = [json.loads(row[0]) for row in self.store.db.execute(
-                    "SELECT record FROM dev12_submissions WHERE json_extract(record,'$.submission_state')='pending' "
-                    "AND json_extract(record,'$.campaign_id')=?", (self.allowance.campaign_id,))]
+            with self.store.database.read():
+                rows = [json.loads(row[0]) for row in self.store.database.execute(
+                    _queries.RECOVER_INCOMPLETE_SELECT_DEV12_SUBMISSIONS, (self.allowance.campaign_id,))]
             for record in rows:
                 sid, aid = record["submission_id"], record["attempt_id"]
                 committed = self._send_committed(sid, aid)
@@ -84,9 +85,9 @@ class SuccessorService:
                 self._update(sid, fields, self.clock(), on_update=settled)
 
     def _send_committed(self, sid, aid):
-        with self.store._lock:
-            return self.store.db.execute(
-                "SELECT 1 FROM dev12_send_ownership WHERE submission_id=? AND attempt_id=?",
+        with self.store.database.read():
+            return self.store.database.execute(
+                _queries.SEND_COMMITTED_SELECT_DEV12_SEND_OWNERSHIP,
                 (sid, aid)).fetchone() is not None
 
     def _possible_send(self, sid):
@@ -121,13 +122,11 @@ class SuccessorService:
                     not self.usage_write_allowed(trusted, record)):
                 raise PermissionError("historical receiver collection denied")
             aid = record["attempt_id"]
-            with self.store._lock:
-                ownership = self.store.db.execute(
-                    "SELECT guard_receipt FROM dev12_send_ownership "
-                    "WHERE attempt_id=? AND submission_id=?", (aid, submission_id)).fetchone()
-                prior_receipts = [json.loads(row[0]) for row in self.store.db.execute(
-                    "SELECT evidence FROM dev12_evidence_events WHERE submission_id=? "
-                    "AND event_kind='late_receiver_receipt_collected'", (submission_id,))]
+            with self.store.database.read():
+                ownership = self.store.database.execute(
+                    _queries.COLLECT_RECEIVER_RECEIPT_SELECT_DEV12_SEND_OWNERSHIP, (aid, submission_id)).fetchone()
+                prior_receipts = [json.loads(row[0]) for row in self.store.database.execute(
+                    _queries.COLLECT_RECEIVER_RECEIPT_SELECT_DEV12_EVIDENCE_EVENTS, (submission_id,))]
             if ownership is None:
                 raise ValueError("guarded send ownership required for late collection")
             guard = json.loads(ownership[0])
@@ -336,9 +335,9 @@ class SuccessorService:
             if outcome["state"] == "unknown":
                 self._possible_send(sid)
                 return
-            with self.store._lock:
-                committed = self.store.db.execute(
-                    "SELECT 1 FROM dev12_send_ownership WHERE attempt_id=?", (aid,)).fetchone()
+            with self.store.database.read():
+                committed = self.store.database.execute(
+                    _queries.EXECUTE_SELECT_DEV12_SEND_OWNERSHIP, (aid,)).fetchone()
             if not committed:
                 raise ContractError("FDC_REJECTED", 409)
             if outcome["state"] != "observed":
@@ -416,7 +415,7 @@ class SuccessorService:
 
     def status(self, submission_id, trusted):
         with self.authority.gate:
-            with self.store._lock:
+            with self.store.database.read():
                 record = self._visible(self.store.successor_get(submission_id), trusted)
                 latest = self.store.successor_latest_usage(record["attempt_id"])
         attempt = {"attempt_id": record["attempt_id"], "dispatch_state": record["dispatch_state"],

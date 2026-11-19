@@ -164,6 +164,13 @@ class ProviderRotationTests(unittest.TestCase):
             ProviderVault(self.vault.root)
         self.assertFalse(self.vault.key_path.exists())
 
+    def test_retired_version_has_a_sanitized_error_and_current_version_stays_readable(self):
+        self.vault.remove("conn.test", 1)
+        self.assertFalse(self.vault._path("conn.test", 1).exists())
+        with self.assertRaisesRegex(SecretBoxError, "^PROVIDER_CREDENTIAL_UNAVAILABLE$"):
+            self.vault.resolve("conn.test", 1)
+        self.assertEqual(self.vault.resolve("conn.test", 2), SECRET + "2")
+
     def test_keyring_remains_required_after_provider_credentials_are_removed(self):
         for version in (1, 2):
             self.vault.remove("conn.test", version)

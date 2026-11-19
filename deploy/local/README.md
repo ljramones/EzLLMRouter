@@ -3,6 +3,9 @@
 Provider credentials and local connector credentials use independent keyrings.
 See [encryption and rotation](../../docs/ENCRYPTION.md) for offline maintenance
 and the complete set of files required for backup and restoration.
+The current source initializes a fresh version-one database; the upgrade
+checkpoints below describe historical releases. See the current
+[database design](../../docs/DATABASE.md) before preparing a new profile.
 
 This guide covers the existing frozen-input Docker profile. Its artifact names,
 environment variables, and project identifiers retain their historical names.

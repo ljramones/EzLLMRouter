@@ -66,6 +66,21 @@ class CoreFailureTests(unittest.TestCase):
         self.assertEqual(status["submission_state"], "failed_after_transmit")
         self.assertEqual(status["attempts"][0]["usage"]["state"], "available")
 
+    def test_candidate_persistence_failure_preserves_usage_and_prevents_resend(self):
+        coordinator = self.coordinator()
+        with patch.object(self.store, "complete_candidate", side_effect=OSError("storage unavailable")):
+            code, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
+        self.assertEqual((code, reply["state"]), (202, "pending"))
+        status = coordinator.status(reply["handle"]["submission_id"], self.trusted)
+        self.assertEqual(status["submission_state"], "outcome_unknown")
+        self.assertEqual(status["attempts"][0]["usage"]["state"], "available")
+        self.assertNotIn("candidate", status)
+        self.assertNotIn("terminal_failure", status)
+        repeated_code, repeated = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
+        self.assertEqual((repeated_code, repeated["state"], repeated["handle"]),
+                         (202, "pending", reply["handle"]))
+        self.assertEqual(len(self.adapter.sent), 1)
+
     def test_post_commit_failure_does_not_downgrade_completed_accounting(self):
         coordinator = self.coordinator()
         complete = self.store.complete_candidate

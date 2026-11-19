@@ -159,14 +159,19 @@ uv sync --locked --all-groups --python 3.12.15
 uv run --locked python -m tools.check
 ```
 
+The root `uv.lock` pins the development environment, including Ruff and mypy.
+The application lockfiles and frozen gateway inputs are separate. Change the
+development lockfile deliberately with `uv lock` when updating dependencies.
+
 The command runs the maintained offline Python regression modules,
 JavaScript syntax and console tests, Ruff correctness checks, and strict mypy
 for the initial typed modules. Each Python test module runs in its own process;
 network connections and listener binds fail in this suite; local IPC pairs are
 used for framing checks. The initial lint rules catch fatal syntax
 and undefined-name errors across server, client and deployment source. Formatting
-and strict typing start with the new file and logging utilities and the runner;
-the legacy modules still need gradual adoption.
+and strict typing cover the file and logging utilities, database boundary,
+schema owner, client transport helpers and runner; the remaining modules still
+need gradual adoption.
 
 Local HTTP fixtures are a separate explicit check:
 
@@ -199,6 +204,9 @@ before choosing a rewrite.
 | --- | --- |
 | `server/` | Coordinator, registry, persistence, operator API, and trusted service. |
 | `server/src/duranki_server/gateway/` | Guard, owned sender transports, adapter, IPC framing and gateway recipes. |
+| `server/src/duranki_server/repositories/` | Domain-owned, named SQL queries. |
+| `server/src/duranki_server/schema/` | Versioned initial database schema. |
+| `server/src/duranki_server/operator_http/` | Operator transport, authentication, routes and application state. |
 | `worker/` | Isolated worker source, staged separately from the trusted service package. |
 | `clients/python/`, `clients/js/` | Installable network clients. |
 | `web/` | Operator console HTML, CSS, and JavaScript. |
@@ -218,12 +226,16 @@ LiteLLM. Frozen dependencies, image digests and retained evidence are unchanged.
 Older qualification runners remain under `tests/gateway_integration`; this move
 covers the runtime implementation and active staging, launch and export tools.
 
+See [database and operator server structure](docs/DATABASE.md) for schema
+ownership, shared transactions, dispatch boundaries and verification.
+
 ## Compatibility and development status
 
 The new names change package and product branding. Existing protocol versions,
-wire headers, schema IDs, database records, frozen artifacts, and legacy Python
-imports are retained so the rename does not invalidate stored work or installed
-integrations. Earlier names in dated contracts and evidence identify those
+wire headers, schema IDs, frozen artifacts, and legacy Python imports retain
+their identifiers. The current database design starts with one fresh initial
+schema; earlier development databases are not automatically adopted or migrated.
+Earlier names in dated contracts and evidence identify those
 historical versions. Current component names are the functional names above.
 
 This source contains controlled synthetic checks and later provider/accounting

@@ -104,7 +104,7 @@ def source_mapping(root, dev05=False):
     source_files.extend((str(path.relative_to(root)),
                          "service/server/duranki_server/" + str(path.relative_to(server_source)))
                         for path in sorted(server_source.rglob("*"))
-                        if path.is_file() and path.suffix in {".py", ".json"})
+                        if path.is_file() and path.suffix in {".py", ".json", ".sql"})
     if dev05:
         source_files = [("tests/gateway_integration/dev05_fixture.json", target)
                         if target == "service/dev_slice/fixture.json" else (source, target)

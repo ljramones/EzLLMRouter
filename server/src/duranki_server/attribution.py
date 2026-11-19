@@ -1,6 +1,8 @@
 """Durable, scoped agent-run and outcome authority alongside the attempt ledger."""
 from __future__ import annotations
 
+from .repositories import attribution as _queries
+
 from copy import deepcopy
 import hashlib
 import json
@@ -18,7 +20,7 @@ def _id(value):
 
 
 def _record(db, table, key, value):
-    row = db.execute(f"SELECT record FROM {table} WHERE {key}=?", (value,)).fetchone()
+    row = db.execute(_queries.RECORD_SELECT_RECORD(key=key, table=table), (value,)).fetchone()
     return json.loads(row[0]) if row else None
 
 
@@ -31,23 +33,22 @@ class AttributionLedger:
 
     def agent(self, agent_id):
         _id(agent_id)
-        with self.store._lock:
-            return _record(self.store.db, "registry_agents", "id", agent_id)
+        with self.store.database.read():
+            return _record(self.store.database, "registry_agents", "id", agent_id)
 
     def agents(self):
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM registry_agents ORDER BY id").fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.AGENTS_SELECT_REGISTRY_AGENTS).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def run(self, run_id):
         _id(run_id)
-        with self.store._lock:
-            return _record(self.store.db, "attribution_runs", "id", run_id)
+        with self.store.database.read():
+            return _record(self.store.database, "attribution_runs", "id", run_id)
 
     def permission(self, caller, agent, user):
-        with self.store._lock:
-            row = self.store.db.execute("SELECT record FROM registry_agent_permissions "
-                "WHERE caller_id=? AND agent_id=? AND user_id=?", (caller, agent, user or "")).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.PERMISSION_SELECT_REGISTRY_AGENT_PERMISSIONS, (caller, agent, user or "")).fetchone()
         return json.loads(row[0]) if row else None
 
     def _authorize(self, trusted, body, parent=None):
@@ -125,15 +126,15 @@ class AttributionLedger:
             "evaluation_ref": body["evaluation_ref"],
             "created_at": timestamp(), "status": "running", "request_digest": digest}
         def save():
-            old = _record(self.store.db, "attribution_runs", "id", body["run_id"])
+            old = _record(self.store.database, "attribution_runs", "id", body["run_id"])
             if old:
                 if old["principal_id"] != trusted["principal_id"] or old["request_digest"] != digest or \
                         old["charging_owner_id"] != trusted["charging_owner_id"]:
                     raise ContractError("WORK_CONFLICT", 409)
                 return old
-            self.store.db.execute("INSERT INTO attribution_runs VALUES (?,?)", (body["run_id"], encode(record)))
+            self.store.database.execute(_queries.SAVE_INSERT_ATTRIBUTION_RUNS, (body["run_id"], encode(record)))
             return record
-        return deepcopy(self.store._transaction(save))
+        return deepcopy(self.store.database.transaction(save))
 
     def bind(self, trusted, req, run_id):
         run = self.run(run_id)
@@ -174,7 +175,7 @@ class AttributionLedger:
                       "owner": identifier(data["owner"]), "versions": versions,
                       "status": "active", "instrumentation_status": "not_instrumented",
                       "instrumentation_ref": None, "revision": 1, "created_at": timestamp()}
-            db.execute("INSERT INTO registry_agents VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_AGENTS, (subject, encode(record)))
             return record
         if action == "agent_state":
             record = _record(db, "registry_agents", "id", subject)
@@ -183,7 +184,7 @@ class AttributionLedger:
                 raise RegistryConflict("agent revision changed or invalid state")
             record.update(status=data["status"], state_reason=nonempty(data["reason"]),
                           revision=expected + 1)
-            db.execute("UPDATE registry_agents SET record=? WHERE id=?", (encode(record), subject))
+            db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
             return record
         if action == "agent_instrumentation":
             record = _record(db, "registry_agents", "id", subject)
@@ -193,7 +194,7 @@ class AttributionLedger:
             reference = identifier(data["evidence_ref"])
             record.update(instrumentation_status=data["status"], instrumentation_ref=reference,
                           revision=expected + 1)
-            db.execute("UPDATE registry_agents SET record=? WHERE id=?", (encode(record), subject))
+            db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
             return record
         if action == "set_agent_permission":
             required = {"caller_principal_id", "agent_id", "charging_owner_id", "task_classes", "status"}
@@ -215,8 +216,7 @@ class AttributionLedger:
                     current["agent_id"] != agent["agent_id"] or current.get("initiating_user_id") != user)) or \
                     (not current and expected != 0):
                 raise RegistryConflict("agent permission revision changed")
-            competing = db.execute("SELECT id FROM registry_agent_permissions WHERE caller_id=? "
-                "AND agent_id=? AND user_id=?", (caller["principal_id"], agent["agent_id"], user or "")).fetchone()
+            competing = db.execute(_queries.APPLY_ADMIN_SELECT_REGISTRY_AGENT_PERMISSIONS, (caller["principal_id"], agent["agent_id"], user or "")).fetchone()
             if competing and competing[0] != subject:
                 raise RegistryConflict("agent permission scope already recorded")
             record = {"permission_id": subject, "caller_principal_id": caller["principal_id"],
@@ -224,9 +224,9 @@ class AttributionLedger:
                       "charging_owner_id": owner, "task_classes": classes,
                       "status": data["status"], "revision": expected + 1}
             if current:
-                db.execute("UPDATE registry_agent_permissions SET record=? WHERE id=?", (encode(record), subject))
+                db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENT_PERMISSIONS, (encode(record), subject))
             else:
-                db.execute("INSERT INTO registry_agent_permissions VALUES (?,?,?,?,?)",
+                db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_AGENT_PERMISSIONS,
                     (subject, caller["principal_id"], agent["agent_id"], user or "", encode(record)))
             return record
         if action == "set_outcome_authority":
@@ -242,7 +242,7 @@ class AttributionLedger:
             record = {"principal_id": subject, "status": data["status"],
                 "task_classes": sorted({identifier(item) for item in data["task_classes"]}),
                 "revision": expected + 1}
-            db.execute("INSERT OR REPLACE INTO registry_outcome_authorities VALUES (?,?)", (subject, encode(record)))
+            db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_OUTCOME_AUTHORITIES, (subject, encode(record)))
             return record
         raise ValueError("unsupported agent authority action")
 
@@ -270,15 +270,15 @@ class AttributionLedger:
         if not run:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         authority = self.registry.principal(trusted["principal_id"])
-        with self.store._lock:
-            grant = _record(self.store.db, "registry_outcome_authorities", "id", trusted["principal_id"])
+        with self.store.database.read():
+            grant = _record(self.store.database, "registry_outcome_authorities", "id", trusted["principal_id"])
         if not authority or authority["status"] != "active" or not grant or grant["status"] != "active" or \
                 run["task_class"] not in grant["task_classes"] or \
                 authority["owner"] != run["charging_owner_id"]:
             raise ContractError("POLICY_DENIED", 403)
         if step:
-            with self.store._lock:
-                rows = self.store.db.execute("SELECT record FROM submissions").fetchall()
+            with self.store.database.read():
+                rows = self.store.database.execute(_queries.APPEND_OUTCOME_SELECT_SUBMISSIONS).fetchall()
             if not any((r := json.loads(row[0])).get("attribution", {}).get("run_id") == run["run_id"] and
                        r["work_key"]["step_id"] == body["step_id"] and
                        r["work_key"]["step_revision"] == body["step_revision"] and
@@ -289,13 +289,12 @@ class AttributionLedger:
         digest = hashlib.sha256(encode(body).encode()).hexdigest()
         from .registry import timestamp
         def save():
-            row = self.store.db.execute("SELECT digest,receipt FROM attribution_outcomes "
-                "WHERE principal_id=? AND event_id=?", (trusted["principal_id"], body["event_id"])).fetchone()
+            row = self.store.database.execute(_queries.SAVE_SELECT_ATTRIBUTION_OUTCOMES, (trusted["principal_id"], body["event_id"])).fetchone()
             if row:
                 if row[0] != digest:
                     raise ContractError("EVENT_CONFLICT", 409)
                 return json.loads(row[1])
-            last = self.store.db.execute("SELECT MAX(revision) FROM attribution_outcomes WHERE subject=?",
+            last = self.store.database.execute(_queries.SAVE_SELECT_ATTRIBUTION_OUTCOMES_2,
                 (subject,)).fetchone()[0] or 0
             if body["subject_revision"] != last + 1:
                 raise ContractError("STALE_REVISION", 409)
@@ -303,22 +302,21 @@ class AttributionLedger:
             receipt = {"version": "1", "event_id": body["event_id"], "run_id": body["run_id"],
                 "kind": body["kind"], "subject_revision": body["subject_revision"],
                 "recorded_at": at, "event_digest": digest}
-            self.store.db.execute("INSERT INTO attribution_outcomes VALUES (?,?,?,?,?,?,?,?)",
+            self.store.database.execute(_queries.SAVE_INSERT_ATTRIBUTION_OUTCOMES,
                 (trusted["principal_id"], body["event_id"], subject, body["subject_revision"],
                  digest, encode(body), at, encode(receipt)))
             if not step:
-                current = _record(self.store.db, "attribution_runs", "id", run["run_id"])
+                current = _record(self.store.database, "attribution_runs", "id", run["run_id"])
                 current.update(status=body["verdict"], terminal_at=at)
-                self.store.db.execute("UPDATE attribution_runs SET record=? WHERE id=?",
+                self.store.database.execute(_queries.SAVE_UPDATE_ATTRIBUTION_RUNS,
                     (encode(current), run["run_id"]))
             return receipt
-        return self.store._transaction(save)
+        return self.store.database.transaction(save)
 
     def outcome_receipt(self, trusted, event_id):
         _id(event_id)
-        with self.store._lock:
-            row = self.store.db.execute("SELECT receipt FROM attribution_outcomes "
-                "WHERE principal_id=? AND event_id=?", (trusted["principal_id"], event_id)).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.OUTCOME_RECEIPT_SELECT_ATTRIBUTION_OUTCOMES, (trusted["principal_id"], event_id)).fetchone()
         if not row:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         return json.loads(row[0])

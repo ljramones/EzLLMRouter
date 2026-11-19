@@ -18,6 +18,7 @@ from duranki_server.operator_web import serve as serve_operator
 from duranki_server.plans import PlanAuthority
 from duranki_server.registry import Registry
 from duranki_server.provider_vault import ProviderVault
+from duranki_server.repositories import startup as startup_queries
 from duranki_server.personal_campaign import PersonalCampaign
 from duranki_server.store import SQLiteStore
 from duranki_server.web import serve as serve_wire
@@ -49,14 +50,8 @@ def main():
     trusted = dict(fixture["trusted_context"])
     identity = {token: trusted}
     store = SQLiteStore(os.environ["DURANKI_DB_PATH"])
-    has_connections = store.db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='registry_connections'").fetchone()
-    protected = (store.db.execute("SELECT json_extract(record,'$.connection_id'),"
-        "json_extract(record,'$.credential_version') FROM registry_connections "
-        "WHERE json_extract(record,'$.credential_state')='present'").fetchall()
-        if has_connections else [])
-    used_vault = (store.db.execute("SELECT 1 FROM registry_connections "
-        "WHERE json_extract(record,'$.credential_version')>0 LIMIT 1").fetchone()
-        if has_connections else None)
+    protected = store.database.execute(startup_queries.PROTECTED_PROVIDER_CREDENTIALS).fetchall()
+    used_vault = store.database.execute(startup_queries.USED_PROVIDER_VAULT).fetchone()
     vault = ProviderVault("/data/provider-vault", require_existing=bool(used_vault))
     for connection_id, version in protected:
         vault.resolve(connection_id, version)  # Fail startup if recovery material is missing or corrupt.

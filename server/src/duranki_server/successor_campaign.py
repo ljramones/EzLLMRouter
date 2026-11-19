@@ -1,6 +1,8 @@
 """Durable finite fictional allowance for one disposable DEV-12 campaign."""
 from __future__ import annotations
 
+from .repositories import successor_campaign as _queries
+
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
@@ -22,21 +24,6 @@ class FiniteSuccessorCampaign:
         self.financial_owner_id = financial_owner_id
         self.currency = "USD"
         self.wall_clock = wall_clock or (lambda: datetime.now(timezone.utc))
-        store.db.executescript("""
-            CREATE TABLE IF NOT EXISTS dev12_campaigns (
-                campaign_id TEXT PRIMARY KEY, record TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS dev12_campaign_attempts (
-                attempt_id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES dev12_campaigns(campaign_id),
-                state TEXT NOT NULL, possible_send INTEGER NOT NULL,
-                reservation_decimal TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS dev12_campaign_audit (
-                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                campaign_id TEXT NOT NULL REFERENCES dev12_campaigns(campaign_id),
-                record TEXT NOT NULL
-            );
-        """)
 
     def start(self, endpoints, owned_resources, *, max_attempts=512, max_concurrent=2,
               ceiling_decimal="10.000000000", window_hours=24):
@@ -53,16 +40,16 @@ class FiniteSuccessorCampaign:
                   "cumulative_reserved_decimal": "0.000000000",
                   "paused": False, "pause_reason": None, "pause_reasons": []}
         def action():
-            if self.store.db.execute("SELECT 1 FROM dev12_campaigns WHERE campaign_id=?",
+            if self.store.database.execute(_queries.ACTION_SELECT_DEV12_CAMPAIGNS,
                                      (self.campaign_id,)).fetchone():
                 raise ValueError("campaign already exists; counter reset denied")
-            self.store.db.execute("INSERT INTO dev12_campaigns VALUES (?,?)",
+            self.store.database.execute(_queries.ACTION_INSERT_DEV12_CAMPAIGNS,
                                   (self.campaign_id, encode(record)))
-        self.store._transaction(action)
+        self.store.database.transaction(action)
         return record
 
     def _record(self, db):
-        row = db.execute("SELECT record FROM dev12_campaigns WHERE campaign_id=?",
+        row = db.execute(_queries.RECORD_SELECT_DEV12_CAMPAIGNS,
                          (self.campaign_id,)).fetchone()
         if not row:
             raise PermissionError("campaign not started")
@@ -82,17 +69,16 @@ class FiniteSuccessorCampaign:
             raise PermissionError("reservation outside durable campaign financial scope")
 
     def inspect(self):
-        with self.store._lock:
-            return self._record(self.store.db)
+        with self.store.database.read():
+            return self._record(self.store.database)
 
     def assert_attempt_releasable(self, record, *, committed):
         """Read the specific admitted reservation under the caller's authority gate."""
-        with self.store._lock:
-            campaign = self._record(self.store.db)
+        with self.store.database.read():
+            campaign = self._record(self.store.database)
             self._bound_reservation(campaign, record)
-            attempt = self.store.db.execute(
-                "SELECT state,possible_send,reservation_decimal FROM dev12_campaign_attempts "
-                "WHERE attempt_id=? AND campaign_id=?",
+            attempt = self.store.database.execute(
+                _queries.ASSERT_ATTEMPT_RELEASABLE_SELECT_DEV12_CAMPAIGN_ATTEMPTS,
                 (record["attempt_id"], self.campaign_id)).fetchone()
             if (not attempt or attempt[0] != "inflight" or bool(attempt[1]) != committed or
                     Decimal(attempt[2]) != Decimal(record["reservation"]["max_exposure_decimal"]) or
@@ -112,13 +98,13 @@ class FiniteSuccessorCampaign:
         bound = Decimal(record["reservation"]["max_exposure_decimal"])
         if Decimal(campaign["cumulative_reserved_decimal"]) + bound > Decimal(campaign["ceiling_decimal"]):
             raise PermissionError("fictional campaign ceiling exhausted")
-        db.execute("INSERT INTO dev12_campaign_attempts VALUES (?,?,?,?,?)",
+        db.execute(_queries.RESERVE_INSERT_DEV12_CAMPAIGN_ATTEMPTS,
                    (record["attempt_id"], self.campaign_id, "inflight", 0, str(bound)))
         campaign["attempt_count"] += 1
         campaign["inflight_count"] += 1
         campaign["cumulative_reserved_decimal"] = str(
             (Decimal(campaign["cumulative_reserved_decimal"]) + bound).quantize(Decimal("0.000000001")))
-        db.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+        db.execute(_queries.RESERVE_UPDATE_DEV12_CAMPAIGNS,
                    (encode(campaign), self.campaign_id))
         record["campaign_id"] = self.campaign_id
 
@@ -126,12 +112,12 @@ class FiniteSuccessorCampaign:
         def action(connection):
             campaign = self._record(connection)
             row = connection.execute(
-                "SELECT state, possible_send, reservation_decimal FROM dev12_campaign_attempts WHERE attempt_id=? AND campaign_id=?",
+                _queries.ACTION_SELECT_DEV12_CAMPAIGN_ATTEMPTS,
                 (attempt_id, self.campaign_id)).fetchone()
             if not row or row[1] or row[0] != "inflight":
                 raise PermissionError("send ownership unavailable")
             submitted = connection.execute(
-                "SELECT record FROM dev12_submissions WHERE json_extract(record,'$.attempt_id')=?",
+                _queries.ACTION_SELECT_DEV12_SUBMISSIONS,
                 (attempt_id,)).fetchone()
             if not submitted:
                 raise PermissionError("admitted reservation missing")
@@ -142,15 +128,15 @@ class FiniteSuccessorCampaign:
             if (campaign["paused"] or self.wall_clock() >= _instant(campaign["expires_at"]) or
                     campaign["possible_send_count"] >= campaign["max_attempts"]):
                 raise PermissionError("send release allowance exhausted")
-            connection.execute("UPDATE dev12_campaign_attempts SET possible_send=1 WHERE attempt_id=?",
+            connection.execute(_queries.ACTION_UPDATE_DEV12_CAMPAIGN_ATTEMPTS,
                                (attempt_id,))
             campaign["possible_send_count"] += 1
-            connection.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+            connection.execute(_queries.RESERVE_UPDATE_DEV12_CAMPAIGNS,
                                (encode(campaign), self.campaign_id))
         if db is not None:
             action(db)
         else:
-            self.store._transaction(lambda: action(self.store.db))
+            self.store.database.transaction(lambda: action(self.store.database))
 
     def pause_in_transaction(self, db, reason):
         """A usage/unknown transition and its scope pause share one write gate."""
@@ -164,7 +150,7 @@ class FiniteSuccessorCampaign:
         campaign["paused"] = True
         campaign["pause_reasons"] = reasons
         campaign["pause_reason"] = reasons[0]
-        db.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+        db.execute(_queries.RESERVE_UPDATE_DEV12_CAMPAIGNS,
                    (encode(campaign), self.campaign_id))
 
     @staticmethod
@@ -179,7 +165,7 @@ class FiniteSuccessorCampaign:
                 record.get("dispatch_state") != "blocked"):
             return False
         events = db.execute(
-            "SELECT event_kind,evidence FROM dev12_evidence_events WHERE submission_id=?",
+            _queries.DEFINITE_NO_SEND_SELECT_DEV12_EVIDENCE_EVENTS,
             (record["submission_id"],)).fetchall()
         kinds = {}
         for kind, raw in events:
@@ -187,8 +173,7 @@ class FiniteSuccessorCampaign:
         if any(kinds.get(kind) for kind in ("late_receiver_receipt_collected",
                                              "native_usage_accepted")):
             return False
-        ownership = db.execute("SELECT 1 FROM dev12_send_ownership WHERE attempt_id=? "
-                               "AND submission_id=?", (record["attempt_id"],
+        ownership = db.execute(_queries.DEFINITE_NO_SEND_SELECT_DEV12_SEND_OWNERSHIP, (record["attempt_id"],
                                record["submission_id"])).fetchone()
         if ownership is None:
             return (not kinds.get("guard_committed") and
@@ -214,7 +199,7 @@ class FiniteSuccessorCampaign:
             raise ValueError("authenticated resume actor required")
         with authority.gate:
             def action():
-                campaign = self._record(self.store.db)
+                campaign = self._record(self.store.database)
                 prior = {"paused": campaign["paused"], "pause_reason": campaign.get("pause_reason"),
                          "pause_reasons": campaign.get("pause_reasons") or
                            ([campaign["pause_reason"]] if campaign.get("paused") and
@@ -247,25 +232,21 @@ class FiniteSuccessorCampaign:
                         blockers.append("unresolved_" + pause)
                 resolved = []
                 no_send_reconciled = []
-                for aid, raw in self.store.db.execute(
-                        "SELECT a.attempt_id,s.record FROM dev12_campaign_attempts a "
-                        "JOIN dev12_submissions s ON json_extract(s.record,'$.attempt_id')=a.attempt_id "
-                        "WHERE a.campaign_id=?", (self.campaign_id,)).fetchall():
+                for aid, raw in self.store.database.execute(
+                        _queries.ACTION_SELECT_DEV12_CAMPAIGN_ATTEMPTS_3, (self.campaign_id,)).fetchall():
                     record = json.loads(raw)
-                    latest = self.store.db.execute(
-                        "SELECT usage FROM dev12_usage_revisions WHERE attempt_id=? "
-                        "ORDER BY revision DESC LIMIT 1", (aid,)).fetchone()
+                    latest = self.store.database.execute(
+                        _queries.ACTION_SELECT_DEV12_USAGE_REVISIONS, (aid,)).fetchone()
                     usage = json.loads(latest[0]) if latest else None
                     if (usage is None and record.get("exposure_state") == "outstanding" and
-                            self._definite_no_send(self.store.db, record)):
+                            self._definite_no_send(self.store.database, record)):
                         record["exposure_state"] = "not_sent"
                         record["status_revision"] += 1
                         record["updated_at"] = observed_at
-                        self.store.db.execute("UPDATE dev12_submissions SET record=? WHERE submission_id=?",
+                        self.store.database.execute(_queries.ACTION_UPDATE_DEV12_SUBMISSIONS,
                                               (encode(record), record["submission_id"]))
-                        self.store.db.execute(
-                            "INSERT INTO dev12_evidence_events(submission_id,event_kind,observed_at,evidence) "
-                            "VALUES (?,?,?,?)", (record["submission_id"],
+                        self.store.database.execute(
+                            _queries.ACTION_INSERT_DEV12_EVIDENCE_EVENTS, (record["submission_id"],
                             "definite_no_send_reconciled", observed_at,
                             encode({"attempt_id": aid,
                                     "basis": "qualified_sender_no_first_write"})))
@@ -274,9 +255,8 @@ class FiniteSuccessorCampaign:
                             (usage is not None and usage["cost_status"] in ("unknown", "over_bound")) or
                             record.get("exposure_state") in ("outstanding", "over_bound")):
                         blockers.append("unresolved_exposure:" + aid)
-                    receipts = [json.loads(item[0]) for item in self.store.db.execute(
-                        "SELECT evidence FROM dev12_evidence_events WHERE submission_id=? "
-                        "AND event_kind='late_receiver_receipt_collected'", (record["submission_id"],))]
+                    receipts = [json.loads(item[0]) for item in self.store.database.execute(
+                        _queries.ACTION_SELECT_DEV12_EVIDENCE_EVENTS, (record["submission_id"],))]
                     if record.get("submission_state") == "unknown" and len(receipts) != 1:
                         blockers.append("unresolved_unknown_outcome:" + aid)
                     resolved.extend(item["receipt_digest"] for item in receipts)
@@ -290,18 +270,18 @@ class FiniteSuccessorCampaign:
                     campaign["paused"] = False
                     campaign["pause_reason"] = None
                     campaign["pause_reasons"] = []
-                    self.store.db.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+                    self.store.database.execute(_queries.RESERVE_UPDATE_DEV12_CAMPAIGNS,
                                           (encode(campaign), self.campaign_id))
-                self.store.db.execute("INSERT INTO dev12_campaign_audit(campaign_id,record) VALUES (?,?)",
+                self.store.database.execute(_queries.ACTION_INSERT_DEV12_CAMPAIGN_AUDIT,
                                       (self.campaign_id, encode(audit)))
                 return audit
-            return self.store._transaction(action)
+            return self.store.database.transaction(action)
 
     def finish(self, attempt_id, *, db=None):
         """Release concurrency only; historical unknown exposure remains reserved."""
         def action(connection):
             row = connection.execute(
-                "SELECT state FROM dev12_campaign_attempts WHERE attempt_id=? AND campaign_id=?",
+                _queries.ACTION_SELECT_DEV12_CAMPAIGN_ATTEMPTS_2,
                 (attempt_id, self.campaign_id)).fetchone()
             if not row:
                 raise KeyError(attempt_id)
@@ -309,18 +289,18 @@ class FiniteSuccessorCampaign:
                 return
             campaign = self._record(connection)
             campaign["inflight_count"] -= 1
-            connection.execute("UPDATE dev12_campaign_attempts SET state='finished' WHERE attempt_id=?",
+            connection.execute(_queries.ACTION_UPDATE_DEV12_CAMPAIGN_ATTEMPTS_2,
                                   (attempt_id,))
-            connection.execute("UPDATE dev12_campaigns SET record=? WHERE campaign_id=?",
+            connection.execute(_queries.RESERVE_UPDATE_DEV12_CAMPAIGNS,
                                   (encode(campaign), self.campaign_id))
         if db is not None:
             action(db)
         else:
-            self.store._transaction(lambda: action(self.store.db))
+            self.store.database.transaction(lambda: action(self.store.database))
 
     def proves_no_send(self, record):
         """Require matching campaign scope and durable evidence of no lower write."""
         if record.get("campaign_id") != self.campaign_id:
             return False
-        with self.store._lock:
-            return self._definite_no_send(self.store.db, record)
+        with self.store.database.read():
+            return self._definite_no_send(self.store.database, record)

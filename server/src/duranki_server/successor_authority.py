@@ -1,6 +1,8 @@
 """Standalone synthetic authority with durable revisions and a first-write gate."""
 from __future__ import annotations
 
+from .repositories import successor_authority as _queries
+
 from .observability import log_failure
 
 import base64
@@ -29,17 +31,8 @@ class SyntheticSuccessorAuthority:
         public_der = private_key.public_key().public_bytes(
             serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
         self.public_key_spki_base64 = base64.b64encode(public_der).decode()
-        store.db.executescript("""
-            CREATE TABLE IF NOT EXISTS dev12_authority (
-                authority_id TEXT PRIMARY KEY, state TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS dev12_authority_audit (
-                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                authority_id TEXT NOT NULL, record TEXT NOT NULL
-            );
-        """)
         with self.gate:
-            row = store.db.execute("SELECT state FROM dev12_authority WHERE authority_id='standalone.synthetic'").fetchone()
+            row = store.database.execute(_queries.INIT_SELECT_DEV12_AUTHORITY).fetchone()
             if row is None:
                 state = {"revisions": {name: 1 for name in REVISION_NAMES},
                          "activation": {"state": "absent", "reason": "not_yet_issued"},
@@ -51,8 +44,8 @@ class SyntheticSuccessorAuthority:
                          "verification_keys": [{"key_id": key_id, "key_version": key_version,
                                                 "public_key_spki_base64": self.public_key_spki_base64,
                                                 "eligibility": "eligible"}]}
-                store._transaction(lambda: store.db.execute(
-                    "INSERT INTO dev12_authority VALUES (?,?)", ("standalone.synthetic", encode(state))))
+                store.database.transaction(lambda: store.database.execute(
+                    _queries.INIT_INSERT_DEV12_AUTHORITY, ("standalone.synthetic", encode(state))))
             else:
                 state = json.loads(row[0])
                 # Read older synthetic records without rewriting their evidence.
@@ -142,12 +135,12 @@ class SyntheticSuccessorAuthority:
             if set(next_state["revisions"]) != set(REVISION_NAMES):
                 raise ValueError("named revision set changed")
             def action():
-                self.store.db.execute("UPDATE dev12_authority SET state=? WHERE authority_id=?",
+                self.store.database.execute(_queries.ACTION_UPDATE_DEV12_AUTHORITY,
                                       (encode(next_state), "standalone.synthetic"))
-                self.store.db.execute("INSERT INTO dev12_authority_audit(authority_id,record) VALUES (?,?)",
+                self.store.database.execute(_queries.ACTION_INSERT_DEV12_AUTHORITY_AUDIT,
                                       ("standalone.synthetic", encode(audit_record)))
             try:
-                self.store._transaction(action)
+                self.store.database.transaction(action)
             except Exception as exc:
                 log_failure('successor_authority.SyntheticSuccessorAuthority.update.failed')
                 # A failed/uncertain DB commit cannot expose a newly permissive view.

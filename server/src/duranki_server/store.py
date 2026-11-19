@@ -1,6 +1,9 @@
 """Replaceable local store boundary; SQLite is DEV-01 only."""
 from __future__ import annotations
 
+from .repositories import store as _queries
+from .database import Database
+
 import json
 import sqlite3
 import threading
@@ -38,75 +41,22 @@ class SQLiteStore:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=FULL")
         self.db.execute("PRAGMA foreign_keys=ON")
-        self.db.executescript("""
-            CREATE TABLE IF NOT EXISTS submissions (
-                submission_id TEXT PRIMARY KEY, principal_id TEXT NOT NULL, task_id TEXT NOT NULL,
-                work_key TEXT NOT NULL, work_digest TEXT NOT NULL, record TEXT NOT NULL,
-                UNIQUE(principal_id, work_key)
-            );
-            CREATE TABLE IF NOT EXISTS intents (
-                attempt_id TEXT PRIMARY KEY, submission_id TEXT NOT NULL REFERENCES submissions(submission_id),
-                intent TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS guard_dispatches (
-                attempt_id TEXT PRIMARY KEY, submission_id TEXT NOT NULL REFERENCES submissions(submission_id),
-                receipt TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS usage_revisions (
-                attempt_id TEXT NOT NULL, revision INTEGER NOT NULL, submission_id TEXT NOT NULL,
-                usage TEXT NOT NULL, PRIMARY KEY(attempt_id, revision)
-            );
-            CREATE TABLE IF NOT EXISTS dev12_submissions (
-                submission_id TEXT PRIMARY KEY, principal_id TEXT NOT NULL,
-                work_key TEXT NOT NULL, work_digest TEXT NOT NULL, record TEXT NOT NULL,
-                UNIQUE(principal_id, work_key)
-            );
-            CREATE TABLE IF NOT EXISTS dev12_usage_revisions (
-                attempt_id TEXT NOT NULL, revision INTEGER NOT NULL,
-                submission_id TEXT NOT NULL REFERENCES dev12_submissions(submission_id),
-                usage TEXT NOT NULL, PRIMARY KEY(attempt_id, revision)
-            );
-            CREATE TABLE IF NOT EXISTS dev12_evidence_events (
-                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                submission_id TEXT NOT NULL REFERENCES dev12_submissions(submission_id),
-                event_kind TEXT NOT NULL, observed_at TEXT NOT NULL, evidence TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS dev12_send_ownership (
-                attempt_id TEXT PRIMARY KEY,
-                submission_id TEXT NOT NULL REFERENCES dev12_submissions(submission_id),
-                committed_at TEXT NOT NULL, guard_receipt TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS work_key_owners (
-                principal_id TEXT NOT NULL, work_key TEXT NOT NULL,
-                contract_version TEXT NOT NULL, submission_id TEXT NOT NULL,
-                PRIMARY KEY(principal_id, work_key)
-            );
-        """)
-        # Additive migration: diagnose contradictory historical ownership. Never
-        # choose a winner by overwriting an existing submission.
-        def index_existing():
-            for table, version in (("submissions", "0.2"), ("dev12_submissions", "0.3")):
-                for principal, key, sid in self.db.execute(
-                        f"SELECT principal_id,work_key,submission_id FROM {table}"):
-                    owner = self.db.execute(
-                        "SELECT contract_version,submission_id FROM work_key_owners "
-                        "WHERE principal_id=? AND work_key=?", (principal, key)).fetchone()
-                    if owner and owner != (version, sid):
-                        raise ValueError("contradictory historical WorkKey ownership")
-                    if not owner:
-                        self.db.execute("INSERT INTO work_key_owners VALUES (?,?,?,?)",
-                                        (principal, key, version, sid))
-        self._transaction(index_existing)
+        self.database = Database(self.db, self._lock, self._transaction)
+        from .schema import initialize
+        try:
+            initialize(self.db)
+        except BaseException:
+            self.db.close()
+            raise
 
     def work_owner(self, key):
         with self._lock:
-            row = self.db.execute(
-                "SELECT contract_version,submission_id FROM work_key_owners "
-                "WHERE principal_id=? AND work_key=?", (key["principal_id"], encode(key))).fetchone()
+            row = self.database.execute(
+                _queries.WORK_OWNER_SELECT_WORK_KEY_OWNERS, (key["principal_id"], encode(key))).fetchone()
             return {"contract_version": row[0], "submission_id": row[1]} if row else None
 
     def _claim_work_in_tx(self, key, version, submission_id):
-        self.db.execute("INSERT INTO work_key_owners VALUES (?,?,?,?)",
+        self.database.execute(_queries.CLAIM_WORK_IN_TX_INSERT_WORK_KEY_OWNERS,
                         (key["principal_id"], encode(key), version, submission_id))
 
     @classmethod
@@ -120,9 +70,12 @@ class SQLiteStore:
         try:
             result.db.execute("PRAGMA synchronous=FULL")
             result.db.execute("PRAGMA foreign_keys=ON")
+            from .schema import validate
+            validate(result.db)
         except BaseException:
             result.db.close()
             raise
+        result.database = Database(result.db, result._lock, result._transaction)
         return result
 
     def close(self):
@@ -133,32 +86,31 @@ class SQLiteStore:
         def action():
             self._claim_work_in_tx(record["work_key"], "0.3", record["submission_id"])
             if reserve is not None:
-                reserve(self.db, record)
-            self.db.execute("INSERT INTO dev12_submissions VALUES (?,?,?,?,?)",
+                reserve(self.database, record)
+            self.database.execute(_queries.ACTION_INSERT_DEV12_SUBMISSIONS,
                             (record["submission_id"], record["work_key"]["principal_id"],
                              encode(record["work_key"]), record["work_digest"], encode(record)))
         self._transaction(action)
 
     def successor_get(self, submission_id):
         with self._lock:
-            row = self.db.execute("SELECT record FROM dev12_submissions WHERE submission_id=?",
+            row = self.database.execute(_queries.SUCCESSOR_GET_SELECT_DEV12_SUBMISSIONS,
                                   (submission_id,)).fetchone()
             return json.loads(row[0]) if row else None
 
     def successor_by_work(self, key):
         with self._lock:
-            row = self.db.execute("SELECT record FROM dev12_submissions WHERE principal_id=? AND work_key=?",
+            row = self.database.execute(_queries.SUCCESSOR_BY_WORK_SELECT_DEV12_SUBMISSIONS,
                                   (key["principal_id"], encode(key))).fetchone()
             return json.loads(row[0]) if row else None
 
     def successor_append_evidence(self, submission_id, event_kind, observed_at, evidence):
         """Later assessments and observations append; admitted bytes stay immutable."""
         def action():
-            if not self.db.execute("SELECT 1 FROM dev12_submissions WHERE submission_id=?",
+            if not self.database.execute(_queries.ACTION_SELECT_DEV12_SUBMISSIONS_2,
                                    (submission_id,)).fetchone():
                 raise KeyError(submission_id)
-            self.db.execute("INSERT INTO dev12_evidence_events(submission_id,event_kind,observed_at,evidence) "
-                            "VALUES (?,?,?,?)", (submission_id, event_kind, observed_at, encode(evidence)))
+            self.database.execute(_queries.ACTION_INSERT_DEV12_EVIDENCE_EVENTS, (submission_id, event_kind, observed_at, encode(evidence)))
         self._transaction(action)
 
     def successor_update(self, submission_id, fields, observed_at, *, on_update=None):
@@ -167,7 +119,7 @@ class SQLiteStore:
         if set(fields) - allowed:
             raise ValueError("immutable successor field")
         def action():
-            row = self.db.execute("SELECT record FROM dev12_submissions WHERE submission_id=?",
+            row = self.database.execute(_queries.SUCCESSOR_GET_SELECT_DEV12_SUBMISSIONS,
                                   (submission_id,)).fetchone()
             if not row:
                 raise KeyError(submission_id)
@@ -175,17 +127,17 @@ class SQLiteStore:
             record.update(fields)
             record["status_revision"] += 1
             record["updated_at"] = observed_at
-            self.db.execute("UPDATE dev12_submissions SET record=? WHERE submission_id=?",
+            self.database.execute(_queries.ACTION_UPDATE_DEV12_SUBMISSIONS,
                             (encode(record), submission_id))
             if on_update is not None:
-                on_update(self.db)
+                on_update(self.database)
             return record
         return self._transaction(action)
 
     def successor_guard_commit(self, submission_id, attempt_id, receipt, observed_at, allowance):
         """Durably claim the one final first-write authority for a guarded attempt."""
         def action():
-            row = self.db.execute("SELECT record FROM dev12_submissions WHERE submission_id=?",
+            row = self.database.execute(_queries.SUCCESSOR_GET_SELECT_DEV12_SUBMISSIONS,
                                   (submission_id,)).fetchone()
             if not row:
                 raise KeyError(submission_id)
@@ -194,15 +146,14 @@ class SQLiteStore:
                     receipt.get("plan_id") != record["signed_plan"]["plan_id"] or
                     receipt.get("work_digest") != record["work_digest"]):
                 raise ValueError("unbound final guard receipt")
-            allowance.mark_possible_send(attempt_id, db=self.db)
-            self.db.execute("INSERT INTO dev12_send_ownership VALUES (?,?,?,?)",
+            allowance.mark_possible_send(attempt_id, db=self.database)
+            self.database.execute(_queries.ACTION_INSERT_DEV12_SEND_OWNERSHIP,
                             (attempt_id, submission_id, observed_at, encode(receipt)))
-            self.db.execute("INSERT INTO dev12_evidence_events(submission_id,event_kind,observed_at,evidence) "
-                            "VALUES (?,?,?,?)", (submission_id, "guard_committed", observed_at, encode(receipt)))
+            self.database.execute(_queries.ACTION_INSERT_DEV12_EVIDENCE_EVENTS, (submission_id, "guard_committed", observed_at, encode(receipt)))
             record["dispatch_state"] = "committed"
             record["status_revision"] += 1
             record["updated_at"] = observed_at
-            self.db.execute("UPDATE dev12_submissions SET record=? WHERE submission_id=?",
+            self.database.execute(_queries.ACTION_UPDATE_DEV12_SUBMISSIONS,
                             (encode(record), submission_id))
         self._transaction(action)
 
@@ -215,7 +166,7 @@ class SQLiteStore:
         from .successor_contract import canonical, usage_valid
 
         def action():
-            row = self.db.execute("SELECT record FROM dev12_submissions WHERE submission_id=?",
+            row = self.database.execute(_queries.SUCCESSOR_GET_SELECT_DEV12_SUBMISSIONS,
                                   (submission_id,)).fetchone()
             if not row:
                 raise KeyError(submission_id)
@@ -226,15 +177,15 @@ class SQLiteStore:
             if usage.get("attempt_id") != attempt_id:
                 raise ValueError("foreign attempt")
             ordinal = usage.get("revision")
-            prior_same = self.db.execute(
-                "SELECT usage FROM dev12_usage_revisions WHERE attempt_id=? AND revision=?",
+            prior_same = self.database.execute(
+                _queries.ACTION_SELECT_DEV12_USAGE_REVISIONS,
                 (attempt_id, ordinal)).fetchone()
             if prior_same:
                 if canonical(json.loads(prior_same[0])) == canonical(usage):
                     return "duplicate"
                 raise ValueError("conflicting native revision")
-            latest = self.db.execute(
-                "SELECT revision FROM dev12_usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1",
+            latest = self.database.execute(
+                _queries.ACTION_SELECT_DEV12_USAGE_REVISIONS_2,
                 (attempt_id,)).fetchone()
             last = latest[0] if latest else None
             if (type(ordinal) is not int or ordinal != (last or 0) + 1 or
@@ -246,31 +197,29 @@ class SQLiteStore:
                                reservation["price_ref"], reservation["usage_ref"],
                                reservation["max_exposure_decimal"]):
                 raise ValueError("native revision violates admitted scope")
-            self.db.execute("INSERT INTO dev12_usage_revisions VALUES (?,?,?,?)",
+            self.database.execute(_queries.ACTION_INSERT_DEV12_USAGE_REVISIONS,
                             (attempt_id, ordinal, submission_id, encode(usage)))
             if receipt_event is not None:
-                self.db.execute("INSERT INTO dev12_evidence_events(submission_id,event_kind,observed_at,evidence) "
-                                "VALUES (?,?,?,?)", (submission_id, "late_receiver_receipt_collected",
+                self.database.execute(_queries.ACTION_INSERT_DEV12_EVIDENCE_EVENTS, (submission_id, "late_receiver_receipt_collected",
                                                      observed_at, encode(receipt_event)))
-            self.db.execute("INSERT INTO dev12_evidence_events(submission_id,event_kind,observed_at,evidence) "
-                            "VALUES (?,?,?,?)", (submission_id, "native_usage_accepted", observed_at, encode(usage)))
+            self.database.execute(_queries.ACTION_INSERT_DEV12_EVIDENCE_EVENTS, (submission_id, "native_usage_accepted", observed_at, encode(usage)))
             record["effective_usage_revision"] = ordinal
             record["settlement_state"] = usage["cost_status"]
             record["exposure_state"] = ("outstanding" if usage["cost_status"] == "unknown" else
                                         "over_bound" if usage["cost_status"] == "over_bound" else "settled")
             record["status_revision"] += 1
             record["updated_at"] = observed_at
-            self.db.execute("UPDATE dev12_submissions SET record=? WHERE submission_id=?",
+            self.database.execute(_queries.ACTION_UPDATE_DEV12_SUBMISSIONS,
                             (encode(record), submission_id))
             if on_settlement is not None:
-                on_settlement(self.db, usage["cost_status"])
+                on_settlement(self.database, usage["cost_status"])
             return "accepted"
         return self._transaction(action)
 
     def successor_latest_usage(self, attempt_id):
         with self._lock:
-            row = self.db.execute(
-                "SELECT usage FROM dev12_usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1",
+            row = self.database.execute(
+                _queries.SUCCESSOR_LATEST_USAGE_SELECT_DEV12_USAGE_REVISIONS,
                 (attempt_id,)).fetchone()
             return json.loads(row[0]) if row else None
 
@@ -278,12 +227,8 @@ class SQLiteStore:
         """Direct expenditure counts each distinct attempt's latest revision once."""
         from decimal import Decimal
         with self._lock:
-            rows = self.db.execute(
-                "SELECT s.record, u.usage FROM dev12_submissions s "
-                "LEFT JOIN dev12_usage_revisions u ON u.attempt_id=json_extract(s.record,'$.attempt_id') "
-                "AND u.revision=(SELECT MAX(x.revision) FROM dev12_usage_revisions x "
-                "WHERE x.attempt_id=json_extract(s.record,'$.attempt_id')) "
-                "WHERE s.principal_id=?", (principal_id,)).fetchall()
+            rows = self.database.execute(
+                _queries.SUCCESSOR_TOTALS_SELECT_DEV12_SUBMISSIONS, (principal_id,)).fetchall()
         known = Decimal(0)
         unknown = 0
         for _record, raw in rows:
@@ -304,9 +249,8 @@ class SQLiteStore:
         instant = datetime.fromisoformat(now.replace("Z", "+00:00"))
         def action():
             expired = []
-            for sid, raw in self.db.execute(
-                    "SELECT submission_id,record FROM dev12_submissions WHERE "
-                    "json_extract(record,'$.candidate_access')='present'").fetchall():
+            for sid, raw in self.database.execute(
+                    _queries.ACTION_SELECT_DEV12_SUBMISSIONS).fetchall():
                 record = json.loads(raw)
                 origin = record.get("result_available_at")
                 if (record.get("submission_state") != "completed" or not origin or
@@ -316,7 +260,7 @@ class SQLiteStore:
                 record["candidate_access"] = "expired"
                 record["updated_at"] = now
                 record["status_revision"] += 1
-                self.db.execute("UPDATE dev12_submissions SET record=? WHERE submission_id=?",
+                self.database.execute(_queries.ACTION_UPDATE_DEV12_SUBMISSIONS,
                                 (encode(record), sid))
                 expired.append(sid)
             return expired
@@ -348,15 +292,15 @@ class SQLiteStore:
         def action():
             self._claim_work_in_tx(record["work_key"], "0.2", record["submission_id"])
             if reserve is not None:
-                record["campaign"] = reserve(self.db, record)
-            self.db.execute("INSERT INTO submissions VALUES (?,?,?,?,?,?)",
+                record["campaign"] = reserve(self.database, record)
+            self.database.execute(_queries.ACTION_INSERT_SUBMISSIONS,
                             (record["submission_id"], record["principal_id"], record["task_id"],
                              encode(record["work_key"]), record["work_digest"], encode(record)))
         self._transaction(action)
 
     def intent(self, submission_id, attempt_id, intent):
         def action():
-            self.db.execute("INSERT INTO intents VALUES (?,?,?)", (attempt_id, submission_id, encode(intent)))
+            self.database.execute(_queries.ACTION_INSERT_INTENTS, (attempt_id, submission_id, encode(intent)))
             self._update_in_tx(submission_id, {"submission_state": "admitted",
                                                "dispatch_state": "intent_persisted", "attempt_revision": 2})
         self._transaction(action)
@@ -364,9 +308,9 @@ class SQLiteStore:
     def guard_commit(self, submission_id, attempt_id, receipt):
         """Durable, single-use final-request acknowledgement before lower send."""
         def action():
-            row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?",
+            row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS,
                                   (submission_id,)).fetchone()
-            preparatory = self.db.execute("SELECT intent FROM intents WHERE submission_id=? AND attempt_id=?",
+            preparatory = self.database.execute(_queries.ACTION_SELECT_INTENTS,
                                           (submission_id, attempt_id)).fetchone()
             if not row or json.loads(row[0])["attempt_id"] != attempt_id or not preparatory:
                 raise ValueError("unadmitted guard attempt")
@@ -375,24 +319,24 @@ class SQLiteStore:
                 receipt.get("plan_id") != bound.get("plan_id") or
                 receipt.get("work_digest") != bound.get("work_digest")):
                 raise ValueError("guard receipt does not match preparatory intent")
-            self.db.execute("INSERT INTO guard_dispatches VALUES (?,?,?)",
+            self.database.execute(_queries.ACTION_INSERT_GUARD_DISPATCHES,
                             (attempt_id, submission_id, encode(receipt)))
         self._transaction(action)
 
     def guard_record(self, attempt_id):
         with self._lock:
-            row = self.db.execute("SELECT receipt FROM guard_dispatches WHERE attempt_id=?",
+            row = self.database.execute(_queries.GUARD_RECORD_SELECT_GUARD_DISPATCHES,
                                   (attempt_id,)).fetchone()
             return json.loads(row[0]) if row else None
 
     def _update_in_tx(self, submission_id, fields):
-        row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+        row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
         if not row:
             raise KeyError(submission_id)
         record = json.loads(row[0])
         record.update(fields)
         record["status_revision"] += 1
-        self.db.execute("UPDATE submissions SET record=? WHERE submission_id=?", (encode(record), submission_id))
+        self.database.execute(_queries.UPDATE_IN_TX_UPDATE_SUBMISSIONS, (encode(record), submission_id))
         return record
 
     def update(self, submission_id, fields, usage=None):
@@ -400,25 +344,25 @@ class SQLiteStore:
         def action():
             latest_usage = {"state": "not_recorded"}
             if usage is not None:
-                row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+                row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
                 if not row:
                     raise KeyError(submission_id)
                 attempt_id = json.loads(row[0])["attempt_id"]
-                existing = self.db.execute("SELECT MAX(revision) FROM usage_revisions WHERE attempt_id=?", (attempt_id,)).fetchone()[0]
+                existing = self.database.execute(_queries.ACTION_SELECT_USAGE_REVISIONS, (attempt_id,)).fetchone()[0]
                 revision = (existing or 0) + 1
                 revision_data = dict(usage)
                 revision_data["revision"] = revision
                 if existing:
                     revision_data["previous_revision"] = existing
-                self.db.execute("INSERT INTO usage_revisions VALUES (?,?,?,?)",
+                self.database.execute(_queries.ACTION_INSERT_USAGE_REVISIONS,
                                 (attempt_id, revision, submission_id, encode(revision_data)))
                 latest_usage = {"state": "available", "revision": revision_data}
             elif "candidate" in new_fields and new_fields["candidate"] is not None:
-                row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+                row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
                 if not row:
                     raise KeyError(submission_id)
                 attempt_id = json.loads(row[0])["attempt_id"]
-                prior = self.db.execute("SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1",
+                prior = self.database.execute(_queries.GET_SELECT_USAGE_REVISIONS,
                                         (attempt_id,)).fetchone()
                 if prior:
                     latest_usage = {"state": "available", "revision": json.loads(prior[0])}
@@ -429,7 +373,7 @@ class SQLiteStore:
 
     def mark_wait_expired_no_store(self, submission_id, at):
         def action():
-            row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+            row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
             if not row:
                 raise KeyError(submission_id)
             record = json.loads(row[0])
@@ -443,7 +387,7 @@ class SQLiteStore:
     def complete_candidate(self, submission_id, candidate, usage, raw_usage_digest,
                            current_allowed, current_expiry, at, live_source_tags=None):
         def action():
-            row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+            row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
             if not row:
                 raise KeyError(submission_id)
             record = json.loads(row[0])
@@ -457,19 +401,18 @@ class SQLiteStore:
             latest_usage = {"state": "not_recorded"}
             if usage is not None:
                 attempt_id = record["attempt_id"]
-                existing = self.db.execute("SELECT MAX(revision) FROM usage_revisions WHERE attempt_id=?",
+                existing = self.database.execute(_queries.ACTION_SELECT_USAGE_REVISIONS,
                                            (attempt_id,)).fetchone()[0]
                 revision_data = dict(usage)
                 revision_data["revision"] = (existing or 0) + 1
                 if existing:
                     revision_data["previous_revision"] = existing
-                self.db.execute("INSERT INTO usage_revisions VALUES (?,?,?,?)",
+                self.database.execute(_queries.ACTION_INSERT_USAGE_REVISIONS,
                                 (attempt_id, revision_data["revision"], submission_id,
                                  encode(revision_data)))
                 latest_usage = {"state": "available", "revision": revision_data}
             else:
-                prior = self.db.execute("SELECT usage FROM usage_revisions WHERE attempt_id=? "
-                                        "ORDER BY revision DESC LIMIT 1", (record["attempt_id"],)).fetchone()
+                prior = self.database.execute(_queries.GET_SELECT_USAGE_REVISIONS, (record["attempt_id"],)).fetchone()
                 if prior:
                     latest_usage = {"state": "available", "revision": json.loads(prior[0])}
             fields = {"submission_state": "completed", "dispatch_state": "response_observed",
@@ -492,7 +435,7 @@ class SQLiteStore:
 
     def get(self, submission_id):
         with self._lock:
-            row = self.db.execute("SELECT record FROM submissions WHERE submission_id=?", (submission_id,)).fetchone()
+            row = self.database.execute(_queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)).fetchone()
             if not row:
                 return None
             record = json.loads(row[0])
@@ -503,16 +446,16 @@ class SQLiteStore:
                 record["candidate_access"] = "expired"
                 record["status_revision"] += 1
                 record["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                self.db.execute("UPDATE submissions SET record=? WHERE submission_id=?",
+                self.database.execute(_queries.UPDATE_IN_TX_UPDATE_SUBMISSIONS,
                                 (encode(record), submission_id))
-            usage = self.db.execute("SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1",
+            usage = self.database.execute(_queries.GET_SELECT_USAGE_REVISIONS,
                                     (record["attempt_id"],)).fetchone()
             record["usage"] = {"state": "available", "revision": json.loads(usage[0])} if usage else {"state": "not_recorded"}
             return record
 
     def by_work(self, key):
         with self._lock:
-            row = self.db.execute("SELECT submission_id FROM submissions WHERE principal_id=? AND work_key=?",
+            row = self.database.execute(_queries.BY_WORK_SELECT_SUBMISSIONS,
                                   (key["principal_id"], encode(key))).fetchone()
         return self.get(row[0]) if row else None
 
@@ -520,8 +463,8 @@ class SQLiteStore:
                                  block, live_source_tag):
         """Verify retained content or a delivered live block tag in the authenticated scope."""
         with self._lock:
-            rows = self.db.execute(
-                "SELECT record FROM submissions WHERE principal_id=? AND task_id=?",
+            rows = self.database.execute(
+                _queries.HAS_AUTHORIZED_TOOL_CALL_SELECT_SUBMISSIONS,
                 (principal_id, task_id)).fetchall()
         for (raw,) in rows:
             record = json.loads(raw)
@@ -540,4 +483,4 @@ class SQLiteStore:
 
     def intent_count(self, submission_id):
         with self._lock:
-            return self.db.execute("SELECT COUNT(*) FROM intents WHERE submission_id=?", (submission_id,)).fetchone()[0]
+            return self.database.execute(_queries.INTENT_COUNT_SELECT_INTENTS, (submission_id,)).fetchone()[0]

@@ -1,6 +1,8 @@
 """One local personal test allowance. Amounts are decimal strings, never floats."""
 from __future__ import annotations
 
+from .repositories import personal_campaign as _queries
+
 from .observability import log_failure
 
 from datetime import datetime, timezone
@@ -42,50 +44,36 @@ def _time(value):
 class PersonalCampaign:
     def __init__(self, store, registry):
         self.store, self.registry = store, registry
-        self.store.db.executescript("""
-            CREATE TABLE IF NOT EXISTS personal_campaigns (
-                id TEXT PRIMARY KEY, record TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS personal_campaign_attempts (
-                attempt_id TEXT PRIMARY KEY, submission_id TEXT NOT NULL UNIQUE,
-                campaign_id TEXT NOT NULL, bound_decimal TEXT NOT NULL,
-                cost_decimal TEXT, state TEXT NOT NULL, usage_revision INTEGER);
-            CREATE TABLE IF NOT EXISTS personal_campaign_audit (
-                seq INTEGER PRIMARY KEY AUTOINCREMENT, campaign_id TEXT NOT NULL,
-                action TEXT NOT NULL, actor TEXT NOT NULL, at TEXT NOT NULL);
-        """)
         # A service restart loses the in-memory send position. A persisted
         # reservation may already have reached the provider, so keep its full
         # exposure and require explicit reconciliation before another send.
         def recover():
-            rows = self.store.db.execute("SELECT campaign_id FROM personal_campaign_attempts "
-                                         "WHERE state='reserved'").fetchall()
+            rows = self.store.database.execute(_queries.RECOVER_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS).fetchall()
             if not rows:
                 return
-            self.store.db.execute("UPDATE personal_campaign_attempts SET state='unknown' "
-                                  "WHERE state='reserved'")
+            self.store.database.execute(_queries.RECOVER_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS)
             for campaign_id in {row[0] for row in rows}:
-                row = self.store.db.execute("SELECT record FROM personal_campaigns WHERE id=?",
+                row = self.store.database.execute(_queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS,
                                             (campaign_id,)).fetchone()
                 if row:
                     record = json.loads(row[0])
                     if record["state"] != "closed":
                         record["state"] = "paused"
                         record["revision"] += 1
-                        self.store.db.execute("UPDATE personal_campaigns SET record=? WHERE id=?",
+                        self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS,
                                               (encode(record), campaign_id))
-                    self.store.db.execute("INSERT INTO personal_campaign_audit(campaign_id,action,actor,at) "
-                                          "VALUES (?,?,?,?)", (campaign_id, "recover_unknown", "system",
+                    self.store.database.execute(_queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT, (campaign_id, "recover_unknown", "system",
                                           datetime.now(timezone.utc).isoformat()))
-        self.store._transaction(recover)
+        self.store.database.transaction(recover)
 
     def _record(self, db):
-        row = db.execute("SELECT record FROM personal_campaigns ORDER BY rowid DESC LIMIT 1").fetchone()
+        row = db.execute(_queries.RECORD_SELECT_PERSONAL_CAMPAIGNS).fetchone()
         return json.loads(row[0]) if row else None
 
     def _audit(self, db, action, actor, *, campaign_id=None):
         if campaign_id is None:
             campaign_id = self._record(db)["id"]
-        db.execute("INSERT INTO personal_campaign_audit(campaign_id,action,actor,at) VALUES (?,?,?,?)",
+        db.execute(_queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT,
                    (campaign_id, action, actor, datetime.now(timezone.utc).isoformat()))
 
     def configure(self, actor, data):
@@ -114,55 +102,55 @@ class PersonalCampaign:
                   "connection_revision": connection["revision"], "credential_version": connection["credential_version"],
                   "model_revision": model["revision"], "price_version": model.get("price_version")}
         def action():
-            old = self._record(self.store.db)
+            old = self._record(self.store.database)
             if old and old["state"] not in ("draft", "paused", "closed"):
                 raise ValueError("existing campaign and exposure must be retained")
-            if self.store.db.execute("SELECT 1 FROM personal_campaign_attempts WHERE state IN ('reserved','unknown','over_bound') LIMIT 1").fetchone():
+            if self.store.database.execute(_queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS).fetchone():
                 raise ValueError("unresolved exposure prevents a new allowance")
             if old and old["state"] != "closed":
-                if self.store.db.execute("SELECT 1 FROM personal_campaign_attempts WHERE campaign_id=? LIMIT 1",
+                if self.store.database.execute(_queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_4,
                                          (old["id"],)).fetchone():
                     raise ValueError("close the existing campaign before configuring another")
                 record["id"] = old["id"]
                 record["revision"] = old["revision"] + 1
             elif old:
                 record["id"] = "personal.local." + str(int(old["id"].rsplit(".", 1)[1]) + 1)
-            self.store.db.execute("INSERT INTO personal_campaigns VALUES (?,?) ON CONFLICT(id) DO UPDATE SET record=excluded.record",
+            self.store.database.execute(_queries.ACTION_INSERT_PERSONAL_CAMPAIGNS,
                                   (record["id"], encode(record)))
-            self._audit(self.store.db, "configure", actor)
+            self._audit(self.store.database, "configure", actor)
             return record
         with self.registry.send_authority.gate:
-            return self.store._transaction(action)
+            return self.store.database.transaction(action)
 
     def transition(self, actor, state):
         if actor != "owner.local" or state not in ("active", "paused", "closed"):
             raise ValueError("invalid campaign action")
         def action():
-            record = self._record(self.store.db)
+            record = self._record(self.store.database)
             if not record or record["state"] == "closed":
                 raise ValueError("campaign unavailable")
             if state == "active":
                 if record["state"] not in ("draft", "paused"):
                     raise ValueError("campaign already active")
                 self._current(record)
-                if self.store.db.execute("SELECT 1 FROM personal_campaign_attempts WHERE state IN ('reserved','unknown','over_bound') LIMIT 1").fetchone():
+                if self.store.database.execute(_queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS).fetchone():
                     raise ValueError("unresolved exposure prevents activation")
             record["state"] = state
             record["revision"] += 1
-            self.store.db.execute("UPDATE personal_campaigns SET record=? WHERE id=?", (encode(record), record["id"]))
-            self._audit(self.store.db, state, actor)
+            self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS, (encode(record), record["id"]))
+            self._audit(self.store.database, state, actor)
             return record
         with self.registry.send_authority.gate:
-            return self.store._transaction(action)
+            return self.store.database.transaction(action)
 
     def revalidate(self, actor):
         """Bind current key/model/rate revisions without resetting spent attempts."""
         if actor != "owner.local":
             raise PermissionError("OWNER_REQUIRED")
         def action():
-            record = self._record(self.store.db)
-            if not record or record["state"] != "paused" or self.store.db.execute(
-                    "SELECT 1 FROM personal_campaign_attempts WHERE state IN ('reserved','unknown','over_bound') LIMIT 1").fetchone():
+            record = self._record(self.store.database)
+            if not record or record["state"] != "paused" or self.store.database.execute(
+                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS).fetchone():
                 raise ValueError("pause and resolve all exposure before revalidation")
             connection = self.registry.connection(record["connection_id"])
             model = self.registry.model(record["configuration_ref"])
@@ -181,12 +169,12 @@ class PersonalCampaign:
                           credential_version=connection["credential_version"],
                           model_revision=model["revision"], price_version=price["price_version"],
                           revision=record["revision"] + 1, state="draft")
-            self.store.db.execute("UPDATE personal_campaigns SET record=? WHERE id=?",
+            self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS,
                                   (encode(record), record["id"]))
-            self._audit(self.store.db, "revalidate", actor)
+            self._audit(self.store.database, "revalidate", actor)
             return record
         with self.registry.send_authority.gate:
-            return self.store._transaction(action)
+            return self.store.database.transaction(action)
 
     def _current(self, record):
         connection = self.registry.connection(record["connection_id"])
@@ -230,7 +218,7 @@ class PersonalCampaign:
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403) from exc
         if bound <= 0 or bound > _amount(campaign["per_request_decimal"]):
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
-        rows = db.execute("SELECT bound_decimal,cost_decimal,state FROM personal_campaign_attempts WHERE campaign_id=?",
+        rows = db.execute(_queries.RESERVE_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS,
                           (campaign["id"],)).fetchall()
         exposure = sum((Decimal(cost if state == "settled" else bound if state != "released" else "0")
                         for bound, cost, state in rows), Decimal(0))
@@ -238,7 +226,7 @@ class PersonalCampaign:
                 any(state in ("reserved", "unknown") for _, _, state in rows) or
                 exposure + bound > _amount(campaign["allowance_decimal"])):
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
-        db.execute("INSERT INTO personal_campaign_attempts VALUES (?,?,?,?,?,?,?)",
+        db.execute(_queries.RESERVE_INSERT_PERSONAL_CAMPAIGN_ATTEMPTS,
                    (record["attempt_id"], record["submission_id"], campaign["id"], format(bound, "f"),
                     None, "reserved", None))
         return {"campaign_id": campaign["id"], "campaign_revision": campaign["revision"],
@@ -249,9 +237,9 @@ class PersonalCampaign:
                 "contract_version": rate["contract"]["version"]}
 
     def check(self, attempt_id, revision):
-        with self.store._lock:
-            campaign = self._record(self.store.db)
-            row = self.store.db.execute("SELECT state,campaign_id FROM personal_campaign_attempts WHERE attempt_id=?", (attempt_id,)).fetchone()
+        with self.store.database.read():
+            campaign = self._record(self.store.database)
+            row = self.store.database.execute(_queries.CHECK_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (attempt_id,)).fetchone()
         if (not campaign or campaign["state"] != "active" or campaign["revision"] != revision or
                 not row or row != ("reserved", campaign["id"])):
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
@@ -262,7 +250,7 @@ class PersonalCampaign:
 
     def settle(self, attempt_id, usage=None, *, before_transmit=False):
         def action():
-            row = self.store.db.execute("SELECT bound_decimal,state,campaign_id FROM personal_campaign_attempts WHERE attempt_id=?",
+            row = self.store.database.execute(_queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_2,
                                         (attempt_id,)).fetchone()
             if not row or row[1] not in ("reserved", "unknown") or (row[1] == "unknown" and before_transmit):
                 return
@@ -275,18 +263,18 @@ class PersonalCampaign:
                 state = "settled"
             if cost is not None and Decimal(cost) > Decimal(row[0]):
                 state = "over_bound"
-            self.store.db.execute("UPDATE personal_campaign_attempts SET state=?,cost_decimal=?,usage_revision=? WHERE attempt_id=?",
+            self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
                                   (state, cost, revision, attempt_id))
             if state != "settled" and state != "released":
-                campaign_row = self.store.db.execute("SELECT record FROM personal_campaigns WHERE id=?", (row[2],)).fetchone()
+                campaign_row = self.store.database.execute(_queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (row[2],)).fetchone()
                 campaign = json.loads(campaign_row[0])
                 if campaign["state"] != "closed":
                     campaign["state"] = "paused"
                     campaign["revision"] += 1
-                    self.store.db.execute("UPDATE personal_campaigns SET record=? WHERE id=?",
+                    self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS,
                                           (encode(campaign), campaign["id"]))
-                self._audit(self.store.db, state, "system", campaign_id=campaign["id"])
-        self.store._transaction(action)
+                self._audit(self.store.database, state, "system", campaign_id=campaign["id"])
+        self.store.database.transaction(action)
 
     def reconcile_recorded_usage(self, actor):
         """Owner-requested local reconciliation; never replays provider work."""
@@ -295,11 +283,11 @@ class PersonalCampaign:
         def action():
             changed = 0
             changed_campaigns = set()
-            rows = self.store.db.execute("SELECT attempt_id,bound_decimal,state,usage_revision,campaign_id FROM personal_campaign_attempts").fetchall()
+            rows = self.store.database.execute(_queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3).fetchall()
             for attempt_id, bound, state, prior_revision, campaign_id in rows:
                 if state == "released":
                     continue
-                row = self.store.db.execute("SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1",
+                row = self.store.database.execute(_queries.ACTION_SELECT_USAGE_REVISIONS,
                                             (attempt_id,)).fetchone()
                 if not row:
                     continue
@@ -316,30 +304,29 @@ class PersonalCampaign:
                 if not amount.is_finite() or amount < 0:
                     continue
                 next_state = "over_bound" if amount > Decimal(bound) else "settled"
-                self.store.db.execute("UPDATE personal_campaign_attempts SET state=?,cost_decimal=?,usage_revision=? WHERE attempt_id=?",
+                self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
                                       (next_state, format(amount, "f"), revision, attempt_id))
                 changed += 1
                 changed_campaigns.add(campaign_id)
                 if next_state == "over_bound":
-                    campaign = json.loads(self.store.db.execute(
-                        "SELECT record FROM personal_campaigns WHERE id=?", (campaign_id,)).fetchone()[0])
+                    campaign = json.loads(self.store.database.execute(
+                        _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)).fetchone()[0])
                     if campaign["state"] != "closed":
                         campaign["state"] = "paused"
                         campaign["revision"] += 1
-                        self.store.db.execute("UPDATE personal_campaigns SET record=? WHERE id=?",
+                        self.store.database.execute(_queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS,
                                               (encode(campaign), campaign["id"]))
             for campaign_id in sorted(changed_campaigns):
-                self._audit(self.store.db, "reconcile_recorded_usage", actor, campaign_id=campaign_id)
+                self._audit(self.store.database, "reconcile_recorded_usage", actor, campaign_id=campaign_id)
             return changed
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def summary(self):
-        with self.store._lock:
-            campaign = self._record(self.store.db)
-            rows = self.store.db.execute("SELECT attempt_id,submission_id,bound_decimal,cost_decimal,state,usage_revision "
-                "FROM personal_campaign_attempts WHERE campaign_id=? ORDER BY rowid",
+        with self.store.database.read():
+            campaign = self._record(self.store.database)
+            rows = self.store.database.execute(_queries.SUMMARY_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS,
                 (campaign["id"],)).fetchall() if campaign else []
-            prior_count = self.store.db.execute("SELECT COUNT(*) FROM personal_campaigns").fetchone()[0]
+            prior_count = self.store.database.execute(_queries.SUMMARY_SELECT_PERSONAL_CAMPAIGNS).fetchone()[0]
         if not campaign:
             return {"state": "not_configured", "effective_state": "not_configured", "attempts": []}
         incurred = sum((Decimal(cost) for _, _, _, cost, state, _ in rows

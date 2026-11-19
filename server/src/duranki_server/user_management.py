@@ -1,6 +1,8 @@
 """Persistent console accounts tied to the existing permission registry."""
 from __future__ import annotations
 
+from .repositories import user_management as _queries
+
 from collections import defaultdict, deque
 import base64
 import hashlib
@@ -101,28 +103,16 @@ class UserManager:
         self.bootstrap_password_file = (Path(bootstrap_password_file) if bootstrap_password_file else
                                         Path(self.store.path).parent / ".console-secrets" / "admin.password")
         self._dummy_hash = password_hash(secrets.token_urlsafe(24))
-        with self.store._lock:
-            self.store.db.executescript("""
-                CREATE TABLE IF NOT EXISTS console_users (
-                    principal_id TEXT PRIMARY KEY REFERENCES registry_principals(id),
-                    username TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
-                    must_change_password INTEGER NOT NULL,
-                    auth_version INTEGER NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-            """)
         self._bootstrap()
         registry.users = self
 
     def _bootstrap(self):
         def action():
-            db = self.store.db
-            if db.execute("SELECT 1 FROM console_users LIMIT 1").fetchone():
+            db = self.store.database
+            if db.execute(_queries.ACTION_SELECT_CONSOLE_USERS).fetchone():
                 return
             principals = [json.loads(row[0]) for row in db.execute(
-                "SELECT record FROM registry_principals ORDER BY id='owner.local' DESC,id")]
+                _queries.ACTION_SELECT_REGISTRY_PRINCIPALS)]
             principal = next((p for p in principals if p["role"] == "registry_admin" and
                               p["kind"] == "human" and p["status"] == "active"), None)
             if not principal:
@@ -136,15 +126,13 @@ class UserManager:
             except UserError as exc:
                 raise UserError("BOOTSTRAP_PASSWORD_REQUIRES_12_TO_256_CHARACTERS") from exc
             at = timestamp()
-            db.execute("INSERT INTO console_users VALUES (?,?,?,?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_CONSOLE_USERS,
                        (principal["principal_id"], name, password_hash(secret), 1, 1, at, at))
         with self.registry.send_authority.gate:
-            self.store._transaction(action)
+            self.store.database.transaction(action)
 
     def _load(self, db, principal_id):
-        row = db.execute("SELECT u.username,u.password_hash,u.must_change_password,u.auth_version,"
-                         "u.created_at,u.updated_at,p.record FROM console_users u "
-                         "JOIN registry_principals p ON p.id=u.principal_id WHERE u.principal_id=?",
+        row = db.execute(_queries.LOAD_SELECT_CONSOLE_USERS,
                          (principal_id,)).fetchone()
         if not row:
             raise UserError("USER_NOT_FOUND", 404)
@@ -159,9 +147,9 @@ class UserManager:
                 "permissions": list(ROLE_PERMISSIONS.get(principal["role"], ()))}
 
     def context(self, principal_id):
-        with self.store._lock:
+        with self.store.database.read():
             try:
-                row, principal = self._load(self.store.db, principal_id)
+                row, principal = self._load(self.store.database, principal_id)
             except UserError:
                 return None
             if principal["status"] != "active":
@@ -173,9 +161,8 @@ class UserManager:
             name = username(name)
         except UserError:
             name = ""
-        with self.store._lock:
-            row = self.store.db.execute("SELECT principal_id,password_hash,auth_version FROM console_users "
-                                        "WHERE username=?", (name,)).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.AUTHENTICATE_SELECT_CONSOLE_USERS, (name,)).fetchone()
         matched = password_matches(password, row[1] if row else self._dummy_hash)
         context = self.context(row[0]) if row and matched else None
         if not context or context["auth_version"] != row[2]:
@@ -183,51 +170,48 @@ class UserManager:
         return context
 
     def _admin(self, db, actor):
-        row = db.execute("SELECT record FROM registry_principals WHERE id=?", (actor,)).fetchone()
+        row = db.execute(_queries.ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
         principal = json.loads(row[0]) if row else None
         if not principal or principal["status"] != "active" or principal["role"] != "registry_admin":
             raise UserError("ADMIN_REQUIRED", 403)
 
     def get(self, actor, principal_id):
-        with self.store._lock:
-            self._admin(self.store.db, actor)
-            return self._public(*self._load(self.store.db, principal_id))
+        with self.store.database.read():
+            self._admin(self.store.database, actor)
+            return self._public(*self._load(self.store.database, principal_id))
 
     def list(self, actor):
-        with self.store._lock:
-            self._admin(self.store.db, actor)
-            ids = [row[0] for row in self.store.db.execute("SELECT principal_id FROM console_users ORDER BY username")]
-            users = [self._load(self.store.db, principal_id) for principal_id in ids]
+        with self.store.database.read():
+            self._admin(self.store.database, actor)
+            ids = [row[0] for row in self.store.database.execute(_queries.LIST_SELECT_CONSOLE_USERS)]
+            users = [self._load(self.store.database, principal_id) for principal_id in ids]
             return {"items": [self._public(row, principal) for row, principal in users if principal["status"] != "revoked"],
                     "roles": {key: list(value) for key, value in ROLE_PERMISSIONS.items()}}
 
     def validate_principal_change(self, db, principal, role, status):
         if (principal["role"] != "registry_admin" or principal["status"] != "active" or
                 (role == "registry_admin" and status == "active") or
-                not db.execute("SELECT 1 FROM console_users WHERE principal_id=?",
+                not db.execute(_queries.VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS_2,
                                (principal["principal_id"],)).fetchone()):
             return
-        count = db.execute("SELECT COUNT(*) FROM console_users u JOIN registry_principals p ON p.id=u.principal_id "
-                           "WHERE json_extract(p.record,'$.role')='registry_admin' "
-                           "AND json_extract(p.record,'$.status')='active'").fetchone()[0]
+        count = db.execute(_queries.VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS).fetchone()[0]
         if count <= 1:
             raise UserError("LAST_ACTIVE_ADMIN", 409)
 
     def _save(self, db, actor, action, principal, old_revision):
         principal["revision"] = old_revision + 1
-        db.execute("INSERT INTO registry_principals VALUES (?,?) ON CONFLICT(id) DO UPDATE SET record=excluded.record",
+        db.execute(_queries.SAVE_INSERT_REGISTRY_PRINCIPALS,
                    (principal["principal_id"], encode(principal)))
-        revision = int(db.execute("SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0]) + 1
-        db.execute("UPDATE registry_meta SET value=? WHERE key='authority_revision'", (str(revision),))
-        db.execute("INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) "
-                   "VALUES (?,?,?,?,?,?,?)", (actor, action, principal["principal_id"], old_revision or None,
+        revision = int(db.execute(_queries.SAVE_SELECT_REGISTRY_META).fetchone()[0]) + 1
+        db.execute(_queries.SAVE_UPDATE_REGISTRY_META, (str(revision),))
+        db.execute(_queries.SAVE_INSERT_REGISTRY_AUDIT, (actor, action, principal["principal_id"], old_revision or None,
                                              principal["revision"], revision, timestamp()))
         return revision
 
     def _write(self, actor, action, change, *, admin=True):
         with self.registry.send_authority.gate:
             def transaction():
-                db = self.store.db
+                db = self.store.database
                 if admin:
                     self._admin(db, actor)
                 principal, old_revision = change(db)
@@ -235,7 +219,7 @@ class UserManager:
                 result = self._public(*self._load(db, principal["principal_id"]))
                 return result, revision
             try:
-                result, revision = self.store._transaction(transaction)
+                result, revision = self.store.database.transaction(transaction)
             except sqlite3.IntegrityError as exc:
                 raise UserError("USERNAME_EXISTS", 409) from exc
             self.registry.send_authority.epoch = revision
@@ -274,9 +258,9 @@ class UserManager:
                          "record_origin": "operator_entered"}
             # Insert the principal before its referencing account in this transaction.
             principal["revision"] = 0
-            db.execute("INSERT INTO registry_principals VALUES (?,?)", (principal["principal_id"], encode(principal)))
+            db.execute(_queries.CHANGE_INSERT_REGISTRY_PRINCIPALS, (principal["principal_id"], encode(principal)))
             at = timestamp()
-            db.execute("INSERT INTO console_users VALUES (?,?,?,?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_CONSOLE_USERS,
                        (principal["principal_id"], name, hashed, 1, 1, at, at))
             return principal, 0
         return self._write(actor, "create_console_user", change)
@@ -291,7 +275,7 @@ class UserManager:
             invalidate = name != row[0] or data["role"] != principal["role"] or data["status"] != principal["status"]
             revision = principal["revision"]
             principal.update(display_name=display, role=data["role"], status=data["status"])
-            db.execute("UPDATE console_users SET username=?,auth_version=auth_version+?,updated_at=? WHERE principal_id=?",
+            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS,
                        (name, int(invalidate), timestamp(), principal_id))
             return principal, revision
         return self._write(actor, "update_console_user", change)
@@ -304,9 +288,9 @@ class UserManager:
             self.validate_principal_change(db, principal, principal["role"], "revoked")
             revision = principal["revision"]
             principal.update(status="revoked", state_reason="Administrator deleted console account")
-            db.execute("UPDATE console_users SET password_hash=?,auth_version=auth_version+1,updated_at=? WHERE principal_id=?",
+            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_2,
                        (self._dummy_hash, timestamp(), principal_id))
-            db.execute("DELETE FROM registry_credentials WHERE principal_id=?", (principal_id,))
+            db.execute(_queries.CHANGE_DELETE_REGISTRY_CREDENTIALS, (principal_id,))
             return principal, revision
         return self._write(actor, "delete_console_user", change)
 
@@ -318,8 +302,7 @@ class UserManager:
             self._expected(data, principal)
             if password_matches(data["password"], row[1]):
                 raise UserError("PASSWORD_MUST_DIFFER")
-            db.execute("UPDATE console_users SET password_hash=?,must_change_password=1,"
-                       "auth_version=auth_version+1,updated_at=? WHERE principal_id=?",
+            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_3,
                        (hashed, timestamp(), principal_id))
             return principal, principal["revision"]
         return self._write(actor, "reset_console_password", change)
@@ -341,8 +324,7 @@ class UserManager:
             row, principal = self._load(db, principal_id)
             if principal["status"] != "active" or row[3] != context["auth_version"]:
                 raise UserError("AUTH_REQUIRED", 401)
-            db.execute("UPDATE console_users SET password_hash=?,must_change_password=0,"
-                       "auth_version=auth_version+1,updated_at=? WHERE principal_id=?",
+            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_4,
                        (hashed, timestamp(), principal_id))
             return principal, principal["revision"]
         return self._write(principal_id, "change_console_password", change, admin=False)

@@ -5,6 +5,8 @@ the stable credential binding, encrypted versions, and discovery metadata.
 """
 from __future__ import annotations
 
+from .repositories import integration_credentials as _queries
+
 from .observability import log_failure
 
 from datetime import datetime, timezone, timedelta
@@ -35,10 +37,8 @@ def credential_context(account_id, version, provider):
 
 def reencrypt_credentials(store, box):
     def rewrite():
-        rows = store.db.execute(
-            "SELECT v.account_id,v.version,v.key_id,v.nonce,v.ciphertext,b.record "
-            "FROM integration_credential_versions v LEFT JOIN integration_credential_bindings b "
-            "ON b.account_id=v.account_id").fetchall()
+        rows = store.database.execute(
+            _queries.REWRITE_SELECT_INTEGRATION_CREDENTIAL_VERSIONS).fetchall()
         changed = 0
         for account_id, version, key_id, nonce, ciphertext, raw in rows:
             binding = json.loads(raw)
@@ -46,11 +46,10 @@ def reencrypt_credentials(store, box):
             value = box.open_parts(key_id, nonce, ciphertext, context)
             if key_id != box.active_id:
                 replacement = box.seal_parts(value, context)
-                store.db.execute("UPDATE integration_credential_versions SET key_id=?,nonce=?,ciphertext=? "
-                                 "WHERE account_id=? AND version=?", (*replacement, account_id, version))
+                store.database.execute(_queries.REWRITE_UPDATE_INTEGRATION_CREDENTIAL_VERSIONS, (*replacement, account_id, version))
                 changed += 1
         return changed
-    return store._transaction(rewrite)
+    return store.database.transaction(rewrite)
 
 
 class DatabaseCredentialStore:
@@ -61,33 +60,21 @@ class DatabaseCredentialStore:
         self.discover = discover or probe
         self.controlled = controlled
         self._gate = threading.RLock()
-        def migrate():
-            db = self.store.db
-            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_bindings "
-                       "(account_id TEXT PRIMARY KEY,dataset_id TEXT NOT NULL,record TEXT NOT NULL)")
-            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_versions "
-                       "(account_id TEXT NOT NULL,version INTEGER NOT NULL,key_id TEXT NOT NULL,"
-                       "nonce BLOB NOT NULL,ciphertext BLOB NOT NULL,PRIMARY KEY(account_id,version))")
-            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_operations "
-                       "(operation_id TEXT PRIMARY KEY,request_hash TEXT NOT NULL,account_id TEXT NOT NULL)")
-            db.execute("CREATE TABLE IF NOT EXISTS integration_credential_meta "
-                       "(key TEXT PRIMARY KEY,value TEXT NOT NULL)")
-        self.store._transaction(migrate)
-        with self.store._lock:
-            has_rows = self.store.db.execute(
-                "SELECT 1 FROM integration_credential_versions LIMIT 1").fetchone() is not None
-            pinned = self.store.db.execute(
-                "SELECT value FROM integration_credential_meta WHERE key='keyring_id'").fetchone()
-        with self.store._lock:
-            known = {row[0] for row in self.store.db.execute(
-                "SELECT DISTINCT key_id FROM integration_credential_versions")}
+        with self.store.database.read():
+            has_rows = self.store.database.execute(
+                _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS_2).fetchone() is not None
+            pinned = self.store.database.execute(
+                _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_META).fetchone()
+        with self.store.database.read():
+            known = {row[0] for row in self.store.database.execute(
+                _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS)}
         self.box = SecretBox(self.key_path, "integration-credentials", required_ids=known,
                              required=bool(has_rows or pinned))
         if pinned and pinned[0] != self.box.identity:
             raise RuntimeError("CREDENTIAL_KEYRING_MISMATCH")
         if not pinned:
-            self.store._transaction(lambda: self.store.db.execute(
-                "INSERT INTO integration_credential_meta VALUES ('keyring_id',?)", (self.box.identity,)))
+            self.store.database.transaction(lambda: self.store.database.execute(
+                _queries.INIT_INSERT_INTEGRATION_CREDENTIAL_META, (self.box.identity,)))
         self._clean_pending()
 
     def _owner(self, principal, dataset_id):
@@ -98,8 +85,8 @@ class DatabaseCredentialStore:
         return dataset
 
     def _binding(self, account_id):
-        with self.store._lock:
-            row = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE account_id=?",
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.BINDING_SELECT_INTEGRATION_CREDENTIAL_BINDINGS,
                                         (account_id,)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -114,9 +101,8 @@ class DatabaseCredentialStore:
 
     def _resolve(self, binding, version=None):
         selected = version or binding["selected_version"]
-        with self.store._lock:
-            row = self.store.db.execute("SELECT key_id,nonce,ciphertext FROM integration_credential_versions "
-                                        "WHERE account_id=? AND version=?", (binding["account_id"], selected)).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.RESOLVE_SELECT_INTEGRATION_CREDENTIAL_VERSIONS, (binding["account_id"], selected)).fetchone()
         if not row:
             raise IntegrationError("CREDENTIAL_KEY_UNAVAILABLE", 503)
         try:
@@ -154,16 +140,16 @@ class DatabaseCredentialStore:
     def _clean_pending(self):
         cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         def clean():
-            db = self.store.db
-            rows = db.execute("SELECT account_id,record FROM integration_credential_bindings").fetchall()
+            db = self.store.database
+            rows = db.execute(_queries.CLEAN_SELECT_INTEGRATION_CREDENTIAL_BINDINGS).fetchall()
             for account_id, raw in rows:
                 item = json.loads(raw)
                 if (item["state"] == "pending" and
                     item["discovery"]["state"] == "not_checked" and item["created_at"] < cutoff):
-                    db.execute("DELETE FROM integration_credential_versions WHERE account_id=?", (account_id,))
-                    db.execute("DELETE FROM integration_credential_operations WHERE account_id=?", (account_id,))
-                    db.execute("DELETE FROM integration_credential_bindings WHERE account_id=?", (account_id,))
-        self.store._transaction(clean)
+                    db.execute(_queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_VERSIONS, (account_id,))
+                    db.execute(_queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_OPERATIONS, (account_id,))
+                    db.execute(_queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_BINDINGS, (account_id,))
+        self.store.database.transaction(clean)
 
     def connect(self, principal, body):
         if type(body) is not dict or set(body) != {"dataset_id", "provider", "api_key", "friendly_name", "operation_id"}:
@@ -177,9 +163,8 @@ class DatabaseCredentialStore:
             raise IntegrationError("SCHEMA_INVALID")
         with self._gate:
             digest = self.box.request_digest(encode(body).encode())
-            with self.store._lock:
-                old = self.store.db.execute("SELECT request_hash,account_id FROM integration_credential_operations "
-                                            "WHERE operation_id=?", (operation_id,)).fetchone()
+            with self.store.database.read():
+                old = self.store.database.execute(_queries.CONNECT_SELECT_INTEGRATION_CREDENTIAL_OPERATIONS, (operation_id,)).fetchone()
             if old:
                 if not hmac.compare_digest(old[0], digest):
                     raise IntegrationError("OPERATION_CONFLICT", 409)
@@ -197,27 +182,26 @@ class DatabaseCredentialStore:
                        "selected_models": [], "allowed_operations": [], "policy_revision": 0,
                        "revision": 1, "created_at": _time(), "updated_at": _time()}
             def create():
-                db = self.store.db
-                db.execute("INSERT INTO integration_credential_bindings VALUES (?,?,?)",
+                db = self.store.database
+                db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_BINDINGS,
                            (account_id, body["dataset_id"], encode(binding)))
-                db.execute("INSERT INTO integration_credential_versions VALUES (?,?,?,?,?)",
+                db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_VERSIONS,
                            (account_id, 1, key_id, nonce, ciphertext))
-                db.execute("INSERT INTO integration_credential_operations VALUES (?,?,?)",
+                db.execute(_queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_OPERATIONS,
                            (operation_id, digest, account_id))
-            self.store._transaction(create)
+            self.store.database.transaction(create)
             discovery = self._discover(binding, 1)
             binding["discovery"] = discovery
             binding["updated_at"] = _time()
-            self.store._transaction(lambda: self.store.db.execute(
-                "UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+            self.store.database.transaction(lambda: self.store.database.execute(
+                _queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                 (encode(binding), account_id)))
             return self._public(binding)
 
     def list(self, principal, dataset_id):
         self._owner(principal, dataset_id)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE dataset_id=? "
-                                         "ORDER BY rowid DESC", (dataset_id,)).fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.LIST_SELECT_INTEGRATION_CREDENTIAL_BINDINGS, (dataset_id,)).fetchall()
         return {"items": [self._public(json.loads(row[0])) for row in rows]}
 
     def list_for(self, principal, dataset_id):
@@ -226,8 +210,8 @@ class DatabaseCredentialStore:
         dataset = self.registry.integration._dataset(dataset_id)
         if principal["owner"] != dataset["owner_id"]:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT record FROM integration_credential_bindings WHERE dataset_id=?",
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.LIST_FOR_SELECT_INTEGRATION_CREDENTIAL_BINDINGS,
                                          (dataset_id,)).fetchall()
         fields = ("account_id", "dataset_id", "environment_id", "provider", "provider_id",
                   "credential_ref", "selected_version", "policy_revision", "selected_models",
@@ -268,25 +252,25 @@ class DatabaseCredentialStore:
                         policy_revision=item["policy_revision"] + 1,
                         revision=item["revision"] + 1, updated_at=_time())
             def commit():
-                db = self.store.db
+                db = self.store.database
                 if account:
-                    db.execute("INSERT INTO integration_accounts VALUES (?,?,?)",
+                    db.execute(_queries.COMMIT_INSERT_INTEGRATION_ACCOUNTS,
                                (account_id, item["dataset_id"], encode(account)))
-                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                    db.execute(_queries.COMMIT_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                                (account_id, item["dataset_id"], 1, encode(account)))
                 else:
-                    row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                    row = db.execute(_queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS,
                                      (account_id, item["dataset_id"])).fetchone()
                     old = json.loads(row[0])
                     old.update(allowed_models=models, allowed_operations=operations,
                                revision=old["revision"] + 1, changed_at=_time())
-                    db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+                    db.execute(_queries.COMMIT_UPDATE_INTEGRATION_ACCOUNTS,
                                (encode(old), account_id, item["dataset_id"]))
-                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                    db.execute(_queries.COMMIT_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                                (account_id, item["dataset_id"], old["revision"], encode(old)))
-                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                db.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                            (encode(item), account_id))
-            self.store._transaction(commit)
+            self.store.database.transaction(commit)
             return self._public(item)
 
     def refresh(self, principal, account_id, body):
@@ -298,8 +282,8 @@ class DatabaseCredentialStore:
             discovery = self._discover(item, item["pending_version"] or item["selected_version"])
             discovery["record_revision"] = item["revision"] + 1
             item.update(discovery=discovery, revision=item["revision"] + 1, updated_at=_time())
-            self.store._transaction(lambda: self.store.db.execute(
-                "UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+            self.store.database.transaction(lambda: self.store.database.execute(
+                _queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                 (encode(item), account_id)))
             return self._public(item)
 
@@ -311,20 +295,20 @@ class DatabaseCredentialStore:
                 raise IntegrationError("STALE_REVISION", 409)
             version = max(item["selected_version"], item["pending_version"] or 0) + 1
             key_id, nonce, ciphertext = self._seal(account_id, version, item["provider"], body.get("api_key"))
-            self.store._transaction(lambda: self.store.db.execute(
-                "INSERT INTO integration_credential_versions VALUES (?,?,?,?,?)",
+            self.store.database.transaction(lambda: self.store.database.execute(
+                _queries.CREATE_INSERT_INTEGRATION_CREDENTIAL_VERSIONS,
                 (account_id, version, key_id, nonce, ciphertext)))
             try:
                 result = self._discover(item, version)
             except Exception:
                 log_failure('integration_credentials.DatabaseCredentialStore.replace.failed')
-                self.store._transaction(lambda: self.store.db.execute(
-                    "DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                self.store.database.transaction(lambda: self.store.database.execute(
+                    _queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
                     (account_id, version)))
                 raise
             if item["state"] == "connected" and (result["state"] != "observed" or result.get("has_more")):
-                self.store._transaction(lambda: self.store.db.execute(
-                    "DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                self.store.database.transaction(lambda: self.store.database.execute(
+                    _queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
                     (account_id, version)))
                 return {**self._public(item), "replacement": result}
             previous_pending = item["pending_version"]
@@ -335,13 +319,13 @@ class DatabaseCredentialStore:
             item.update(discovery=result, revision=item["revision"] + 1, updated_at=_time())
             item["discovery"]["record_revision"] = item["revision"]
             def commit():
-                db = self.store.db
-                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                db = self.store.database
+                db.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                            (encode(item), account_id))
                 if previous_pending and previous_pending != version:
-                    db.execute("DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                    db.execute(_queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
                                (account_id, previous_pending))
-            self.store._transaction(commit)
+            self.store.database.transaction(commit)
             return self._public(item)
 
     def disable(self, principal, account_id, body):
@@ -354,19 +338,19 @@ class DatabaseCredentialStore:
                 return self._public(item)
             item.update(state="disabled", revision=item["revision"] + 1, updated_at=_time())
             def commit():
-                db = self.store.db
-                row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                db = self.store.database
+                row = db.execute(_queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS,
                                  (account_id, item["dataset_id"])).fetchone()
                 if row:
                     account = json.loads(row[0])
                     account.update(state="disabled", revision=account["revision"] + 1, changed_at=_time())
-                    db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+                    db.execute(_queries.COMMIT_UPDATE_INTEGRATION_ACCOUNTS,
                                (encode(account), account_id, item["dataset_id"]))
-                    db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+                    db.execute(_queries.COMMIT_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                                (account_id, item["dataset_id"], account["revision"], encode(account)))
-                db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                db.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                            (encode(item), account_id))
-            self.store._transaction(commit)
+            self.store.database.transaction(commit)
             return self._public(item)
 
     def retire(self, principal, account_id, body):
@@ -381,11 +365,11 @@ class DatabaseCredentialStore:
                 raise IntegrationError("RETIREMENT_NOT_ACKNOWLEDGED", 409)
             item.update(revision=item["revision"] + 1, updated_at=_time())
             def commit():
-                self.store.db.execute("DELETE FROM integration_credential_versions WHERE account_id=? AND version=?",
+                self.store.database.execute(_queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS,
                                       (account_id, version))
-                self.store.db.execute("UPDATE integration_credential_bindings SET record=? WHERE account_id=?",
+                self.store.database.execute(_queries.COMMIT_UPDATE_INTEGRATION_CREDENTIAL_BINDINGS,
                                       (encode(item), account_id))
-            self.store._transaction(commit)
+            self.store.database.transaction(commit)
             return self._public(item)
 
     def resolve_for(self, principal, dataset_id, account_id, model_id, operation_family, purpose):
@@ -403,7 +387,7 @@ class DatabaseCredentialStore:
             if (item["dataset_id"] != dataset_id or item["environment_id"] != dataset["environment_id"] or
                     item["state"] != "connected"):
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-            row = self.store.db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+            row = self.store.database.execute(_queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS,
                                         (account_id, dataset_id)).fetchone()
             account = json.loads(row[0]) if row else None
             allowed = (model_id in account["allowed_models"] if operation_family == "generation" else
@@ -414,13 +398,12 @@ class DatabaseCredentialStore:
             facts = {"dataset_id": dataset_id, "credential_version": item["selected_version"],
                      "policy_revision": item["policy_revision"], "purpose": purpose,
                      "model_id": model_id, "operation_family": operation_family}
-            authority_revision = int(self.store.db.execute(
-                "SELECT value FROM registry_meta WHERE key='authority_revision'").fetchone()[0])
-            audit = self.store.db.execute(
-                "INSERT INTO registry_audit(actor,action,subject,old_revision,new_revision,authority_revision,at) "
-                "VALUES (?,?,?,?,?,?,?)", (principal["principal_id"], "credential_resolved", account_id,
+            authority_revision = int(self.store.database.execute(
+                _queries.RELEASE_SELECT_REGISTRY_META).fetchone()[0])
+            audit = self.store.database.execute(
+                _queries.RELEASE_INSERT_REGISTRY_AUDIT, (principal["principal_id"], "credential_resolved", account_id,
                     item["revision"], item["revision"], authority_revision, _time()))
-            self.store.db.execute("INSERT INTO registry_audit_values(seq,before_json,after_json) VALUES (?,?,?)",
+            self.store.database.execute(_queries.RELEASE_INSERT_REGISTRY_AUDIT_VALUES,
                                   (audit.lastrowid, None, encode(facts)))
             return {"account_id": account_id, "dataset_id": dataset_id,
                     "environment_id": dataset["environment_id"], "provider_id": item["provider_id"],
@@ -430,4 +413,4 @@ class DatabaseCredentialStore:
 
         # Permission checks, selected version and the audit commit precede release.
         with self._gate:
-            return self.store._transaction(release)
+            return self.store.database.transaction(release)

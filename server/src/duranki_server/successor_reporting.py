@@ -1,6 +1,8 @@
 """Authorized read-only reporting over distinct wire-0.3 synthetic attempts."""
 from __future__ import annotations
 
+from .repositories import successor_reporting as _queries
+
 from datetime import datetime, timezone
 from decimal import Decimal
 import json
@@ -57,13 +59,11 @@ def usage_report(store, scope, filters=None):
             type(scope.get("principal_id")) is not str:
         raise PermissionError("authenticated reporting scope required")
     operational_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    with store._lock:
-        records = [json.loads(row[0]) for row in store.db.execute(
-            "SELECT record FROM dev12_submissions ORDER BY rowid").fetchall()]
+    with store.database.read():
+        records = [json.loads(row[0]) for row in store.database.execute(
+            _queries.USAGE_REPORT_SELECT_DEV12_SUBMISSIONS).fetchall()]
         usage_events = [(sid, json.loads(raw), observed_at) for sid, raw, observed_at in
-                        store.db.execute("SELECT submission_id,evidence,observed_at "
-                                         "FROM dev12_evidence_events WHERE event_kind='native_usage_accepted' "
-                                         "ORDER BY event_id").fetchall()]
+                        store.database.execute(_queries.USAGE_REPORT_SELECT_DEV12_EVIDENCE_EVENTS).fetchall()]
     by_submission = {}
     for sid, usage, observed_at in usage_events:
         if "cutoff" not in filters or observed_at <= filters["cutoff"]:

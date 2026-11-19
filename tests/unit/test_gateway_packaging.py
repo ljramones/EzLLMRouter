@@ -1,6 +1,7 @@
 """Runtime import identity and staged isolation without Docker or a model call."""
 import ast
 from importlib import import_module
+from importlib.util import find_spec
 import json
 import os
 from pathlib import Path
@@ -31,9 +32,31 @@ class GatewayPackagingTests(unittest.TestCase):
 
     def child(self, script, paths, directory):
         bootstrap = "import sys; sys.path[:0] = " + repr([str(path) for path in paths]) + "\n"
-        return subprocess.run([sys.executable, "-S", "-B", "-c", bootstrap + script],
+        result = subprocess.run([sys.executable, "-S", "-B", "-c", bootstrap + script],
             cwd=directory, env={**os.environ, "PYTHONPATH": ""}, capture_output=True,
-            text=True, check=True, timeout=20)
+            text=True, check=False, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result
+
+    def worker_dependencies(self, directory):
+        # Copy only the declared HTTP dependency modules. The development venv
+        # lives inside ROOT, and adding its entire site-packages could expose
+        # service code from a non-editable installation to the isolated worker.
+        destination = directory / ".dependencies"
+        destination.mkdir()
+        for name in ("httpx", "httpcore", "anyio", "h11", "certifi", "idna",
+                     "typing_extensions", "sniffio"):
+            spec = find_spec(name)
+            if spec is None:
+                self.assertEqual(name, "sniffio", "missing HTTP dependency: " + name)
+                continue  # Older AnyIO versions use sniffio; current versions do not.
+            source = Path(spec.origin)
+            if spec.submodule_search_locations:
+                shutil.copytree(source.parent, destination / name,
+                                ignore=shutil.ignore_patterns("__pycache__"))
+            else:
+                shutil.copy2(source, destination / source.name)
+        return destination
 
     def test_legacy_imports_share_one_guard_context_and_exception_type(self):
         sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
@@ -74,12 +97,16 @@ import importlib, json
 from pathlib import Path
 import duranki_server
 from duranki_server import registry, operator_web
+from duranki_server.store import SQLiteStore
 from duranki_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
 import guard as old_guard
 import recipe as old_recipe
 assert old_guard is guard
 assert old_recipe.SyntheticDevelopmentRecipe is synthetic_recipe.SyntheticDevelopmentRecipe
 assert 'service/server' in str(Path(duranki_server.__file__))
+store = SQLiteStore('staged.sqlite')
+assert store.db.execute('PRAGMA user_version').fetchone() == (1,)
+store.close()
 for name in ('guard', 'choice_b_sender', 'adapter', 'owned_sender_transport', 'owned_tls_sender_transport',
              'proxy_recipe', 'worker_ready', 'dev12_guard', 'choice_b_wire'):
     module = importlib.import_module('duranki_server.gateway.' + name)
@@ -106,7 +133,8 @@ assert 'litellm' not in sys.modules
 assert choice_b_wire.LIMIT == 262144
 print(json.dumps({'worker': 'isolated', 'service_importable': False}))
 """
-            result = self.child(script, [directory, *self.dependencies()], directory)
+            dependencies = self.worker_dependencies(directory)
+            result = self.child(script, [directory, dependencies], directory)
             self.assertFalse(json.loads(result.stdout)["service_importable"])
 
     def test_staged_runtime_implementation_inputs_are_not_test_sources(self):

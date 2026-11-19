@@ -1,4 +1,5 @@
 """Atomic, owner-only files for local secrets and bootstrap recovery."""
+
 from __future__ import annotations
 
 import os

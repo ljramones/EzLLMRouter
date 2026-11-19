@@ -108,7 +108,7 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(record["candidate_access"], "not_retained")
             self.assertFalse(record["content_store_allowed"])
             self.assertEqual(record["usage"]["revision"]["price_version"], "synthetic.unpriced.v1")
-            self.assertEqual(copied.db.execute("PRAGMA user_version").fetchone()[0], 7)
+            self.assertEqual(copied.db.execute("PRAGMA user_version").fetchone()[0], 1)
         finally:
             copied.close()
 

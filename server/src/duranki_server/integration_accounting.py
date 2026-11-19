@@ -1,6 +1,8 @@
 """Durable accounting of externally executed work; no sender or submission path."""
 from __future__ import annotations
 
+from .repositories import integration_accounting as _queries
+
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
@@ -272,51 +274,13 @@ class ExternalAccounting:
     def __init__(self, registry):
         self.registry = registry
         self.store = registry.store
-        def migrate():
-            db = self.store.db
-            db.execute("CREATE TABLE IF NOT EXISTS integration_meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)")
-            row = db.execute("SELECT value FROM integration_meta WHERE key='schema_version'").fetchone()
-            if row and row[0] not in ("1", "2", "3"):
-                raise RuntimeError("unknown integration schema version")
-            for sql in (
-                "CREATE TABLE IF NOT EXISTS integration_datasets (id TEXT PRIMARY KEY,record TEXT NOT NULL)",
-                "CREATE TABLE IF NOT EXISTS integration_accounts (id TEXT NOT NULL,dataset_id TEXT NOT NULL,record TEXT NOT NULL,PRIMARY KEY(id,dataset_id))",
-                "CREATE TABLE IF NOT EXISTS integration_account_history (id TEXT NOT NULL,dataset_id TEXT NOT NULL,revision INTEGER NOT NULL,record TEXT NOT NULL,PRIMARY KEY(id,dataset_id,revision))",
-                "CREATE TABLE IF NOT EXISTS integration_runs (dataset_id TEXT NOT NULL,run_id TEXT NOT NULL,root_run_id TEXT NOT NULL,parent_run_id TEXT,task_id TEXT NOT NULL,PRIMARY KEY(dataset_id,run_id))",
-                "CREATE TABLE IF NOT EXISTS integration_attempts (dataset_id TEXT NOT NULL,attempt_id TEXT NOT NULL,start_event_id TEXT NOT NULL,record TEXT NOT NULL,included INTEGER NOT NULL,PRIMARY KEY(dataset_id,attempt_id))",
-                "CREATE TABLE IF NOT EXISTS integration_events (dataset_id TEXT NOT NULL,event_id TEXT NOT NULL,kind TEXT NOT NULL,attempt_id TEXT,ordinal INTEGER,digest TEXT NOT NULL,record TEXT NOT NULL,receipt TEXT NOT NULL,PRIMARY KEY(dataset_id,event_id))",
-                "CREATE UNIQUE INDEX IF NOT EXISTS integration_usage_ordinal ON integration_events(dataset_id,attempt_id,ordinal) WHERE kind='usage'"
-                ,"CREATE TABLE IF NOT EXISTS integration_snapshots (dataset_id TEXT NOT NULL,snapshot_id TEXT NOT NULL,attempt_id TEXT NOT NULL,kind TEXT NOT NULL,digest TEXT NOT NULL,metadata TEXT NOT NULL,content TEXT,PRIMARY KEY(dataset_id,snapshot_id))"
-                ,"CREATE TABLE IF NOT EXISTS integration_eligibility_reads (dataset_id TEXT NOT NULL,eligibility_id TEXT NOT NULL,record TEXT NOT NULL,PRIMARY KEY(dataset_id,eligibility_id))"
-                ,"CREATE TABLE IF NOT EXISTS integration_expired_datasets (id TEXT PRIMARY KEY,expired_at TEXT NOT NULL)"
-                ,"CREATE TABLE IF NOT EXISTS integration_dataset_retention (dataset_id TEXT PRIMARY KEY,days INTEGER NOT NULL,activated_at TEXT NOT NULL)"
-            ):
-                db.execute(sql)
-            if row and row[0] in ("1", "2"):
-                # Account identity is scoped by collection. Keep the existing
-                # connection's account and revision history in its source
-                # collection while allowing the same identity to be
-                # registered for a fresh accounting collection.
-                db.execute("ALTER TABLE integration_accounts RENAME TO integration_accounts_v2")
-                db.execute("ALTER TABLE integration_account_history RENAME TO integration_account_history_v2")
-                db.execute("CREATE TABLE integration_accounts (id TEXT NOT NULL,dataset_id TEXT NOT NULL,record TEXT NOT NULL,PRIMARY KEY(id,dataset_id))")
-                db.execute("CREATE TABLE integration_account_history (id TEXT NOT NULL,dataset_id TEXT NOT NULL,revision INTEGER NOT NULL,record TEXT NOT NULL,PRIMARY KEY(id,dataset_id,revision))")
-                db.execute("INSERT INTO integration_accounts SELECT id,dataset_id,record FROM integration_accounts_v2")
-                db.execute("INSERT INTO integration_account_history SELECT id,json_extract(record,'$.dataset_id'),revision,record FROM integration_account_history_v2")
-                db.execute("DROP TABLE integration_accounts_v2")
-                db.execute("DROP TABLE integration_account_history_v2")
-                db.execute("UPDATE integration_meta SET value='3' WHERE key='schema_version'")
-            elif not row:
-                db.execute("INSERT INTO integration_meta VALUES ('schema_version','3')")
-        self.store._transaction(migrate)
         self._expire_snapshots()
 
     def _expire_snapshots(self):
         # Content is purged, while identity, digest and expiry evidence remain.
         def action():
-            return self.store.db.execute("UPDATE integration_snapshots SET content=NULL WHERE content IS NOT NULL "
-                                  "AND json_extract(metadata,'$.retention_until')<=?", (_time(),)).rowcount
-        return self.store._transaction(action)
+            return self.store.database.execute(_queries.ACTION_UPDATE_INTEGRATION_SNAPSHOTS, (_time(),)).rowcount
+        return self.store.database.transaction(action)
 
     def maintain(self):
         """Explicit physical cleanup; read methods enforce expiry without writing."""
@@ -331,10 +295,8 @@ class ExternalAccounting:
         """
         now = datetime.fromisoformat(_time().replace("Z", "+00:00"))
         def action():
-            db = self.store.db
-            rows = db.execute("SELECT d.id,d.record,r.days,r.activated_at FROM integration_datasets d "
-                              "LEFT JOIN integration_dataset_retention r ON r.dataset_id=d.id "
-                              "WHERE d.id LIKE 'dataset.local.real.%'").fetchall()
+            db = self.store.database
+            rows = db.execute(_queries.ACTION_SELECT_INTEGRATION_DATASETS).fetchall()
             expired = []
             for did, raw, days, activated_at in rows:
                 try:
@@ -345,22 +307,21 @@ class ExternalAccounting:
                 if expiry <= now:
                     expired.append(did)
             for did in expired:
-                db.execute("INSERT OR IGNORE INTO integration_expired_datasets VALUES (?,?)",
+                db.execute(_queries.ACTION_INSERT_INTEGRATION_EXPIRED_DATASETS,
                            (did, _time()))
                 for table in ("integration_events", "integration_attempts", "integration_runs",
                               "integration_snapshots", "integration_eligibility_reads",
                               "integration_accounts"):
-                    db.execute(f"DELETE FROM {table} WHERE dataset_id=?", (did,))
-                db.execute("DELETE FROM integration_account_history WHERE dataset_id=?", (did,))
-                db.execute("DELETE FROM integration_datasets WHERE id=?", (did,))
-                db.execute("DELETE FROM integration_dataset_retention WHERE dataset_id=?", (did,))
+                    db.execute(_queries.ACTION_DELETE_RECORD(table=table), (did,))
+                db.execute(_queries.ACTION_DELETE_INTEGRATION_ACCOUNT_HISTORY, (did,))
+                db.execute(_queries.ACTION_DELETE_INTEGRATION_DATASETS, (did,))
+                db.execute(_queries.ACTION_DELETE_INTEGRATION_DATASET_RETENTION, (did,))
             return len(expired)
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def _dataset(self, dataset_id):
-        with self.store._lock:
-            row = self.store.db.execute("SELECT d.record,r.days,r.activated_at FROM integration_datasets d "
-                "LEFT JOIN integration_dataset_retention r ON r.dataset_id=d.id WHERE d.id=?",
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.DATASET_SELECT_INTEGRATION_DATASETS,
                 (dataset_id,)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -389,17 +350,17 @@ class ExternalAccounting:
         if not ingest or ingest["status"] != "active" or ingest["owner"] != body["owner_id"] or ingest["kind"] != "service":
             raise IntegrationError("POLICY_DENIED", 403)
         def action():
-            db = self.store.db
+            db = self.store.database
             local_real = body["dataset_id"].startswith("dataset.local.real.")
             if local_real and getattr(self, "accounting_retention_days", None) is None:
                 raise IntegrationError("POLICY_DENIED", 403)
-            if db.execute("SELECT 1 FROM integration_expired_datasets WHERE id=?",
+            if db.execute(_queries.ACTION_SELECT_INTEGRATION_EXPIRED_DATASETS,
                           (body["dataset_id"],)).fetchone():
                 raise IntegrationError("DATASET_EXPIRED", 410)
-            old = db.execute("SELECT record FROM integration_datasets WHERE id=?", (body["dataset_id"],)).fetchone()
+            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_DATASETS_2, (body["dataset_id"],)).fetchone()
             if old:
                 if local_real:
-                    retention = db.execute("SELECT days,activated_at FROM integration_dataset_retention WHERE dataset_id=?",
+                    retention = db.execute(_queries.ACTION_SELECT_INTEGRATION_DATASET_RETENTION,
                                            (body["dataset_id"],)).fetchone()
                     if not retention:
                         raise IntegrationError("POLICY_DENIED", 403)
@@ -419,43 +380,43 @@ class ExternalAccounting:
                     raise IntegrationError("POLICY_DENIED", 403) from None
                 if expiry <= datetime.fromisoformat(_time().replace("Z", "+00:00")):
                     raise IntegrationError("DATASET_EXPIRED", 410)
-            db.execute("INSERT INTO integration_datasets VALUES (?,?)", (body["dataset_id"], encode(body)))
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_DATASETS, (body["dataset_id"], encode(body)))
             if local_real:
-                db.execute("INSERT INTO integration_dataset_retention VALUES (?,?,?)",
+                db.execute(_queries.ACTION_INSERT_INTEGRATION_DATASET_RETENTION,
                            (body["dataset_id"], self.accounting_retention_days, body["activated_at"]))
             return 201, {"integration_version": version, **body}
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def create_account(self, principal, body, version="1"):
         body = _checked(body, "account", version)
         dataset = self._dataset(body["dataset_id"])
         self._authorize(principal, dataset, "admin")
         def action():
-            db = self.store.db
-            old = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+            db = self.store.database
+            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (body["account_id"], body["dataset_id"])).fetchone()
             if old:
-                original = db.execute("SELECT record FROM integration_account_history WHERE id=? AND dataset_id=? AND revision=1",
+                original = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNT_HISTORY,
                                       (body["account_id"], body["dataset_id"])).fetchone()
                 record = json.loads(original[0])
                 if {k: record[k] for k in body} != body:
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 return 200, {"integration_version": version, **record}
             record = {**body, "owner_id": dataset["owner_id"], "revision": 1, "registered_at": _time()}
-            db.execute("INSERT INTO integration_accounts VALUES (?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_ACCOUNTS,
                        (body["account_id"], body["dataset_id"], encode(record)))
-            db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                        (body["account_id"], body["dataset_id"], 1, encode(record)))
             return 201, {"integration_version": version, **record}
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def set_account_state(self, principal, account_id, body, version="1"):
         body = _checked(body, "account_state", version)
         dataset = self._dataset(body["dataset_id"])
         self._authorize(principal, dataset, "admin")
         def action():
-            db = self.store.db
-            row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+            db = self.store.database
+            row = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (account_id, body["dataset_id"])).fetchone()
             if not row:
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -463,12 +424,12 @@ class ExternalAccounting:
             if record["revision"] != body["expected_revision"]:
                 raise IntegrationError("STALE_REVISION", 409)
             record.update(state=body["state"], revision=record["revision"] + 1, changed_at=_time())
-            db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+            db.execute(_queries.ACTION_UPDATE_INTEGRATION_ACCOUNTS,
                        (encode(record), account_id, body["dataset_id"]))
-            db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                        (account_id, body["dataset_id"], record["revision"], encode(record)))
             return 200, {"integration_version": version, **record}
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def set_account_permissions(self, principal, account_id, body):
         """Explicit v3 opt-in; an existing v1/v2 account starts with no speech permissions."""
@@ -476,8 +437,8 @@ class ExternalAccounting:
         dataset = self._dataset(body["dataset_id"])
         self._authorize(principal, dataset, "admin")
         def action():
-            db = self.store.db
-            row = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+            db = self.store.database
+            row = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                              (account_id, body["dataset_id"])).fetchone()
             if not row:
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -487,12 +448,12 @@ class ExternalAccounting:
             record.update(allowed_models=body["allowed_models"],
                           allowed_operations=body["allowed_operations"],
                           revision=record["revision"] + 1, changed_at=_time())
-            db.execute("UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?",
+            db.execute(_queries.ACTION_UPDATE_INTEGRATION_ACCOUNTS,
                        (encode(record), account_id, body["dataset_id"]))
-            db.execute("INSERT INTO integration_account_history VALUES (?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_ACCOUNT_HISTORY,
                        (account_id, body["dataset_id"], record["revision"], encode(record)))
             return 200, {"integration_version": "3", **record}
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def eligibility(self, principal, dataset_id, account_id, model_id, version="1",
                     operation_family=None, capability=None, selection_kind=None):
@@ -507,8 +468,8 @@ class ExternalAccounting:
                 raise IntegrationError("SCHEMA_INVALID")
         if model_id is not None and not _shape(model_id, SCHEMA["$defs"]["id"]) or version != "3" and model_id is None:
             raise IntegrationError("SCHEMA_INVALID")
-        with self.store._lock:
-            row = self.store.db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                                         (account_id, dataset_id)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -531,17 +492,16 @@ class ExternalAccounting:
         if version in ("2", "3"):
             result.update(eligibility_id="eligibility." + uuid.uuid4().hex, evaluated_at=_time())
             result["eligibility_digest"] = "sha256:" + hashlib.sha256(encode(result).encode()).hexdigest()
-            self.store._transaction(lambda: self.store.db.execute(
-                "INSERT INTO integration_eligibility_reads VALUES (?,?,?)",
+            self.store.database.transaction(lambda: self.store.database.execute(
+                _queries.ELIGIBILITY_INSERT_INTEGRATION_ELIGIBILITY_READS,
                 (dataset_id, result["eligibility_id"], encode(result))))
         return result
 
     def datasets(self, principal):
         if principal["role"] not in ("registry_admin", "read_only_operator"):
             raise IntegrationError("POLICY_DENIED", 403)
-        with self.store._lock:
-            rows = self.store.db.execute("SELECT d.record,r.days,r.activated_at FROM integration_datasets d "
-                "LEFT JOIN integration_dataset_retention r ON r.dataset_id=d.id ORDER BY d.id").fetchall()
+        with self.store.database.read():
+            rows = self.store.database.execute(_queries.DATASETS_SELECT_INTEGRATION_DATASETS).fetchall()
         at = datetime.fromisoformat(_time().replace("Z", "+00:00"))
         items = []
         for raw, days, activated_at in rows:
@@ -553,15 +513,15 @@ class ExternalAccounting:
     def accounts(self, principal, dataset_id):
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "report")
-        with self.store._lock:
-            rows = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM integration_accounts WHERE dataset_id=? ORDER BY id", (dataset_id,))]
+        with self.store.database.read():
+            rows = [json.loads(row[0]) for row in self.store.database.execute(
+                _queries.ACCOUNTS_SELECT_INTEGRATION_ACCOUNTS, (dataset_id,))]
         return {"integration_version": VERSION, "dataset_id": dataset_id, "items": rows}
 
     def _bind_run(self, db, event):
         dataset_id, run_id = event["dataset_id"], event["run_id"]
         root, parent, task = event["root_run_id"], event.get("parent_run_id"), event["task_id"]
-        old = db.execute("SELECT root_run_id,parent_run_id,task_id FROM integration_runs WHERE dataset_id=? AND run_id=?",
+        old = db.execute(_queries.BIND_RUN_SELECT_INTEGRATION_RUNS_2,
                          (dataset_id, run_id)).fetchone()
         if old:
             if old != (root, parent, task):
@@ -573,7 +533,7 @@ class ExternalAccounting:
             if ancestor in seen:
                 raise IntegrationError("SEMANTIC_INVALID")
             seen.add(ancestor)
-            row = db.execute("SELECT root_run_id,parent_run_id,task_id FROM integration_runs WHERE dataset_id=? AND run_id=?",
+            row = db.execute(_queries.BIND_RUN_SELECT_INTEGRATION_RUNS_2,
                              (dataset_id, ancestor)).fetchone()
             if not row:
                 break  # Late parent delivery; binding is rechecked when that parent arrives.
@@ -581,18 +541,18 @@ class ExternalAccounting:
                 raise IntegrationError("EVENT_CONFLICT", 409)
             ancestor = row[1]
         for child_root, child_task in db.execute(
-                "SELECT root_run_id,task_id FROM integration_runs WHERE dataset_id=? AND parent_run_id=?",
+                _queries.BIND_RUN_SELECT_INTEGRATION_RUNS,
                 (dataset_id, run_id)):
             if child_root != root or child_task != task:
                 raise IntegrationError("EVENT_CONFLICT", 409)
-        db.execute("INSERT INTO integration_runs VALUES (?,?,?,?,?)", (dataset_id, run_id, root, parent, task))
+        db.execute(_queries.BIND_RUN_INSERT_INTEGRATION_RUNS, (dataset_id, run_id, root, parent, task))
 
     def _check_lineage(self, db, event):
         did = event["dataset_id"]
         starts = {row[0]: json.loads(row[1]) for row in db.execute(
-            "SELECT attempt_id,record FROM integration_attempts WHERE dataset_id=?", (did,))}
+            _queries.ACTION_SELECT_INTEGRATION_ATTEMPTS, (did,))}
         accepted_links = {link["attempt_id"]: link for (raw,) in db.execute(
-            "SELECT record FROM integration_events WHERE dataset_id=? AND kind='lineage'", (did,))
+            _queries.CHECK_LINEAGE_SELECT_INTEGRATION_EVENTS, (did,))
             for link in (json.loads(raw),)}
         aid = event["attempt_id"]
         if event["kind"] == "attempt_started":
@@ -649,7 +609,7 @@ class ExternalAccounting:
                     current and current.get("logical_operation_id") != logical or
                     prior and current and prior.get("task_id") != current.get("task_id")):
                 raise IntegrationError("EVENT_CONFLICT", 409)
-            if not prior and db.execute("SELECT 1 FROM integration_attempts WHERE dataset_id<>? AND attempt_id=?",
+            if not prior and db.execute(_queries.CHECK_LINEAGE_SELECT_INTEGRATION_ATTEMPTS,
                                         (did, predecessor)).fetchone():
                 raise IntegrationError("EVENT_CONFLICT", 409)
             seen = {current_aid}
@@ -664,13 +624,13 @@ class ExternalAccounting:
         evidence = event["eligibility_evidence"]
         if "eligibility_id" not in evidence:
             return
-        row = db.execute("SELECT record FROM integration_eligibility_reads WHERE dataset_id=? AND eligibility_id=?",
+        row = db.execute(_queries.CHECK_DECISION_EVIDENCE_SELECT_INTEGRATION_ELIGIBILITY_READS,
                          (event["dataset_id"], evidence["eligibility_id"])).fetchone()
         if not row:
             raise IntegrationError("SEMANTIC_INVALID")
         observed = json.loads(row[0])
         history = [json.loads(r[0]) for r in db.execute(
-            "SELECT record FROM integration_account_history WHERE id=? AND dataset_id=? ORDER BY revision",
+            _queries.CHECK_DECISION_EVIDENCE_SELECT_INTEGRATION_ACCOUNT_HISTORY,
             (event["selected_account_id"], event["dataset_id"]))]
         assessment = _eligibility_assessment(event, observed, history)
         if assessment == "binding_conflict":
@@ -680,7 +640,7 @@ class ExternalAccounting:
             raise IntegrationError("SEMANTIC_INVALID")
 
     def _check_snapshot_reference(self, db, dataset_id, snapshot_id, attempt_id, kind):
-        row = db.execute("SELECT attempt_id,kind FROM integration_snapshots WHERE dataset_id=? AND snapshot_id=?",
+        row = db.execute(_queries.CHECK_SNAPSHOT_REFERENCE_SELECT_INTEGRATION_SNAPSHOTS,
                          (dataset_id, snapshot_id)).fetchone()
         if row and row != (attempt_id, kind):
             raise IntegrationError("EVENT_CONFLICT", 409)
@@ -694,9 +654,9 @@ class ExternalAccounting:
         self._authorize(principal, dataset, "ingest")
         digest = hashlib.sha256(encode(event).encode()).hexdigest()
         def action():
-            db = self.store.db
+            db = self.store.database
             did, eid, kind = event["dataset_id"], event["event_id"], event["kind"]
-            old = db.execute("SELECT digest,receipt FROM integration_events WHERE dataset_id=? AND event_id=?",
+            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_3,
                              (did, eid)).fetchone()
             if old:
                 if old[0] != digest:
@@ -705,7 +665,7 @@ class ExternalAccounting:
             attempt_id = event.get("attempt_id")
             start = None
             if attempt_id:
-                row = db.execute("SELECT record FROM integration_attempts WHERE dataset_id=? AND attempt_id=?",
+                row = db.execute(_queries.ACTION_SELECT_INTEGRATION_ATTEMPTS_2,
                                  (did, attempt_id)).fetchone()
                 start = json.loads(row[0]) if row else None
             if kind in ("activity", "attempt_started"):
@@ -715,24 +675,23 @@ class ExternalAccounting:
             if kind == "attempt_started":
                 if start:
                     raise IntegrationError("EVENT_CONFLICT", 409)
-                account = db.execute("SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?",
+                account = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS,
                                      (event["provider_account_id"], did)).fetchone()
                 if not account and version == "1":
                     raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
                 if version in ("2", "3"):
                     self._check_snapshot_reference(db, did, event["context_ref"], attempt_id, "feature")
                     for sid, snapshot_kind, metadata in db.execute(
-                        "SELECT snapshot_id,kind,metadata FROM integration_snapshots WHERE dataset_id=? AND attempt_id=?",
+                        _queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS,
                         (did, attempt_id)):
                         if snapshot_kind == "feature" and sid != event["context_ref"]:
                             raise IntegrationError("EVENT_CONFLICT", 409)
                         if snapshot_kind == "decision" and json.loads(metadata)["available_at"] > event["started_at"]:
                             raise IntegrationError("SEMANTIC_INVALID")
-                    for (raw,) in db.execute("SELECT record FROM integration_events WHERE dataset_id=? "
-                            "AND attempt_id=? AND kind='account_resolution'", (did, attempt_id)):
+                    for (raw,) in db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_4, (did, attempt_id)):
                         if json.loads(raw)["resolved_account_id"] != event["provider_account_id"]:
                             raise IntegrationError("EVENT_CONFLICT", 409)
-                for (raw,) in db.execute("SELECT record FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='decision'",
+                for (raw,) in db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_2,
                                          (did, attempt_id)):
                     decision = json.loads(raw)
                     if (decision["selected_account_id"] != event["provider_account_id"] or
@@ -745,10 +704,10 @@ class ExternalAccounting:
                                     "not_applicable")) or
                             decision["occurred_at"] > event["started_at"]):
                         raise IntegrationError("EVENT_CONFLICT", 409)
-                db.execute("INSERT INTO integration_attempts VALUES (?,?,?,?,?)",
+                db.execute(_queries.ACTION_INSERT_INTEGRATION_ATTEMPTS,
                            (did, attempt_id, eid, encode(event), int(event["started_at"] >= dataset["activated_at"])))
             if kind == "decision":
-                previous = db.execute("SELECT event_id FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='decision'",
+                previous = db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_5,
                                       (did, attempt_id)).fetchone()
                 if previous:
                     raise IntegrationError("EVENT_CONFLICT", 409)
@@ -765,8 +724,7 @@ class ExternalAccounting:
                 if version in ("2", "3"):
                     self._check_decision_evidence(db, event)
                     self._check_snapshot_reference(db, did, event["decision_ref"], attempt_id, "decision")
-                    snapshot = db.execute("SELECT content FROM integration_snapshots WHERE dataset_id=? "
-                        "AND snapshot_id=? AND attempt_id=? AND kind='decision'",
+                    snapshot = db.execute(_queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS_3,
                         (did, event["decision_ref"], attempt_id)).fetchone()
                     if snapshot and snapshot[0]:
                         action = json.loads(snapshot[0])["selected_action"]
@@ -775,19 +733,17 @@ class ExternalAccounting:
                                (("operation_family", "capability", "selection_kind") if version == "3" else ())):
                             raise IntegrationError("EVENT_CONFLICT", 409)
             if kind == "account_resolution":
-                resolved = db.execute("SELECT 1 FROM integration_accounts WHERE id=? AND dataset_id=?",
+                resolved = db.execute(_queries.ACTION_SELECT_INTEGRATION_ACCOUNTS_2,
                     (event["resolved_account_id"], did)).fetchone()
-                if (not resolved or db.execute("SELECT 1 FROM integration_events WHERE dataset_id=? "
-                    "AND attempt_id=? AND kind='account_resolution'", (did, attempt_id)).fetchone()):
+                if (not resolved or db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_8, (did, attempt_id)).fetchone()):
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 if start and start["provider_account_id"] != event["resolved_account_id"]:
                     raise IntegrationError("EVENT_CONFLICT", 409)
-            if kind == "lineage" and db.execute("SELECT 1 FROM integration_events WHERE dataset_id=? "
-                    "AND attempt_id=? AND kind='lineage'", (did, attempt_id)).fetchone():
+            if kind == "lineage" and db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_6, (did, attempt_id)).fetchone():
                 raise IntegrationError("EVENT_CONFLICT", 409)
             ordinal = event.get("usage_revision") if kind == "usage" else None
             if ordinal is not None and db.execute(
-                    "SELECT 1 FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='usage' AND ordinal=?",
+                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_7,
                     (did, attempt_id, ordinal)).fetchone():
                 raise IntegrationError("EVENT_CONFLICT", 409)
             membership = ("included" if event["started_at"] >= dataset["activated_at"] else
@@ -797,16 +753,16 @@ class ExternalAccounting:
             receipt = {"integration_version": version, "dataset_id": did, "event_id": eid,
                        "event_digest": "sha256:" + digest, "kind": kind,
                        "membership_at_receipt": membership, "received_at": _time()}
-            db.execute("INSERT INTO integration_events VALUES (?,?,?,?,?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_EVENTS,
                        (did, eid, kind, attempt_id, ordinal, digest, encode(event), encode(receipt)))
             return 201, receipt
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def receipt(self, principal, dataset_id, event_id):
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "receipt")
-        with self.store._lock:
-            row = self.store.db.execute("SELECT receipt FROM integration_events WHERE dataset_id=? AND event_id=?",
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.RECEIPT_SELECT_INTEGRATION_EVENTS,
                                         (dataset_id, event_id)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -842,27 +798,26 @@ class ExternalAccounting:
         content = {key: record[key] for key in ("features", "selected_action") if key in record}
         metadata = {key: value for key, value in record.items() if key not in content}
         def action():
-            db = self.store.db
-            old = db.execute("SELECT digest,metadata FROM integration_snapshots WHERE dataset_id=? AND snapshot_id=?",
+            db = self.store.database
+            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS_2,
                              (did, sid)).fetchone()
             if old:
                 if old[0] != digest:
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 return 200, {"integration_version": version, "snapshot_id": sid,
                              "snapshot_digest": digest, "status": json.loads(old[1])["status"]}
-            for aid, raw in db.execute("SELECT attempt_id,record FROM integration_attempts WHERE dataset_id=?",
+            for aid, raw in db.execute(_queries.ACTION_SELECT_INTEGRATION_ATTEMPTS,
                                        (did,)):
                 attempt = json.loads(raw)
                 if attempt.get("context_ref") == sid and (aid != record["attempt_id"] or
                         record["snapshot_kind"] != "feature"):
                     raise IntegrationError("EVENT_CONFLICT", 409)
-            for aid, raw in db.execute("SELECT attempt_id,record FROM integration_events WHERE dataset_id=? "
-                                       "AND kind='decision'", (did,)):
+            for aid, raw in db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS, (did,)):
                 decision = json.loads(raw)
                 if decision.get("decision_ref") == sid and (aid != record["attempt_id"] or
                         record["snapshot_kind"] != "decision"):
                     raise IntegrationError("EVENT_CONFLICT", 409)
-            start = db.execute("SELECT record FROM integration_attempts WHERE dataset_id=? AND attempt_id=?",
+            start = db.execute(_queries.ACTION_SELECT_INTEGRATION_ATTEMPTS_2,
                                (did, record["attempt_id"])).fetchone()
             if start:
                 attempt = json.loads(start[0])
@@ -872,8 +827,7 @@ class ExternalAccounting:
                 if record["snapshot_kind"] == "decision" and record["available_at"] > attempt["started_at"]:
                     raise IntegrationError("SEMANTIC_INVALID")
             if record["snapshot_kind"] == "decision" and "selected_action" in content:
-                rows = db.execute("SELECT record FROM integration_events WHERE dataset_id=? AND attempt_id=? "
-                                  "AND kind='decision'", (did, record["attempt_id"])).fetchall()
+                rows = db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_2, (did, record["attempt_id"])).fetchall()
                 for (raw,) in rows:
                     decision = json.loads(raw)
                     if decision.get("decision_ref") != sid or any(
@@ -881,21 +835,20 @@ class ExternalAccounting:
                         ("selected_account_id", "selected_model_id", "policy_version", "eligibility_evidence") +
                         (("operation_family", "capability", "selection_kind") if version == "3" else ())):
                         raise IntegrationError("EVENT_CONFLICT", 409)
-            db.execute("INSERT INTO integration_snapshots VALUES (?,?,?,?,?,?,?)",
+            db.execute(_queries.ACTION_INSERT_INTEGRATION_SNAPSHOTS,
                 (did, sid, record["attempt_id"], record["snapshot_kind"], digest,
                  encode(metadata), encode(content) if content and record["retention_until"] > _time() else None))
             return 201, {"integration_version": version, "snapshot_id": sid,
                          "snapshot_digest": digest, "status": record["status"]}
-        return self.store._transaction(action)
+        return self.store.database.transaction(action)
 
     def snapshot(self, principal, dataset_id, snapshot_id, version="2"):
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "snapshot")
         if not _shape(snapshot_id, SCHEMA_V2["$defs"]["id"]):
             raise IntegrationError("SCHEMA_INVALID")
-        with self.store._lock:
-            row = self.store.db.execute("SELECT metadata,content,digest FROM integration_snapshots "
-                "WHERE dataset_id=? AND snapshot_id=?", (dataset_id, snapshot_id)).fetchone()
+        with self.store.database.read():
+            row = self.store.database.execute(_queries.SNAPSHOT_SELECT_INTEGRATION_SNAPSHOTS, (dataset_id, snapshot_id)).fetchone()
         if not row:
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
         meta, content, digest = _snapshot_record(*row, _time())
@@ -909,24 +862,22 @@ class ExternalAccounting:
         dataset = self._dataset(dataset_id)
         self._authorize(principal, dataset, "report")
         at = _time()
-        with self.store._lock:
-            db = self.store.db
-            attempts = [json.loads(r[0]) for r in db.execute("SELECT record FROM integration_attempts "
-                "WHERE dataset_id=? AND included=1 ORDER BY attempt_id", (dataset_id,))]
+        with self.store.database.read():
+            db = self.store.database
+            attempts = [json.loads(r[0]) for r in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_ATTEMPTS, (dataset_id,))]
             included = {item["attempt_id"] for item in attempts}
-            events = [json.loads(r[0]) for r in db.execute("SELECT record FROM integration_events "
-                "WHERE dataset_id=? ORDER BY event_id", (dataset_id,))]
+            events = [json.loads(r[0]) for r in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_EVENTS, (dataset_id,))]
             eligible_ids = {e["eligibility_evidence"]["eligibility_id"] for e in events if
                 e.get("attempt_id") in included and e["kind"] == "decision" and
                 e.get("eligibility_evidence", {}).get("eligibility_id")}
             eligibility = [json.loads(r[0]) for r in db.execute(
-                "SELECT record FROM integration_eligibility_reads WHERE dataset_id=? ORDER BY eligibility_id", (dataset_id,))
+                _queries.DATASET_EXPORT_SELECT_INTEGRATION_ELIGIBILITY_READS, (dataset_id,))
                 if json.loads(r[0])["eligibility_id"] in eligible_ids]
             snapshots = [_snapshot_record(*r, at) for r in db.execute(
-                "SELECT metadata,content,digest FROM integration_snapshots WHERE dataset_id=? ORDER BY snapshot_id",
+                _queries.DATASET_EXPORT_SELECT_INTEGRATION_SNAPSHOTS,
                 (dataset_id,))]
             history = defaultdict(list)
-            for (raw,) in db.execute("SELECT record FROM integration_account_history"):
+            for (raw,) in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY):
                 item = json.loads(raw)
                 if item["dataset_id"] == dataset_id:
                     history[item["account_id"]].append(item)
@@ -989,24 +940,24 @@ class ExternalAccounting:
                                                   if key in ("from", "to")) or (
                filters.get("from") and filters.get("to") and filters["from"] > filters["to"]):
             raise IntegrationError("SCHEMA_INVALID")
-        with self.store._lock:
-            attempts = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM integration_attempts WHERE dataset_id=? AND included=1 ORDER BY attempt_id",
+        with self.store.database.read():
+            attempts = [json.loads(row[0]) for row in self.store.database.execute(
+                _queries.DATASET_EXPORT_SELECT_INTEGRATION_ATTEMPTS,
                 (dataset_id,))]
-            all_starts = {row[0]: json.loads(row[1]) for row in self.store.db.execute(
-                "SELECT attempt_id,record FROM integration_attempts WHERE dataset_id=?", (dataset_id,))}
-            events = [json.loads(row[0]) for row in self.store.db.execute(
-                "SELECT record FROM integration_events WHERE dataset_id=? ORDER BY event_id", (dataset_id,))]
-            runs = {row[0]: row[1] for row in self.store.db.execute(
-                "SELECT run_id,parent_run_id FROM integration_runs WHERE dataset_id=?", (dataset_id,))}
+            all_starts = {row[0]: json.loads(row[1]) for row in self.store.database.execute(
+                _queries.ACTION_SELECT_INTEGRATION_ATTEMPTS, (dataset_id,))}
+            events = [json.loads(row[0]) for row in self.store.database.execute(
+                _queries.DATASET_EXPORT_SELECT_INTEGRATION_EVENTS, (dataset_id,))]
+            runs = {row[0]: row[1] for row in self.store.database.execute(
+                _queries.REPORT_SELECT_INTEGRATION_RUNS, (dataset_id,))}
             if version in ("2", "3"):
-                snapshots = {row[0]: _snapshot_record(row[1], row[2], row[3], at) for row in self.store.db.execute(
-                    "SELECT snapshot_id,metadata,content,digest FROM integration_snapshots WHERE dataset_id=?",
+                snapshots = {row[0]: _snapshot_record(row[1], row[2], row[3], at) for row in self.store.database.execute(
+                    _queries.REPORT_SELECT_INTEGRATION_SNAPSHOTS,
                     (dataset_id,))}
-                eligibility_reads = {row[0]: json.loads(row[1]) for row in self.store.db.execute(
-                    "SELECT eligibility_id,record FROM integration_eligibility_reads WHERE dataset_id=?", (dataset_id,))}
+                eligibility_reads = {row[0]: json.loads(row[1]) for row in self.store.database.execute(
+                    _queries.REPORT_SELECT_INTEGRATION_ELIGIBILITY_READS, (dataset_id,))}
                 account_history = defaultdict(list)
-                for (raw,) in self.store.db.execute("SELECT record FROM integration_account_history"):
+                for (raw,) in self.store.database.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY):
                     item = json.loads(raw)
                     if item["dataset_id"] == dataset_id:
                         account_history[item["account_id"]].append(item)

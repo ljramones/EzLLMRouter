@@ -1,0 +1,71 @@
+"""SQL owned by the user_management repository."""
+from ..database import Query
+
+
+SAVE_INSERT_REGISTRY_PRINCIPALS = Query(
+    'INSERT INTO registry_principals VALUES (?,?) ON CONFLICT(id) DO UPDATE SET '
+    'record=excluded.record'
+)
+
+SAVE_UPDATE_REGISTRY_META = Query("UPDATE registry_meta SET value=? WHERE key='authority_revision'")
+
+SAVE_INSERT_REGISTRY_AUDIT = Query(
+    'INSERT INTO registry_audit '
+    '(actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES '
+    '(?,?,?,?,?,?,?)'
+)
+
+ACTION_INSERT_CONSOLE_USERS = Query('INSERT INTO console_users VALUES (?,?,?,?,?,?,?)')
+
+CHANGE_INSERT_REGISTRY_PRINCIPALS = Query('INSERT INTO registry_principals VALUES (?,?)')
+
+CHANGE_UPDATE_CONSOLE_USERS = Query(
+    'UPDATE console_users SET username=?,auth_version=auth_version+?,updated_at=? WHERE '
+    'principal_id=?'
+)
+
+CHANGE_UPDATE_CONSOLE_USERS_2 = Query(
+    'UPDATE console_users SET password_hash=?,auth_version=auth_version+1,updated_at=? WHERE '
+    'principal_id=?'
+)
+
+CHANGE_DELETE_REGISTRY_CREDENTIALS = Query('DELETE FROM registry_credentials WHERE principal_id=?')
+
+CHANGE_UPDATE_CONSOLE_USERS_3 = Query(
+    'UPDATE console_users SET '
+    'password_hash=?,must_change_password=1,auth_version=auth_version+1,updated_at=? WHERE '
+    'principal_id=?'
+)
+
+CHANGE_UPDATE_CONSOLE_USERS_4 = Query(
+    'UPDATE console_users SET '
+    'password_hash=?,must_change_password=0,auth_version=auth_version+1,updated_at=? WHERE '
+    'principal_id=?'
+)
+
+LOAD_SELECT_CONSOLE_USERS = Query(
+    'SELECT '
+    'u.username,u.password_hash,u.must_change_password,u.auth_version,u.created_at,u.updated_at,p.record'
+    ' FROM console_users u JOIN registry_principals p ON p.id=u.principal_id WHERE '
+    'u.principal_id=?'
+)
+
+ADMIN_SELECT_REGISTRY_PRINCIPALS = Query('SELECT record FROM registry_principals WHERE id=?')
+
+ACTION_SELECT_CONSOLE_USERS = Query('SELECT 1 FROM console_users LIMIT 1')
+
+ACTION_SELECT_REGISTRY_PRINCIPALS = Query("SELECT record FROM registry_principals ORDER BY id='owner.local' DESC,id")
+
+AUTHENTICATE_SELECT_CONSOLE_USERS = Query('SELECT principal_id,password_hash,auth_version FROM console_users WHERE username=?')
+
+LIST_SELECT_CONSOLE_USERS = Query('SELECT principal_id FROM console_users ORDER BY username')
+
+VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS = Query(
+    'SELECT COUNT(*) FROM console_users u JOIN registry_principals p ON p.id=u.principal_id '
+    "WHERE json_extract(p.record,'$.role')='registry_admin' AND "
+    "json_extract(p.record,'$.status')='active'"
+)
+
+VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS_2 = Query('SELECT 1 FROM console_users WHERE principal_id=?')
+
+SAVE_SELECT_REGISTRY_META = Query("SELECT value FROM registry_meta WHERE key='authority_revision'")

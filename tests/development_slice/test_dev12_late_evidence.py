@@ -187,7 +187,7 @@ class LateEvidenceTests(unittest.TestCase):
                              "expires_at"):
                     self.assertEqual(after[name], before[name])
                 with authority.gate:
-                    store._transaction(lambda: campaign.pause_in_transaction(store.db, "manual"))
+                    store.database.transaction(lambda: campaign.pause_in_transaction(store.database, "manual"))
                 denied = service.resume_campaign(sid, trusted, "financial receipt alone")
                 self.assertEqual(denied["decision"], "refused")
                 self.assertIn("unresolved_manual", denied["blockers"])
