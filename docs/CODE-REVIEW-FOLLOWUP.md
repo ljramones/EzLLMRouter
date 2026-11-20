@@ -16,6 +16,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.1.2: Unbounded probe observations and inventory decoding | New schema version 2 adds connection and inventory indexes, retaining 20 recent diagnostics plus up to three inventory anchors per connection. Inventory and permission reads decode at most three records. Regressions cover 2,000 historical rows, indexed query plans, partial/failed discovery fallback, pruning, version 1 upgrade/restart, exact price preservation and full rollback on migration failure. The adopted version 1 SQL remains unchanged. |
 | 4.1.3: Rejected database changed to WAL | Validate ownership/schema before setting journal mode. Rejection preserves the database bytes and creates no WAL/SHM sidecars. Other findings in this subsection remain open. |
 | 4.1.3: Dataset purge races | Account, event, snapshot, recorded eligibility and credential mutations recheck dataset existence inside their publishing transaction. Purge also removes encrypted credential versions, bindings and operation records atomically. Deterministic thread regressions cover eleven delayed writer paths and discovery returning after purge; no orphan rows or credentials reappear. Other persistence findings remain open. |
+| 4.1.3 / 5.2 edge cases: IPv6 probe failure and TLS socket leak | Provider metadata probes connect using the approved DNS result's socket family and complete sockaddr, preserving IPv6 flow/scope fields and the original hostname for TLS verification. Trust configuration is created before opening a socket. Raw sockets, TLS streams and response readers close on success and transport/size failures. IPv4 preference, address-policy rejection and the response cap remain covered. |
 | 4.2.1: Inconsistent worker/sender timeouts | One bounded absolute attempt deadline reaches worker dispatch, relay waits, provider reading and first-byte gates. Text execution rejects timeout values above five minutes before admission. Tests cover the limit and a 60-second budget. |
 | 4.2.2: Worker error races a trusted relay | Await the trusted relay even after a worker error. Abandonment is recorded under the authority gate and checked before commit and first byte. Failure classification uses socket acceptance; in-flight paid response content and usage survive a worker error. |
 | 4.2.3: Worker identity grows indefinitely | Keep a bounded 512-attempt diagnostic window, with duplicate counts saturated at two. A 10,000-attempt regression verifies bounded state and socket-frame size. Trusted sender registration remains the one-use authority. |
@@ -23,7 +24,8 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.2.5: Diagnostic fsync blocks or fails execution | Use a bounded best-effort queue and background writer. Tests block fsync and simulate a disk failure while guarded requests complete. Durable intent/accounting commits remain synchronous. |
 | 4.2.6: Fault hooks and missing gateway/worker logging | Runtime adapters no longer read mutation, context-swap, bypass, destination-override, trace-file or pool-probe switches. Explicit fixture adapters retain the negative controls under `tools/gateway/` and require opt-in staging. Worker raw egress probes exist only in the fixture entry point. The isolated worker receives the same standard-library-only, secret-safe logger as the server. Command, relay, reply, transport and worker startup failures log exception types and stack locations without messages or payloads. |
 | 4.3.4: JavaScript client drift | All JavaScript protocols use a shared streamed byte reader and strict decoder: 1 MiB for wire 0.2/attribution, 16 MiB for wire 0.3/accounting. Results match submitted profiles instead of a synthetic configuration list. Error handles are validated against the original selector and copied; foreign/malformed handles are discarded. Installed-package checks cover all 125 shared contract cases and 35 additional transport/recovery/result cases, including exact byte-cap boundaries, an embedding above 64 KiB and newly registered profiles. |
-| 5.1: Credential gate held during provider discovery | Connect, refresh and replacement release the gate for network discovery, then recheck dataset and captured binding revision before publishing. Tests hold discovery while credential release, key rotation, disable and permission changes complete. Overlapping replacements reserve distinct versions, reject stale results and clean up unused versions. The separate session-lock finding remains open. |
+| 5.1: Credential gate held during provider discovery | Connect, refresh and replacement release the gate for network discovery, then recheck dataset and captured binding revision before publishing. Tests hold discovery while credential release, key rotation, disable and permission changes complete. Overlapping replacements reserve distinct versions, reject stale results and clean up unused versions. |
+| 5.1: Session lock held across database work | Authentication snapshots sessions under a short dictionary lock, reads account state under the database gate, then verifies session identity and expiry before publishing. Login rechecks account/auth version after password verification. Database operations, wire-token creation/revocation and response writes run outside the session lock. Thread regressions cover logout, expiry, password change/reset, permission changes and replacement races. Expired/invalid sessions and rejected logins discard their associated wire credentials. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -31,7 +33,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 559 unittest cases plus
+The expanded offline Python/component runner passes: 582 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -62,6 +64,14 @@ rollback against a version 1 database; concurrency checks use held provider
 fixtures and explicit thread barriers without real sockets or provider calls.
 The server wheel includes both numbered migration resources.
 
+The session/probe batch adds 23 offline tests: 14 exercise real operator handlers
+with memory streams and explicit thread barriers; nine exercise the real HTTP
+response parser over synthetic socket/TLS objects. The probe checks verify IPv6
+sockaddrs, SNI, address rejection, invalid trust material, connection/handshake/send
+failures and declared/streamed response limits. Four selected regressions also
+reject the pre-fix implementations from `ed48930`. Actual IPv6/TLS networking and
+the browser suite have not been rerun for this batch.
+
 The local deployment evidence driver now observes the durable guard receipt
 and held receiver request before revocation. It no longer reads private pool
 queues; any new deployment run must validate this before-first-write evidence
@@ -87,11 +97,11 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Resolve the separate session lock held across database queries (5.1). Other
-   full scans, N+1 queries and persistence details remain open; the single SQLite
-   connection still serializes database access.
-2. Widen lint/type coverage incrementally; the current strict mypy gate still
+1. Widen lint/type coverage incrementally; the current strict mypy gate still
    covers only its explicit file list (4.3.2).
+2. Address full scans, N+1 queries, executor shutdown and remaining token/future
+   lifecycle issues. Other persistence details remain open; the single
+   SQLite connection still serializes database access.
 3. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
    large functions with focused behavior tests. Continue the platform, process
    recovery, generated-input and performance work in the testing roadmap.

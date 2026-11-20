@@ -15,6 +15,12 @@ HTTP servers bound concurrent connections and socket/input timeouts. Logs use
 structured metadata and exclude credentials, prompts and response bodies.
 Treat model-server origins and service credentials as trusted configuration.
 
+Provider metadata probes validate all resolved addresses before connecting to
+one approved IPv4 or IPv6 sockaddr. TLS still verifies the configured hostname.
+Invalid trust material is rejected before opening a socket; response, TLS and
+socket cleanup also runs after transport or response-size failures. These
+fixed GET probes do not generate model work.
+
 ## Execution isolation
 
 The request-preparation worker has no provider credentials or network interface.

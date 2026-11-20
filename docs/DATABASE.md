@@ -87,6 +87,14 @@ ordering retains the permission boundaries: login and session recovery, required
 password changes, integration-only access and ordinary-user report scope.
 Authenticated mutations validate origin, session and CSRF before reading bodies.
 
+Session dictionary access uses a short memory lock. Authentication releases it
+before account queries, reads principal/account state under one database gate,
+then checks that the same session still exists and has not expired before
+publishing a request snapshot. Login also rechecks the authenticated account
+version before insertion. Database access, wire-token creation/revocation and
+HTTP writes never hold the session lock. Logout can remove a session while a
+lookup waits; its late result cannot recreate that session.
+
 Offline tests exercise actual handlers through in-memory HTTP streams, including
 route dispatch, isolation between servers, body rejection and background jobs.
 The explicit `--http-only` command exercises socket-level fixtures when the host

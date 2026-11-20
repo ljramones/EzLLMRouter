@@ -79,6 +79,12 @@ use HttpOnly, SameSite cookies, expire after 30 minutes, and recheck the current
 account state on each request. Writes require both the allowed Origin and a CSRF
 token. Login attempts are limited to 20 per minute per client address.
 
+Login rechecks account state after password verification and before creating its
+session, so a completed password reset or permission change during verification
+rejects that login. Account lookups run outside the session dictionary lock;
+results cannot restore a session removed by logout or expiry. Expired or invalid
+sessions also revoke their associated temporary execution credentials.
+
 Service identities use API credentials and cannot sign in as named human users.
 Start a new instance using the [database guide](DATABASE.md) and use the matching
 browser assets from `web/`.

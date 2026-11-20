@@ -122,10 +122,15 @@ def _wire_get(settings, provider, path, headers, *, timeout, controlled):
     addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
     if not addresses or any(not _allowed_ip(item[4][0], provider, controlled=controlled) for item in addresses):
         raise ProbeError("destination_rejected")
-    address = sorted(addresses, key=lambda item: item[0] != socket.AF_INET)[0][4]
-    raw = socket.create_connection(address, timeout=timeout)
-    context = ssl.create_default_context(cadata=settings.get("ca_pem"))
+    family, kind, protocol, _, address = sorted(addresses, key=lambda item: item[0] != socket.AF_INET)[0]
     try:
+        context = ssl.create_default_context(cadata=settings.get("ca_pem"))
+    except ValueError as exc:
+        raise ProbeError("network_or_tls_failure") from exc
+    raw = socket.socket(family, kind, protocol)
+    try:
+        raw.settimeout(timeout)
+        raw.connect(address)
         with context.wrap_socket(raw, server_hostname=host) as tls:
             tls.settimeout(timeout)
             request = "GET " + path + " HTTP/1.1\r\nHost: " + host + (f":{port}" if port != 443 else "")
@@ -133,14 +138,14 @@ def _wire_get(settings, provider, path, headers, *, timeout, controlled):
             for name, value in headers.items():
                 request += name + ": " + value + "\r\n"
             tls.sendall((request + "\r\n").encode("ascii"))
-            response = http.client.HTTPResponse(tls)
-            response.begin()
-            if response.length is not None and response.length > 262144:
-                raise ProbeError("response_too_large")
-            data = response.read(262145)
-            if len(data) > 262144:
-                raise ProbeError("response_too_large")
-            return response.status, response.getheader("Content-Type", ""), data
+            with http.client.HTTPResponse(tls) as response:
+                response.begin()
+                if response.length is not None and response.length > 262144:
+                    raise ProbeError("response_too_large")
+                data = response.read(262145)
+                if len(data) > 262144:
+                    raise ProbeError("response_too_large")
+                return response.status, response.getheader("Content-Type", ""), data
     finally:
         raw.close()
 

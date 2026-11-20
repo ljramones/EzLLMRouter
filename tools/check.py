@@ -75,6 +75,8 @@ MODULES = (
     "tests.unit.test_gateway_runtime_safety",
     "tests.unit.test_observation_retention",
     "tests.unit.test_database_concurrency",
+    "tests.unit.test_operator_sessions",
+    "tests.unit.test_provider_transport",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
