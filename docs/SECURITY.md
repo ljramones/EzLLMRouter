@@ -17,6 +17,11 @@ threads. Execution queues and ephemeral operator credentials are also bounded;
 see [runtime resource ownership](RESOURCES.md). Logs use
 structured metadata and exclude credentials, prompts and response bodies.
 Treat model-server origins and service credentials as trusted configuration.
+Expected client API rejections log an INFO event with the public code and status;
+unexpected failures retain sanitized stack locations. Empty connections and idle
+keep-alive expiry emit no request/failure event. Partial request timeouts remain
+visible. Operator access labels derive their literal words from the route table;
+queries, credentials and dynamic IDs remain excluded.
 
 Provider metadata probes validate all resolved addresses before connecting to
 one approved IPv4 or IPv6 sockaddr. TLS still verifies the configured hostname.

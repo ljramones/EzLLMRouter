@@ -367,14 +367,14 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 864 unittest cases, seven console scripts and 251 packaged-wheel tests; the previous implementation pass is recorded through `a698cdf`. |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 873 unittest cases, seven console scripts and 293 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
 | 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
 | 6 | Persistence recovery | Open | Orphaned vault versions, preservation of savepoint errors, coherent admission snapshots, probe-idempotency window and failed-executor recovery (4.1.4). |
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
-| 8 | Client fixes | In progress | JS total deadline and local serialization errors; Python regex/status/retry/CA handling; exposed credentials/transports and remaining cross-language validation differences (4.5.1–4.5.3). |
+| 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
 | 10 | Test-runner gaps | Open | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
 | 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
@@ -418,14 +418,13 @@ numbers when updating this checklist in future passes.
 
 ### Checklist review and recommended next work
 
-A read-only source review confirmed one missed performance detail from report 3
-§4.1.4: `OperatorProjection.overview_counts` still selects every submission record
-and decodes its JSON inside `database.read()`. Item 2 is therefore **Partial** until
-this overview path uses SQL aggregation with the same visibility/count semantics.
-Its previously implemented report, sender and password-hashing changes remain in
-place. No new tests were run for this checklist-only review.
+The earlier checklist review identified a missed performance detail from report 3
+§4.1.4: overview counts decoded every submission under the shared lock. The current
+pass fixed it with SQL aggregation and an independent snapshot while preserving
+visibility/count semantics. Item 2 is now **Implemented**, with the report, sender
+and password-hashing fixes retained.
 
-The next coding batch is authorized and in progress:
+The authorized coding batch is now implemented:
 
 1. Finish item 2's overview aggregation follow-up.
 2. Item 7: classify routine wire rejections and idle closes correctly, derive safe
@@ -448,10 +447,63 @@ deployment, security or performance qualification.
 
 ### Current pass: overview, logging and clients
 
-Items 2 and 7 are implemented. Focused checks pass: projection (9), HTTP structure
-(22), release safety (13) and security boundaries (13); strict mypy also passes on
-the modified observability/repository modules. Tests cover scope and unknown/empty
-states without decoding submission JSON, real socket-pair idle and partial-input
-timeouts, public rejection codes without stacks/secrets, route-table labels and
-distinct before-send failure events. Item 8 is in progress. Full-suite and package
-validation will be recorded before handoff; target checks remain in item 1.
+Items **2, 7 and 8** are implemented in `efba749`, `13b2f98` and `cfe549d`:
+
+- Overview counts aggregate states in SQL using an independent read snapshot;
+  no submission JSON is decoded under the writer lock. Scope, empty states,
+  unknown states and all existing count meanings are preserved.
+- Expected wire `RequestError` responses log public codes/status at INFO without
+  duplicate stacks. Unexpected failures retain sanitized stack locations. Empty
+  connections and idle expiry are quiet; partial/pipelined request timeouts remain
+  visible. Operator route words derive from the routing table. Coordinator failures
+  identify admission persistence, preparation, description, intent persistence,
+  failure persistence and attempt waiting separately.
+- Every JS client exchange has a 35,000 ms total fetch/body budget (`timeoutMs`,
+  explicit `null` to disable). Abort paths cancel/release active readers and clean
+  up late responses. Invalid local serialization gives `SCHEMA_INVALID`/`never`
+  before fetch. Credentials and injected fetch functions are private fields.
+- Python adds private-CA `verify=` support without replacing its deadline transport;
+  identifiers reject final newlines while unanchored patterns retain substring
+  behavior. Closed clients, invalid request objects, attribution status checks and
+  accounting retry guidance use the documented typed behavior. The public raw
+  accounting transport property and dead decoder/closed check are removed.
+- Decoded schema/correspondence failures use `PROTOCOL_INVALID`; valid server error
+  codes are preserved. Accounting 5xx guidance defaults safely to `query_first`
+  when missing/invalid. Wire 0.3 C0/DEL and wire 0.2 null-request policies align
+  across languages. JS accounting errors expose snake_case fields while retaining
+  existing camelCase getters. Compatibility details are in the client guides.
+
+Validation:
+
+- **873 unittest cases** across 103 offline module registrations, two script suites
+  and seven console scripts pass. Ruff, formatting of **419 Python files** and
+  strict mypy on **51 source files** pass. The final typed-503 logging refinement
+  also passes all 22 HTTP-structure tests.
+- **144 shared client cases** pass against Python, a freshly installed JS package,
+  Go with the race detector, and a freshly built Java JAR. Go vet passes. The JS
+  installed-consumer runner passes all its checks, including **52 safety tests**
+  for stalled fetch/body reads, slow chunks, late responses, cancellation, local
+  serialization and credential redaction. No real network calls are made there.
+- Python private-CA tests perform actual TLS handshakes over socket pairs: both
+  clients accept the configured CA and the default trust store rejects it before
+  HTTP request bytes. Deadline and serialization tests pass without listeners.
+- Built server/client wheels match **119 packaged namespace files** to source and
+  pass **293 installed-wheel tests**. The exact service image validation module
+  list passes **nine staged-source tests** over socket pairs with the dependency
+  fixture. These checks do not constitute an image build or deployment acceptance.
+- Package exports and TypeScript declaration syntax pass. Full TypeScript type
+  checking was unavailable because the pinned compiler is not available on the
+  configured tool paths.
+  Rust could not execute: the installed Cargo/toolchain is x86_64, while this
+  executor requires ARM64. .NET is unavailable. Their source/tests are updated;
+  Rust/.NET runtime and TypeScript compiler checks remain **pending**, never passed.
+- Fresh wheel SHA-256 values: server
+  `cb3b5070219bd782105129348da555a124cb93f8e9e7f083c2d63fab7c59d5d4`;
+  Python client
+  `a3824c8a6dc78ed528972f333cba36bf20c262946fbd922d943de1c4a75058cf`.
+  Evidence is under ignored `.artifacts/code-review/items-2-7-8/`.
+
+No deployment was restarted, no provider inference was issued, and frozen worker
+inputs/migrations were unchanged. Item 1 remains open for target qualification;
+item 9 remains deferred. The recommended next coding work is item 6 (persistence
+recovery), followed by item 10 (test-runner gaps); item 11 remains structural work.
