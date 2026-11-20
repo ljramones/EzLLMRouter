@@ -360,14 +360,15 @@ The six release-fix groups above are implemented at `ee6c444`; their outstanding
 target checks are tracked in item 1.
 
 Statuses: **Open** means work has not started; **In progress** means active work;
+**Partial** means implemented work has a known source follow-up remaining;
 **Implemented** means source changes and local checks pass, with any remaining
 target checks stated explicitly; **Complete** means the required verification
 also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 864 unittest cases, seven console scripts and 251 packaged-wheel tests; items 2–5 are implemented through `a698cdf`. |
-| 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. Full cohort aggregates still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 864 unittest cases, seven console scripts and 251 packaged-wheel tests; the previous implementation pass is recorded through `a698cdf`. |
+| 2 | Blocking work and performance | Partial — overview aggregation remains | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. Remaining: replace `OperatorProjection.overview_counts` row loading/JSON decoding under the shared lock with SQL aggregation (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
@@ -378,9 +379,10 @@ also passes. A pending or unavailable check is never a passing result.
 | 10 | Test-runner gaps | Open | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
 | 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
 
-### Implemented pass: items 2–5
+### Implementation pass: items 2–5
 
-The four authorized workstreams are implemented in these reviewable commits:
+The authorized changes were delivered in these reviewable commits. The checklist
+review below identifies an additional item 2 follow-up that remains open:
 
 - `b04dafb`: authentication/HTTP hardening and password hashing outside shared locks.
 - `25f1835`: independent report snapshots and usage-attempt pagination.
@@ -412,6 +414,29 @@ and the LiteLLM-dependent frozen-worker checks. No profile was restarted or mode
 request issued. Frozen worker versions, wheel inventories and migration bytes are
 unchanged. Broader CI hardening remains deferred in item 9. Keep all 11 stable
 numbers when updating this checklist in future passes.
+
+
+### Checklist review and recommended next work
+
+A read-only source review confirmed one missed performance detail from report 3
+§4.1.4: `OperatorProjection.overview_counts` still selects every submission record
+and decodes its JSON inside `database.read()`. Item 2 is therefore **Partial** until
+this overview path uses SQL aggregation with the same visibility/count semantics.
+Its previously implemented report, sender and password-hashing changes remain in
+place. No new tests were run for this checklist-only review.
+
+Recommended next coding batch, not yet started:
+
+1. Finish item 2's overview aggregation follow-up.
+2. Item 7: classify routine wire rejections and idle closes correctly, derive safe
+   route labels from routing, and distinguish Coordinator failure events.
+3. Item 8: start with JavaScript total deadlines and definite local serialization
+   failures, then cover Python schema/status/retry handling, credential/transport
+   exposure, private CAs and the remaining cross-language validation differences.
+
+Then address item 6's crash/recovery details and item 10's test-runner gaps.
+Item 1 remains a release gate for target verification; item 9 stays deferred as
+requested. Keep item 11's broad structural work after the correctness fixes.
 
 Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts
