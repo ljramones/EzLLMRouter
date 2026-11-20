@@ -6,7 +6,8 @@ import re
 from urllib.parse import urlsplit
 
 
-KEY = re.compile(r"[A-Za-z0-9._:-]{1,128}\Z")
+from .identifiers import require_identifier
+
 RATE = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,12})?\Z")
 
 
@@ -22,9 +23,7 @@ def _text(value, limit=500):
 
 
 def _key(value):
-    if type(value) is not str or not KEY.fullmatch(value):
-        raise ValueError("invalid catalogue key")
-    return value
+    return require_identifier(value)
 
 
 def operator_source(url, title, recorded_at, snapshot):
@@ -40,7 +39,7 @@ def operator_source(url, title, recorded_at, snapshot):
     ):
         raise ValueError("invalid source URL")
     return {
-        "id": "operator.source." + snapshot,
+        "id": _key("operator.source." + snapshot),
         "title": title,
         "url": url,
         "checked_on": None,
@@ -159,7 +158,8 @@ def validate_catalogue(subject, data):
     entry, sources = data["entry"], data["sources"]
     if type(entry) is not dict or type(sources) is not list or not sources:
         raise ValueError("invalid catalogue import")
-    if subject != "catalogue." + str(entry.get("catalogue_key")):
+    _key(subject)
+    if subject != "catalogue." + _key(entry.get("catalogue_key")):
         raise ValueError("catalogue key mismatch")
     for key in (
         "display_name",

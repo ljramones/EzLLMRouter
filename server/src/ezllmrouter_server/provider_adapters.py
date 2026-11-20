@@ -277,11 +277,14 @@ def probe(
     """Return a safe observation; no secret or raw response enters the result."""
     try:
         provider = validate_settings(adapter_id, settings, controlled=controlled)
+    except (ValueError, TypeError):
+        return {"state": "failed", "reason": "invalid_settings", "models": []}
+    if operation not in ("access", "inventory", "readiness"):
+        return {"state": "unsupported", "reason": "operation_not_implemented", "models": []}
+    try:
         spec = ADAPTERS[adapter_id].get(operation)
         if spec is None:
             return {"state": "unsupported", "reason": "operation_not_implemented", "models": []}
-        if operation not in ("access", "inventory", "readiness"):
-            raise ValueError("unsupported probe operation")
         # These code-owned operation fields contain method/path pairs.
         spec = cast(tuple[str, str], spec)
         models: list[str] = []

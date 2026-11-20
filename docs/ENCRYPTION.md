@@ -70,6 +70,18 @@ all records already use that key. The keyring retains predecessors so partially
 rewritten data and older backups remain decryptable. Automatic key deletion and
 HMAC-key rotation are outside this command.
 
+## Resume provider credential cleanup
+
+Execution provider credential replacement/removal commits its registry record,
+audit and idempotency receipt before deleting the retired sealed file. If that
+file cleanup fails, correct the filesystem fault and repeat the original request
+with the same actor, operation ID, expected revision and credential body.
+
+The saved operation receipt identifies its retired version across retries and
+registry/vault reopen. Replaying the operation resumes deletion, returns its
+recorded reply and preserves the currently selected credential version. Later
+rotations remain intact when an earlier operation's cleanup is retried.
+
 ## Back up and restore an instance
 
 With the service and maintenance stopped, preserve the database, its

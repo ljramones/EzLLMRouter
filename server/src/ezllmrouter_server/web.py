@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import uuid
 
 from .canonical import ContractError, SAFE, ident, strict_loads
+from .identifiers import valid_identifier
 from .integration_accounting import IntegrationError, route_id
 
 
@@ -562,7 +563,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                         len(run_headers) != 1
                         or len(versions) != 1
                         or versions[0] != "1"
-                        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}", run_headers[0])
+                        or not valid_identifier(run_headers[0])
                     )
                 ):
                     raise ContractError("SCHEMA_INVALID", 400)

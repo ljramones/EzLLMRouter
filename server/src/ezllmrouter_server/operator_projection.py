@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .repositories import operator_projection as _queries
 from .repositories.store import LATEST_USAGE
+from .identifiers import valid_identifier
 
 from datetime import datetime, timezone
 import json
@@ -11,14 +12,13 @@ from pathlib import Path
 import re
 
 
-ID = re.compile(r"[A-Za-z0-9._:-]{1,128}\Z")
 STATES = frozenset(
     {"admitted", "completed", "failed_before_transmit", "failed_after_transmit", "outcome_unknown"}
 )
 
 
 def _identifier(value):
-    return value if type(value) is str and ID.fullmatch(value) else None
+    return value if valid_identifier(value) else None
 
 
 def _usage(raw):

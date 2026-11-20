@@ -73,6 +73,7 @@ MODULES = (
     "tests.unit.test_check_inventory",
     "tests.unit.test_gateway_lifecycle",
     "tests.unit.test_resource_lifecycle",
+    "tests.unit.test_correctness_cases",
     "tests.unit.test_gateway_runtime_safety",
     "tests.unit.test_observation_retention",
     "tests.unit.test_database_concurrency",
@@ -119,6 +120,7 @@ FRONTEND_TESTS = (
 )
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
+    "server/src/ezllmrouter_server/identifiers.py",
     "server/src/ezllmrouter_server/private_files.py",
     "server/src/ezllmrouter_server/observability.py",
     "server/src/ezllmrouter_server/database.py",

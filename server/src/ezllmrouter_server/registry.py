@@ -8,6 +8,7 @@ complete. A failed commit leaves the old epoch and records untouched.
 from __future__ import annotations
 
 from .repositories import registry as _queries
+from .identifiers import require_identifier
 
 from .observability import log_failure
 
@@ -32,7 +33,6 @@ from .cache_accounting import SEMANTICS as CACHE_SEMANTICS, validate_contract
 from .integration_accounting import ExternalAccounting
 
 
-IDENT = re.compile(r"[A-Za-z0-9._:-]{1,128}\Z")
 MODELS = {"model.demo", "model.demo.alt"}
 DESTINATION = (
     "configuration_ref",
@@ -57,9 +57,7 @@ def timestamp():
 
 
 def identifier(value):
-    if type(value) is not str or not IDENT.fullmatch(value):
-        raise ValueError("invalid identifier")
-    return value
+    return require_identifier(value)
 
 
 def nonempty(value, limit=160):
@@ -568,19 +566,23 @@ class Registry:
                 if prior:
                     if prior[0] != actor or prior[1] != digest:
                         raise RegistryConflict("operation reuse conflict")
-                    return json.loads(prior[2])
-                row = db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)
-                ).fetchone()
-                record = json.loads(row[0]) if row else None
-                if (
-                    not record
-                    or record["revision"] != expected_revision
-                    or record["status"] == "archived"
-                ):
-                    raise RegistryConflict("connection revision changed")
-                old_version = record["credential_version"]
-                next_version = old_version + 1
+                    reply = json.loads(prior[2])
+                else:
+                    row = db.execute(
+                        _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)
+                    ).fetchone()
+                    record = json.loads(row[0]) if row else None
+                    if (
+                        not record
+                        or record["revision"] != expected_revision
+                        or record["status"] == "archived"
+                    ):
+                        raise RegistryConflict("connection revision changed")
+                    old_version = record["credential_version"]
+                    next_version = old_version + 1
+            if prior:
+                self.provider_vault.remove(connection_id, reply["record"]["credential_version"] - 1)
+                return reply
             sealed = None
             if mode == "replace":
                 sealed = self.provider_vault.seal(connection_id, next_version, secret)

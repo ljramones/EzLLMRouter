@@ -286,6 +286,7 @@ class Coordinator:
         faults=None,
         trusted_source_labels=None,
         registry=None,
+        authentication_context=None,
     ):
         self.store, self.identity = store, identity
         self.config, self.prompt_blocks = config, prompt_blocks
@@ -294,6 +295,7 @@ class Coordinator:
         self.retention, self.classification = retention, classification
         self.trusted_source_labels = trusted_source_labels or {}
         self.registry = registry
+        self.authentication_context = deepcopy(authentication_context)
         self.faults = faults or {}
         self.pool = BoundedExecutor(max_workers=4, thread_name_prefix="ezllmrouter-execution")
         self._admission = AdmissionGate()
@@ -316,15 +318,37 @@ class Coordinator:
         return hmac.new(self._live_source_key, jcs(block), hashlib.sha256).hexdigest()
 
     def authenticate(self, token):
-        trusted = (
-            self.registry.authenticate(token, next(iter(self.identity.values())))
-            if self.registry
-            else self.identity.get(token)
-        )
-        if not trusted or datetime.fromisoformat(
-            trusted["expires_at"].replace("Z", "+00:00")
-        ) <= datetime.now(timezone.utc):
+        if type(token) is not str:
             raise ContractError("AUTHENTICATION_FAILED", 401)
+        trusted = self.identity.get(token)
+        if self.registry:
+            template = trusted if trusted is not None else self.authentication_context
+            if template is None:
+                # Inherit a context only when every configured identity has the
+                # same non-identity scope. Conflicting scopes need an explicit one.
+                scopes = [
+                    {
+                        key: value
+                        for key, value in context.items()
+                        if key not in {"principal_id", "charging_owner_id"}
+                    }
+                    for context in self.identity.values()
+                ]
+                if scopes and all(scope == scopes[0] for scope in scopes):
+                    template = scopes[0]
+            if not isinstance(template, dict):
+                raise ContractError("AUTHENTICATION_FAILED", 401)
+            trusted = self.registry.authenticate(token, template)
+        try:
+            expiry = (
+                datetime.fromisoformat(trusted["expires_at"].replace("Z", "+00:00"))
+                if trusted
+                else None
+            )
+            if expiry is None or expiry.tzinfo is None or expiry <= datetime.now(timezone.utc):
+                raise ValueError("expired authentication context")
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            raise ContractError("AUTHENTICATION_FAILED", 401) from exc
         return trusted
 
     def capabilities(self, trusted):
@@ -670,13 +694,12 @@ class Coordinator:
             self._failed(sid, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
             return 503, self._failed_reply(handle, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
         if credential is None:
-            credential = (
-                None
+            matches = (
+                []
                 if self.registry
-                else next(
-                    (token for token, scope in self.identity.items() if scope is trusted), None
-                )
+                else [token for token, scope in self.identity.items() if scope is trusted]
             )
+            credential = matches[0] if len(matches) == 1 else None
         if credential is None:
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
             return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")

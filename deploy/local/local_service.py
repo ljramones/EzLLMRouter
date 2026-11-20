@@ -104,6 +104,7 @@ def main():
             GatewayProxyRecipe(),
             trusted_source_labels=fixture["trusted_source_labels"],
             registry=registry,
+            authentication_context=trusted,
         )
         cleanup.callback(coordinator.close)
         projection = OperatorProjection(store, trusted["principal_id"], "/data/send-events.jsonl")

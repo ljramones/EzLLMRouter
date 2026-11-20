@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .repositories import reporting as _queries
+from .identifiers import valid_identifier
 
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
@@ -11,6 +12,12 @@ from statistics import median
 
 
 KNOWN = frozenset({"reported", "calculated", "reconciled"})
+
+REPORT_BUCKETS = {
+    "agent_id": {"__direct_human__", "__unattributed__"},
+    "initiating_user_id": {"__autonomous__", "__unknown__"},
+    "charging_owner_id": {"__unknown__"},
+}
 
 
 def _utc(value):
@@ -36,6 +43,11 @@ def _ratio(numerator, denominator, places="0.000000001"):
             Decimal(places), rounding=ROUND_HALF_EVEN
         )
     )
+
+
+def _matches(record, field, value):
+    observed = record.get(field)
+    return observed is not None and str(observed) == value
 
 
 class Totals:
@@ -156,7 +168,21 @@ def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
     }
     if (
         set(filters) - allowed
-        or any(type(v) is not str or len(v) > 160 for v in filters.values())
+        or any(type(v) is not str or len(v) > 256 for v in filters.values())
+        or any(
+            not valid_identifier(filters[key]) and filters[key] not in REPORT_BUCKETS.get(key, ())
+            for key in {
+                "connection_id",
+                "configuration_ref",
+                "agent_id",
+                "agent_version",
+                "initiating_user_id",
+                "charging_owner_id",
+                "task_class",
+                "purpose",
+            }
+            & filters.keys()
+        )
         or type(page) is not int
         or not 1 <= page <= 10000
         or type(limit) is not int
@@ -287,7 +313,7 @@ def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
             )
         )
         and not any(
-            str(item.get(key)) != value
+            not _matches(item, key, value)
             for key, value in filters.items()
             if key not in ("from", "to", "cutoff", "currency", "agent_search")
         )
@@ -426,13 +452,13 @@ def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
         if (start and started < start) or (end and started >= end) or started > cutoff:
             continue
         if any(
-            str(run.get(field)) != filters[field] for field in run_filters if filters.get(field)
+            not _matches(run, field, filters[field]) for field in run_filters if filters.get(field)
         ):
             continue
         if any(filters.get(field) for field in attempt_filters) and not any(
             item["root_run_id"] == run["run_id"]
             and all(
-                str(item.get(field)) == filters[field]
+                _matches(item, field, filters[field])
                 for field in attempt_filters
                 if filters.get(field)
             )

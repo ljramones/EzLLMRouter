@@ -77,9 +77,11 @@ limits. The isolated worker prepares a request; the trusted service validates
 the final request and owns transmission. A client response does not itself prove
 task acceptance.
 
-Text execution accepts `generation_settings.total_timeout_ms` from 1 through
-300,000 milliseconds. A larger value is rejected with HTTP 422 and
-`LIMIT_EXCEEDED` before admission. The trusted sender uses one attempt deadline
+Text execution accepts `generation_settings.max_output_tokens` from 1 through
+32,768 and `generation_settings.total_timeout_ms` from 1 through 300,000
+milliseconds. A larger value is rejected with HTTP 422 and `LIMIT_EXCEEDED`
+before admission. Personal campaign and provider/model policies can impose lower
+limits; the existing personal campaign ceiling is 4,096 output tokens. The trusted sender uses one attempt deadline
 bounded by that timeout and the signed plan's expiry; worker preparation and
 provider response reading share that budget.
 
@@ -105,6 +107,36 @@ and other valid Unicode content. NUL and lone surrogate code points are rejected
 Identifiers, timestamps and fields with explicit text restrictions still use
 their schema rules.
 
+## Identity and identifier rules
+
+Internal IDs are case-sensitive ASCII strings of 1–160 characters. The first
+character is a letter or digit; subsequent characters can also contain `.`, `_`,
+`:` and `-`. Admission, registry, catalogue, operator projections and ID report
+filters share this rule, matching the clients. Prefixes such as `catalogue.` and
+`operator.source.` count toward the limit. Display text and external provider
+model names use their own field rules.
+
+Report-only buckets such as `__direct_human__` remain valid selectors in their
+specific fields. Missing values are excluded from literal filters, including the
+string `"None"`; a recorded literal `"None"` still matches exactly.
+
+Registry-backed Coordinator authentication uses a credential's explicit context
+first. Other registry credentials use the configured `authentication_context`,
+or a common scope when every mapped identity has identical non-identity context.
+Different scopes require an explicit fallback. Empty or ambiguous context maps
+return HTTP 401; an empty map with an explicit registry authentication context is
+supported. Missing, invalid and expired context expiries also return HTTP 401.
+Credential selection is independent of map insertion order. Direct Coordinator
+callers must pass `credential=` when more than one credential shares the same
+context object.
+
+The isolated embedding/rerank profiles calculate fictional native prices from
+the packaged `dev12/tariffs.json`. Rate strings, minimum charges, quantum and
+cardinality domains come from that resource; registered arithmetic and rounding
+remain code-owned. Calculations check price identity, currency, native units,
+domain and maximum bound against registration. The existing resource and golden
+prices are unchanged.
+
 ## Operator API
 
 The operator API is under `/operator/v1/`. Named sign-in creates a browser session;
@@ -113,3 +145,13 @@ password change have limited access until that change is complete.
 
 See [users and permissions](USER-MANAGEMENT.md) for account endpoints and
 [local connectors](LOCAL-CONNECTORS.md) for connection endpoints.
+
+Provider probes return a safe failed observation with reason `invalid_settings`
+for invalid adapter/settings input, before network access. Unsupported operations
+return `unsupported` / `operation_not_implemented`; malformed replies remain
+`malformed_response` failures. Neither settings nor credentials enter the result.
+
+The immutable demo projection represents an existing attempt with no qualifying
+usage revision at its report cutoff as unknown usage and cost. Future attempts
+and revisions are excluded, and replacement counts stay non-negative. Workflow
+traversal rejects cycles and missing parents with a controlled validation error.

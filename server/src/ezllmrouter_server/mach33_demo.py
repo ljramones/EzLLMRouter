@@ -72,10 +72,15 @@ class Mach33Demo:
             if _date(item["recorded_at"]) <= self.cutoff:
                 revisions[item["attempt_id"]].append(item)
         self.revisions = {
-            key: sorted(value, key=lambda item: (item["revision"], item["recorded_at"]))
-            for key, value in revisions.items()
+            item["id"]: sorted(
+                revisions.get(item["id"], []),
+                key=lambda value: (value["revision"], value["recorded_at"]),
+            )
+            for item in data["attempts"]
         }
-        self.rows = [self._row(item) for item in data["attempts"]]
+        self.rows = [
+            self._row(item) for item in data["attempts"] if _date(item["started_at"]) <= self.cutoff
+        ]
         self.rows_by_id = {item["attempt_id"]: item for item in self.rows}
 
     def _label(self, section, identifier):
@@ -90,7 +95,22 @@ class Mach33Demo:
         return identifier
 
     def _row(self, item):
-        revision = self.revisions[item["id"]][-1]
+        observed = self.revisions[item["id"]]
+        revision = (
+            observed[-1]
+            if observed
+            else {
+                "id": None,
+                "revision": None,
+                "recorded_at": None,
+                "usage": None,
+                "usage_state": "unknown",
+                "cost_state": "unknown",
+                "currency": None,
+                "amount": None,
+                "price_schedule_id": None,
+            }
+        )
         usage = revision["usage"]
         return {
             "dataset_id": self.meta["dataset_id"],
@@ -282,7 +302,7 @@ class Mach33Demo:
                 "workflows": len(workflows),
                 "usage_revisions": sum(len(self.revisions[item["attempt_id"]]) for item in rows),
                 "replacement_revisions": sum(
-                    len(self.revisions[item["attempt_id"]]) - 1 for item in rows
+                    max(0, len(self.revisions[item["attempt_id"]]) - 1) for item in rows
                 ),
                 "provider_results": dict(Counter(item["provider_result"] for item in rows)),
                 "workflow_outcomes": dict(Counter(item["task_outcome"] for item in workflows)),
@@ -323,15 +343,27 @@ class Mach33Demo:
         outcomes = [row for row in self.data["outcomes"] if row["workflow_id"] == identifier]
         rollups = []
         by_run = {row["id"]: row for row in runs}
+        ancestors = {}
         for run in runs:
-            descendants = {run["id"]}
-            for other in runs:
-                cursor = other
-                while cursor.get("parent_run_id"):
-                    if cursor["parent_run_id"] == run["id"]:
-                        descendants.add(other["id"])
-                        break
-                    cursor = by_run[cursor["parent_run_id"]]
+            cursor, path, visiting = run["id"], [], set()
+            while cursor is not None and cursor not in ancestors:
+                if cursor in visiting:
+                    raise ValueError("cyclic demo workflow")
+                if cursor not in by_run:
+                    raise ValueError("unknown demo parent run")
+                visiting.add(cursor)
+                path.append(cursor)
+                cursor = by_run[cursor].get("parent_run_id")
+            while path:
+                current = path.pop()
+                parent = by_run[current].get("parent_run_id")
+                ancestors[current] = (ancestors[parent] | {parent}) if parent else set()
+        for run in runs:
+            descendants = {
+                other["id"]
+                for other in runs
+                if other["id"] == run["id"] or run["id"] in ancestors[other["id"]]
+            }
             own = [row for row in attempts if row["run_id"] == run["id"]]
             delegated = [
                 row

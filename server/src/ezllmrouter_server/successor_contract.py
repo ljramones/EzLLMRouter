@@ -9,7 +9,7 @@ from __future__ import annotations
 from .observability import log_failure
 
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_CEILING, ROUND_HALF_EVEN
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_HALF_EVEN
 from hashlib import sha256
 from importlib.resources import files
 import json
@@ -18,12 +18,12 @@ import re
 from .canonical import ContractError
 
 SAFE = 9007199254740991
-QUANTUM = Decimal("0.000000001")
 SCHEMAS = json.loads(files("ezllmrouter_server").joinpath("dev12/schemas.json").read_text())
 REGISTRATIONS = json.loads(
     files("ezllmrouter_server").joinpath("dev12/registrations.json").read_text()
 )
 TARIFFS = json.loads(files("ezllmrouter_server").joinpath("dev12/tariffs.json").read_text())
+QUANTUM = Decimal(TARIFFS["quantum"])
 
 
 def strict_decode(data: bytes):
@@ -447,21 +447,65 @@ def tariff(request, price):
         else request["input"]["items"]
     )
     kind = price["schedule_kind"]
+    sections = {
+        "tariff_a": "schedule_a",
+        "tariff_b": "schedule_b",
+        "embedding_document": "embedding_document",
+        "embedding_query": "embedding_query",
+    }
+    if kind not in sections:
+        raise ValueError("unregistered tariff")
+    schedule = TARIFFS[sections[kind]]
+    if (
+        price["price_ref"] != schedule["id"]
+        or price["component"] != schedule["unit"]
+        or price["currency"] != TARIFFS["currency"]
+        or price["maximum_bound_decimal"] != schedule["maximum_domain_bound_usd"]
+    ):
+        raise ValueError("tariff registration mismatch")
+    minimum, maximum = (
+        (TARIFFS["domain"][key] for key in ("minimum_documents", "maximum_documents"))
+        if kind in {"tariff_a", "tariff_b"}
+        else (schedule["minimum_items"], schedule["maximum_items"])
+    )
+    if (minimum, maximum) != (price["minimum_items"], price["maximum_items"]):
+        raise ValueError("tariff registration domain mismatch")
+    if not minimum <= count <= maximum:
+        raise ValueError("tariff cardinality outside registered domain")
+
+    def rate(key):
+        if type(schedule[key]) is not str:
+            raise ValueError("invalid tariff rate")
+        try:
+            value = Decimal(schedule[key])
+        except InvalidOperation as exc:
+            raise ValueError("invalid tariff rate") from exc
+        if not value.is_finite() or value < 0:
+            raise ValueError("invalid tariff rate")
+        return value
+
     if kind == "tariff_a":
-        quantity = (count + 9) // 10
-        raw = max(Decimal("0.005"), Decimal("0.003") * quantity)
+        # This is the registered tariff formula, never an evaluated expression.
+        match = re.fullmatch(r"ceil\(documents/([1-9][0-9]*)\)", schedule["units_formula"])
+        if not match:
+            raise ValueError("unsupported tariff formula")
+        divisor = int(match[1])
+        quantity = (count + divisor - 1) // divisor
+        raw = max(rate("minimum_per_attempt_usd"), rate("per_unit_usd") * quantity)
     elif kind == "tariff_b":
         quantity = count
-        raw = Decimal(count) * Decimal("0.0003000005" if count <= 10 else "0.0004000005")
-    elif kind in ("embedding_document", "embedding_query"):
-        quantity = count
-        raw = Decimal(count) * Decimal("0.000200000")
+        raw = Decimal(count) * rate(
+            "whole_request_tier_le_10_usd" if count <= 10 else "whole_request_tier_ge_11_usd"
+        )
     else:
-        raise ValueError("unregistered tariff")
+        quantity = count
+        raw = Decimal(count) * rate("per_item_usd")
+    if raw.quantize(QUANTUM, rounding=ROUND_CEILING) > Decimal(price["maximum_bound_decimal"]):
+        raise ValueError("tariff exceeds registered maximum")
     return {
         "quantity": quantity,
-        "settled": str(raw.quantize(QUANTUM, rounding=ROUND_HALF_EVEN)),
-        "bound": str(raw.quantize(QUANTUM, rounding=ROUND_CEILING)),
+        "settled": format(raw.quantize(QUANTUM, rounding=ROUND_HALF_EVEN), "f"),
+        "bound": format(raw.quantize(QUANTUM, rounding=ROUND_CEILING), "f"),
     }
 
 

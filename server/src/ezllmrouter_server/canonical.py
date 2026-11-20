@@ -8,10 +8,11 @@ import hashlib
 import json
 import re
 from .gateway.choice_b_wire import MAX_ATTEMPT_TIMEOUT_MS
+from .identifiers import valid_identifier
 
 PREFIX = b"ezllmrouter-work-v0.2\n"
 SAFE = 9007199254740991
-_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
+MAX_OUTPUT_TOKENS = 32768
 _DECIMAL = re.compile(r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
 
 
@@ -136,7 +137,7 @@ def utc_second(value: str) -> str:
 
 
 def ident(value):
-    if not isinstance(value, str) or not _ID.fullmatch(value):
+    if not valid_identifier(value):
         raise ContractError("SCHEMA_INVALID", 400)
     return value
 
@@ -370,7 +371,10 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
         or min(settings["max_output_tokens"], settings["total_timeout_ms"]) < 1
     ):
         raise ContractError("SCHEMA_INVALID", 400)
-    if settings["total_timeout_ms"] > MAX_ATTEMPT_TIMEOUT_MS:
+    if (
+        settings["total_timeout_ms"] > MAX_ATTEMPT_TIMEOUT_MS
+        or settings["max_output_tokens"] > MAX_OUTPUT_TOKENS
+    ):
         raise ContractError("LIMIT_EXCEEDED", 422)
     settings = {**settings, "temperature_decimal": decimal_lexical(settings["temperature_decimal"])}
     if settings["temperature_decimal"] != "0":
