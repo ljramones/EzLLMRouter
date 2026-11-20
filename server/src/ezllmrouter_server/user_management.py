@@ -101,7 +101,7 @@ def password_matches(value, encoded):
 
 
 class LoginThrottle:
-    """Bound failed guesses by account and reserve finite concurrent hashing work."""
+    """Bound peer/account guesses without letting one peer lock out another."""
 
     def __init__(self, clock=time.monotonic):
         self.clock, self.lock = clock, threading.Lock()
@@ -110,7 +110,9 @@ class LoginThrottle:
         self._key = secrets.token_bytes(32)
 
     def begin(self, peer, subject=None):
-        identity = ("account\0" + subject) if subject is not None else ("credential\0" + peer)
+        identity = (
+            "peer\0" + peer + ("\0account\0" + subject if subject is not None else "\0credential")
+        )
         key = hmac.new(self._key, identity.encode(), hashlib.sha256).hexdigest()
         now = self.clock()
         with self.lock:
@@ -131,7 +133,14 @@ class LoginThrottle:
                 and key not in active
                 and len(set(active) | self.attempts.keys()) >= 512
             ):
-                return None
+                oldest = min(
+                    (old for old in self.attempts if old not in active),
+                    key=lambda old: self.attempts[old][-1],
+                    default=None,
+                )
+                if oldest is None:
+                    return None
+                del self.attempts[oldest]
             ticket = object()
             self.pending[ticket] = key
             return ticket

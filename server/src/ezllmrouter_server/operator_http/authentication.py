@@ -12,8 +12,32 @@ from ..user_management import ROLE_PERMISSIONS, UserError, username
 from .application import OperatorSession
 from .common import SESSION_SECONDS
 
+SESSION_LIMIT = 64
+SESSIONS_PER_PRINCIPAL = 4
+ADMIN_SESSION_RESERVE = 8
+
 
 class AuthenticationRoutes:
+    def _make_session_room(self, item, discarded):
+        """Called under the session lock after validating the new login."""
+        sessions = self.application.sessions
+        owned = sorted(
+            (key for key, old in sessions.items() if old["principal_id"] == item["principal_id"]),
+            key=lambda key: sessions[key]["expires"],
+        )
+        while len(owned) >= SESSIONS_PER_PRINCIPAL:
+            discarded.append(sessions.pop(owned.pop(0)))
+        ordinary = [key for key, old in sessions.items() if old["role"] != "registry_admin"]
+        if item["role"] == "registry_admin" and len(sessions) >= SESSION_LIMIT and ordinary:
+            oldest = min(ordinary, key=lambda key: sessions[key]["expires"])
+            discarded.append(sessions.pop(oldest))
+        elif (
+            item["role"] != "registry_admin"
+            and len(ordinary) >= SESSION_LIMIT - ADMIN_SESSION_RESERVE
+        ):
+            return False
+        return len(sessions) < SESSION_LIMIT
+
     def _session_details(self, item):
         """Read current account state under the caller's database read gate."""
         details = {}
@@ -197,7 +221,7 @@ class AuthenticationRoutes:
                     if getattr(self.application, "_closing", False):
                         failure = (503, "SERVICE_UNAVAILABLE")
                         discarded.append(item)
-                    elif len(self.application.sessions) >= 64:
+                    elif not self._make_session_room(item, discarded):
                         failure = (429, "SESSION_LIMIT")
                         discarded.append(item)
                     else:

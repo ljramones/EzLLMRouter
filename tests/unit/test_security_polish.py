@@ -32,7 +32,10 @@ class ThrottleTests(unittest.TestCase):
             throttle.finish(throttle.begin("local", "admin"), failed=True)
         ticket = throttle.begin("local", "admin")
         self.assertIsNotNone(ticket)
-        self.assertIsNone(throttle.begin("other-peer", "admin"))
+        self.assertIsNone(throttle.begin("local", "admin"))
+        other = throttle.begin("other-peer", "admin")
+        self.assertIsNotNone(other)
+        throttle.finish(other, success=True)
         throttle.finish(ticket, success=True)
         self.assertIsNotNone(throttle.begin("other-peer", "admin"))
 
@@ -45,12 +48,15 @@ class ThrottleTests(unittest.TestCase):
         self.assertFalse(throttle.attempts)
         self.assertFalse(throttle.pending)
 
-    def test_failure_budget_is_per_account_across_peers(self):
+    def test_failure_budget_is_per_peer_and_account(self):
         throttle = LoginThrottle()
         for _ in range(20):
             ticket = throttle.begin("first-peer", "alice")
             throttle.finish(ticket, failed=True)
-        self.assertIsNone(throttle.begin("second-peer", "alice"))
+        self.assertIsNone(throttle.begin("first-peer", "alice"))
+        other_peer = throttle.begin("second-peer", "alice")
+        self.assertIsNotNone(other_peer)
+        throttle.finish(other_peer, success=True)
         other = throttle.begin("first-peer", "bob")
         self.assertIsNotNone(other)
         throttle.finish(other, success=True)
@@ -83,7 +89,13 @@ class ThrottleTests(unittest.TestCase):
         for i in range(512):
             throttle.finish(throttle.begin("local", "private-user-" + str(i)), failed=True)
         self.assertEqual(len(throttle.attempts), 512)
-        self.assertIsNone(throttle.begin("local", "new-user"))
+        fresh = throttle.begin("local", "new-user")
+        self.assertIsNotNone(fresh)
+        throttle.finish(fresh, failed=True)
+        self.assertEqual(len(throttle.attempts), 512)
+        admin = throttle.begin("local", "admin")
+        self.assertIsNotNone(admin)
+        throttle.finish(admin, success=True)
         self.assertNotIn("private-user", repr(throttle.attempts))
         clock[0] = 60
         self.assertIsNotNone(throttle.begin("local", "new-user"))

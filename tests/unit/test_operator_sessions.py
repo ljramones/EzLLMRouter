@@ -324,14 +324,15 @@ class OperatorSessionTests(UserHTTPFixture):
         with self.assertRaises(ContractError):
             self.registry.credential_principal(item["wire_token"])
 
-    def test_session_limit_discards_new_wire_token_and_sends_outside_lock(self):
+    def test_principal_session_eviction_revokes_old_tokens_outside_the_session_lock(self):
         application = self.server.application
         self.registry.personal_campaign = object()
         template = self.handler()._session()[1]
+        old_wire = self.registry.issue_local_operator_token("owner.local")
         for index in range(63):
             application.sessions["limit." + str(index)] = {
                 **template,
-                "wire_token": None,
+                "wire_token": old_wire if index == 0 else None,
                 "expires": time.monotonic() + 1800,
             }
         issued = []
@@ -354,8 +355,55 @@ class OperatorSessionTests(UserHTTPFixture):
             status, _, _ = self.request(
                 "POST", "/operator/v1/login", {"username": "admin", "password": PASSWORD}
             )
-        self.assertEqual(status, 429)
-        self.assertEqual(len(application.sessions), 64)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(application.sessions), 4)
         self.assertEqual(len(issued), 1)
+        self.assertEqual(
+            self.registry.credential_principal(issued[0])["principal_id"], "owner.local"
+        )
         with self.assertRaises(ContractError):
-            self.registry.credential_principal(issued[0])
+            self.registry.credential_principal(old_wire)
+
+    def test_non_admin_sessions_leave_capacity_for_administrators(self):
+        user = self.create()
+        application = self.server.application
+        template = self.handler()._session()[1]
+        for index in range(56):
+            application.sessions["occupied." + str(index)] = {
+                **template,
+                "principal_id": "user.other." + str(index),
+                "role": "ordinary",
+                "wire_token": None,
+                "expires": time.monotonic() + 1800,
+            }
+        status, _, body = self.request(
+            "POST", "/operator/v1/login", {"username": user["username"], "password": PASSWORD}
+        )
+        self.assertEqual((status, body), (429, {"error": "SESSION_LIMIT"}))
+        self.login(password=PASSWORD)
+        self.assertEqual(self.handler()._session()[1]["role"], "registry_admin")
+        self.assertLessEqual(len(application.sessions), 64)
+
+    def test_repeated_user_logins_replace_only_that_users_oldest_sessions(self):
+        user = self.create()
+        account = self.users.authenticate(user["username"], PASSWORD)
+        admin_cookie = self.cookie
+        with patch.object(self.users, "authenticate", return_value=account):
+            for index in range(8):
+                self.login(user["username"], PASSWORD)
+                if index == 0:
+                    oldest_cookie = self.cookie
+        ordinary_cookie = self.cookie
+        self.assertEqual(
+            sum(
+                item["principal_id"] == user["principal_id"]
+                for item in self.server.application.sessions.values()
+            ),
+            4,
+        )
+        self.cookie = oldest_cookie
+        self.assertIsNone(self.handler()._session())
+        self.cookie = admin_cookie
+        self.assertEqual(self.handler()._session()[1]["role"], "registry_admin")
+        self.cookie = ordinary_cookie
+        self.assertEqual(self.handler()._session()[1]["principal_id"], user["principal_id"])
