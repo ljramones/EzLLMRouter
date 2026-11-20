@@ -34,7 +34,7 @@ DEVELOPMENT_TESTS = (
     "retrieval_contract native_adapter"
 ).split()
 GATEWAY_TESTS = (
-    "guard provider_guard provider_plan retrieval_guard_timeout core_bridge choice_b "
+    "guard provider_guard provider_plan compressed_responses retrieval_guard_timeout core_bridge choice_b "
     "guarded_tool_execution runtime_capture provider_worker_diagnostic retrieval_first_write "
     "python_actor_recovery completion_preflight "
     "completion_supplement first_owner_supplement_followup first_owner_supplement "
@@ -112,9 +112,9 @@ LOOPBACK_MODULES = (
     "tests.gateway_integration.test_installed_client_boundary",
 )
 EXCLUDED_TESTS = {
-    "tests/gateway_integration/test_freshness_interface.py": "Explicit counterexamples against hash-checked gateway wheels (AnyIO 4.15.1); the development lock uses 4.16.0.",
+    "tests/gateway_integration/test_freshness_interface.py": "Executed by deploy/local/Dockerfile.service validation with the frozen wheel mount and AnyIO 4.15.1; the development lock uses 4.16.0.",
     "tests/gateway_integration/test_alt_handler.py": "Build-time isolation check in the frozen LiteLLM image; needs that reviewed runtime.",
-    "tests/gateway_integration/test_cache_frozen_usage.py": "Frozen LiteLLM usage-model check run by Dockerfile.worker, not the development environment.",
+    "tests/gateway_integration/test_cache_frozen_usage.py": "Executed by deploy/local/Dockerfile.worker with its read-only validation mount and the frozen LiteLLM wheels.",
     "tests/gateway_integration/test_provider_worker_target.py": "Standalone frozen-worker discriminator invoked by Dockerfile.worker; not a unittest module.",
     "tests/gateway_integration/test_run10_held_timeout.py": "Explicit evidence audit requiring --repo, --runtime and --timeout-source from a retained run.",
 }

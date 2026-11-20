@@ -242,7 +242,10 @@ class ChoiceBComponentTests(unittest.TestCase):
             "attempt_id": attempt,
             "method": "POST",
             "url": "http://127.0.0.1:8766/v1/chat/completions",
-            "headers": [["authorization", "Bearer " + WORKER_KEY]],
+            "headers": [
+                ["authorization", "Bearer " + WORKER_KEY],
+                ["accept-encoding", "gzip, deflate"],
+            ],
             "body_b64": base64.b64encode(b"{}").decode("ascii"),
             "timeout": {"connect": 1, "read": 1, "write": 1, "pool": 1},
         }
@@ -250,6 +253,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             adapter.process_relay({**envelope, "attempt_id": "attempt.forged"})
         self.assertEqual(adapter.process_relay(envelope)["status"], 200)
         self.assertEqual(inspected[0].headers["authorization"], "Bearer " + adapter.provider_key)
+        self.assertEqual(inspected[0].headers["accept-encoding"], "identity")
         with self.assertRaisesRegex(ValueError, "replayed attempt authority"):
             adapter.process_relay(envelope)
 

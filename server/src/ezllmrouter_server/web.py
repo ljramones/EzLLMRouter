@@ -28,8 +28,6 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("EzLLMRouter-Contract-Version", value.get("contract_version", "0.2"))
-            if self.close_connection:
-                self.send_header("Connection", "close")
             self.end_headers()
             self.wfile.write(body)
 
@@ -130,8 +128,6 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                 "EzLLMRouter-Integration-Version", getattr(self, "integration_version", "1")
             )
             self.send_header("Cache-Control", "no-store, max-age=0")
-            if self.close_connection:
-                self.send_header("Connection", "close")
             self.end_headers()
             self.wfile.write(body)
 

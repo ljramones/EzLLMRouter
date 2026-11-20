@@ -19,6 +19,22 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def inspect_wheel(path):
+    """Inspect archive names before installation; never import a wheel to review it."""
+    with zipfile.ZipFile(path) as archive:
+        for entry in archive.infolist():
+            parts = Path(entry.filename).parts
+            name = parts[-1].lower() if parts else ""
+            if (
+                entry.filename.startswith(("/", "\\"))
+                or ".." in parts
+                or name.endswith(".pth")
+                or name.startswith(("sitecustomize.", "usercustomize."))
+                or any(part.lower() in {"sitecustomize", "usercustomize"} for part in parts)
+            ):
+                raise ValueError("unsafe wheel startup entry: " + entry.filename)
+
+
 def build_clients(root, destination):
     """Build current client sources offline instead of relying on retired SDK archives."""
     python = tomllib.loads((root / "clients/python/pyproject.toml").read_text())["project"]
@@ -50,6 +66,7 @@ def build_clients(root, destination):
     )
     if {p.name for p in destination.iterdir() if p.name != ".gitignore"} != {wheel, tarball}:
         raise ValueError("unexpected current client package inventory")
+    inspect_wheel(destination / wheel)
     return python, destination / wheel, destination / tarball
 
 
@@ -233,6 +250,9 @@ def source_mapping(root, dev05=False, *, fixtures=False):
 
 def main():
     arguments = list(sys.argv[1:])
+    if len(arguments) == 2 and arguments[0] == "--inspect-wheel":
+        inspect_wheel(Path(arguments[1]))
+        return
     fixtures = "--fixtures" in arguments
     if fixtures:
         arguments.remove("--fixtures")
@@ -261,6 +281,7 @@ def main():
         path = wheel_dir / row["filename"]
         if not path.is_file() or path.stat().st_size != row["bytes"] or sha(path) != row["sha256"]:
             raise ValueError("wheel mismatch: " + row["filename"])
+        inspect_wheel(path)
     if {path.name for path in wheel_dir.glob("*.whl")} != {row["filename"] for row in wheels}:
         raise ValueError("unexpected wheel in input directory")
     source_files = source_mapping(root, dev05, fixtures=fixtures)

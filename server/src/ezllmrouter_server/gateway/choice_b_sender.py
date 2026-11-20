@@ -159,9 +159,12 @@ class ChoiceBSenderAdapter:
                 try:
                     response = await lower.handle_async_request(request)
                     body = await read_response(response)
+                    headers = response.headers.copy()
+                    headers.pop("content-encoding", None)
+                    headers.pop("content-length", None)
                     return httpx.Response(
                         response.status_code,
-                        headers=response.headers,
+                        headers=headers,
                         content=body,
                         request=request,
                     )
@@ -388,6 +391,7 @@ class ChoiceBSenderAdapter:
             provider_key = self.provider_key
             invocation.provider_key = provider_key
         header_map["authorization"] = "Bearer " + provider_key
+        header_map["accept-encoding"] = "identity"
         request = httpx.Request(
             "POST", expected_url, headers=header_map, content=body, extensions={"timeout": timeout}
         )

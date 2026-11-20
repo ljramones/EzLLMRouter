@@ -69,6 +69,9 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_one_request(self):
         self._diagnostic_id = "request." + uuid.uuid4().hex
         self.command, self.path = "OTHER", "/"
+        self._body_bytes_read = 0
+        self._body_read = False
+        self.headers = None
         context = REQUEST_CORRELATION.set(self.diagnostic_id)
         self._response_status = 0
         started = time.monotonic()
@@ -104,14 +107,40 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def read_body(self, length):
         try:
-            return self.rfile.read(length)
+            body = self.rfile.read(length)
+            self._body_bytes_read = getattr(self, "_body_bytes_read", 0) + len(body)
+            self._body_read = True
+            return body
         finally:
             # Long model waits keep their contract deadline after input is complete.
             self._finish_input()
 
+    def _body_pending(self):
+        headers = getattr(self, "headers", None)
+        if headers is None:
+            return True
+        if headers.get_all("Transfer-Encoding"):
+            return True
+        lengths = headers.get_all("Content-Length")
+        if not lengths:
+            return self.command in {"POST", "PUT", "PATCH", "DELETE"} and not getattr(
+                self, "_body_read", False
+            )
+        if len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
+            return True
+        try:
+            length = int(lengths[0])
+        except ValueError:
+            return True
+        return getattr(self, "_body_bytes_read", 0) < length
+
     def send_response(self, code, message=None):
         self._response_status = code
+        if self._body_pending():
+            self.close_connection = True
         super().send_response(code, message)
+        if getattr(self, "close_connection", False):
+            self.send_header("Connection", "close")
         self.send_header("X-Request-ID", self.diagnostic_id)
 
     def log_message(self, *_args):

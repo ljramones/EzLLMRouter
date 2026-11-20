@@ -12,11 +12,88 @@ import sys
 import sysconfig
 import tempfile
 import unittest
+import zipfile
 
-from tools.gateway.stage import source_mapping
+from tools.gateway.stage import inspect_wheel, source_mapping
+from deploy.local import prepare
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "server/src/ezllmrouter_server/gateway"
+
+
+class TrustedImageTests(unittest.TestCase):
+    def test_startup_hooks_are_rejected_by_archive_inspection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            wheel = Path(temporary) / "review.whl"
+            for name in (
+                "boot.pth",
+                "data/purelib/boot.PTH",
+                "sitecustomize.py",
+                "usercustomize.pyc",
+                "sitecustomize/__init__.py",
+                "../../outside.py",
+            ):
+                with self.subTest(name=name):
+                    with zipfile.ZipFile(wheel, "w") as archive:
+                        archive.writestr(name, "raise RuntimeError('must never execute')")
+                    with self.assertRaisesRegex(ValueError, "unsafe wheel startup entry"):
+                        inspect_wheel(wheel)
+            with zipfile.ZipFile(wheel, "w") as archive:
+                archive.writestr(
+                    "package/__init__.py", "raise RuntimeError('inspection is not import')"
+                )
+            inspect_wheel(wheel)
+
+    def test_trusted_lock_is_a_minimal_subset_of_the_reviewed_worker_lock(self):
+        gateway = set(
+            (ROOT / "deploy/local/inputs/gateway/requirements.gateway.lock")
+            .read_text()
+            .splitlines()
+        )
+        runtime = set(
+            (ROOT / "deploy/local/inputs/requirements.runtime.lock").read_text().splitlines()
+        )
+        self.assertLessEqual(runtime, gateway)
+        names = {line.split("==")[0].lower().replace("_", "-") for line in runtime}
+        self.assertEqual(
+            names,
+            {
+                "anyio",
+                "certifi",
+                "cffi",
+                "cryptography",
+                "h11",
+                "httpcore",
+                "httpx",
+                "idna",
+                "pycparser",
+                "sniffio",
+                "typing-extensions",
+            },
+        )
+        dockerfile = (ROOT / "deploy/local/Dockerfile.service").read_text()
+        self.assertIn("--require-hashes -r /opt/ezllmrouter/requirements.runtime.lock", dockerfile)
+        self.assertNotIn("requirements.gateway.lock", dockerfile)
+        self.assertIn("importlib.util.find_spec('litellm') is None", dockerfile)
+        self.assertNotIn("test_alt_handler.py", dockerfile)
+
+    def test_frozen_checks_are_staged_for_their_actual_docker_runners(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            build = Path(temporary)
+            package = build / "service/server/ezllmrouter_server"
+            package.mkdir(parents=True)
+            (package / "__init__.py").write_text("")
+            prepare.stage_worker_validation(build)
+            worker = (ROOT / "deploy/local/Dockerfile.worker").read_text()
+            for name in prepare.WORKER_VALIDATION_FILES:
+                self.assertTrue((build / "worker/validation" / name).is_file())
+                self.assertIn("/tmp/validation/" + name, worker)
+            self.assertIn("source=validation,target=/tmp/validation,readonly", worker)
+            service = (ROOT / "deploy/local/Dockerfile.service").read_text()
+            self.assertIn("tests.gateway_integration.test_freshness_interface", service)
+            self.assertIn("target=/app/gateway-inputs/dev04/wheels,readonly", service)
+
+
 MODULES = (
     "guard",
     "adapter",

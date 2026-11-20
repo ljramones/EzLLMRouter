@@ -1,6 +1,7 @@
 """Build identity follows source bytes and ignores local filesystem debris."""
 
 import shutil
+import re
 
 from pathlib import Path
 import subprocess
@@ -16,6 +17,19 @@ from deploy.local import prepare as prepare
 
 @unittest.skipUnless(shutil.which("git"), "git is required for this fixture")
 class PrepareTests(unittest.TestCase):
+    def test_service_docker_validation_modules_are_staged_and_importable(self):
+        dockerfile = (ROOT / "deploy/local/Dockerfile.service").read_text()
+        modules = re.findall(r"\btests\.operator_console\.test_[a-z0-9_]+", dockerfile)
+        self.assertTrue(modules)
+        loader = unittest.TestLoader()
+        for name in modules:
+            with self.subTest(module=name):
+                filename = name.rsplit(".", 1)[1] + ".py"
+                self.assertIn(filename, prepare.SERVICE_VALIDATION_FILES)
+                self.assertTrue((ROOT / "tests/operator_console" / filename).is_file())
+                self.assertGreater(loader.loadTestsFromName(name).countTestCases(), 0)
+        self.assertEqual(loader.errors, [])
+
     def test_fingerprint_uses_nonignored_git_source_only(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -16,4 +16,7 @@ RUN test -r /app/worker/local_worker.py && test ! -e /app/server \
  && test ! -e /app/dev_slice && test ! -e /app/gateway
 RUN --network=none --mount=type=bind,source=test_provider_worker_target.py,target=/tmp/test_provider_worker_target.py,readonly \
     python -B /tmp/test_provider_worker_target.py
+RUN --network=none --mount=type=bind,source=validation,target=/tmp/validation,readonly \
+    PYTHONPATH=/tmp/validation/server:/app/worker python -B /tmp/validation/test_alt_handler.py \
+ && PYTHONPATH=/tmp/validation/server:/app/worker python -B /tmp/validation/test_cache_frozen_usage.py
 CMD ["python", "/app/worker/local_worker.py"]

@@ -46,8 +46,28 @@ SOURCE_ROOTS = (
 FIXED_INPUTS = (
     "deploy/local/inputs/gateway/WHEEL-INVENTORY.json",
     "deploy/local/inputs/gateway/requirements.gateway.lock",
+    "deploy/local/inputs/requirements.runtime.lock",
     "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
 )
+SERVICE_VALIDATION_FILES = (
+    "test_attribution.py",
+    "test_reporting.py",
+    "test_report_http.py",
+    "test_registry_core.py",
+    "dev09_accounting_fixture.json",
+)
+WORKER_VALIDATION_FILES = ("test_alt_handler.py", "test_cache_frozen_usage.py")
+
+
+def stage_worker_validation(build):
+    destination = build / "worker/validation"
+    destination.mkdir(parents=True)
+    shutil.copytree(
+        build / "service/server/ezllmrouter_server", destination / "server/ezllmrouter_server"
+    )
+    shutil.copy2(ROOT / "server/pyproject.toml", destination / "server/pyproject.toml")
+    for name in WORKER_VALIDATION_FILES:
+        shutil.copy2(ROOT / "tests/gateway_integration" / name, destination / name)
 
 
 def package_artifacts(directory):
@@ -227,6 +247,23 @@ def prepare_work(work, run, source_hash, artifact):
     wheel = sdk_out / DEV09_CLIENT
     if not wheel.is_file() or package_artifacts(sdk_out) != {DEV09_CLIENT}:
         raise RuntimeError("offline client wheel does not match clients/python/pyproject.toml")
+    subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            str(ROOT / "tools/gateway/stage.py"),
+            "--inspect-wheel",
+            str(wheel),
+        ],
+        check=True,
+        timeout=30,
+    )
+    shutil.copy2(
+        ROOT / "deploy/local/inputs/requirements.runtime.lock",
+        build / "service/requirements.runtime.lock",
+    )
+    stage_worker_validation(build)
     shutil.copy2(ROOT / "deploy/local/Dockerfile.service", build / "service/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/Dockerfile.worker", build / "worker/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/local_worker.py", build / "worker/local_worker.py")
@@ -292,14 +329,12 @@ def prepare_work(work, run, source_hash, artifact):
     target_tests.mkdir(parents=True)
     (build / "service/tests/__init__.py").write_text("")
     (target_tests / "__init__.py").write_text("")
-    for name in (
-        "test_attribution.py",
-        "test_reporting.py",
-        "test_report_http.py",
-        "test_registry_core.py",
-        "dev09_accounting_fixture.json",
-    ):
+    for name in SERVICE_VALIDATION_FILES:
         shutil.copy2(ROOT / "tests/operator_console" / name, target_tests / name)
+    gateway_tests = build / "service/tests/gateway_integration"
+    gateway_tests.mkdir()
+    (gateway_tests / "__init__.py").write_text("")
+    shutil.copy2(ROOT / "tests/gateway_integration/test_freshness_interface.py", gateway_tests)
     for relative in (
         "development_slice/request.json",
         "development_slice/fixture.json",
@@ -363,6 +398,8 @@ def prepare_work(work, run, source_hash, artifact):
         build / "worker/Dockerfile",
         build / "worker/local_worker.py",
         build / "worker/socket_lease.py",
+        build / "service/requirements.runtime.lock",
+        *(p for p in (build / "worker/validation").rglob("*") if p.is_file()),
         *(local.iterdir()),
         *(web.iterdir()),
         *(ingress.iterdir()),

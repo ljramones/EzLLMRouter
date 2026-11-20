@@ -5,6 +5,8 @@ from __future__ import annotations
 import shutil
 
 import asyncio
+import base64
+import gzip
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -14,6 +16,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+import zlib
 
 import httpx
 
@@ -26,15 +29,21 @@ from ezllmrouter_server.gateway.owned_tls_sender_transport import OwnedTLSHTTPTr
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
+from tests.gateway_integration.test_compressed_responses import PROVIDER_REPLY, responses_sender
 
 
 class Receiver(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.rfile.read(int(self.headers["Content-Length"]))
         self.server.requests.append((self.path, dict(self.headers), body))
-        payload = json.dumps({"id": "response.test", "object": "response", "output": []}).encode()
+        payload = json.dumps(PROVIDER_REPLY).encode()
+        encoding = getattr(self.server, "encoding", None)
+        if encoding:
+            payload = gzip.compress(payload) if encoding == "gzip" else zlib.compress(payload)
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
+        if encoding:
+            self.send_header("Content-Encoding", encoding)
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -45,6 +54,26 @@ class Receiver(BaseHTTPRequestHandler):
 
 @unittest.skipUnless(shutil.which("openssl"), "openssl is required for this fixture")
 class OwnedTLSProof(unittest.TestCase):
+    def test_selected_sender_preserves_gzip_and_deflate_responses(self):
+        async def send():
+            adapter, item, request = responses_sender(self.settings)
+            await adapter._start_lower()
+            try:
+                result = await adapter._send(request, item)
+                self.assertTrue(item.first_bytes_accepted)
+                self.assertEqual(json.loads(base64.b64decode(result["body_b64"])), PROVIDER_REPLY)
+            finally:
+                await adapter.guard.aclose()
+
+        for encoding in ("gzip", "deflate"):
+            with self.subTest(encoding=encoding):
+                self.server.encoding = encoding
+                asyncio.run(send())
+        self.assertEqual(len(self.server.requests), 2)
+        self.assertTrue(
+            all(row[1]["Accept-Encoding"] == "identity" for row in self.server.requests)
+        )
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

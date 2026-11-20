@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
+from importlib.util import find_spec
 import os
 import signal
-import sys
 import threading
 from contextlib import ExitStack
 from pathlib import Path
@@ -36,8 +36,8 @@ from socket_lease import remove_stale_socket
 
 def main():
     configure_logging()
-    if "litellm" in sys.modules:
-        raise RuntimeError("LiteLLM imported into trusted sender")
+    if find_spec("litellm") is not None:
+        raise RuntimeError("LiteLLM must not be installed in the trusted service")
     credentials = json.loads(Path("/run/ezllmrouter/credentials.json").read_text())
     token, provider_key = credentials["service_token"], credentials["synthetic_provider_key"]
     password = Path("/run/ezllmrouter/operator-password").read_text().strip()

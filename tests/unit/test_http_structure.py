@@ -3,6 +3,8 @@
 import csv
 import io
 import json
+import socket
+import threading
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -12,9 +14,105 @@ from unittest.mock import Mock, patch
 from ezllmrouter_server.observability import EventFormatter
 from ezllmrouter_server.operator_http import reports
 from ezllmrouter_server.operator_http.routing import Route, Router
+from ezllmrouter_server.web import serve as serve_wire
 
 from tests.operator_console.test_user_management import PASSWORD
-from tests.operator_console.test_user_management_web import UserHTTPFixture
+from tests.operator_console.test_user_management_web import MemoryServer, UserHTTPFixture
+
+
+class HTTPFramingTests(UserHTTPFixture):
+    def exchange(self, server, request):
+        client, peer = socket.socketpair()
+        errors = []
+
+        def handle():
+            try:
+                with peer:
+                    server.handler(peer, ("127.0.0.1", 12345), server)
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=handle)
+        thread.start()
+        try:
+            with client:
+                client.settimeout(3)
+                client.sendall(request)
+                client.shutdown(socket.SHUT_WR)
+                chunks = []
+                while chunk := client.recv(65536):
+                    chunks.append(chunk)
+            return b"".join(chunks)
+        finally:
+            thread.join(timeout=3)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(errors, [])
+
+    def test_operator_unread_body_is_never_parsed_as_another_request(self):
+        inner = b"GET /operator/v1/session HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n\r\n"
+        cases = (
+            ("POST /operator/v1/login", "Content-Type: text/plain\r\n"),
+            ("POST /operator/v1/users", "Content-Type: application/json\r\n"),
+            ("GET /operator/v1/session", ""),
+            ("POST /operator/v1/login", "Content-Type: application/json\r\nContent-Length: 1\r\n"),
+            (
+                "POST /operator/v1/login",
+                "Content-Type: application/json\r\nTransfer-Encoding: chunked\r\n",
+            ),
+        )
+        for route, headers in cases:
+            with self.subTest(route=route, headers=headers):
+                request = (
+                    route + " HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n"
+                    "Origin: http://127.0.0.1:48761\r\n"
+                    + headers
+                    + f"Content-Length: {len(inner)}\r\n\r\n"
+                ).encode() + inner
+                reply = self.exchange(self.server, request)
+                self.assertEqual(reply.count(b"HTTP/1.1 "), 1, reply)
+                self.assertIn(b"Connection: close\r\n", reply)
+
+    def test_wire_early_rejections_and_get_bodies_close_before_the_next_request(self):
+        capabilities = Mock(return_value={"contract_version": "0.2"})
+        coordinator = SimpleNamespace(
+            registry=None, authenticate=lambda _: {}, capabilities=capabilities
+        )
+        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+            server = serve_wire("127.0.0.1", 48761, coordinator)
+        headers = (
+            "Host: 127.0.0.1:48761\r\nEzLLMRouter-Contract-Version: 0.2\r\n"
+            "Authorization: Bearer synthetic\r\n"
+        )
+        inner = ("GET /v1/capabilities HTTP/1.1\r\n" + headers + "\r\n").encode()
+        for route, extra in (
+            ("POST /v1/unknown", ""),
+            ("POST /v1/submissions", "EzLLMRouter-Wait-Ms: invalid\r\n"),
+            ("POST /v1/submissions", "Content-Type: text/plain\r\n"),
+            ("GET /v1/capabilities", ""),
+        ):
+            with self.subTest(route=route, extra=extra):
+                capabilities.reset_mock()
+                request = (
+                    route
+                    + " HTTP/1.1\r\n"
+                    + headers
+                    + extra
+                    + f"Content-Length: {len(inner)}\r\n\r\n"
+                ).encode() + inner
+                reply = self.exchange(server, request)
+                self.assertEqual(reply.count(b"HTTP/1.1 "), 1, reply)
+                self.assertIn(b"Connection: close\r\n", reply)
+                self.assertEqual(capabilities.call_count, int(route.startswith("GET")))
+
+    def test_fully_consumed_invalid_json_keeps_legitimate_pipelining(self):
+        request = (
+            b"POST /operator/v1/login HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n"
+            b"Origin: http://127.0.0.1:48761\r\nContent-Type: application/json\r\n"
+            b"Content-Length: 1\r\n\r\n{"
+            b"GET /operator/v1/session HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n\r\n"
+        )
+        reply = self.exchange(self.server, request)
+        self.assertEqual(reply.count(b"HTTP/1.1 "), 2, reply)
 
 
 class RouterTests(unittest.TestCase):
