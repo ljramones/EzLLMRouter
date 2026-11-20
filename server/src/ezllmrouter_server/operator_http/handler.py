@@ -124,6 +124,7 @@ class OperatorHandler(
 
     def do_POST(self):
         if not self._origin_ok(mutation=True) or urlsplit(self.path).query:
+            self.close_connection = True
             return self._fail(403, "ORIGIN_REJECTED")
         session = None
         if self.path != "/operator/v1/login":

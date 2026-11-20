@@ -120,9 +120,7 @@ class RetryASGIDouble:
                     PROVIDER_URL,
                     json=payload,
                     timeout=timeout,
-                    headers={
-                        "Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]
-                    },
+                    headers={"Authorization": "Bearer " + self.owner.provider_key},
                 )
                 await send(
                     {
@@ -148,6 +146,7 @@ class RetryASGIDouble:
 
 class TestAdapter(LiteLLMAsgiAdapter):
     def __init__(self, forced_retries=None, mutation="", lower_mode="ok"):
+        self.provider_key = "sk-" + "r" * 40
         self._runtime = LoopThread("ezllmrouter-fixture-loop")
         self.loop, self.thread = self._runtime.loop, self._runtime.thread
         self.proxy_mutation = mutation
@@ -194,11 +193,7 @@ class TestAdapter(LiteLLMAsgiAdapter):
 class RetryCauseTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.old_env = {
-            k: os.environ.get(k)
-            for k in ("EZLLMROUTER_DEV04_PROVIDER_KEY", "EZLLMROUTER_DEV04_GUARD_EVENTS")
-        }
-        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "r" * 40
+        self.old_env = {k: os.environ.get(k) for k in ("EZLLMROUTER_DEV04_GUARD_EVENTS",)}
         os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(Path(self.temp.name) / "events.jsonl")
         self.coordinator = None
         self.adapter = None
@@ -345,6 +340,7 @@ class RetryCauseTests(unittest.TestCase):
             invocation,
             lambda: None,
             lambda _: None,
+            provider_key="sk-" + "r" * 40,
         )
         # Both private controls must be consumed by the SDK, never by the provider.
         for field, value in (("max_retries", 0), ("timeout", 1.0)):
@@ -355,7 +351,7 @@ class RetryCauseTests(unittest.TestCase):
                     PROVIDER_URL,
                     json=body,
                     headers={
-                        "Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"],
+                        "Authorization": "Bearer " + self.adapter.provider_key,
                         "x-ezllmrouter-attempt": "attempt.test",
                     },
                     extensions={"timeout": {"read": 1.0}},
@@ -390,13 +386,14 @@ class RetryCauseTests(unittest.TestCase):
             self.adapter.invocations[0].projection,
             lambda: None,
             lambda _: None,
+            provider_key="sk-" + "r" * 40,
         )
         request = httpx.Request(
             "POST",
             PROVIDER_URL,
             json=provider_expectation(context.projection),
             headers={
-                "Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"],
+                "Authorization": "Bearer " + self.adapter.provider_key,
                 "x-ezllmrouter-attempt": context.attempt_id,
             },
             extensions={"timeout": dict.fromkeys(("connect", "read", "write", "pool"), 30.0)},

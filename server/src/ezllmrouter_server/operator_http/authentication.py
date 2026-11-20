@@ -7,7 +7,8 @@ from contextlib import nullcontext
 from http import cookies
 
 from ..observability import log_failure
-from ..user_management import ROLE_PERMISSIONS, UserError
+from ..canonical import ContractError
+from ..user_management import ROLE_PERMISSIONS, UserError, username
 from .application import OperatorSession
 from .common import SESSION_SECONDS
 
@@ -94,17 +95,44 @@ class AuthenticationRoutes:
         ):
             return self._fail(400, "INVALID_BODY")
         peer = self.client_address[0] if isinstance(self.client_address, tuple) else "local"
-        if not self.application.login_throttle.allow(peer):
+        try:
+            body["password"].encode("utf-8", "strict")
+        except UnicodeError:
+            return self._fail(400, "INVALID_BODY")
+        subject = None
+        if "username" in body:
+            if self.application.accounts is None:
+                return self._fail(401, "AUTH_FAILED")
+            try:
+                subject = username(body["username"])
+            except UserError as exc:
+                return self._fail(exc.status, exc.code)
+        ticket = self.application.login_throttle.begin(peer, subject)
+        if ticket is None:
             return self._fail(429, "LOGIN_RATE_LIMITED")
+        outcome = {"failed": False, "success": False}
+        try:
+            return self._login(body, outcome)
+        except Exception:
+            log_failure("operator_http.authentication.unavailable")
+            return self._fail(503, "AUTH_UNAVAILABLE")
+        finally:
+            self.application.login_throttle.finish(ticket, **outcome)
+
+    def _login_rejected(self, outcome, status, code):
+        outcome["failed"] = status == 401
+        return self._fail(status, code)
+
+    def _login(self, body, outcome):
         account = None
         named_login = "username" in body
         if named_login:
             if not self.application.accounts:
-                return self._fail(401, "AUTH_FAILED")
+                return self._login_rejected(outcome, 401, "AUTH_FAILED")
             try:
                 account = self.application.accounts.authenticate(body["username"], body["password"])
             except UserError as exc:
-                return self._fail(exc.status, exc.code)
+                return self._login_rejected(outcome, exc.status, exc.code)
             principal_id = account["principal_id"]
             principal = self.application.registry.principal(principal_id)
         elif hmac.compare_digest(self.application.password.encode(), body["password"].encode()):
@@ -114,7 +142,7 @@ class AuthenticationRoutes:
                 else None
             )
             if self.application.registry and (not principal or principal["status"] != "active"):
-                return self._fail(401, "AUTH_FAILED")
+                return self._login_rejected(outcome, 401, "AUTH_FAILED")
             principal_id = "owner.local"
         elif self.application.registry:
             try:
@@ -122,13 +150,14 @@ class AuthenticationRoutes:
                     body["password"], "human"
                 )
                 principal_id = principal["principal_id"]
-            except Exception:
-                log_failure("operator_http.authentication.post_operator_v1_login.failed")
-                return self._fail(401, "AUTH_FAILED")
+            except ContractError as exc:
+                if exc.status != 401:
+                    raise
+                return self._login_rejected(outcome, 401, "AUTH_FAILED")
         else:
-            return self._fail(401, "AUTH_FAILED")
+            return self._login_rejected(outcome, 401, "AUTH_FAILED")
         if self.application.registry and (not principal or principal["status"] != "active"):
-            return self._fail(401, "AUTH_FAILED")
+            return self._login_rejected(outcome, 401, "AUTH_FAILED")
         if self.application.accounts and (not account):
             account = self.application.accounts.context(principal_id)
         token, csrf = (secrets.token_urlsafe(32), secrets.token_urlsafe(32))
@@ -178,15 +207,14 @@ class AuthenticationRoutes:
         self._revoke_session_tokens(discarded)
         if failure:
             return self._fail(*failure)
+        outcome["success"] = True
         return self._send(
             200,
             {**self._session_payload(published), "expires_in_seconds": SESSION_SECONDS},
             extra=(
                 (
                     "Set-Cookie",
-                    "ezllmrouter_operator="
-                    + token
-                    + "; Path=/operator; HttpOnly; SameSite=Strict; Max-Age=1800",
+                    self._session_cookie(token, SESSION_SECONDS),
                 ),
             ),
         )
@@ -204,7 +232,7 @@ class AuthenticationRoutes:
             extra=(
                 (
                     "Set-Cookie",
-                    "ezllmrouter_operator=; Path=/operator; HttpOnly; SameSite=Strict; Max-Age=0",
+                    self._session_cookie("", 0),
                 ),
             ),
         )

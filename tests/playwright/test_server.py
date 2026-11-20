@@ -46,7 +46,6 @@ class BrowserFixtureTests(unittest.TestCase):
             os.environ,
             {
                 "EZLLMROUTER_ADMIN_USERNAME": "admin",
-                "EZLLMROUTER_ADMIN_PASSWORD": fixture.BOOTSTRAP,
             },
         )
         environment.start()

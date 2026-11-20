@@ -26,7 +26,6 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
         raise ValueError("fresh synthetic credentials required")
     if os.environ.get("OPENAI_API_KEY") not in (None, provider_key):
         raise ValueError("unexpected provider credential")
-    os.environ["OPENAI_API_KEY"] = provider_key
     os.environ["LITELLM_DONT_SHOW_FEEDBACK_BOX"] = "true"
     os.environ["LITELLM_LOG"] = "ERROR"
     os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
@@ -72,7 +71,7 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
 
         store = FailGuardCommit(store)
 
-    adapter = adapter_factory()
+    adapter = adapter_factory(provider_key=provider_key)
     Path("/data/module-identities.json").write_text(
         json.dumps(adapter.module_identities, indent=2) + "\n"
     )

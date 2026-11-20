@@ -61,11 +61,18 @@ async def read_response(response):
 class ChoiceBSenderAdapter:
     """Single-use trusted attempt registry and pinned lower transport."""
 
-    def __init__(self, authority, registry=None, *, controlled_provider_proof=False):
+    def __init__(self, authority, registry=None, *, provider_key, controlled_provider_proof=False):
         self.authority = authority
         self.provider_registry = registry
         self.controlled_provider_proof = controlled_provider_proof
-        self.provider_key = os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]
+        if (
+            type(provider_key) is not str
+            or not provider_key.startswith("sk-")
+            or not 36 <= len(provider_key) <= 4096
+            or any(not 33 <= ord(c) <= 126 for c in provider_key)
+        ):
+            raise ValueError("invalid trusted provider credential")
+        self.provider_key = provider_key
         self.registry: dict[str, Invocation] = {}
         self.claimed: set[str] = set()
         self.lock = threading.Lock()
@@ -213,6 +220,7 @@ class ChoiceBSenderAdapter:
         if actual != expected:
             raise ContractError("FDC_REJECTED", 409)
         invocation = Invocation(**guard_context)
+        invocation.provider_key = self.provider_key
         budget = remaining_seconds(timeout_ms, invocation.deadline)
         invocation.execution_deadline = min(
             datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")),
@@ -377,6 +385,7 @@ class ChoiceBSenderAdapter:
             invocation.provider_key = provider_key
         else:
             provider_key = self.provider_key
+            invocation.provider_key = provider_key
         header_map["authorization"] = "Bearer " + provider_key
         request = httpx.Request(
             "POST", expected_url, headers=header_map, content=body, extensions={"timeout": timeout}

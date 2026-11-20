@@ -58,6 +58,15 @@ The command requires existing absolute paths and does not initialize an instance
 register accounts, discover models or call a provider. Its output contains only
 the scope, active key identifier and number of rewritten secrets.
 
+Maintenance acquires an exclusive instance lease before opening the database or
+changing keys. Every current `SQLiteStore` holds a shared lease until it closes;
+rotation, resume, retirement and `integration_local --backup` refuse a live
+instance. The lease is the canonical database path plus `.instance.lock`, owned
+by the service user with mode `0600`. Never remove that file while any owner may
+still be running: replacing its inode would bypass exclusion. Older server
+versions and external SQLite tools do not participate in the lease protocol and
+must also be stopped explicitly.
+
 Rotation publishes the new write key durably before rewriting ciphertext.
 Database rewrites commit in one transaction per store. Vault files are replaced
 atomically one at a time. Credential versions, account/connector revisions,
@@ -67,8 +76,66 @@ If maintenance is interrupted, correct the reported fault and run the same
 command with `resume` in place of `rotate`. Resume uses the already active key;
 it does not generate another key. A completed resume reports zero rewrites when
 all records already use that key. The keyring retains predecessors so partially
-rewritten data and older backups remain decryptable. Automatic key deletion and
-HMAC-key rotation are outside this command.
+rewritten data and older backups remain decryptable. Rotation and resume never
+delete predecessors. Retirement is a separate, explicit operation; HMAC-key
+rotation is outside this command.
+
+## Retire an old encryption key
+
+Before rotating, run `resume` and record its active key identifier if you intend
+to retire that key later. After rotation, complete `resume` and verify backups
+before retiring it. Keep services stopped throughout maintenance.
+
+Retirement scans references in all integration credential versions, every local
+connector ciphertext, or every sealed provider-vault file for the selected scope.
+It verifies decryption and record binding without rewriting ciphertext. Active
+keys, referenced keys, unknown keys and unverifiable stored credentials prevent
+retirement. Unselected and orphaned vault files are included and can block it.
+The independent HMAC key is preserved.
+
+The command cannot inspect external backups. `--confirm-no-dependent-backups`
+is the owner's explicit acknowledgment that no retained backup or other data
+still needs the selected key. Restore and re-encrypt needed backups first, or
+retain their keyring securely instead of retiring the key. For example:
+
+```sh
+uv run --project server --frozen --no-python-downloads \
+  python -m ezllmrouter_server.secret_rotation retire \
+  --scope integration \
+  --db "$PWD/local-instance/service.sqlite" \
+  --keyring "$PWD/local-instance/secrets/integration.keys.json" \
+  --key-id OLD_KEY_ID --confirm-no-dependent-backups
+```
+
+Use `--scope connectors` or `--scope provider` with the corresponding paths to
+retire a key from those stores. This removes only the selected key from the live
+keyring. It does not erase key material from copied keyrings, backups or storage
+snapshots, and does not revoke those copies.
+
+## Keyring caching and filesystem requirements
+
+Each `SecretBox` caches its validated keyring and decoded cryptographic objects.
+Every operation checks file identity, size, timestamps, owner and permissions;
+a changed generation is read and validated again. Rotation by another instance
+is observed on the next operation. Missing, corrupt, symlinked or insecure files
+fail closed rather than using stale cached keys. Every encryption still creates
+a fresh random nonce.
+
+Use a local POSIX filesystem with coherent file metadata, working advisory
+`flock`, atomic same-directory hard-link creation and replacement, and file and
+directory `fsync`. Run services and maintenance under the same owning user.
+Hard-linked database files are rejected; the maintenance command also rejects a
+symlink as its database input. Network, FUSE and other filesystems are suitable
+only when those guarantees have been established for the actual deployment.
+
+Private publication writes a `0600` temporary file in the destination directory,
+syncs its contents, publishes by link or replacement, then syncs the directory.
+There is no in-place copy fallback when atomic publication is unsupported.
+Existing destinations still block no-replace publication. An
+`AtomicPublicationError` reports whether publication already occurred: directory
+sync can fail after a complete new file becomes visible. Preserve credential
+custody in that case, inspect the target and recover with the relevant resume
+procedure rather than deleting a potentially committed credential or keyring.
 
 ## Resume provider credential cleanup
 

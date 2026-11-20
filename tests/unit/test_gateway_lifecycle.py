@@ -197,6 +197,7 @@ class GatewayLifecycleTests(unittest.TestCase):
         for rpc_failure in (False, True):
             with self.subTest(rpc_failure=rpc_failure):
                 adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+                adapter.provider_key = "sk-" + "s" * 40
                 adapter.authority = LocalSendAuthority()
                 adapter.registry, adapter.claimed, adapter.lock = {}, set(), threading.Lock()
                 waiting = threading.Event()

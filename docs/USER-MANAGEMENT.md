@@ -26,10 +26,14 @@ The initial account is bound to the existing active human administrator, normall
 Passwords must contain 12–256 characters. Password changes sign out existing
 sessions; sign in again with the new password.
 
-To choose different initial credentials, set `EZLLMROUTER_ADMIN_USERNAME` and
-`EZLLMROUTER_ADMIN_PASSWORD` in the service environment before its first start.
-These values only seed an empty account table. Restarting the service or changing
-the environment does not overwrite an existing account or password.
+To choose a different initial username, set `EZLLMROUTER_ADMIN_USERNAME` before
+the first start. Supply the initial password through the owner-only bootstrap
+file, or through the explicit `bootstrap_password` library constructor argument.
+The file contains UTF-8 password text with an optional single trailing LF
+terminator. All other whitespace and Unicode are preserved. For a password that
+itself ends in LF, write that password followed by its terminator. The old
+`EZLLMROUTER_ADMIN_PASSWORD` environment variable is ignored. Bootstrap inputs
+only seed an empty account table and never overwrite an existing password.
 
 ## Roles
 
@@ -77,7 +81,13 @@ Passwords are stored as salted scrypt verifiers, separately from public identity
 records. They are excluded from API responses and audit entries. Browser sessions
 use HttpOnly, SameSite cookies, expire after 30 minutes, and recheck the current
 account state on each request. Writes require both the allowed Origin and a CSRF
-token. Login attempts are limited to 20 per minute per client address.
+token. Named login throttling follows the case-insensitive username across client
+addresses, with at most 20 failed or pending attempts per rolling minute and two
+concurrent verifications per identity. There are eight concurrent login slots
+across the application. A successful login clears that identity's failures.
+Credential-only login uses the client address. HTTPS proxy deployments must use
+the explicit Unix-socket policy described in [security](SECURITY.md); that policy
+adds Secure to session and clearing cookies.
 
 Login rechecks account state after password verification and before creating its
 session, so a completed password reset or permission change during verification

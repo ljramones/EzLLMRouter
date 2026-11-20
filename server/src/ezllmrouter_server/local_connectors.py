@@ -349,7 +349,7 @@ def connector_context(connector_id):
     return encode({"connector_id": connector_id}).encode()
 
 
-def reencrypt_connectors(store, box):
+def reencrypt_connectors(store, box, *, verify_only=False):
     def rewrite():
         changed = 0
         for identifier, raw in store.database.execute(
@@ -358,7 +358,7 @@ def reencrypt_connectors(store, box):
             envelope = json.loads(raw)
             context = connector_context(identifier)
             value = box.open(envelope, context)
-            if envelope["key_id"] != box.active_id:
+            if not verify_only and envelope["key_id"] != box.active_id:
                 store.database.execute(
                     _queries.REWRITE_UPDATE_LOCAL_CONNECTORS,
                     (encode(box.seal(value, context)), identifier),

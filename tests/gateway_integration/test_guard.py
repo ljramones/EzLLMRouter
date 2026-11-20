@@ -3,13 +3,11 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 import json
-import os
 from pathlib import Path
 import sys
 import tempfile
 import sqlite3
 import unittest
-from unittest.mock import patch
 
 import httpx
 
@@ -50,7 +48,9 @@ def projection(text="Hi"):
     }
 
 
-def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
+def invocation(
+    aid="attempt.one", text="Hi", fresh=None, commit=None, provider_key="sk-" + "x" * 40
+):
     return Invocation(
         "submission.one",
         aid,
@@ -70,14 +70,12 @@ def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
         projection(text),
         fresh or (lambda: None),
         commit or (lambda _receipt: None),
+        provider_key=provider_key,
     )
 
 
 class GuardTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        environment = patch.dict(os.environ, {"EZLLMROUTER_DEV04_PROVIDER_KEY": "sk-" + "x" * 40})
-        environment.start()
-        self.addCleanup(environment.stop)
         self.arrivals = []
 
         def lower(request):
@@ -97,7 +95,7 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
             return await self.client.post(
                 url,
                 json=body or provider_expectation(context.projection),
-                headers={"Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]},
+                headers={"Authorization": "Bearer " + ("sk-" + "x" * 40)},
             )
         finally:
             ACTIVE.reset(token)
@@ -169,7 +167,7 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
             await self.client.post(
                 PROVIDER_URL,
                 json=provider_expectation(projection()),
-                headers={"Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]},
+                headers={"Authorization": "Bearer " + ("sk-" + "x" * 40)},
             )
         self.assertEqual(raised.exception.code, "NO_TRUSTED_CONTEXT")
         self.assertEqual(self.arrivals, [])

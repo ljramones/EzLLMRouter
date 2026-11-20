@@ -101,31 +101,52 @@ def password_matches(value, encoded):
 
 
 class LoginThrottle:
-    """Bound hashing work per client without permanently locking an account."""
+    """Bound failed guesses by account and reserve finite concurrent hashing work."""
 
     def __init__(self, clock=time.monotonic):
         self.clock, self.lock = clock, threading.Lock()
         self.attempts = defaultdict(deque)
+        self.pending = {}
+        self._key = secrets.token_bytes(32)
 
-    def allow(self, peer):
+    def begin(self, peer, subject=None):
+        identity = ("account\0" + subject) if subject is not None else ("credential\0" + peer)
+        key = hmac.new(self._key, identity.encode(), hashlib.sha256).hexdigest()
         now = self.clock()
         with self.lock:
-            for key in tuple(self.attempts):
-                while self.attempts[key] and self.attempts[key][0] <= now - 60:
-                    self.attempts[key].popleft()
-                if not self.attempts[key]:
-                    del self.attempts[key]
-            if peer not in self.attempts and len(self.attempts) >= 512:
-                return False
-            attempts = self.attempts[peer]
-            if len(attempts) >= 20:
-                return False
-            attempts.append(now)
-            return True
+            for old in tuple(self.attempts):
+                while self.attempts[old] and self.attempts[old][0] <= now - 60:
+                    self.attempts[old].popleft()
+                if not self.attempts[old]:
+                    del self.attempts[old]
+            active = list(self.pending.values())
+            if (
+                len(active) >= 8
+                or active.count(key) >= 2
+                or len(self.attempts.get(key, ())) + active.count(key) >= 20
+            ):
+                return None
+            if (
+                key not in self.attempts
+                and key not in active
+                and len(set(active) | self.attempts.keys()) >= 512
+            ):
+                return None
+            ticket = object()
+            self.pending[ticket] = key
+            return ticket
+
+    def finish(self, ticket, *, failed=False, success=False):
+        with self.lock:
+            key = self.pending.pop(ticket)
+            if success:
+                self.attempts.pop(key, None)
+            elif failed:
+                self.attempts[key].append(self.clock())
 
 
 class UserManager:
-    def __init__(self, registry, *, bootstrap_password_file=None):
+    def __init__(self, registry, *, bootstrap_password_file=None, bootstrap_password=None):
         self.registry, self.store = registry, registry.store
         self.bootstrap_password_file = (
             Path(bootstrap_password_file)
@@ -133,10 +154,10 @@ class UserManager:
             else Path(self.store.path).parent / ".console-secrets" / "admin.password"
         )
         self._dummy_hash = password_hash(secrets.token_urlsafe(24))
-        self._bootstrap()
+        self._bootstrap(bootstrap_password)
         registry.users = self
 
-    def _bootstrap(self):
+    def _bootstrap(self, bootstrap_password=None):
         def action():
             db = self.store.database
             if db.execute(_queries.ACTION_SELECT_CONSOLE_USERS).fetchone():
@@ -159,9 +180,9 @@ class UserManager:
                     "an existing active administrator is required for console bootstrap"
                 )
             name = username(os.environ.get("EZLLMROUTER_ADMIN_USERNAME", DEFAULT_ADMIN_USERNAME))
-            secret = os.environ.get("EZLLMROUTER_ADMIN_PASSWORD")
+            secret = bootstrap_password
             if secret is None:
-                secret = secret_text(self.bootstrap_password_file)
+                secret = secret_text(self.bootstrap_password_file, preserve=True)
             try:
                 validate_password(secret)
             except UserError as exc:

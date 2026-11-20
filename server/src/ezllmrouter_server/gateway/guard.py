@@ -272,11 +272,7 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
     if request.method != "POST" or str(request.url) != expected_url:
         raise GuardRejected()
     headers = request.headers
-    provider_key = (
-        invocation.provider_key
-        if provider_route
-        else os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY", "")
-    )
+    provider_key = invocation.provider_key
     if (
         type(provider_key) is not str
         or len(provider_key) < (16 if provider_route else 36)

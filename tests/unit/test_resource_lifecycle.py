@@ -286,7 +286,7 @@ class StartupCleanupTests(unittest.TestCase):
             ),
         ):
             with self.assertRaises(ValueError):
-                asgi_module.LiteLLMAsgiAdapter(lower=lower)
+                asgi_module.LiteLLMAsgiAdapter(lower=lower, provider_key="sk-" + "s" * 40)
         lower.aclose.assert_awaited_once()
         self.assert_stopped(values)
 
@@ -344,7 +344,7 @@ class StartupCleanupTests(unittest.TestCase):
                 patch.dict(sender.os.environ, {"EZLLMROUTER_DEV04_PROVIDER_KEY": "synthetic"}),
             ):
                 with self.assertRaises(RuntimeError):
-                    sender.ChoiceBSenderAdapter(LocalSendAuthority())
+                    sender.ChoiceBSenderAdapter(LocalSendAuthority(), provider_key="sk-" + "s" * 40)
             create.assert_not_called()
             self.assertEqual(path.read_text(), "existing")
 
@@ -368,7 +368,7 @@ class StartupCleanupTests(unittest.TestCase):
                 patch.dict(sender.os.environ, {"EZLLMROUTER_DEV04_PROVIDER_KEY": "synthetic"}),
             ):
                 with self.assertRaises(PermissionError):
-                    sender.ChoiceBSenderAdapter(LocalSendAuthority())
+                    sender.ChoiceBSenderAdapter(LocalSendAuthority(), provider_key="sk-" + "s" * 40)
             self.assertFalse(path.exists())
         server.server_close.assert_called_once()
         server.shutdown.assert_not_called()
@@ -891,13 +891,17 @@ class OperatorFailureCleanupTests(unittest.TestCase):
     def test_operator_socket_permission_failure_closes_the_allocated_listener(self):
         from ezllmrouter_server import operator_web
 
-        listener = SimpleNamespace(server_close=Mock())
-        with (
-            patch.object(operator_web, "UnixOperatorServer", return_value=listener),
-            patch.object(
-                operator_web.os, "chmod", side_effect=PermissionError("controlled permissions")
-            ),
-        ):
-            with self.assertRaises(PermissionError):
-                operator_web.serve("127.0.0.1", 12345, socket_path="unused", **self.arguments())
-        listener.server_close.assert_called_once()
+        stream = Mock()
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "operator.sock")
+            stream.getsockname.return_value = path
+            with (
+                patch.object(operator_web.socket, "socket", return_value=stream),
+                patch.object(
+                    operator_web.os, "chmod", side_effect=PermissionError("controlled permissions")
+                ),
+            ):
+                with self.assertRaises(PermissionError):
+                    operator_web.serve("127.0.0.1", 12345, socket_path=path, **self.arguments())
+        stream.listen.assert_not_called()
+        stream.close.assert_called_once()

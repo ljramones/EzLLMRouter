@@ -41,7 +41,14 @@ class RestrictedProxy:
 class LiteLLMAsgiAdapter:
     """The proxy executes on one event loop; ContextVar scopes each invocation."""
 
-    def __init__(self, *, lower=None, request_timeout=1.0):
+    def __init__(self, *, provider_key, lower=None, request_timeout=1.0):
+        if (
+            type(provider_key) is not str
+            or not provider_key.startswith("sk-")
+            or not 36 <= len(provider_key) <= 4096
+        ):
+            raise ValueError("invalid trusted provider credential")
+        self.provider_key = provider_key
         self.lower_transport = lower
         self.request_timeout = request_timeout
         self._runtime = LoopThread("ezllmrouter-proxy-asgi")
@@ -88,6 +95,7 @@ class LiteLLMAsgiAdapter:
         await proxy_server.initialize(
             model=PROXY_MODEL,
             api_base=provider_base,
+            api_key=self.provider_key,
             request_timeout=selected_timeout,
             drop_params=False,
             add_function_to_prompt=False,
@@ -143,6 +151,7 @@ class LiteLLMAsgiAdapter:
         if actual != expected:
             raise ContractError("FDC_REJECTED", 409)
         invocation = Invocation(**guard_context)
+        invocation.provider_key = self.provider_key
         future = self._call(self._send(prepared, timeout_ms, invocation))
         try:
             return future.result(timeout=timeout_ms / 1000 + 5)

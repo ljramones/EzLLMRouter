@@ -29,7 +29,7 @@ class AccountsRoutes:
                     extra=(
                         (
                             "Set-Cookie",
-                            "ezllmrouter_operator=; Path=/operator; HttpOnly; SameSite=Strict; Max-Age=0",
+                            self._session_cookie("", 0),
                         ),
                     ),
                 )

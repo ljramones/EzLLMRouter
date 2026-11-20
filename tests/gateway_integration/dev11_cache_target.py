@@ -159,7 +159,10 @@ def main():
             )
             campaign.transition("owner.local", "active")
             adapter = ChoiceBSenderAdapter(
-                authority, registry=registry, controlled_provider_proof=True
+                authority,
+                registry=registry,
+                controlled_provider_proof=True,
+                provider_key="sk-" + "s" * 40,
             )
             coordinator = Coordinator(
                 store,

@@ -117,8 +117,12 @@ python3 -I -S tests/security/check_credential_init.py
 It runs only the initializer in the digest-pinned Python base image with
 `CAP_CHOWN`, a read-only root filesystem, no network and a temporary credentials
 filesystem. It checks initial creation and replacement, service ownership and
-mode `0400`. It does not start or restart a deployment. This requires Docker;
-the `credential-init` CI job runs the same check.
+mode `0400`. It does not start or restart a deployment. This requires Docker
+with ARM64 execution support: the reused local-profile base digest identifies
+an ARM64 image, and the command explicitly requests `linux/arm64`. The
+`credential-init` CI job uses the native `ubuntu-24.04-arm` runner; other CI jobs
+retain their own platforms. Setting `--platform` alone does not enable emulation
+on an AMD64 host.
 
 ## Browser journeys
 

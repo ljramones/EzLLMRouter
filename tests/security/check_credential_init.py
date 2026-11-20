@@ -70,6 +70,8 @@ def main():
             "docker",
             "run",
             "--rm",
+            "--platform",
+            "linux/arm64",
             "--network",
             "none",
             "--read-only",

@@ -75,6 +75,7 @@ class RuntimeSafetyTests(unittest.TestCase):
                 raise TimeoutError("controlled worker timeout")
 
         adapter = LiteLLMAsgiAdapter.__new__(LiteLLMAsgiAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.describe = Mock(return_value={})
         future = TimedOut()
 
@@ -83,7 +84,9 @@ class RuntimeSafetyTests(unittest.TestCase):
             return future
 
         adapter._call = submit
-        item = invocation()
+        item = invocation(
+            provider_key=PROVIDER_KEY,
+        )
         item.plan["destination"] = {}
         context = {
             key: getattr(item, key)
@@ -124,6 +127,7 @@ class RuntimeSafetyTests(unittest.TestCase):
         proxy = modules["litellm.proxy.proxy_server"]
         proxy.initialize, proxy.app = AsyncMock(), Mock()
         adapter = LiteLLMAsgiAdapter.__new__(LiteLLMAsgiAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.lower_transport = httpx.MockTransport(lambda _: httpx.Response(200))
         adapter.request_timeout = 1.0
 
@@ -173,7 +177,13 @@ class RuntimeSafetyTests(unittest.TestCase):
         return patch.dict(os.environ, environment)
 
     def test_choice_b_sends_the_exact_bound_tool_request_with_all_old_switches_set(self):
-        item, receipts, arrivals = invocation(), [], []
+        item, receipts, arrivals = (
+            invocation(
+                provider_key=PROVIDER_KEY,
+            ),
+            [],
+            [],
+        )
         item.commit = receipts.append
         item.plan["work_key"]["step_id"] = "step.dev03.mutation"
         item.projection["work"].update(
@@ -194,6 +204,7 @@ class RuntimeSafetyTests(unittest.TestCase):
             return httpx.Response(200, json=PROVIDER_REPLY)
 
         adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.guard = GuardTransport(httpx.MockTransport(lower))
         request = httpx.Request(
             "POST",
@@ -211,9 +222,10 @@ class RuntimeSafetyTests(unittest.TestCase):
         self.assertIsNone(ACTIVE.get())
 
     def test_asgi_sends_the_bound_context_and_content_with_all_old_switches_set(self):
-        item = invocation(text="Simulate swapped context")
+        item = invocation(provider_key=PROVIDER_KEY, text="Simulate swapped context")
         body, arrivals, contexts = provider_expectation(item.projection), [], []
         adapter = LiteLLMAsgiAdapter.__new__(LiteLLMAsgiAdapter)
+        adapter.provider_key = PROVIDER_KEY
 
         def lower(request):
             arrivals.append(json.loads(request.content))
@@ -333,6 +345,7 @@ class FailureLoggingTests(unittest.TestCase):
 
     def test_trusted_relay_logs_command_failure_without_exception_values(self):
         adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.process_relay = Mock(side_effect=KeyError("secret-canary credential"))
         stream = RecordSocket({"kind": "final_request", "body_b64": "secret-canary"})
         adapter.handle_relay(stream)
@@ -342,6 +355,7 @@ class FailureLoggingTests(unittest.TestCase):
 
     def test_trusted_relay_logs_reply_failure_without_retrying(self):
         adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.process_relay = Mock(return_value={"status": 200})
         stream = RecordSocket({"kind": "final_request"})
         with patch.object(stream, "sendall", side_effect=OSError("secret-canary reply")) as write:
@@ -364,8 +378,11 @@ class FailureLoggingTests(unittest.TestCase):
         self.assertEqual(event["event"], "gateway.worker.start_or_serve_failed")
 
     def test_lower_failure_is_logged_without_request_or_exception_contents(self):
-        item = invocation()
+        item = invocation(
+            provider_key=PROVIDER_KEY,
+        )
         adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+        adapter.provider_key = PROVIDER_KEY
         adapter.guard = Mock(
             handle_async_request=Mock(side_effect=OSError("secret-canary provider"))
         )

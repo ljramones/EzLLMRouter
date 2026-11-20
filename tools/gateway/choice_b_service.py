@@ -45,7 +45,7 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
             return value
 
     identity = LiveIdentity({token: trusted})
-    adapter = adapter_factory(authority)
+    adapter = adapter_factory(authority, provider_key=provider_key)
 
     class AuthorityControl(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
         daemon_threads = True

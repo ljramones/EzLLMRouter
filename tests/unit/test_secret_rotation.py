@@ -1,7 +1,7 @@
 """Day-zero key separation and interrupted rotation, using temporary stores only."""
 
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import base64
 import io
 import json
@@ -17,8 +17,29 @@ from ezllmrouter_server.private_files import write_private
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.secret_box import SecretBox, SecretBoxError
 from ezllmrouter_server.secret_rotation import main as maintenance
+from ezllmrouter_server.store import SQLiteStore
 from tests.operator_console import test_integration_credentials as credential_fixtures
 from tests.operator_console import test_local_connectors as connector_fixtures
+
+
+@contextmanager
+def stopped_store(owner):
+    """Exercise the CLI after stopping all owners, then reopen the fixture service."""
+    path = owner.store.path
+    connectors = getattr(owner, "connectors", None)
+    if connectors is not None:
+        connectors.close()
+    owner.store.close()
+    try:
+        yield
+    finally:
+        owner.store = SQLiteStore(path)
+        owner.addCleanup(owner.store.close)
+        owner.registry.store = owner.store
+        for name in ("credentials", "connectors"):
+            subsystem = getattr(owner, name, None)
+            if subsystem is not None:
+                subsystem.store = owner.store
 
 
 SECRET = "synthetic-encryption-test-credential"
@@ -292,7 +313,7 @@ class IntegrationRotationTests(unittest.TestCase):
             "--keyring",
             str(self.key_path),
         ]
-        with redirect_stdout(output):
+        with stopped_store(self), redirect_stdout(output):
             self.assertEqual(maintenance(["rotate", *args]), 0)
             self.assertEqual(maintenance(["resume", *args]), 0)
         first, second = [json.loads(line) for line in output.getvalue().splitlines()]
@@ -333,7 +354,7 @@ class IntegrationRotationTests(unittest.TestCase):
 
         result = replace()
         output = io.StringIO()
-        with redirect_stdout(output):
+        with stopped_store(self), redirect_stdout(output):
             self.assertEqual(
                 maintenance(
                     [
@@ -360,7 +381,7 @@ class ConnectorRotationTests(connector_fixtures.LocalFixture):
         self.registry.integration_credentials = object()
         self.registry.provider_vault = object()
         output = io.StringIO()
-        with redirect_stdout(output):
+        with stopped_store(self), redirect_stdout(output):
             self.assertEqual(
                 maintenance(["rotate", "--scope", "connectors", "--db", self.store.path]), 0
             )

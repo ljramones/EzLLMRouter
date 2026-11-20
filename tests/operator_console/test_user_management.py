@@ -52,7 +52,7 @@ class UserFixture(unittest.TestCase):
         with patch.dict(
             os.environ, {"EZLLMROUTER_ADMIN_PASSWORD": DEFAULT_ADMIN_PASSWORD}, clear=True
         ):
-            self.users = UserManager(self.registry)
+            self.users = UserManager(self.registry, bootstrap_password=DEFAULT_ADMIN_PASSWORD)
 
     def create(self, name="alice", role="ordinary"):
         return self.users.create(
@@ -102,7 +102,7 @@ class UserTests(UserFixture):
             os.environ,
             {"EZLLMROUTER_ADMIN_USERNAME": "local-admin", "EZLLMROUTER_ADMIN_PASSWORD": PASSWORD},
         ):
-            configured = UserManager(self.registry)
+            configured = UserManager(self.registry, bootstrap_password=PASSWORD)
         self.assertTrue(configured.authenticate("local-admin", PASSWORD)["must_change_password"])
 
     def test_crud_preserves_attribution_and_records_audit(self):
@@ -279,7 +279,10 @@ class UserTests(UserFixture):
     def test_throttle_recovers_after_window(self):
         now = [0]
         throttle = LoginThrottle(clock=lambda: now[0])
-        self.assertTrue(all(throttle.allow("local") for _ in range(20)))
-        self.assertFalse(throttle.allow("local"))
+        for _ in range(20):
+            ticket = throttle.begin("local", "admin")
+            self.assertIsNotNone(ticket)
+            throttle.finish(ticket, failed=True)
+        self.assertIsNone(throttle.begin("local", "admin"))
         now[0] = 60
-        self.assertTrue(throttle.allow("local"))
+        self.assertIsNotNone(throttle.begin("local", "admin"))

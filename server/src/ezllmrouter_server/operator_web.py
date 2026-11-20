@@ -3,6 +3,7 @@
 import os
 import socket
 import socketserver
+import stat
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -12,6 +13,7 @@ from .local_connectors import LocalConnectors
 from .observability import log_failure
 from .operator_http.application import OperatorApplication
 from .operator_http.handler import OperatorHandler
+from .operator_http.policy import OperatorPolicy
 from .user_management import LoginThrottle, UserManager
 
 
@@ -23,7 +25,18 @@ class UnixOperatorServer(ThreadingHTTPServer):
         super().__init__(address, handler)
 
     def server_bind(self):
+        parent = Path(self.server_address).parent
+        metadata = parent.lstat()
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_mode & 0o022
+            or metadata.st_uid != os.geteuid()
+        ):
+            raise ValueError(
+                "operator socket directory must be owned and not writable by other users"
+            )
         socketserver.TCPServer.server_bind(self)
+        os.chmod(self.server_address, 0o600)
         self.server_name = "localhost"
         self.server_port = self.public_port
 
@@ -56,11 +69,13 @@ def serve(
     integration_only=False,
     mach33_demo=None,
     bootstrap_password_file=None,
+    public_origin=None,
 ):
-    if host not in ("0.0.0.0", "127.0.0.1") or not password or len(password) < 32:
+    if not password or len(password) < 32:
         raise ValueError("unsafe operator binding or credential")
-    allowed_hosts = allowed_hosts or {f"127.0.0.1:{port}", f"localhost:{port}"}
-    allowed_origins = {"http://" + value for value in allowed_hosts}
+    policy = OperatorPolicy.build(
+        host, port, allowed_hosts, unix_socket=socket_path is not None, public_origin=public_origin
+    )
     accounts = (
         registry.users or UserManager(registry, bootstrap_password_file=bootstrap_password_file)
         if registry
@@ -76,8 +91,9 @@ def serve(
     root = Path(web_root)
     application = OperatorApplication(
         accounts=accounts,
-        allowed_hosts=allowed_hosts,
-        allowed_origins=allowed_origins,
+        allowed_hosts=policy.hosts,
+        allowed_origins=policy.origins,
+        secure_cookies=policy.secure_cookies,
         build=build,
         fixture=fixture,
         integration_only=integration_only,
@@ -104,8 +120,6 @@ def serve(
             if socket_path is None
             else UnixOperatorServer(socket_path, OperatorHandler, port)
         )
-        if socket_path is not None:
-            os.chmod(socket_path, 0o600)
     except BaseException:
         try:
             application.close()

@@ -62,6 +62,13 @@ is closed before a result is returned. Connection setup, commit/rollback and
 maintenance opening remain in `SQLiteStore`. Offline maintenance validates an
 existing schema and never creates a database or initializes its tables.
 
+Persistent stores hold a shared instance lease until close. Encryption
+maintenance and the local backup command require an exclusive lease and reject
+live store owners before changing keys or creating backup targets. Keep the
+owner-only `DATABASE_PATH.instance.lock` sidecar in place; never unlink it to
+clear a busy instance. Older processes and external SQLite tools must also be
+stopped. See [offline maintenance and filesystem requirements](ENCRYPTION.md).
+
 The local implementation still uses one serialized SQLite connection. This
 change centralizes ownership and keeps atomic behavior; it does not claim a new
 database backend or parallel-read throughput.

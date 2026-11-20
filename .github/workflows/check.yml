@@ -23,7 +23,8 @@ jobs:
       - name: Local HTTP regression fixtures
         run: uv run --locked python -m tools.check --http-only
   credential-init:
-    runs-on: ubuntu-24.04
+    # The local profile pins an ARM64 image manifest; use its native architecture.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24

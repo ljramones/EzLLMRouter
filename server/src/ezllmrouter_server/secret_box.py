@@ -1,7 +1,7 @@
-"""Purpose-bound AES-GCM envelopes and durable, append-only key history.
+"""Purpose-bound AES-GCM envelopes with cached, explicitly retired keyrings.
 
-Publish a new write key before rewriting any ciphertext. Retaining every old
-key makes an interrupted rotation readable and resumable across processes.
+Publish a write key before rewriting ciphertext. Retained keys keep interrupted
+rotations readable; retirement requires offline reference and backup review.
 """
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ import json
 import os
 import secrets
 import stat
+import threading
+from copy import deepcopy
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -38,7 +40,7 @@ def validate_secret(value):
 
 def private_directory(path):
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if path.is_symlink() or path.stat().st_mode & 0o077:
+    if path.is_symlink() or path.stat().st_mode & 0o077 or path.stat().st_uid != os.geteuid():
         raise SecretBoxError("SECRET_DIRECTORY_PERMISSIONS")
 
 
@@ -70,6 +72,11 @@ def decode_envelope(raw):
 class SecretBox:
     def __init__(self, path, purpose, *, required_ids=(), required=False):
         self.path, self.purpose = Path(path), purpose
+        self._cache_lock = threading.RLock()
+        self._cached_fingerprint = None
+        self._cached_state = None
+        self._decoded_keys = {}
+        self._decoded_mac = None
         private_directory(self.path.parent)
         with self._locked():
             if not self.path.exists():
@@ -95,6 +102,12 @@ class SecretBox:
 
     @contextmanager
     def _locked(self):
+        with self._cache_lock:
+            with self._file_locked():
+                yield
+
+    @contextmanager
+    def _file_locked(self):
         descriptor = os.open(
             self.path.with_name(self.path.name + ".lock"),
             os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
@@ -102,15 +115,40 @@ class SecretBox:
         )
         try:
             metadata = os.fstat(descriptor)
-            if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+            if (
+                not stat.S_ISREG(metadata.st_mode)
+                or metadata.st_mode & 0o077
+                or metadata.st_uid != os.geteuid()
+            ):
                 raise SecretBoxError("SECRET_KEYRING_LOCK_PERMISSIONS")
             fcntl.flock(descriptor, fcntl.LOCK_EX)
             yield
         finally:
             os.close(descriptor)
 
+    def _fingerprint(self):
+        metadata = self.path.lstat()
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_mode & 0o077
+            or metadata.st_uid != os.geteuid()
+        ):
+            raise ValueError("unsafe keyring metadata")
+        return (
+            metadata.st_dev,
+            metadata.st_ino,
+            metadata.st_size,
+            metadata.st_mtime_ns,
+            metadata.st_ctime_ns,
+            metadata.st_mode,
+            metadata.st_uid,
+        )
+
     def _read(self):
         try:
+            fingerprint = self._fingerprint()
+            if self._cached_state is not None and fingerprint == self._cached_fingerprint:
+                return self._cached_state
             state = json.loads(
                 read_private(self.path, limit=1024 * 1024), object_pairs_hook=_unique
             )
@@ -124,17 +162,26 @@ class SecretBox:
                 or state["active_key_id"] not in state["keys"]
             ):
                 raise ValueError()
-            if len(base64.b64decode(state["mac_key"], validate=True)) != 32:
+            mac = base64.b64decode(state["mac_key"], validate=True)
+            if len(mac) != 32:
                 raise ValueError()
+            decoded = {}
             for identifier, encoded in state["keys"].items():
                 key = base64.b64decode(encoded, validate=True)
                 if len(key) != 32 or identifier != self._identifier(key):
                     raise ValueError()
+                decoded[identifier] = AESGCM(key)
+            if self._fingerprint() != fingerprint:
+                raise ValueError("keyring changed during read")
+            self._decoded_keys, self._decoded_mac = decoded, mac
+            self._cached_state, self._cached_fingerprint = state, fingerprint
             return state
         except (OSError, ValueError, TypeError, KeyError) as exc:
             raise SecretBoxError("SECRET_KEYRING_UNAVAILABLE") from exc
 
     def _write(self, state):
+        self._cached_state, self._cached_fingerprint = None, None
+        self._decoded_keys, self._decoded_mac = {}, None
         content = (json.dumps(state, sort_keys=True) + "\n").encode()
         if len(content) > 1024 * 1024:
             raise SecretBoxError("SECRET_KEYRING_CAPACITY")
@@ -148,24 +195,39 @@ class SecretBox:
     @property
     def identity(self):
         with self._locked():
-            key = base64.b64decode(self._read()["mac_key"], validate=True)
+            self._read()
+            key = self._decoded_mac
         return "ring." + hashlib.sha256(self.purpose.encode() + b"\0" + key).hexdigest()[:32]
 
     def request_digest(self, value):
         """Idempotency has its own key; rotating encryption preserves request identity."""
         with self._locked():
-            key = base64.b64decode(self._read()["mac_key"], validate=True)
+            self._read()
+            key = self._decoded_mac
         return hmac.new(key, self.purpose.encode() + b"\0" + value, hashlib.sha256).hexdigest()
 
     def rotate(self):
         with self._locked():
-            state = self._read()
+            state = deepcopy(self._read())
             key = secrets.token_bytes(32)
             identifier = self._identifier(key)
             state["keys"][identifier] = base64.b64encode(key).decode("ascii")
             state["active_key_id"] = identifier
             self._write(state)
             return identifier
+
+    def retire_key(self, identifier, *, referenced_ids, backup_acknowledged=False):
+        """Offline owner operation after a complete reference scan and backup review."""
+        if not backup_acknowledged:
+            raise SecretBoxError("SECRET_BACKUP_REVIEW_REQUIRED")
+        with self._locked():
+            state = deepcopy(self._read())
+            if identifier == state["active_key_id"] or identifier in referenced_ids:
+                raise SecretBoxError("SECRET_KEY_STILL_IN_USE")
+            if identifier not in state["keys"]:
+                raise SecretBoxError("SECRET_KEY_UNAVAILABLE")
+            del state["keys"][identifier]
+            self._write(state)
 
     def _aad(self, context, identifier):
         return json.dumps(
@@ -184,12 +246,12 @@ class SecretBox:
         with self._locked():
             state = self._read()
             identifier = state["active_key_id"]
-            key = base64.b64decode(state["keys"][identifier], validate=True)
+            cipher = self._decoded_keys[identifier]
         nonce = secrets.token_bytes(12)
         return (
             identifier,
             nonce,
-            AESGCM(key).encrypt(nonce, value.encode(), self._aad(context, identifier)),
+            cipher.encrypt(nonce, value.encode(), self._aad(context, identifier)),
         )
 
     def open_parts(self, identifier, nonce, ciphertext, context):
@@ -203,8 +265,9 @@ class SecretBox:
             ):
                 raise ValueError()
             with self._locked():
-                key = base64.b64decode(self._read()["keys"][identifier], validate=True)
-            value = AESGCM(key).decrypt(nonce, ciphertext, self._aad(context, identifier)).decode()
+                self._read()
+                cipher = self._decoded_keys[identifier]
+            value = cipher.decrypt(nonce, ciphertext, self._aad(context, identifier)).decode()
             validate_secret(value)
             return value
         except Exception as exc:

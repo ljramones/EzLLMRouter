@@ -50,8 +50,6 @@ def main():
         or len(password) < 32
     ):
         raise RuntimeError("invalid local synthetic credential files")
-    os.environ["EZLLMROUTER_DEV_TOKEN"] = token
-    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = provider_key
     os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
     os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = "/data/send-events.jsonl"
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
@@ -85,7 +83,7 @@ def main():
             provider_execution_ready=True,
         )
         registry.personal_campaign = PersonalCampaign(store, registry)
-        adapter = ChoiceBSenderAdapter(authority, registry=registry)
+        adapter = ChoiceBSenderAdapter(authority, registry=registry, provider_key=provider_key)
         cleanup.callback(adapter.close)
         registry.runtime_ready = (
             lambda: adapter.server_thread.is_alive() and not authority.is_revoked()

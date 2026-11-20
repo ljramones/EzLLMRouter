@@ -24,6 +24,43 @@ Invalid trust material is rejected before opening a socket; response, TLS and
 socket cleanup also runs after transport or response-size failures. These
 fixed GET probes do not generate model work.
 
+## Operator login and browser transport
+
+Named login throttling follows the canonical username across client addresses.
+Each identity allows at most 20 failed or pending attempts in a rolling minute,
+two concurrent verifications, and eight concurrent logins across the application.
+Successful authentication clears that identity's failures. Credential-only login
+uses the client address instead. The throttle retains at most 512 identities as
+keyed hashes, without usernames or passwords; password hashing has its own
+two-operation concurrency limit. Expected authentication failures return safe
+errors without error-level stack traces. Unexpected failures return 503 and log
+only sanitized diagnostic metadata.
+
+The TCP console binds only to `127.0.0.1` and accepts loopback Host authorities.
+An embedding application can instead use `operator_web.serve` with a Unix socket
+and an explicit canonical HTTPS `public_origin` behind a trusted reverse proxy.
+That mode requires matching Host and Origin values and sets Secure on both
+session creation and clearing cookies. Forwarded headers do not enable HTTPS
+mode. The stock launchers remain local-only; they do not expose a remote-hosting
+switch. Keep the proxy's backend socket private and restrict access at the proxy.
+
+The Unix socket directory must belong to the service user and must not be
+group- or other-writable. Socket permissions are set to `0600` after binding and
+before listening; a permission failure prevents the listener from starting.
+
+## Secret inputs
+
+Production launchers read mounted private credential files and pass provider
+keys explicitly to trusted adapters. Guarded sends use the invocation's bound
+key; they do not fall back to a process environment variable. Synthetic test
+harness inputs and the isolated worker's public placeholder key are separate
+from production credentials.
+
+Bootstrap passwords come from the owner-only password file or an explicit
+`UserManager` constructor argument. `EZLLMROUTER_ADMIN_PASSWORD` is ignored;
+`EZLLMROUTER_ADMIN_USERNAME` remains a non-secret initial username setting.
+See [first sign-in](USER-MANAGEMENT.md#first-sign-in) for password file semantics.
+
 ## Execution isolation
 
 The request-preparation worker has no provider credentials or network interface.

@@ -72,7 +72,11 @@ class ProviderVault:
             with self._gate:
                 self._path(connection_id, version).unlink(missing_ok=True)
 
-    def reencrypt_secrets(self, connection_ids):
+    def key_references(self):
+        with self._gate:
+            return {self._read(path)["key_id"] for path in self.root.glob("*.sealed")}
+
+    def reencrypt_secrets(self, connection_ids, *, verify_only=False):
         """Atomically replace each file; a partial run can resume with old keys retained."""
         names = {hashlib.sha256(value.encode()).hexdigest(): value for value in connection_ids}
         changed = 0
@@ -84,7 +88,7 @@ class ProviderVault:
                 context = credential_context(names[match[1]], int(match[2]))
                 envelope = self._read(path)
                 value = self.box.open(envelope, context)
-                if envelope["key_id"] != self.box.active_id:
+                if not verify_only and envelope["key_id"] != self.box.active_id:
                     write_private(
                         path,
                         json.dumps(self.box.seal(value, context), sort_keys=True).encode(),

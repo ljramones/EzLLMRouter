@@ -103,7 +103,7 @@ class BootstrapTests(unittest.TestCase):
         self.store.db.execute("DELETE FROM console_users")
         with patch.dict(os.environ, {"EZLLMROUTER_ADMIN_PASSWORD": "short"}, clear=True):
             with self.assertRaises(UserError) as raised:
-                UserManager(self.registry)
+                UserManager(self.registry, bootstrap_password="short")
         self.assertEqual(raised.exception.code, "BOOTSTRAP_PASSWORD_REQUIRES_12_TO_256_CHARACTERS")
         self.assertEqual(
             self.store.db.execute("SELECT COUNT(*) FROM console_users").fetchone()[0], 0

@@ -313,7 +313,10 @@ def run(preflight=False):
                     raise RuntimeError("controlled receiver readiness deadline")
                 stage = "sender_and_coordinator"
                 adapter = ChoiceBSenderAdapter(
-                    authority, registry=registry, controlled_provider_proof=True
+                    authority,
+                    registry=registry,
+                    controlled_provider_proof=True,
+                    provider_key="sk-" + "s" * 40,
                 )
                 coordinator = Coordinator(
                     store,

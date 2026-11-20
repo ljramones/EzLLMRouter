@@ -3,7 +3,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 import json
-import os
 from pathlib import Path
 import socket
 import sys
@@ -111,8 +110,8 @@ class OwnedSenderTests(unittest.TestCase):
                 item.plan["per_attempt_total_timeout_ms"] = 3000
                 item.authority_epoch = authority.snapshot_epoch()
             key = "sk-" + "q" * 40
-            old_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
-            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = key
+            for item in (first, second):
+                item.provider_key = key
             entered, release = asyncio.Event(), asyncio.Event()
 
             async def held_receiver():
@@ -186,10 +185,6 @@ class OwnedSenderTests(unittest.TestCase):
                 await transport.aclose()
                 first_receiver.close()
                 second_receiver.close()
-                if old_key is None:
-                    os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
-                else:
-                    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = old_key
 
         epoch, arrival, receipts, first, second = asyncio.run(scenario())
         self.assertEqual(epoch, 1)
@@ -218,8 +213,7 @@ class OwnedSenderTests(unittest.TestCase):
             item.plan["per_attempt_total_timeout_ms"] = 3000
             item.authority_epoch = authority.snapshot_epoch()
             key = "sk-" + "t" * 40
-            old_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
-            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = key
+            item.provider_key = key
 
             async def synthetic_receiver():
                 body = b""
@@ -267,10 +261,6 @@ class OwnedSenderTests(unittest.TestCase):
                         pass
                 await transport.aclose()
                 receiver.close()
-                if old_key is None:
-                    os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
-                else:
-                    os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = old_key
 
         status, data, arrival, receipts, accepted = asyncio.run(scenario())
         self.assertEqual(status, 200)

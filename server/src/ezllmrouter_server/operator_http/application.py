@@ -71,6 +71,7 @@ class OperatorApplication:
     sessions: dict[str, OperatorSession]
     successor_store: SQLiteStore | None
     worker_probe: Callable[[], Mapping[str, JSONValue]]
+    secure_cookies: bool = False
     _closing: bool = field(default=False, init=False)
     scheduler_stop: threading.Event = field(default_factory=threading.Event, init=False)
     maintenance_stop: threading.Event = field(default_factory=threading.Event, init=False)

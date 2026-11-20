@@ -275,7 +275,9 @@ class Instance:
             provider_vault=ProviderVault(self.root / "vault"),
         )
         self.users = UserManager(
-            self.registry, bootstrap_password_file=self.root / "admin.password"
+            self.registry,
+            bootstrap_password_file=self.root / "admin.password",
+            bootstrap_password=BOOTSTRAP,
         )
         self.registry.integration_credentials = DatabaseCredentialStore(
             self.registry,
@@ -390,7 +392,6 @@ def main():
     args = parser.parse_args()
     options = json.loads(args.options)
     os.environ["EZLLMROUTER_ADMIN_USERNAME"] = "admin"
-    os.environ["EZLLMROUTER_ADMIN_PASSWORD"] = BOOTSTRAP
     with tempfile.TemporaryDirectory(prefix="ezllmrouter-browser-") as directory:
         instance = Instance(Path(directory), options)
         if args.validate:

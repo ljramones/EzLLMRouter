@@ -22,6 +22,7 @@ from .operator_web import serve as operator_serve
 from .mach33_demo import Mach33Demo
 from .registry import Registry
 from .store import SQLiteStore
+from .instance_lock import InstanceLease, InstanceBusy
 from .web import serve as api_serve
 
 try:
@@ -109,12 +110,16 @@ def main(argv=None):
             or args.backup == args.db
         ):
             parser.error("new absolute backup destination required")
-        write_private(args.backup, b"")
-        with (
-            closing(sqlite3.connect(args.db)) as source,
-            closing(sqlite3.connect(args.backup)) as target,
-        ):
-            source.backup(target)
+        try:
+            with InstanceLease(args.db, exclusive=True):
+                write_private(args.backup, b"")
+                with (
+                    closing(sqlite3.connect(args.db)) as source,
+                    closing(sqlite3.connect(args.backup)) as target,
+                ):
+                    source.backup(target)
+        except InstanceBusy:
+            parser.error("stop services and other maintenance before backing up")
         print("consistent backup:", args.backup)
         return
     if (

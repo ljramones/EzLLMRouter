@@ -33,7 +33,7 @@ def credential_context(account_id, version, provider):
     return encode({"account_id": account_id, "version": version, "provider": provider}).encode()
 
 
-def reencrypt_credentials(store, box):
+def reencrypt_credentials(store, box, *, verify_only=False):
     def rewrite():
         rows = store.database.execute(
             _queries.REWRITE_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
@@ -43,7 +43,7 @@ def reencrypt_credentials(store, box):
             binding = json.loads(raw)
             context = credential_context(account_id, version, binding["provider"])
             value = box.open_parts(key_id, nonce, ciphertext, context)
-            if key_id != box.active_id:
+            if not verify_only and key_id != box.active_id:
                 replacement = box.seal_parts(value, context)
                 store.database.execute(
                     _queries.REWRITE_UPDATE_INTEGRATION_CREDENTIAL_VERSIONS,

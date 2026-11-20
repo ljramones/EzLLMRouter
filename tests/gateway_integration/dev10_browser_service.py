@@ -198,7 +198,9 @@ def main():
     os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
     os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(ROOT / "guard.jsonl")
     os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(ROOT / "send.jsonl")
-    adapter = ChoiceBSenderAdapter(authority, registry=registry, controlled_provider_proof=True)
+    adapter = ChoiceBSenderAdapter(
+        authority, registry=registry, controlled_provider_proof=True, provider_key="sk-" + "s" * 40
+    )
     registry.runtime_ready = lambda: adapter.server_thread.is_alive() and not authority.is_revoked()
     coordinator = Coordinator(
         store,

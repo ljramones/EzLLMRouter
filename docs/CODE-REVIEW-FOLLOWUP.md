@@ -32,6 +32,9 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP structural cleanup is recorded separately below. |
 | 4.3.1 / 4.3.2: HTTP structure | Resolve routes from explicit method/path metadata before dispatch, retaining authorization stages and selector validation. Consolidate the public asset allowlist and four CSV writers, replace dependency re-exports with direct imports, type application/session/lifecycle state and clarify operation-specific failure events. Twelve offline regressions exercise real handlers, route precedence, permission and body-read boundaries, export values and safe logging. An old/new handler comparison preserves status/error/header behavior across 1,033 requests and identical bytes for all four CSV exports. Strict typing expands to 31 modules. |
 | 5.4 / 5.5 / 5.9: Shared server logic | Share exact money/UTC rendering and a JSON engine with explicit policies while retaining wire-version limits, null/control/negative-zero behavior, canonical ordering and digest domains. Centralize active administrator checks, transactional authority/audit bookkeeping and usage revision appends. Introduce a domain-error root and named state types while preserving catch types, retry attributes and plain wire strings. Declare optional collaborators, inject guarded sending/readiness/successor ownership and remove attribution's Registry import cycle. Split the registry action dispatcher (785 to 33 lines), usage report (484 to 93), external report (302 to 100) and Coordinator admission/dispatch with typed snapshots. Add 24 offline regressions; strict typing covers 36 modules. |
+| 4.6 / 4.10 / 4.3.5: Login and operator transport policy | Bound failed and pending named logins by canonical username across peers, clear failures after success, and cap concurrent work and retained identities. Expected credential rejection has no ERROR stack trace; unexpected faults return a sanitized 503. TCP is loopback-only; an explicit HTTPS origin over a private Unix socket enables Secure session and clearing cookies. Owned socket directories and mode `0600` are checked before listening. Product-specific integration forwarding remains outside this security batch. |
+| 4.2.7: Environment-based provider credentials | Trusted adapter constructors receive provider keys explicitly; invocation guards use only the bound credential. Production startup no longer exports service/provider secrets into the environment. Console bootstrap uses a private UTF-8 password file or explicit library argument and preserves password whitespace. Synthetic harness environment inputs and the worker's public placeholder remain fixture mechanisms. |
+| 4.3.5: Offline encryption maintenance, key retirement and filesystems | Shared service leases exclude exclusive rotation, resume, retirement and local backup before key changes. Retirement verifies all stored references and decryptability, rejects active/referenced keys, and requires explicit backup-dependency acknowledgment. Keyring generation caching avoids repeated parsing and cipher construction while checking metadata every operation. Atomic publication reports whether a fault followed publication; required local filesystem guarantees and recovery limits are documented. |
 | 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. The quality batch expanded strict mypy to 28 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
 | 4.2.7 / 5.11 / 3.10: Resource ownership and lifecycle | Coordinator and successor expose draining, idempotent close methods; execution queues and completed-future retention are bounded. Sender/worker IPC and ingress have connection limits and whole-frame/write deadlines. Worker socket exchange is async and cancellable; rejected executor submissions cannot execute later. Gateway startup failures close partial clients, listeners and loop threads. HTTP input enforces its deadline without per-request timer threads. Registry wire tokens expire/prune under a short memory lock; operator shutdown revokes session tokens and blocks late publication. Local-service startup/shutdown unwinds resources in dependency order. |
 | 3.10: Authentication context selection | Empty/malformed expiry contexts return 401. Exact credentials retain their own scope, registry defaults use an explicit or unambiguous common context, and implicit execution credential selection rejects ambiguous aliases. Tests reverse insertion order and verify explicit context/credential behavior. |
@@ -47,8 +50,8 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 716 unittest cases plus
-the console component checks, Ruff and the existing strict mypy scope.
+The expanded offline Python/component runner passes: 795 unittest cases plus
+seven console component scripts, Ruff and strict mypy across 38 modules.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
 
@@ -64,6 +67,13 @@ frozen-worker integration are **unverified here**. CI jobs are configured for th
 first three; the reviewed frozen worker needs its own isolated qualification.
 The browser run above is evidence for its saved baseline, not a rerun after
 these server changes.
+
+The credential-initializer CI job uses native `ubuntu-24.04-arm` and explicitly
+requests Docker platform `linux/arm64`. Its existing base-image digest is an
+ARM64 image manifest; the prior AMD64 runner failed with `exec format error`
+before executing the check. The digest and capability restrictions are unchanged.
+This fixes the runner mismatch; a subsequent CI run must still establish the
+actual CHOWN-only result.
 
 The gateway follow-up adds 14 focused runtime/logging checks, including exact
 bound requests with every former fixture switch enabled, fixed startup
@@ -167,6 +177,22 @@ revisions, 36 usage reports and 15 external accounting reports. Evidence and the
 source snapshot are under ignored `.artifacts/code-review/shared-server-batch/`.
 Browser, listener and frozen-worker target qualification remain separate checks.
 
+The security/encryption batch passes 795 offline unittest cases, seven console
+component scripts, Ruff and strict mypy across 38 modules; 427 Python files pass
+formatting checks. Its 43 new regressions cover throttling, cookie and origin
+policy, pre-listen permissions, expected-error logging, explicit secret inputs,
+cross-process maintenance exclusion, key cache invalidation, retirement reference
+and backup guards, and filesystem publication failures. Fixtures use disposable
+stores, memory HTTP handlers, socket pairs and child processes without listeners
+or provider requests.
+
+The built wheel passes 211 selected tests; all 103 packaged files match the
+source and imported server modules come from the extracted wheel. Evidence is
+under ignored `.artifacts/code-review/security-encryption-batch/`. No existing
+instance, private key material, applied migration or frozen dependency input was
+changed. Browser, actual listener/TLS and frozen-worker qualification remain
+pending for this batch, including the explicit ASGI proxy credential input.
+
 The local deployment evidence driver now observes the durable guard receipt
 and held receiver request before revocation. It no longer reads private pool
 queues; any new deployment run must validate this before-first-write evidence
@@ -192,13 +218,39 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Continue strict typing into the remaining service/client modules; the expanded
-   36-module scope is not full coverage (4.3.2). Other lower-severity structural
-   findings remain open unless covered by an implemented-fix entry above.
-2. Continue the platform, process recovery, generated-input and performance work
-   in the testing roadmap and complete the outstanding target checks.
+1. **Python client consistency and API polish:** unify the remaining request
+   pipelines, header/error handling, exception root and schema-validator policies.
+   Add public typing and `py.typed`, address the Python naming convention, tighten
+   base-URL validation, review credential exposure and remove unused resources
+   (5.4 / report-1 6.6–6.7).
+2. **Remaining runtime coupling, naming and packaging:** remove fixed consumer,
+   purpose, identity/class and integration-forwarding assumptions; replace
+   milestone names and hidden aliases; derive release metadata from one source.
+   Consolidate remaining descriptor, demo and gateway duplication, narrow expected
+   parser-error handling, and separate fixture-only successor code from the
+   production wheel (4.2.7 / 4.3.5 / 5.1 / 5.3).
+3. **Deployment hygiene:** consolidate command runners and filesystem helpers,
+   resolve the `profile` module name collision, finish timeout/error/connection
+   cleanup, remove dated run IDs and make Docker context selection explicit.
+   Review restart's automatic source preparation, correct stale client-version
+   evidence labels and remove unnecessary image layers/test-source staging
+   (4.3.5 / 5.5).
+4. **Broader typing:** extend strict checks into remaining services and clients.
+   The current 38-module scope is not full coverage (4.3.2).
+5. **Test/tooling hygiene:** separate evidence drivers from tests, simplify import
+   strategies and compatibility shims, remove duplicated harnesses and improve
+   naming. Finish port-allocation race, sleep, missing-tool and assertion cleanup;
+   standardize JavaScript test entry points and reduce production dependence on
+   test fixtures (5.6).
+6. **Validation and the testing roadmap:** rerun browsers and actual HTTP/TLS
+   fixtures after the fixes, confirm credential initialization on the corrected
+   ARM64 CI runner, qualify Rust and the isolated frozen worker in their target
+   environments, and measure subsystem coverage. Complete process-termination
+   recovery, backup/restore, supported-platform, generated-input and sustained
+   performance testing. Existing synthetic database benchmarks cover only part
+   of that roadmap; they do not establish production capacity.
 
-GitHub Actions hardening is deferred to a separate activity at the owner's
+Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts
 and action revisions (4.3.3).
 

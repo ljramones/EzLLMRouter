@@ -98,7 +98,12 @@ def scenario(root, fixture, base, receiver_log, name, action):
         require(campaign.summary()["state"] == "draft", name + " automatically activated")
         campaign.transition("owner.local", "active")
         token = registry.issue_local_operator_token("owner.local")
-        adapter = ChoiceBSenderAdapter(authority, registry=registry, controlled_provider_proof=True)
+        adapter = ChoiceBSenderAdapter(
+            authority,
+            registry=registry,
+            controlled_provider_proof=True,
+            provider_key="sk-" + "s" * 40,
+        )
         coordinator = Coordinator(
             store,
             {TEST_TOKEN: fixture["trusted_context"]},

@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 
 from ezllmrouter_server import integration_local
 from ezllmrouter_server.integration_bootstrap import BootstrapError, SERVICES, ensure_services
-from ezllmrouter_server.private_files import read_private, write_private
+from ezllmrouter_server.private_files import AtomicPublicationError, read_private, write_private
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
 
@@ -132,8 +132,9 @@ class StartupRecoveryTests(unittest.TestCase):
             "ezllmrouter_server.private_files.os.link",
             side_effect=OSError("disk write interrupted"),
         ):
-            with self.assertRaisesRegex(OSError, "interrupted"):
+            with self.assertRaises(AtomicPublicationError) as failed:
                 ensure_services(self.registry, self.directory)
+        self.assertFalse(failed.exception.published)
         self.assertEqual(list(self.directory.iterdir()), [])
         self.assertEqual(self.registry.principal("svc.integration")["credential_state"], "unbound")
         self.assertEqual(

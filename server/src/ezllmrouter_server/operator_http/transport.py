@@ -6,6 +6,15 @@ from .common import _pairs, _reject_number, csv_bytes
 
 
 class TransportRoutes:
+    def _session_cookie(self, token, max_age):
+        return (
+            "ezllmrouter_operator="
+            + token
+            + "; Path=/operator; HttpOnly; SameSite=Strict; Max-Age="
+            + str(max_age)
+            + ("; Secure" if self.application.secure_cookies else "")
+        )
+
     def log_message(self, *_args):
         return
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .database import Database
+from .instance_lock import InstanceLease
 from .formatting import money, utc_timestamp
 from .repositories import store as _queries
 from .states import DispatchState, SubmissionState
@@ -54,7 +55,19 @@ class SQLiteStore:
     def __init__(self, path: str | Path):
         self.path = str(path)
         self._lock = threading.RLock()
-        self.db = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
+        self._lease = InstanceLease(self.path, create=True)
+        connection = None
+        try:
+            connection = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
+            self.db = connection
+            self._lease.verify()
+        except BaseException:
+            try:
+                if connection is not None:
+                    connection.close()
+            finally:
+                self._lease.close()
+            raise
         self.database = Database(self.db, self._lock, self._transaction)
         from .schema import initialize
 
@@ -64,7 +77,7 @@ class SQLiteStore:
             self.db.execute("PRAGMA synchronous=FULL")
             self.db.execute("PRAGMA foreign_keys=ON")
         except BaseException:
-            self.db.close()
+            self.close()
             raise
 
     def work_owner(self, key):
@@ -81,17 +94,29 @@ class SQLiteStore:
         )
 
     @classmethod
-    def open_existing(cls, path, *, read_only=False):
+    def open_existing(cls, path, *, read_only=False, maintenance=False):
         """Open for offline maintenance without creating a database or running schema setup."""
         result = cls.__new__(cls)
         result.path = str(path)
         result._lock = threading.RLock()
-        result.db = sqlite3.connect(
-            Path(path).as_uri() + ("?mode=ro" if read_only else "?mode=rw"),
-            uri=True,
-            check_same_thread=False,
-            isolation_level=None,
-        )
+        result._lease = InstanceLease(path, exclusive=maintenance)
+        connection = None
+        try:
+            connection = sqlite3.connect(
+                Path(path).as_uri() + ("?mode=ro" if read_only else "?mode=rw"),
+                uri=True,
+                check_same_thread=False,
+                isolation_level=None,
+            )
+            result.db = connection
+            result._lease.verify()
+        except BaseException:
+            try:
+                if connection is not None:
+                    connection.close()
+            finally:
+                result._lease.close()
+            raise
         try:
             result.db.execute("PRAGMA synchronous=FULL")
             result.db.execute("PRAGMA foreign_keys=ON")
@@ -99,13 +124,16 @@ class SQLiteStore:
 
             validate(result.db)
         except BaseException:
-            result.db.close()
+            result.close()
             raise
         result.database = Database(result.db, result._lock, result._transaction)
         return result
 
     def close(self):
-        self.db.close()
+        try:
+            self.db.close()
+        finally:
+            self._lease.close()
 
     def successor_create(self, record, reserve=None):
         """Add a distinct wire-0.3 row without rewriting legacy submissions."""

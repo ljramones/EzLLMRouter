@@ -75,7 +75,7 @@ class SwappingProxy:
 
 
 class FixtureAsgiAdapter(LiteLLMAsgiAdapter):
-    def __init__(self):
+    def __init__(self, *, provider_key):
         self.pool_probe = os.environ.get("EZLLMROUTER_DEV04_POOL_PROBE") == "1"
         self.proxy_mutation = os.environ.get("EZLLMROUTER_DEV04_PROXY_MUTATION", "")
         if self.proxy_mutation not in ("", "content", "tool"):
@@ -104,7 +104,9 @@ class FixtureAsgiAdapter(LiteLLMAsgiAdapter):
             lower = TraceTransport(
                 lower, trace, os.environ.get("EZLLMROUTER_DEV04_AUTHORITY_TOGGLE")
             )
-        super().__init__(lower=lower, request_timeout=30.0 if self.pool_probe else 1.0)
+        super().__init__(
+            provider_key=provider_key, lower=lower, request_timeout=30.0 if self.pool_probe else 1.0
+        )
 
     async def _start(self):
         # Only the fixture adapter changes the proxy destination. The actual
