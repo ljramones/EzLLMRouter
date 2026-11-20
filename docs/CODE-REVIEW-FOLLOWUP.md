@@ -366,11 +366,11 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 846 unittest cases, seven console scripts and 245 packaged-wheel tests at `ee6c444`. |
-| 2 | Blocking work and performance | In progress | Paginate usage attempts and filter/select latest revisions in SQL; move decoding outside shared locks, sender database work off its event loop, and password hashing outside shared locks (4.1.3, 4.2.2, 4.3.3). |
-| 3 | Remaining authentication/HTTP hardening | Implemented — local regressions pass | Login backoff and unknown-user handling; password-change throttling; non-ASCII CSRF handling; asset-read and invalid-body responses; CSP/HTTPS headers and CSV export safety (4.3.1, 4.3.5). |
-| 4 | Gateway correctness | In progress | Definite classification of pre-send failures; trusted header/receipt field restrictions; campaign authority invalidation; separation of worker/service socket ownership (4.2.3). |
-| 5 | Worker lifecycle and diagnostics | In progress | Graceful shutdown, bounded handler joins, diagnostic rotation and observable diagnostic drops (4.2.3). |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 864 unittest cases, seven console scripts and 251 packaged-wheel tests; items 2–5 are implemented through `a698cdf`. |
+| 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. Full cohort aggregates still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
+| 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
+| 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
+| 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
 | 6 | Persistence recovery | Open | Orphaned vault versions, preservation of savepoint errors, coherent admission snapshots, probe-idempotency window and failed-executor recovery (4.1.4). |
 | 7 | Logging | Open | Routine wire rejections and idle connections; route labels derived from routing; distinct Coordinator failure events (4.3.4–4.3.5, 5.1). |
 | 8 | Client fixes | Open | JS total deadline and local serialization errors; Python regex/status/retry/CA handling; exposed credentials/transports and remaining cross-language validation differences (4.5.1–4.5.3). |
@@ -378,19 +378,40 @@ also passes. A pending or unavailable check is never a passing result.
 | 10 | Test-runner gaps | Open | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
 | 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
 
-### Active pass: items 2–5
+### Implemented pass: items 2–5
 
-The user authorized these four workstreams together. Preserve revocation,
-first-byte ownership, financial uncertainty and existing audit/history semantics
-while removing blocking work. Keep commits reviewable by concern, record focused
-regressions and the full applicable checks, and update the table before handoff.
-Item 3 is implemented: separate unknown-user login budgets and progressive
-backoff, password-change throttling, robust CSRF/body/asset failures, CSP and
-conditional HSTS, and spreadsheet-safe CSV exports. Password reset hashing and
-verification also run outside shared locks, with revision checks before saving
-(part of item 2). Focused regressions pass: security polish (21), user management
-(15), HTTP structure (20), and credential management (6); Ruff passes. Full-suite
-and target-environment checks remain pending. Items 2, 4 and 5 continue below.
+The four authorized workstreams are implemented in these reviewable commits:
+
+- `b04dafb`: authentication/HTTP hardening and password hashing outside shared locks.
+- `25f1835`: independent report snapshots and usage-attempt pagination.
+- `a698cdf`: atomic authorization/first writes off the response loop, campaign
+  invalidation, socket ownership, worker shutdown and bounded diagnostics.
+
+Validation for this pass:
+
+- Full offline suite: **864 unittest cases**, 103 module registrations, two script
+  suites and seven console scripts. Ruff passes, **419 Python files** are formatted,
+  and strict mypy passes on **51 source files**. The final atomic epoch-publication
+  refinement also passes the 14 campaign and 24 database-batch tests.
+- Barrier/socket-pair checks verify that report readers do not block a writer,
+  a blocked final check does not stall a paid reply, revocation/would-block cases
+  still prevent unauthorized first writes, and attempt pages preserve full totals,
+  cohort costs and visibility. A real child process verifies worker SIGTERM cleanup.
+- The two previously reported HTTP journeys pass over real HTTP parsing on socket
+  pairs. The service Dockerfile's exact four-module validation list passes **nine
+  tests** on staged source with the frozen dependency fixture. These are source
+  replays, not image builds or real TCP/TLS qualification.
+- Built server/client wheels match **119 packaged namespace files** to current
+  source and pass **251 installed-wheel tests**. Server wheel SHA-256:
+  `ac0336d8a39d44c988f69474462bd32d25c34b57500172e2f7ebe1af357604f1`.
+- Evidence is retained under ignored `.artifacts/code-review/review-items-2-5/`.
+
+Item 1 remains open for actual image builds, peer read-only socket mounts and
+signal/grace-period behavior on Docker, real HTTP/TLS, browsers, credential setup
+and the LiteLLM-dependent frozen-worker checks. No profile was restarted or model
+request issued. Frozen worker versions, wheel inventories and migration bytes are
+unchanged. Broader CI hardening remains deferred in item 9. Keep all 11 stable
+numbers when updating this checklist in future passes.
 
 Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts
