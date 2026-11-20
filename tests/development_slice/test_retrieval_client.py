@@ -11,7 +11,7 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError  # noqa: E402
+from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 VECTORS = json.loads(
     (ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text()

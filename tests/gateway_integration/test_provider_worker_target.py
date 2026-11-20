@@ -10,12 +10,9 @@ import traceback
 
 import httpx
 
-if __package__:
-    from worker.choice_b_worker import Worker
-    from worker import choice_b_worker
-else:
-    from choice_b_worker import Worker
-    import choice_b_worker
+from ezllmrouter_worker import worker as choice_b_worker
+
+Worker = choice_b_worker.Worker
 
 
 class CapturedRelay(choice_b_worker.RelayTransport):

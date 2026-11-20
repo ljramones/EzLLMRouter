@@ -123,15 +123,17 @@ def scenario(root, fixture, base, receiver_log, name, action):
         )
         coordinator = Coordinator(
             store,
-            {TEST_TOKEN: fixture["trusted_context"]},
-            public_destination(fixture),
-            fixture["prompt_blocks"],
-            fixture["allowed_lineages"],
-            PlanAuthority(ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry),
-            adapter,
-            fixture["retention"],
-            fixture["classification"],
-            GatewayProxyRecipe(controlled_provider_proof=True),
+            identity={TEST_TOKEN: fixture["trusted_context"]},
+            config=public_destination(fixture),
+            prompt_blocks=fixture["prompt_blocks"],
+            allowed_lineages=fixture["allowed_lineages"],
+            authority=PlanAuthority(
+                ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
+            ),
+            adapter=adapter,
+            retention=fixture["retention"],
+            classification=fixture["classification"],
+            recipe=GatewayProxyRecipe(controlled_provider_proof=True),
             trusted_source_labels=fixture["trusted_source_labels"],
             registry=registry,
         )
@@ -258,7 +260,7 @@ def settled(
             store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0] == 2,
             "usage revisions did not reconcile",
         )
-        require(len(rows(Path(os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"]))) == 2, "sender count")
+        require(len(rows(Path(os.environ["EZLLMROUTER_GATEWAY_SEND_EVENTS"]))) == 2, "sender count")
         return {
             "arrivals": 2,
             "duplicate_arrivals": 0,
@@ -474,8 +476,8 @@ def main():
         cert, key = certificate(root)
         receiver_log = root / "receiver.jsonl"
         os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
-        os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(root / "send.jsonl")
+        os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(root / "guard.jsonl")
+        os.environ["EZLLMROUTER_GATEWAY_SEND_EVENTS"] = str(root / "send.jsonl")
         with (root / "receiver.stderr").open("w") as err:
             receiver = subprocess.Popen(
                 [

@@ -1,5 +1,6 @@
 """SQL owned by the integration_credentials repository."""
 
+from . import shared
 from ..database import Query
 
 
@@ -58,9 +59,7 @@ INIT_SELECT_INTEGRATION_CREDENTIAL_META = Query(
     "SELECT value FROM integration_credential_meta WHERE key='keyring_id'"
 )
 
-INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS = Query(
-    "SELECT DISTINCT key_id FROM integration_credential_versions"
-)
+INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS = shared.INTEGRATION_KEY_IDS
 
 INIT_INSERT_INTEGRATION_CREDENTIAL_META = Query(
     "INSERT INTO integration_credential_meta VALUES ('keyring_id',?)"
@@ -99,28 +98,18 @@ LIST_FOR_SELECT_INTEGRATION_CREDENTIAL_BINDINGS = Query(
     "SELECT record FROM integration_credential_bindings WHERE dataset_id=?"
 )
 
-COMMIT_INSERT_INTEGRATION_ACCOUNTS = Query("INSERT INTO integration_accounts VALUES (?,?,?)")
+COMMIT_INSERT_INTEGRATION_ACCOUNTS = shared.INSERT_INTEGRATION_ACCOUNT
 
-COMMIT_INSERT_INTEGRATION_ACCOUNT_HISTORY = Query(
-    "INSERT INTO integration_account_history VALUES (?,?,?,?)"
-)
+COMMIT_INSERT_INTEGRATION_ACCOUNT_HISTORY = shared.APPEND_ACCOUNT_HISTORY
 
-COMMIT_UPDATE_INTEGRATION_ACCOUNTS = Query(
-    "UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?"
-)
+COMMIT_UPDATE_INTEGRATION_ACCOUNTS = shared.UPDATE_INTEGRATION_ACCOUNT
 
-RELEASE_SELECT_INTEGRATION_ACCOUNTS = Query(
-    "SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?"
-)
+RELEASE_SELECT_INTEGRATION_ACCOUNTS = shared.GET_INTEGRATION_ACCOUNT
 
-INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS_2 = Query(
-    "SELECT 1 FROM integration_credential_versions LIMIT 1"
-)
+HAS_CREDENTIAL_VERSIONS = Query("SELECT 1 FROM integration_credential_versions LIMIT 1")
 
 CONNECT_SELECT_INTEGRATION_CREDENTIAL_OPERATIONS = Query(
     "SELECT request_hash,account_id FROM integration_credential_operations WHERE operation_id=?"
 )
 
-RELEASE_SELECT_REGISTRY_META = Query(
-    "SELECT value FROM registry_meta WHERE key='authority_revision'"
-)
+RELEASE_SELECT_REGISTRY_META = shared.AUTHORITY_REVISION

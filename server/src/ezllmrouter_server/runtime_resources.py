@@ -1,138 +1,19 @@
 """Standard-library ownership helpers shared by the service, worker and ingress."""
 
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
 import asyncio
-import socket
-import socketserver
 import threading
-import time
 
-MAX_CONNECTIONS = 32
+from .execution_resources import (
+    AdmissionGate as AdmissionGate,
+    BoundedExecutor as BoundedExecutor,
+    ServiceClosing as ServiceClosing,
+)
 
-
-class ServiceClosing(RuntimeError):
-    pass
-
-
-class AdmissionGate:
-    """Stop new submissions and wait for callers already publishing durable work."""
-
-    def __init__(self):
-        self._condition = threading.Condition()
-        self._closed = False
-        self._active = 0
-
-    @contextmanager
-    def enter(self):
-        with self._condition:
-            if self._closed:
-                raise ServiceClosing("service is closing")
-            self._active += 1
-        try:
-            yield
-        finally:
-            with self._condition:
-                self._active -= 1
-                self._condition.notify_all()
-
-    def close(self):
-        with self._condition:
-            self._closed = True
-            self._condition.notify_all()
-            self._condition.wait_for(lambda: self._active == 0)
-
-
-class BoundedExecutor:
-    """Bound running plus queued work; accepted tasks drain during normal shutdown."""
-
-    def __init__(self, *, max_workers, max_pending=64, thread_name_prefix):
-        if max_pending < max_workers or max_workers < 1:
-            raise ValueError("invalid executor capacity")
-        self._slots = threading.BoundedSemaphore(max_pending)
-        self._submission_lock = threading.RLock()
-        self._closed = False
-        self._pool_options = {"max_workers": max_workers, "thread_name_prefix": thread_name_prefix}
-        self._max_pending = max_pending
-        self._inflight = 0
-        self._failed = False
-        self._failures = self._recoveries = 0
-        self._pool = ThreadPoolExecutor(**self._pool_options)
-
-    def _recover(self):
-        if self._closed or not self._failed or self._inflight:
-            return
-        try:
-            replacement = ThreadPoolExecutor(**self._pool_options)
-        except Exception:
-            return  # Remains visibly unavailable; a later status/submit retries.
-        self._pool.shutdown(wait=False, cancel_futures=False)
-        self._pool = replacement
-        self._failed = False
-        self._recoveries += 1
-
-    def status(self):
-        with self._submission_lock:
-            self._recover()
-            return {
-                "state": "closed" if self._closed else "recovering" if self._failed else "ready",
-                "inflight": self._inflight,
-                "capacity": self._max_pending,
-                "submit_failures": self._failures,
-                "recoveries": self._recoveries,
-            }
-
-    def _completed(self, _future):
-        self._slots.release()
-        with self._submission_lock:
-            self._inflight -= 1
-            self._recover()
-
-    def submit(self, action, *args, **kwargs):
-        with self._submission_lock:
-            if self._closed:
-                raise RuntimeError("execution pool is closed")
-            self._recover()
-            if self._failed:
-                raise RuntimeError("execution pool is recovering")
-            if not self._slots.acquire(blocking=False):
-                raise RuntimeError("execution capacity exhausted")
-            ready = threading.Event()
-            accepted = False
-
-            def execute():
-                # ThreadPoolExecutor can enqueue before thread creation fails.
-                # Such a failed submit must never run provider work later.
-                ready.wait()
-                if accepted:
-                    return action(*args, **kwargs)
-                return None
-
-            self._inflight += 1
-            try:
-                future = self._pool.submit(execute)
-            except BaseException:
-                self._failed = True
-                self._failures += 1
-                self._inflight -= 1
-                ready.set()
-                self._slots.release()
-                self._recover()
-                raise
-            accepted = True
-            ready.set()
-            future.add_done_callback(self._completed)
-            return future
-
-    def shutdown(self, wait=True, *, cancel_futures=False):
-        with self._submission_lock:
-            self._closed = True
-            pool = self._pool
-        if pool is not None:
-            pool.shutdown(wait=wait, cancel_futures=cancel_futures)
-            if wait:
-                with self._submission_lock:
-                    self._pool = None
+from .connection_resources import (
+    MAX_CONNECTIONS as MAX_CONNECTIONS,
+    BoundedThreadingMixIn as BoundedThreadingMixIn,
+    BoundedUnixServer as BoundedUnixServer,
+)
 
 
 class LoopThread:
@@ -203,80 +84,3 @@ class LoopThread:
                 self.thread.join(timeout=7)
                 if self.thread.is_alive():
                     raise RuntimeError("event loop did not stop")
-
-
-class BoundedThreadingMixIn(socketserver.ThreadingMixIn):
-    daemon_threads = True
-    block_on_close = False
-    handler_join_timeout = 5.0
-
-    def __init__(self, *args, max_connections=MAX_CONNECTIONS, **kwargs):
-        if type(max_connections) is not int or max_connections < 1:
-            raise ValueError("max_connections must be a positive integer")
-        self._connection_slots = threading.BoundedSemaphore(max_connections)
-        self._active_connections = set()
-        self._handler_threads = set()
-        self._connections_lock = threading.Lock()
-        self._connections_closed = False
-        super().__init__(*args, **kwargs)
-
-    def process_request(self, request, client_address):
-        with self._connections_lock:
-            accepted = not self._connections_closed and self._connection_slots.acquire(
-                blocking=False
-            )
-            if accepted:
-                self._active_connections.add(request)
-                thread = None
-                try:
-                    thread = threading.Thread(
-                        target=self.process_request_thread,
-                        args=(request, client_address),
-                        daemon=self.daemon_threads,
-                    )
-                    self._handler_threads.add(thread)
-                    thread.start()
-                except BaseException:
-                    self._active_connections.discard(request)
-                    self._handler_threads.discard(thread)
-                    self._connection_slots.release()
-                    self.shutdown_request(request)
-                    raise
-        if not accepted:
-            self.shutdown_request(request)
-
-    def process_request_thread(self, request, client_address):
-        try:
-            super().process_request_thread(request, client_address)
-        finally:
-            with self._connections_lock:
-                self._active_connections.discard(request)
-                self._handler_threads.discard(threading.current_thread())
-                self._connection_slots.release()
-
-    def server_close(self):
-        with self._connections_lock:
-            self._connections_closed = True
-            active = tuple(self._active_connections)
-            threads = tuple(self._handler_threads)
-        for stream in active:
-            try:
-                stream.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-        try:
-            super().server_close()
-        finally:
-            deadline = time.monotonic() + self.handler_join_timeout
-            for thread in threads:
-                if thread is not threading.current_thread():
-                    thread.join(timeout=max(0, deadline - time.monotonic()))
-            if any(
-                thread.is_alive() and thread is not threading.current_thread() for thread in threads
-            ):
-                raise RuntimeError("connection handlers did not stop within shutdown deadline")
-
-
-class BoundedUnixServer(BoundedThreadingMixIn, socketserver.UnixStreamServer):
-    allow_reuse_address = False
-    request_queue_size = MAX_CONNECTIONS

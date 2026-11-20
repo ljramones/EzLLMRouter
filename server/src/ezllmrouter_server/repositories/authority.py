@@ -8,14 +8,14 @@ import json
 from collections.abc import Collection, Mapping
 from typing import cast
 
+from . import shared
 from ..database import Database, Query
 
-PRINCIPAL = Query("SELECT record FROM registry_principals WHERE id=?")
-REVISION = Query("SELECT value FROM registry_meta WHERE key='authority_revision'")
-ADVANCE = Query("UPDATE registry_meta SET value=? WHERE key='authority_revision'")
-AUDIT = Query(
-    "INSERT INTO registry_audit (actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES (?,?,?,?,?,?,?)"
-)
+PRINCIPAL = shared.GET_PRINCIPAL
+REVISION = shared.AUTHORITY_REVISION
+ADVANCE = shared.SET_AUTHORITY_REVISION
+AUDIT = shared.APPEND_AUTHORITY_AUDIT
+
 AUDIT_VALUES = Query("INSERT INTO registry_audit_values VALUES (?,?,?)")
 
 
@@ -71,4 +71,32 @@ def record_change(
             AUDIT_VALUES,
             (audit.lastrowid, encode(public_values(before)), encode(public_values(after))),
         )
+    return revision
+
+
+def record_access(
+    db: Database,
+    *,
+    actor: str,
+    action: str,
+    subject: str,
+    record_revision: int,
+    at: str,
+    facts: Mapping[str, object],
+) -> int:
+    row = db.execute(REVISION).fetchone()
+    if row is None:
+        raise RuntimeError("missing authority revision")
+    revision = int(cast(str, row[0]))
+    audit = db.execute(
+        AUDIT, (actor, action, subject, record_revision, record_revision, revision, at)
+    )
+    db.execute(
+        AUDIT_VALUES,
+        (
+            audit.lastrowid,
+            None,
+            json.dumps(dict(facts), ensure_ascii=False, separators=(",", ":"), sort_keys=True),
+        ),
+    )
     return revision

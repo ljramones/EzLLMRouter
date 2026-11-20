@@ -115,15 +115,15 @@ class ToolCoreTests(unittest.TestCase):
         self.authority = CapturingAuthority()
         self.coordinator = Coordinator(
             self.store,
-            {"token": self.trusted},
-            deepcopy(FIXTURE["destination"]),
-            deepcopy(FIXTURE["prompt_blocks"]),
-            deepcopy(FIXTURE["allowed_lineages"]),
-            self.authority,
-            self.adapter,
-            deepcopy(FIXTURE["retention"]),
-            deepcopy(FIXTURE["classification"]),
-            SyntheticDevelopmentRecipe(),
+            identity={"token": self.trusted},
+            config=deepcopy(FIXTURE["destination"]),
+            prompt_blocks=deepcopy(FIXTURE["prompt_blocks"]),
+            allowed_lineages=deepcopy(FIXTURE["allowed_lineages"]),
+            authority=self.authority,
+            adapter=self.adapter,
+            retention=deepcopy(FIXTURE["retention"]),
+            classification=deepcopy(FIXTURE["classification"]),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=deepcopy(FIXTURE["trusted_source_labels"]),
         )
 
@@ -392,15 +392,15 @@ class ToolCoreTests(unittest.TestCase):
         self.store.update(sid, {"delivery_state": "candidate_delivered"})
         replacement = Coordinator(
             self.store,
-            self.coordinator.identity,
-            deepcopy(self.coordinator.config),
-            deepcopy(self.coordinator.prompt_blocks),
-            deepcopy(self.coordinator.allowed_lineages),
-            self.authority,
-            self.adapter,
-            deepcopy(self.coordinator.retention),
-            deepcopy(self.coordinator.classification),
-            SyntheticDevelopmentRecipe(),
+            identity=self.coordinator.identity,
+            config=deepcopy(self.coordinator.config),
+            prompt_blocks=deepcopy(self.coordinator.prompt_blocks),
+            allowed_lineages=deepcopy(self.coordinator.allowed_lineages),
+            authority=self.authority,
+            adapter=self.adapter,
+            retention=deepcopy(self.coordinator.retention),
+            classification=deepcopy(self.coordinator.classification),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=deepcopy(self.coordinator.trusted_source_labels),
         )
         try:
@@ -861,15 +861,15 @@ class ToolCoreTests(unittest.TestCase):
         second_adapter, second_authority = FakeAdapter(), CapturingAuthority()
         second = Coordinator(
             second_store,
-            {"token": deepcopy(self.trusted)},
-            deepcopy(self.coordinator.config),
-            deepcopy(self.coordinator.prompt_blocks),
-            deepcopy(self.coordinator.allowed_lineages),
-            second_authority,
-            second_adapter,
-            deepcopy(self.coordinator.retention),
-            deepcopy(self.coordinator.classification),
-            SyntheticDevelopmentRecipe(),
+            identity={"token": deepcopy(self.trusted)},
+            config=deepcopy(self.coordinator.config),
+            prompt_blocks=deepcopy(self.coordinator.prompt_blocks),
+            allowed_lineages=deepcopy(self.coordinator.allowed_lineages),
+            authority=second_authority,
+            adapter=second_adapter,
+            retention=deepcopy(self.coordinator.retention),
+            classification=deepcopy(self.coordinator.classification),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=deepcopy(self.coordinator.trusted_source_labels),
         )
         try:

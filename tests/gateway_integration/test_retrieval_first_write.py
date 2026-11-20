@@ -12,13 +12,13 @@ from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
-from ezllmrouter_server.store import SQLiteStore  # noqa: E402
-from tools.synthetic.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
-from tools.synthetic.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
-from ezllmrouter_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
-from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
-from ezllmrouter_server.gateway import owned_tls_sender_transport as tls_sender  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from ezllmrouter_server.store import SQLiteStore
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+from ezllmrouter_server.successor_plan import execution_eligible, mint_plan
+from ezllmrouter_server.gateway.guard import GuardRejected
+from ezllmrouter_server.gateway import owned_tls_sender_transport as tls_sender
 
 
 class _BIO:
@@ -116,6 +116,7 @@ class FirstWriteTests(unittest.TestCase):
                     campaign,
                 )
                 invocation = SimpleNamespace(
+                    check_executor=None,
                     committed=True,
                     abandoned=False,
                     authority_epoch=authority.snapshot_epoch(),

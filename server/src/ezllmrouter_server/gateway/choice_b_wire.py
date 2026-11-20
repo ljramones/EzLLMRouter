@@ -1,5 +1,7 @@
 """Small bounded JSON record used only by the DEV-04 Choice B Unix sockets."""
 
+from __future__ import annotations
+from typing import Any, TYPE_CHECKING
 import json
 import os
 from pathlib import Path
@@ -9,18 +11,20 @@ import struct
 import time
 from datetime import datetime, timezone
 
-
 LIMIT = 262144
-MAX_ATTEMPT_TIMEOUT_MS = 300_000
+if TYPE_CHECKING or __package__ == "ezllmrouter_server.gateway":
+    from ..execution_policy import MAX_ATTEMPT_TIMEOUT_MS as MAX_ATTEMPT_TIMEOUT_MS
+else:
+    from .execution_policy import MAX_ATTEMPT_TIMEOUT_MS as MAX_ATTEMPT_TIMEOUT_MS
 
 
-def socket_path(kind, root=Path("/link")):
+def socket_path(kind: str, root: Path = Path("/link")) -> Path:
     if kind not in ("sender", "worker"):
         raise ValueError("unknown IPC role")
     return Path(os.environ.get("EZLLMROUTER_" + kind.upper() + "_SOCKET", root / (kind + ".sock")))
 
 
-def remaining_seconds(timeout_ms, deadline):
+def remaining_seconds(timeout_ms: int, deadline: str) -> float:
     if type(timeout_ms) is not int or not 1 <= timeout_ms <= MAX_ATTEMPT_TIMEOUT_MS:
         raise ValueError("attempt timeout outside supported limits")
     if type(deadline) is not str:
@@ -34,7 +38,7 @@ def remaining_seconds(timeout_ms, deadline):
     return remaining
 
 
-def _read_exact(stream, count, deadline=None):
+def _read_exact(stream: socket.socket, count: int, deadline: float | None = None) -> bytes:
     chunks = []
     while count:
         if deadline is not None:
@@ -44,43 +48,43 @@ def _read_exact(stream, count, deadline=None):
             stream.settimeout(remaining)
         part = stream.recv(count)
         if not part:
-            raise EOFError("incomplete DEV-04 socket record")
+            raise EOFError("incomplete gateway socket record")
         chunks.append(part)
         count -= len(part)
     return b"".join(chunks)
 
 
-def receive(stream, *, timeout=None):
+def receive(stream: socket.socket, *, timeout: float | None = None) -> dict[str, Any]:
     deadline = None if timeout is None else time.monotonic() + timeout
     size = struct.unpack("!I", _read_exact(stream, 4, deadline))[0]
     if not 0 < size <= LIMIT:
-        raise ValueError("DEV-04 socket record size")
+        raise ValueError("gateway socket record size")
     value = json.loads(_read_exact(stream, size, deadline))
     if type(value) is not dict:
-        raise ValueError("DEV-04 socket record shape")
+        raise ValueError("gateway socket record shape")
     return value
 
 
-def _frame(value):
+def _frame(value: dict[str, Any]) -> bytes:
     raw = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
         "utf-8"
     )
     if not 0 < len(raw) <= LIMIT:
-        raise ValueError("DEV-04 socket record size")
+        raise ValueError("gateway socket record size")
     return struct.pack("!I", len(raw)) + raw
 
 
-def send(stream, value, *, timeout=None):
+def send(stream: socket.socket, value: dict[str, Any], *, timeout: float | None = None) -> None:
     frame = _frame(value)
     if timeout is not None:
         stream.settimeout(timeout)
     stream.sendall(frame)
 
 
-def exchange(path, value, timeout):
+def exchange(path: str | Path, value: dict[str, Any], timeout: float) -> dict[str, Any]:
     deadline = time.monotonic() + timeout
 
-    def remaining():
+    def remaining() -> float:
         seconds = deadline - time.monotonic()
         if seconds <= 0:
             raise TimeoutError("socket exchange deadline expired")
@@ -93,19 +97,17 @@ def exchange(path, value, timeout):
         return receive(stream, timeout=remaining())
 
 
-async def async_exchange(path, value, timeout):
-    # Owning the nonblocking socket in this task makes cancellation close it;
-    # asyncio.to_thread would leave a blocked exchange alive until its timeout.
+async def async_exchange(path: str | Path, value: dict[str, Any], timeout: float) -> dict[str, Any]:
     loop = asyncio.get_running_loop()
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
         stream.setblocking(False)
 
-        async def read_exact(count):
+        async def read_exact(count: int) -> bytes:
             chunks = []
             while count:
                 part = await loop.sock_recv(stream, count)
                 if not part:
-                    raise EOFError("incomplete DEV-04 socket record")
+                    raise EOFError("incomplete gateway socket record")
                 chunks.append(part)
                 count -= len(part)
             return b"".join(chunks)
@@ -115,8 +117,8 @@ async def async_exchange(path, value, timeout):
             await loop.sock_sendall(stream, _frame(value))
             size = struct.unpack("!I", await read_exact(4))[0]
             if not 0 < size <= LIMIT:
-                raise ValueError("DEV-04 socket record size")
+                raise ValueError("gateway socket record size")
             result = json.loads(await read_exact(size))
             if type(result) is not dict:
-                raise ValueError("DEV-04 socket record shape")
+                raise ValueError("gateway socket record shape")
             return result

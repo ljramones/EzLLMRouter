@@ -387,9 +387,7 @@ class OperatorProjection:
                 if existing[0] != kind:
                     raise ValueError("operation kind conflict")
                 return False
-            if self.store.database.execute(_queries.ACTION_SELECT_OPERATOR_LAUNCHES_3).fetchone()[
-                0
-            ]:
+            if self.store.database.execute(_queries.RUNNING_LAUNCH_COUNT).fetchone()[0]:
                 raise ValueError("another synthetic launcher is running")
             self.store.database.execute(
                 _queries.ACTION_INSERT_OPERATOR_LAUNCHES,
@@ -439,7 +437,7 @@ class OperatorProjection:
 
         def action():
             row = self.store.database.execute(
-                _queries.ACTION_SELECT_OPERATOR_LAUNCHES_2, (operation_id,)
+                _queries.LAUNCH_SUBMISSION_IDS, (operation_id,)
             ).fetchone()
             if not row:
                 raise ValueError("unregistered launcher")
@@ -513,9 +511,7 @@ class OperatorProjection:
                 ):
                     raise ValueError("provider validation operation conflict")
                 return False
-            if self.store.database.execute(
-                _queries.ACTION_SELECT_OPERATOR_PROVIDER_VALIDATIONS_2
-            ).fetchone():
+            if self.store.database.execute(_queries.PROVIDER_VALIDATION_RUNNING).fetchone():
                 raise ValueError("provider validation already running")
             self.store.database.execute(
                 _queries.ACTION_INSERT_OPERATOR_PROVIDER_VALIDATIONS,

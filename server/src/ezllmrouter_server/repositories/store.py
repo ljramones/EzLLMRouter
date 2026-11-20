@@ -48,7 +48,7 @@ ACTION_SELECT_DEV12_USAGE_REVISIONS = Query(
     "SELECT usage FROM dev12_usage_revisions WHERE attempt_id=? AND revision=?"
 )
 
-ACTION_SELECT_DEV12_USAGE_REVISIONS_2 = Query(
+LATEST_SUCCESSOR_USAGE_REVISION = Query(
     "SELECT revision FROM dev12_usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1"
 )
 
@@ -88,7 +88,7 @@ HAS_AUTHORIZED_TOOL_CALL_SELECT_SUBMISSIONS = Query(
     "SELECT record FROM submissions WHERE principal_id=? AND task_id=?"
 )
 
-ACTION_SELECT_DEV12_SUBMISSIONS_2 = Query("SELECT 1 FROM dev12_submissions WHERE submission_id=?")
+SUCCESSOR_SUBMISSION_EXISTS = Query("SELECT 1 FROM dev12_submissions WHERE submission_id=?")
 
 INTENT_COUNT_SELECT_INTENTS = Query("SELECT COUNT(*) FROM intents WHERE submission_id=?")
 

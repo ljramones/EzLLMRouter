@@ -12,8 +12,8 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-from ezllmrouter_server.gateway.retrieval_guard import check_synthetic_request  # noqa: E402
-from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
+from ezllmrouter_server.gateway.retrieval_guard import check_synthetic_request
+from ezllmrouter_server.gateway.guard import GuardRejected
 
 
 class _URL:

@@ -24,7 +24,7 @@ from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 if RUN.exists():
     raise SystemExit("one-use run directory already exists")
@@ -244,7 +244,7 @@ try:
                 ),
             )
         )
-        script = ROOT / "tests/integration_readiness/speech_v3_js_actor.cjs"
+        script = ROOT / "tools/accounting/evidence/speech_v3_js_actor.cjs"
         env = {
             **os.environ,
             "SPEECH_V3_JS_CLIENT": str(js_dir),

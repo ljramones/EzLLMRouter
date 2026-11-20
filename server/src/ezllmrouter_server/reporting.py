@@ -95,7 +95,7 @@ class Totals:
         }
 
 
-def _group(items, field):
+def group_attempts(items, field):
     result = {}
     for item in items:
         key = item.get(field) or "__unknown__"
@@ -103,7 +103,7 @@ def _group(items, field):
     return [{"id": key, **total.public()} for key, total in sorted(result.items())]
 
 
-def _descendants(items, runs):
+def descendant_attempts(items, runs):
     by_run = {}
     for item in items:
         if item["run_id"]:
@@ -175,9 +175,9 @@ def usage_costs(
     for item in items:
         grand.add(item)
     by_attempt = {item["attempt_id"]: item for item in items}
-    descendants = _descendants(items, runs)
+    descendants = descendant_attempts(items, runs)
     cohort_by_attempt = {item["attempt_id"]: item for item in all_items}
-    cohort_descendants = _descendants(all_items, runs)
+    cohort_descendants = descendant_attempts(all_items, runs)
     agent_rows = _agent_summary(
         by_attempt, descendants, filters, items, outcomes, registry, runs, scope
     )
@@ -189,7 +189,7 @@ def usage_costs(
         cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs, workflows
     )
     groupings = {
-        field: _group(items, field)
+        field: group_attempts(items, field)
         for field in (
             "provider",
             "connection_id",
@@ -223,7 +223,7 @@ def usage_costs(
         "filters": filters,
         "total": grand.public(),
         "groupings": groupings,
-        "trend": _group(trend_items, "day"),
+        "trend": group_attempts(trend_items, "day"),
         "agents": {
             "page": page,
             "limit": limit,

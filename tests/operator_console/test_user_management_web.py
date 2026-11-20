@@ -29,7 +29,7 @@ class MemoryServer:
 class UserHTTPFixture(UserFixture):
     def setUp(self):
         super().setUp()
-        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.operator_web.BoundedHTTPServer", MemoryServer):
             self.server = serve(
                 "127.0.0.1",
                 48761,

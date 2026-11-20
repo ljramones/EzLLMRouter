@@ -70,17 +70,17 @@ trusted_source_labels = dict(fixture["trusted_source_labels"])
 trusted_source_labels["src.user.no_store"] = no_store_user_label
 coordinator = Coordinator(
     store,
-    identities,
-    config,
-    fixture["prompt_blocks"],
-    [*fixture["allowed_lineages"], "src.user.no_store"],
-    authority,
-    adapter,
-    retention,
-    fixture["classification"],
-    SyntheticDevelopmentRecipe(config["endpoint"]),
-    {"mutate_after_binding": mutator} if mutator else {},
-    trusted_source_labels,
+    identity=identities,
+    config=config,
+    prompt_blocks=fixture["prompt_blocks"],
+    allowed_lineages=[*fixture["allowed_lineages"], "src.user.no_store"],
+    authority=authority,
+    adapter=adapter,
+    retention=retention,
+    classification=fixture["classification"],
+    recipe=SyntheticDevelopmentRecipe(config["endpoint"]),
+    faults={"mutate_after_binding": mutator} if mutator else {},
+    trusted_source_labels=trusted_source_labels,
 )
 server = serve("0.0.0.0", int(os.environ.get("PORT", "8765")), coordinator)
 server.serve_forever()

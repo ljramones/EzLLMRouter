@@ -34,6 +34,7 @@ class Route:
     family: bool = False
     query: bool = True
     requires: Dependency | None = None
+    roles: tuple[str, ...] = ()
 
     @property
     def failure_event(self) -> str:
@@ -160,17 +161,99 @@ ROUTES = (
         "resource",
         requires="registry",
     ),
-    *(
-        Route("GET", path, "get_registry_resource", "resource", family=family, requires="registry")
-        for path, family in (
-            ("/operator/v1/models", True),
-            ("/operator/v1/principals", True),
-            ("/operator/v1/connections", True),
-            ("/operator/v1/provider-validations/", True),
-            ("/operator/v1/personal-campaign", False),
-            ("/operator/v1/providers", False),
-            ("/operator/v1/access/explain", False),
-        )
+    Route(
+        "GET",
+        "/operator/v1/providers",
+        "get_registry_providers",
+        "resource",
+        family=False,
+        query=False,
+        requires="registry",
+        roles=("registry_admin", "read_only_operator"),
+    ),
+    Route(
+        "GET",
+        "/operator/v1/provider-validations/",
+        "get_registry_validation",
+        "resource",
+        family=True,
+        query=False,
+        requires="registry",
+        roles=("registry_admin", "read_only_operator"),
+    ),
+    Route(
+        "GET",
+        "/operator/v1/connections",
+        "get_registry_connections",
+        "resource",
+        family=False,
+        query=False,
+        requires="registry",
+        roles=("registry_admin", "read_only_operator"),
+    ),
+    Route(
+        "GET",
+        "/operator/v1/personal-campaign",
+        "get_registry_campaign",
+        "resource",
+        family=False,
+        query=False,
+        requires="registry",
+    ),
+    Route(
+        "GET",
+        "/operator/v1/connections/",
+        "get_registry_connection",
+        "resource",
+        family=True,
+        query=False,
+        requires="registry",
+        roles=("registry_admin", "read_only_operator"),
+    ),
+    Route(
+        "GET",
+        "/operator/v1/models",
+        "get_registry_models",
+        "resource",
+        family=False,
+        query=False,
+        requires="registry",
+    ),
+    Route(
+        "GET",
+        "/operator/v1/models/",
+        "get_registry_model",
+        "resource",
+        family=True,
+        query=False,
+        requires="registry",
+    ),
+    Route(
+        "GET",
+        "/operator/v1/principals",
+        "get_registry_principals",
+        "resource",
+        family=False,
+        query=False,
+        requires="registry",
+    ),
+    Route(
+        "GET",
+        "/operator/v1/principals/",
+        "get_registry_principal",
+        "resource",
+        family=True,
+        query=False,
+        requires="registry",
+    ),
+    Route(
+        "GET",
+        "/operator/v1/access/explain",
+        "get_registry_explanation",
+        "resource",
+        family=False,
+        query=True,
+        requires="registry",
     ),
     Route("GET", "/operator/v1/overview", "get_operator_v1_overview", "activity", query=False),
     Route("GET", "/operator/v1/activity", "get_operator_v1_activity", "activity"),

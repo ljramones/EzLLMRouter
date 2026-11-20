@@ -64,6 +64,4 @@ APPEND_OUTCOME_SELECT_SUBMISSIONS = Query(
     "AND json_extract(record,'$.work_key.execution_generation')=? LIMIT 1"
 )
 
-SAVE_SELECT_ATTRIBUTION_OUTCOMES_2 = Query(
-    "SELECT MAX(revision) FROM attribution_outcomes WHERE subject=?"
-)
+LATEST_OUTCOME_REVISION = Query("SELECT MAX(revision) FROM attribution_outcomes WHERE subject=?")

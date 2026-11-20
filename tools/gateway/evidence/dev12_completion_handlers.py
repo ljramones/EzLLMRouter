@@ -202,13 +202,13 @@ def _evidence(runtime, case, stages, checks, payload, attempt_group):
         import os
 
         os.fsync(stream.fileno())
-    digest = sha256(raw).hexdigest()
+    domain_digest = sha256(raw).hexdigest()
     relative = str(path.relative_to(runtime.root))
     stage_rows = [
         {
             "stage": name,
             "evidence_path": relative,
-            "sha256": digest,
+            "sha256": domain_digest,
             "case_id": case["id"],
             "attempt_group": case["attempt_group"],
             "observed": observed,
@@ -239,7 +239,12 @@ def ingress_identity(runtime, case):
 
         return taint_boundary(runtime, case)
     if case["scenario_id"] in {"t79_c", "t79_d"} and case["variant"] == "composed":
-        from ezllmrouter_server.successor_contract import digest, work_digest, schema_valid, SCHEMAS
+        from ezllmrouter_server.successor_contract import (
+            domain_digest,
+            work_digest,
+            schema_valid,
+            SCHEMAS,
+        )
         from ezllmrouter_server.successor_plan import execution_eligible
 
         request = _case_request(runtime, case, "DELEGATED_RERANK")
@@ -320,8 +325,8 @@ def ingress_identity(runtime, case):
                 "t79_c.digest_link_tamper": (
                     rejected["link"]
                     and original["work_digest"] == work_digest(record["canonical_work"])
-                    and digest("ezllmrouter-admission-v1\n", original) == original_digest,
-                    "Changing snapshot work-digest link cannot validate against original plan",
+                    and domain_digest("ezllmrouter-admission-v1\n", original) == original_digest,
+                    "Changing snapshot work-domain_digest link cannot validate against original plan",
                 ),
             }
         else:
@@ -368,7 +373,12 @@ def ingress_identity(runtime, case):
         case["scenario_id"] in {"t77_a", "t77_b", "t77_c", "t77_d"}
         and case["variant"] == "composed"
     ):
-        from ezllmrouter_server.successor_contract import SCHEMAS, schema_valid, digest, work_digest
+        from ezllmrouter_server.successor_contract import (
+            SCHEMAS,
+            schema_valid,
+            domain_digest,
+            work_digest,
+        )
         from ezllmrouter_server.successor_plan import execution_eligible
 
         request = _case_request(runtime, case)
@@ -506,7 +516,7 @@ def ingress_identity(runtime, case):
                 },
                 "admission": {
                     "submission_id": sid,
-                    "snapshot_digest": digest("ezllmrouter-admission-v1\n", snapshot),
+                    "snapshot_digest": domain_digest("ezllmrouter-admission-v1\n", snapshot),
                     "snapshot_valid": schema_valid(snapshot, SCHEMAS["$defs"]["AdmissionSnapshot"]),
                 },
             },
@@ -1077,7 +1087,7 @@ def recovery_chain(runtime, case):
             raise AssertionError("durable guard receipt absent")
         guard = json.loads(guard_row[0])
         retained = DurableReceiverReceipts(runtime.root / "receiver-receipts.jsonl")
-        receipt, digest = retained.find(
+        receipt, domain_digest = retained.find(
             aid,
             body_sha256=guard["body_sha256"],
             body_bytes=guard["body_bytes"],
@@ -1087,7 +1097,7 @@ def recovery_chain(runtime, case):
         checks = {
             "recovery_chain.retained_receipt": (
                 receipt["attempt_id"] == aid
-                and digest.startswith("sha256:")
+                and domain_digest.startswith("sha256:")
                 and before == after
                 and ref["campaign_id"] == runtime.allowance.campaign_id,
                 "Independent retained receipt binds guarded attempt/body/route without a new send",
@@ -1096,7 +1106,7 @@ def recovery_chain(runtime, case):
         stages = {
             "receiver": {
                 "attempt_id": aid,
-                "receipt_digest": digest,
+                "receipt_digest": domain_digest,
                 "body_sha256": receipt["body_sha256"],
             }
         }
@@ -3143,9 +3153,9 @@ def client_contract(runtime, case):
         root / "tests/fixtures/contracts/dev12-successor-01/schemas.json"
     ).read_bytes()
     py_schemas = (
-        runtime.installed_python_root / "ezllmrouter_client/dev12_schemas.json"
+        runtime.installed_python_root / "ezllmrouter_client/retrieval_schemas.json"
     ).read_bytes()
-    js_schemas = (runtime.installed_js_root / "dev12_schemas.json").read_bytes()
+    js_schemas = (runtime.installed_js_root / "retrieval_schemas.json").read_bytes()
     source_registry = (
         root / "tests/fixtures/contracts/dev12-successor-01/registrations.json"
     ).read_bytes()
@@ -3305,7 +3315,7 @@ def client_contract(runtime, case):
             ),
             "t47_c.legacy_digest": (
                 legacy_py["exit"] == 0,
-                "Legacy canonical/digest golden tests pass without rewriting bytes",
+                "Legacy canonical/domain_digest golden tests pass without rewriting bytes",
             ),
             "t47_c.caller_tool_cycle": (
                 legacy_http["exit"] == 0

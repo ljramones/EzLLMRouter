@@ -33,10 +33,10 @@ for package in (
         raise RuntimeError("frozen wheel hash mismatch: " + package)
 
 
-import httpcore  # noqa: E402
-import httpx  # noqa: E402
-from httpcore._backends.anyio import AnyIOStream  # noqa: E402
-from anyio._backends._asyncio import SocketStream  # noqa: E402
+import httpcore
+import httpx
+from httpcore._backends.anyio import AnyIOStream
+from anyio._backends._asyncio import SocketStream
 
 
 class FakeTransport:

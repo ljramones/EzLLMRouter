@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from contextlib import closing
 import hashlib
 import os
@@ -27,7 +28,7 @@ from ezllmrouter_server.private_files import read_private, write_private
 LOCAL = ROOT / "deploy/local"
 STATE = LOCAL / ".state"
 COMPOSE = LOCAL / "compose.yaml"
-PROJECT = "ezllmrouter-dev06-local"
+PROJECT = "ezllmrouter-local"
 BASE = "docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163"
 NODE = (
     "docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c"
@@ -178,11 +179,11 @@ def environment(build):
         EZLLMROUTER_INGRESS_RESOURCES=str(
             Path(build["build_dir"]) / "ingress/runtime_resources.py"
         ),
-        EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-dev06-receiver:" + suffix,
-        EZLLMROUTER_WORKER_IMAGE="ezllmrouter-dev06-worker:" + suffix,
-        EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev06-service:" + suffix,
-        EZLLMROUTER_DEV07_PYACTOR_IMAGE="ezllmrouter-dev07-pyactor:" + suffix,
-        EZLLMROUTER_DEV07_JSACTOR_IMAGE="ezllmrouter-dev07-jsactor:" + suffix,
+        EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-receiver:" + suffix,
+        EZLLMROUTER_WORKER_IMAGE="ezllmrouter-worker:" + suffix,
+        EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-service:" + suffix,
+        EZLLMROUTER_DEV07_PYACTOR_IMAGE="ezllmrouter-python-actor:" + suffix,
+        EZLLMROUTER_DEV07_JSACTOR_IMAGE="ezllmrouter-js-actor:" + suffix,
     )
 
 
@@ -199,15 +200,32 @@ def fixture_mounts(build):
     return mounts
 
 
+def profile_project():
+    marker = STATE / "PROFILE-OWNER.json"
+    if not marker.exists():
+        return PROJECT
+    value = json.loads(marker.read_text())
+    project = value.get("project")
+    if (
+        set(value) != {"project", "root"}
+        or value["root"] != str(ROOT)
+        or not isinstance(project, str)
+        or not re.fullmatch(r"ezllmrouter-[a-z0-9][a-z0-9-]*", project)
+    ):
+        raise RuntimeError("profile ownership marker mismatch")
+    return project
+
+
 def compose_args(*args):
-    return [*DOCKER, "compose", "-f", str(COMPOSE), *args]
+    return [*DOCKER, "compose", "--project-name", profile_project(), "-f", str(COMPOSE), *args]
 
 
 def ensure_owner(env):
+    project = profile_project()
     marker = STATE / "PROFILE-OWNER.json"
     if marker.exists():
         value = json.loads(marker.read_text())
-        if value != {"project": PROJECT, "root": str(ROOT)}:
+        if value != {"project": project, "root": str(ROOT)}:
             raise RuntimeError("profile ownership marker mismatch")
         return
     names, _ = command(
@@ -216,11 +234,17 @@ def ensure_owner(env):
     volumes, _ = command(
         "preexisting-volumes", [*DOCKER, "volume", "ls", "--format", "{{.Name}}"], env
     )
-    if any(x.startswith(PROJECT + "-") for x in names.splitlines()) or any(
-        x.startswith(PROJECT + "_") for x in volumes.splitlines()
+    if any(
+        x.startswith(prefix + "-")
+        for prefix in (project, "ezllmrouter-dev06-local")
+        for x in names.splitlines()
+    ) or any(
+        x.startswith(prefix + "_")
+        for prefix in (project, "ezllmrouter-dev06-local")
+        for x in volumes.splitlines()
     ):
         raise RuntimeError("profile resource collision without ownership marker")
-    marker.write_text(json.dumps({"project": PROJECT, "root": str(ROOT)}, indent=2) + "\n")
+    marker.write_text(json.dumps({"project": project, "root": str(ROOT)}, indent=2) + "\n")
 
 
 def backup_live_store(env):

@@ -30,12 +30,27 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[3]
 KIT = Path(__file__).resolve().parent
 INPUTS = (
-    ROOT / "docs/gateway/wp-b-docker-01-c02/EZLLMROUTER-WP-B-BUILD-INPUTS-01-CORRECTION-02.json"
+    Path(
+        os.environ.get(
+            "EZLLMROUTER_BUILD_INPUTS", str(ROOT / ".artifacts/retained-inputs/BUILD-INPUTS.json")
+        )
+    )
+    .expanduser()
+    .resolve()
 )
-SOURCE = ROOT / "docs/gateway/review-evidence-02/litellm-1.105.1.tar.gz"
+SOURCE = (
+    Path(
+        os.environ.get(
+            "EZLLMROUTER_LITELLM_SOURCE",
+            str(ROOT / ".artifacts/retained-inputs/litellm-1.105.1.tar.gz"),
+        )
+    )
+    .expanduser()
+    .resolve()
+)
 SOURCE_SHA = "f1a274db0b2bcc78c34ed34c06df2c1dcd0dc038469193684927f6bb2cab2d97"
 PKG_INFO_SHA = "2781e2079443c555c32c49d7bd06fc9beb70c9d0936d05805dea34dd500e127c"
-UV = Path("/opt/homebrew/bin/uv")
+UV = Path(os.environ.get("EZLLMROUTER_REVIEWED_UV", shutil.which("uv") or "/usr/bin/uv"))
 UV_SHA = "cfe5e5695316639f9820e8e57d0732e8a361311c03f1ea1786f4fc879cebf4c5"
 RUN_PARENT = Path("/private/tmp/ezllmrouter-wp-b-docker-01")
 MAX_AGGREGATE = 2 * 1024 * 1024 * 1024
@@ -55,8 +70,13 @@ HOSTS = {
     "codeload.github.com",
 }
 CONFIG_DELIVERY_ORIGIN = "https://production.cloudfront.docker.com"
-PREDECESSOR_ZIP = Path(
-    "/Users/larrymitchell/Downloads/ezllmrouter-wpb-inputs-run-20261017-40/INPUTS-EVIDENCE.zip"
+OWNER_HANDOFF_PARENT = (
+    Path(os.environ.get("EZLLMROUTER_HANDOFF_ROOT", str(Path.home() / "Downloads")))
+    .expanduser()
+    .resolve()
+)
+PREDECESSOR_ZIP = (
+    OWNER_HANDOFF_PARENT / "ezllmrouter-wpb-inputs-run-20261017-40/INPUTS-EVIDENCE.zip"
 )
 PREDECESSOR_MANIFEST = PREDECESSOR_ZIP.with_name("EVIDENCE-MANIFEST.json")
 PREDECESSOR_ZIP_SHA = "1cca3b26fe9850d3fdb1b000d9937146c9aff10bf9c3a1971f1149551aad6a67"
@@ -67,7 +87,6 @@ NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 PHASES = ("wheel", "runtime", "tools")
 TARGET_PYTHON = (3, 12, 15)
 TARGET_GLIBC = (2, 36)
-OWNER_HANDOFF_PARENT = Path("/Users/larrymitchell/Downloads")
 INPUTS02_PARENT = Path("/private/tmp/ezllmrouter-wp-b-inputs-02")
 INPUTS02_PACKET = (
     OWNER_HANDOFF_PARENT / "ezllmrouter-wpb-inputs-run-20261018-41/INPUTS-EVIDENCE.zip"
@@ -1134,7 +1153,7 @@ def stage_source(entry, dest, run, phase):
         and dest.count("/") == 1
         and dest.split("/")[1] in harness[phase]
     ):
-        expected = ROOT / "tests/gateway-proof" / dest.split("/")[1]
+        expected = ROOT / "tools/gateway" / dest.split("/")[1]
     elif any(dest.startswith(prefix) for prefix in artifacts[phase]) or (
         phase == "wheel" and dest == "artifacts/cargo-config.toml"
     ):
@@ -1414,7 +1433,7 @@ def packet(run, handoff_parent=None):
     else:
         parent = Path(handoff_parent)
         if parent != OWNER_HANDOFF_PARENT:
-            raise ValueError("handoff parent must be owner Downloads")
+            raise ValueError("handoff parent must match EZLLMROUTER_HANDOFF_ROOT")
         safe_component_path(parent, Path("/"))
         outdir = parent / ("ezllmrouter-wpb-inputs-" + run.name)
         outdir.mkdir(mode=0o700, exist_ok=False)
@@ -2372,7 +2391,7 @@ def inputs02_collect(args):
     if Path.cwd().resolve() != ROOT:
         raise ValueError("run INPUTS-02 from independent EzLLMRouter root")
     if args.handoff_parent != str(OWNER_HANDOFF_PARENT):
-        raise ValueError("INPUTS-02 handoff parent must be owner Downloads")
+        raise ValueError("INPUTS-02 handoff parent must match EZLLMROUTER_HANDOFF_ROOT")
     INPUTS02_PARENT.mkdir(mode=0o700, exist_ok=True)
     safe_component_path(INPUTS02_PARENT, Path("/private/tmp"))
     if not RUN_RE.fullmatch(args.new_run):

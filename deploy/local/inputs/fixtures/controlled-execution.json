@@ -1,0 +1,111 @@
+{
+  "trusted_context": {
+    "context_id": "ctx.demo",
+    "issuer_id": "issuer.synthetic",
+    "principal_id": "svc.demo",
+    "charging_owner_id": "team.demo",
+    "source_authority_id": "srcauth.demo",
+    "task_id": "task.demo",
+    "prompt_id": "prompt.demo",
+    "prompt_version": "v1",
+    "expires_at": "2030-01-01T01:00:00Z"
+  },
+  "destination": {
+    "configuration_ref": "cfg.demo",
+    "service": "synthetic",
+    "endpoint": "receiver",
+    "model": "model.demo",
+    "model_version": "v1",
+    "processing_region": "local"
+  },
+  "prompt_blocks": [
+    {
+      "block_id": "block.system.1",
+      "kind": "system_text",
+      "text": "Answer briefly.",
+      "source_labels": {
+        "lineage_ids": [
+          "src.prompt.1"
+        ],
+        "sensitivity": "internal",
+        "restrictions": []
+      }
+    }
+  ],
+  "allowed_lineages": [
+    "src.prompt.1",
+    "src.user.1",
+    "src.candidate.tool",
+    "src.tool.1",
+    "src.user.no_store"
+  ],
+  "trusted_source_labels": {
+    "src.prompt.1": {
+      "lineage_ids": [
+        "src.prompt.1"
+      ],
+      "sensitivity": "internal",
+      "restrictions": []
+    },
+    "src.user.1": {
+      "lineage_ids": [
+        "src.user.1"
+      ],
+      "sensitivity": "internal",
+      "restrictions": []
+    },
+    "src.candidate.tool": {
+      "lineage_ids": [
+        "src.candidate.tool"
+      ],
+      "sensitivity": "internal",
+      "restrictions": []
+    },
+    "src.tool.1": {
+      "lineage_ids": [
+        "src.tool.1"
+      ],
+      "sensitivity": "internal",
+      "restrictions": []
+    },
+    "src.user.no_store": {
+      "lineage_ids": [
+        "src.user.no_store"
+      ],
+      "sensitivity": "confidential",
+      "restrictions": [
+        "no.content.store"
+      ]
+    }
+  },
+  "retention": {
+    "retention_class": "content_30d",
+    "policy_version": "retention.dev01",
+    "content_store_allowed": true,
+    "content_expires_at": "2030-01-31T00:00:00Z"
+  },
+  "classification": {
+    "sensitivity": "internal",
+    "combined_restrictions": [],
+    "content_digest": "sha256:51b788e684ade60e29e6c64f19156a2868ffc0fb65d4021bd176a1663336cefd",
+    "rules_engine_version": "rules.dev01"
+  },
+  "policy": {
+    "quality_approval_ref": "approval.dev01",
+    "adapter_recipe_ref": "recipe.demo",
+    "adapter_version": "v1",
+    "tool_adapter_recipe_ref": "recipe.dev03.tool.v1",
+    "tool_adapter_version": "v1",
+    "policy_version": "policy.dev01",
+    "recovery_policy_version": "recovery.dev01",
+    "registry_version": "registry.dev01",
+    "limit_ref": "limit.dev01",
+    "limit_version": "v1",
+    "max_attempt_charge_decimal": "0.1",
+    "currency": "USD",
+    "alert_policy_ref": "alerts.dev01",
+    "decision_record_ref": "decision.dev01",
+    "key_id": "key.dev01",
+    "key_version": "v1"
+  }
+}

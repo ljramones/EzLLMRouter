@@ -5,8 +5,8 @@ import base64
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-from tools.gateway.evidence.dev12_executor import Dev12SyntheticExecutor, receiver_decode  # noqa: E402
-from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from tools.gateway.evidence.dev12_executor import Dev12SyntheticExecutor, receiver_decode
+from ezllmrouter_server.canonical import ContractError
 
 
 class ReceiverDecodeTests(unittest.TestCase):

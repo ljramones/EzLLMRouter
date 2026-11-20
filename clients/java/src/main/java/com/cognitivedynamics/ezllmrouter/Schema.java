@@ -16,7 +16,7 @@ final class Schema {
     private static final Map<String, Pattern> PATTERNS = new ConcurrentHashMap<>();
     private static Map<String, Map<String, Object>> load() {
         Map<String, Map<String, Object>> out = new HashMap<>();
-        Map<String, String> files = Map.of("0.2", "wire02.json", "0.3", "dev12_schemas.json", "1", "integration_schema.json", "2", "integration_schema_v2.json", "3", "integration_schema_v3.json");
+        Map<String, String> files = Map.of("0.2", "wire02.json", "0.3", "retrieval_schemas.json", "1", "integration_schema.json", "2", "integration_schema_v2.json", "3", "integration_schema_v3.json");
         for (var file : files.entrySet()) {
             try (InputStream stream = Schema.class.getResourceAsStream("schemas/" + file.getValue())) {
                 if (stream == null) throw new IOException("missing client schema");

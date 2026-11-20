@@ -383,7 +383,7 @@ def run():
             )
             (root / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
             executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
-            os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(root / "guard.jsonl")
+            os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(root / "guard.jsonl")
             executed = executor.execute
 
             def diagnosed_execute(*args, **kwargs):
@@ -413,7 +413,18 @@ def run():
                 and trusted["identity_binding_id"]
                 == record["trusted_identity"]["identity_binding_id"]
             )
-            coordinator = Coordinator(store, legacy, {}, {}, {}, None, None, {}, {}, None)
+            coordinator = Coordinator(
+                store,
+                identity=legacy,
+                config={},
+                prompt_blocks={},
+                allowed_lineages={},
+                authority=None,
+                adapter=None,
+                retention={},
+                classification={},
+                recipe=None,
+            )
             from tools.synthetic.successor_assembly import attach_standalone_synthetic
 
             successor = attach_standalone_synthetic(

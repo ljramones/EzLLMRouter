@@ -25,7 +25,7 @@ from ezllmrouter_server.states import (
 from ezllmrouter_server.successor_contract import (
     SCHEMAS,
     classify_request,
-    digest,
+    domain_digest,
     native_usage_row,
     result_valid,
     schema_valid,
@@ -430,7 +430,7 @@ class SuccessorService:
         }
         if not schema_valid(admission, SCHEMAS["$defs"]["AdmissionSnapshot"]):
             raise ContractError("SEMANTIC_INVALID", 422)
-        admission_hash = digest("ezllmrouter-admission-v1\n", admission)
+        admission_hash = domain_digest("ezllmrouter-admission-v1\n", admission)
         with self.authority.gate:
             revisions, activation, key_id, key_version, signer = self.authority.minting_snapshot()
             plan = mint_plan(
@@ -590,7 +590,7 @@ class SuccessorService:
                 from ezllmrouter_server.successor_contract import price_for
 
                 # JSON decoding permits escaped lone surrogates. ASCII escaping
-                # makes the invalid-evidence digest total without changing the
+                # makes the invalid-evidence domain_digest total without changing the
                 # canonical work or signing serializers.
                 raw = json.dumps(
                     component, sort_keys=True, ensure_ascii=True, separators=(",", ":")

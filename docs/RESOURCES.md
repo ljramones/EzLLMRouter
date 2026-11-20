@@ -76,11 +76,13 @@ bind/activation or permission change closes the partial listener. Cleanup remove
 only the socket-path identity recorded after its own bind; it preserves a path
 that another owner has replaced.
 
-The same resource helper is copied explicitly into the isolated worker and the
-credential-free ingress. It contains no service, database or provider dependencies.
-The worker's import-only package checks verify that the trusted server package
-remains unavailable there. Frozen dependency versions, hashes and wheel inputs
-are unchanged.
+`runtime_resources.py` composes the typed admission/executor implementation in
+`execution_resources.py`, loop ownership, and the dependency-free connection
+limits in `connection_resources.py`. The explicit isolated-worker package receives
+those helpers; the credential-free ingress receives only the connection helper.
+The shared helpers import package peers and the standard library on the worker
+path. Import qualification verifies that the trusted server package is unavailable.
+Frozen dependency versions, hashes and wheel inputs are unchanged.
 
 ## Validation
 

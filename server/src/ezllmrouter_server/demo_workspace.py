@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .reporting import _descendants, _group
+from .reporting import descendant_attempts, group_attempts
 from .demo_common import LABEL, amount, total, basis
 
 
@@ -150,7 +150,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         visible = [item for item in selected if item["at"] <= cutoff]
         visible_events = [item["id"] for item in events if item["at"] <= cutoff]
         lineage_rows = [{"attempt_id": item["id"], "run_id": item["run"]} for item in visible]
-        descendants = _descendants(lineage_rows, runs)
+        descendants = descendant_attempts(lineage_rows, runs)
         workflows = []
         for run in fixture["runs"]:
             if story != "all" and not any(a["run"] == run["run_id"] for a in attempts):
@@ -176,11 +176,11 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
                 "full_total": total(full_visible),
                 "attempts": visible,
                 "event_ids": visible_events,
-                "actor": _group(visible, "actor"),
-                "provider": _group(visible, "provider"),
-                "model": _group(visible, "model"),
-                "user": _group(visible, "user"),
-                "owner": _group(visible, "owner"),
+                "actor": group_attempts(visible, "actor"),
+                "provider": group_attempts(visible, "provider"),
+                "model": group_attempts(visible, "model"),
+                "user": group_attempts(visible, "user"),
+                "owner": group_attempts(visible, "owner"),
                 "workflows": workflows,
             }
         )

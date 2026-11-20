@@ -1,5 +1,6 @@
 """SQL owned by the registry repository."""
 
+from . import shared
 from ..database import Query, identifier, predicate
 
 _RECORD_KEYS = {
@@ -28,7 +29,7 @@ APPLY_UPDATE_REGISTRY_CONNECTIONS = Query("UPDATE registry_connections SET recor
 
 APPLY_UPDATE_REGISTRY_MODELS = Query("UPDATE registry_models SET record=? WHERE ref=?")
 
-APPLY_INSERT_REGISTRY_PRINCIPALS = Query("INSERT INTO registry_principals VALUES (?,?)")
+APPLY_INSERT_REGISTRY_PRINCIPALS = shared.INSERT_PRINCIPAL
 
 APPLY_UPDATE_REGISTRY_PRINCIPALS = Query("UPDATE registry_principals SET record=? WHERE id=?")
 
@@ -39,21 +40,13 @@ APPLY_INSERT_REGISTRY_GRANTS = Query(
 
 APPLY_INSERT_REGISTRY_PRICES = Query("INSERT INTO registry_prices VALUES (?,?,?)")
 
-REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS = Query(
-    "SELECT record FROM registry_principals WHERE id=?"
-)
+REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS = shared.GET_PRINCIPAL
 
 SAVE_INSERT_REGISTRY_OBSERVATIONS = Query("INSERT INTO registry_observations VALUES (?,?,?)")
 
-ACTION_UPDATE_REGISTRY_META = Query(
-    "UPDATE registry_meta SET value=? WHERE key='authority_revision'"
-)
+ACTION_UPDATE_REGISTRY_META = shared.SET_AUTHORITY_REVISION
 
-ACTION_INSERT_REGISTRY_AUDIT = Query(
-    "INSERT INTO registry_audit "
-    "(actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES "
-    "(?,?,?,?,?,?,?)"
-)
+ACTION_INSERT_REGISTRY_AUDIT = shared.APPEND_AUTHORITY_AUDIT
 
 
 ACTION_INSERT_REGISTRY_OPERATIONS = Query("INSERT INTO registry_operations VALUES (?,?,?,?)")
@@ -75,15 +68,13 @@ def LOAD_FOR_UPDATE_SELECT_RECORD(*, column: str, table: str) -> Query:
     return Query(f"SELECT record FROM {table} WHERE {column}=?")
 
 
-ACTION_DELETE_REGISTRY_CREDENTIALS = Query("DELETE FROM registry_credentials WHERE principal_id=?")
+ACTION_DELETE_REGISTRY_CREDENTIALS = shared.DELETE_PRINCIPAL_CREDENTIALS
 
 ACTION_INSERT_REGISTRY_CREDENTIALS = Query("INSERT INTO registry_credentials VALUES (?,?,?)")
 
 ACTION_INSERT_REGISTRY_GRANTS = Query("INSERT INTO registry_grants VALUES (?,?,?)")
 
-VERSION_SELECT_REGISTRY_META = Query(
-    "SELECT value FROM registry_meta WHERE key='authority_revision'"
-)
+VERSION_SELECT_REGISTRY_META = shared.AUTHORITY_REVISION
 
 
 def RECORD_SELECT_RECORD(*, table: str, where: str) -> Query:
@@ -138,11 +129,11 @@ APPLY_SELECT_REGISTRY_MODELS = Query("SELECT 1 FROM registry_models WHERE ref=?"
 
 APPLY_SELECT_REGISTRY_DEPLOYMENTS = Query("SELECT record FROM registry_deployments WHERE id=?")
 
-APPLY_SELECT_REGISTRY_CONNECTIONS_2 = Query("SELECT 1 FROM registry_connections WHERE id=?")
+CONNECTION_EXISTS = Query("SELECT 1 FROM registry_connections WHERE id=?")
 
 APPLY_SELECT_REGISTRY_PRINCIPALS = Query("SELECT 1 FROM registry_principals WHERE id=?")
 
-APPLY_SELECT_REGISTRY_MODELS_2 = Query("SELECT record FROM registry_models WHERE ref=?")
+MODEL_FOR_UPDATE = Query("SELECT record FROM registry_models WHERE ref=?")
 
 APPLY_SELECT_REGISTRY_GRANTS = Query(
     "SELECT record FROM registry_grants WHERE principal_id=? AND config_ref=?"
@@ -220,23 +211,23 @@ def ACTION_SELECT_RECORD(*, table: str) -> Query:
     return Query(f"SELECT record FROM {table} WHERE {column}=?")
 
 
-APPLY_SELECT_REGISTRY_DEPLOYMENTS_2 = Query(
+DEPLOYMENTS_FOR_CONNECTION = Query(
     "SELECT record FROM registry_deployments WHERE json_extract(record,'$.connection_id')=?"
 )
 
-APPLY_SELECT_REGISTRY_DEPLOYMENTS_3 = Query("SELECT 1 FROM registry_deployments WHERE id=?")
+DEPLOYMENT_EXISTS = Query("SELECT 1 FROM registry_deployments WHERE id=?")
 
-APPLY_SELECT_REGISTRY_PRINCIPALS_2 = Query(
+ACTIVE_ADMIN_COUNT = Query(
     "SELECT COUNT(*) FROM registry_principals WHERE "
     "json_extract(record,'$.role')='registry_admin' AND "
     "json_extract(record,'$.status')='active'"
 )
 
-APPLY_SELECT_REGISTRY_CONNECTIONS_3 = Query(
+SCHEDULED_CONNECTION_COUNT = Query(
     "SELECT COUNT(*) FROM registry_connections WHERE json_extract(record,'$.checks_scheduled')=1"
 )
 
-APPLY_SELECT_REGISTRY_PRICES_2 = Query("SELECT 1 FROM registry_prices WHERE config_ref=?")
+MODEL_HAS_PRICE = Query("SELECT 1 FROM registry_prices WHERE config_ref=?")
 
 
 def grants(*, principal_id: str | None = None, configuration_ref: str | None = None) -> Query:

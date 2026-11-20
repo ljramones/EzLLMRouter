@@ -12,13 +12,13 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
-from ezllmrouter_server.store import SQLiteStore  # noqa: E402
-from tools.synthetic.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
-from tools.synthetic.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
-from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts  # noqa: E402
-from tools.synthetic.successor_service import SuccessorService  # noqa: E402
-from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from ezllmrouter_server.store import SQLiteStore
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts
+from tools.synthetic.successor_service import SuccessorService
+from ezllmrouter_server.canonical import ContractError
 
 VECTORS = json.loads(
     (ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text()

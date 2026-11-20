@@ -1,5 +1,6 @@
 """SQL owned by the local_connectors repository."""
 
+from . import shared
 from ..database import Query
 
 
@@ -18,6 +19,6 @@ TRANSACTION_INSERT_LOCAL_CONNECTORS = Query(
 )
 
 
-INIT_SELECT_LOCAL_CONNECTORS = Query("SELECT secret FROM local_connectors WHERE secret IS NOT NULL")
+INIT_SELECT_LOCAL_CONNECTORS = shared.LOCAL_CONNECTOR_SECRETS
 
 AVAILABILITY_SELECT_LOCAL_CONNECTORS = Query("SELECT record FROM local_connectors ORDER BY id")

@@ -1,5 +1,6 @@
 """SQL owned by the integration_accounting repository."""
 
+from . import shared
 from ..database import Query
 
 # Traverse only the connected component. UNION deduplicates even malformed
@@ -55,15 +56,11 @@ BIND_RUN_INSERT_INTEGRATION_RUNS = Query("INSERT INTO integration_runs VALUES (?
 
 ACTION_INSERT_INTEGRATION_DATASETS = Query("INSERT INTO integration_datasets VALUES (?,?)")
 
-ACTION_INSERT_INTEGRATION_ACCOUNTS = Query("INSERT INTO integration_accounts VALUES (?,?,?)")
+ACTION_INSERT_INTEGRATION_ACCOUNTS = shared.INSERT_INTEGRATION_ACCOUNT
 
-ACTION_INSERT_INTEGRATION_ACCOUNT_HISTORY = Query(
-    "INSERT INTO integration_account_history VALUES (?,?,?,?)"
-)
+ACTION_INSERT_INTEGRATION_ACCOUNT_HISTORY = shared.APPEND_ACCOUNT_HISTORY
 
-ACTION_UPDATE_INTEGRATION_ACCOUNTS = Query(
-    "UPDATE integration_accounts SET record=? WHERE id=? AND dataset_id=?"
-)
+ACTION_UPDATE_INTEGRATION_ACCOUNTS = shared.UPDATE_INTEGRATION_ACCOUNT
 
 ACTION_INSERT_INTEGRATION_EVENTS = Query("INSERT INTO integration_events VALUES (?,?,?,?,?,?,?,?)")
 
@@ -103,7 +100,7 @@ ACTION_INSERT_INTEGRATION_DATASET_RETENTION = Query(
     "INSERT INTO integration_dataset_retention VALUES (?,?,?)"
 )
 
-BIND_RUN_SELECT_INTEGRATION_RUNS_2 = Query(
+RUN_LINEAGE = Query(
     "SELECT root_run_id,parent_run_id,task_id FROM integration_runs WHERE dataset_id=? AND run_id=?"
 )
 
@@ -120,7 +117,7 @@ CHECK_SNAPSHOT_REFERENCE_SELECT_INTEGRATION_SNAPSHOTS = Query(
     "SELECT attempt_id,kind FROM integration_snapshots WHERE dataset_id=? AND snapshot_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_2 = Query(
+DECISION_EVENT_RECORD = Query(
     "SELECT record FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='decision'"
 )
 
@@ -167,11 +164,9 @@ ACTION_SELECT_INTEGRATION_EXPIRED_DATASETS = Query(
     "SELECT 1 FROM integration_expired_datasets WHERE id=?"
 )
 
-ACTION_SELECT_INTEGRATION_DATASETS_2 = Query("SELECT record FROM integration_datasets WHERE id=?")
+DATASET_FOR_UPDATE = Query("SELECT record FROM integration_datasets WHERE id=?")
 
-ACTION_SELECT_INTEGRATION_ACCOUNTS = Query(
-    "SELECT record FROM integration_accounts WHERE id=? AND dataset_id=?"
-)
+ACTION_SELECT_INTEGRATION_ACCOUNTS = shared.GET_INTEGRATION_ACCOUNT
 
 ELIGIBILITY_INSERT_INTEGRATION_ELIGIBILITY_READS = Query(
     "INSERT INTO integration_eligibility_reads VALUES (?,?,?)"
@@ -186,7 +181,7 @@ ACCOUNTS_SELECT_INTEGRATION_ACCOUNTS = Query(
     "SELECT record FROM integration_accounts WHERE dataset_id=? ORDER BY id"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_3 = Query(
+EVENT_RECEIPT = Query(
     "SELECT digest,receipt FROM integration_events WHERE dataset_id=? AND event_id=?"
 )
 
@@ -195,7 +190,7 @@ ACTION_SELECT_INTEGRATION_SNAPSHOTS = Query(
     "attempt_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_4 = Query(
+ACCOUNT_RESOLUTION_RECORD = Query(
     "SELECT record FROM integration_events WHERE dataset_id=? AND attempt_id=? AND "
     "kind='account_resolution'"
 )
@@ -204,11 +199,11 @@ RECEIPT_SELECT_INTEGRATION_EVENTS = Query(
     "SELECT receipt FROM integration_events WHERE dataset_id=? AND event_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_SNAPSHOTS_2 = Query(
+SNAPSHOT_IDENTITY = Query(
     "SELECT digest,metadata FROM integration_snapshots WHERE dataset_id=? AND snapshot_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_ATTEMPTS_2 = Query(
+ATTEMPT_FOR_UPDATE = Query(
     "SELECT record FROM integration_attempts WHERE dataset_id=? AND attempt_id=?"
 )
 
@@ -245,20 +240,18 @@ CHECK_LINEAGE_SELECT_INTEGRATION_ATTEMPTS = Query(
     "SELECT 1 FROM integration_attempts WHERE dataset_id<>? AND attempt_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_5 = Query(
+DECISION_EVENT_ID = Query(
     "SELECT event_id FROM integration_events WHERE dataset_id=? AND attempt_id=? AND "
     "kind='decision'"
 )
 
-ACTION_SELECT_INTEGRATION_ACCOUNTS_2 = Query(
-    "SELECT 1 FROM integration_accounts WHERE id=? AND dataset_id=?"
-)
+INTEGRATION_ACCOUNT_EXISTS = Query("SELECT 1 FROM integration_accounts WHERE id=? AND dataset_id=?")
 
-ACTION_SELECT_INTEGRATION_EVENTS_6 = Query(
+LINEAGE_EVENT_EXISTS = Query(
     "SELECT 1 FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='lineage'"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_7 = Query(
+USAGE_REVISION_EXISTS = Query(
     "SELECT 1 FROM integration_events WHERE dataset_id=? AND attempt_id=? AND kind='usage' "
     "AND ordinal=?"
 )
@@ -275,12 +268,12 @@ ACTION_SELECT_INTEGRATION_DATASET_RETENTION = Query(
     "SELECT days,activated_at FROM integration_dataset_retention WHERE dataset_id=?"
 )
 
-ACTION_SELECT_INTEGRATION_SNAPSHOTS_3 = Query(
+DECISION_SNAPSHOT_CONTENT = Query(
     "SELECT content FROM integration_snapshots WHERE dataset_id=? AND snapshot_id=? AND "
     "attempt_id=? AND kind='decision'"
 )
 
-ACTION_SELECT_INTEGRATION_EVENTS_8 = Query(
+ACCOUNT_RESOLUTION_EXISTS = Query(
     "SELECT 1 FROM integration_events WHERE dataset_id=? AND attempt_id=? AND "
     "kind='account_resolution'"
 )

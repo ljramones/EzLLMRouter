@@ -1,4 +1,4 @@
-name: ezllmrouter-dev06-local
+name: ezllmrouter-local
 services:
   credential-init:
     profiles: [setup]

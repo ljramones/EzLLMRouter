@@ -39,7 +39,7 @@ _CAPABILITIES = {
 
 
 class IntegrationError(RequestError):
-    def __init__(self, code, status=400, retry_guidance="never"):
+    def __init__(self, code: str, status: int = 400, retry_guidance: str = "never") -> None:
         super().__init__(code, status)
         self.retry_guidance = retry_guidance
 
@@ -360,7 +360,7 @@ def _checked(value, definition, version="1"):
     return value
 
 
-def route_id(raw):
+def route_id(raw: str) -> str:
     """Decode one URL path segment once, then apply the published ID grammar."""
     if re.search(r"%(?![0-9A-Fa-f]{2})", raw):
         raise IntegrationError("SCHEMA_INVALID")
@@ -387,7 +387,9 @@ class AccountingReportData:
 
 
 class ExternalAccounting:
-    def __init__(self, registry):
+    def __init__(self, registry, *, feature_policy=None, accounting_retention_days=None):
+        self.feature_policy = feature_policy
+        self.accounting_retention_days = accounting_retention_days
         self.registry = registry
         self.store = registry.store
         self._expire_snapshots()
@@ -523,15 +525,13 @@ class ExternalAccounting:
         def action():
             db = self.store.database
             local_real = body["dataset_id"].startswith("dataset.local.real.")
-            if local_real and getattr(self, "accounting_retention_days", None) is None:
+            if local_real and self.accounting_retention_days is None:
                 raise IntegrationError("POLICY_DENIED", 403)
             if db.execute(
                 _queries.ACTION_SELECT_INTEGRATION_EXPIRED_DATASETS, (body["dataset_id"],)
             ).fetchone():
                 raise IntegrationError("DATASET_EXPIRED", 410)
-            old = db.execute(
-                _queries.ACTION_SELECT_INTEGRATION_DATASETS_2, (body["dataset_id"],)
-            ).fetchone()
+            old = db.execute(_queries.DATASET_FOR_UPDATE, (body["dataset_id"],)).fetchone()
             if old:
                 if local_real:
                     retention = db.execute(
@@ -795,9 +795,7 @@ class ExternalAccounting:
     def _bind_run(self, db, event):
         dataset_id, run_id = event["dataset_id"], event["run_id"]
         root, parent, task = event["root_run_id"], event.get("parent_run_id"), event["task_id"]
-        old = db.execute(
-            _queries.BIND_RUN_SELECT_INTEGRATION_RUNS_2, (dataset_id, run_id)
-        ).fetchone()
+        old = db.execute(_queries.RUN_LINEAGE, (dataset_id, run_id)).fetchone()
         if old:
             if old != (root, parent, task):
                 raise IntegrationError("EVENT_CONFLICT", 409)
@@ -808,9 +806,7 @@ class ExternalAccounting:
             if ancestor in seen:
                 raise IntegrationError("SEMANTIC_INVALID")
             seen.add(ancestor)
-            row = db.execute(
-                _queries.BIND_RUN_SELECT_INTEGRATION_RUNS_2, (dataset_id, ancestor)
-            ).fetchone()
+            row = db.execute(_queries.RUN_LINEAGE, (dataset_id, ancestor)).fetchone()
             if not row:
                 break  # Late parent delivery; binding is rechecked when that parent arrives.
             if row[0] != root or row[2] != task:
@@ -981,7 +977,7 @@ class ExternalAccounting:
             db = self.store.database
             self._authorize(principal, self._dataset(event["dataset_id"]), "ingest")
             did, eid, kind = event["dataset_id"], event["event_id"], event["kind"]
-            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS_3, (did, eid)).fetchone()
+            old = db.execute(_queries.EVENT_RECEIPT, (did, eid)).fetchone()
             if old:
                 if old[0] != digest:
                     raise IntegrationError("EVENT_CONFLICT", 409)
@@ -989,9 +985,7 @@ class ExternalAccounting:
             attempt_id = event.get("attempt_id")
             start = None
             if attempt_id:
-                row = db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_ATTEMPTS_2, (did, attempt_id)
-                ).fetchone()
+                row = db.execute(_queries.ATTEMPT_FOR_UPDATE, (did, attempt_id)).fetchone()
                 start = json.loads(row[0]) if row else None
             if kind in ("activity", "attempt_started"):
                 self._bind_run(db, event)
@@ -1019,14 +1013,10 @@ class ExternalAccounting:
                             and json.loads(metadata)["available_at"] > event["started_at"]
                         ):
                             raise IntegrationError("SEMANTIC_INVALID")
-                    for (raw,) in db.execute(
-                        _queries.ACTION_SELECT_INTEGRATION_EVENTS_4, (did, attempt_id)
-                    ):
+                    for (raw,) in db.execute(_queries.ACCOUNT_RESOLUTION_RECORD, (did, attempt_id)):
                         if json.loads(raw)["resolved_account_id"] != event["provider_account_id"]:
                             raise IntegrationError("EVENT_CONFLICT", 409)
-                for (raw,) in db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_2, (did, attempt_id)
-                ):
+                for (raw,) in db.execute(_queries.DECISION_EVENT_RECORD, (did, attempt_id)):
                     decision = json.loads(raw)
                     if (
                         decision["selected_account_id"] != event["provider_account_id"]
@@ -1057,9 +1047,7 @@ class ExternalAccounting:
                     ),
                 )
             if kind == "decision":
-                previous = db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_5, (did, attempt_id)
-                ).fetchone()
+                previous = db.execute(_queries.DECISION_EVENT_ID, (did, attempt_id)).fetchone()
                 if previous:
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 if start and (
@@ -1086,7 +1074,7 @@ class ExternalAccounting:
                         db, did, event["decision_ref"], attempt_id, "decision"
                     )
                     snapshot = db.execute(
-                        _queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS_3,
+                        _queries.DECISION_SNAPSHOT_CONTENT,
                         (did, event["decision_ref"], attempt_id),
                     ).fetchone()
                     if snapshot and snapshot[0]:
@@ -1108,30 +1096,26 @@ class ExternalAccounting:
                             raise IntegrationError("EVENT_CONFLICT", 409)
             if kind == "account_resolution":
                 resolved = db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_ACCOUNTS_2,
+                    _queries.INTEGRATION_ACCOUNT_EXISTS,
                     (event["resolved_account_id"], did),
                 ).fetchone()
                 if (
                     not resolved
-                    or db.execute(
-                        _queries.ACTION_SELECT_INTEGRATION_EVENTS_8, (did, attempt_id)
-                    ).fetchone()
+                    or db.execute(_queries.ACCOUNT_RESOLUTION_EXISTS, (did, attempt_id)).fetchone()
                 ):
                     raise IntegrationError("EVENT_CONFLICT", 409)
                 if start and start["provider_account_id"] != event["resolved_account_id"]:
                     raise IntegrationError("EVENT_CONFLICT", 409)
             if (
                 kind == "lineage"
-                and db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_6, (did, attempt_id)
-                ).fetchone()
+                and db.execute(_queries.LINEAGE_EVENT_EXISTS, (did, attempt_id)).fetchone()
             ):
                 raise IntegrationError("EVENT_CONFLICT", 409)
             ordinal = event.get("usage_revision") if kind == "usage" else None
             if (
                 ordinal is not None
                 and db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_7, (did, attempt_id, ordinal)
+                    _queries.USAGE_REVISION_EXISTS, (did, attempt_id, ordinal)
                 ).fetchone()
             ):
                 raise IntegrationError("EVENT_CONFLICT", 409)
@@ -1186,7 +1170,7 @@ class ExternalAccounting:
         dataset = self._dataset(record["dataset_id"])
         self._authorize(principal, dataset, "ingest")
         if record["status"] == "captured":
-            policy = getattr(self, "feature_policy", None)
+            policy = self.feature_policy
             if policy is None:
                 if record["provenance"] != "synthetic" or record["classification"] != "low":
                     raise IntegrationError("POLICY_DENIED", 403)
@@ -1218,7 +1202,7 @@ class ExternalAccounting:
         def action():
             db = self.store.database
             self._authorize(principal, self._dataset(record["dataset_id"]), "ingest")
-            old = db.execute(_queries.ACTION_SELECT_INTEGRATION_SNAPSHOTS_2, (did, sid)).fetchone()
+            old = db.execute(_queries.SNAPSHOT_IDENTITY, (did, sid)).fetchone()
             if old:
                 if old[0] != digest:
                     raise IntegrationError("EVENT_CONFLICT", 409)
@@ -1240,9 +1224,7 @@ class ExternalAccounting:
                     aid != record["attempt_id"] or record["snapshot_kind"] != "decision"
                 ):
                     raise IntegrationError("EVENT_CONFLICT", 409)
-            start = db.execute(
-                _queries.ACTION_SELECT_INTEGRATION_ATTEMPTS_2, (did, record["attempt_id"])
-            ).fetchone()
+            start = db.execute(_queries.ATTEMPT_FOR_UPDATE, (did, record["attempt_id"])).fetchone()
             if start:
                 attempt = json.loads(start[0])
                 expected = attempt["context_ref"] if record["snapshot_kind"] == "feature" else None
@@ -1255,7 +1237,7 @@ class ExternalAccounting:
                     raise IntegrationError("SEMANTIC_INVALID")
             if record["snapshot_kind"] == "decision" and "selected_action" in content:
                 rows = db.execute(
-                    _queries.ACTION_SELECT_INTEGRATION_EVENTS_2, (did, record["attempt_id"])
+                    _queries.DECISION_EVENT_RECORD, (did, record["attempt_id"])
                 ).fetchall()
                 for (raw,) in rows:
                     decision = json.loads(raw)

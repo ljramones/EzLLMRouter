@@ -4,7 +4,7 @@ import asyncio
 
 import httpx
 
-from worker import choice_b_worker as runtime
+from ezllmrouter_worker import worker as runtime
 
 
 class FixtureWorker(runtime.Worker):

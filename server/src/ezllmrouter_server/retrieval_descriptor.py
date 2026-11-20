@@ -1,6 +1,6 @@
 """Exact descriptor and recipe for the adopted synthetic retrieval profile."""
 
-from .successor_contract import digest
+from .successor_contract import domain_digest
 
 
 def recipe_for(request, work_hash, config, descriptor):
@@ -36,7 +36,7 @@ def execution_descriptor(request, work_hash, config):
         "lifecycle": "synchronous_one_attempt",
         "deadline": request["deadline"],
     }
-    descriptor["recipe_digest"] = digest(
+    descriptor["recipe_digest"] = domain_digest(
         "ezllmrouter-preparation-v1\n", recipe_for(request, work_hash, config, descriptor)
     )
     return descriptor

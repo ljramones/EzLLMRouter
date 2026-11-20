@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 from ezllmrouter_client import IntegrationClient, IntegrationClientError, __version__
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DID = "dataset.integration.c02"
 ACCOUNT = "account:c02:01"
 NODE = "/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node"
@@ -49,7 +49,7 @@ def actor(base, secret_file, package, mode, evidence):
     run = subprocess.run(
         (
             NODE,
-            str(ROOT / "tests/integration_readiness/correction02_js_actor.cjs"),
+            str(ROOT / "tools/accounting/evidence/correction02_js_actor.cjs"),
             base,
             str(secret_file),
             str(package),

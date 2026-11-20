@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 if not sys.argv[1].startswith("volume-v3-"):
     raise SystemExit("volume-v3 run ID required")

@@ -1,15 +1,17 @@
 """Restricted ezllmrouter-work-v0.2 canonicalization for the development slice."""
 
 from __future__ import annotations
-
 import hashlib
 import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-
+from typing import cast
+from collections.abc import Collection
+from .records import Record
+from .json_validation import JSONValue
 from .errors import RequestError
 from .formatting import parse_utc_second, utc_timestamp
-from .gateway.choice_b_wire import MAX_ATTEMPT_TIMEOUT_MS
+from .execution_policy import MAX_ATTEMPT_TIMEOUT_MS
 from .identifiers import valid_identifier
 from .json_validation import (
     MAX_SAFE_INTEGER,
@@ -23,30 +25,30 @@ from .json_validation import (
 PREFIX = b"ezllmrouter-work-v0.2\n"
 SAFE = MAX_SAFE_INTEGER
 MAX_OUTPUT_TOKENS = 32768
-_DECIMAL = re.compile(r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
+_DECIMAL = re.compile("^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$")
 
 
 class ContractError(RequestError):
     def __init__(self, code: str, status: int = 422):
         super().__init__(code)
-        self.code, self.status = code, status
+        self.code, self.status = (code, status)
 
 
-def strict_loads(data: bytes):
+def strict_loads(data: bytes) -> JSONValue:
     try:
         return decode_json(data, WORK_V02)
     except JSONValidationError as exc:
         raise ContractError(exc.code, exc.status) from exc
 
 
-def restricted(value, depth=0):
+def restricted(value: object, depth: int = 0) -> None:
     try:
         validate_json(value, WORK_V02, depth)
     except JSONValidationError as exc:
         raise ContractError(exc.code, exc.status) from exc
 
 
-def jcs(value) -> bytes:
+def jcs(value: object) -> bytes:
     """The contract's UTF-16-sorted, safe-integer, no-null JCS profile."""
     restricted(value)
     return canonical_json(value, utf16_keys=True).encode("utf-8")
@@ -75,23 +77,24 @@ def utc_second(value: str) -> str:
         raise ContractError("SCHEMA_INVALID", 400) from exc
 
 
-def ident(value):
+def ident(value: object) -> str:
     if not valid_identifier(value):
         raise ContractError("SCHEMA_INVALID", 400)
     return value
 
 
-def exact_keys(obj, required, optional=()):
+def exact_keys(obj: object, required: Collection[str], optional: Collection[str] = ()) -> Record:
     if (
         not isinstance(obj, dict)
         or not set(required) <= set(obj)
         or set(obj) - set(required) - set(optional)
     ):
         raise ContractError("SCHEMA_INVALID", 400)
+    return cast(Record, obj)
 
 
-def _labels(labels):
-    exact_keys(labels, ("lineage_ids", "sensitivity", "restrictions"))
+def _labels(labels: object) -> Record:
+    labels = exact_keys(labels, ("lineage_ids", "sensitivity", "restrictions"))
     if labels["sensitivity"] not in ("public", "internal", "confidential", "restricted"):
         raise ContractError("SCHEMA_INVALID", 400)
     result = dict(labels)
@@ -99,8 +102,8 @@ def _labels(labels):
         values = labels[key]
         if (
             not isinstance(values, list)
-            or (key == "lineage_ids" and not values)
-            or not all(isinstance(v, str) for v in values)
+            or (key == "lineage_ids" and (not values))
+            or (not all((isinstance(v, str) for v in values)))
         ):
             raise ContractError("SCHEMA_INVALID", 400)
         if len(values) != len(set(values)):
@@ -109,10 +112,10 @@ def _labels(labels):
     return result
 
 
-def _tool_schema_shape(value, depth=0):
+def _tool_schema_shape(value: object, depth: int = 0) -> None:
     if depth > 16:
         raise ContractError("LIMIT_EXCEEDED", 413)
-    exact_keys(
+    value = exact_keys(
         value,
         ("type",),
         (
@@ -142,7 +145,7 @@ def _tool_schema_shape(value, depth=0):
         names = value["required"]
         if (
             not isinstance(names, list)
-            or not all(isinstance(x, str) for x in names)
+            or not all((isinstance(x, str) for x in names))
             or len(names) != len(set(names))
         ):
             raise ContractError("SCHEMA_INVALID", 400)
@@ -154,11 +157,17 @@ def _tool_schema_shape(value, depth=0):
     for key in ("minimum", "maximum"):
         if key in value and (type(value[key]) is not int or abs(value[key]) > SAFE):
             raise ContractError("SCHEMA_INVALID", 400)
-    if "pattern" in value and not isinstance(value["pattern"], str):
+    if "pattern" in value and (not isinstance(value["pattern"], str)):
         raise ContractError("SCHEMA_INVALID", 400)
 
 
-def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages):
+def validate_text_request(
+    req: object,
+    trusted: Record,
+    config: Record,
+    prompt_blocks: list[Record],
+    allowed_lineages: Collection[str],
+) -> tuple[list[Record], Record, str, str]:
     """Resolve trusted prompt and the pinned, caller-owned lookup subset."""
     restricted(req)
     required = (
@@ -190,7 +199,7 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
         "trace_context",
         "observed_at",
     )
-    exact_keys(req, required, optional)
+    req = exact_keys(req, required, optional)
     if req["contract_version"] != "0.2" or req["profile"] != "initial_1a@1":
         raise ContractError("UNSUPPORTED_VERSION", 426)
     for key in (
@@ -216,7 +225,7 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     if "trace_context" in req and (
         not isinstance(req["trace_context"], dict)
         or not all(
-            isinstance(k, str) and isinstance(v, str) for k, v in req["trace_context"].items()
+            (isinstance(k, str) and isinstance(v, str) for k, v in req["trace_context"].items())
         )
     ):
         raise ContractError("SCHEMA_INVALID", 400)
@@ -271,7 +280,7 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     ):
         raise ContractError("SCHEMA_INVALID", 400)
     if req["purpose"] != "execution" or any(
-        k in req for k in ("parent_call", "subtask_id", "session_id", "construction_manifest_ref")
+        (k in req for k in ("parent_call", "subtask_id", "session_id", "construction_manifest_ref"))
     ):
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
     choice = req.get("tool_choice", "none")
@@ -280,7 +289,7 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     features = req["requested_features"]
     if (
         not isinstance(features, list)
-        or not all(isinstance(x, str) for x in features)
+        or not all((isinstance(x, str) for x in features))
         or len(features) != len(set(features))
     ):
         raise ContractError("SCHEMA_INVALID", 400)
@@ -303,7 +312,9 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     if not set(features) <= {"text", "tools"}:
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
     settings = req["generation_settings"]
-    exact_keys(settings, ("max_output_tokens", "temperature_decimal", "total_timeout_ms"))
+    settings = exact_keys(
+        settings, ("max_output_tokens", "temperature_decimal", "total_timeout_ms")
+    )
     if (
         type(settings["max_output_tokens"]) is not int
         or type(settings["total_timeout_ms"]) is not int
@@ -322,7 +333,9 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     if datetime.fromisoformat(deadline.replace("Z", "+00:00")) <= datetime.now(timezone.utc):
         raise ContractError("SEMANTIC_INVALID", 422)
     prompt = req["resolved_prompt"]
-    exact_keys(prompt, ("prompt_id", "prompt_version", "block_ids", "source_artifact_digest"))
+    prompt = exact_keys(
+        prompt, ("prompt_id", "prompt_version", "block_ids", "source_artifact_digest")
+    )
     for k in ("prompt_id", "prompt_version"):
         ident(prompt[k])
     if (
@@ -337,15 +350,15 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
     messages = req["messages"]
     if not isinstance(messages, list) or not 1 <= len(messages) <= 128:
         raise ContractError("SCHEMA_INVALID", 400)
-    resolved, ids, calls, results = [], set(), {}, set()
+    resolved, ids, calls, results = ([], set(), {}, set())
     tool_content = False
     for index, message in enumerate(messages):
         exact_keys(message, ("role", "blocks"))
-        role, blocks = message["role"], message["blocks"]
+        role, blocks = (message["role"], message["blocks"])
         if (
             role not in ("system", "user", "assistant", "tool")
             or not isinstance(blocks, list)
-            or not blocks
+            or (not blocks)
         ):
             raise ContractError("CAPABILITY_UNSUPPORTED", 422)
         if index == 0 and role != "system":
@@ -371,7 +384,7 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
                         block["tool_name"] != "lookup"
                         or type(block["arguments"]) is not dict
                         or set(block["arguments"]) != {"key"}
-                        or type(block["arguments"]["key"]) is not str
+                        or (type(block["arguments"]["key"]) is not str)
                     ):
                         raise ContractError("SEMANTIC_INVALID", 422)
                     call_id = ident(block["call_id"])
@@ -417,17 +430,25 @@ def validate_text_request(req, trusted, config, prompt_blocks, allowed_lineages)
         raise ContractError("LIMIT_EXCEEDED", 413)
     if set(calls) != results:
         raise ContractError("SEMANTIC_INVALID", 422)
-    if tool_content and not definitions:
+    if tool_content and (not definitions):
         raise ContractError("SEMANTIC_INVALID", 422)
     derived_tools = bool(definitions or tool_content or choice != "none")
     if derived_tools != ("tools" in features):
         raise ContractError("SEMANTIC_INVALID", 422)
-    if choice == "auto" and not definitions:
+    if choice == "auto" and (not definitions):
         raise ContractError("SEMANTIC_INVALID", 422)
-    return resolved, settings, deadline, digest(jcs(prompt_blocks))
+    return (resolved, settings, deadline, digest(jcs(prompt_blocks)))
 
 
-def projection(req, trusted, config, messages, settings, deadline, prompt_digest):
+def projection(
+    req: Record,
+    trusted: Record,
+    config: Record,
+    messages: list[Record],
+    settings: Record,
+    deadline: str,
+    prompt_digest: str,
+) -> Record:
     prompt = req["resolved_prompt"]
     work = {
         "task_id": req["task_id"],
@@ -464,5 +485,5 @@ def projection(req, trusted, config, messages, settings, deadline, prompt_digest
     }
 
 
-def work_digest(value):
+def work_digest(value: object) -> str:
     return digest(PREFIX + jcs(value))

@@ -152,15 +152,17 @@ class SignedPlanTests(unittest.TestCase):
             adapter = SyntheticAdapter()
             coordinator = Coordinator(
                 store,
-                {"token.synthetic": current},
-                copy.deepcopy(fixture["destination"]),
-                fixture["prompt_blocks"],
-                fixture["allowed_lineages"],
-                PlanAuthority(Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])),
-                adapter,
-                copy.deepcopy(fixture["retention"]),
-                copy.deepcopy(fixture["classification"]),
-                SyntheticTextRecipe(),
+                identity={"token.synthetic": current},
+                config=copy.deepcopy(fixture["destination"]),
+                prompt_blocks=fixture["prompt_blocks"],
+                allowed_lineages=fixture["allowed_lineages"],
+                authority=PlanAuthority(
+                    Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])
+                ),
+                adapter=adapter,
+                retention=copy.deepcopy(fixture["retention"]),
+                classification=copy.deepcopy(fixture["classification"]),
+                recipe=SyntheticTextRecipe(),
             )
             gate = threading.Event()
             blockers = [coordinator.pool.submit(gate.wait, 3) for _ in range(4)]
@@ -229,15 +231,15 @@ class SignedPlanTests(unittest.TestCase):
         )
         coordinator = Coordinator(
             store,
-            {"token.synthetic": copy.deepcopy(trusted)},
-            copy.deepcopy(fixture["destination"]),
-            fixture["prompt_blocks"],
-            fixture["allowed_lineages"],
-            authority,
-            adapter,
-            copy.deepcopy(fixture["retention"]),
-            copy.deepcopy(fixture["classification"]),
-            SyntheticDevelopmentRecipe(),
+            identity={"token.synthetic": copy.deepcopy(trusted)},
+            config=copy.deepcopy(fixture["destination"]),
+            prompt_blocks=fixture["prompt_blocks"],
+            allowed_lineages=fixture["allowed_lineages"],
+            authority=authority,
+            adapter=adapter,
+            retention=copy.deepcopy(fixture["retention"]),
+            classification=copy.deepcopy(fixture["classification"]),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=trusted_labels,
         )
         try:

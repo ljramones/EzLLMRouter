@@ -35,7 +35,13 @@ from ezllmrouter_server.gateway.choice_b_wire import (
     send,
 )
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedSocketStream
-from worker.choice_b_worker import RelayTransport, RECENT_ATTEMPTS, Worker
+from tests.worker_support import runtime as _worker
+
+RelayTransport, RECENT_ATTEMPTS, Worker = (
+    _worker.RelayTransport,
+    _worker.RECENT_ATTEMPTS,
+    _worker.Worker,
+)
 
 
 def deadline():
@@ -84,7 +90,7 @@ class GatewayLifecycleTests(unittest.TestCase):
         source = (
             "import signal,sys\n"
             f"sys.path.insert(0, {str(root)!r})\n"
-            "from worker import choice_b_worker as worker\n"
+            "from tests.worker_support import runtime as worker\n"
             "def serve():\n"
             " try:\n  print('READY',flush=True); signal.pause()\n"
             " finally:\n  print('CLEANED',flush=True)\n"
@@ -178,7 +184,9 @@ class GatewayLifecycleTests(unittest.TestCase):
 
             return Result()
 
-        with patch("worker.choice_b_worker.asyncio.run_coroutine_threadsafe", side_effect=schedule):
+        with patch(
+            "ezllmrouter_worker.worker.asyncio.run_coroutine_threadsafe", side_effect=schedule
+        ):
             worker.dispatch(
                 {"kind": "selected_request", "timeout_ms": 60000, "deadline": deadline()}
             )
@@ -198,7 +206,9 @@ class GatewayLifecycleTests(unittest.TestCase):
             coro.close()
             return future
 
-        with patch("worker.choice_b_worker.asyncio.run_coroutine_threadsafe", side_effect=schedule):
+        with patch(
+            "ezllmrouter_worker.worker.asyncio.run_coroutine_threadsafe", side_effect=schedule
+        ):
             with self.assertRaises(TimeoutError):
                 worker.dispatch(
                     {"kind": "selected_request", "timeout_ms": 60000, "deadline": deadline()}
@@ -378,7 +388,7 @@ class GatewayLifecycleTests(unittest.TestCase):
             tempfile.TemporaryDirectory() as directory,
             patch.dict(
                 os.environ,
-                {"EZLLMROUTER_DEV04_GUARD_EVENTS": str(Path(directory) / "events.jsonl")},
+                {"EZLLMROUTER_GATEWAY_GUARD_EVENTS": str(Path(directory) / "events.jsonl")},
             ),
         ):
             self.assertTrue(guard.flush_events(2))
@@ -419,7 +429,7 @@ class GatewayLifecycleTests(unittest.TestCase):
             tempfile.TemporaryDirectory() as directory,
             patch.dict(
                 os.environ,
-                {"EZLLMROUTER_DEV04_GUARD_EVENTS": str(Path(directory) / "events.jsonl")},
+                {"EZLLMROUTER_GATEWAY_GUARD_EVENTS": str(Path(directory) / "events.jsonl")},
             ),
         ):
             self.assertTrue(guard.flush_events(2))

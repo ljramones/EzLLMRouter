@@ -118,3 +118,23 @@ not establish whether the server committed the operation.
 Local tests and package builds do not establish Docker deployment or production
 acceptance. Use the [development checks](../../docs/DEVELOPMENT.md) and
 [security policy](../../docs/SECURITY.md) when validating a new profile.
+
+
+### Source preparation and instance identity
+
+Commit runtime sources and inputs before preparation. The preparer rejects a
+dirty source tree before building packages or staging images; its fingerprint
+still records exact source and frozen-input identities.
+
+New profiles use project `ezllmrouter-local` and descriptive receiver, worker,
+service and actor image names. The wrapper reads `PROFILE-OWNER.json` and passes
+that recorded project explicitly to Compose, preserving an older owned project.
+Keep the ownership marker with the profile state and use the wrapper for operations
+on that profile. Unowned resources under either the current or older project name
+block new ownership. Source cleanup does not restart an existing daemon.
+
+Diagnostic controls are `EZLLMROUTER_GATEWAY_GUARD_EVENTS` and
+`EZLLMROUTER_GATEWAY_SEND_EVENTS`. Worker source stages as `ezllmrouter_worker`,
+with explicitly listed common helpers and no trusted server package. Rebuild and
+qualify the resulting image, mounts and stop behavior using the reviewed frozen
+inputs before accepting an updated deployment.

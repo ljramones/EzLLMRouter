@@ -118,7 +118,18 @@ def run():
             usage_write_allowed=permitted,
         )
         successor.recover_incomplete()
-        coordinator = Coordinator(store, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
+        coordinator = Coordinator(
+            store,
+            identity={token: trusted},
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
         coordinator.successor = successor
         wire = serve("127.0.0.1", service_port, coordinator)
         threading.Thread(target=wire.serve_forever, daemon=True).start()

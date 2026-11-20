@@ -39,7 +39,7 @@ def require_public_destination(destination: dict) -> None:
         or destination.get("endpoint") != PUBLIC_ENDPOINT
         or destination.get("model") not in PUBLIC_MODELS
     ):
-        raise ValueError("unregistered DEV-04 public destination")
+        raise ValueError("unregistered gateway public destination")
 
 
 def provider_text_input(projected):
@@ -126,7 +126,7 @@ class GatewayProxyRecipe:
         body["max_retries"] = 0
         # Bind the selected SDK request to this signed attempt's budget.
         if type(timeout_ms) is not int or timeout_ms <= 0:
-            raise ValueError("invalid signed DEV-04 timeout")
+            raise ValueError("invalid signed gateway timeout")
         body["timeout"] = timeout_ms / 1000
         raw = json.dumps(body, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
             "utf-8"

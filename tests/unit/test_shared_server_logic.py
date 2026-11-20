@@ -65,7 +65,7 @@ class FormattingTests(unittest.TestCase):
     def test_utc_formatting_normalizes_offsets_without_losing_precise_mode(self):
         instant = datetime(2026, 11, 19, 13, 2, 3, 456789, timezone(timedelta(hours=-5)))
         self.assertEqual(utc_timestamp(instant), "2026-11-19T18:02:03Z")
-        self.assertEqual(utc_timestamp(instant, precise=True), "2026-11-19T18:02:03.456789+00:00")
+        self.assertEqual(utc_timestamp(instant, precise=True), "2026-11-19T18:02:03.456789Z")
         with self.assertRaises(ValueError):
             utc_timestamp(instant.replace(tzinfo=None))
 
@@ -82,8 +82,8 @@ class FormattingTests(unittest.TestCase):
         ):
             with self.subTest(value=value):
                 self.assertFalse(is_utc_second(value))
-                self.assertFalse(successor_contract.utc_second(value))
-        self.assertTrue(successor_contract.utc_second("2024-02-29T00:00:00Z"))
+                self.assertFalse(successor_contract.valid_utc_second(value))
+        self.assertTrue(successor_contract.valid_utc_second("2024-02-29T00:00:00Z"))
 
 
 class JSONPolicyTests(unittest.TestCase):
@@ -357,15 +357,15 @@ class DispatchWiringTests(unittest.TestCase):
         )
         coordinator = core_fixtures.Coordinator(
             self.store,
-            template.identity,
-            template.config,
-            template.prompt_blocks,
-            template.allowed_lineages,
-            template.authority,
-            self.adapter,
-            template.retention,
-            template.classification,
-            template.recipe,
+            identity=template.identity,
+            config=template.config,
+            prompt_blocks=template.prompt_blocks,
+            allowed_lineages=template.allowed_lineages,
+            authority=template.authority,
+            adapter=self.adapter,
+            retention=template.retention,
+            classification=template.classification,
+            recipe=template.recipe,
             successor=successor,
             context_sender=send,
         )

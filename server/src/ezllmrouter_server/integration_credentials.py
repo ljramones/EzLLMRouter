@@ -17,6 +17,7 @@ from .formatting import utc_timestamp
 from .integration_accounting import IntegrationError, _checked, _time
 from .observability import log_failure
 from .provider_adapters import probe
+from .repositories import authority
 from .repositories import integration_credentials as _queries
 from .secret_box import SecretBox, validate_secret
 from .store import encode
@@ -72,10 +73,7 @@ class DatabaseCredentialStore:
         self._gate = threading.RLock()
         with self.store.database.read():
             has_rows = (
-                self.store.database.execute(
-                    _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS_2
-                ).fetchone()
-                is not None
+                self.store.database.execute(_queries.HAS_CREDENTIAL_VERSIONS).fetchone() is not None
             )
             pinned = self.store.database.execute(
                 _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_META
@@ -674,24 +672,14 @@ class DatabaseCredentialStore:
                 "model_id": model_id,
                 "operation_family": operation_family,
             }
-            authority_revision = int(
-                self.store.database.execute(_queries.RELEASE_SELECT_REGISTRY_META).fetchone()[0]
-            )
-            audit = self.store.database.execute(
-                _queries.RELEASE_INSERT_REGISTRY_AUDIT,
-                (
-                    principal["principal_id"],
-                    "credential_resolved",
-                    account_id,
-                    item["revision"],
-                    item["revision"],
-                    authority_revision,
-                    _time(),
-                ),
-            )
-            self.store.database.execute(
-                _queries.RELEASE_INSERT_REGISTRY_AUDIT_VALUES,
-                (audit.lastrowid, None, encode(facts)),
+            authority.record_access(
+                self.store.database,
+                actor=principal["principal_id"],
+                action="credential_resolved",
+                subject=account_id,
+                record_revision=item["revision"],
+                at=_time(),
+                facts=facts,
             )
             return {
                 "account_id": account_id,

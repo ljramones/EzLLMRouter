@@ -11,6 +11,8 @@ import re
 from decimal import ROUND_CEILING, ROUND_HALF_EVEN, Decimal, InvalidOperation
 from hashlib import sha256
 from importlib.resources import files
+from typing import Any
+from .json_validation import JSONValue
 
 from .canonical import ContractError
 from .formatting import is_utc_second, money
@@ -24,11 +26,11 @@ from .json_validation import (
 )
 
 SAFE = MAX_SAFE_INTEGER
-SCHEMAS = json.loads(files("ezllmrouter_server").joinpath("dev12/schemas.json").read_text())
+SCHEMAS = json.loads(files("ezllmrouter_server").joinpath("retrieval/schemas.json").read_text())
 REGISTRATIONS = json.loads(
-    files("ezllmrouter_server").joinpath("dev12/registrations.json").read_text()
+    files("ezllmrouter_server").joinpath("retrieval/registrations.json").read_text()
 )
-TARIFFS = json.loads(files("ezllmrouter_server").joinpath("dev12/tariffs.json").read_text())
+TARIFFS = json.loads(files("ezllmrouter_server").joinpath("retrieval/tariffs.json").read_text())
 QUANTUM = Decimal(TARIFFS["quantum"])
 
 
@@ -103,12 +105,12 @@ def schema_valid(value, schema, bundle=SCHEMAS):
     return True
 
 
-def canonical(value):
+def canonical(value: JSONValue) -> bytes:
     """A1's ASCII-key-order canonical JSON for its restricted value domain."""
     return canonical_json(value, allow_null=True, exact_types=True)
 
 
-def digest(prefix: str, value) -> str:
+def domain_digest(prefix: str, value) -> str:
     return "sha256:" + sha256((prefix + canonical(value)).encode("utf-8")).hexdigest()
 
 
@@ -134,10 +136,10 @@ def work_projection(request, trusted):
 
 def work_digest(work):
     op = work["operation"]
-    return digest(f"ezllmrouter-work-v0.3\n{op['type']}@{op['version']}\n", work)
+    return domain_digest(f"ezllmrouter-work-v0.3\n{op['type']}@{op['version']}\n", work)
 
 
-def utc_second(value):
+def valid_utc_second(value):
     return type(value) is str and is_utc_second(value)
 
 
@@ -177,7 +179,7 @@ def semantic_request(request, trusted, registry=REGISTRATIONS, *, fresh=True):
     metadata, identity = request["metadata"], trusted["identity"]
     config = config_for(request, registry)
     if not all(
-        utc_second(item)
+        valid_utc_second(item)
         for item in (request["deadline"], trusted["authenticated_at"], trusted["expires_at"])
     ):
         return False
@@ -435,7 +437,14 @@ def tariff(request, price):
     }
 
 
-def usage_valid(row, request, attempt_id, price_ref, usage_ref, max_exposure_decimal):
+def usage_valid(
+    row: dict[str, Any],
+    request: dict[str, Any],
+    attempt_id: str,
+    price_ref: str,
+    usage_ref: str,
+    max_exposure_decimal: str,
+) -> bool:
     """Validate a complete native row against independently admitted request/price scope."""
     if (
         not schema_valid(row, SCHEMAS["$defs"]["UsageRevision"])

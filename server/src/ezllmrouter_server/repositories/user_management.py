@@ -1,5 +1,6 @@
 """SQL owned by the user_management repository."""
 
+from . import shared
 from ..database import Query
 
 
@@ -11,27 +12,27 @@ SAVE_INSERT_REGISTRY_PRINCIPALS = Query(
 
 ACTION_INSERT_CONSOLE_USERS = Query("INSERT INTO console_users VALUES (?,?,?,?,?,?,?)")
 
-CHANGE_INSERT_REGISTRY_PRINCIPALS = Query("INSERT INTO registry_principals VALUES (?,?)")
+CHANGE_INSERT_REGISTRY_PRINCIPALS = shared.INSERT_PRINCIPAL
 
 CHANGE_UPDATE_CONSOLE_USERS = Query(
     "UPDATE console_users SET username=?,auth_version=auth_version+?,updated_at=? WHERE "
     "principal_id=?"
 )
 
-CHANGE_UPDATE_CONSOLE_USERS_2 = Query(
+UPDATE_PASSWORD_PRESERVING_STATE = Query(
     "UPDATE console_users SET password_hash=?,auth_version=auth_version+1,updated_at=? WHERE "
     "principal_id=?"
 )
 
-CHANGE_DELETE_REGISTRY_CREDENTIALS = Query("DELETE FROM registry_credentials WHERE principal_id=?")
+CHANGE_DELETE_REGISTRY_CREDENTIALS = shared.DELETE_PRINCIPAL_CREDENTIALS
 
-CHANGE_UPDATE_CONSOLE_USERS_3 = Query(
+RESET_PASSWORD_REQUIRING_CHANGE = Query(
     "UPDATE console_users SET "
     "password_hash=?,must_change_password=1,auth_version=auth_version+1,updated_at=? WHERE "
     "principal_id=?"
 )
 
-CHANGE_UPDATE_CONSOLE_USERS_4 = Query(
+CHANGE_PASSWORD_COMPLETED = Query(
     "UPDATE console_users SET "
     "password_hash=?,must_change_password=0,auth_version=auth_version+1,updated_at=? WHERE "
     "principal_id=?"
@@ -44,7 +45,7 @@ LOAD_SELECT_CONSOLE_USERS = Query(
     "u.principal_id=?"
 )
 
-ADMIN_SELECT_REGISTRY_PRINCIPALS = Query("SELECT record FROM registry_principals WHERE id=?")
+ADMIN_SELECT_REGISTRY_PRINCIPALS = shared.GET_PRINCIPAL
 
 ACTION_SELECT_CONSOLE_USERS = Query("SELECT 1 FROM console_users LIMIT 1")
 
@@ -64,6 +65,4 @@ VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS = Query(
     "json_extract(p.record,'$.status')='active'"
 )
 
-VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS_2 = Query(
-    "SELECT 1 FROM console_users WHERE principal_id=?"
-)
+CONSOLE_USER_EXISTS = Query("SELECT 1 FROM console_users WHERE principal_id=?")

@@ -20,7 +20,7 @@ var patterns sync.Map
 
 func loadSchemas() map[string]Object {
 	out := map[string]Object{}
-	for key, file := range map[string]string{"0.2": "wire02.json", "0.3": "dev12_schemas.json", "1": "integration_schema.json", "2": "integration_schema_v2.json", "3": "integration_schema_v3.json"} {
+	for key, file := range map[string]string{"0.2": "wire02.json", "0.3": "retrieval_schemas.json", "1": "integration_schema.json", "2": "integration_schema_v2.json", "3": "integration_schema_v3.json"} {
 		raw, err := schemaFiles.ReadFile("schemas/" + file)
 		if err != nil {
 			panic(err)

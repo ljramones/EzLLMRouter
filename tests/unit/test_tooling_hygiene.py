@@ -115,7 +115,7 @@ assert not {'guard', 'choice_b_sender', 'dev12_integrated', 'profile'} & sys.mod
         with tempfile.TemporaryDirectory() as temporary:
             store = SQLiteStore(Path(temporary) / "service.sqlite")
             self.addCleanup(store.close)
-            with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", BoundServer):
+            with patch("ezllmrouter_server.operator_web.BoundedHTTPServer", BoundServer):
                 server = serve(
                     "127.0.0.1",
                     0,

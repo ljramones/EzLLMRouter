@@ -8,7 +8,7 @@ from typing import Any
 
 from ._schema_validation import validate
 
-SCHEMAS = json.loads(files("ezllmrouter_client").joinpath("dev12_schemas.json").read_text())
+SCHEMAS = json.loads(files("ezllmrouter_client").joinpath("retrieval_schemas.json").read_text())
 
 
 def schema(value: Any, shape: dict[str, Any]) -> bool:

@@ -290,15 +290,15 @@ class Run10Controls(unittest.TestCase):
             identity = {"token": trusted}
             coordinator = Coordinator(
                 store,
-                identity,
-                public_destination(FIXTURE),
-                copy.deepcopy(FIXTURE["prompt_blocks"]),
-                copy.deepcopy(FIXTURE["allowed_lineages"]),
-                PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE)),
-                adapter,
-                copy.deepcopy(FIXTURE["retention"]),
-                copy.deepcopy(FIXTURE["classification"]),
-                GatewayProxyRecipe(),
+                identity=identity,
+                config=public_destination(FIXTURE),
+                prompt_blocks=copy.deepcopy(FIXTURE["prompt_blocks"]),
+                allowed_lineages=copy.deepcopy(FIXTURE["allowed_lineages"]),
+                authority=PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE)),
+                adapter=adapter,
+                retention=copy.deepcopy(FIXTURE["retention"]),
+                classification=copy.deepcopy(FIXTURE["classification"]),
+                recipe=GatewayProxyRecipe(),
                 trusted_source_labels=copy.deepcopy(FIXTURE["trusted_source_labels"]),
             )
             try:

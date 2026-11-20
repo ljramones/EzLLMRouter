@@ -17,7 +17,7 @@ class NativeClientContracts(unittest.TestCase):
             **{
                 name: "clients/js/" + name
                 for name in (
-                    "dev12_schemas.json",
+                    "retrieval_schemas.json",
                     "integration_schema.json",
                     "integration_schema_v2.json",
                     "integration_schema_v3.json",

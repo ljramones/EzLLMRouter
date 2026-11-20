@@ -1,0 +1,18 @@
+{
+  "version": "dev03.lookup.v1",
+  "tool_recipe_ref": "recipe.dev03.tool.v1",
+  "tool_definition": {
+    "name": "lookup",
+    "description": "Synthetic lookup",
+    "input_schema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}
+  },
+  "result_source_labels": {"lineage_ids": ["src.tool.1"], "sensitivity": "internal", "restrictions": []},
+  "cases": [
+    {"actor": "python", "step_id": "step.dev03.python", "result_kind": "result_value",
+     "arguments": {"key": "synthetic"}, "result": {"value": "synthetic"},
+     "final_text": "Lookup: synthetic", "model_posts": 2, "caller_tool_executions": 1},
+    {"actor": "js", "step_id": "step.dev03.js", "result_kind": "result_text",
+     "arguments": {"key": "synthetic"}, "result": "value.synthetic",
+     "final_text": "Lookup: synthetic", "model_posts": 2, "caller_tool_executions": 1}
+  ]
+}

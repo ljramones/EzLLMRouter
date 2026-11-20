@@ -31,7 +31,7 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
         raise ValueError("fresh synthetic credentials required")
     if "litellm" in sys.modules:
         raise RuntimeError("LiteLLM imported into trusted sender")
-    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
+    os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = "/data/guard-events.jsonl"
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     trusted = dict(fixture["trusted_context"])
 
@@ -92,15 +92,15 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
     )
     coordinator = Coordinator(
         SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"]),
-        identity,
-        public_destination(fixture),
-        fixture["prompt_blocks"],
-        fixture["allowed_lineages"],
-        PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture)),
-        adapter,
-        fixture["retention"],
-        fixture["classification"],
-        GatewayProxyRecipe(),
+        identity=identity,
+        config=public_destination(fixture),
+        prompt_blocks=fixture["prompt_blocks"],
+        allowed_lineages=fixture["allowed_lineages"],
+        authority=PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture)),
+        adapter=adapter,
+        retention=fixture["retention"],
+        classification=fixture["classification"],
+        recipe=GatewayProxyRecipe(),
         trusted_source_labels=fixture["trusted_source_labels"],
     )
     server = serve("127.0.0.1", int(os.environ.get("PORT", "8773")), coordinator)

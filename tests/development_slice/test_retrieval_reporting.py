@@ -10,14 +10,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.successor_contract import (
     native_usage_row,
     price_for,
     work_projection,
     work_digest,
-)  # noqa: E402
-from ezllmrouter_server.successor_reporting import usage_report  # noqa: E402
+)
+from ezllmrouter_server.successor_reporting import usage_report
 
 VECTORS = json.loads(
     (ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text()

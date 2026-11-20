@@ -63,11 +63,11 @@ CHECK_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS = Query(
     "SELECT state,campaign_id FROM personal_campaign_attempts WHERE attempt_id=?"
 )
 
-ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_2 = Query(
+CAMPAIGN_ATTEMPT_EXPOSURE = Query(
     "SELECT bound_decimal,state,campaign_id FROM personal_campaign_attempts WHERE attempt_id=?"
 )
 
-ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3 = Query(
+CAMPAIGN_ATTEMPTS_WITH_LATEST_USAGE = Query(
     "SELECT p.attempt_id,p.bound_decimal,p.state,p.usage_revision,p.campaign_id,u.usage FROM "
     "personal_campaign_attempts p LEFT JOIN usage_revisions u ON u.attempt_id=p.attempt_id "
     "AND u.revision=(SELECT MAX(revision) FROM usage_revisions WHERE attempt_id=p.attempt_id) "
@@ -76,7 +76,7 @@ ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3 = Query(
 
 RECOVER_SELECT_PERSONAL_CAMPAIGNS = Query("SELECT record FROM personal_campaigns WHERE id=?")
 
-ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_4 = Query(
+CAMPAIGN_HAS_ATTEMPTS = Query(
     "SELECT 1 FROM personal_campaign_attempts WHERE campaign_id=? LIMIT 1"
 )
 

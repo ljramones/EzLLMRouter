@@ -9,8 +9,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server import successor_contract as subject  # noqa: E402
-from ezllmrouter_server.canonical import ContractError  # noqa: E402
+from ezllmrouter_server import successor_contract as subject
+from ezllmrouter_server.canonical import ContractError
 
 VECTORS = json.loads(
     (ROOT / "tests/fixtures/contracts/dev12-successor-01/vectors.json").read_text()
@@ -33,7 +33,7 @@ class SuccessorContractTests(unittest.TestCase):
                 )
                 self.assertEqual(subject.work_digest(work), case["work_digest"])
                 self.assertEqual(
-                    subject.digest("ezllmrouter-admission-v1\n", case["admission_snapshot"]),
+                    subject.domain_digest("ezllmrouter-admission-v1\n", case["admission_snapshot"]),
                     case["admission_snapshot_digest"],
                 )
         for fixture in VECTORS["result_examples"]:

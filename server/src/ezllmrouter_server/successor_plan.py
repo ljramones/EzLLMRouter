@@ -14,11 +14,11 @@ from .successor_contract import (
     SCHEMAS,
     canonical,
     config_for,
-    digest,
+    domain_digest,
     price_for,
     schema_valid,
     tariff,
-    utc_second,
+    valid_utc_second,
     work_digest,
     work_projection,
 )
@@ -159,7 +159,7 @@ def plan_valid(
         return False
     if descriptor != execution_descriptor(request, admitted_work_hash, config):
         return False
-    return utc_second(plan["expires_at"]) and plan["expires_at"] <= request["deadline"]
+    return valid_utc_second(plan["expires_at"]) and plan["expires_at"] <= request["deadline"]
 
 
 def execution_eligible(plan, request, admitted_work, admission_snapshot, context):
@@ -172,14 +172,14 @@ def execution_eligible(plan, request, admitted_work, admission_snapshot, context
     ):
         return False
     work_hash = work_digest(admitted_work)
-    admission_hash = digest("ezllmrouter-admission-v1\n", admission_snapshot)
+    admission_hash = domain_digest("ezllmrouter-admission-v1\n", admission_snapshot)
     if (
         not schema_valid(admission_snapshot, SCHEMAS["$defs"]["AdmissionSnapshot"])
         or admission_snapshot["work_digest"] != work_hash
         or admission_snapshot.get("commission", {}).get("status") == "verified"
         or admission_snapshot.get("delegation", {}).get("coverage") != "none"
         or admission_snapshot.get("delegation", {}).get("verified_link_indices")
-        or not utc_second(admission_snapshot.get("assessed_at"))
+        or not valid_utc_second(admission_snapshot.get("assessed_at"))
         or (
             "commission" not in request["metadata"]
             and admission_snapshot["commission"].get("absence_reason") != "caller_omitted"
@@ -191,7 +191,7 @@ def execution_eligible(plan, request, admitted_work, admission_snapshot, context
     ):
         return False
     if (
-        not utc_second(context["evaluation_time"])
+        not valid_utc_second(context["evaluation_time"])
         or context["evaluation_time"] >= plan["expires_at"]
         or not context["send_permission"]
         or context["plan_revoked"]

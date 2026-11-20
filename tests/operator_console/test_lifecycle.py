@@ -105,7 +105,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertLess(names.index("failure-console-socket"), names.index("failure-down"))
 
     def test_diagnose_reads_existing_profile_without_restarting(self):
-        (self.state / "PROFILE-OWNER.json").write_text("{}")
+        (self.state / "PROFILE-OWNER.json").write_text(
+            json.dumps({"project": profile.PROJECT, "root": str(profile.ROOT)})
+        )
         names = []
 
         def fake_command(name, _argv, env=None, allowed=(0,)):
@@ -125,7 +127,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertIn("service traceback", output.getvalue())
 
     def test_restart_stops_only_owned_profile_without_removing_volumes(self):
-        (self.state / "PROFILE-OWNER.json").write_text("{}")
+        (self.state / "PROFILE-OWNER.json").write_text(
+            json.dumps({"project": profile.PROJECT, "root": str(profile.ROOT)})
+        )
         names = []
 
         def fake_command(name, argv, env=None, allowed=(0,)):
@@ -148,7 +152,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertNotIn("-v", names[0][1])
 
     def test_audit_uses_existing_owned_build_without_prepare_or_restart(self):
-        (self.state / "PROFILE-OWNER.json").write_text("{}")
+        (self.state / "PROFILE-OWNER.json").write_text(
+            json.dumps({"project": profile.PROJECT, "root": str(profile.ROOT)})
+        )
         build = {"fingerprint": "f" * 64}
         with (
             patch.object(sys, "argv", ["profile.py", "audit"]),

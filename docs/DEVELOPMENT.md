@@ -16,12 +16,12 @@ listener binds; local IPC pairs support framing checks. The second check runs
 HTTP and TLS fixtures against localhost and requires permission to bind sockets.
 These commands use temporary stores and controlled fixtures, with no model calls.
 
-Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules across `server/`,
+Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules and `RUF100` across `server/`,
 `clients/`, `deploy/`, `worker/`, `tools/` and `tests/`. Formatting is enforced
 across those same trees. Local runtime state under
 `deploy/local/.state/` is explicitly excluded, including when passed directly to
-Ruff. Existing dependency/build exclusions also apply. No new blanket rule
-ignores hide the adopted lint findings.
+Ruff. Existing dependency/build exclusions also apply. Dead lint suppressions are rejected; the unused `E402` suppressions were removed.
+No new blanket rule ignores hide adopted findings.
 
 Strict mypy checks the modules selected by `TYPED_PATHS` in `tools/check.py`,
 including the full Python client, all runtime SQL repositories, provider probes,
@@ -29,7 +29,17 @@ shared validation/identity/filesystem helpers and selected operator boundaries.
 The client and repository directories are checked as a whole, including new modules.
 Imports use `follow_imports="silent"` so dependency types remain available while
 errors in modules outside the selected scope remain outside the blocking check.
-This is an incremental check, not whole-project type coverage.
+This is an incremental check, not whole-project type coverage. The blocking scope
+also includes the Store implementation/protocol, canonical request validator,
+wire HTTP package, shared execution policy and bounded executor.
+
+The same command then runs `tools.type_audit` over every server/Python-client
+module. `tools/type_audit_budget.json` records the remaining error budget per file.
+New files have a zero-error budget; increases fail, and reductions pass. Keep
+budgets decreasing as modules enter strict coverage. Budget changes are visible
+code-review changes. Fresh reports under `.artifacts/type-audit/` retain the full
+diagnostics and counts. The baseline for this structural pass falls from 2,934 to
+2,383 library errors; that remaining debt is not a passing whole-library mypy run.
 
 Apply the maintained formatter before committing Python changes:
 
@@ -204,8 +214,9 @@ Run `npm run report` to inspect the local HTML report.
 ## Fixture and evidence organization
 
 One-off gateway qualification and forensic commands live under
-`tools/gateway/evidence/`; operator browser proofs and actors live under
-`tools/operator/`. Runtime compatibility shims are removed. Historical proof IDs,
+`tools/gateway/evidence/`; historical Docker-input tooling lives under
+`tools/gateway/docker/`. Accounting evidence actors live under
+`tools/accounting/evidence/`, and operator browser proofs under `tools/operator/`. Runtime compatibility shims are removed. Historical proof IDs,
 recorded source commits and contract fixtures preserve their original identities;
 new source packets record the relocated paths. Synthetic successor authority,
 allowance, execution and receipt helpers live in `tools/synthetic/`, outside the
@@ -229,13 +240,19 @@ The disposable gateway harness requests these with the staging command's
 `--fixtures` flag. Normal local-profile staging omits the fixture adapters and
 entry points, and the worker's normal command interface rejects raw egress probes.
 
-The worker's standalone `worker_logging.py` is copied from the server's
-standard-library-only `observability.py`. It has no server-package dependency.
-Both processes log exception types and stack locations, excluding exception
-messages, source text, credentials and request/response bodies. Offline
-regressions exercise legacy switches and secret canaries without importing
-LiteLLM, making model calls or binding network listeners. The frozen worker
-and Docker harness require separate qualification with the reviewed inputs.
+The isolated `ezllmrouter_worker` package receives its worker entry points and a
+small explicit list of dependency-free helpers from `tools/gateway/worker_package.py`.
+Those helpers are byte-identical copies of the canonical service sources. The
+worker imports package-relative modules and runs with `python -m ezllmrouter_worker`;
+the trusted server package remains unavailable in its runtime. The in-process
+LiteLLM experiment lives in `tools/gateway/asgi_adapter.py` and is absent from the
+server wheel. Frozen alternate-handler validation mounts only the required tool
+and server sources in the worker's network-disabled build check.
+
+Both processes log exception types and stack locations without messages, source
+text, credentials or payloads. Offline regressions use mock vendor modules, socket
+pairs and disposable stores. They do not qualify the actual frozen worker or
+Docker signal/mount behavior; those remain target checks.
 
 ## Test and build inputs
 
@@ -243,6 +260,7 @@ and Docker harness require separate qualification with the reviewed inputs.
 | --- | --- |
 | `tests/fixtures/contracts/` | Schemas, examples, vectors and standalone conformance checks. |
 | `deploy/local/inputs/catalogue.json` | Model catalogue seed used by import and display checks. |
+| `deploy/local/inputs/fixtures/` | Runtime execution/request/tool-cycle fixture copies; parity checks preserve adopted test-golden bytes. |
 | `deploy/local/inputs/gateway/` | Frozen gateway lock, wheel inventory and advisory metadata. |
 | `server/` and client package resources | Runtime copies of supported schemas. |
 

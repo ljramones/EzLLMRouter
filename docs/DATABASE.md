@@ -186,7 +186,9 @@ measurements. Database plus WAL/SHM files reached about 545 MB at the largest si
 
 `formatting.py` owns decimal rendering and UTC formatting. Callers select the
 existing representation: exact decimal scale, compact report strings or nine
-fixed places; UTC seconds ending in `Z` or precise UTC ISO timestamps. Financial
+fixed places; UTC seconds ending in `Z` or fixed six-place microseconds ending in `Z`. Stored
+legacy offsets remain readable; timestamp ordering compares parsed instants and
+retains the selected original representation. Financial
 calculations retain their existing quantization and rounding rules. Rendering
 does not convert through floating point or change recorded history.
 
@@ -234,8 +236,10 @@ Registry mutations dispatch to focused action handlers. Coordinator carries an
 explicit admission snapshot into preparation/dispatch. Usage reporting separates
 snapshot reads, visibility, attempt projection and aggregation; external reports
 carry one database snapshot into per-attempt and version-specific projections.
-Strict type checking covers 36 modules, including the shared policies and
-authority repository; the remaining service bodies are outside that gate.
+The strict scope in `tools/check.py` includes the Store protocol/implementation,
+canonical validation, wire HTTP modules, execution policy/resources and shared
+repositories. The remaining library debt has a per-file regression budget; see
+[development checks](DEVELOPMENT.md).
 
 ## Operator HTTP server
 
@@ -290,3 +294,55 @@ CSV exports; its generated evidence is under ignored
 `.artifacts/code-review/http-batch/`.
 The explicit `--http-only` command exercises socket-level fixtures when the host
 allows loopback binds. Neither check invokes a model provider.
+
+
+## Structural boundaries and version decisions
+
+`web.serve` only composes a `wire_http` application and handler. Transport and
+authentication, work operations, integration routes and CSV projection have
+separate owners. Integration reads resolve through one route table. Operator
+registry reads resolve directly to named handlers in the existing operator route
+table; restricted reads declare their allowed roles there. Domain authorization
+still runs inside the owning operation. Typed request errors keep their public
+status/code through the registry HTTP boundary.
+
+Coordinator carries its immutable admission snapshot through named validation,
+exposure, record construction, persistence, plan, preparation, intent and waiting
+steps. Usage observation, output validation and candidate completion have separate
+steps. Configuration arguments after the store are named at every maintained
+composition site. The guarded sender is selected during construction.
+
+The Store protocol covers its public database handle, close, work ownership,
+intent/guard operations, candidate completion and every successor ledger method.
+Its SQLite implementation is checked against that protocol. Identical cross-domain
+SQL lives in `repositories/shared.py`; domain modules expose their named query
+objects. Numbered query suffixes have descriptive replacements. Credential access
+uses the shared audit helper without advancing authority for a read-only release.
+Both HTTP surfaces share CSV serialization and spreadsheet-neutralization policy.
+
+The current digest domains are the adopted EzLLMRouter baseline. This pass keeps
+all their bytes and version labels, including the `*-v1` prefixes. The raw-byte
+`canonical.digest` and domain/value `successor_contract.domain_digest` APIs remain
+explicitly different; each wire profile retains its adopted canonical ordering and
+value restrictions. Existing signed resources and corpus digests establish the
+current baseline, rather than compatibility with obsolete namespace domains.
+A future domain or canonicalization change requires a new domain/version,
+registration and consumer updates, corresponding golden/signed fixtures and an
+explicit policy for existing records. A path or private helper rename alone does
+not create such a protocol version.
+
+Schema/registration/tariff resources now live under `retrieval/`; bundled client
+schema files use `retrieval_schemas.json`. Their contents, `$id` values, rates,
+registered recipe/version identifiers and digests are unchanged. Historical
+`dev12_*` SQLite table names and proof/receipt IDs retain their original identities;
+changing those requires a separate schema/contract migration. Operational project,
+image and diagnostic-control defaults use descriptive EzLLMRouter names.
+
+An instance persists its owner, task class, credential consumer and release
+purpose in `registry_meta.instance_identity`. New instances default to
+`svc.ezllmrouter.credential-consumer` and `ezllmrouter-provider-dispatch`. A database
+with the old default consumer adopts that existing identity before recording the
+metadata. Reopen preserves the recorded identity and rejects conflicting
+configuration. Older custom instances should supply their existing identity flags
+when first opened by this version. Saved feature policies are checked against the
+resolved owner. No principal, grant, attribution or historical record is renamed.

@@ -108,7 +108,7 @@ def main() -> None:
         "| IC02-05 manifest | Root `MANIFEST.sha256` includes "
         "`retained/final-release/MANIFEST.sha256`; exact path/hash verifier in packager |\n"
         "| Restart, restore, v1/v2 copies | Seed/verify/restore summaries, validation record and "
-        "`tests/integration_readiness/correction02_upgrade.py` in source diff |\n"
+        "`tools/accounting/evidence/correction02_upgrade.py` in source diff |\n"
         "| Release identity | `RELEASE-ARTIFACTS.sha256`, retained release manifest and "
         "`SOURCE-IDENTITY.json` |\n"
         "| Final record delta | `delta/product-to-final.patch` |\n\n"

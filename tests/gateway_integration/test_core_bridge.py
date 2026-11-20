@@ -80,15 +80,15 @@ class CoreBridgeTests(unittest.TestCase):
     def coordinator(self, adapter):
         return Coordinator(
             self.store,
-            self.identity,
-            deepcopy(FIXTURE["destination"]),
-            deepcopy(FIXTURE["prompt_blocks"]),
-            deepcopy(FIXTURE["allowed_lineages"]),
-            PlanAuthority(Ed25519PrivateKey.generate(), deepcopy(FIXTURE["policy"])),
-            adapter,
-            deepcopy(FIXTURE["retention"]),
-            deepcopy(FIXTURE["classification"]),
-            SyntheticDevelopmentRecipe(),
+            identity=self.identity,
+            config=deepcopy(FIXTURE["destination"]),
+            prompt_blocks=deepcopy(FIXTURE["prompt_blocks"]),
+            allowed_lineages=deepcopy(FIXTURE["allowed_lineages"]),
+            authority=PlanAuthority(Ed25519PrivateKey.generate(), deepcopy(FIXTURE["policy"])),
+            adapter=adapter,
+            retention=deepcopy(FIXTURE["retention"]),
+            classification=deepcopy(FIXTURE["classification"]),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=deepcopy(FIXTURE["trusted_source_labels"]),
         )
 

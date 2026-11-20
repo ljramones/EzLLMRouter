@@ -51,6 +51,9 @@ class OperatorHandler(
     ):
         if route is None or route.stage != stage:
             return False
+        if route.roles and (session is None or session[1]["role"] not in route.roles):
+            self._fail(403, "OPERATOR_REQUIRED")
+            return True
         getattr(self, route.handler)(path, session, body, scope)
         return True
 

@@ -160,16 +160,16 @@ class CoreTests(unittest.TestCase):
     def coordinator(self, store=None, adapter=None, retention=None, faults=None):
         c = Coordinator(
             store or self.store,
-            {"token.synthetic": self.trusted},
-            copy.deepcopy(FIXTURE["destination"]),
-            FIXTURE["prompt_blocks"],
-            FIXTURE["allowed_lineages"],
-            FakeAuthority(),
-            adapter or self.adapter,
-            copy.deepcopy(retention or FIXTURE["retention"]),
-            copy.deepcopy(FIXTURE["classification"]),
-            SyntheticTextRecipe(),
-            faults,
+            identity={"token.synthetic": self.trusted},
+            config=copy.deepcopy(FIXTURE["destination"]),
+            prompt_blocks=FIXTURE["prompt_blocks"],
+            allowed_lineages=FIXTURE["allowed_lineages"],
+            authority=FakeAuthority(),
+            adapter=adapter or self.adapter,
+            retention=copy.deepcopy(retention or FIXTURE["retention"]),
+            classification=copy.deepcopy(FIXTURE["classification"]),
+            recipe=SyntheticTextRecipe(),
+            faults=faults,
         )
         self.addCleanup(c.pool.shutdown, wait=True)
         return c

@@ -229,7 +229,18 @@ def main(target, output):
             "%Y-%m-%dT%H:%M:%SZ"
         ),
     }
-    coordinator = Coordinator(None, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
+    coordinator = Coordinator(
+        None,
+        identity={token: trusted},
+        config={},
+        prompt_blocks={},
+        allowed_lineages={},
+        authority=None,
+        adapter=None,
+        retention={},
+        classification={},
+        recipe=None,
+    )
     authenticated = coordinator.authenticate(token)
     assert authenticated == trusted
     service = SuccessorService(

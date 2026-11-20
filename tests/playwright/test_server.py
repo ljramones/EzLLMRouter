@@ -51,7 +51,7 @@ class BrowserFixtureTests(unittest.TestCase):
         )
         environment.start()
         self.addCleanup(environment.stop)
-        replacement = patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer)
+        replacement = patch("ezllmrouter_server.operator_web.BoundedHTTPServer", MemoryServer)
         replacement.start()
         self.addCleanup(replacement.stop)
         self.instance = fixture.Instance(Path(temporary.name), {})

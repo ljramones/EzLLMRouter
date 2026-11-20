@@ -33,7 +33,7 @@ pub(crate) fn ids(value: &Value, names: &[&str]) -> bool { names.iter().all(|key
 static BUNDLES: LazyLock<BTreeMap<&'static str, Value>> = LazyLock::new(|| {
     [
         ("0.2", include_str!("../schemas/wire02.json")),
-        ("0.3", include_str!("../schemas/dev12_schemas.json")),
+        ("0.3", include_str!("../schemas/retrieval_schemas.json")),
         ("1", include_str!("../schemas/integration_schema.json")),
         ("2", include_str!("../schemas/integration_schema_v2.json")),
         ("3", include_str!("../schemas/integration_schema_v3.json")),

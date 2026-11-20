@@ -1,6 +1,6 @@
 "use strict";
 
-const bundle = require("./dev12_schemas.json");
+const bundle = require("./retrieval_schemas.json");
 const {SUCCESSOR_RESPONSE_LIMIT} = require("./http.cjs");
 const own = (value, key) => Object.hasOwn(value, key);
 

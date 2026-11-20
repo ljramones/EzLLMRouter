@@ -11,9 +11,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server.core import Coordinator  # noqa: E402
-from ezllmrouter_server.canonical import ContractError  # noqa: E402
-from ezllmrouter_server.web import serve  # noqa: E402
+from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.web import serve
 
 
 class FakeSuccessor:
@@ -42,7 +42,16 @@ class WebBoundaryTests(unittest.TestCase):
         expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         trusted = {"principal_id": "user.demo", "task_id": "task.demo", "expires_at": expiry}
         coordinator = Coordinator(
-            None, {"test.token": trusted}, {}, {}, {}, None, None, {}, {}, None
+            None,
+            identity={"test.token": trusted},
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
         )
         successor = FakeSuccessor()
         coordinator.successor = successor
@@ -108,7 +117,16 @@ class WebBoundaryTests(unittest.TestCase):
         expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         trusted = {"principal_id": "user.demo", "task_id": "task.demo", "expires_at": expiry}
         coordinator = Coordinator(
-            None, {"test.token": trusted}, {}, {}, {}, None, None, {}, {}, None
+            None,
+            identity={"test.token": trusted},
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
         )
         successor = FakeSuccessor()
         coordinator.successor = successor
@@ -154,7 +172,16 @@ class WebBoundaryTests(unittest.TestCase):
         expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         trusted = {"principal_id": "user.demo", "task_id": "task.demo", "expires_at": expiry}
         coordinator = Coordinator(
-            None, {"test.token": trusted}, {}, {}, {}, None, None, {}, {}, None
+            None,
+            identity={"test.token": trusted},
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
         )
         successor = FakeSuccessor()
         coordinator.successor = successor

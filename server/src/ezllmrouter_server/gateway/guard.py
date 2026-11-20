@@ -14,7 +14,10 @@ import time
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable
+from typing import Callable, Protocol, TypeVar
+from concurrent.futures import Future
+from contextlib import AbstractContextManager
+from ..execution_policy import PROVIDER_URL as PROVIDER_URL, valid_provider_key
 
 import httpx
 
@@ -25,11 +28,16 @@ from ezllmrouter_server.observability import log_failure
 from ezllmrouter_server.runtime_resources import BoundedExecutor
 from ezllmrouter_server.diagnostic_journal import append_event
 
-from .proxy_recipe import PUBLIC_MODEL, require_public_destination
+from .proxy_recipe import require_public_destination
 
-PROVIDER_URL = "http://127.0.0.1:8766/v1/chat/completions"
-PROVIDER_MODEL = PUBLIC_MODEL
 RECIPE_VERSION = "recipe.dev04.openai-sdk.v2"
+
+
+R = TypeVar("R")
+
+
+class CheckExecutor(Protocol):
+    def submit(self, action: Callable[[], R]) -> Future[R]: ...
 
 
 class GuardRejected(ServerError, RuntimeError):
@@ -57,9 +65,11 @@ class Invocation:
     provider_key: str | None = field(default=None, repr=False)
     abandoned: bool = False
     execution_deadline: str | None = None
-    authority_gate: object = field(default_factory=threading.RLock, repr=False)
-    check_executor: object | None = field(default=None, repr=False)
-    relay_future: object | None = field(default=None, repr=False)
+    authority_gate: AbstractContextManager[object] = field(
+        default_factory=threading.RLock, repr=False
+    )
+    check_executor: CheckExecutor | None = field(default=None, repr=False)
+    relay_future: Future[httpx.Response] | None = field(default=None, repr=False)
     observations: list[str] = field(default_factory=list)
 
     @property
@@ -67,9 +77,9 @@ class Invocation:
         return self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
 
 
-async def run_check(invocation, action):
+async def run_check(invocation: Invocation, action: Callable[[], R]) -> R:
     """Keep blocking registry/SQLite checks off the provider response loop."""
-    executor = getattr(invocation, "check_executor", None)
+    executor = invocation.check_executor
     if executor is None:
         return await asyncio.to_thread(action)
     return await asyncio.wrap_future(executor.submit(action))
@@ -89,9 +99,7 @@ SDK_HEADERS = frozenset(
     }
 )
 
-ACTIVE: ContextVar[Invocation | None] = ContextVar(
-    "ezllmrouter_dev04_gateway_invocation", default=None
-)
+ACTIVE: ContextVar[Invocation | None] = ContextVar("ezllmrouter_gateway_invocation", default=None)
 _EVENT_QUEUE = queue.Queue(maxsize=1024)
 _EVENT_START = threading.Lock()
 _EVENT_WRITER = None
@@ -157,7 +165,7 @@ atexit.register(flush_events)
 
 
 def _event(invocation: Invocation | None, stage: str, code: str | None = None):
-    target = os.environ.get("EZLLMROUTER_DEV04_GUARD_EVENTS")
+    target = os.environ.get("EZLLMROUTER_GATEWAY_GUARD_EVENTS")
     if not target:
         return
     row = {
@@ -309,11 +317,7 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
         raise GuardRejected()
     headers = request.headers
     provider_key = invocation.provider_key
-    if (
-        type(provider_key) is not str
-        or len(provider_key) < (16 if provider_route else 36)
-        or (not provider_route and not provider_key.startswith("sk-"))
-    ):
+    if not valid_provider_key(provider_key, responses=provider_route):
         raise GuardRejected()
     if (
         headers.get("host") != request.url.netloc.decode()

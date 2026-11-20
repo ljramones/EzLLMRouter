@@ -11,43 +11,26 @@ import httpx
 
 from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.canonical import ContractError
-from .provider_reply import candidate_from_provider
-from .guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL
+from ezllmrouter_server.gateway.provider_reply import candidate_from_provider
+from ezllmrouter_server.gateway.guard import (
+    ACTIVE,
+    GuardRejected,
+    GuardTransport,
+    Invocation,
+    PROVIDER_URL,
+)
 from ezllmrouter_server.observability import log_failure
-from .proxy_recipe import PROXY_MODEL, require_public_destination
+from ezllmrouter_server.gateway.proxy_recipe import PROXY_MODEL, require_public_destination
 
 
-PROXY_URL = "http://127.0.0.1:8767/v1/chat/completions"
-
-
-class RestrictedProxy:
-    """Expose only the selected route to this private ASGI caller."""
-
-    def __init__(self, vendor_app):
-        self.vendor_app = vendor_app
-
-    async def __call__(self, scope, receive, send):
-        if (
-            scope["type"] != "http"
-            or scope.get("path") != "/v1/chat/completions"
-            or scope.get("method") != "POST"
-            or ACTIVE.get() is None
-        ):
-            await send({"type": "http.response.start", "status": 403, "headers": []})
-            await send({"type": "http.response.body", "body": b""})
-            return
-        await self.vendor_app(scope, receive, send)
+from ezllmrouter_server.execution_policy import PROXY_URL, RestrictedProxy, valid_provider_key
 
 
 class LiteLLMAsgiAdapter:
     """The proxy executes on one event loop; ContextVar scopes each invocation."""
 
     def __init__(self, *, provider_key, lower=None, request_timeout=1.0):
-        if (
-            type(provider_key) is not str
-            or not provider_key.startswith("sk-")
-            or not 36 <= len(provider_key) <= 4096
-        ):
+        if not valid_provider_key(provider_key):
             raise ValueError("invalid trusted provider credential")
         self.provider_key = provider_key
         self.lower_transport = lower
@@ -108,7 +91,7 @@ class LiteLLMAsgiAdapter:
             or litellm.num_retries != 0
         ):
             raise RuntimeError("alternate LiteLLM handler or retry configuration")
-        self.proxy = RestrictedProxy(proxy_server.app)
+        self.proxy = RestrictedProxy(proxy_server.app, lambda: ACTIVE.get() is not None)
         import openai as openai_sdk
         from litellm.llms.openai import common_utils as openai_utils
         from litellm.llms.openai import openai as openai_adapter

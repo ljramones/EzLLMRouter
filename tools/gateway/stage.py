@@ -11,6 +11,12 @@ import sys
 import tomllib
 import zipfile
 
+if __package__:
+    from .worker_package import source_mapping as worker_sources
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from worker_package import source_mapping as worker_sources
+
 
 CLIENT_DEPS = {"anyio", "certifi", "h11", "httpcore", "httpx", "idna", "typing-extensions"}
 
@@ -102,6 +108,7 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         ("tools/gateway/evidence/choice_b_steps.sh", "harness/choice_b_steps.sh"),
         ("tools/gateway/evidence/compose.yaml", "harness/compose.yaml"),
         ("tools/gateway/stage.py", "harness/stage.py"),
+        ("tools/gateway/worker_package.py", "harness/worker_package.py"),
         ("tools/gateway/evidence/receipts.py", "harness/receipts.py"),
         ("tools/gateway/evidence/review_gate.py", "harness/review_gate.py"),
         ("tools/gateway/evidence/source_correspondence.py", "harness/source_correspondence.py"),
@@ -143,11 +150,10 @@ def source_mapping(root, dev05=False, *, fixtures=False):
             "server/src/ezllmrouter_server/gateway/choice_b_wire.py",
             "service/gateway/choice_b_wire.py",
         ),
-        ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "worker/choice_b_wire.py"),
-        ("worker/choice_b_worker.py", "worker/choice_b_worker.py"),
-        ("server/src/ezllmrouter_server/observability.py", "worker/worker_logging.py"),
-        ("server/src/ezllmrouter_server/runtime_resources.py", "worker/runtime_resources.py"),
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
+        ("tools/__init__.py", "service/gateway/tools/__init__.py"),
+        ("tools/gateway/__init__.py", "service/gateway/tools/gateway/__init__.py"),
+        ("tools/gateway/asgi_adapter.py", "service/gateway/tools/gateway/asgi_adapter.py"),
         ("tools/gateway/receiver.py", "receiver/receiver.py"),
         ("tools/gateway/evidence/python_text.py", "python/actors/python_text.py"),
         ("tools/gateway/evidence/python_negative.py", "python/actors/python_negative.py"),
@@ -159,14 +165,18 @@ def source_mapping(root, dev05=False, *, fixtures=False):
             "js/actors/actor_output_regression.cjs",
         ),
         ("tests/tool_cycle/python_actor.py", "python/actors/python_actor.py"),
-        ("tests/tool_cycle/scenarios.json", "python/actors/scenarios.json"),
+        ("deploy/local/inputs/fixtures/tool-cycle.json", "python/actors/scenarios.json"),
         ("tests/tool_cycle/js_actor.cjs", "js/actors/js_actor.cjs"),
-        ("tests/tool_cycle/scenarios.json", "js/actors/scenarios.json"),
-        ("tests/development_slice/request.json", "python/actors/request.json"),
-        ("tests/development_slice/request.json", "js/actors/request.json"),
-        ("tests/development_slice/request.json", "service/dev_slice/request.json"),
-        ("tests/development_slice/fixture.json", "service/dev_slice/fixture.json"),
+        ("deploy/local/inputs/fixtures/tool-cycle.json", "js/actors/scenarios.json"),
+        ("deploy/local/inputs/fixtures/request.json", "python/actors/request.json"),
+        ("deploy/local/inputs/fixtures/request.json", "js/actors/request.json"),
+        ("deploy/local/inputs/fixtures/request.json", "service/dev_slice/request.json"),
+        ("deploy/local/inputs/fixtures/execution.json", "service/dev_slice/fixture.json"),
     ]
+    source_files.extend(worker_sources())
+    source_files.append(
+        ("server/src/ezllmrouter_server/execution_policy.py", "service/gateway/execution_policy.py")
+    )
     if fixtures:
         source_files.extend(
             [
@@ -201,7 +211,7 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         )
     if dev05:
         source_files = [
-            ("tools/gateway/evidence/dev05_fixture.json", target)
+            ("deploy/local/inputs/fixtures/controlled-execution.json", target)
             if target == "service/dev_slice/fixture.json"
             else (source, target)
             for source, target in source_files

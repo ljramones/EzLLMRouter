@@ -191,7 +191,7 @@ class PersonalCampaign:
                 raise ValueError("unresolved exposure prevents a new allowance")
             if old and old["state"] != "closed":
                 if self.store.database.execute(
-                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_4, (old["id"],)
+                    _queries.CAMPAIGN_HAS_ATTEMPTS, (old["id"],)
                 ).fetchone():
                     raise ValueError("close the existing campaign before configuring another")
                 record["id"] = old["id"]
@@ -472,7 +472,7 @@ class PersonalCampaign:
     def settle(self, attempt_id, usage=None, *, before_transmit=False):
         def action():
             row = self.store.database.execute(
-                _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_2, (attempt_id,)
+                _queries.CAMPAIGN_ATTEMPT_EXPOSURE, (attempt_id,)
             ).fetchone()
             if (
                 not row
@@ -518,7 +518,7 @@ class PersonalCampaign:
             changed = 0
             changed_campaigns = set()
             rows = self.store.database.execute(
-                _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3
+                _queries.CAMPAIGN_ATTEMPTS_WITH_LATEST_USAGE
             ).fetchall()
             for attempt_id, bound, state, prior_revision, campaign_id, raw_usage in rows:
                 if state == "released":

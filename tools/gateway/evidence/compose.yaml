@@ -151,7 +151,7 @@ services:
       EZLLMROUTER_DEV_TOKEN: ${EZLLMROUTER_DEV_TOKEN:?}
       EZLLMROUTER_DEV04_PROVIDER_KEY: ${EZLLMROUTER_DEV04_PROVIDER_KEY:?}
       EZLLMROUTER_DEV04_POOL_PROBE: "1"
-      EZLLMROUTER_DEV04_SEND_EVENTS: /data/send-events.jsonl
+      EZLLMROUTER_GATEWAY_SEND_EVENTS: /data/send-events.jsonl
       EZLLMROUTER_DEV05_TEST_TOOL_MUTATION: ${EZLLMROUTER_DEV05_TEST_TOOL_MUTATION:-0}
       PORT: "8773"
     command: ["python", "/app/gateway/service_fixture.py", "sender"]

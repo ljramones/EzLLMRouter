@@ -171,8 +171,8 @@ def integration(revision=1, mutation=False, fail_commit=False, timeout_ms=1000):
     with tempfile.TemporaryDirectory(prefix="ezllmrouter-run15-") as tmp:
         env = {
             "EZLLMROUTER_DEV04_PROVIDER_KEY": PROVIDER_KEY,
-            "EZLLMROUTER_DEV04_GUARD_EVENTS": str(Path(tmp) / "guard.jsonl"),
-            "EZLLMROUTER_DEV04_SEND_EVENTS": str(Path(tmp) / "send.jsonl"),
+            "EZLLMROUTER_GATEWAY_GUARD_EVENTS": str(Path(tmp) / "guard.jsonl"),
+            "EZLLMROUTER_GATEWAY_SEND_EVENTS": str(Path(tmp) / "send.jsonl"),
         }
         with patch.dict(os.environ, env):
             store = CommitStore(Path(tmp) / "store.sqlite", fail_commit)
@@ -181,15 +181,15 @@ def integration(revision=1, mutation=False, fail_commit=False, timeout_ms=1000):
             signer = PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE))
             core = Coordinator(
                 store,
-                {"token": trusted},
-                public_destination(FIXTURE),
-                deepcopy(FIXTURE["prompt_blocks"]),
-                deepcopy(FIXTURE["allowed_lineages"]),
-                signer,
-                adapter,
-                deepcopy(FIXTURE["retention"]),
-                deepcopy(FIXTURE["classification"]),
-                GatewayProxyRecipe(),
+                identity={"token": trusted},
+                config=public_destination(FIXTURE),
+                prompt_blocks=deepcopy(FIXTURE["prompt_blocks"]),
+                allowed_lineages=deepcopy(FIXTURE["allowed_lineages"]),
+                authority=signer,
+                adapter=adapter,
+                retention=deepcopy(FIXTURE["retention"]),
+                classification=deepcopy(FIXTURE["classification"]),
+                recipe=GatewayProxyRecipe(),
                 trusted_source_labels=deepcopy(FIXTURE["trusted_source_labels"]),
             )
             try:

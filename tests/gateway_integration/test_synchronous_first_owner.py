@@ -75,7 +75,18 @@ class SynchronizedOwnershipTests(unittest.TestCase):
                 read_allowed=lambda _who, _record: True,
                 usage_write_allowed=lambda _who, _record: True,
             )
-            coordinator = Coordinator(None, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
+            coordinator = Coordinator(
+                None,
+                identity={token: trusted},
+                config={},
+                prompt_blocks={},
+                allowed_lineages={},
+                authority=None,
+                adapter=None,
+                retention={},
+                classification={},
+                recipe=None,
+            )
             coordinator.successor = service
             web = serve("127.0.0.1", 0, coordinator)
             thread = threading.Thread(target=web.serve_forever, daemon=True)

@@ -57,7 +57,7 @@ class HTTPFramingTests(UserHTTPFixture):
                 registry=None,
                 authenticate=Mock(side_effect=ContractError(code, status)),
             )
-            with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+            with patch("ezllmrouter_server.web.BoundedHTTPServer", MemoryServer):
                 server = serve_wire("127.0.0.1", 48761, coordinator)
             request = b"GET /v1/capabilities?private=canary HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer private-token\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\n"
             with self.assertLogs("ezllmrouter", level="INFO") as logged:
@@ -78,7 +78,7 @@ class HTTPFramingTests(UserHTTPFixture):
             authenticate=lambda _: {},
             capabilities=lambda _: {"contract_version": "0.2"},
         )
-        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.web.BoundedHTTPServer", MemoryServer):
             server = serve_wire("127.0.0.1", 48761, coordinator)
         for request, expected_access, expected_errors in (
             (b"", 0, 0),
@@ -148,7 +148,7 @@ class HTTPFramingTests(UserHTTPFixture):
         coordinator = SimpleNamespace(
             registry=None, authenticate=lambda _: {}, capabilities=capabilities
         )
-        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.web.BoundedHTTPServer", MemoryServer):
             server = serve_wire("127.0.0.1", 48761, coordinator)
         headers = (
             "Host: 127.0.0.1:48761\r\nEzLLMRouter-Contract-Version: 0.2\r\n"

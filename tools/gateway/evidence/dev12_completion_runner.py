@@ -1798,7 +1798,7 @@ class CompletionRuntime:
                 from tools.gateway.evidence.dev12_ct02b_supplement import verify_started_limits
             verify_started_limits(self.allowance.inspect(), finite_scope)
         self.executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
-        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(self.guard_log)
+        os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(self.guard_log)
 
         def permitted(current, original):
             return (
@@ -1809,7 +1809,18 @@ class CompletionRuntime:
                 == original["trusted_identity"]["identity_binding_id"]
             )
 
-        self.coordinator = Coordinator(self.store, identities, {}, {}, {}, None, None, {}, {}, None)
+        self.coordinator = Coordinator(
+            self.store,
+            identity=identities,
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
         self.successor = attach_standalone_synthetic(
             self.coordinator,
             store=self.store,
@@ -2003,7 +2014,7 @@ class CompletionRuntime:
         self.executor = Dev12SyntheticExecutor(
             worker, self.receiver_port, cert.read_text(), TEST_KEY
         )
-        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(self.guard_log)
+        os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(self.guard_log)
 
         def permitted(current, original):
             return (
@@ -2014,7 +2025,18 @@ class CompletionRuntime:
                 == original["trusted_identity"]["identity_binding_id"]
             )
 
-        self.coordinator = Coordinator(self.store, identities, {}, {}, {}, None, None, {}, {}, None)
+        self.coordinator = Coordinator(
+            self.store,
+            identity=identities,
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
         self.successor = attach_standalone_synthetic(
             self.coordinator,
             store=self.store,
@@ -2219,7 +2241,18 @@ class CompletionRuntime:
 
         for vector_id, token in self.credentials.items():
             identities[token]["task_id"] = fixture(vector_id)[0]["work_selector"]["task_id"]
-        self.coordinator = Coordinator(self.store, identities, {}, {}, {}, None, None, {}, {}, None)
+        self.coordinator = Coordinator(
+            self.store,
+            identity=identities,
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
         self.successor = attach_standalone_synthetic(
             self.coordinator,
             store=self.store,

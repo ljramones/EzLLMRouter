@@ -50,7 +50,7 @@ class CredentialTests(unittest.TestCase):
             legacy_token="synthetic-legacy-service-token-000000000000",
             legacy_trusted=TRUSTED,
         )
-        for subject in ("svc.integration", "svc.vega.credential-consumer"):
+        for subject in ("svc.integration", "svc.ezllmrouter.credential-consumer"):
             self.registry.mutate(
                 "owner.local",
                 {
@@ -79,7 +79,7 @@ class CredentialTests(unittest.TestCase):
                     "data": {"status": "active", "reason": "controlled test"},
                 },
             )
-            if subject == "svc.vega.credential-consumer":
+            if subject == "svc.ezllmrouter.credential-consumer":
                 self.consumer = self.registry.credential_principal(token)
                 self.consumer_token = token
         self.owner = self.registry.principal("owner.local")
@@ -174,7 +174,7 @@ class CredentialTests(unittest.TestCase):
             account_id,
             "claude-opus-4-8",
             "generation",
-            "vega-provider-dispatch",
+            "ezllmrouter-provider-dispatch",
         )
         self.assertEqual(secret["api_key"], "known-fixture-api-key-0001")
         self.assertEqual(secret["credential_version"], 1)
@@ -203,7 +203,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-sonnet-4-5-20250929",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )
         with self.assertRaises(IntegrationError):
             self.credentials.resolve_for(
@@ -212,7 +212,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )
         reopened = DatabaseCredentialStore(
             self.registry, self.key_path, discover=self.credentials.discover, controlled=True
@@ -224,7 +224,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )["credential_version"],
             1,
         )
@@ -256,7 +256,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )["api_key"],
             "known-fixture-api-key-0002",
         )
@@ -300,7 +300,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )
 
     def test_missing_and_wrong_key_fail_without_overwriting(self):
@@ -376,7 +376,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )["api_key"],
             "known-fixture-api-key-0001",
         )
@@ -387,7 +387,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )
         self.registry.integration.set_account_state(
             self.owner,
@@ -452,7 +452,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )["api_key"],
             "known-fixture-api-key-0001",
         )
@@ -545,7 +545,7 @@ class CredentialTests(unittest.TestCase):
                 account_id,
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )["api_key"],
             "known-fixture-api-key-0002",
         )
@@ -755,7 +755,7 @@ class CredentialHTTPTests(unittest.TestCase):
                     + pending["account_id"]
                     + "/resolve?dataset_id="
                     + self.dataset
-                    + "&purpose=vega-provider-dispatch&"
+                    + "&purpose=ezllmrouter-provider-dispatch&"
                     "operation_family=generation&model_id=claude-opus-4-8",
                     headers={
                         "Authorization": "Bearer " + token,

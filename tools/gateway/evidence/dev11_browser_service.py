@@ -263,23 +263,25 @@ def main():
     registry.controlled_provider_proof = False
     registry.personal_campaign = PersonalCampaign(store, registry)
     os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = "sk-" + "s" * 40
-    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(ROOT / "guard.jsonl")
-    os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = str(ROOT / "send.jsonl")
+    os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(ROOT / "guard.jsonl")
+    os.environ["EZLLMROUTER_GATEWAY_SEND_EVENTS"] = str(ROOT / "send.jsonl")
     adapter = ChoiceBSenderAdapter(
         authority, registry=registry, controlled_provider_proof=True, provider_key="sk-" + "s" * 40
     )
     registry.runtime_ready = lambda: adapter.server_thread.is_alive() and not authority.is_revoked()
     coordinator = Coordinator(
         store,
-        {TEST_TOKEN: fixture["trusted_context"]},
-        public_destination(fixture),
-        fixture["prompt_blocks"],
-        fixture["allowed_lineages"],
-        PlanAuthority(ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry),
-        adapter,
-        fixture["retention"],
-        fixture["classification"],
-        GatewayProxyRecipe(controlled_provider_proof=True),
+        identity={TEST_TOKEN: fixture["trusted_context"]},
+        config=public_destination(fixture),
+        prompt_blocks=fixture["prompt_blocks"],
+        allowed_lineages=fixture["allowed_lineages"],
+        authority=PlanAuthority(
+            ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
+        ),
+        adapter=adapter,
+        retention=fixture["retention"],
+        classification=fixture["classification"],
+        recipe=GatewayProxyRecipe(controlled_provider_proof=True),
         trusted_source_labels=fixture["trusted_source_labels"],
         registry=registry,
     )

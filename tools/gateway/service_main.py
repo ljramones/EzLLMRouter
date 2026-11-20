@@ -11,7 +11,7 @@ from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
-from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from tools.gateway.asgi_adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.proxy_recipe import (
     GatewayProxyRecipe,
     public_destination,
@@ -28,7 +28,7 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
         raise ValueError("unexpected provider credential")
     os.environ["LITELLM_DONT_SHOW_FEEDBACK_BOX"] = "true"
     os.environ["LITELLM_LOG"] = "ERROR"
-    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
+    os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = "/data/guard-events.jsonl"
 
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     config = public_destination(fixture)
@@ -77,15 +77,15 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
     )
     coordinator = Coordinator(
         store,
-        identity,
-        config,
-        fixture["prompt_blocks"],
-        fixture["allowed_lineages"],
-        PlanAuthority(Ed25519PrivateKey.generate(), policy),
-        adapter,
-        fixture["retention"],
-        fixture["classification"],
-        GatewayProxyRecipe(),
+        identity=identity,
+        config=config,
+        prompt_blocks=fixture["prompt_blocks"],
+        allowed_lineages=fixture["allowed_lineages"],
+        authority=PlanAuthority(Ed25519PrivateKey.generate(), policy),
+        adapter=adapter,
+        retention=fixture["retention"],
+        classification=fixture["classification"],
+        recipe=GatewayProxyRecipe(),
         trusted_source_labels=fixture["trusted_source_labels"],
     )
     server = serve("127.0.0.1", int(os.environ.get("PORT", "8765")), coordinator)

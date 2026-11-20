@@ -28,7 +28,7 @@ extend-exclude = ["deploy/local/.state"]
 force-exclude = true
 
 [tool.ruff.lint]
-select = ["E9", "F", "B"]
+select = ["E9", "F", "B", "RUF100"]
 
 [tool.mypy]
 python_version = "3.12"

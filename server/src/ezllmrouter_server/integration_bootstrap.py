@@ -34,7 +34,7 @@ SERVICES = (
     ),
     ServiceIdentity(
         DEFAULT_IDENTITY.credential_consumer_id,
-        "Vega credential consumer",
+        "Credential consumer",
         "consumer.token",
         "op.integration.consumer",
         "local credential consumer",

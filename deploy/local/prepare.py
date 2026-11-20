@@ -66,6 +66,10 @@ def stage_worker_validation(build):
         build / "service/server/ezllmrouter_server", destination / "server/ezllmrouter_server"
     )
     shutil.copy2(ROOT / "server/pyproject.toml", destination / "server/pyproject.toml")
+    for name in ("tools/__init__.py", "tools/gateway/__init__.py", "tools/gateway/asgi_adapter.py"):
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / name, target)
     for name in WORKER_VALIDATION_FILES:
         shutil.copy2(ROOT / "tests/gateway_integration" / name, destination / name)
 
@@ -154,6 +158,8 @@ def fingerprint():
 
 
 def main():
+    if source_dirty():
+        raise SystemExit("commit runtime source and inputs before preparing deployment images")
     artifact = os.environ.get("EZLLMROUTER_ARTIFACT_ROOT")
     if not artifact:
         raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required; see deploy/local/README.md")
@@ -266,8 +272,6 @@ def prepare_work(work, run, source_hash, artifact):
     stage_worker_validation(build)
     shutil.copy2(ROOT / "deploy/local/Dockerfile.service", build / "service/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/Dockerfile.worker", build / "worker/Dockerfile")
-    shutil.copy2(ROOT / "deploy/local/local_worker.py", build / "worker/local_worker.py")
-    shutil.copy2(ROOT / "deploy/local/socket_lease.py", build / "worker/socket_lease.py")
     shutil.copy2(
         ROOT / "tests/gateway_integration/test_provider_worker_target.py",
         build / "worker/test_provider_worker_target.py",
@@ -290,8 +294,8 @@ def prepare_work(work, run, source_hash, artifact):
         ("deploy/local/local_service.py", "local_service.py"),
         ("deploy/local/initialize_credentials.py", "initialize_credentials.py"),
         ("deploy/local/socket_lease.py", "socket_lease.py"),
-        ("tests/development_slice/request.json", "request.json"),
-        ("tests/tool_cycle/scenarios.json", "scenarios.json"),
+        ("deploy/local/inputs/fixtures/request.json", "request.json"),
+        ("deploy/local/inputs/fixtures/tool-cycle.json", "scenarios.json"),
     ):
         shutil.copy2(ROOT / source, local / name)
     web = build / "service/web"
@@ -308,7 +312,7 @@ def prepare_work(work, run, source_hash, artifact):
     ingress.mkdir()
     shutil.copy2(ROOT / "deploy/local/console_ingress.py", ingress / "console_ingress.py")
     shutil.copy2(
-        ROOT / "server/src/ezllmrouter_server/runtime_resources.py",
+        ROOT / "server/src/ezllmrouter_server/connection_resources.py",
         ingress / "runtime_resources.py",
     )
     service_client = build / "service/client"
@@ -396,8 +400,7 @@ def prepare_work(work, run, source_hash, artifact):
         build / "service/gateway/dev11_cache_target.py",
         build / "service/gateway/dev11_browser_service.py",
         build / "worker/Dockerfile",
-        build / "worker/local_worker.py",
-        build / "worker/socket_lease.py",
+        *(p for p in (build / "worker/ezllmrouter_worker").glob("*.py")),
         build / "service/requirements.runtime.lock",
         *(p for p in (build / "worker/validation").rglob("*") if p.is_file()),
         *(local.iterdir()),

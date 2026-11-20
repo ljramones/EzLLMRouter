@@ -19,7 +19,11 @@ def utc_timestamp(instant: datetime | None = None, *, precise: bool = False) -> 
     if instant.utcoffset() is None:
         raise ValueError("naive timestamp")
     instant = instant.astimezone(timezone.utc)
-    return instant.isoformat() if precise else instant.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return (
+        instant.isoformat(timespec="microseconds").replace("+00:00", "Z")
+        if precise
+        else instant.strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
 
 
 def parse_utc_second(value: object, *, allow_offset: bool = False) -> datetime:
@@ -37,3 +41,16 @@ def is_utc_second(value: object) -> bool:
         return utc_timestamp(parse_utc_second(value)) == value
     except (ValueError, OverflowError):
         return False
+
+
+def earliest_timestamp(*values: str | None) -> str | None:
+    """Select by instant while retaining the original stored representation."""
+    candidates = [value for value in values if value is not None]
+
+    def instant(value: str) -> datetime:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.utcoffset() is None:
+            raise ValueError("naive timestamp")
+        return parsed.astimezone(timezone.utc)
+
+    return min(candidates, key=instant) if candidates else None

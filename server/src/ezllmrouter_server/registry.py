@@ -37,7 +37,7 @@ from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
 from .cache_accounting import validate_contract
 from .canonical import ContractError
 from .catalogue import operator_reference_price, validate_catalogue
-from .identity import DEFAULT_IDENTITY, InstanceIdentity
+from .identity import InstanceIdentity, persist_identity, resolve_identity
 from .integration_accounting import ExternalAccounting
 from .provider_adapters import ADAPTERS, PROVIDERS, validate_settings
 from .provider_adapters import probe as provider_probe
@@ -110,9 +110,9 @@ class Registry:
         integration_feature_policy=None,
         integration_accounting_retention_days=None,
         runtime_ready=None,
-        identity: InstanceIdentity = DEFAULT_IDENTITY,
+        identity: InstanceIdentity | None = None,
     ):
-        self.identity = identity
+        self.identity = resolve_identity(store.database, identity)
         self.store = store
         self.send_authority = send_authority
         self.runtime_ready = (
@@ -133,11 +133,22 @@ class Registry:
         self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
         if self.principal(self.identity.owner_id) is None:
             raise ValueError("configured owner does not match the persisted registry")
+        persist_identity(store.database, self.identity)
         self.attribution = AttributionLedger(self)
-        self.integration = ExternalAccounting(self)
-        self.integration.feature_policy = integration_feature_policy
-        self.integration.accounting_retention_days = integration_accounting_retention_days
+        self.integration = ExternalAccounting(
+            self,
+            feature_policy=integration_feature_policy,
+            accounting_retention_days=integration_accounting_retention_days,
+        )
         self.integration.expire_datasets()
+
+    def configure_integration_credentials(self, key_path):
+        from .integration_credentials import DatabaseCredentialStore
+
+        if self.integration_credentials is not None:
+            raise RuntimeError("integration credentials already configured")
+        self.integration_credentials = DatabaseCredentialStore(self, key_path)
+        return self.integration_credentials
 
     def readiness(self, model):
         if model.get("kind") == "real_catalogue":
@@ -927,7 +938,7 @@ class Registry:
                     if expected != 0:
                         raise RegistryConflict("catalogue creation requires revision zero")
                     candidate = validate_catalogue(subject, data, owner_id=self.identity.owner_id)
-                    row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (subject,)).fetchone()
+                    row = db.execute(_queries.MODEL_FOR_UPDATE, (subject,)).fetchone()
                     if row:
                         existing = json.loads(row[0])
                         if (
@@ -1069,9 +1080,7 @@ class Registry:
                 observed.update(prior["models"])
         associated = {
             json.loads(item[0])["serving_id"]
-            for item in db.execute(
-                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_2, (subject,)
-            ).fetchall()
+            for item in db.execute(_queries.DEPLOYMENTS_FOR_CONNECTION, (subject,)).fetchall()
         }
         changed = []
         seen = set()
@@ -1143,9 +1152,7 @@ class Registry:
         ):
             raise ValueError("selected connection unavailable")
         model = json.loads(
-            db.execute(
-                _queries.APPLY_SELECT_REGISTRY_MODELS_2, (deployment["model_ref"],)
-            ).fetchone()[0]
+            db.execute(_queries.MODEL_FOR_UPDATE, (deployment["model_ref"],)).fetchone()[0]
         )
         if (
             model["status"] != "catalogued"
@@ -1202,7 +1209,7 @@ class Registry:
             or not subject.startswith("conn.")
         ):
             raise ValueError("invalid connection creation")
-        if db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_2, (subject,)).fetchone():
+        if db.execute(_queries.CONNECTION_EXISTS, (subject,)).fetchone():
             raise RegistryConflict("connection exists")
         adapter_id = identifier(data["adapter_id"])
         settings = data["settings"]
@@ -1283,7 +1290,7 @@ class Registry:
                     raise ValueError("unsupported scheduled probe")
                 if (
                     not record["checks_scheduled"]
-                    and db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_3).fetchone()[0] >= 16
+                    and db.execute(_queries.SCHEDULED_CONNECTION_COUNT).fetchone()[0] >= 16
                 ):
                     raise ValueError("scheduled connection limit")
             elif data["operation"] is not None or data["interval_seconds"] is not None:
@@ -1301,12 +1308,10 @@ class Registry:
                 raise ValueError("invalid model association")
             deployment_id = identifier(data["deployment_id"])
             model_ref = identifier(data["model_ref"])
-            model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (model_ref,)).fetchone()
+            model_row = db.execute(_queries.MODEL_FOR_UPDATE, (model_ref,)).fetchone()
             if not model_row or json.loads(model_row[0]).get("kind") != "real_catalogue":
                 raise ValueError("association requires existing real catalogue model")
-            if db.execute(
-                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_3, (deployment_id,)
-            ).fetchone():
+            if db.execute(_queries.DEPLOYMENT_EXISTS, (deployment_id,)).fetchone():
                 raise RegistryConflict("deployment identity exists")
             deployment = {
                 "deployment_id": deployment_id,
@@ -1563,9 +1568,7 @@ class Registry:
                     raise ValueError("unsupported synthetic transport")
                 if (
                     not record["legacy_unpriced"]
-                    and not db.execute(
-                        _queries.APPLY_SELECT_REGISTRY_PRICES_2, (subject,)
-                    ).fetchone()
+                    and not db.execute(_queries.MODEL_HAS_PRICE, (subject,)).fetchone()
                 ):
                     raise ValueError("price required before enable")
                 record["approved_by"], record["approved_at"] = actor, timestamp()
@@ -1635,7 +1638,7 @@ class Registry:
                 and record["status"] == "active"
                 and data["role"] != "registry_admin"
             ):
-                active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
+                active = db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone()[0]
                 if active <= 1:
                     raise ValueError("last active administrator")
             record["role"] = data["role"]
@@ -1656,7 +1659,7 @@ class Registry:
                 and record["status"] == "active"
                 and data["status"] != "active"
             ):
-                active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
+                active = db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone()[0]
                 if active <= 1:
                     raise ValueError("last active administrator")
             record["status"], record["state_reason"] = data["status"], data["reason"]
@@ -1675,7 +1678,7 @@ class Registry:
         principal_row = db.execute(
             _queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (subject,)
         ).fetchone()
-        model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (ref,)).fetchone()
+        model_row = db.execute(_queries.MODEL_FOR_UPDATE, (ref,)).fetchone()
         if not principal_row or not model_row:
             raise ValueError("unregistered grant target")
         principal, model = json.loads(principal_row[0]), json.loads(model_row[0])

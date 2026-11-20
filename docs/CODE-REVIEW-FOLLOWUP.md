@@ -367,7 +367,7 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 889 unittest cases, seven console scripts and 355 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 904 unittest cases, seven console scripts and 370 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
 | 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
@@ -376,8 +376,8 @@ also passes. A pending or unavailable check is never a passing result.
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
 | 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage measures 86.02% (4.4.4). |
-| 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
+| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Latest Python executable-line coverage measures 86.69% (4.4.4). |
+| 11 | Structural cleanup | Implemented — local checks pass | HTTP/Coordinator steps and direct registry routes; complete checked Store interface; shared SQL/CSV/execution policy; explicit composition; UTC ordering/formatting; generic operational defaults with persisted identity; isolated worker package and relocated evidence/runtime inputs. Strict scope grows to 66 files; 2,383 existing library typing errors have per-file regression budgets. Contract/domain and filesystem decisions are recorded below. |
 
 ### Implementation pass: items 2–5
 
@@ -591,3 +591,50 @@ Item 8's Rust/.NET/TypeScript target checks remain pending. Item 9 stays deferre
 at the owner's request, and item 11 remains the broad structural cleanup. No
 profile restart, provider inference, frozen-input update or migration change was
 performed in this pass.
+
+
+### Implementation pass: item 11
+
+Structural cleanup is implemented across the requested boundaries:
+
+| Area | Result |
+| --- | --- |
+| HTTP/Coordinator functions | `web.serve` is six lines of composition, replacing its 575-line closure. Transport/authentication, work operations, integration routes and CSV projection are separate. Operator registry reads resolve directly to named route handlers with explicit roles on restricted reads. Coordinator `_submit` falls from 202 to 59 lines, `_start_attempt` from 175 to 51 and `_observe_response` from 181 to 41, with named validation, persistence, preparation, waiting and response steps. |
+| Store and typing | The Store protocol covers database access, close, work ownership, guard/intent and all successor methods. SQLite conforms under strict mypy. Checked scope grows from 51 to 66 files, adding the Store implementation, canonical validator, wire HTTP package, shared policy/executor and IPC framing. Whole-library debt falls from 2,934 to 2,383 errors; per-file budgets now block increases and give new files a zero-error budget. Full-library typing remains tracked debt. |
+| Shared implementation | Twelve duplicated SQL definitions have one shared owner; 34 numbered query names have descriptive replacements. CSV serialization/body framing and worker/proxy credential policy are shared. Credential-read audits use one helper without advancing authority. Shared reporting helpers have public names. Optional accounting configuration is passed into construction, and guarded sending is selected during composition. |
+| Worker isolation | The isolated worker stages as `ezllmrouter_worker` and imports only its explicit package helpers. The in-process LiteLLM adapter moves to tooling and leaves the server wheel. Frozen negative validation mounts its minimal tooling explicitly and supplies the required synthetic constructor credential; a mock-vendor replay passes. Actual frozen-image execution remains pending. |
+| Time and identity | New precise timestamps have fixed six-place UTC `Z` formatting; expiry compares instants and preserves the chosen stored representation. New defaults use generic EzLLMRouter project/image/diagnostic and consumer names. Persisted instance identity, an older default consumer and an existing Compose ownership marker retain their IDs/project. Conflicting identity changes and unowned resource collisions are rejected. A custom-owner policy/restart regression passes. |
+| Source/evidence organization | Accounting evidence and historical Docker-input tools move out of `tests/`; installed-SDK proof runners move to gateway tooling. Runtime staging uses byte-identical fixture copies under `deploy/local/inputs/fixtures/`. Internal schema filenames use `retrieval` while all schema IDs and bytes remain identical. Preparation rejects dirty runtime sources; `RUF100` rejects dead lint suppressions. |
+| Recorded decisions | Database/encryption/development guides record the unchanged adopted digest-domain baseline, requirements for future versions, preserved historical IDs, explicit module ownership and local POSIX publication/lease constraints. Existing migrations, locks, prices, signed resources and adopted fixtures are unchanged. |
+
+Verification:
+
+- **904 unittest cases** across **105 module registrations**, two script suites,
+  seven console scripts and **522** JavaScript conformance checks pass.
+- Ruff, formatting on **439 Python files** and strict mypy on **66 files** pass.
+  The whole-library budget audit passes with **2,383** existing errors; this is a
+  regression budget, not a passing whole-library type check.
+- Fresh server/client wheels match **129 namespace files** byte-for-byte and pass
+  **370 installed-wheel tests**. The server wheel excludes the in-process LiteLLM
+  adapter. Its SHA-256 is
+  `8d24d5c19ac6ba8e0d706f95334b0ce46491adf84834576afef0a135cc2d3054`.
+- Installed JavaScript passes **144 shared cases**, **52 safety cases**, package,
+  actor/transport and output checks. Go formatting/vet/race and Java packaged-JAR
+  checks pass, including **144** shared cases for each client.
+- Python executable-line coverage is **86.69%**, **17,390 / 20,059** lines. It covers
+  the service and Python client, including worker threads/guarded Python children;
+  it does not measure branches, native code or JavaScript.
+- The final tooling-only staging changes pass 11 packaging/import checks and five
+  tooling checks. These include the relocated adapter and staged service entry points.
+- Nine renamed schema/registration/tariff resources match their previous bytes;
+  digest-domain constants, frozen/runtime locks, migration files and adopted
+  contract fixtures match the `9a40046` baseline.
+- Evidence is under ignored `.artifacts/code-review/item11/`,
+  `.artifacts/coverage/python-tci43q9y/` and `.artifacts/type-audit/library-14f0m6u6/`.
+
+Nine of the eleven workstreams are now **Implemented**. Item 1 remains open for
+actual image builds, real listeners/TLS, browsers, named-volume/capability and
+frozen-worker qualification. Item 8's Rust/.NET/TypeScript target checks remain
+pending. Item 9 stays deferred at the owner's request. This pass changed source
+and disposable test artifacts, without restarting the existing daemon, issuing
+provider inference, acquiring gateway inputs or changing migrations.

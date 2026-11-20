@@ -16,7 +16,7 @@ from urllib.parse import urlsplit, urlunsplit
 from .connector_availability import AvailabilityMonitor
 from .errors import RequestError
 from .formatting import utc_timestamp as timestamp
-from .json_validation import unique_pairs
+from .json_validation import unique_pairs, MAX_SAFE_INTEGER
 from .observability import log_failure
 from .repositories import authority
 from .repositories import local_connectors as _queries
@@ -255,7 +255,7 @@ def _text(value, secret, *, required=False, limit=240):
 
 
 def _integer(value):
-    return value if type(value) is int and 0 <= value <= 2**53 - 1 else None
+    return value if type(value) is int and 0 <= value <= MAX_SAFE_INTEGER else None
 
 
 def discover(kind, base_url, api_key="", *, read=None):

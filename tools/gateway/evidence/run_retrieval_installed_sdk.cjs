@@ -9,4 +9,4 @@ if(!artifact||!fs.statSync(artifact).isFile())throw Error("private CommonJS tarb
 const directory=fs.mkdtempSync(path.join(os.tmpdir(),"dev12-installed-sdk-"));
 execFileSync("tar",["-xzf",artifact,"-C",directory]);
 process.env.DEV12_JS_CLIENT_DIR=path.join(directory,"package");
-require("./test_retrieval_client.cjs");
+require(path.resolve(__dirname, "../../../tests/development_slice/test_retrieval_client.cjs"));

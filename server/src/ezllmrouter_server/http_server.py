@@ -131,7 +131,7 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             self._finish_input()
         return accepted
 
-    def read_body(self, length):
+    def read_body(self, length: int) -> bytes:
         try:
             body = self.rfile.read(length)
             self._body_bytes_read = getattr(self, "_body_bytes_read", 0) + len(body)
@@ -160,7 +160,7 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             return True
         return getattr(self, "_body_bytes_read", 0) < length
 
-    def send_response(self, code, message=None):
+    def send_response(self, code: int, message: str | None = None) -> None:
         self._response_status = code
         if self._body_pending():
             self.close_connection = True

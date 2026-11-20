@@ -8,7 +8,7 @@ HERE = Path(__file__).resolve().parent
 SOURCES = {
     "Wire02": ROOT
     / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-SCHEMAS-v0.3-CORRECTION-01.json",
-    "Wire03": HERE / "dev12_schemas.json",
+    "Wire03": HERE / "retrieval_schemas.json",
     "IntegrationV1": HERE / "integration_schema.json",
     "IntegrationV2": HERE / "integration_schema_v2.json",
     "IntegrationV3": HERE / "integration_schema_v3.json",

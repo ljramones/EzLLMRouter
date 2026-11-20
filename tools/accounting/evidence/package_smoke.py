@@ -8,7 +8,7 @@ import sys
 
 from ezllmrouter_client import IntegrationClient
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 EXAMPLES = json.loads(
     (ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json").read_text()
 )

@@ -146,7 +146,18 @@ def run():
         executor = Dev12SyntheticExecutor(
             "/link/dev12-worker.sock", receiver_port, (root / "cert.pem").read_text(), TEST_KEY
         )
-        coordinator = Coordinator(store, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
+        coordinator = Coordinator(
+            store,
+            identity={token: trusted},
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
         from tools.synthetic.successor_assembly import attach_standalone_synthetic
 
         successor = attach_standalone_synthetic(

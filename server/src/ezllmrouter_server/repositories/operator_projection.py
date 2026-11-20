@@ -82,9 +82,7 @@ def OVERVIEW_COUNTS_SELECT_SUBMISSIONS(*, principal_id: str) -> Query:
 
 ACTION_SELECT_OPERATOR_LAUNCHES = Query("SELECT kind FROM operator_launches WHERE operation_id=?")
 
-ACTION_SELECT_OPERATOR_LAUNCHES_2 = Query(
-    "SELECT submission_ids FROM operator_launches WHERE operation_id=?"
-)
+LAUNCH_SUBMISSION_IDS = Query("SELECT submission_ids FROM operator_launches WHERE operation_id=?")
 
 LAUNCH_SELECT_OPERATOR_LAUNCHES = Query(
     "SELECT kind,state,created_at,updated_at,submission_ids,caller_lookups,error_code FROM "
@@ -97,7 +95,7 @@ ACTION_SELECT_OPERATOR_PROVIDER_VALIDATIONS = Query(
     " FROM operator_provider_validations WHERE operation_id=?"
 )
 
-ACTION_SELECT_OPERATOR_PROVIDER_VALIDATIONS_2 = Query(
+PROVIDER_VALIDATION_RUNNING = Query(
     "SELECT 1 FROM operator_provider_validations WHERE state='running' LIMIT 1"
 )
 
@@ -113,9 +111,7 @@ def ACTIVITY_SELECT_SUBMISSIONS(*, where: str) -> Query:
     return Query("SELECT COUNT(*) FROM submissions s WHERE " + where)
 
 
-ACTION_SELECT_OPERATOR_LAUNCHES_3 = Query(
-    "SELECT COUNT(*) FROM operator_launches WHERE state='running'"
-)
+RUNNING_LAUNCH_COUNT = Query("SELECT COUNT(*) FROM operator_launches WHERE state='running'")
 
 
 def activity_filter(principal_id: str, state: str | None) -> tuple[str, list[str]]:

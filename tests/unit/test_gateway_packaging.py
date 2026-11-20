@@ -96,7 +96,6 @@ class TrustedImageTests(unittest.TestCase):
 
 MODULES = (
     "guard",
-    "adapter",
     "choice_b_sender",
     "choice_b_wire",
     "owned_sender_transport",
@@ -238,14 +237,16 @@ import ezllmrouter_server
 from ezllmrouter_server import registry, operator_web
 from ezllmrouter_server import secret_rotation
 from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
+from ezllmrouter_server.gateway import guard, choice_b_sender, synthetic_recipe
+from tools.gateway import asgi_adapter
+import service_main, choice_b_service
 assert 'service/server' in str(Path(ezllmrouter_server.__file__))
 assert 'service/server' in secret_rotation.__file__
 store = SQLiteStore('staged.sqlite')
 from ezllmrouter_server.schema import VERSION
 assert store.db.execute('PRAGMA user_version').fetchone() == (VERSION,)
 store.close()
-for name in ('guard', 'choice_b_sender', 'adapter', 'owned_sender_transport', 'owned_tls_sender_transport',
+for name in ('guard', 'choice_b_sender', 'owned_sender_transport', 'owned_tls_sender_transport',
              'proxy_recipe', 'worker_ready', 'retrieval_guard', 'choice_b_wire'):
     module = importlib.import_module('ezllmrouter_server.gateway.' + name)
     assert 'service/server' in module.__file__
@@ -258,24 +259,30 @@ print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}
     def test_staged_worker_needs_only_runtime_wire_and_safe_logger(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            for source, target in source_mapping(ROOT):
-                if target.startswith("worker/") and target.endswith(".py"):
-                    shutil.copy2(ROOT / source, directory / Path(target).name)
+            from tools.gateway.worker_package import stage_worker
+
+            stage_worker(ROOT, directory / "ezllmrouter_worker")
             self.assertEqual(
-                sorted(path.name for path in directory.iterdir()),
+                sorted(path.name for path in (directory / "ezllmrouter_worker").iterdir()),
                 [
-                    "choice_b_wire.py",
-                    "choice_b_worker.py",
-                    "runtime_resources.py",
-                    "worker_logging.py",
+                    "__init__.py",
+                    "__main__.py",
+                    "connection_resources.py",
+                    "execution_policy.py",
+                    "execution_resources.py",
+                    "ipc.py",
+                    "observability.py",
+                    "resources.py",
+                    "socket_lease.py",
+                    "worker.py",
                 ],
             )
             script = """
 import importlib.util, json
-import choice_b_worker, choice_b_wire, worker_logging
+from ezllmrouter_worker import worker, ipc, observability
 assert importlib.util.find_spec('ezllmrouter_server') is None
 assert 'litellm' not in sys.modules
-assert choice_b_wire.LIMIT == 262144
+assert ipc.LIMIT == 262144
 print(json.dumps({'worker': 'isolated', 'service_importable': False}))
 """
             dependencies = self.worker_dependencies(directory)
@@ -299,7 +306,7 @@ print(json.dumps({'worker': 'isolated', 'service_importable': False}))
             next(
                 (ROOT / source).read_bytes()
                 for source, target in source_mapping(ROOT)
-                if target == "worker/worker_logging.py"
+                if target == "worker/ezllmrouter_worker/observability.py"
             ),
         )
 

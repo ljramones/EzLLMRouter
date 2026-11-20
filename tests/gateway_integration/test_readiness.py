@@ -16,8 +16,8 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server.canonical import ContractError  # noqa: E402
-from ezllmrouter_server.web import serve  # noqa: E402
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.web import serve
 
 
 TOKEN = "synthetic-readiness-token-0000000000000000"

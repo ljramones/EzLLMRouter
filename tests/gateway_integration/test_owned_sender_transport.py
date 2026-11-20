@@ -11,8 +11,8 @@ import threading
 
 
 ROOT = Path(__file__).resolve().parents[2]
-import httpcore  # noqa: E402
-import httpx  # noqa: E402
+import httpcore
+import httpx
 from ezllmrouter_server.gateway.guard import (
     ACTIVE,
     GuardRejected,
@@ -20,13 +20,13 @@ from ezllmrouter_server.gateway.guard import (
     Invocation,
     PROVIDER_URL,
     provider_expectation,
-)  # noqa: E402
+)
 from ezllmrouter_server.gateway.owned_sender_transport import (
     LocalSendAuthority,
     OwnedHTTPTransport,
     OwnedSocketStream,
-)  # noqa: E402
-from tests.gateway_integration.test_guard import invocation as guard_invocation  # noqa: E402
+)
+from tests.gateway_integration.test_guard import invocation as guard_invocation
 
 
 def local_invocation(attempt="attempt.owned.local", authority_epoch=0):

@@ -2,6 +2,7 @@
 
 from urllib.parse import parse_qs
 
+from ..errors import RequestError
 from ..observability import log_failure
 from ..provider_adapters import ADAPTERS, PROVIDERS
 from ..registry import RegistryConflict
@@ -9,170 +10,129 @@ from ..user_management import UserError
 
 
 class RegistryRoutes:
-    def _registry_read(self, path, session):
+    def get_registry_providers(self, path, session, body, scope):
+        return self._send(200, {"providers": PROVIDERS, "adapters": ADAPTERS})
+
+    def get_registry_validation(self, path, session, body, scope):
+        operation_id = path.path.rsplit("/", 1)[1]
+        value = self.application.projection.provider_validation(operation_id)
+        return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
+
+    def get_registry_connections(self, path, session, body, scope):
+        return self._send(200, {"items": self.application.registry.list_connections()})
+
+    def get_registry_campaign(self, path, session, body, scope):
         actor = session[1]["principal_id"]
-        role = session[1]["role"]
-        admin_view = role in ("registry_admin", "read_only_operator")
-        if path.path == "/operator/v1/providers" and (not path.query):
-            if not admin_view:
-                return self._fail(403, "OPERATOR_REQUIRED")
-            return self._send(200, {"providers": PROVIDERS, "adapters": ADAPTERS})
-        if path.path.startswith("/operator/v1/provider-validations/") and (not path.query):
-            if not admin_view:
-                return self._fail(403, "OPERATOR_REQUIRED")
-            operation_id = path.path.rsplit("/", 1)[1]
-            value = self.application.projection.provider_validation(operation_id)
-            return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
-        if path.path == "/operator/v1/connections" and (not path.query):
-            if not admin_view:
-                return self._fail(403, "OPERATOR_REQUIRED")
-            return self._send(200, {"items": self.application.registry.list_connections()})
-        if path.path == "/operator/v1/personal-campaign" and (not path.query):
-            if actor != self.application.owner_id or not getattr(
-                self.application.registry, "personal_campaign", None
-            ):
-                return self._fail(403, "OWNER_REQUIRED")
-            return self._send(200, self.application.registry.personal_campaign.summary())
-        if (
-            path.path.startswith("/operator/v1/connections/")
-            and path.path.endswith("/inventory")
-            and (not path.query)
+        if actor != self.application.owner_id or not getattr(
+            self.application.registry, "personal_campaign", None
         ):
-            if not admin_view:
-                return self._fail(403, "OPERATOR_REQUIRED")
-            connection_id = path.path[len("/operator/v1/connections/") : -len("/inventory")]
-            if "/" in connection_id or not self.application.registry.connection(connection_id):
-                return self._fail(404, "NOT_FOUND")
-            return self._send(200, self.application.registry.source_inventory(connection_id))
-        if path.path.startswith("/operator/v1/connections/") and (not path.query):
-            if not admin_view:
-                return self._fail(403, "OPERATOR_REQUIRED")
-            connection_id = path.path[len("/operator/v1/connections/") :]
-            if "/" in connection_id:
-                raise ValueError("invalid connection path")
-            connection = self.application.registry.connection(connection_id)
-            if not connection:
-                return self._fail(404, "NOT_FOUND")
-            return self._send(
-                200,
-                {
-                    "connection": connection,
-                    "deployments": self.application.registry.deployments(connection_id),
-                    "observations": self.application.registry.observations(connection_id),
-                    "history": self.application.registry.history(connection_id),
-                },
-            )
-        if path.path == "/operator/v1/models" and (not path.query):
-            models = self.application.registry.list_models()
-            if not admin_view:
-                models = [
-                    model
-                    for model in models
-                    if self.application.registry.explain(
-                        actor, model["configuration_ref"], "execution", self.application.task_class
-                    )["allowed"]
-                ]
-            return self._send(
-                200,
-                {
-                    "items": [
-                        {
-                            **model,
-                            "readiness": self.application.registry.readiness(model),
-                            "current_price": (
-                                self.application.registry.prices(model["configuration_ref"])
-                                or [None]
-                            )[-1],
-                        }
-                        for model in models
-                    ]
-                },
-            )
-        if path.path.startswith("/operator/v1/models/") and (not path.query):
-            ref = path.path[len("/operator/v1/models/") :]
-            if "/" in ref:
-                raise ValueError("invalid model path")
-            model = self.application.registry.model(ref)
-            if not model:
-                return self._fail(404, "NOT_FOUND")
-            if not admin_view and (
-                not self.application.registry.explain(
-                    actor, ref, "execution", self.application.task_class
+            return self._fail(403, "OWNER_REQUIRED")
+        return self._send(200, self.application.registry.personal_campaign.summary())
+
+    def get_registry_inventory(self, path, session, body, scope):
+        connection_id = path.path[len("/operator/v1/connections/") : -len("/inventory")]
+        if "/" in connection_id or not self.application.registry.connection(connection_id):
+            return self._fail(404, "NOT_FOUND")
+        return self._send(200, self.application.registry.source_inventory(connection_id))
+
+    def get_registry_connection(self, path, session, body, scope):
+        if path.path.endswith("/inventory"):
+            return self.get_registry_inventory(path, session, body, scope)
+        connection_id = path.path[len("/operator/v1/connections/") :]
+        if "/" in connection_id:
+            raise ValueError("invalid connection path")
+        connection = self.application.registry.connection(connection_id)
+        if not connection:
+            return self._fail(404, "NOT_FOUND")
+        return self._send(
+            200,
+            {
+                "connection": connection,
+                "deployments": self.application.registry.deployments(connection_id),
+                "observations": self.application.registry.observations(connection_id),
+                "history": self.application.registry.history(connection_id),
+            },
+        )
+
+    def get_registry_models(self, path, session, body, scope):
+        actor = session[1]["principal_id"]
+        admin_view = session[1]["role"] in ("registry_admin", "read_only_operator")
+        models = self.application.registry.list_models()
+        if not admin_view:
+            models = [
+                model
+                for model in models
+                if self.application.registry.explain(
+                    actor, model["configuration_ref"], "execution", self.application.task_class
                 )["allowed"]
-            ):
-                return self._fail(404, "NOT_FOUND")
-            grants = []
-            if admin_view:
-                grants = self.application.registry.grants(configuration_ref=ref)
-            return self._send(
-                200,
-                {
-                    "model": model,
-                    "readiness": self.application.registry.readiness(model),
-                    "prices": self.application.registry.prices(ref),
-                    "grants": [grant for grant in grants if grant],
-                    "history": self.application.registry.history(ref) if admin_view else [],
-                },
-            )
-        if path.path == "/operator/v1/principals" and (not path.query):
-            principals = (
-                self.application.registry.list_principals()
-                if admin_view
-                else [self.application.registry.principal(actor)]
-            )
-            models = {
-                model["configuration_ref"]: model
-                for model in self.application.registry.list_models()
-            }
-            grants_by_principal = {}
-            for grant in self.application.registry.grants(
-                principal_id=None if admin_view else actor
-            ):
-                if grant["configuration_ref"] in models:
-                    grants_by_principal.setdefault(grant["principal_id"], []).append(grant)
-            items = []
-            for principal in principals:
-                grants = grants_by_principal.get(principal["principal_id"], [])
-                items.append(
-                    {
-                        **principal,
-                        "grant_summary": [
-                            {
-                                **grant,
-                                "display_name": models[grant["configuration_ref"]]["display_name"],
-                                "readiness": self.application.registry.readiness(
-                                    models[grant["configuration_ref"]]
-                                ),
-                            }
-                            for grant in grants
-                            if grant
-                        ],
-                    }
-                )
-            return self._send(200, {"items": items})
-        if path.path.startswith("/operator/v1/principals/") and (not path.query):
-            principal_id = path.path[len("/operator/v1/principals/") :]
-            if "/" in principal_id:
-                raise ValueError("invalid principal path")
-            if not admin_view and principal_id != actor:
-                return self._fail(404, "NOT_FOUND")
-            principal = self.application.registry.principal(principal_id)
-            if not principal:
-                return self._fail(404, "NOT_FOUND")
-            models = {
-                model["configuration_ref"]: model
-                for model in self.application.registry.list_models()
-            }
-            grants = [
-                grant
-                for grant in self.application.registry.grants(principal_id=principal_id)
-                if grant["configuration_ref"] in models
             ]
-            return self._send(
-                200,
+        return self._send(
+            200,
+            {
+                "items": [
+                    {
+                        **model,
+                        "readiness": self.application.registry.readiness(model),
+                        "current_price": (
+                            self.application.registry.prices(model["configuration_ref"]) or [None]
+                        )[-1],
+                    }
+                    for model in models
+                ]
+            },
+        )
+
+    def get_registry_model(self, path, session, body, scope):
+        actor = session[1]["principal_id"]
+        admin_view = session[1]["role"] in ("registry_admin", "read_only_operator")
+        ref = path.path[len("/operator/v1/models/") :]
+        if "/" in ref:
+            raise ValueError("invalid model path")
+        model = self.application.registry.model(ref)
+        if not model:
+            return self._fail(404, "NOT_FOUND")
+        if not admin_view and (
+            not self.application.registry.explain(
+                actor, ref, "execution", self.application.task_class
+            )["allowed"]
+        ):
+            return self._fail(404, "NOT_FOUND")
+        grants = []
+        if admin_view:
+            grants = self.application.registry.grants(configuration_ref=ref)
+        return self._send(
+            200,
+            {
+                "model": model,
+                "readiness": self.application.registry.readiness(model),
+                "prices": self.application.registry.prices(ref),
+                "grants": [grant for grant in grants if grant],
+                "history": self.application.registry.history(ref) if admin_view else [],
+            },
+        )
+
+    def get_registry_principals(self, path, session, body, scope):
+        actor = session[1]["principal_id"]
+        admin_view = session[1]["role"] in ("registry_admin", "read_only_operator")
+        principals = (
+            self.application.registry.list_principals()
+            if admin_view
+            else [self.application.registry.principal(actor)]
+        )
+        models = {
+            model["configuration_ref"]: model for model in self.application.registry.list_models()
+        }
+        grants_by_principal = {}
+        for grant in self.application.registry.grants(principal_id=None if admin_view else actor):
+            if grant["configuration_ref"] in models:
+                grants_by_principal.setdefault(grant["principal_id"], []).append(grant)
+        items = []
+        for principal in principals:
+            grants = grants_by_principal.get(principal["principal_id"], [])
+            items.append(
                 {
-                    "principal": principal,
-                    "grants": [
+                    **principal,
+                    "grant_summary": [
                         {
                             **grant,
                             "display_name": models[grant["configuration_ref"]]["display_name"],
@@ -183,33 +143,68 @@ class RegistryRoutes:
                         for grant in grants
                         if grant
                     ],
-                    "history": self.application.registry.history(principal_id)
-                    if admin_view
-                    else [],
-                },
+                }
             )
-        if path.path == "/operator/v1/access/explain":
-            query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
-            if set(query) != {"principal_id", "configuration_ref", "purpose", "task_class"} or any(
-                (len(values) != 1 for values in query.values())
-            ):
-                raise ValueError("invalid explain query")
-            principal_id = query["principal_id"][0]
-            if not admin_view and principal_id != actor:
-                return self._fail(404, "NOT_FOUND")
-            return self._send(
-                200,
-                self.application.registry.explain(
-                    principal_id,
-                    query["configuration_ref"][0],
-                    query["purpose"][0],
-                    query["task_class"][0],
-                ),
-            )
-        return self._fail(404, "NOT_FOUND")
+        return self._send(200, {"items": items})
 
-    def get_registry_resource(self, path, session, body, scope):
-        return self._registry_read(path, session)
+    def get_registry_principal(self, path, session, body, scope):
+        actor = session[1]["principal_id"]
+        admin_view = session[1]["role"] in ("registry_admin", "read_only_operator")
+        principal_id = path.path[len("/operator/v1/principals/") :]
+        if "/" in principal_id:
+            raise ValueError("invalid principal path")
+        if not admin_view and principal_id != actor:
+            return self._fail(404, "NOT_FOUND")
+        principal = self.application.registry.principal(principal_id)
+        if not principal:
+            return self._fail(404, "NOT_FOUND")
+        models = {
+            model["configuration_ref"]: model for model in self.application.registry.list_models()
+        }
+        grants = [
+            grant
+            for grant in self.application.registry.grants(principal_id=principal_id)
+            if grant["configuration_ref"] in models
+        ]
+        return self._send(
+            200,
+            {
+                "principal": principal,
+                "grants": [
+                    {
+                        **grant,
+                        "display_name": models[grant["configuration_ref"]]["display_name"],
+                        "readiness": self.application.registry.readiness(
+                            models[grant["configuration_ref"]]
+                        ),
+                    }
+                    for grant in grants
+                    if grant
+                ],
+                "history": self.application.registry.history(principal_id) if admin_view else [],
+            },
+        )
+
+    def get_registry_explanation(self, path, session, body, scope):
+        actor = session[1]["principal_id"]
+        admin_view = session[1]["role"] in ("registry_admin", "read_only_operator")
+        query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
+        if set(query) != {"principal_id", "configuration_ref", "purpose", "task_class"} or any(
+            (len(values) != 1 for values in query.values())
+        ):
+            raise ValueError("invalid explain query")
+        principal_id = query["principal_id"][0]
+        if not admin_view and principal_id != actor:
+            return self._fail(404, "NOT_FOUND")
+        return self._send(
+            200,
+            self.application.registry.explain(
+                principal_id,
+                query["configuration_ref"][0],
+                query["purpose"][0],
+                query["task_class"][0],
+            ),
+        )
 
     def post_operator_v1_registry(self, path, session, body, scope):
         if session[1]["role"] != "registry_admin":
@@ -222,6 +217,8 @@ class RegistryRoutes:
             return self._fail(exc.status, exc.code)
         except RegistryConflict:
             return self._fail(409, "REGISTRY_CONFLICT")
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(400, "INVALID_REGISTRY_CHANGE")
         except PermissionError:
@@ -268,6 +265,8 @@ class RegistryRoutes:
             else:
                 return self._fail(400, "INVALID_CAMPAIGN")
             return self._send(200, result)
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(409, "CAMPAIGN_NOT_ELIGIBLE")
         except PermissionError:
@@ -301,6 +300,8 @@ class RegistryRoutes:
             )
         except RegistryConflict:
             return self._fail(409, "REGISTRY_CONFLICT")
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(400, "INVALID_CREDENTIAL_CHANGE")
         except PermissionError:
@@ -327,6 +328,8 @@ class RegistryRoutes:
             )
         except RegistryConflict:
             return self._fail(409, "REGISTRY_CONFLICT")
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(400, "INVALID_PROBE")
         except PermissionError:
@@ -420,6 +423,8 @@ class RegistryRoutes:
                 return self._send(
                     200, self.application.projection.provider_validation(body["operation_id"])
                 )
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(409, "VALIDATION_OPERATION_CONFLICT")
         except Exception:
@@ -481,6 +486,8 @@ class RegistryRoutes:
             return self._send(200, {"record": record, "one_time_credential": secret})
         except RegistryConflict:
             return self._fail(409, "REGISTRY_CONFLICT")
+        except RequestError as exc:
+            return self._fail(exc.status, exc.code)
         except ValueError:
             return self._fail(400, "INVALID_REGISTRY_CHANGE")
         except Exception:

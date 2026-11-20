@@ -15,16 +15,25 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server.gateway.choice_b_wire import LIMIT, receive, send  # noqa: E402
+from ezllmrouter_server.gateway.choice_b_wire import LIMIT, receive, send
 from tools.gateway.stage import source_mapping
 from ezllmrouter_server.runtime_resources import LoopThread
 
 
 WORKER_SOURCE_FILES = {
-    "choice_b_worker.py",
-    "choice_b_wire.py",
-    "worker_logging.py",
-    "runtime_resources.py",
+    "ezllmrouter_worker/" + name
+    for name in (
+        "__init__.py",
+        "__main__.py",
+        "worker.py",
+        "ipc.py",
+        "resources.py",
+        "observability.py",
+        "execution_policy.py",
+        "execution_resources.py",
+        "connection_resources.py",
+        "socket_lease.py",
+    )
 }
 
 
@@ -53,18 +62,15 @@ def validate_worker_source_context(context, *, fixtures=False):
         if not line.lstrip().upper().startswith("COPY "):
             continue
         fields = shlex.split(line, comments=True)
-        if fields and fields[0].upper() == "COPY" and fields[-1] == "/app/worker/":
-            app_copies.append(fields[1:-1])
-    if len(app_copies) != 1:
-        raise AssertionError("expected one explicit worker code COPY")
-    sources = app_copies[0]
-    for name in sources:
-        if not (context / name).is_file():
+        if fields[-1].startswith("/app/worker"):
+            app_copies.append([field for field in fields[1:-1] if not field.startswith("--")])
+            if fields[-1].rstrip("/") != "/app/worker/ezllmrouter_worker":
+                raise AssertionError("worker COPY must name the isolated package")
+    if app_copies != [["ezllmrouter_worker"]]:
+        raise AssertionError("worker COPY must name the isolated package")
+    for name in WORKER_SOURCE_FILES:
+        if not (context / name).is_file() or (context / name).is_symlink():
             raise AssertionError("worker COPY source is not a staged file: " + name)
-    if len(sources) != 4 or set(sources) != WORKER_SOURCE_FILES:
-        raise AssertionError(
-            "worker COPY must name exactly the runtime, wire, safe logger and resource helpers"
-        )
     observed = {
         path.relative_to(context).as_posix() for path in context.rglob("*") if path.is_file()
     }
@@ -149,12 +155,12 @@ class ChoiceBComponentTests(unittest.TestCase):
             path = context / "Dockerfile"
             current = path.read_text()
             changed = current.replace(
-                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py runtime_resources.py /app/worker/",
+                "COPY --chmod=0555 ezllmrouter_worker /app/worker/ezllmrouter_worker",
                 "COPY worker/ /app/worker/",
             )
             self.assertNotEqual(current, changed)
             path.write_text(changed)
-            with self.assertRaisesRegex(AssertionError, "not a staged file: worker/"):
+            with self.assertRaisesRegex(AssertionError, "isolated package"):
                 validate_worker_source_context(context)
 
     def test_worker_layout_rejects_broad_copy(self):
@@ -163,19 +169,21 @@ class ChoiceBComponentTests(unittest.TestCase):
             path = context / "Dockerfile"
             current = path.read_text()
             changed = current.replace(
-                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py runtime_resources.py /app/worker/",
+                "COPY --chmod=0555 ezllmrouter_worker /app/worker/ezllmrouter_worker",
                 "COPY . /app/worker/",
             )
             self.assertNotEqual(current, changed)
             path.write_text(changed)
-            with self.assertRaisesRegex(AssertionError, "not a staged file"):
+            with self.assertRaisesRegex(AssertionError, "isolated package"):
                 validate_worker_source_context(context)
 
     def test_worker_layout_rejects_missing_wire_module(self):
         with tempfile.TemporaryDirectory(prefix="dev04-worker-source-") as tmp:
             context = stage_worker_source_context(ROOT, Path(tmp))
-            (context / "choice_b_wire.py").unlink()
-            with self.assertRaisesRegex(AssertionError, "not a staged file: choice_b_wire.py"):
+            (context / "ezllmrouter_worker/ipc.py").unlink()
+            with self.assertRaisesRegex(
+                AssertionError, "not a staged file: ezllmrouter_worker/ipc.py"
+            ):
                 validate_worker_source_context(context)
 
     def test_worker_layout_rejects_extra_trusted_source(self):

@@ -14,7 +14,7 @@ import sys
 
 from ezllmrouter_client import IntegrationClient, __version__
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DID = "dataset.integration.correction.v2"
 ACCOUNT = "account:correct:01"
 BASE = "http://127.0.0.1:48760"
@@ -76,7 +76,7 @@ def main():
             actor = subprocess.run(
                 (
                     node,
-                    str(ROOT / "tests/integration_readiness/correction_js_actor.cjs"),
+                    str(ROOT / "tools/accounting/evidence/correction_js_actor.cjs"),
                     BASE,
                     str(secrets / "ingest.token"),
                     str(package),
@@ -291,7 +291,7 @@ def main():
         actor = subprocess.run(
             (
                 node,
-                str(ROOT / "tests/integration_readiness/correction_js_actor.cjs"),
+                str(ROOT / "tools/accounting/evidence/correction_js_actor.cjs"),
                 BASE,
                 str(secrets / "ingest.token"),
                 str(package),

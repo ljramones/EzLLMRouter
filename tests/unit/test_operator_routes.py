@@ -76,7 +76,7 @@ class OperatorRouteTests(UserHTTPFixture):
     def test_two_servers_never_share_sessions(self):
         self.ready_admin()
         first = self.server
-        with patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer):
+        with patch("ezllmrouter_server.operator_web.BoundedHTTPServer", MemoryServer):
             second = serve(
                 "127.0.0.1",
                 48761,
@@ -131,7 +131,7 @@ class OperatorRouteTests(UserHTTPFixture):
                 raise OSError("injected bind failure")
 
         with (
-            patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", FailedServer),
+            patch("ezllmrouter_server.operator_web.BoundedHTTPServer", FailedServer),
             patch(
                 "ezllmrouter_server.operator_web.OperatorApplication.close", autospec=True
             ) as closed,
@@ -195,7 +195,7 @@ class OperatorRouteTests(UserHTTPFixture):
 
     def test_background_thread_start_failure_closes_bound_server_and_jobs(self):
         with (
-            patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer),
+            patch("ezllmrouter_server.operator_web.BoundedHTTPServer", MemoryServer),
             patch.object(
                 threading.Thread, "start", side_effect=RuntimeError("injected thread failure")
             ),

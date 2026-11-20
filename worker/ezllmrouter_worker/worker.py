@@ -1,4 +1,4 @@
-"""DEV-04 Choice B LiteLLM worker: no authority, provider key or network route."""
+"""Isolated LiteLLM worker: no authority, provider key or network route."""
 
 from __future__ import annotations
 
@@ -17,27 +17,19 @@ from contextlib import ExitStack
 
 import httpx
 
-if __package__:
-    from ezllmrouter_server.runtime_resources import BoundedUnixServer, LoopThread
-    from ezllmrouter_server.gateway.choice_b_wire import (
-        async_exchange,
-        receive,
-        remaining_seconds,
-        send,
-        socket_path,
-    )
-    from ezllmrouter_server.observability import configure_logging, log_failure
-else:
-    from runtime_resources import BoundedUnixServer, LoopThread
-    from choice_b_wire import async_exchange, receive, remaining_seconds, send, socket_path
-    from worker_logging import configure_logging, log_failure
+from .resources import BoundedUnixServer, LoopThread
+from .ipc import async_exchange, receive, remaining_seconds, send, socket_path
+from .observability import configure_logging, log_failure
+from .execution_policy import (
+    PROVIDER_URL,
+    WORKER_KEY,
+    RestrictedProxy,
+    trusted_credentials_present,
+)
 
 
-PROVIDER_URL = "http://127.0.0.1:8766/v1/chat/completions"
-PROXY_MODEL = "openai/model.demo"
-WORKER_KEY = "sk-dev04-worker-placeholder-not-provider-000000"
 LINK = Path("/link")
-ACTIVE: ContextVar[str | None] = ContextVar("dev04_worker_attempt", default=None)
+ACTIVE: ContextVar[str | None] = ContextVar("ezllmrouter_worker_attempt", default=None)
 ACTIVE_BUDGET: ContextVar[tuple[int, str] | None] = ContextVar(
     "ezllmrouter_worker_budget", default=None
 )
@@ -103,26 +95,9 @@ class RelayTransport(httpx.AsyncBaseTransport):
         )
 
 
-class RestrictedProxy:
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send_response):
-        if (
-            scope["type"] != "http"
-            or scope.get("path") != "/v1/chat/completions"
-            or scope.get("method") != "POST"
-            or ACTIVE.get() is None
-        ):
-            await send_response({"type": "http.response.start", "status": 403, "headers": []})
-            await send_response({"type": "http.response.body", "body": b""})
-            return
-        await self.app(scope, receive, send_response)
-
-
 class Worker:
     def __init__(self):
-        if "EZLLMROUTER_DEV_TOKEN" in os.environ or "EZLLMROUTER_DEV04_PROVIDER_KEY" in os.environ:
+        if trusted_credentials_present(os.environ):
             raise RuntimeError("trusted credential present in LiteLLM worker")
         os.environ["OPENAI_API_KEY"] = WORKER_KEY
         os.environ["LITELLM_DONT_SHOW_FEEDBACK_BOX"] = "true"
@@ -195,7 +170,7 @@ class Worker:
         )
         if litellm.aclient_session is not self.client or litellm.client_session is not None:
             raise RuntimeError("selected LiteLLM client replaced")
-        self.proxy = RestrictedProxy(proxy_server.app)
+        self.proxy = RestrictedProxy(proxy_server.app, lambda: ACTIVE.get() is not None)
         import openai
 
         def module_file(module):
@@ -318,7 +293,7 @@ def handle_command(worker, stream):
 def _serve():
     path = socket_path("worker", LINK)
     if path.exists() or path.is_symlink():
-        raise RuntimeError("Choice B worker socket collision")
+        raise RuntimeError("worker socket collision")
     with ExitStack() as cleanup:
         worker = Worker()
         cleanup.callback(worker.close)
@@ -373,7 +348,3 @@ def main():
     finally:
         if previous is not None:
             signal.signal(signal.SIGTERM, previous)
-
-
-if __name__ == "__main__":
-    main()

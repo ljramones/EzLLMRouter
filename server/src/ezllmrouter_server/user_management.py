@@ -321,7 +321,7 @@ class UserManager:
             or principal["status"] != "active"
             or (role == "registry_admin" and status == "active")
             or not db.execute(
-                _queries.VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS_2,
+                _queries.CONSOLE_USER_EXISTS,
                 (principal["principal_id"],),
             ).fetchone()
         ):
@@ -458,7 +458,7 @@ class UserManager:
             revision = principal["revision"]
             principal.update(status="revoked", state_reason="Administrator deleted console account")
             db.execute(
-                _queries.CHANGE_UPDATE_CONSOLE_USERS_2,
+                _queries.UPDATE_PASSWORD_PRESERVING_STATE,
                 (self._dummy_hash, timestamp(), principal_id),
             )
             db.execute(_queries.CHANGE_DELETE_REGISTRY_CREDENTIALS, (principal_id,))
@@ -482,7 +482,9 @@ class UserManager:
             self._expected(data, principal)
             if row[3] != auth_version:
                 raise UserError("USER_CONFLICT", 409)
-            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_3, (hashed, timestamp(), principal_id))
+            db.execute(
+                _queries.RESET_PASSWORD_REQUIRING_CHANGE, (hashed, timestamp(), principal_id)
+            )
             return principal, principal["revision"]
 
         return self._write(actor, "reset_console_password", change)
@@ -515,7 +517,7 @@ class UserManager:
             row, principal = self._load(db, principal_id)
             if principal["status"] != "active" or row[3] != context["auth_version"]:
                 raise UserError("AUTH_REQUIRED", 401)
-            db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_4, (hashed, timestamp(), principal_id))
+            db.execute(_queries.CHANGE_PASSWORD_COMPLETED, (hashed, timestamp(), principal_id))
             return principal, principal["revision"]
 
         return self._write(principal_id, "change_console_password", change, admin=False)

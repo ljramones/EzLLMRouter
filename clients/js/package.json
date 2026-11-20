@@ -34,7 +34,7 @@
     "integration_schema.json",
     "integration_schema_v2.json",
     "integration_schema_v3.json",
-    "dev12_schemas.json"
+    "retrieval_schemas.json"
   ],
   "scripts": {
     "test": "python3 -I -S ../../tests/client_languages/check_javascript.py",

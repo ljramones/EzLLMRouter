@@ -17,11 +17,8 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from ezllmrouter_server.canonical import ContractError
-from ezllmrouter_server.gateway import (
-    adapter as asgi_module,
-    choice_b_sender as sender,
-    choice_b_wire as wire,
-)
+from ezllmrouter_server.gateway import choice_b_sender as sender, choice_b_wire as wire
+from tools.gateway import asgi_adapter as asgi_module
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
 from ezllmrouter_server.runtime_resources import (
     AdmissionGate,
@@ -34,7 +31,7 @@ from tools.synthetic.successor_service import SuccessorService
 from tests.development_slice import test_core as core_fixtures
 from tests.operator_console import test_integration_credentials as credential_fixtures
 from tests.unit import test_accounting_recovery as recovery_fixtures
-from worker import choice_b_worker as worker
+from tests.worker_support import runtime as worker
 
 
 class ResourcePrimitiveTests(unittest.TestCase):
@@ -931,7 +928,7 @@ class OperatorFailureCleanupTests(unittest.TestCase):
 
         listener = SimpleNamespace(server_close=Mock())
         original = listener.server_close
-        with patch.object(operator_web, "ThreadingHTTPServer", return_value=listener):
+        with patch.object(operator_web, "BoundedHTTPServer", return_value=listener):
             server = operator_web.serve("127.0.0.1", 12345, **self.arguments())
         self.addCleanup(server.application.close)
         with patch.object(server.application, "close", side_effect=OSError("controlled cleanup")):

@@ -59,15 +59,17 @@ class ClientBoundaryTests(unittest.TestCase):
             token = registry.issue_local_operator_token("owner.local")
             coordinator = Coordinator(
                 store,
-                {TEST_TOKEN: fixture["trusted_context"]},
-                public_destination(fixture),
-                fixture["prompt_blocks"],
-                fixture["allowed_lineages"],
-                PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), registry),
-                adapter,
-                fixture["retention"],
-                fixture["classification"],
-                GatewayProxyRecipe(controlled_provider_proof=True),
+                identity={TEST_TOKEN: fixture["trusted_context"]},
+                config=public_destination(fixture),
+                prompt_blocks=fixture["prompt_blocks"],
+                allowed_lineages=fixture["allowed_lineages"],
+                authority=PlanAuthority(
+                    Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
+                ),
+                adapter=adapter,
+                retention=fixture["retention"],
+                classification=fixture["classification"],
+                recipe=GatewayProxyRecipe(controlled_provider_proof=True),
                 trusted_source_labels=fixture["trusted_source_labels"],
                 registry=registry,
             )
@@ -274,15 +276,17 @@ class ClientBoundaryTests(unittest.TestCase):
             adapter.return_details = True
             coordinator = Coordinator(
                 store,
-                {TEST_TOKEN: fixture["trusted_context"]},
-                public_destination(fixture),
-                fixture["prompt_blocks"],
-                fixture["allowed_lineages"],
-                PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), registry),
-                adapter,
-                fixture["retention"],
-                fixture["classification"],
-                GatewayProxyRecipe(controlled_provider_proof=True),
+                identity={TEST_TOKEN: fixture["trusted_context"]},
+                config=public_destination(fixture),
+                prompt_blocks=fixture["prompt_blocks"],
+                allowed_lineages=fixture["allowed_lineages"],
+                authority=PlanAuthority(
+                    Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
+                ),
+                adapter=adapter,
+                retention=fixture["retention"],
+                classification=fixture["classification"],
+                recipe=GatewayProxyRecipe(controlled_provider_proof=True),
                 trusted_source_labels=fixture["trusted_source_labels"],
                 registry=registry,
             )

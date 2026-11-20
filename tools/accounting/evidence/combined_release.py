@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 
 from ezllmrouter_client import IntegrationClient
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 EXAMPLES_PATH = ROOT / "tests/fixtures/contracts/integration-readiness-v1/examples.json"
 EXAMPLES = json.loads(EXAMPLES_PATH.read_text())
 
@@ -41,7 +41,7 @@ def main():
             subprocess.run(
                 (
                     node,
-                    str(ROOT / "tests/integration_readiness/js_actor.cjs"),
+                    str(ROOT / "tools/accounting/evidence/js_actor.cjs"),
                     base,
                     str(secret_dir / "ingest.token"),
                     str(EXAMPLES_PATH),
@@ -118,7 +118,7 @@ def main():
             subprocess.run(
                 (
                     node,
-                    str(ROOT / "tests/integration_readiness/js_actor.cjs"),
+                    str(ROOT / "tools/accounting/evidence/js_actor.cjs"),
                     base,
                     str(secret_dir / "ingest.token"),
                     str(EXAMPLES_PATH),

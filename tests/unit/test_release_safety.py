@@ -190,7 +190,9 @@ class CampaignFailureTests(unittest.TestCase):
         attempt = self._record("plan-failed")
         attempt["status_revision"] = 1
         self.store.create(attempt, reserve=lambda db, item: self.campaign.reserve(db, item, 20, 16))
-        coordinator = SimpleNamespace(store=self.store, registry=self.registry)
+        coordinator = SimpleNamespace(
+            store=self.store, registry=self.registry, personal_campaign=self.campaign
+        )
         Coordinator._failed(
             coordinator,
             attempt["submission_id"],

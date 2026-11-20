@@ -129,7 +129,16 @@ def main(target, package_root, output):
     # No operational token or real account is loaded into this assembly.
     foreign = {**trusted, "principal_id": "user.foreign"}
     coordinator = Coordinator(
-        None, {RENEWED: trusted, FOREIGN: foreign}, {}, {}, {}, None, None, {}, {}, None
+        None,
+        identity={RENEWED: trusted, FOREIGN: foreign},
+        config={},
+        prompt_blocks={},
+        allowed_lineages={},
+        authority=None,
+        adapter=None,
+        retention={},
+        classification={},
+        recipe=None,
     )
     successor = SuccessorService(
         store,

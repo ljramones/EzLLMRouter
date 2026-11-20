@@ -40,13 +40,13 @@ def main() -> None:
         "docs/development/integration-readiness/RELEASE.md",
         "docs/development/integration-readiness/RELEASE-v1.md",
         "docs/development/integration-readiness/client-requirements-v2.lock",
-        "tests/integration_readiness/correction_release.py",
-        "tests/integration_readiness/correction_js_actor.cjs",
-        "tests/integration_readiness/correction_operator_smoke.py",
-        "tests/integration_readiness/correction_browser_smoke.cjs",
-        "tests/integration_readiness/correction_upgrade_check.py",
-        "tests/integration_readiness/package_correction_release.py",
-        "tests/integration_readiness/package_correction_review.py",
+        "tools/accounting/evidence/correction_release.py",
+        "tools/accounting/evidence/correction_js_actor.cjs",
+        "tools/accounting/evidence/correction_operator_smoke.py",
+        "tools/accounting/evidence/correction_browser_smoke.cjs",
+        "tools/accounting/evidence/correction_upgrade_check.py",
+        "tools/accounting/evidence/package_correction_release.py",
+        "tools/accounting/evidence/package_correction_review.py",
         "tests/operator_console/test_integration_accounting.py",
     )
     source_files += tuple(
@@ -111,7 +111,7 @@ def main() -> None:
         "| Review question | Evidence |\n| --- | --- |\n"
         "| IR01–IR09 implementation and cases | `tests/fixtures/contracts/integration-readiness-v2/`, "
         "`delta/source-to-product.patch`, `tests/operator_console/test_integration_accounting.py` |\n"
-        "| Exact installed client/service and reconciliation | `tests/integration_readiness/correction_*`, "
+        "| Exact installed client/service and reconciliation | `tools/accounting/evidence/correction_*`, "
         "`retained/evidence/installed-*.log`, `retained/instance/evidence/final-report.json`, "
         "`final-report.csv`, `final-export.json` |\n"
         "| Restart, backup restore and v1 upgrade | `retained/evidence/installed-restart-verify.log`, "

@@ -114,15 +114,15 @@ class BoundaryTests(unittest.TestCase):
         self.adapter = FakeAdapter()
         self.coordinator = Coordinator(
             self.store,
-            {"token.synthetic": FIXTURE["trusted_context"]},
-            copy.deepcopy(FIXTURE["destination"]),
-            FIXTURE["prompt_blocks"],
-            FIXTURE["allowed_lineages"],
-            FakeAuthority(),
-            self.adapter,
-            copy.deepcopy(FIXTURE["retention"]),
-            copy.deepcopy(FIXTURE["classification"]),
-            SyntheticDevelopmentRecipe(),
+            identity={"token.synthetic": FIXTURE["trusted_context"]},
+            config=copy.deepcopy(FIXTURE["destination"]),
+            prompt_blocks=FIXTURE["prompt_blocks"],
+            allowed_lineages=FIXTURE["allowed_lineages"],
+            authority=FakeAuthority(),
+            adapter=self.adapter,
+            retention=copy.deepcopy(FIXTURE["retention"]),
+            classification=copy.deepcopy(FIXTURE["classification"]),
+            recipe=SyntheticDevelopmentRecipe(),
             trusted_source_labels=copy.deepcopy(FIXTURE["trusted_source_labels"]),
         )
         self.addCleanup(self.coordinator.pool.shutdown, wait=True)

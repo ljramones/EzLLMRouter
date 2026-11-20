@@ -18,7 +18,7 @@ from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE = Path(
     "/Users/larrymitchell/Mach33/EzLLMRouter-artifacts/integration-correction03-20261028-01/candidate1/corrected"
 )

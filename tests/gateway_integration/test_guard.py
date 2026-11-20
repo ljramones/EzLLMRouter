@@ -22,7 +22,7 @@ from ezllmrouter_server.gateway.guard import (
     PROVIDER_URL,
     provider_expectation,
 )
-from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from tools.gateway.asgi_adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
 from ezllmrouter_server.store import SQLiteStore
 

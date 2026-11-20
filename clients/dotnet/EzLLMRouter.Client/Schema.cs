@@ -12,7 +12,7 @@ internal static class Schema
     private static Dictionary<string, JsonObject> Load()
     {
         var result = new Dictionary<string, JsonObject>();
-        foreach (var (version, name) in new Dictionary<string, string> { ["0.2"] = "wire02.json", ["0.3"] = "dev12_schemas.json", ["1"] = "integration_schema.json", ["2"] = "integration_schema_v2.json", ["3"] = "integration_schema_v3.json" })
+        foreach (var (version, name) in new Dictionary<string, string> { ["0.2"] = "wire02.json", ["0.3"] = "retrieval_schemas.json", ["1"] = "integration_schema.json", ["2"] = "integration_schema_v2.json", ["3"] = "integration_schema_v3.json" })
         {
             using var input = typeof(Schema).Assembly.GetManifestResourceStream("CognitiveDynamics.EzLLMRouter.Schemas." + name) ?? throw new InvalidOperationException("Missing embedded schema");
             result[version] = JsonNode.Parse(input)!["$defs"]!.AsObject();

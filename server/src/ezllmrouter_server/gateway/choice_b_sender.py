@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import base64
 from concurrent.futures import Future
+from typing import NoReturn
+from ..execution_policy import PROXY_URL, WORKER_KEY, valid_provider_key
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -38,8 +40,6 @@ from .owned_tls_sender_transport import OwnedTLSHTTPTransport
 from .proxy_recipe import require_public_destination
 
 
-PROXY_URL = "http://127.0.0.1:8767/v1/chat/completions"
-WORKER_KEY = "sk-dev04-worker-placeholder-not-provider-000000"
 LINK = Path("/link")
 RESPONSE_LIMIT = 65536
 
@@ -68,12 +68,7 @@ class ChoiceBSenderAdapter:
         self.authority = authority
         self.provider_registry = registry
         self.controlled_provider_proof = controlled_provider_proof
-        if (
-            type(provider_key) is not str
-            or not provider_key.startswith("sk-")
-            or not 36 <= len(provider_key) <= 4096
-            or any(not 33 <= ord(c) <= 126 for c in provider_key)
-        ):
+        if not valid_provider_key(provider_key):
             raise ValueError("invalid trusted provider credential")
         self.provider_key = provider_key
         self.registry: dict[str, Invocation] = {}
@@ -85,7 +80,7 @@ class ChoiceBSenderAdapter:
         self.server = self.server_thread = None
         self._socket_path = socket_path("sender", LINK)
         if self._socket_path.exists() or self._socket_path.is_symlink():
-            raise RuntimeError("Choice B sender socket collision")
+            raise RuntimeError("trusted sender socket collision")
         self._runtime = LoopThread("ezllmrouter-trusted-sender")
         self.loop, self.thread = self._runtime.loop, self._runtime.thread
         try:
@@ -182,7 +177,7 @@ class ChoiceBSenderAdapter:
         self.guard = GuardTransport(SelectedLower())
 
     def _record_send(self, invocation):
-        target = os.environ.get("EZLLMROUTER_DEV04_SEND_EVENTS")
+        target = os.environ.get("EZLLMROUTER_GATEWAY_SEND_EVENTS")
         if not target:
             return
         row = {
@@ -305,7 +300,7 @@ class ChoiceBSenderAdapter:
                 self.claimed.discard(invocation.attempt_id)
 
     @staticmethod
-    def _reject_or_unknown(invocation, cause):
+    def _reject_or_unknown(invocation: Invocation, cause: BaseException) -> NoReturn:
         with invocation.authority_gate:
             invocation.abandoned = True
             possible_send = invocation.first_bytes_accepted

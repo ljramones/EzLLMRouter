@@ -10,15 +10,15 @@ RUN --mount=type=bind,source=wheels,target=/opt/ezllmrouter/wheels,readonly \
  && python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --only-binary=:all: \
       --require-hashes -r /opt/ezllmrouter/requirements.gateway.lock \
  && python -m pip check
-COPY --chmod=0555 choice_b_worker.py choice_b_wire.py worker_logging.py runtime_resources.py local_worker.py socket_lease.py /app/worker/
+COPY --chmod=0555 ezllmrouter_worker /app/worker/ezllmrouter_worker
 RUN chmod 0555 /app && mkdir -p /link/worker /link/sender && chown -R 10001:10001 /link
 USER 10001:10001
 WORKDIR /app
-RUN test -r /app/worker/local_worker.py && test ! -e /app/server \
+RUN test -r /app/worker/ezllmrouter_worker/__main__.py && test ! -e /app/server \
  && test ! -e /app/dev_slice && test ! -e /app/gateway
 RUN --network=none --mount=type=bind,source=test_provider_worker_target.py,target=/tmp/test_provider_worker_target.py,readonly \
     python -B /tmp/test_provider_worker_target.py
 RUN --network=none --mount=type=bind,source=validation,target=/tmp/validation,readonly \
-    PYTHONPATH=/tmp/validation/server:/app/worker python -B /tmp/validation/test_alt_handler.py \
- && PYTHONPATH=/tmp/validation/server:/app/worker python -B /tmp/validation/test_cache_frozen_usage.py
-CMD ["python", "/app/worker/local_worker.py"]
+    PYTHONPATH=/tmp/validation:/tmp/validation/server:/app/worker python -B /tmp/validation/test_alt_handler.py \
+ && PYTHONPATH=/tmp/validation:/tmp/validation/server:/app/worker python -B /tmp/validation/test_cache_frozen_usage.py
+CMD ["python", "-m", "ezllmrouter_worker"]

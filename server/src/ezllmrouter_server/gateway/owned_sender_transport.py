@@ -153,7 +153,7 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
         self.sock.close()
 
     async def start_tls(self, ssl_context, server_hostname=None, timeout=None):
-        raise RuntimeError("DEV-04 owned sender excludes TLS")
+        raise RuntimeError("gateway owned sender excludes TLS")
 
     def get_extra_info(self, info):
         if info == "socket":
@@ -169,7 +169,7 @@ class OwnedSocketBackend(httpcore.AsyncNetworkBackend):
 
     async def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):
         if (host, port, local_address, socket_options) != (HOST, PORT, None, None):
-            raise RuntimeError("DEV-04 owned sender destination/options rejected")
+            raise RuntimeError("gateway owned sender destination/options rejected")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
         try:
@@ -182,10 +182,10 @@ class OwnedSocketBackend(httpcore.AsyncNetworkBackend):
             raise
 
     async def connect_unix_socket(self, path, timeout=None, socket_options=None):
-        raise RuntimeError("DEV-04 owned sender excludes Unix provider destinations")
+        raise RuntimeError("gateway owned sender excludes Unix provider destinations")
 
     async def sleep(self, seconds):
-        raise RuntimeError("DEV-04 owned sender excludes connection retries")
+        raise RuntimeError("gateway owned sender excludes connection retries")
 
 
 class _ResponseStream(httpx.AsyncByteStream):

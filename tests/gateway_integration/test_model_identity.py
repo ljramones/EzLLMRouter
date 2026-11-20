@@ -115,15 +115,15 @@ class ModelIdentityTests(unittest.TestCase):
             authority = PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE))
             coordinator = Coordinator(
                 store,
-                {"token": trusted},
-                public_destination(FIXTURE),
-                deepcopy(FIXTURE["prompt_blocks"]),
-                deepcopy(FIXTURE["allowed_lineages"]),
-                authority,
-                adapter,
-                deepcopy(FIXTURE["retention"]),
-                deepcopy(FIXTURE["classification"]),
-                GatewayProxyRecipe(),
+                identity={"token": trusted},
+                config=public_destination(FIXTURE),
+                prompt_blocks=deepcopy(FIXTURE["prompt_blocks"]),
+                allowed_lineages=deepcopy(FIXTURE["allowed_lineages"]),
+                authority=authority,
+                adapter=adapter,
+                retention=deepcopy(FIXTURE["retention"]),
+                classification=deepcopy(FIXTURE["classification"]),
+                recipe=GatewayProxyRecipe(),
                 trusted_source_labels=deepcopy(FIXTURE["trusted_source_labels"]),
             )
             request = deepcopy(REQUEST)

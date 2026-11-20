@@ -489,7 +489,7 @@ class AttributionLedger:
                 return json.loads(row[1])
             last = (
                 self.store.database.execute(
-                    _queries.SAVE_SELECT_ATTRIBUTION_OUTCOMES_2, (subject,)
+                    _queries.LATEST_OUTCOME_REVISION, (subject,)
                 ).fetchone()[0]
                 or 0
             )

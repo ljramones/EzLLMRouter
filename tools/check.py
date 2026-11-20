@@ -96,6 +96,7 @@ MODULES = (
     "tests.unit.test_provision_recovery",
     "tests.unit.test_quality_gates",
     "tests.unit.test_persistence_recovery",
+    "tests.unit.test_structural_cleanup",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
@@ -138,6 +139,14 @@ JAVASCRIPT_SCRIPTS = tuple(
 )
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
+    "server/src/ezllmrouter_server/execution_policy.py",
+    "server/src/ezllmrouter_server/execution_resources.py",
+    "server/src/ezllmrouter_server/gateway/choice_b_wire.py",
+    "server/src/ezllmrouter_server/store.py",
+    "server/src/ezllmrouter_server/records.py",
+    "server/src/ezllmrouter_server/canonical.py",
+    "server/src/ezllmrouter_server/csv_export.py",
+    "server/src/ezllmrouter_server/wire_http",
     "server/src/ezllmrouter_server/identifiers.py",
     "server/src/ezllmrouter_server/identity.py",
     "server/src/ezllmrouter_server/external_identity.py",
@@ -154,6 +163,7 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/database.py",
     "server/src/ezllmrouter_server/schema.py",
     "tools/check.py",
+    "tools/type_audit.py",
     "tools/gateway/paths.py",
     "tests/support.py",
     "deploy/local/command_support.py",
@@ -274,6 +284,7 @@ def javascript_inventory_errors(root: Path = ROOT) -> list[str]:
             "-z",
             "--",
             "tests",
+            "tools/accounting/evidence",
         ],
         text=True,
     ).split("\0")
@@ -386,6 +397,7 @@ def main() -> int:
             )
             run([sys.executable, "-m", "ruff", "format", "--check", *QUALITY_PATHS])
             run([sys.executable, "-m", "mypy", *TYPED_PATHS])
+            run([sys.executable, "-m", "tools.type_audit"])
         # Check all application JavaScript syntax, not only modules reached by a view fixture.
         if not args.http_only:
             for path in sorted((ROOT / "web").glob("*.js")):

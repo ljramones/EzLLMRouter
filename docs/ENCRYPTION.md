@@ -169,3 +169,11 @@ decryption keys. Never put these files in Git or an evidence export; generated
 default keyring names, lock files and sealed credentials are ignored by the
 repository and excluded from runtime evidence capture. Keep custom keyring paths
 outside the source and evidence trees as well.
+
+
+Instance identity metadata and the local profile ownership marker belong with
+consistent backups. Reopening preserves those identities; filesystem relocation
+and profile ownership must be resolved explicitly using the recorded checkout and
+project. Atomic file publication still requires the local POSIX guarantees above.
+Unsupported hard-link/replacement/fsync behavior raises an error; there is no
+copy fallback or automatic deletion of uncertain credential/key files.

@@ -137,6 +137,7 @@ class ProfileRunnerTests(unittest.TestCase):
             old.mkdir(parents=True)
             (old / "failure.txt").write_text("preserve")
             with (
+                patch.object(prepare, "source_dirty", return_value=False),
                 patch.object(prepare, "ROOT", root),
                 patch.object(prepare, "STATE", state),
                 patch.object(prepare, "fingerprint", return_value="a" * 64),

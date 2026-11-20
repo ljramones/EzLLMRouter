@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import httpx
 
 from ezllmrouter_server import observability
-from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter, RestrictedProxy
+from tools.gateway.asgi_adapter import LiteLLMAsgiAdapter, RestrictedProxy
 from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
 from ezllmrouter_server.gateway.choice_b_wire import receive, send
 from ezllmrouter_server.gateway.guard import (
@@ -29,7 +29,7 @@ from ezllmrouter_server.gateway.guard import (
 from tests.gateway_integration.test_guard import invocation
 from tools.gateway.stage import source_mapping
 from tools.gateway import service_fixture
-from worker import choice_b_worker
+from tests.worker_support import runtime as choice_b_worker
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_SWITCHES = (
@@ -151,7 +151,7 @@ class RuntimeSafetyTests(unittest.TestCase):
     def test_runtime_does_not_read_fixture_switches_or_inspect_private_pool_queues(self):
         paths = [
             *Path(ROOT / "server/src/ezllmrouter_server/gateway").glob("*.py"),
-            ROOT / "worker/choice_b_worker.py",
+            ROOT / "worker/ezllmrouter_worker/worker.py",
         ]
         for path in paths:
             with self.subTest(path=path.name):
@@ -169,8 +169,8 @@ class RuntimeSafetyTests(unittest.TestCase):
                 "EZLLMROUTER_DEV04_PROVIDER_BASE_OVERRIDE": "http://forbidden.invalid/v1",
                 "EZLLMROUTER_DEV04_LOWER_TRACE": str(Path(directory) / "trace.jsonl"),
                 "EZLLMROUTER_DEV04_AUTHORITY_TOGGLE": str(Path(directory) / "authority"),
-                "EZLLMROUTER_DEV04_GUARD_EVENTS": "",
-                "EZLLMROUTER_DEV04_SEND_EVENTS": "",
+                "EZLLMROUTER_GATEWAY_GUARD_EVENTS": "",
+                "EZLLMROUTER_GATEWAY_SEND_EVENTS": "",
             }
         )
         (Path(directory) / "authority").write_text("revoked")
@@ -259,7 +259,7 @@ class RuntimeSafetyTests(unittest.TestCase):
                 transport=GuardTransport(httpx.MockTransport(lower)), trust_env=False
             ) as client:
                 adapter.guarded_client = client
-                adapter.proxy = RestrictedProxy(proxy)
+                adapter.proxy = RestrictedProxy(proxy, lambda: ACTIVE.get() is not None)
                 return await adapter._send(json.dumps(body).encode(), 1000, item)
 
         with tempfile.TemporaryDirectory() as directory, self.environment(directory):
@@ -386,7 +386,7 @@ class FailureLoggingTests(unittest.TestCase):
         adapter.guard = Mock(
             handle_async_request=Mock(side_effect=OSError("secret-canary provider"))
         )
-        with patch.dict(os.environ, {"EZLLMROUTER_DEV04_SEND_EVENTS": ""}):
+        with patch.dict(os.environ, {"EZLLMROUTER_GATEWAY_SEND_EVENTS": ""}):
             with self.assertRaises(OSError):
                 asyncio.run(adapter._send(httpx.Request("POST", PROVIDER_URL), item))
         (event,) = self.events()

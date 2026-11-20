@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from .formatting import money, utc_timestamp
 from .repositories import successor_reporting as _queries
-from .successor_contract import utc_second
+from .successor_contract import valid_utc_second
 
 SYNTHETIC_ENVIRONMENT = "standalone-synthetic"
 
@@ -70,7 +70,9 @@ def usage_report(store, scope, filters=None):
     if (
         set(filters) - permitted
         or any(type(value) is not str or len(value) > 160 for value in filters.values())
-        or any(not utc_second(filters[key]) for key in ("from", "to", "cutoff") if key in filters)
+        or any(
+            not valid_utc_second(filters[key]) for key in ("from", "to", "cutoff") if key in filters
+        )
         or ("from" in filters and "to" in filters and filters["from"] >= filters["to"])
     ):
         raise ValueError("invalid successor report filter")

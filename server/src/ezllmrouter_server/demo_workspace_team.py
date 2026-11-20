@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from .demo_common import LABEL, amount, total, basis
-from .reporting import _descendants, _group
+from .reporting import descendant_attempts, group_attempts
 
 
 def project_team_demo(
@@ -199,7 +199,9 @@ def project_team_demo(
     for cutoff in times:
         visible = [item for item in billable if item["usage_at"] <= cutoff]
         full_visible = [item for item in attempts if item["usage_at"] <= cutoff]
-        lineage = _descendants([{"attempt_id": a["id"], "run_id": a["run"]} for a in visible], runs)
+        lineage = descendant_attempts(
+            [{"attempt_id": a["id"], "run_id": a["run"]} for a in visible], runs
+        )
         workflows = []
         for run in source_runs:
             if root_story[root_run(run["run_id"])] not in selected:
@@ -226,12 +228,12 @@ def project_team_demo(
                 "outcomes": [
                     event for event in shown if event["kind"] in ("Acceptance", "Outcome")
                 ],
-                "actor": _group(visible, "actor"),
-                "provider": _group(visible, "provider"),
-                "model": _group(visible, "model"),
-                "user": _group(visible, "user"),
-                "owner": _group(visible, "owner"),
-                "story": _group(visible, "story"),
+                "actor": group_attempts(visible, "actor"),
+                "provider": group_attempts(visible, "provider"),
+                "model": group_attempts(visible, "model"),
+                "user": group_attempts(visible, "user"),
+                "owner": group_attempts(visible, "owner"),
+                "story": group_attempts(visible, "story"),
                 "workflows": workflows,
             }
         )

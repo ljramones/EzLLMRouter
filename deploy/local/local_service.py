@@ -50,8 +50,8 @@ def main():
         or len(password) < 32
     ):
         raise RuntimeError("invalid local synthetic credential files")
-    os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = "/data/guard-events.jsonl"
-    os.environ["EZLLMROUTER_DEV04_SEND_EVENTS"] = "/data/send-events.jsonl"
+    os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = "/data/guard-events.jsonl"
+    os.environ["EZLLMROUTER_GATEWAY_SEND_EVENTS"] = "/data/send-events.jsonl"
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     request = json.loads(Path("/app/local/request.json").read_text())
     scenarios = json.loads(Path("/app/local/scenarios.json").read_text())
@@ -90,15 +90,17 @@ def main():
         )
         coordinator = Coordinator(
             store,
-            identity,
-            public_destination(fixture),
-            fixture["prompt_blocks"],
-            fixture["allowed_lineages"],
-            PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), registry=registry),
-            adapter,
-            fixture["retention"],
-            fixture["classification"],
-            GatewayProxyRecipe(),
+            identity=identity,
+            config=public_destination(fixture),
+            prompt_blocks=fixture["prompt_blocks"],
+            allowed_lineages=fixture["allowed_lineages"],
+            authority=PlanAuthority(
+                Ed25519PrivateKey.generate(), proxy_policy(fixture), registry=registry
+            ),
+            adapter=adapter,
+            retention=fixture["retention"],
+            classification=fixture["classification"],
+            recipe=GatewayProxyRecipe(),
             trusted_source_labels=fixture["trusted_source_labels"],
             registry=registry,
             authentication_context=trusted,

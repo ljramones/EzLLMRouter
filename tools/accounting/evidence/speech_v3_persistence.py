@@ -21,7 +21,7 @@ from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / "deploy/local/.state/integration-v3-runs/speech-v3-20261029-12"
 RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 SERVER_VERSION = version("mach33-ezllmrouter-server")

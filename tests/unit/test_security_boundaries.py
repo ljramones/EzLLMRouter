@@ -171,7 +171,7 @@ class CredentialAuditTests(unittest.TestCase):
                 item["account_id"],
                 "claude-opus-4-8",
                 "generation",
-                "vega-provider-dispatch",
+                "ezllmrouter-provider-dispatch",
             )
             self.assertEqual(resolved["api_key"], "known-fixture-api-key-0001")
         rows = self.store.db.execute(
@@ -184,7 +184,7 @@ class CredentialAuditTests(unittest.TestCase):
             self.assertEqual(account, item["account_id"])
             facts = json.loads(raw)
             self.assertEqual(facts["credential_version"], 1)
-            self.assertEqual(facts["purpose"], "vega-provider-dispatch")
+            self.assertEqual(facts["purpose"], "ezllmrouter-provider-dispatch")
             self.assertNotIn("known-fixture-api-key", raw)
 
     def test_audit_transaction_failure_prevents_plaintext_release(self):
@@ -201,7 +201,7 @@ class CredentialAuditTests(unittest.TestCase):
                     item["account_id"],
                     "claude-opus-4-8",
                     "generation",
-                    "vega-provider-dispatch",
+                    "ezllmrouter-provider-dispatch",
                 )
         decrypt.assert_not_called()
 

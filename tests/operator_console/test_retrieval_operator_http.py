@@ -11,9 +11,9 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from ezllmrouter_server.operator_projection import OperatorProjection  # noqa: E402
-from ezllmrouter_server.operator_web import serve  # noqa: E402
-from ezllmrouter_server.store import SQLiteStore  # noqa: E402
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve
+from ezllmrouter_server.store import SQLiteStore
 
 
 class SyntheticOperatorHTTPTests(unittest.TestCase):

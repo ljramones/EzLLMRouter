@@ -42,7 +42,7 @@
     "runner": "helper",
     "reason": "Actor/transport fixture consumed by the registered parity, installed-client or explicit tool-cycle harness."
   },
-  "tests/development_slice/run_dev12_installed_sdk.cjs": {
+  "tools/gateway/evidence/run_retrieval_installed_sdk.cjs": {
     "runner": "target",
     "reason": "Installed-SDK proof requires an explicit private tarball, request fixture and network-disabled disposable runtime; never auto-dispatch provider work."
   },
@@ -89,31 +89,31 @@
       "{repo}/tests/gateway_integration/test_js_actor_recovery.cjs"
     ]
   },
-  "tests/integration_readiness/browser_smoke.cjs": {
+  "tools/accounting/evidence/browser_smoke.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/correction02_js_actor.cjs": {
+  "tools/accounting/evidence/correction02_js_actor.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/correction03_js_actor.cjs": {
+  "tools/accounting/evidence/correction03_js_actor.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/correction_browser_smoke.cjs": {
+  "tools/accounting/evidence/correction_browser_smoke.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/correction_js_actor.cjs": {
+  "tools/accounting/evidence/correction_js_actor.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/js_actor.cjs": {
+  "tools/accounting/evidence/js_actor.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },
-  "tests/integration_readiness/speech_v3_js_actor.cjs": {
+  "tools/accounting/evidence/speech_v3_js_actor.cjs": {
     "runner": "target",
     "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
   },

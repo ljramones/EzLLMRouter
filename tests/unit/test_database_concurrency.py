@@ -41,7 +41,7 @@ class CredentialConcurrencyTests(unittest.TestCase):
             account,
             "claude-opus-4-8",
             "generation",
-            "vega-provider-dispatch",
+            "ezllmrouter-provider-dispatch",
         )
 
     def hold_discovery(self, *, key=None):

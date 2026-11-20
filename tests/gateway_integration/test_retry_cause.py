@@ -59,7 +59,7 @@ from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from tools.gateway.asgi_adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.guard import (
     ACTIVE,
     GuardRejected,
@@ -196,7 +196,7 @@ class RetryCauseTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         environment = patch.dict(
             os.environ,
-            {"EZLLMROUTER_DEV04_GUARD_EVENTS": str(Path(self.temp.name) / "events.jsonl")},
+            {"EZLLMROUTER_GATEWAY_GUARD_EVENTS": str(Path(self.temp.name) / "events.jsonl")},
         )
         environment.start()
         self.addCleanup(environment.stop)
@@ -219,15 +219,15 @@ class RetryCauseTests(unittest.TestCase):
         self.trusted = deepcopy(FIXTURE["trusted_context"])
         self.coordinator = Coordinator(
             self.store,
-            {"token": self.trusted},
-            public_destination(FIXTURE),
-            deepcopy(FIXTURE["prompt_blocks"]),
-            deepcopy(FIXTURE["allowed_lineages"]),
-            PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE)),
-            self.adapter,
-            deepcopy(FIXTURE["retention"]),
-            deepcopy(FIXTURE["classification"]),
-            GatewayProxyRecipe(),
+            identity={"token": self.trusted},
+            config=public_destination(FIXTURE),
+            prompt_blocks=deepcopy(FIXTURE["prompt_blocks"]),
+            allowed_lineages=deepcopy(FIXTURE["allowed_lineages"]),
+            authority=PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(FIXTURE)),
+            adapter=self.adapter,
+            retention=deepcopy(FIXTURE["retention"]),
+            classification=deepcopy(FIXTURE["classification"]),
+            recipe=GatewayProxyRecipe(),
             trusted_source_labels=deepcopy(FIXTURE["trusted_source_labels"]),
         )
         request = deepcopy(REQUEST)

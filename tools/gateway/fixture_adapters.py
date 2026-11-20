@@ -12,8 +12,8 @@ from unittest.mock import patch
 import httpx
 
 from ezllmrouter_server.canonical import ContractError
-from ezllmrouter_server.gateway import adapter as runtime_adapter
-from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
+from tools.gateway import asgi_adapter as runtime_adapter
+from tools.gateway.asgi_adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
 from ezllmrouter_server.gateway.guard import ACTIVE, Invocation, PROVIDER_URL
 from ezllmrouter_server.gateway.proxy_recipe import PROXY_MODEL

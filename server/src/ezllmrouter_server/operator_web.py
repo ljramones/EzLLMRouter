@@ -8,7 +8,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from .http_server import BoundedHTTPServer as ThreadingHTTPServer
+from .http_server import BoundedHTTPServer
 from .local_connectors import LocalConnectors
 from .observability import log_failure
 from .operator_http.application import OperatorApplication
@@ -17,7 +17,7 @@ from .operator_http.policy import OperatorPolicy
 from .user_management import LoginThrottle, UserManager
 
 
-class UnixOperatorServer(ThreadingHTTPServer):
+class UnixOperatorServer(BoundedHTTPServer):
     address_family = socket.AF_UNIX
 
     def __init__(self, address, handler, public_port):
@@ -118,7 +118,7 @@ def serve(
     server = None
     try:
         server = (
-            ThreadingHTTPServer((host, port), OperatorHandler)
+            BoundedHTTPServer((host, port), OperatorHandler)
             if socket_path is None
             else UnixOperatorServer(socket_path, OperatorHandler, port)
         )
