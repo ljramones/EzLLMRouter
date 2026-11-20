@@ -11,6 +11,7 @@ from pathlib import Path
 import socket
 import tempfile
 import threading
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -155,6 +156,28 @@ class SocketBudgetTests(unittest.TestCase):
         self.addCleanup(first.close)
         self.addCleanup(second.close)
         return first, second
+
+    def test_handler_join_uses_one_bounded_shutdown_deadline(self):
+        entered, release = threading.Event(), threading.Event()
+
+        def handle(*_):
+            entered.set()
+            release.wait(3)
+
+        server = BoundedUnixServer("unused", handle, bind_and_activate=False)
+        server.handler_join_timeout = 0.02
+        stream, _ = self.pair()
+        server.process_request(stream, None)
+        self.assertTrue(entered.wait(1))
+        started = time.monotonic()
+        try:
+            with self.assertRaisesRegex(RuntimeError, "shutdown deadline"):
+                server.server_close()
+            self.assertLess(time.monotonic() - started, 0.5)
+        finally:
+            release.set()
+            server.handler_join_timeout = 1
+            server.server_close()
 
     def test_connection_cap_rejects_excess_and_close_releases_a_partial_reader(self):
         entered = threading.Event()

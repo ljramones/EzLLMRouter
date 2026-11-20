@@ -8,6 +8,7 @@ records are deliberately excluded from the model-request acceptance fact.
 from __future__ import annotations
 
 import asyncio
+from contextlib import nullcontext
 from datetime import datetime
 import socket
 import ssl
@@ -18,7 +19,7 @@ import httpcore
 import httpx
 
 from ezllmrouter_server.provider_adapters import _allowed_ip, validate_settings
-from .guard import ACTIVE, GuardRejected
+from .guard import ACTIVE, GuardRejected, run_check
 from .owned_sender_transport import _writable, _ResponseStream
 
 
@@ -85,33 +86,39 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
                         raise GuardRejected("NO_TRUSTED_CONTEXT")
                     if self.first_write_wait is not None:
                         await self.first_write_wait()
-                with self.authority.gate:
-                    if request and not self.request_bytes_accepted:
-                        invocation.fresh_check()
-                    if (
-                        request
-                        and not self.request_bytes_accepted
-                        and (
-                            invocation.abandoned
-                            or self.authority.revoked
-                            or invocation.authority_epoch != self.authority.epoch
-                            or time.time()
-                            >= datetime.fromisoformat(
-                                invocation.deadline.replace("Z", "+00:00")
-                            ).timestamp()
-                        )
-                    ):
-                        raise GuardRejected("FDC_REJECTED")
-                    try:
-                        count = self.sock.send(cipher[offset:])
-                    except (BlockingIOError, InterruptedError):
-                        count = 0
-                    if count and request and not self.request_bytes_accepted:
-                        self.request_bytes_accepted = True
-                        invocation.first_bytes_accepted = True
-                        invocation.observations.append(
-                            "FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET"
-                        )
+
+                def emit(*, invocation=invocation, cipher=cipher, offset=offset):
+                    first = request and not self.request_bytes_accepted
+                    with self.authority.gate if first else nullcontext():
+                        if first:
+                            invocation.fresh_check()
+                            if (
+                                invocation.abandoned
+                                or self.authority.revoked
+                                or invocation.authority_epoch != self.authority.epoch
+                                or time.time()
+                                >= datetime.fromisoformat(
+                                    invocation.deadline.replace("Z", "+00:00")
+                                ).timestamp()
+                            ):
+                                raise GuardRejected("FDC_REJECTED")
+                        try:
+                            count = self.sock.send(cipher[offset:])
+                        except (BlockingIOError, InterruptedError):
+                            count = 0
+                        if count and first:
+                            self.request_bytes_accepted = True
+                            invocation.first_bytes_accepted = True
+                            invocation.observations.append(
+                                "FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET"
+                            )
+                        return count
+
+                count = (
+                    await run_check(invocation, emit)
+                    if request and not self.request_bytes_accepted
+                    else emit()
+                )
                 if count:
                     offset += count
                     continue

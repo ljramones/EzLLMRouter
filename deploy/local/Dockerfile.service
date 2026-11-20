@@ -2,6 +2,8 @@ ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE} AS dependencies
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_CONFIG_FILE=/dev/null \
     PYTHONPATH=/app/server:/app/local:/app
+ENV EZLLMROUTER_WORKER_SOCKET=/link/worker/worker.sock \
+    EZLLMROUTER_SENDER_SOCKET=/link/sender/sender.sock
 COPY wheelhouse.sha256 requirements.runtime.lock client-wheel.sha256 /opt/ezllmrouter/
 RUN --mount=type=bind,source=wheels,target=/opt/ezllmrouter/wheels,readonly \
     --mount=type=bind,source=client,target=/opt/ezllmrouter/client,readonly \
@@ -43,8 +45,8 @@ COPY --from=validation /app/web/ /app/web/
 COPY --from=validation /app/dev_slice/fixture.json /app/dev_slice/fixture.json
 COPY --from=validation /app/local/local_service.py /app/local/initialize_credentials.py /app/local/socket_lease.py /app/local/request.json /app/local/scenarios.json /app/local/build-identity.json /app/local/
 RUN chmod 0555 /app \
- && mkdir -p /data /link /console /run/ezllmrouter \
- && chown 10001:10001 /data /link /console /run/ezllmrouter
+ && mkdir -p /data /link/worker /link/sender /console /run/ezllmrouter \
+ && chown 10001:10001 /data /link /link/worker /link/sender /console /run/ezllmrouter
 USER 10001:10001
 WORKDIR /app
 RUN test ! -e /app/tests && test ! -e /app/gateway && test ! -e /opt/ezllmrouter/wheels \

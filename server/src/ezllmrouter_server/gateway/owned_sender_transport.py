@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import nullcontext
 from datetime import datetime
 import socket
 import threading
@@ -11,7 +12,7 @@ import time
 import httpcore
 import httpx
 
-from .guard import ACTIVE, GuardRejected
+from .guard import ACTIVE, GuardRejected, run_check
 
 
 HOST = "127.0.0.1"
@@ -113,30 +114,33 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
         data = memoryview(buffer)
         offset = 0
         while offset < len(data):
-            # This can inspect signed work and policy. It runs before the gate,
-            # after connection/pool waits, and again after every would-block wait.
-            if not self.first_bytes_accepted:
-                invocation.fresh_check()
-            with self.authority.gate:
-                # Only fixed local authority changes through this gate. No await,
-                # disk work or callback intervenes before the nonblocking send.
-                if not self.first_bytes_accepted and (
-                    invocation.abandoned
-                    or self.authority.revoked
-                    or invocation.authority_epoch != self.authority.epoch
-                    or time.time() >= plan_deadline
-                ):
-                    raise GuardRejected("FDC_REJECTED")
-                try:
-                    count = self.sock.send(data[offset:])
-                except (BlockingIOError, InterruptedError):
-                    count = 0
-                if count > 0:
+
+            def emit(*, offset=offset):
+                # Fresh database checks and first-byte acceptance share one gate
+                # on a check thread. No await can split that authorization.
+                with self.authority.gate if not self.first_bytes_accepted else nullcontext():
                     if not self.first_bytes_accepted:
-                        self.first_bytes_accepted = True
-                        invocation.first_bytes_accepted = True
-                        invocation.observations.append("FIRST_BYTES_ACCEPTED_BY_LOCAL_SOCKET")
-                    self.accepted_bytes += count
+                        invocation.fresh_check()
+                    if not self.first_bytes_accepted and (
+                        invocation.abandoned
+                        or self.authority.revoked
+                        or invocation.authority_epoch != self.authority.epoch
+                        or time.time() >= plan_deadline
+                    ):
+                        raise GuardRejected("FDC_REJECTED")
+                    try:
+                        count = self.sock.send(data[offset:])
+                    except (BlockingIOError, InterruptedError):
+                        count = 0
+                    if count > 0:
+                        if not self.first_bytes_accepted:
+                            self.first_bytes_accepted = True
+                            invocation.first_bytes_accepted = True
+                            invocation.observations.append("FIRST_BYTES_ACCEPTED_BY_LOCAL_SOCKET")
+                        self.accepted_bytes += count
+                    return count
+
+            count = await run_check(invocation, emit) if not self.first_bytes_accepted else emit()
             if count > 0:
                 offset += count
                 continue

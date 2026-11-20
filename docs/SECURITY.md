@@ -29,6 +29,11 @@ fixed GET probes do not generate model work.
 Named login throttling follows the backend peer and canonical username together.
 Each pair allows at most 20 failed or pending attempts in a rolling minute,
 two concurrent verifications, and eight concurrent logins across the application.
+After five failures, a retry must wait 50 ms, doubling after each subsequent
+failure up to two seconds. Requests arriving too soon are rejected without
+sleeping or checking a password. Unknown usernames share a peer bucket (ten per
+minute, 64 peer buckets and one concurrent unknown-user check globally), reserving
+verification capacity for known accounts. Password changes use a separate throttle.
 Successful authentication clears that identity's failures. Credential-only login
 uses the client address instead. The throttle retains at most 512 identities as
 keyed hashes, without usernames or passwords, evicting the oldest inactive entry
@@ -59,6 +64,16 @@ interpreted as another request on a reused backend connection.
 The Unix socket directory must belong to the service user and must not be
 group- or other-writable. Socket permissions are set to `0600` after binding and
 before listening; a permission failure prevents the listener from starting.
+The local profile gives the service ownership of `/link/sender` and the isolated
+worker ownership of `/link/worker` using separate volumes. Each peer sees the
+other's socket volume read-only. The worker can connect to the sender but cannot
+replace or remove its socket. `local_profile.py` includes an explicit ownership
+probe; this topology still needs validation on the target Docker runtime.
+
+Responses constrain form submission to the same origin. The explicit HTTPS proxy
+mode also emits HSTS with a one-year maximum age. CSRF comparisons handle arbitrary
+header bytes as a rejection. CSV exports prefix spreadsheet formula strings with
+an apostrophe, while preserving numeric negative decimal amounts.
 
 ## Secret inputs
 

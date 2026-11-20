@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import socket
 import unittest
+import threading
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,6 +79,46 @@ class PairBackend(httpcore.AsyncNetworkBackend):
 
 
 class OwnedSenderTests(unittest.TestCase):
+    def test_blocked_final_check_does_not_stall_another_paid_reply(self):
+        async def scenario():
+            authority = LocalSendAuthority()
+            sender, receiver = pair()
+            paid_sender, paid_receiver = pair()
+            stream, paid_stream = (
+                OwnedSocketStream(sender, authority),
+                OwnedSocketStream(paid_sender, authority),
+            )
+            item = local_invocation()
+            entered, release = threading.Event(), threading.Event()
+
+            def fresh():
+                entered.set()
+                if not release.wait(3):
+                    raise AssertionError("final check was not released")
+
+            item.fresh_check = fresh
+            token = ACTIVE.set(item)
+            pending = asyncio.create_task(stream.write(b"pending request", timeout=1))
+            try:
+                for _ in range(100):
+                    if entered.is_set():
+                        break
+                    await asyncio.sleep(0.001)
+                self.assertTrue(entered.is_set())
+                paid_receiver.send(b"paid result")
+                self.assertEqual(await paid_stream.read(64, timeout=0.1), b"paid result")
+                self.assertFalse(item.first_bytes_accepted)
+            finally:
+                release.set()
+                await pending
+                ACTIVE.reset(token)
+                await stream.aclose()
+                await paid_stream.aclose()
+                receiver.close()
+                paid_receiver.close()
+
+        asyncio.run(scenario())
+
     def test_real_httpcore_pool_queue_revocation_blocks_second_headers(self):
         async def scenario():
             first_sender, first_receiver = pair()

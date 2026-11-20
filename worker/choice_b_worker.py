@@ -11,6 +11,8 @@ import json
 import os
 from pathlib import Path
 import socketserver
+import signal
+import threading
 from contextlib import ExitStack
 
 import httpx
@@ -22,11 +24,12 @@ if __package__:
         receive,
         remaining_seconds,
         send,
+        socket_path,
     )
     from ezllmrouter_server.observability import configure_logging, log_failure
 else:
     from runtime_resources import BoundedUnixServer, LoopThread
-    from choice_b_wire import async_exchange, receive, remaining_seconds, send
+    from choice_b_wire import async_exchange, receive, remaining_seconds, send, socket_path
     from worker_logging import configure_logging, log_failure
 
 
@@ -87,7 +90,7 @@ class RelayTransport(httpx.AsyncBaseTransport):
 
         try:
             result = await async_exchange(
-                LINK / "sender.sock", envelope, remaining_seconds(*budget) + 2
+                socket_path("sender", LINK), envelope, remaining_seconds(*budget) + 2
             )
         except Exception as exc:
             log_failure("gateway.worker.relay_failed")
@@ -313,7 +316,7 @@ def handle_command(worker, stream):
 
 
 def _serve():
-    path = LINK / "worker.sock"
+    path = socket_path("worker", LINK)
     if path.exists() or path.is_symlink():
         raise RuntimeError("Choice B worker socket collision")
     with ExitStack() as cleanup:
@@ -325,7 +328,14 @@ def _serve():
                 handle_command(worker, self.request)
 
         server = BoundedUnixServer(str(path), Handler, bind_and_activate=False)
-        cleanup.callback(server.server_close)
+
+        def close_listener():
+            try:
+                worker.close()
+            finally:
+                server.server_close()
+
+        cleanup.callback(close_listener)
         server.server_bind()
         status = path.lstat()
         identity = (status.st_dev, status.st_ino)
@@ -346,11 +356,23 @@ def _serve():
 
 def main():
     configure_logging()
+    previous = None
+    if threading.current_thread() is threading.main_thread():
+
+        def stop(_signal, _frame):
+            raise KeyboardInterrupt
+
+        previous = signal.signal(signal.SIGTERM, stop)
     try:
         _serve()
+    except KeyboardInterrupt:
+        pass
     except Exception:
         log_failure("gateway.worker.start_or_serve_failed")
         raise SystemExit(1) from None
+    finally:
+        if previous is not None:
+            signal.signal(signal.SIGTERM, previous)
 
 
 if __name__ == "__main__":

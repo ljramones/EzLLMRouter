@@ -12,6 +12,7 @@ from .canonical import ContractError
 from .formatting import money, utc_timestamp
 from .identifiers import valid_identifier
 from .repositories import personal_campaign as _queries
+from .repositories import authority as authority_queries
 from .store import encode
 
 CENT_NANO = Decimal("0.000000001")
@@ -77,17 +78,25 @@ class PersonalCampaign:
                         self.store.database.execute(
                             _queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS, (encode(record), campaign_id)
                         )
-                    self.store.database.execute(
-                        _queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT,
-                        (
-                            campaign_id,
-                            "recover_unknown",
-                            "system",
-                            utc_timestamp(datetime.now(timezone.utc), precise=True),
-                        ),
+                    self._audit(
+                        self.store.database, "recover_unknown", "system", campaign_id=campaign_id
                     )
 
-        self.store.database.transaction(recover)
+        self._authority_transaction(recover)
+
+    def _authority_transaction(self, action):
+        with self.registry.send_authority.gate:
+
+            def mutate():
+                result = action()
+                row = self.store.database.execute(authority_queries.REVISION).fetchone()
+                return result, int(row[0])
+
+            result, epoch = self.store.database.transaction(mutate)
+            # Read inside the transaction, publish only after commit. A failed
+            # post-commit query must never leave the in-memory epoch behind.
+            self.registry.send_authority.epoch = epoch
+            return result
 
     def _record(self, db):
         row = db.execute(_queries.RECORD_SELECT_PERSONAL_CAMPAIGNS).fetchone()
@@ -99,6 +108,17 @@ class PersonalCampaign:
         db.execute(
             _queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT,
             (campaign_id, action, actor, utc_timestamp(datetime.now(timezone.utc), precise=True)),
+        )
+        authority_queries.record_change(
+            db,
+            actor=actor,
+            action="campaign_" + action,
+            subject=campaign_id,
+            old_revision=None,
+            new_revision=json.loads(
+                db.execute(_queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)).fetchone()[0]
+            )["revision"],
+            at=utc_timestamp(datetime.now(timezone.utc), precise=True),
         )
 
     def configure(self, actor, data):
@@ -184,8 +204,7 @@ class PersonalCampaign:
             self._audit(self.store.database, "configure", actor)
             return record
 
-        with self.registry.send_authority.gate:
-            return self.store.database.transaction(action)
+        return self._authority_transaction(action)
 
     def transition(self, actor, state):
         if actor != self.registry.identity.owner_id or state not in ("active", "paused", "closed"):
@@ -211,8 +230,7 @@ class PersonalCampaign:
             self._audit(self.store.database, state, actor)
             return record
 
-        with self.registry.send_authority.gate:
-            return self.store.database.transaction(action)
+        return self._authority_transaction(action)
 
     def revalidate(self, actor):
         """Bind current key/model/rate revisions without resetting spent attempts."""
@@ -267,8 +285,7 @@ class PersonalCampaign:
             self._audit(self.store.database, "revalidate", actor)
             return record
 
-        with self.registry.send_authority.gate:
-            return self.store.database.transaction(action)
+        return self._authority_transaction(action)
 
     def acknowledge_exposure(self, actor, data):
         """Charge unresolved exposure to its allowance without inventing provider usage."""
@@ -339,8 +356,7 @@ class PersonalCampaign:
             self._audit(db, "acknowledge_exposure", actor, campaign_id=campaign["id"])
             return acknowledgement
 
-        with self.registry.send_authority.gate:
-            return self.store.database.transaction(action)
+        return self._authority_transaction(action)
 
     def _current(self, record):
         connection = self.registry.connection(record["connection_id"])
@@ -491,7 +507,7 @@ class PersonalCampaign:
                     )
                 self._audit(self.store.database, state, "system", campaign_id=campaign["id"])
 
-        self.store.database.transaction(action)
+        self._authority_transaction(action)
 
     def reconcile_recorded_usage(self, actor):
         """Owner-requested local reconciliation; never replays provider work."""
@@ -551,7 +567,7 @@ class PersonalCampaign:
                 )
             return changed
 
-        return self.store.database.transaction(action)
+        return self._authority_transaction(action)
 
     def summary(self):
         with self.store.database.read():

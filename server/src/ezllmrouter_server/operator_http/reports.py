@@ -9,6 +9,7 @@ from urllib.parse import parse_qs
 from ..demo_workspace import project_demo
 from ..demo_workspace_team import project_team_demo
 from ..observability import log_failure
+from ..gateway.guard import diagnostic_status
 from ..reporting import usage_costs
 from ..successor_reporting import usage_report
 
@@ -241,6 +242,7 @@ class ReportsRoutes:
                 "service": {"state": "live"},
                 "worker": worker,
                 "sender": self.application.sender_status(),
+                "diagnostics": diagnostic_status(),
                 "counts": self.application.projection.overview_counts(scope),
                 "recent": self.application.projection.activity(limit=6, principal_id=scope)[
                     "items"

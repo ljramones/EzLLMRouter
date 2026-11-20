@@ -81,7 +81,17 @@ uv run --locked python deploy/local/local_profile.py restart
 uv run --locked python deploy/local/local_profile.py backup
 ```
 
-Normal stop/start retains named volumes. The backup command creates a private,
+Normal stop/start retains named volumes. Rebuilt service/worker images use
+separate sender and worker socket volumes, with each peer's mount read-only.
+The former `link_data` volume can remain unused; this change does not remove it
+or migrate data. Rebuild both images together before adopting the new Compose
+configuration. The `topology` check tests worker-to-sender connectivity and
+rejection of a worker attempt to remove the sender socket. Container mount and
+signal behavior require target-runtime verification.
+
+The service gets 330 seconds to drain accepted work before Docker can kill it;
+the worker stops afterward with a 15-second grace period. Both run under Docker's
+init process. Normal stop/start retains the database and credential volumes. The backup command creates a private,
 consistent SQLite copy; a complete recovery also needs the matching integration
 secrets, connector keyring directory and provider vault. Follow
 [encryption and recovery](../../docs/ENCRYPTION.md) for the full file set and

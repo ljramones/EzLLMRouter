@@ -186,6 +186,21 @@ class CampaignTests(unittest.TestCase):
         self.store.create(record, reserve=lambda db, item: self.campaign.reserve(db, item, 20, 16))
         return record
 
+    def test_campaign_mutation_invalidates_authority_and_persists_epoch(self):
+        from ezllmrouter_server.repositories.authority import REVISION
+
+        before = self.registry.send_authority.epoch
+        self.campaign.configure("owner.local", self.config)
+        configured = self.registry.send_authority.epoch
+        self.assertGreater(configured, before)
+        self.campaign.transition("owner.local", "active")
+        active = self.registry.send_authority.epoch
+        self.assertGreater(active, configured)
+        self.campaign.transition("owner.local", "paused")
+        paused = self.registry.send_authority.epoch
+        self.assertGreater(paused, active)
+        self.assertEqual(paused, int(self.store.database.execute(REVISION).fetchone()[0]))
+
     def test_draft_atomic_race_known_settlement_and_restart(self):
         self.campaign.configure("owner.local", self.config)
         with self.assertRaises(ContractError):

@@ -43,8 +43,14 @@ services:
     tmpfs: ["/tmp:rw,nosuid,nodev,size=32m"]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    volumes: ["link_data:/link"]
+    init: true
+    stop_grace_period: 15s
+    volumes:
+      - worker_link_data:/link/worker
+      - sender_link_data:/link/sender:ro
   service:
+    init: true
+    stop_grace_period: 330s
     image: ${EZLLMROUTER_SERVICE_IMAGE:?}
     pull_policy: never
     network_mode: service:netns
@@ -55,7 +61,8 @@ services:
     security_opt: ["no-new-privileges:true"]
     volumes:
       - service_data:/data
-      - link_data:/link
+      - worker_link_data:/link/worker:ro
+      - sender_link_data:/link/sender
       - console_link_data:/console
       - credential_data:/run/ezllmrouter:ro
     environment:
@@ -81,7 +88,8 @@ volumes:
   credential_data:
   receiver_data:
   service_data:
-  link_data:
+  worker_link_data:
+  sender_link_data:
   console_link_data:
 networks:
   local_private:

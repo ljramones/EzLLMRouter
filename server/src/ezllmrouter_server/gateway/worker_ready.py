@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 
-from .choice_b_wire import receive, send
+from .choice_b_wire import receive, send, socket_path
 
 
 def validate_identity(value, require_empty=True):
@@ -71,7 +71,7 @@ def probe(path, deadline_seconds=50.0, interval_seconds=0.2, require_empty=True)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--socket", type=Path, default=Path("/link/worker.sock"))
+    parser.add_argument("--socket", type=Path, default=socket_path("worker"))
     parser.add_argument("--deadline", type=float, default=50.0)
     parser.add_argument("--allow-activity", action="store_true")
     args = parser.parse_args()

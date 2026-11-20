@@ -9,6 +9,10 @@ import json
 import os
 from pathlib import Path
 import socket
+import signal
+import selectors
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -16,6 +20,7 @@ from unittest.mock import patch
 
 import httpx
 
+from ezllmrouter_server.diagnostic_journal import append_event, read_events
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.gateway import guard
 from ezllmrouter_server.gateway.choice_b_sender import (
@@ -73,6 +78,83 @@ class Stream(httpx.AsyncByteStream):
 
 
 class GatewayLifecycleTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "POSIX worker signal lifecycle")
+    def test_worker_sigterm_unwinds_main_and_returns_success(self):
+        root = Path(__file__).resolve().parents[2]
+        source = (
+            "import signal,sys\n"
+            f"sys.path.insert(0, {str(root)!r})\n"
+            "from worker import choice_b_worker as worker\n"
+            "def serve():\n"
+            " try:\n  print('READY',flush=True); signal.pause()\n"
+            " finally:\n  print('CLEANED',flush=True)\n"
+            "worker._serve=serve\nworker.main()\n"
+        )
+        process = subprocess.Popen(
+            [sys.executable, "-I", "-c", source],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            with selectors.DefaultSelector() as ready:
+                ready.register(process.stdout, selectors.EVENT_READ)
+                self.assertTrue(ready.select(timeout=5), "worker failed to become ready")
+                self.assertEqual(process.stdout.readline().strip(), "READY")
+            process.send_signal(signal.SIGTERM)
+            output, error = process.communicate(timeout=5)
+            self.assertEqual(process.returncode, 0, error)
+            self.assertIn("CLEANED", output)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate(timeout=5)
+
+    def test_diagnostic_rotation_is_bounded_and_counts_dropped_events(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "events.jsonl"
+            for number in range(50):
+                append_event(
+                    target, {"attempt_id": str(number), "padding": "x" * 50}, max_bytes=200
+                )
+            self.assertEqual(len(list(Path(directory).iterdir())), 3)
+            self.assertTrue(all(p.stat().st_size <= 200 for p in Path(directory).iterdir()))
+            rows = read_events(target)
+            self.assertEqual(rows[-1]["attempt_id"], "49")
+            self.assertLess(len(rows), 50)
+            append_event(target, {"attempt_id": "50"}, max_bytes=200)
+            self.assertEqual(read_events(target)[-1]["attempt_id"], "50")
+        before = guard.diagnostic_status()["dropped"]
+        with patch.object(guard._EVENT_QUEUE, "put_nowait", side_effect=guard.queue.Full):
+            guard.enqueue_event("unused", {"stage": "synthetic"})
+        self.assertEqual(guard.diagnostic_status()["dropped"], before + 1)
+
+    def test_expired_or_malformed_pre_send_context_is_definitely_rejected(self):
+        adapter = ChoiceBSenderAdapter.__new__(ChoiceBSenderAdapter)
+        adapter.provider_key = "sk-" + "x" * 40
+        for destination, expires in (
+            ({}, deadline()),
+            (invocation().plan["destination"], "2000-01-01T00:00:00Z"),
+        ):
+            context = invocation()
+            context.plan["destination"] = destination
+            context.plan["deadline"] = expires
+            with self.assertRaises(ContractError) as caught:
+                adapter.send_with_context(
+                    b"{}",
+                    1000,
+                    {},
+                    {
+                        "submission_id": context.submission_id,
+                        "attempt_id": context.attempt_id,
+                        "plan": context.plan,
+                        "projection": {},
+                        "fresh_check": lambda: None,
+                        "commit": lambda _: None,
+                    },
+                )
+            self.assertEqual(caught.exception.code, "FDC_REJECTED")
+
     def test_long_plan_budgets_are_not_cut_to_thirty_five_seconds(self):
         self.assertEqual(remaining_seconds(60000, deadline()), 60)
         self.assertEqual(remaining_seconds(MAX_ATTEMPT_TIMEOUT_MS, deadline()) > 60, True)

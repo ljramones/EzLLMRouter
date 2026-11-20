@@ -70,7 +70,7 @@ def main():
             vault.resolve(
                 connection_id, version
             )  # Fail startup if recovery material is missing or corrupt.
-        remove_stale_socket(Path("/link/sender.sock"))
+        remove_stale_socket(Path(os.environ.get("EZLLMROUTER_SENDER_SOCKET", "/link/sender.sock")))
         remove_stale_socket(Path("/console/operator.sock"))
         authority = LocalSendAuthority()
         registry = Registry(
@@ -125,7 +125,11 @@ def main():
         cleanup.callback(close_server, wire)
 
         def worker_status():
-            value = probe(Path("/link/worker.sock"), deadline_seconds=1, require_empty=False)
+            value = probe(
+                Path(os.environ.get("EZLLMROUTER_WORKER_SOCKET", "/link/worker.sock")),
+                deadline_seconds=1,
+                require_empty=False,
+            )
             return {
                 "state": "live",
                 "transport": value["selected_transport"],

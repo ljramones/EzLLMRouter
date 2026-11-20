@@ -6,6 +6,7 @@ import asyncio
 import atexit
 import hashlib
 import json
+import math
 import os
 import queue
 import threading
@@ -13,7 +14,6 @@ import time
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Callable
 
 import httpx
@@ -21,6 +21,9 @@ import httpx
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.errors import ServerError
 from ezllmrouter_server.observability import log_failure
+
+from ezllmrouter_server.runtime_resources import BoundedExecutor
+from ezllmrouter_server.diagnostic_journal import append_event
 
 from .proxy_recipe import PUBLIC_MODEL, require_public_destination
 
@@ -55,6 +58,7 @@ class Invocation:
     abandoned: bool = False
     execution_deadline: str | None = None
     authority_gate: object = field(default_factory=threading.RLock, repr=False)
+    check_executor: object | None = field(default=None, repr=False)
     relay_future: object | None = field(default=None, repr=False)
     observations: list[str] = field(default_factory=list)
 
@@ -63,12 +67,36 @@ class Invocation:
         return self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
 
 
+async def run_check(invocation, action):
+    """Keep blocking registry/SQLite checks off the provider response loop."""
+    executor = getattr(invocation, "check_executor", None)
+    if executor is None:
+        return await asyncio.to_thread(action)
+    return await asyncio.wrap_future(executor.submit(action))
+
+
+SDK_HEADERS = frozenset(
+    {
+        "x-stainless-lang",
+        "x-stainless-package-version",
+        "x-stainless-os",
+        "x-stainless-arch",
+        "x-stainless-runtime",
+        "x-stainless-runtime-version",
+        "x-stainless-retry-count",
+        "x-stainless-read-timeout",
+        "x-stainless-async",
+    }
+)
+
 ACTIVE: ContextVar[Invocation | None] = ContextVar(
     "ezllmrouter_dev04_gateway_invocation", default=None
 )
 _EVENT_QUEUE = queue.Queue(maxsize=1024)
 _EVENT_START = threading.Lock()
 _EVENT_WRITER = None
+_EVENT_COUNTS = {"written": 0, "dropped": 0, "write_errors": 0}
+_EVENT_COUNT_LOCK = threading.Lock()
 
 
 def _write_events():
@@ -78,11 +106,12 @@ def _write_events():
             if target is None:
                 row.set()
                 continue
-            with Path(target).open("a") as handle:
-                handle.write(json.dumps(row, separators=(",", ":")) + "\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-        except (OSError, ValueError):
+            append_event(target, row)
+            with _EVENT_COUNT_LOCK:
+                _EVENT_COUNTS["written"] += 1
+        except (OSError, ValueError, TypeError):
+            with _EVENT_COUNT_LOCK:
+                _EVENT_COUNTS["write_errors"] += 1
             log_failure("gateway.diagnostic_write_failed")
         finally:
             _EVENT_QUEUE.task_done()
@@ -103,7 +132,14 @@ def enqueue_event(target, row):
         _EVENT_QUEUE.put_nowait((target, row))
     except (queue.Full, RuntimeError):
         # Diagnostics neither authorize nor settle work.
+        with _EVENT_COUNT_LOCK:
+            _EVENT_COUNTS["dropped"] += 1
         return
+
+
+def diagnostic_status():
+    with _EVENT_COUNT_LOCK:
+        return {**_EVENT_COUNTS, "queued": _EVENT_QUEUE.qsize(), "capacity": _EVENT_QUEUE.maxsize}
 
 
 def flush_events(timeout=1):
@@ -309,7 +345,9 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
         "connection",
         "x-ezllmrouter-attempt",
     }
-    if any(name not in allowed_headers and not name.startswith("x-stainless-") for name in headers):
+    if any(name not in allowed_headers | SDK_HEADERS for name in headers) or any(
+        len(value) > 256 for name, value in headers.items() if name in SDK_HEADERS
+    ):
         raise GuardRejected()
     if headers.get("content-length") and headers["content-length"] != str(len(body)):
         raise GuardRejected()
@@ -341,10 +379,13 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
         read_timeout_ok = False
     if (
         type(timeout) is not dict
-        or not timeout
+        or set(timeout) != {"connect", "read", "write", "pool"}
         or not read_timeout_ok
         or any(
-            type(value) not in (int, float) or value <= 0 or value > limit
+            type(value) not in (int, float)
+            or not math.isfinite(value)
+            or value <= 0
+            or value > limit
             for value in timeout.values()
         )
     ):
@@ -370,6 +411,9 @@ class GuardTransport(httpx.AsyncBaseTransport):
 
     def __init__(self, lower: httpx.AsyncBaseTransport):
         self.lower = lower
+        self.checks = BoundedExecutor(
+            max_workers=2, max_pending=32, thread_name_prefix="ezllmrouter-send-check"
+        )
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         invocation = ACTIVE.get()
@@ -390,20 +434,25 @@ class GuardTransport(httpx.AsyncBaseTransport):
             # A named DEV-04 transport control, added before the complete check.
             request.headers["x-ezllmrouter-attempt"] = invocation.attempt_id
             receipt = check_request(request, invocation, body)
-            invocation.fresh_check()
-            with invocation.authority_gate:
-                if invocation.abandoned:
-                    raise GuardRejected("ATTEMPT_ABANDONED")
-                try:
-                    invocation.commit(receipt)
-                except Exception as exc:
-                    log_failure("gateway.guard.intent_commit_failed")
-                    raise GuardRejected("INTENT_PERSIST_FAILED") from exc
-                invocation.committed = True
-                invocation.observations.append("guard_commit_acknowledged")
-                _event(invocation, "commit_acknowledged")
-                invocation.released = True
-                _event(invocation, "released_to_lower_transport")
+            invocation.check_executor = self.checks
+
+            def authorize():
+                with invocation.authority_gate:
+                    if invocation.abandoned:
+                        raise GuardRejected("ATTEMPT_ABANDONED")
+                    invocation.fresh_check()
+                    try:
+                        invocation.commit(receipt)
+                    except Exception as exc:
+                        log_failure("gateway.guard.intent_commit_failed")
+                        raise GuardRejected("INTENT_PERSIST_FAILED") from exc
+                    invocation.committed = True
+                    invocation.observations.append("guard_commit_acknowledged")
+                    _event(invocation, "commit_acknowledged")
+                    invocation.released = True
+                    _event(invocation, "released_to_lower_transport")
+
+            await run_check(invocation, authorize)
             response = await self.lower.handle_async_request(request)
             invocation.response_received = True
             return response
@@ -425,4 +474,7 @@ class GuardTransport(httpx.AsyncBaseTransport):
             raise
 
     async def aclose(self):
-        await self.lower.aclose()
+        try:
+            await self.lower.aclose()
+        finally:
+            await asyncio.to_thread(self.checks.shutdown, wait=True, cancel_futures=True)

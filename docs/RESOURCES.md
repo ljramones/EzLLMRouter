@@ -12,6 +12,9 @@
 | Worker exchange | Connect, request and response share the caller's total attempt budget plus the existing bounded protocol allowance. Cancelling the worker's async exchange closes its socket immediately. |
 | Console ingress | Three seconds to connect upstream, five seconds per write, a 30-second idle wait and a six-minute connection lifetime. |
 | Operator wire tokens | A 30-minute lifetime and at most 4,096 live tokens per registry. Issue/authentication prune expired entries; capacity exhaustion preserves existing live credentials. |
+| Report readers | Four independent read-only WAL snapshots; ten-second SQL budget. Decoding/aggregation runs outside the writer lock. |
+| Trusted sender checks | Two threads, at most 32 running/queued checks. Fresh checks and the first nonblocking write share the authority gate on a check thread, leaving the response loop free. |
+| Gateway diagnostics | Queue of 1,024 rows, four-MiB files with two backups, at most 64 KiB per row. Overview exposes written/dropped/write-error counters. Cached bounded tails are diagnostic only. |
 | Browser sessions | At most four per principal and 64 per application; ordinary sessions occupy at most 56 slots. New logins replace that principal's oldest session. Eviction and shutdown revoke attached wire credentials. |
 
 Execution queue exhaustion records a definite failure before transmission, with a
@@ -41,10 +44,17 @@ Normal shutdown and failed startup unwind dependencies in this order:
 4. Close the sender's listener, transports and event loop.
 5. Close SQLite.
 
-Listeners shut down their active sockets and join their handler threads before
-returning from `server_close()`. Shutdown waits for accepted work and its existing
+Listeners shut down their active sockets and allow a combined five seconds for
+handler joins. A remaining handler raises a shutdown error; the rest of the owned
+cleanup still runs. Shutdown drains accepted Coordinator work and its existing
 I/O deadlines; it does not cancel a paid attempt merely because its caller stopped
 waiting. New requests cannot publish a session after operator shutdown starts.
+
+The isolated worker handles SIGTERM by unwinding its listener and loop ownership.
+It closes the worker loop before joining IPC handlers. Compose enables an init
+process for service/worker, gives the service 330 seconds to drain its maximum
+300-second attempt, and stops the worker afterward with a 15-second grace period.
+These container signal/timing behaviors require target Docker qualification.
 
 ## Gateway startup and cleanup
 

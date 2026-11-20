@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypedDict
 
+from .diagnostic_journal import read_events
 from .formatting import money, utc_timestamp
 from .identifiers import valid_identifier
 from .repositories import operator_projection as _queries
@@ -245,30 +246,18 @@ class OperatorProjection:
         if self.send_events_path is None:
             return {}
         observations = {}
-        try:
-            with self.send_events_path.open(encoding="utf-8") as stream:
-                for line in stream:
-                    try:
-                        row = json.loads(line)
-                    except (ValueError, TypeError):
-                        continue
-                    attempt = row.get("attempt_id") if type(row) is dict else None
-                    if not _identifier(attempt) or attempt not in attempt_ids:
-                        continue
-                    accepted = row.get("first_bytes_accepted_by_local_socket")
-                    count = row.get("first_acceptance_events")
-                    if (
-                        type(accepted) is not bool
-                        or type(count) is not int
-                        or count != int(accepted)
-                    ):
-                        observations[attempt] = None
-                    elif attempt in observations:
-                        observations[attempt] = None
-                    else:
-                        observations[attempt] = accepted
-        except (OSError, UnicodeError):
-            return {}
+        for row in read_events(self.send_events_path):
+            attempt = row.get("attempt_id")
+            if not _identifier(attempt) or attempt not in attempt_ids:
+                continue
+            accepted = row.get("first_bytes_accepted_by_local_socket")
+            count = row.get("first_acceptance_events")
+            if type(accepted) is not bool or type(count) is not int or count != int(accepted):
+                observations[attempt] = None
+            elif attempt in observations:
+                observations[attempt] = None
+            else:
+                observations[attempt] = accepted
         return observations
 
     def usage(self, principal_id=None):

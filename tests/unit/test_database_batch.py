@@ -653,7 +653,7 @@ class IntegrationQueryTests(unittest.TestCase):
         campaign = PersonalCampaign(self.store, self.registry)
         self.store.db.execute(
             "INSERT INTO personal_campaigns VALUES (?,?)",
-            ("campaign.batch", encode({"id": "campaign.batch", "state": "closed"})),
+            ("campaign.batch", encode({"id": "campaign.batch", "state": "closed", "revision": 1})),
         )
         for i in range(40):
             item = record(f"submission.campaign.{i}", f"attempt.campaign.{i}", f"step.campaign.{i}")
@@ -687,7 +687,9 @@ class IntegrationQueryTests(unittest.TestCase):
             for call in execute.call_args_list
             if call.args[0].sql.lstrip().startswith("SELECT")
         ]
-        self.assertEqual(len(reads), 1)
+        # One batched usage read plus constant campaign/epoch audit reads.
+        self.assertLessEqual(len(reads), 5)
+        self.assertEqual(sum("usage_revisions" in call.args[0].sql for call in reads), 1)
         self.assertEqual(
             self.store.db.execute(
                 "SELECT DISTINCT cost_decimal,usage_revision FROM personal_campaign_attempts"

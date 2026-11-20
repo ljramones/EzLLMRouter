@@ -415,6 +415,24 @@ def topology(env):
         env,
     )
     command(
+        "worker-socket-ownership",
+        compose_args(
+            "exec",
+            "-T",
+            "worker",
+            "python",
+            "-c",
+            "import errno,os,pathlib,json\n"
+            "path=pathlib.Path(os.environ['EZLLMROUTER_SENDER_SOCKET'])\n"
+            "assert path.is_socket()\n"
+            "try:\n path.unlink()\n"
+            "except OSError as error:\n assert error.errno in (errno.EROFS,errno.EACCES,errno.EPERM)\n"
+            "else:\n raise AssertionError('worker can remove trusted sender socket')\n"
+            "print(json.dumps({'sender_socket':'read-only in worker'}))",
+        ),
+        env,
+    )
+    command(
         "forged-attempt",
         compose_args(
             "exec",
@@ -422,8 +440,8 @@ def topology(env):
             "worker",
             "python",
             "-c",
-            "import socket,json,base64; from choice_b_wire import send,receive; "
-            "s=socket.socket(socket.AF_UNIX); s.connect('/link/sender.sock'); "
+            "import os,socket,json,base64; from choice_b_wire import send,receive; "
+            "s=socket.socket(socket.AF_UNIX); s.connect(os.environ['EZLLMROUTER_SENDER_SOCKET']); "
             "send(s,{'kind':'final_request','attempt_id':'attempt.'+'0'*32,'method':'POST',"
             "'url':'http://127.0.0.1:8766/v1/chat/completions','headers':[],"
             "'body_b64':base64.b64encode(b'{}').decode(),'timeout':{}}); "

@@ -18,7 +18,7 @@ import time
 import httpx
 
 from ezllmrouter_server.runtime_resources import BoundedUnixServer, LoopThread
-from .choice_b_wire import exchange, receive, remaining_seconds, send
+from .choice_b_wire import exchange, receive, remaining_seconds, send, socket_path
 from ezllmrouter_server.canonical import ContractError, SAFE
 from .provider_reply import candidate_from_provider
 from .guard import (
@@ -29,6 +29,8 @@ from .guard import (
     PROVIDER_URL,
     enqueue_event,
     flush_events,
+    run_check,
+    SDK_HEADERS,
 )
 from ezllmrouter_server.observability import log_failure
 from .owned_sender_transport import OwnedHTTPTransport
@@ -81,7 +83,7 @@ class ChoiceBSenderAdapter:
         self._closed = False
         self._socket_identity = None
         self.server = self.server_thread = None
-        self._socket_path = LINK / "sender.sock"
+        self._socket_path = socket_path("sender", LINK)
         if self._socket_path.exists() or self._socket_path.is_symlink():
             raise RuntimeError("Choice B sender socket collision")
         self._runtime = LoopThread("ezllmrouter-trusted-sender")
@@ -141,7 +143,10 @@ class ChoiceBSenderAdapter:
                     return await adapter.lower.handle_async_request(request)
                 if adapter.provider_registry is None:
                     raise GuardRejected("PROVIDER_UNAVAILABLE")
-                connection = adapter.provider_registry.connection(destination["connection_id"])
+                connection = await run_check(
+                    invocation,
+                    lambda: adapter.provider_registry.connection(destination["connection_id"]),
+                )
                 if (
                     not connection
                     or connection["status"] != "active"
@@ -217,15 +222,18 @@ class ChoiceBSenderAdapter:
 
     @staticmethod
     def _worker_command(value, timeout):
-        return exchange(LINK / "worker.sock", value, timeout)
+        return exchange(socket_path("worker", LINK), value, timeout)
 
     def send_with_context(self, prepared, timeout_ms, expected, guard_context):
-        actual = self.describe(prepared, timeout_ms, guard_context["plan"]["destination"])
-        if actual != expected:
-            raise ContractError("FDC_REJECTED", 409)
-        invocation = Invocation(**guard_context)
-        invocation.provider_key = self.provider_key
-        budget = remaining_seconds(timeout_ms, invocation.deadline)
+        try:
+            actual = self.describe(prepared, timeout_ms, guard_context["plan"]["destination"])
+            if actual != expected:
+                raise ValueError("prepared request differs")
+            invocation = Invocation(**guard_context)
+            invocation.provider_key = self.provider_key
+            budget = remaining_seconds(timeout_ms, invocation.deadline)
+        except (ValueError, TypeError, KeyError, TimeoutError) as exc:
+            raise ContractError("FDC_REJECTED", 409) from exc
         invocation.execution_deadline = min(
             datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")),
             datetime.now(timezone.utc) + timedelta(seconds=budget),
@@ -365,6 +373,21 @@ class ChoiceBSenderAdapter:
         header_map = httpx.Headers(headers)
         if header_map.get("authorization") != "Bearer " + WORKER_KEY:
             raise ValueError("worker placeholder authorization")
+        allowed = SDK_HEADERS | {
+            "host",
+            "authorization",
+            "content-type",
+            "content-length",
+            "accept",
+            "accept-encoding",
+            "user-agent",
+            "connection",
+        }
+        if (
+            any(name not in allowed for name in header_map)
+            or header_map.get("x-stainless-retry-count", "0") != "0"
+        ):
+            raise ValueError("worker header rejected")
         body = base64.b64decode(envelope["body_b64"], validate=True)
         if not body or len(body) > 65536:
             raise ValueError("relay body size")
@@ -390,8 +413,17 @@ class ChoiceBSenderAdapter:
         else:
             provider_key = self.provider_key
             invocation.provider_key = provider_key
-        header_map["authorization"] = "Bearer " + provider_key
-        header_map["accept-encoding"] = "identity"
+        # Provider credentials and forwarding headers belong to the trusted
+        # sender. SDK metadata never becomes an unaudited worker-to-provider field.
+        header_map = httpx.Headers(
+            {
+                "authorization": "Bearer " + provider_key,
+                "content-type": "application/json",
+                "accept": "application/json",
+                "accept-encoding": "identity",
+                "user-agent": "EzLLMRouter/trusted-sender",
+            }
+        )
         request = httpx.Request(
             "POST", expected_url, headers=header_map, content=body, extensions={"timeout": timeout}
         )

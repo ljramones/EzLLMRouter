@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import sqlite3
 import unittest
+import threading
 
 import httpx
 
@@ -96,6 +97,63 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
             )
         finally:
             ACTIVE.reset(token)
+
+    async def test_blocked_database_check_leaves_response_loop_responsive(self):
+        entered, release = threading.Event(), threading.Event()
+
+        def blocked():
+            entered.set()
+            if not release.wait(3):
+                raise AssertionError("check did not release")
+
+        context = invocation(fresh=blocked)
+        task = asyncio.create_task(self.send(context))
+        try:
+            for _ in range(100):
+                if entered.is_set():
+                    break
+                await asyncio.sleep(0.001)
+            self.assertTrue(entered.is_set())
+            # This task executes on the same loop while the SQLite callback is blocked.
+            self.assertFalse(task.done())
+            await asyncio.wait_for(asyncio.sleep(0), 0.1)
+        finally:
+            release.set()
+            await task
+
+    async def test_worker_timeout_keys_and_sdk_headers_cannot_enter_receipt(self):
+        for extra in ({"x-stainless-unreviewed": "private"},):
+            context = invocation()
+            token = ACTIVE.set(context)
+            try:
+                with self.assertRaises(GuardRejected):
+                    await self.client.post(
+                        PROVIDER_URL,
+                        json=provider_expectation(context.projection),
+                        headers={"Authorization": "Bearer " + context.provider_key, **extra},
+                    )
+                self.assertFalse(context.committed)
+            finally:
+                ACTIVE.reset(token)
+        for timeout in (
+            {"read": 1},
+            {"connect": 1, "read": 1, "write": 1, "pool": 1, "private": 1},
+            {"connect": 1, "read": float("nan"), "write": 1, "pool": 1},
+        ):
+            context = invocation()
+            token = ACTIVE.set(context)
+            try:
+                with self.assertRaises(GuardRejected):
+                    await self.client.post(
+                        PROVIDER_URL,
+                        json=provider_expectation(context.projection),
+                        headers={"Authorization": "Bearer " + context.provider_key},
+                        extensions={"timeout": timeout},
+                    )
+                self.assertFalse(context.committed)
+            finally:
+                ACTIVE.reset(token)
+        self.assertEqual(self.arrivals, [])
 
     async def test_valid_final_request_commits_before_one_lower_send(self):
         sequence = []

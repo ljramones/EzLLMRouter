@@ -6,6 +6,7 @@ import asyncio
 import socket
 import socketserver
 import threading
+import time
 
 MAX_CONNECTIONS = 32
 
@@ -168,6 +169,7 @@ class LoopThread:
 class BoundedThreadingMixIn(socketserver.ThreadingMixIn):
     daemon_threads = True
     block_on_close = False
+    handler_join_timeout = 5.0
 
     def __init__(self, *args, max_connections=MAX_CONNECTIONS, **kwargs):
         if type(max_connections) is not int or max_connections < 1:
@@ -226,9 +228,14 @@ class BoundedThreadingMixIn(socketserver.ThreadingMixIn):
         try:
             super().server_close()
         finally:
+            deadline = time.monotonic() + self.handler_join_timeout
             for thread in threads:
                 if thread is not threading.current_thread():
-                    thread.join()
+                    thread.join(timeout=max(0, deadline - time.monotonic()))
+            if any(
+                thread.is_alive() and thread is not threading.current_thread() for thread in threads
+            ):
+                raise RuntimeError("connection handlers did not stop within shutdown deadline")
 
 
 class BoundedUnixServer(BoundedThreadingMixIn, socketserver.UnixStreamServer):

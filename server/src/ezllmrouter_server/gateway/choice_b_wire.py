@@ -1,6 +1,8 @@
 """Small bounded JSON record used only by the DEV-04 Choice B Unix sockets."""
 
 import json
+import os
+from pathlib import Path
 import asyncio
 import socket
 import struct
@@ -10,6 +12,12 @@ from datetime import datetime, timezone
 
 LIMIT = 262144
 MAX_ATTEMPT_TIMEOUT_MS = 300_000
+
+
+def socket_path(kind, root=Path("/link")):
+    if kind not in ("sender", "worker"):
+        raise ValueError("unknown IPC role")
+    return Path(os.environ.get("EZLLMROUTER_" + kind.upper() + "_SOCKET", root / (kind + ".sock")))
 
 
 def remaining_seconds(timeout_ms, deadline):
