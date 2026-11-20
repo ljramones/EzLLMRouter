@@ -164,7 +164,16 @@ class HTTPStructureTests(UserHTTPFixture):
                 self.assertEqual(self.request("GET", path)[0], 404)
         self.assertEqual(self.request("GET", "/operator/v1/retrieval-usage")[0], 404)
         self.assertEqual(self.request("GET", "/operator/v1/activity?limit=2&limit=3")[0], 400)
-        self.assertEqual(self.request("GET", "/operator/v1/integration/vega-me?extra=1")[0], 400)
+        self.assertEqual(self.request("GET", "/operator/v1/integration/identity?extra=1")[0], 400)
+
+    def test_display_identity_route_requires_authentication_and_integration_profile(self):
+        path = "/operator/v1/integration/identity"
+        self.assertEqual(self.request("GET", path)[0], 401)
+        self.ready_admin()
+        status, _, body = self.request("GET", path)
+        self.assertEqual((status, body), (200, {"user": None}))
+        self.server.application.integration_only = False
+        self.assertEqual(self.request("GET", path)[0], 404)
 
     def test_mutation_rejections_precede_body_read_for_resolved_and_unknown_routes(self):
         paths = (

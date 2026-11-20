@@ -620,10 +620,11 @@ class CredentialHTTPTests(unittest.TestCase):
         self.assertEqual(session_status, 200)
         self.assertEqual(restored["csrf"], csrf)
         self.assertEqual(restored["principal_id"], "owner.local")
-        self.assertEqual(operator("GET", "/operator/v1/integration/vega-me")[0], 401)
-        self.assertEqual(
-            operator("GET", "/operator/v1/integration/vega-me", cookie=cookie)[2], {"user": None}
+        self.assertEqual(operator("GET", "/operator/v1/integration/identity")[0], 401)
+        identity_status, _, identity = operator(
+            "GET", "/operator/v1/integration/identity", cookie=cookie
         )
+        self.assertEqual((identity_status, identity), (200, {"user": None}))
         self.assertEqual(
             operator("GET", listing, cookie=cookie)[2]["items"][0]["account_id"],
             pending["account_id"],

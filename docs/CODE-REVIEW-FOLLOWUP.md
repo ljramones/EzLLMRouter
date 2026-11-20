@@ -313,6 +313,15 @@ Playwright type checking pass. The focused three-browser run was attempted but
 stopped at the executor's denied fixture bind; browser verification remains a
 CI gate. Evidence is under `.artifacts/code-review/build-context/`.
 
+The HTTP fixture follow-up passes the bound test port directly to the shared
+host client and replaces the credential journey's retired identity URL with
+`/operator/v1/integration/identity`. An offline route check covers authentication,
+disabled display lookup and the integration-profile boundary. Both reported
+failures reproduce against the prior fixtures; both corrected journeys pass
+with real HTTP handlers and parsers over socket pairs. All 28 focused offline
+checks, Ruff lint and formatting pass. Actual TCP verification remains a CI gate.
+Replay evidence is under `.artifacts/code-review/http-fixtures/`.
+
 ## Remaining review work
 
 The review is not fully resolved. Continue in this order:

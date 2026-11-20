@@ -182,13 +182,12 @@ class WebTests(unittest.TestCase):
         )
 
     def test_actual_host_consumer_parses_login_health_and_launch(self):
-        with patch.object(check, "PORT", self.port), patch.object(check, "ORIGIN", self.origin):
-            client = check.OperatorClient("p" * 40)
-            client.login()
-            self.assertEqual(client.health()["worker"]["state"], "live")
-            launch = client.launch("text")
-            self.assertEqual(launch["state"], "completed")
-            self.assertEqual(launch["submission_ids"], ["submission.demo"])
+        client = check.OperatorClient("p" * 40, port=self.port)
+        client.login()
+        self.assertEqual(client.health()["worker"]["state"], "live")
+        launch = client.launch("text")
+        self.assertEqual(launch["state"], "completed")
+        self.assertEqual(launch["submission_ids"], ["submission.demo"])
         self.assertEqual(self.runner.calls, ["text"])
 
     def test_unix_console_through_fixed_loopback_relay(self):
