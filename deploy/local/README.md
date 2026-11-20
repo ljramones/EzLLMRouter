@@ -22,7 +22,9 @@ uv run --locked python deploy/local/local_profile.py prepare
 Use the Python and Node versions recorded at the repository root. Source staging
 copies server packages, browser assets, worker code and the selected client
 artifacts into separate contexts. Build fingerprints include the active inputs.
-The worker context contains no service credentials or trusted service package.
+The worker context contains no service credentials. Its validation directory
+contains a temporary copy of the trusted code for build checks; BuildKit mounts that
+directory read-only for the checks, and it never enters the worker image.
 
 `local_profile.py` replaces the former `profile.py`, avoiding the standard-library
 profiler module collision. Docker uses its selected context by default; set
@@ -34,10 +36,17 @@ not prepare current source automatically. Run `prepare` separately when you inte
 to adopt changed source. This does not restart any instance on its own.
 
 BuildKit mounts the hash-checked wheel and client archives only during dependency
-installation. Service regressions run in a validation stage; the final service
+installation. The trusted service installs an 11-package subset of the reviewed
+worker lock plus the current client wheel. LiteLLM is absent from its dependency,
+validation and runtime stages, and both build and startup check that absence.
+Preparation scans every wheel archive for startup hooks before installation.
+Service regressions run in a validation stage; the final service
 image contains the server, console, local entry points and required fixture data,
 without test/evidence Python sources. The worker's target check is also a temporary
-build mount. Isolated owner proof commands mount their separately staged fixtures
+build mount. LiteLLM-dependent alternate-handler and usage-model checks run only
+in the worker build, with their temporary validation mount. The service validates
+the frozen HTTP interface counterexamples with a read-only wheel mount.
+Isolated owner proof commands mount their separately staged fixtures
 read-only; ordinary profile startup has no fixture-code mounts. These Dockerfile
 changes need qualification in the target Docker environment with the existing
 reviewed lock and pinned images.

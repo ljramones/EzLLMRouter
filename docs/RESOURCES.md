@@ -12,7 +12,7 @@
 | Worker exchange | Connect, request and response share the caller's total attempt budget plus the existing bounded protocol allowance. Cancelling the worker's async exchange closes its socket immediately. |
 | Console ingress | Three seconds to connect upstream, five seconds per write, a 30-second idle wait and a six-minute connection lifetime. |
 | Operator wire tokens | A 30-minute lifetime and at most 4,096 live tokens per registry. Issue/authentication prune expired entries; capacity exhaustion preserves existing live credentials. |
-| Browser sessions | The existing limit remains 64 sessions per operator application. Shutdown discards its sessions and revokes their wire credentials. |
+| Browser sessions | At most four per principal and 64 per application; ordinary sessions occupy at most 56 slots. New logins replace that principal's oldest session. Eviction and shutdown revoke attached wire credentials. |
 
 Execution queue exhaustion records a definite failure before transmission, with a
 recoverable work handle and HTTP 503. It does not invoke the provider or leave a

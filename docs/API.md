@@ -165,3 +165,33 @@ The immutable demo projection represents an existing attempt with no qualifying
 usage revision at its report cutoff as unknown usage and cost. Future attempts
 and revisions are excluded, and replacement counts stay non-negative. Workflow
 traversal rejects cycles and missing parents with a controlled validation error.
+
+## Personal campaign exposure recovery
+
+The execution console's owner can acknowledge an `unknown` or `over_bound`
+attempt on a paused or closed campaign. The API is
+`POST /operator/v1/personal-campaign`, with the normal authenticated owner
+session, allowed Origin and CSRF token:
+
+```json
+{
+  "action": "acknowledge_exposure",
+  "campaign_id": "personal.local.1",
+  "attempt_id": "attempt.example",
+  "expected_revision": 3,
+  "reason": "Owner accepts the unresolved possible charge"
+}
+```
+
+This records an audited reason and counts the full reservation, or a higher
+known cost, against that allowance. The state becomes `acknowledged`; no provider
+usage is fabricated and no provider request is sent. Request counts and attempt
+history remain intact. Live `reserved` attempts cannot be acknowledged. Repeating
+the same acknowledgement is idempotent. New recorded usage can later replace
+the conservative budget charge through the existing reconcile action.
+
+Activation remains a separate owner action. Closing an old campaign and explicitly
+authorizing a new allowance retains the old exposure without blocking the new
+campaign. The summary and console show `unresolved_prior_attempts`, including
+the campaign revision needed to acknowledge them. The accounting-only console
+does not expose personal execution campaign actions.

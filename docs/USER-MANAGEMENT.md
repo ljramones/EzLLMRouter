@@ -81,10 +81,16 @@ Passwords are stored as salted scrypt verifiers, separately from public identity
 records. They are excluded from API responses and audit entries. Browser sessions
 use HttpOnly, SameSite cookies, expire after 30 minutes, and recheck the current
 account state on each request. Writes require both the allowed Origin and a CSRF
-token. Named login throttling follows the case-insensitive username across client
-addresses, with at most 20 failed or pending attempts per rolling minute and two
-concurrent verifications per identity. There are eight concurrent login slots
+token. Named login throttling follows the backend peer and case-insensitive
+username together, with at most 20 failed or pending attempts per rolling minute
+and two concurrent verifications per pair. There are eight concurrent login slots
 across the application. A successful login clears that identity's failures.
+
+Each principal keeps at most four browser sessions. A new login replaces its
+oldest session and revokes that session's temporary execution credential. The
+application allows 64 sessions in total, with ordinary sessions limited to 56
+so administrators retain capacity. Reverse proxies must throttle their own
+clients before sharing backend connections.
 Credential-only login uses the client address. HTTPS proxy deployments must use
 the explicit Unix-socket policy described in [security](SECURITY.md); that policy
 adds Secure to session and clearing cookies.

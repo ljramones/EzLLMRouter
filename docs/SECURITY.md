@@ -26,15 +26,23 @@ fixed GET probes do not generate model work.
 
 ## Operator login and browser transport
 
-Named login throttling follows the canonical username across client addresses.
-Each identity allows at most 20 failed or pending attempts in a rolling minute,
+Named login throttling follows the backend peer and canonical username together.
+Each pair allows at most 20 failed or pending attempts in a rolling minute,
 two concurrent verifications, and eight concurrent logins across the application.
 Successful authentication clears that identity's failures. Credential-only login
 uses the client address instead. The throttle retains at most 512 identities as
-keyed hashes, without usernames or passwords; password hashing has its own
-two-operation concurrency limit. Expected authentication failures return safe
-errors without error-level stack traces. Unexpected failures return 503 and log
-only sanitized diagnostic metadata.
+keyed hashes, without usernames or passwords, evicting the oldest inactive entry
+when full. A failed login cannot block the same account from another peer.
+Reverse proxies must apply client-level throttling before shared backend
+connections; forwarded headers do not change the backend peer identity.
+Password hashing has its own two-operation concurrency limit. Expected operator
+login failures return safe errors without error-level stack traces. Unexpected
+failures return 503 and log only sanitized diagnostic metadata.
+
+Sessions are capped at four per principal and 64 per application. A new login
+replaces that principal's oldest session, revoking its attached wire credential.
+Non-administrator sessions occupy at most 56 slots; administrators can displace
+an ordinary session when the global table is full.
 
 The TCP console binds only to `127.0.0.1` and accepts loopback Host authorities.
 An embedding application can instead use `operator_web.serve` with a Unix socket
@@ -43,6 +51,10 @@ That mode requires matching Host and Origin values and sets Secure on both
 session creation and clearing cookies. Forwarded headers do not enable HTTPS
 mode. The stock launchers remain local-only; they do not expose a remote-hosting
 switch. Keep the proxy's backend socket private and restrict access at the proxy.
+
+Both HTTP servers close a connection before replying when a declared request
+body remains unread or its framing is ambiguous. Rejected body bytes cannot be
+interpreted as another request on a reused backend connection.
 
 The Unix socket directory must belong to the service user and must not be
 group- or other-writable. Socket permissions are set to `0600` after binding and

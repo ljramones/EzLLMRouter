@@ -32,7 +32,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP structural cleanup is recorded separately below. |
 | 4.3.1 / 4.3.2: HTTP structure | Resolve routes from explicit method/path metadata before dispatch, retaining authorization stages and selector validation. Consolidate the public asset allowlist and four CSV writers, replace dependency re-exports with direct imports, type application/session/lifecycle state and clarify operation-specific failure events. Twelve offline regressions exercise real handlers, route precedence, permission and body-read boundaries, export values and safe logging. An old/new handler comparison preserves status/error/header behavior across 1,033 requests and identical bytes for all four CSV exports. Strict typing expands to 31 modules. |
 | 5.4 / 5.5 / 5.9: Shared server logic | Share exact money/UTC rendering and a JSON engine with explicit policies while retaining wire-version limits, null/control/negative-zero behavior, canonical ordering and digest domains. Centralize active administrator checks, transactional authority/audit bookkeeping and usage revision appends. Introduce a domain-error root and named state types while preserving catch types, retry attributes and plain wire strings. Declare optional collaborators, inject guarded sending/readiness/successor ownership and remove attribution's Registry import cycle. Split the registry action dispatcher (785 to 33 lines), usage report (484 to 93), external report (302 to 100) and Coordinator admission/dispatch with typed snapshots. Add 24 offline regressions; strict typing covers 36 modules. |
-| 4.6 / 4.10 / 4.3.5: Login and operator transport policy | Bound failed and pending named logins by canonical username across peers, clear failures after success, and cap concurrent work and retained identities. Expected credential rejection has no ERROR stack trace; unexpected faults return a sanitized 503. TCP is loopback-only; an explicit HTTPS origin over a private Unix socket enables Secure session and clearing cookies. Owned socket directories and mode `0600` are checked before listening. Product-specific integration forwarding remains outside this security batch. |
+| 4.6 / 4.10 / 4.3.5: Login and operator transport policy | Bound failed and pending named logins by backend peer and canonical username, clear failures after success, evict old inactive throttle entries, and cap concurrent work and retained sessions. Expected operator-login rejection has no ERROR stack trace; unexpected faults return a sanitized 503. TCP is loopback-only; an explicit HTTPS origin over a private Unix socket enables Secure session and clearing cookies. Owned socket directories and mode `0600` are checked before listening. Product-specific integration forwarding remains outside this security batch. |
 | 4.2.7: Environment-based provider credentials | Trusted adapter constructors receive provider keys explicitly; invocation guards use only the bound credential. Production startup no longer exports service/provider secrets into the environment. Console bootstrap uses a private UTF-8 password file or explicit library argument and preserves password whitespace. Synthetic harness environment inputs and the worker's public placeholder remain fixture mechanisms. |
 | 4.3.5: Offline encryption maintenance, key retirement and filesystems | Shared service leases exclude exclusive rotation, resume, retirement and local backup before key changes. Retirement verifies all stored references and decryptability, rejects active/referenced keys, and requires explicit backup-dependency acknowledgment. Keyring generation caching avoids repeated parsing and cipher construction while checking metadata every operation. Atomic publication reports whether a fault followed publication; required local filesystem guarantees and recovery limits are documented. |
 | 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. The quality batch expanded strict mypy to 28 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
@@ -284,8 +284,10 @@ The full runner passes 820 cases and seven component scripts; 415 Python files
 pass formatting, and strict typing covers 51 modules. Both built wheels pass 204
 selected tests; all 117 packaged files match source and imported namespaces come
 from the extracted wheels. Positive and negative installed-wheel consumer checks
-verify Python typing. An isolated copy of the validation-stage inputs passes 15
-regressions and imports its HTTP test with the built client; Docker build execution
+verify Python typing. An isolated copy of selected validation-stage inputs passed
+15 regressions and imported its HTTP test with the built client. That check did
+not execute the Dockerfile's full validation command; two stale module names
+remained and were subsequently caught by report 3. Docker build execution
 remains a separate target check. Installed JavaScript, packaged TypeScript 5.9.3
 consumer checks and Playwright type checking pass. The updated actual HTTP test
 was attempted here and listener binding is still denied. Evidence, path maps and
@@ -322,19 +324,55 @@ with real HTTP handlers and parsers over socket pairs. All 28 focused offline
 checks, Ruff lint and formatting pass. Actual TCP verification remains a CI gate.
 Replay evidence is under `.artifacts/code-review/http-fixtures/`.
 
+## Report 3 release fixes
+
+The six before-release groups in the 2026-11-20 review are implemented. This is
+a source/test result, not a completed deployment or release qualification.
+
+| Review item | Change and evidence |
+| --- | --- |
+| 3.1: Compressed paid responses | The trusted relay requests identity encoding. The Responses lower adapter removes encoding and length headers after bounded decoding, so a compressed provider reply is decoded once. Gzip/deflate regressions retain candidate text and usage, enforce the decoded cap and close streams. Real TLS fixture cases are also registered. |
+| 3.2: Service build validation | Dockerfile test names match the staged files. An offline check resolves every operator validation module against the staging list. The exact four-module Dockerfile list passes eight tests on disposable staged sources over socket pairs; this is not a Docker build. The earlier validation claim above is corrected. |
+| 3.3: Unread request bodies | Both servers inherit central body-consumption tracking and close before a response when declared body bytes remain or framing is ambiguous. Actual HTTP parser/socket-pair tests cover rejected POST bodies, GET bodies, duplicate lengths, transfer encoding and legitimate pipelining after a fully consumed body. |
+| 4.3.1–4.3.2: Login/session exhaustion | Throttling uses a backend peer/account pair with inactive-entry eviction. Successful logins replace the principal's oldest session at a four-session limit. Ordinary sessions occupy at most 56 of 64 slots; administrator admission can displace an ordinary session. Evicted wire tokens are revoked outside the session lock. Proxy client-level throttling remains the proxy's responsibility. |
+| 4.2.1: Trusted dependency isolation | The service installs an 11-package subset of the existing reviewed worker lock plus the client wheel. LiteLLM is absent from service dependency, validation and runtime stages, with build/startup assertions. Preparation inspects dependency and client wheel archives before installation. Both previously orphaned frozen checks now name real Docker runners: the service's frozen interface counterexamples and the worker's usage-model test. LiteLLM-dependent checks use a temporary read-only worker validation mount. |
+| 4.1.1–4.1.2: Campaign recovery and service ownership | Owner-only exposure acknowledgement records a reason, retains the full bound or higher known cost, leaves provider usage unchanged and preserves attempt counts/audits. Closed-campaign exposure remains visible without blocking a new explicit allowance; late corrections remain reconcilable. Admission and summary share exposure arithmetic. Writable stores take an exclusive lease; a second process is rejected before recovery. Read-only offline tools share leases after the writer stops. |
+
+Verification passes 846 unittest cases across 103 module registrations and two
+script suites, seven console scripts, lint, formatting on 417 files, and strict
+mypy on 51 files. Built server/client wheels pass 245 selected tests; all 117
+checked package files match source and imported namespaces come from those wheels.
+The runtime lock resolves offline for CPython 3.12 Linux ARM64 using the existing
+reviewed artifacts. All 117 wheel hashes match and archive inspection finds no
+startup hooks. The three frozen interface counterexamples pass against the shipped
+HTTP dependency versions. Evidence is under `.artifacts/code-review/report-3/`.
+
+Actual image builds, the worker's LiteLLM-dependent checks, real listener/TLS
+fixtures and browser journeys still require their target environments. No
+existing profile was restarted, no provider inference was invoked, and the
+frozen worker requirements, wheel inventory and migration bytes are unchanged.
+
 ## Remaining review work
 
 The review is not fully resolved. Continue in this order:
 
-1. **Broader typing:** extend strict checks into remaining services and clients.
-   The current 51-module scope is not full coverage (4.3.2).
-2. **Validation and the testing roadmap:** rerun browsers and actual HTTP/TLS
-   fixtures after the fixes, confirm credential initialization on the corrected
-   ARM64 CI runner, qualify Rust and the isolated frozen worker in their target
-   environments, and measure subsystem coverage. Complete process-termination
-   recovery, backup/restore, supported-platform, generated-input and sustained
-   performance testing. Existing synthetic database benchmarks cover only part
-   of that roadmap; they do not establish production capacity.
+1. **Target qualification:** build and exercise the changed service and worker
+   images with the reviewed inputs; rerun browser and actual HTTP/TLS fixtures,
+   credential initialization, Rust and the frozen worker in their target environments.
+2. **Blocking work:** move large reports, sender database work and password
+   verification off shared locks/event loops (report 3: 4.1.3, 4.2.2, 4.3.3).
+3. **Logging:** treat routine wire rejections and idle closes appropriately and
+   derive route labels from the route table (4.3.4–4.3.5).
+4. **Dependency and CI coverage:** declare server gateway extras, exercise the
+   shipped lock in CI and harden remaining bootstrap/action/toolchain inputs
+   (4.4.1–4.4.3). Frozen checks now have runners; they still need target execution.
+5. **Clients:** distinguish local JS serialization failures from uncertain sends,
+   add a JS total deadline, and address the remaining parity/error-mapping details
+   (4.5.1–4.5.3).
+6. **Typing and the testing roadmap:** extend the current 51-file strict scope
+   and measure subsystem coverage. Complete process-termination recovery,
+   backup/restore, platform, generated-input and sustained performance tests.
+   Existing synthetic benchmarks do not establish production capacity.
 
 Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts

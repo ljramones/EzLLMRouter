@@ -59,8 +59,9 @@ register accounts, discover models or call a provider. Its output contains only
 the scope, active key identifier and number of rewritten secrets.
 
 Maintenance acquires an exclusive instance lease before opening the database or
-changing keys. Every current `SQLiteStore` holds a shared lease until it closes;
-rotation, resume, retirement and `integration_local --backup` refuse a live
+changing keys. Every writable `SQLiteStore` holds an exclusive lease until it
+closes; read-only offline tools hold shared leases. A second service, rotation,
+resume, retirement and `integration_local --backup` refuse a live
 instance. The lease is the canonical database path plus `.instance.lock`, owned
 by the service user with mode `0600`. Never remove that file while any owner may
 still be running: replacing its inode would bypass exclusion. Older server
