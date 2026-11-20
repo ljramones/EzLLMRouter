@@ -144,11 +144,14 @@ def _visible(record, scope):
     )
 
 
-def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
+def usage_costs(
+    registry, scope, filters=None, *, page=1, limit=50, attempt_page=1, attempt_limit=100
+):
     """Apply visibility before any count, aggregate, table, or export."""
     filters = filters or {}
+    _report_window(filters, attempt_limit, attempt_page)
     start, end, cutoff, cutoff_text = _report_window(filters, limit, page)
-    raw, latest, runs, outcomes, connections = _read_usage_snapshot(cutoff_text, registry)
+    raw, latest, runs, outcomes, connections = _read_usage_snapshot(cutoff_text, registry, scope)
     all_items = _visible_attempts(connections, cutoff, latest, raw, scope)
     items = [
         item
@@ -230,7 +233,8 @@ def usage_costs(registry, scope, filters=None, *, page=1, limit=50):
         "cohorts": cohort_rows,
         "cohort_filter_basis": "task_start; full descendant attempt cost through cutoff",
         "workflows": workflows,
-        "attempts": items,
+        "attempts": items[(attempt_page - 1) * attempt_limit : attempt_page * attempt_limit],
+        "attempt_pagination": {"page": attempt_page, "limit": attempt_limit, "total": len(items)},
         "attribution_coverage": attribution_coverage,
         "outcome_coverage": {
             "reported_root_runs": sum(run_id in outcomes for run_id in cohort_root_ids),
@@ -611,20 +615,32 @@ def _visible_attempts(connections, cutoff, latest, raw, scope):
     return all_items
 
 
-def _read_usage_snapshot(cutoff_text, registry):
-    with registry.store.database.read():
-        db = registry.store.database
-        raw = db.execute(_queries.USAGE_COSTS_SELECT_SUBMISSIONS).fetchall()
-        revisions = db.execute(
-            _queries.USAGE_COSTS_SELECT_USAGE_REVISIONS, (cutoff_text,)
+def _read_usage_snapshot(cutoff_text, registry, scope):
+    parameters = (cutoff_text, scope["role"], scope["principal_id"], scope["principal_id"])
+    with registry.store.database.snapshot() as db:
+        raw = db.execute(_queries.USAGE_COSTS_SELECT_SUBMISSIONS, parameters).fetchall()
+        revisions = db.execute(_queries.USAGE_COSTS_SELECT_USAGE_REVISIONS, parameters).fetchall()
+        run_rows = db.execute(_queries.USAGE_COSTS_SELECT_ATTRIBUTION_RUNS).fetchall()
+        outcome_rows = db.execute(
+            _queries.LATEST_OUTCOMES_SELECT_ATTRIBUTION_OUTCOMES, (cutoff_text,)
         ).fetchall()
-        runs = {
-            r["run_id"]: r
-            for (value,) in db.execute(_queries.USAGE_COSTS_SELECT_ATTRIBUTION_RUNS).fetchall()
-            for r in (json.loads(value),)
-            if r["created_at"] <= cutoff_text
-        }
-        outcomes = _latest_outcomes(db, cutoff_text)
+    # JSON decoding and aggregation hold neither the writer lock nor the snapshot.
+    runs = {
+        r["run_id"]: r
+        for (value,) in run_rows
+        for r in (json.loads(value),)
+        if r["created_at"] <= cutoff_text
+    }
+    outcomes = {}
+    for value, at in outcome_rows:
+        event = json.loads(value)
+        if event["kind"] == "task_outcome":
+            outcomes[event["run_id"]] = {
+                "verdict": event["verdict"],
+                "recorded_at": at,
+                "evaluation_ref": event["evaluator_version"],
+                "revision": event["subject_revision"],
+            }
     latest = {attempt: json.loads(value) for attempt, value in revisions}
     connections = {c["connection_id"]: c for c in registry.list_connections()}
     return raw, latest, runs, outcomes, connections

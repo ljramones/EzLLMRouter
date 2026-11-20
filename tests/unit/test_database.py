@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+import threading
 from unittest.mock import patch
 
 from ezllmrouter_server import schema
@@ -25,6 +26,36 @@ class DatabaseTests(unittest.TestCase):
         value = SQLiteStore(self.path)
         self.addCleanup(value.close)
         return value
+
+    def test_report_snapshot_does_not_hold_writer_and_remains_consistent(self):
+        store = self.store()
+        with store.database.snapshot() as snapshot:
+            before = snapshot.execute(Query("SELECT COUNT(*) FROM registry_meta")).fetchone()
+            done = threading.Event()
+
+            def write():
+                store.database.transaction(
+                    lambda: store.database.execute(
+                        Query("INSERT INTO registry_meta VALUES ('report-test','1')")
+                    )
+                )
+                done.set()
+
+            writer = threading.Thread(target=write)
+            writer.start()
+            self.assertTrue(done.wait(1), "report reader blocked the writer")
+            writer.join(1)
+            self.assertEqual(
+                snapshot.execute(Query("SELECT COUNT(*) FROM registry_meta")).fetchone(), before
+            )
+            with self.assertRaises(sqlite3.OperationalError):
+                snapshot.execute(Query("DELETE FROM registry_meta"))
+        self.assertEqual(
+            store.database.execute(
+                Query("SELECT value FROM registry_meta WHERE key='report-test'")
+            ).fetchone(),
+            ("1",),
+        )
 
     def test_current_schema_contains_all_domains_and_records_each_revision(self):
         store = self.store()

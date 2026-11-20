@@ -223,6 +223,25 @@ class ReportingTests(unittest.TestCase):
             selected,
         )
 
+    def test_attempt_pages_preserve_complete_totals_and_cohorts(self):
+        full = self.report()
+        pages = [
+            usage_costs(
+                self.registry,
+                {"role": "registry_admin", "principal_id": "owner.local"},
+                {"cutoff": full["cutoff"]},
+                attempt_page=page,
+                attempt_limit=3,
+            )
+            for page in range(1, 5)
+        ]
+        self.assertEqual([row for page in pages for row in page["attempts"]], full["attempts"])
+        for page in pages:
+            self.assertLessEqual(len(page["attempts"]), 3)
+            self.assertEqual(page["total"], full["total"])
+            self.assertEqual(page["cohorts"], full["cohorts"])
+            self.assertEqual(page["attempt_pagination"]["total"], 10)
+
     def test_fixture_conservation_replacement_and_cohorts(self):
         report = self.report()
         self.assertEqual(report["total"]["attempts"], 10)

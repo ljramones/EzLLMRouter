@@ -1,7 +1,7 @@
 "use strict";
 // Every number and row comes from one server-authorized report and cutoff.
 const dev09TechnicalUsage=usage;
-const costUi={tab:"overview",filters:{},page:1,agent:null};
+const costUi={tab:"overview",filters:{},page:1,attemptPage:1,agent:null};
 const dev12Ui={filters:{},selected:null};
 const costExact=value=>value===null||value===undefined?"Unknown":String(value);
 const costState=value=>String(value||"Unknown").replaceAll("_"," ").replace(/^./,x=>x.toUpperCase());
@@ -10,7 +10,7 @@ const costAmounts=totals=>{
   return (parts.length?parts.join(" + "):"No known amount")+` · ${totals.unknown_cost_attempts} unknown-cost attempt(s)`+
     (totals.estimated_attempts?` · ${totals.estimated_attempts} estimated`:"");
 };
-function costFilterQuery(extra={}){const query=new URLSearchParams({page:String(costUi.page),limit:"50"});
+function costFilterQuery(extra={}){const query=new URLSearchParams({page:String(costUi.page),limit:"50",attempt_page:String(costUi.attemptPage),attempt_limit:"100"});
   for(const [key,value] of Object.entries({...costUi.filters,...extra}))if(value)query.set(key,value);
   return query;}
 function costLink(label,callback){const button=node("button",label,"primary-link");button.type="button";button.onclick=callback;return button;}
@@ -62,12 +62,12 @@ function costFilterControls(root,report,labels){const box=node("details",undefin
     else label.append(input);
     controls[key]=input;tools.append(label);}
   box.append(tools);const actions=crudActions(crudButton("Apply filters",()=>{costUi.filters=Object.fromEntries(
-      Object.entries(controls).map(([key,input])=>[key,input.value.trim()]).filter(([,value])=>value));costUi.page=1;render();},"action"),
-    crudButton("Clear",()=>{costUi.filters={};costUi.page=1;costUi.agent=null;render();}));
+      Object.entries(controls).map(([key,input])=>[key,input.value.trim()]).filter(([,value])=>value));costUi.page=1;costUi.attemptPage=1;render();},"action"),
+    crudButton("Clear",()=>{costUi.filters={};costUi.page=1;costUi.attemptPage=1;costUi.agent=null;render();}));
   box.append(actions);root.append(box);
 }
 function costExportActions(root){const box=crudActions();
-  for(const format of ["csv","json"]){box.append(crudButton("Export "+format.toUpperCase(),async()=>{
+  for(const format of ["csv","json"]){box.append(crudButton("Export attempt page · "+format.toUpperCase(),async()=>{
     try{const query=costFilterQuery({export:format}),response=await fetch("/operator/v1/usage-costs?"+query,
         {credentials:"same-origin",cache:"no-store",redirect:"error"});
       if(!response.ok)throw Error("Export request failed: "+response.status);
@@ -134,7 +134,7 @@ async function sourceConnectionCost(connection){
     definition([["Attempts",report.total.attempts],["Known cost subtotal",costAmounts(report.total)],
       ["Cost coverage",report.total.cost_coverage],["Scope",report.scope]]),
     crudActions(crudButton("Open filtered Usage & Costs",()=>{costUi.filters={connection_id:connection.connection_id};
-      costUi.tab="providers";costUi.page=1;state.view="usage";render();})));
+      costUi.tab="providers";costUi.page=1;costUi.attemptPage=1;state.view="usage";render();})));
   return box;
 }
 async function sourceProviderCost(providerId){
@@ -143,7 +143,7 @@ async function sourceProviderCost(providerId){
   box.append(definition([["Recorded attempts",report.total.attempts],
     ["Known cost subtotal",costAmounts(report.total)],["Cost coverage",report.total.cost_coverage]]),
     crudActions(crudButton("Open filtered Usage & Costs",()=>{costUi.filters={provider:providerId};
-      costUi.tab="providers";costUi.page=1;state.view="usage";render();})));
+      costUi.tab="providers";costUi.page=1;costUi.attemptPage=1;state.view="usage";render();})));
   return box;
 }
 function dev12Query(extra={}){const query=new URLSearchParams();for(const [key,value] of Object.entries({...dev12Ui.filters,...extra}))if(value)query.set(key,value);return query;}
@@ -234,6 +234,12 @@ usage=async function dev09UsageCosts({embedded=false}={}){
   if(costUi.tab==="technical")return dev09TechnicalUsage();
   const [report,labels]=await Promise.all([api("/operator/v1/usage-costs?"+costFilterQuery()),loadViewLabels()]);
   costFilterControls(root,report,labels);costExportActions(root);
+  const attemptPage=report.attempt_pagination;
+  if(attemptPage){const pages=Math.max(1,Math.ceil(attemptPage.total/attemptPage.limit)),controls=crudActions();
+    controls.append(node("p",`Attempt page ${attemptPage.page} of ${pages} · ${attemptPage.total} attempts. Totals include all matching attempts.`));
+    if(attemptPage.page>1)controls.append(crudButton("Previous attempts",()=>{costUi.attemptPage--;render();}));
+    if(attemptPage.page<pages)controls.append(crudButton("Next attempts",()=>{costUi.attemptPage++;render();}));
+    root.append(controls);}
   const total=report.total;
   if(!total.attempts){
     const empty=panel("No recorded attempts");empty.append(node("p",

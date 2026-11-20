@@ -107,7 +107,21 @@ Ingestion walks the affected lineage component with indexed predecessor lookups;
 cycle detection visits each edge once. Unrelated attempts do not add work to that
 validation. Missing predecessors, late starts, lineage overrides and snapshot
 references remain supported. Snapshot binding checks select only matching references.
-Full dataset reports and exports still read their requested dataset in full.
+External integration dataset reports and exports still read their requested
+dataset in full. The controlled usage-cost report instead uses a store-owned,
+read-only WAL snapshot, with at most four concurrent report readers and a ten-second
+SQL execution budget. It selects visibility, cutoff and latest usage revisions in
+SQL, then releases the snapshot before JSON decoding and aggregation. Writers do
+not wait for those report readers. In-memory test stores use their existing read
+scope. Shutdown interrupts and drains readers before releasing the service lease.
+
+Usage-cost attempts and exports use `attempt_page` (1–10,000) and `attempt_limit`
+(1–100, default 100). `attempt_pagination` includes the total count. Agent inventory
+retains its independent `page`/`limit` fields. Totals and cohorts cover all matching
+attempts, regardless of the displayed page. Cohort costs retain full descendant
+costs through the cutoff, including attempts outside the task-start interval;
+those aggregates still require all visible attempt metadata. Exports contain the
+selected attempt page, and the console labels this explicitly.
 
 Snapshot and successor-result expiry use indexed cutoffs and preserve identity,
 digest and accounting evidence. Maintenance checks for due work before taking a

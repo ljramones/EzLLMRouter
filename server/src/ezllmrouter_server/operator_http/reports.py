@@ -159,6 +159,8 @@ class ReportsRoutes:
             "task_class",
             "purpose",
             "agent_search",
+            "attempt_page",
+            "attempt_limit",
             "page",
             "limit",
             "export",
@@ -167,7 +169,7 @@ class ReportsRoutes:
         selected = {
             key: values[0]
             for key, values in query.items()
-            if key not in ("page", "limit", "export")
+            if key not in ("page", "limit", "export", "attempt_page", "attempt_limit")
         }
         report = usage_costs(
             self.application.registry,
@@ -175,6 +177,8 @@ class ReportsRoutes:
             selected,
             page=int(query.get("page", ["1"])[0]),
             limit=int(query.get("limit", ["50"])[0]),
+            attempt_page=int(query.get("attempt_page", ["1"])[0]),
+            attempt_limit=int(query.get("attempt_limit", ["100"])[0]),
         )
         export = query.get("export", [None])[0]
         if export == "json":

@@ -6,6 +6,8 @@ import json
 import sqlite3
 import threading
 import uuid
+import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
@@ -68,7 +70,8 @@ class SQLiteStore:
             finally:
                 self._lease.close()
             raise
-        self.database = Database(self.db, self._lock, self._transaction)
+        self._init_readers()
+        self.database = Database(self.db, self._lock, self._transaction, self._snapshot)
         from .schema import initialize
 
         try:
@@ -99,6 +102,7 @@ class SQLiteStore:
         result = cls.__new__(cls)
         result.path = str(path)
         result._lock = threading.RLock()
+        result._init_readers()
         result._lease = InstanceLease(path, exclusive=maintenance or not read_only)
         connection = None
         try:
@@ -126,12 +130,57 @@ class SQLiteStore:
         except BaseException:
             result.close()
             raise
-        result.database = Database(result.db, result._lock, result._transaction)
+        result.database = Database(result.db, result._lock, result._transaction, result._snapshot)
         return result
 
-    def close(self):
+    def _init_readers(self):
+        self._readers_changed = threading.Condition()
+        self._readers = set()
+        self._closing = False
+
+    @contextmanager
+    def _snapshot(self):
+        if self.path == ":memory:":
+            with self.database.read() as db:
+                yield db
+            return
+        with self._readers_changed:
+            if self._closing or len(self._readers) >= 4:
+                raise RuntimeError("report reader unavailable")
+            connection = sqlite3.connect(
+                Path(self.path).resolve().as_uri() + "?mode=ro",
+                uri=True,
+                check_same_thread=False,
+                isolation_level=None,
+                timeout=1,
+            )
+            self._readers.add(connection)
+        deadline = time.monotonic() + 10
+        connection.set_progress_handler(lambda: time.monotonic() >= deadline, 1000)
+
+        def no_write(action):
+            raise RuntimeError("read-only reporting snapshot")
+
+        db = Database(connection, threading.RLock(), no_write)
         try:
-            self.db.close()
+            with db.read():
+                yield db
+        finally:
+            with self._readers_changed:
+                connection.close()
+                self._readers.remove(connection)
+                self._readers_changed.notify_all()
+
+    def close(self):
+        with self._readers_changed:
+            self._closing = True
+            for connection in self._readers:
+                connection.interrupt()
+            if not self._readers_changed.wait_for(lambda: not self._readers, timeout=5):
+                raise RuntimeError("report readers did not stop; database lease retained")
+        try:
+            with self._lock:
+                self.db.close()
         finally:
             self._lease.close()
 

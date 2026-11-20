@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 import re
 import sqlite3
@@ -66,12 +66,21 @@ class Result:
 
 class Database:
     def __init__(
-        self, connection: sqlite3.Connection, gate: threading.RLock, transaction: Transaction
+        self,
+        connection: sqlite3.Connection,
+        gate: threading.RLock,
+        transaction: Transaction,
+        snapshot: Callable[[], AbstractContextManager[Database]] | None = None,
     ) -> None:
         self._connection = connection
         self._gate = gate
         self._transaction = transaction
         self._read_depth = 0
+        self._snapshot = snapshot
+
+    def snapshot(self) -> AbstractContextManager[Database]:
+        """An independent, bounded read snapshot when supported by the store."""
+        return self._snapshot() if self._snapshot is not None else self.read()
 
     @contextmanager
     def read(self) -> Iterator[Database]:
