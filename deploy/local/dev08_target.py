@@ -104,7 +104,7 @@ def main():
             completed_at=datetime.now(timezone.utc).isoformat(),
         )
         (run / "failure.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
-        raise SystemExit("DEV-08 target failed: " + str(exc) + "; evidence: " + str(run))
+        raise SystemExit("DEV-08 target failed: " + str(exc) + "; evidence: " + str(run)) from exc
 
 
 if __name__ == "__main__":

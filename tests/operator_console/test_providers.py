@@ -5,7 +5,6 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import pathlib
-import socket
 import ssl
 import subprocess
 import sys

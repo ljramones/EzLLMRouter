@@ -7,7 +7,6 @@ Importing this module has no target side effects.
 
 from __future__ import annotations
 
-from base64 import b64encode
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -17,7 +16,6 @@ import json
 import os
 from pathlib import Path
 import sqlite3
-import subprocess
 import sys
 import threading
 import time
@@ -125,6 +123,7 @@ def original_snapshot(root):
                             ).description
                         ],
                         row,
+                        strict=True,
                     )
                 )
                 for row in db.execute("SELECT * FROM " + name)
@@ -565,7 +564,7 @@ def retained_rows(runtime):
         for name in names:
             cursor = runtime.store.db.execute("SELECT * FROM " + name + " ORDER BY rowid")
             columns = [column[0] for column in cursor.description]
-            result[name] = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            result[name] = [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
     return result
 
 

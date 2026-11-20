@@ -28,7 +28,8 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 5.1: Session lock held across database work | Authentication snapshots sessions under a short dictionary lock, reads account state under the database gate, then verifies session identity and expiry before publishing. Login rechecks account/auth version after password verification. Database operations, wire-token creation/revocation and response writes run outside the session lock. Thread regressions cover logout, expiry, password change/reset, permission changes and replacement races. Expired/invalid sessions and rejected logins discard their associated wire credentials. |
 | 4.3.5: Python client has no total response deadline | Both clients default to a configurable 60-second HTTP budget. The owned HTTPX transport clamps pool/connect/TLS/write/read operations to the remaining monotonic budget through public HTTPcore interfaces, including incomplete headers and slow bodies. Uncoalesced response chunks also bound cooperative injected streams. Socket-pair tests exercise real blocked reads without listeners; deterministic tests cover all four protocol paths, connection reuse, independent concurrent budgets and query-first errors without replay. OS DNS can overrun, but late connections are closed before sending; custom transports own their blocking I/O deadlines. |
 | 4.3.5: Provisioning deletes an issued credential after interruption | Reserve credential custody and sync an operation receipt before issuance. Preserve both after possible issuance, including Ctrl-C, broken output, failed fsync, malformed/lost replies and connection-close failure. Existing files block another invocation. Only failures before issuance remove unused files created by that invocation. An uncertain reply can still leave an empty/partial credential, requiring revision inspection and explicit rotation. |
-| 4.3.2: Imported types erased by mypy skip | Use `follow_imports="silent"` and include the new deadline transport in the strict eight-file scope. Broader lint rules, formatting, test linting and further module coverage remain open. |
+| 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP routing, shared exports and duplication still need structural cleanup. |
+| 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. Strict mypy now covers 26 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -36,7 +37,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 606 unittest cases plus
+The expanded offline Python/component runner passes: 610 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -88,6 +89,16 @@ cases using isolated package imports. Separate baseline probes confirm the old
 reader accepts a stream beyond the new default budget and the old provisioning
 command deletes the saved credential after broken output.
 
+The quality batch has zero Ruff diagnostics in the expanded scope and 406 Python
+files passing the formatter. The original broader-rule scan reported 270
+diagnostics; fixes preserve explicit shared exports instead of deleting imports
+that route modules consume. New annotations leave SQL text, contract resources,
+applied migrations and frozen dependency inputs unchanged. The four added quality
+regressions run the real lint/format/mypy commands without model calls or sockets.
+Loopback TLS tests now assert specific guard and certificate errors, but still
+require their separate target run. Browser and frozen-worker qualification have
+not been rerun for the formatting/lint changes.
+
 The local deployment evidence driver now observes the durable guard receipt
 and held receiver request before revocation. It no longer reads private pool
 queues; any new deployment run must validate this before-first-write evidence
@@ -113,14 +124,15 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Widen lint/type coverage incrementally; the current strict mypy gate still
-   covers only its explicit file list (4.3.2).
-2. Address full scans, N+1 queries, executor shutdown and remaining token/future
+1. Address full scans, N+1 queries, executor shutdown and remaining token/future
    lifecycle issues. Other persistence details remain open; the single
    SQLite connection still serializes database access.
-3. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
-   large functions with focused behavior tests. Continue the platform, process
-   recovery, generated-input and performance work in the testing roadmap.
+2. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
+   large functions with focused behavior tests. Continue strict typing into the
+   remaining service/client modules; the expanded 26-module scope is not full
+   coverage (4.3.2).
+3. Continue the platform, process recovery, generated-input and performance work
+   in the testing roadmap and complete the outstanding target checks.
 
 GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts

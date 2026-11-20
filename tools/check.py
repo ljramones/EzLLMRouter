@@ -79,6 +79,7 @@ MODULES = (
     "tests.unit.test_provider_transport",
     "tests.unit.test_client_deadlines",
     "tests.unit.test_provision_recovery",
+    "tests.unit.test_quality_gates",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
@@ -114,7 +115,8 @@ FRONTEND_TESTS = (
     "test_crud_view.cjs",
     "test_dev09_provider_index.cjs",
 )
-TYPED_FILES = (
+QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
+TYPED_PATHS = (
     "server/src/ezllmrouter_server/private_files.py",
     "server/src/ezllmrouter_server/observability.py",
     "server/src/ezllmrouter_server/database.py",
@@ -123,6 +125,8 @@ TYPED_FILES = (
     "clients/python/src/ezllmrouter_client/_http.py",
     "clients/python/src/ezllmrouter_client/_deadline.py",
     "clients/python/src/ezllmrouter_client/_json.py",
+    "server/src/ezllmrouter_server/repositories",
+    "server/src/ezllmrouter_server/provider_adapters.py",
 )
 
 
@@ -285,15 +289,11 @@ def main() -> int:
                     "-m",
                     "ruff",
                     "check",
-                    "server/src",
-                    "clients/python/src",
-                    "deploy/local",
-                    "worker",
-                    "tools",
+                    *QUALITY_PATHS,
                 ]
             )
-            run([sys.executable, "-m", "ruff", "format", "--check", *TYPED_FILES])
-            run([sys.executable, "-m", "mypy", *TYPED_FILES])
+            run([sys.executable, "-m", "ruff", "format", "--check", *QUALITY_PATHS])
+            run([sys.executable, "-m", "mypy", *TYPED_PATHS])
         # Check all application JavaScript syntax, not only modules reached by a view fixture.
         if not args.http_only:
             for path in sorted((ROOT / "web").glob("*.js")):

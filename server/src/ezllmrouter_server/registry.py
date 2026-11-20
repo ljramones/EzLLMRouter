@@ -734,6 +734,7 @@ class Registry:
                             "at",
                         ),
                         row[:6],
+                        strict=True,
                     )
                 ),
                 "before": json.loads(row[6]) if row[6] else None,

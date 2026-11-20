@@ -41,7 +41,7 @@ ACTION_UPDATE_OPERATOR_LAUNCHES = Query(
 )
 
 
-def ACTIVITY_ORDER_SUBMISSIONS(*, where):
+def ACTIVITY_ORDER_SUBMISSIONS(*, where: str) -> Query:
     predicate(where)
     return Query(
         "SELECT s.record,i.intent FROM submissions s LEFT JOIN intents i ON i.submission_id=s.submission_id WHERE "
@@ -50,7 +50,7 @@ def ACTIVITY_ORDER_SUBMISSIONS(*, where):
     )
 
 
-def DETAIL_SELECT_SUBMISSIONS(*, principal_id):
+def DETAIL_SELECT_SUBMISSIONS(*, principal_id: str) -> Query:
     return Query(
         "SELECT record FROM submissions WHERE submission_id=?"
         + ("" if principal_id == "*" else " AND principal_id=?")
@@ -64,7 +64,7 @@ DETAIL_SELECT_GUARD_DISPATCHES = Query(
 )
 
 
-def USAGE_ORDER_SUBMISSIONS(*, principal_id):
+def USAGE_ORDER_SUBMISSIONS(*, principal_id: str) -> Query:
     return Query(
         "SELECT s.record,i.intent,g.receipt FROM submissions s LEFT JOIN intents i ON i.submission_id=s.submission_id LEFT JOIN guard_dispatches g ON g.submission_id=s.submission_id "
         + ("" if principal_id == "*" else "WHERE s.principal_id=? ")
@@ -72,7 +72,7 @@ def USAGE_ORDER_SUBMISSIONS(*, principal_id):
     )
 
 
-def OVERVIEW_COUNTS_SELECT_SUBMISSIONS(*, principal_id):
+def OVERVIEW_COUNTS_SELECT_SUBMISSIONS(*, principal_id: str) -> Query:
     return Query(
         "SELECT record FROM submissions" + ("" if principal_id == "*" else " WHERE principal_id=?")
     )
@@ -106,7 +106,7 @@ PROVIDER_VALIDATION_SELECT_OPERATOR_PROVIDER_VALIDATIONS = Query(
 )
 
 
-def ACTIVITY_SELECT_SUBMISSIONS(*, where):
+def ACTIVITY_SELECT_SUBMISSIONS(*, where: str) -> Query:
     predicate(where)
     return Query("SELECT COUNT(*) FROM submissions s WHERE " + where)
 
@@ -116,7 +116,7 @@ ACTION_SELECT_OPERATOR_LAUNCHES_3 = Query(
 )
 
 
-def activity_filter(principal_id, state):
+def activity_filter(principal_id: str, state: str | None) -> tuple[str, list[str]]:
     where = "1=1" if principal_id == "*" else "s.principal_id=?"
     values = [] if principal_id == "*" else [principal_id]
     if state:

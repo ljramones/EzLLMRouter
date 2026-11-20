@@ -13,7 +13,6 @@ from contextlib import nullcontext
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import traceback
@@ -38,7 +37,6 @@ from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.successor_contract import content_digest
 from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
 from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-from ezllmrouter_server.successor_service import SuccessorService
 from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_tls_receiver import TEST_KEY
@@ -155,7 +153,7 @@ def selected_cases(full):
         return [
             (name, request, context)
             for name, (request, context) in zip(
-                ("DIRECT_DOCUMENT", "DELEGATED_RERANK", "AUTONOMOUS_QUERY"), base
+                ("DIRECT_DOCUMENT", "DELEGATED_RERANK", "AUTONOMOUS_QUERY"), base, strict=True
             )
         ]
     selected = []
@@ -325,9 +323,11 @@ def run():
                     "task_id": request["work_selector"]["task_id"],
                     "expires_at": context["expires_at"],
                 }
-                for token, (request, context) in zip(tokens, requests)
+                for token, (request, context) in zip(tokens, requests, strict=True)
             }
-            contexts = {token: context for token, (_, context) in zip(tokens, requests)}
+            contexts = {
+                token: context for token, (_, context) in zip(tokens, requests, strict=True)
+            }
             store = SQLiteStore(root / "campaign.sqlite")
             signing_key = ed25519.Ed25519PrivateKey.generate()
             signing_path = root / "signing-key.pem"
@@ -454,7 +454,9 @@ def run():
             )
             threading.Thread(target=operator.serve_forever, daemon=True).start()
             results = []
-            for index, ((request, _context), token) in enumerate(zip(requests, tokens)):
+            for index, ((request, _context), token) in enumerate(
+                zip(requests, tokens, strict=True)
+            ):
                 with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", token) as client:
                     reply = (
                         client.submit_embedding(request, {"wait_ms": 5000})

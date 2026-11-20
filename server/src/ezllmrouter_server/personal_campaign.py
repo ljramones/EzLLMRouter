@@ -7,7 +7,7 @@ from .repositories import personal_campaign as _queries
 from .observability import log_failure
 
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_UP
+from decimal import Decimal, InvalidOperation
 import json
 
 from .canonical import ContractError
@@ -532,6 +532,7 @@ class PersonalCampaign:
                             "usage_revision",
                         ),
                         row,
+                        strict=True,
                     )
                 )
                 for row in rows

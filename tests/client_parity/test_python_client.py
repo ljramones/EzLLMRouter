@@ -116,7 +116,8 @@ class ClientTests(unittest.TestCase):
             with self.subTest(options=options):
                 self.assertEqual(
                     error(
-                        lambda: client.submit(EXAMPLES["submit_text"], options), "SCHEMA_INVALID"
+                        lambda *, options=options: client.submit(EXAMPLES["submit_text"], options),
+                        "SCHEMA_INVALID",
                     ).http_status,
                     None,
                 )
@@ -126,7 +127,7 @@ class ClientTests(unittest.TestCase):
             {"task_id": "task.demo"},
         ):
             with self.subTest(selector=selector):
-                error(lambda: client.getStatus(selector), "SCHEMA_INVALID")
+                error(lambda *, selector=selector: client.getStatus(selector), "SCHEMA_INVALID")
         self.assertEqual(transport.calls, [])
         client.close()
 
@@ -142,9 +143,9 @@ class ClientTests(unittest.TestCase):
                 value["handle"] = handle
                 client, transport = self.client(value)
                 call = (
-                    (lambda: client.submit(EXAMPLES["submit_text"]))
+                    (lambda *, client=client: client.submit(EXAMPLES["submit_text"]))
                     if method == "submit"
-                    else (lambda: client.getStatus(selected()))
+                    else (lambda *, client=client: client.getStatus(selected()))
                 )
                 caught = error(call, "INTERNAL_UNAVAILABLE")
                 self.assertEqual(caught.selector, selected())
@@ -172,7 +173,7 @@ class ClientTests(unittest.TestCase):
                         else:
                             value["handle"]["work_key"]["task_id"] = "task.other"
 
-                    def mutate():
+                    def mutate(*, kind=kind, selector=selector):
                         if kind == "id":
                             selector["submission_id"] = "submission.other"
                         else:
@@ -186,7 +187,10 @@ class ClientTests(unittest.TestCase):
                     else:
                         self.assertEqual(
                             error(
-                                lambda: client.getStatus(selector), "INTERNAL_UNAVAILABLE"
+                                lambda *, client=client, selector=selector: client.getStatus(
+                                    selector
+                                ),
+                                "INTERNAL_UNAVAILABLE",
                             ).selector,
                             expected,
                         )
@@ -257,7 +261,10 @@ class ClientTests(unittest.TestCase):
         variants.append(wrong_usage)
         for value in variants:
             client, transport = self.client(value)
-            caught = error(lambda: client.submit(EXAMPLES["submit_text"]), "INTERNAL_UNAVAILABLE")
+            caught = error(
+                lambda *, client=client: client.submit(EXAMPLES["submit_text"]),
+                "INTERNAL_UNAVAILABLE",
+            )
             self.assertEqual(caught.selector, selected())
             self.assertEqual(len(transport.calls), 1)
             client.close()
@@ -283,7 +290,9 @@ class ClientTests(unittest.TestCase):
         ):
             with self.subTest(name=name):
                 client, _ = self.client(EXAMPLES[name], status=status)
-                caught = error(lambda: client.submit(EXAMPLES["submit_text"]), code)
+                caught = error(
+                    lambda *, client=client: client.submit(EXAMPLES["submit_text"]), code
+                )
                 self.assertEqual(caught.http_status, status)
                 self.assertEqual(caught.selector, selected())
                 self.assertEqual(caught.attempt_id, EXAMPLES[name]["attempt_id"])

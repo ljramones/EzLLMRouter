@@ -74,7 +74,10 @@ class FirstWriteTests(unittest.TestCase):
                     store, Ed25519PrivateKey.generate(), "key.gate", "v1"
                 )
                 campaign = FiniteSuccessorCampaign(
-                    store, "campaign.gate", "budget.gate", wall_clock=lambda: clock[0]
+                    store,
+                    "campaign.gate",
+                    "budget.gate",
+                    wall_clock=lambda *, clock=clock: clock[0],
                 )
                 campaign.start({}, [], window_hours=1)
                 revisions, activation, kid, kv, signer = authority.minting_snapshot()
@@ -128,7 +131,14 @@ class FirstWriteTests(unittest.TestCase):
                     deadline=plan["expires_at"],
                 )
 
-                def fresh_check():
+                def fresh_check(
+                    *,
+                    authority=authority,
+                    record=record,
+                    plan=plan,
+                    campaign=campaign,
+                    invocation=invocation,
+                ):
                     current, epoch = authority.current_snapshot(record, "2030-01-01T00:00:02Z")
                     if not execution_eligible(
                         plan,
@@ -144,7 +154,17 @@ class FirstWriteTests(unittest.TestCase):
                 invocation.fresh_check = fresh_check
                 changed = [False]
 
-                def prohibit():
+                def prohibit(
+                    *,
+                    changed=changed,
+                    change=change,
+                    authority=authority,
+                    plan=plan,
+                    store=store,
+                    clock=clock,
+                    invocation=invocation,
+                    campaign=campaign,
+                ):
                     if changed[0]:
                         return
                     changed[0] = True
@@ -153,7 +173,9 @@ class FirstWriteTests(unittest.TestCase):
                     elif change == "campaign_paused":
                         with authority.gate:
                             store.database.transaction(
-                                lambda: campaign.pause_in_transaction(
+                                lambda *,
+                                campaign=campaign,
+                                store=store: campaign.pause_in_transaction(
                                     store.database, "unknown_cost"
                                 )
                             )
@@ -165,7 +187,7 @@ class FirstWriteTests(unittest.TestCase):
                     elif change == "execution_expired":
                         invocation.deadline = "2000-01-01T00:00:00Z"
 
-                async def first_wait():
+                async def first_wait(*, change=change):
                     if not change.startswith("would_block_then_"):
                         prohibit()
 

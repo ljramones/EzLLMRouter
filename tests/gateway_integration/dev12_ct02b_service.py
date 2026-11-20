@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from hashlib import sha256
 import json
 from pathlib import Path
 import sys
@@ -15,7 +14,6 @@ from dev12_completion_runner import CompletionRuntime, append_durable
 from dev12_ct02b_supplement import (
     CAMPAIGN,
     EXPIRY,
-    ROOT_FILES,
     digest,
     original_snapshot,
     run_single_target,

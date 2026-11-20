@@ -1355,7 +1355,7 @@ def build_continuation_plan(*, root: Path, prior_plan: dict, checkpoint: dict) -
             (row["scenario_id"], row["variant"]) for row in prior_successor["cases"]
         ] != current_pairs or prior_successor["artifacts"] != plan["artifacts"]:
             raise RuntimeError("latest continuation plan differs from selected inventory")
-        for case, predecessor in zip(plan["cases"], prior_successor["cases"]):
+        for case, predecessor in zip(plan["cases"], prior_successor["cases"], strict=True):
             inherited_ids[case["id"]] = predecessor["id"]
             case["id"] = predecessor["id"]
             case["evidence_paths"] = predecessor["evidence_paths"]
@@ -3135,7 +3135,7 @@ class CompletionRuntime:
         correlated_before = self._correlation_snapshot()
         expected = checkpoint["retained_t60_positive_attempt_ids"]
         positives = {}
-        for principal, aid in zip(("user.demo", "svc.vega", "svc.orion"), expected):
+        for principal, aid in zip(("user.demo", "svc.vega", "svc.orion"), expected, strict=True):
             sid, record = correlated_before["submissions"].get(aid, (None, None))
             guard_sid, guard = correlated_before["guards"].get(aid, (None, None))
             usage = correlated_before["latest_usage"].get(aid)
@@ -3212,7 +3212,9 @@ class CompletionRuntime:
             and len(selected) == 3
             and all(
                 selected[aid].get("actor_id") == positives[principal]["actor_id"]
-                for principal, aid in zip(("user.demo", "svc.vega", "svc.orion"), expected)
+                for principal, aid in zip(
+                    ("user.demo", "svc.vega", "svc.orion"), expected, strict=True
+                )
             )
         )
         direct = selected.get(expected[0], {})

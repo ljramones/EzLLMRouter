@@ -102,9 +102,9 @@ def normalize_url(value, kind="openai_compatible"):
         host = url.hostname.encode("idna").decode("ascii").lower()
         try:
             ipaddress.ip_address(host)
-        except ValueError:
+        except ValueError as caught_error:
             if any(char not in "abcdefghijklmnopqrstuvwxyz0123456789.-_" for char in host):
-                raise ValueError()
+                raise ValueError() from caught_error
         else:
             if not allowed_address(host):
                 raise ConnectorError("LOCAL_ADDRESS_REQUIRED")

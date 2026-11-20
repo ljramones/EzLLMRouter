@@ -315,7 +315,10 @@ class LocalConnectorTests(LocalFixture):
         ):
             with self.assertRaises(ConnectorError):
                 discover(
-                    "ollama", "http://localhost:11434", "private-secret-key", read=lambda *_: value
+                    "ollama",
+                    "http://localhost:11434",
+                    "private-secret-key",
+                    read=lambda *_, value=value: value,
                 )
 
     def test_optional_metadata_matching_a_local_token_is_redacted(self):

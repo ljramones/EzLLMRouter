@@ -4,7 +4,6 @@ from email.message import Message
 from email.parser import BytesParser
 import io
 import json
-import unittest
 from unittest.mock import patch
 
 from tests.operator_console.test_user_management import (

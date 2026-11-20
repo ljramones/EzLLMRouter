@@ -8,16 +8,13 @@ from .observability import log_failure
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from hashlib import sha256
 import json
 import sqlite3
-import time
 import uuid
 
 from .canonical import ContractError
 from .successor_contract import (
-    REGISTRATIONS,
     SCHEMAS,
     classify_request,
     digest,
@@ -100,7 +97,7 @@ class SuccessorService:
                 sid, aid = record["submission_id"], record["attempt_id"]
                 committed = self._send_committed(sid, aid)
 
-                def settled(db):
+                def settled(db, *, committed=committed, aid=aid):
                     if committed:
                         self.allowance.pause_in_transaction(db, "unknown_outcome")
                     self.allowance.finish(aid, db=db)

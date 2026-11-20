@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
-from ezllmrouter_server.gateway.guard import ACTIVE, Invocation
+from ezllmrouter_server.gateway.guard import ACTIVE, Invocation, GuardRejected
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
 from ezllmrouter_server.gateway.owned_tls_sender_transport import OwnedTLSHTTPTransport
 from ezllmrouter_server.provider_vault import ProviderVault
@@ -132,7 +132,7 @@ class OwnedTLSProof(unittest.TestCase):
                 self.assertEqual(
                     invocation.observations, ["FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET"]
                 )
-                with self.assertRaises(Exception):
+                with self.assertRaises(GuardRejected):
                     await transport.handle_async_request(
                         httpx.Request("POST", self.settings["origin"] + "/v1/chat/completions")
                     )
@@ -166,7 +166,7 @@ class OwnedTLSProof(unittest.TestCase):
                 await asyncio.wait_for(entered.wait(), timeout=3)
                 self.authority.revoke()
                 release.set()
-                with self.assertRaises(Exception):
+                with self.assertRaises(GuardRejected):
                     await task
                 self.assertFalse(invocation.first_bytes_accepted)
             finally:
@@ -215,7 +215,7 @@ class OwnedTLSProof(unittest.TestCase):
             invocation = self.invocation()
             token = ACTIVE.set(invocation)
             try:
-                with self.assertRaises(Exception):
+                with self.assertRaises(GuardRejected):
                     await transport.handle_async_request(self.request())
                 self.assertEqual(blocked, [True])
                 self.assertFalse(invocation.first_bytes_accepted)
@@ -264,7 +264,7 @@ class OwnedTLSProof(unittest.TestCase):
             )
             token = ACTIVE.set(self.invocation())
             try:
-                with self.assertRaises(Exception):
+                with self.assertRaises(ssl.SSLCertVerificationError):
                     await transport.handle_async_request(
                         httpx.Request(
                             "POST",
@@ -352,7 +352,7 @@ class OwnedTLSProof(unittest.TestCase):
                 await asyncio.wait_for(entered.wait(), timeout=3)
                 change()
                 release.set()
-                with self.assertRaises(Exception):
+                with self.assertRaises(GuardRejected):
                     await task
                 self.assertFalse(invocation.first_bytes_accepted)
             finally:

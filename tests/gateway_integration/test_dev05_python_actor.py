@@ -48,10 +48,10 @@ class ActorModes(unittest.TestCase):
                     def __exit__(self, *_):
                         return False
 
-                    def get(self, _):
+                    def get(self, _, *, sends=sends):
                         return types.SimpleNamespace(
                             raise_for_status=lambda: None,
-                            json=lambda: {"arrivals": [{}] * sends[0]},
+                            json=lambda *, sends=sends: {"arrivals": [{}] * sends[0]},
                         )
 
                 class FakeClient:
@@ -64,7 +64,7 @@ class ActorModes(unittest.TestCase):
                     def __exit__(self, *_):
                         return False
 
-                    def submit(self, request, _options):
+                    def submit(self, request, _options, *, sends=sends):
                         if request["step_id"] == "step.dev03.mutation":
                             raise EzLLMRouterError(
                                 "FDC_REJECTED", 409, {"submission_id": "submission.mutation"}
@@ -124,7 +124,7 @@ class ActorModes(unittest.TestCase):
                             "candidate": candidate,
                         }
 
-                    def getStatus(self, selector):
+                    def getStatus(self, selector, *, mode=mode):
                         sid = selector.get("submission_id", "submission.1")
                         if sid == "submission.mutation":
                             return {"submission_state": "failed_before_transmit"}
@@ -166,7 +166,7 @@ class ActorModes(unittest.TestCase):
                 if mode == "by_work":
                     argv.extend(("step.dev03.js", "gen.1", "tool_call"))
 
-                def fake_sleep(duration):
+                def fake_sleep(duration, *, clock=clock):
                     clock[0] += duration
 
                 with (
@@ -183,7 +183,7 @@ class ActorModes(unittest.TestCase):
                         },
                     ),
                     patch.object(time, "sleep", fake_sleep),
-                    patch.object(time, "monotonic", lambda: clock[0]),
+                    patch.object(time, "monotonic", lambda *, clock=clock: clock[0]),
                     contextlib.redirect_stdout(stdout),
                     contextlib.redirect_stderr(stderr),
                 ):

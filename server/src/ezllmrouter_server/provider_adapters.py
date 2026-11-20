@@ -12,16 +12,25 @@ import json
 import re
 import socket
 import ssl
+from typing import Any, TypedDict, cast
 from urllib.parse import quote, urlsplit
 
 
 class ProbeError(ValueError):
-    def __init__(self, reason):
+    def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
 
 
-ADAPTERS = {
+class Adapter(TypedDict):
+    provider: str
+    access: tuple[str, str] | None
+    inventory: tuple[str, str] | None
+    readiness: tuple[str, str] | None
+    inference: str | None
+
+
+ADAPTERS: dict[str, Adapter] = {
     "openai.responses.v1": {
         "provider": "openai",
         "access": ("GET", "/v1/models"),
@@ -82,7 +91,9 @@ PUBLIC_HOSTS = {
 }
 
 
-def validate_settings(adapter_id, settings, *, controlled=False):
+def validate_settings(
+    adapter_id: str, settings: dict[str, Any], *, controlled: bool = False
+) -> str:
     if adapter_id not in ADAPTERS or type(settings) is not dict:
         raise ValueError("unsupported API adapter")
     provider = ADAPTERS[adapter_id]["provider"]
@@ -143,7 +154,7 @@ def validate_settings(adapter_id, settings, *, controlled=False):
     return provider
 
 
-def _allowed_ip(address, provider, *, controlled):
+def _allowed_ip(address: str, provider: str, *, controlled: bool) -> bool:
     ip = ipaddress.ip_address(address)
     if ip.is_loopback:
         return controlled or provider == "vllm"
@@ -154,7 +165,7 @@ def _allowed_ip(address, provider, *, controlled):
     return controlled or provider == "vllm" or ip.is_global
 
 
-def _headers(adapter_id, key, settings):
+def _headers(adapter_id: str, key: str | None, settings: dict[str, Any]) -> dict[str, str]:
     if not key or any(ord(c) < 33 or ord(c) > 126 for c in key):
         raise ProbeError("credential_unavailable")
     if adapter_id.startswith("anthropic."):
@@ -171,12 +182,21 @@ def _headers(adapter_id, key, settings):
     return headers
 
 
-def _wire_get(settings, provider, path, headers, *, timeout, controlled):
+def _wire_get(
+    settings: dict[str, Any],
+    provider: str,
+    path: str,
+    headers: dict[str, str],
+    *,
+    timeout: float,
+    controlled: bool,
+) -> tuple[int, str, bytes]:
     url = urlsplit(settings["origin"])
     host, port = url.hostname, url.port or 443
     addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
     if not addresses or any(
-        not _allowed_ip(item[4][0], provider, controlled=controlled) for item in addresses
+        not _allowed_ip(cast(str, item[4][0]), provider, controlled=controlled)
+        for item in addresses
     ):
         raise ProbeError("destination_rejected")
     family, kind, protocol, _, address = sorted(
@@ -206,12 +226,12 @@ def _wire_get(settings, provider, path, headers, *, timeout, controlled):
                 data = response.read(262145)
                 if len(data) > 262144:
                     raise ProbeError("response_too_large")
-                return response.status, response.getheader("Content-Type", ""), data
+                return response.status, cast(str, response.getheader("Content-Type", "")), data
     finally:
         raw.close()
 
 
-def _xai_bad_request_reason(content_type, data):
+def _xai_bad_request_reason(content_type: str, data: bytes) -> str:
     """Classify documented key rejection without returning provider text or secret echoes."""
     if "application/json" not in content_type.lower():
         return "provider_rejected_request"
@@ -245,7 +265,15 @@ def _xai_bad_request_reason(content_type, data):
     return "provider_rejected_request"
 
 
-def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=False):
+def probe(
+    adapter_id: str,
+    settings: dict[str, Any],
+    credential: str | None,
+    operation: str,
+    *,
+    timeout: float = 3,
+    controlled: bool = False,
+) -> dict[str, Any]:
     """Return a safe observation; no secret or raw response enters the result."""
     try:
         provider = validate_settings(adapter_id, settings, controlled=controlled)
@@ -254,8 +282,10 @@ def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=
             return {"state": "unsupported", "reason": "operation_not_implemented", "models": []}
         if operation not in ("access", "inventory", "readiness"):
             raise ValueError("unsupported probe operation")
-        models = []
-        details = {}
+        # These code-owned operation fields contain method/path pairs.
+        spec = cast(tuple[str, str], spec)
+        models: list[str] = []
+        details: dict[str, dict[str, str]] = {}
         path, seen, pages = spec[1], set(), 0
         while True:
             try:

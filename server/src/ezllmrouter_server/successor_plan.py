@@ -10,7 +10,6 @@ import base64
 from decimal import Decimal
 
 from .successor_contract import (
-    REGISTRATIONS,
     SCHEMAS,
     canonical,
     config_for,

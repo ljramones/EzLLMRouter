@@ -1,6 +1,5 @@
 """Real SQLite account lifecycle, password verification, and permission tests."""
 
-import json
 import os
 from pathlib import Path
 import sys
@@ -207,9 +206,9 @@ class UserTests(UserFixture):
         for role in ("ordinary", "read_only_operator"):
             user = self.create("account-" + role, role)
             for operation in (
-                lambda: self.users.list(user["principal_id"]),
-                lambda: self.users.get(user["principal_id"], "owner.local"),
-                lambda: self.users.delete(
+                lambda *, user=user: self.users.list(user["principal_id"]),
+                lambda *, user=user: self.users.get(user["principal_id"], "owner.local"),
+                lambda *, user=user: self.users.delete(
                     user["principal_id"], "owner.local", {"expected_revision": 1}
                 ),
             ):

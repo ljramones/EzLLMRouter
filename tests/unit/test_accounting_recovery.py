@@ -341,7 +341,19 @@ class ContractFailureTests(unittest.TestCase):
                 campaign.start({}, [], max_attempts=2)
                 calls = []
 
-                def execute(record, _authority, _store, _campaign):
+                def execute(
+                    record,
+                    _authority,
+                    _store,
+                    _campaign,
+                    *,
+                    calls=calls,
+                    committed=committed,
+                    store=store,
+                    campaign=campaign,
+                    code=code,
+                    status=status,
+                ):
                     calls.append(record)
                     if committed:
                         store.successor_guard_commit(

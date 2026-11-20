@@ -26,7 +26,6 @@ from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
 from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-from ezllmrouter_server.successor_service import SuccessorService
 from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_integrated import fixture, observations, runtime_source_identity

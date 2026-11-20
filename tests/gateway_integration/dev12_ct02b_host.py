@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from hashlib import sha256
 import argparse
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -19,13 +17,11 @@ from dev12_completion_preflight import mounted_source_identity
 from dev12_completion_source_custody import source_files
 from dev12_ct02b_supplement import (
     ADJUDICATION_SHA,
-    ALLOC,
     BUDGET,
     CAMPAIGN,
     CASE,
     EXPIRY,
     GENERATION,
-    ORIGINAL,
     OWNER,
     PREDECESSOR_PACKET_SHA,
     ROOT_BASENAME,

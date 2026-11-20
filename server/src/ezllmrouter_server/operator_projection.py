@@ -271,7 +271,7 @@ class OperatorProjection:
 
         known_cost = {}
         cost_unknown = 0
-        for item, usage, (_, intent_raw, receipt_raw) in zip(summaries, latest, rows):
+        for item, usage, (_, intent_raw, receipt_raw) in zip(summaries, latest, rows, strict=True):
             cost = usage["cost"]
             if cost["status"] == "calculated" and cost.get("currency") == "USD":
                 known_cost["USD"] = known_cost.get("USD", Decimal(0)) + Decimal(

@@ -408,7 +408,7 @@ def result_valid(result, request, attempt_id, registry=REGISTRATIONS):
             and len(vector["values"]) == profile["dimensions"]
             and all(decimal_valid(value) for value in vector["values"])
             for index, (vector, item) in enumerate(
-                zip(result["vectors"], request["input"]["items"])
+                zip(result["vectors"], request["input"]["items"], strict=True)
             )
         )
     if (

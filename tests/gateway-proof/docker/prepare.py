@@ -160,8 +160,8 @@ def safe_component_path(path, anchor, require_file=False):
         raise ValueError("absolute path required")
     try:
         parts = path.relative_to(anchor).parts
-    except ValueError:
-        raise ValueError("path outside approved anchor")
+    except ValueError as caught_error:
+        raise ValueError("path outside approved anchor") from caught_error
     for part in parts:
         if part in ("", ".", ".."):
             raise ValueError("unsafe path component")
@@ -171,8 +171,8 @@ def safe_component_path(path, anchor, require_file=False):
             current = current / part
         try:
             mode = current.lstat().st_mode
-        except FileNotFoundError:
-            raise ValueError("missing path component: " + str(current))
+        except FileNotFoundError as caught_error:
+            raise ValueError("missing path component: " + str(current)) from caught_error
         if stat.S_ISLNK(mode):
             raise ValueError("symlink component: " + str(current))
         if current != path and not stat.S_ISDIR(mode):
@@ -652,8 +652,8 @@ def validate_marker(marker):
     }
     try:
         tree = ast.parse(marker, mode="eval")
-    except SyntaxError:
-        raise ValueError("malformed resolver marker")
+    except SyntaxError as caught_error:
+        raise ValueError("malformed resolver marker") from caught_error
 
     def operand(node):
         return (isinstance(node, ast.Name) and node.id in names) or (
@@ -1147,8 +1147,8 @@ def stage_source(entry, dest, run, phase):
             raise ValueError("wheelhouse accepts one-level wheel files only")
         try:
             source.relative_to(run / "validated-artifacts")
-        except ValueError:
-            raise ValueError("artifact source outside validated run store")
+        except ValueError as caught_error:
+            raise ValueError("artifact source outside validated run store") from caught_error
         expected = run / "validated-artifacts" / dest
     else:
         raise ValueError("staging destination outside exact phase allowlist")
@@ -1325,7 +1325,7 @@ def stage_phase(run, phase, data=None, copier=shutil.copyfileobj):
         prefix = "artifacts/build-wheels/" if phase == "wheel" else "artifacts/runtime-wheels/"
         wheels = [(s, d, h) for s, d, h, _, _ in checked if d.startswith(prefix)]
         matched = set()
-        for source, dest, digest in wheels:
+        for _source, dest, digest in wheels:
             identity = wheel_identity(Path(dest).name)
             if identity not in lock or digest not in lock[identity]:
                 raise ValueError("wheel not selected by actual lock")

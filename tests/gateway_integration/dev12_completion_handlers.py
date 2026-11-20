@@ -1264,7 +1264,7 @@ def authority_recovery(runtime, case):
                 response = _post(runtime, request, _headers(runtime))
             finally:
                 runtime.executor.first_write_wait = None
-            status = response["status"] or {}
+            response["status"] or {}
             sid = response["reply"].get("handle", {}).get("submission_id")
             record = runtime.store.successor_get(sid) if sid else None
             observations = {
@@ -2325,7 +2325,9 @@ def native_accounting(runtime, case):
         cases = [
             _unknown_then_retained_correction(runtime, case, item, suffix) for item, suffix in modes
         ]
-        by_mode = {suffix: observation for (_item, suffix), observation in zip(modes, cases)}
+        by_mode = {
+            suffix: observation for (_item, suffix), observation in zip(modes, cases, strict=True)
+        }
         if scenario == "t49_a":
             checks = {
                 "t49_a.absent_counter": (

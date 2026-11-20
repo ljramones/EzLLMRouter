@@ -2,7 +2,6 @@
 
 from .common import (
     NOT_HANDLED,
-    RegistryConflict,
     csv,
     datetime,
     io,

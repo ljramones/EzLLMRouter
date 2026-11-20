@@ -57,7 +57,7 @@ def taint_boundary(runtime, case):
             ],
         }
     )
-    labels = request["messages"][-1]["blocks"][0]
+    request["messages"][-1]["blocks"][0]
     trusted = {
         "task_id": request["task_id"],
         "principal_id": "user.demo",
@@ -142,7 +142,6 @@ def assessment_transition(runtime, case):
         _evidence,
         _headers,
         _post,
-        _trusted,
     )
 
     if (case["scenario_id"], case["variant"]) != ("t14_a", "composed"):
@@ -154,7 +153,7 @@ def assessment_transition(runtime, case):
     if not sid:
         raise AssertionError("commission/delegation control was not admitted")
     original = runtime.store.successor_get(sid)
-    accepted = _census(runtime)
+    _census(runtime)
     if first["status"].get("submission_state") != "completed":
         raise AssertionError("commission/delegation control did not complete")
 

@@ -574,7 +574,9 @@ def _continuation_context(plan, root, prior_exposure, errors):
             + ".continuation"
             + str(continuation_number)
         )
-        for current, original, preceding in zip(plan["cases"], prior["cases"], previous["cases"]):
+        for current, original, preceding in zip(
+            plan["cases"], prior["cases"], previous["cases"], strict=True
+        ):
             pair = (
                 "scenario_id",
                 "variant",
@@ -1423,14 +1425,14 @@ def main():
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
-    except FileExistsError:
+    except FileExistsError as caught_error:
         if receipt_path.read_bytes() != data:
             print(
                 json.dumps(
                     {"status": "BLOCKED_NO_SEND", "errors": ["existing preflight receipt differs"]}
                 )
             )
-            raise SystemExit(2)
+            raise SystemExit(2) from caught_error
     result["receipt_path"] = str(receipt_path)
     result["receipt_sha256"] = sha256(data).hexdigest()
     print(json.dumps(result, sort_keys=True, indent=2))

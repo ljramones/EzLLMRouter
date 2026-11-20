@@ -357,7 +357,7 @@ class Run10Controls(unittest.TestCase):
                 edit_obj(
                     d,
                     "choice-b-freshness-queued-status",
-                    lambda v: v.update(terminal_error_code=reason),
+                    lambda v, *, reason=reason: v.update(terminal_error_code=reason),
                 )
                 with self.assertRaises(AssertionError):
                     run_verifier(d)

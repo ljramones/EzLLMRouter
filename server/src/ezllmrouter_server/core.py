@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from copy import deepcopy
 from contextvars import copy_context
 from datetime import datetime, timezone
@@ -22,7 +22,6 @@ from .canonical import (
     ident,
     jcs,
     projection,
-    utc_second,
     validate_text_request,
     work_digest,
     strict_loads,
@@ -599,7 +598,7 @@ class Coordinator:
                 self.store.create(record)
         except ContractError:
             raise
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as caught_error:
             owner = self.store.work_owner(key)
             if owner and owner["contract_version"] != "0.2":
                 raise ContractError("WORK_VERSION_CONFLICT", 409) from None
@@ -610,7 +609,7 @@ class Coordinator:
                 and duplicate.get("attribution_digest") == attribution_digest
             ):
                 return 202, self._pending(duplicate)
-            raise ContractError("WORK_CONFLICT", 409)
+            raise ContractError("WORK_CONFLICT", 409) from caught_error
         except Exception as exc:
             log_failure("core.Coordinator.submit.failed")
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc

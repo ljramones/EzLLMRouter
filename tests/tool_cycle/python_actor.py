@@ -485,7 +485,7 @@ def multi_call_cycle():
                         "result_value": value,
                         "source_labels": RESULT_LABEL,
                     }
-                    for i, (call, value) in enumerate(zip(calls, results), 1)
+                    for i, (call, value) in enumerate(zip(calls, results, strict=True), 1)
                 ],
             }
         )

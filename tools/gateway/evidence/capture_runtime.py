@@ -99,7 +99,7 @@ def main():
         print(json.dumps(capture(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])))
     except (CaptureLimit, OSError, ValueError, KeyError) as exc:
         print("runtime capture withheld: " + str(exc), file=sys.stderr)
-        raise SystemExit(2)
+        raise SystemExit(2) from exc
 
 
 if __name__ == "__main__":

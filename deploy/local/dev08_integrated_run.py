@@ -219,7 +219,7 @@ def main():
         )
         (run / "failure.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
         print("DEV-08 integrated failed: " + str(exc) + "; evidence: " + str(run), file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     finally:
         if started_worker:
             try:

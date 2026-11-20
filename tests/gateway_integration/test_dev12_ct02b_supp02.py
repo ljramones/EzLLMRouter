@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dev12_ct02b_supp02 import (
     BUDGET,
     CAMPAIGN,
-    EXPIRY,
     OWNER,
     ROOT_BASENAME,
     SUPP01_CAMPAIGN,

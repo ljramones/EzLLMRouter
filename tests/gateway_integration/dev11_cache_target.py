@@ -18,11 +18,9 @@ from ezllmrouter_client import EzLLMRouterClient
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.personal_campaign import PersonalCampaign
 from ezllmrouter_server.plans import PlanAuthority
-from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.web import serve
 from choice_b_sender import ChoiceBSenderAdapter
 from dev08_integrated import (
-    TEST_KEY,
     TEST_TOKEN,
     certificate,
     fixture_paths,

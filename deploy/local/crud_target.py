@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
 
 from catalogue_import import OperatorClient

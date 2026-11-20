@@ -169,7 +169,7 @@ class AvailabilityTests(LocalFixture):
         ):
             with self.subTest(reason=reason):
 
-                def read(*_, **__):
+                def read(*_, reason=reason, **__):
                     raise ConnectorError(reason, 502)
 
                 self.connectors.availability_read = read

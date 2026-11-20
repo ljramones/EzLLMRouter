@@ -362,14 +362,18 @@ class DatasetPurgeRaceTests(unittest.TestCase):
                     snapshot = deepcopy(EXAMPLES["snapshots"][0])
                     snapshot["dataset_id"] = did
                     actions = {
-                        "account": lambda: accounting.create_account(self.owner, account, "3"),
-                        "state": lambda: accounting.set_account_state(
+                        "account": lambda *, account=account: accounting.create_account(
+                            self.owner, account, "3"
+                        ),
+                        "state": lambda *, account=account, did=did: accounting.set_account_state(
                             self.owner,
                             account["account_id"],
                             {"dataset_id": did, "expected_revision": 1, "state": "disabled"},
                             "3",
                         ),
-                        "permissions": lambda: accounting.set_account_permissions(
+                        "permissions": lambda *,
+                        account=account,
+                        did=did: accounting.set_account_permissions(
                             self.owner,
                             account["account_id"],
                             {
@@ -379,12 +383,14 @@ class DatasetPurgeRaceTests(unittest.TestCase):
                                 "allowed_operations": [],
                             },
                         ),
-                        "event": lambda: accounting.append_event(ingest, event),
-                        "snapshot": lambda: accounting.append_snapshot(ingest, snapshot),
-                        "eligibility2": lambda: accounting.eligibility(
+                        "event": lambda *, event=event: accounting.append_event(ingest, event),
+                        "snapshot": lambda *, snapshot=snapshot: accounting.append_snapshot(
+                            ingest, snapshot
+                        ),
+                        "eligibility2": lambda *, did=did, account=account: accounting.eligibility(
                             ingest, did, account["account_id"], "model.synthetic", "2"
                         ),
-                        "eligibility3": lambda: accounting.eligibility(
+                        "eligibility3": lambda *, did=did, account=account: accounting.eligibility(
                             ingest,
                             did,
                             account["account_id"],
@@ -427,9 +433,13 @@ class DatasetPurgeRaceTests(unittest.TestCase):
                                 },
                             )
                     if name == "credential_connect":
-                        actions[name] = lambda: self.credentials.connect(self.owner, connect_body)
+                        actions[name] = (
+                            lambda *, connect_body=connect_body: self.credentials.connect(
+                                self.owner, connect_body
+                            )
+                        )
                     elif name == "credential_save":
-                        actions[name] = lambda: self.credentials.save(
+                        actions[name] = lambda *, binding=binding, did=did: self.credentials.save(
                             self.owner,
                             binding["account_id"],
                             {
@@ -440,13 +450,15 @@ class DatasetPurgeRaceTests(unittest.TestCase):
                             },
                         )
                     elif name == "credential_disable":
-                        actions[name] = lambda: self.credentials.disable(
-                            self.owner,
-                            binding["account_id"],
-                            {"dataset_id": did, "expected_revision": binding["revision"]},
+                        actions[name] = (
+                            lambda *, binding=binding, did=did: self.credentials.disable(
+                                self.owner,
+                                binding["account_id"],
+                                {"dataset_id": did, "expected_revision": binding["revision"]},
+                            )
                         )
                     elif name == "credential_retire":
-                        actions[name] = lambda: self.credentials.retire(
+                        actions[name] = lambda *, binding=binding, did=did: self.credentials.retire(
                             self.owner,
                             binding["account_id"],
                             {

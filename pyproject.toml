@@ -24,10 +24,11 @@ cognitivedynamics-ezllmrouter-client = { path = "clients/python", editable = tru
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+extend-exclude = ["deploy/local/.state"]
+force-exclude = true
 
 [tool.ruff.lint]
-# Establish a blocking correctness baseline without disguising legacy style debt.
-select = ["E9", "F821", "F822", "F823"]
+select = ["E9", "F", "B"]
 
 [tool.mypy]
 python_version = "3.12"

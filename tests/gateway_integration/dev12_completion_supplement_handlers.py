@@ -14,9 +14,7 @@ import json
 from pathlib import Path
 import os
 import subprocess
-import sys
 import threading
-import time
 from unittest.mock import patch
 
 from dev12_completion_handlers import _case_request, _census, _evidence, _headers, _post
@@ -1094,7 +1092,7 @@ def _authority_wait(runtime, case):
         fired = []
         original_clock = runtime.allowance.wall_clock
 
-        async def lower_wait():
+        async def lower_wait(*, fired=fired, name=name, before=before):
             if fired:
                 return
             fired.append(True)

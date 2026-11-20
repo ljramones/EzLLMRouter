@@ -87,4 +87,4 @@ if __name__ == "__main__":
         main()
     except (OSError, ValueError, EOFError, TimeoutError) as exc:
         print("worker readiness failed: " + type(exc).__name__ + ": " + str(exc), file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc

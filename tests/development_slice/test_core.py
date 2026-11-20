@@ -352,7 +352,7 @@ class CoreTests(unittest.TestCase):
                 coordinator = self.coordinator(store=store, adapter=adapter)
                 original = coordinator._assert_current_dispatch
 
-                def check(*args, **kwargs):
+                def check(*args, store=store, error_type=error_type, original=original, **kwargs):
                     if store.db.execute("SELECT COUNT(*) FROM intents").fetchone()[0]:
                         raise error_type("synthetic unavailable authority")
                     return original(*args, **kwargs)
@@ -596,15 +596,24 @@ class CoreTests(unittest.TestCase):
                 finished = threading.Event()
 
                 class OrderedStore:
-                    def __getattr__(self, name):
+                    def __getattr__(self, name, *, inner=inner):
                         return getattr(inner, name)
 
-                    def complete_candidate(self, *args):
+                    def complete_candidate(self, *args, inner=inner, finished=finished):
                         result = inner.complete_candidate(*args)
                         finished.set()
                         return result
 
-                    def mark_wait_expired_no_store(self, sid, at):
+                    def mark_wait_expired_no_store(
+                        self,
+                        sid,
+                        at,
+                        *,
+                        finish_first=finish_first,
+                        adapter=adapter,
+                        finished=finished,
+                        inner=inner,
+                    ):
                         if finish_first:
                             adapter.release.set()
                             if not finished.wait(3):

@@ -202,7 +202,7 @@ class GatewayLifecycleTests(unittest.TestCase):
                 waiting = threading.Event()
 
                 class ObservedFuture(Future):
-                    def result(self, timeout=None):
+                    def result(self, timeout=None, *, waiting=waiting):
                         waiting.set()
                         return super().result(timeout)
 
@@ -212,7 +212,7 @@ class GatewayLifecycleTests(unittest.TestCase):
                     "usage": {"prompt_tokens": 3, "completion_tokens": 1},
                 }
 
-                def complete():
+                def complete(*, waiting=waiting, future=future, provider=provider):
                     if waiting.wait(2):
                         future.set_result(
                             {
@@ -227,7 +227,15 @@ class GatewayLifecycleTests(unittest.TestCase):
                 thread.start()
                 item = invocation()
 
-                def command(_envelope, _timeout):
+                def command(
+                    _envelope,
+                    _timeout,
+                    *,
+                    adapter=adapter,
+                    item=item,
+                    future=future,
+                    rpc_failure=rpc_failure,
+                ):
                     current = adapter.registry[item.attempt_id]
                     remaining = (
                         datetime.fromisoformat(_envelope["deadline"]) - datetime.now(timezone.utc)

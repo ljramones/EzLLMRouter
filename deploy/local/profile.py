@@ -12,7 +12,6 @@ import sqlite3
 import stat
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 
 from check import exercise, readback, wait_health
@@ -439,7 +438,7 @@ def audit_live(build, env):
         raise RuntimeError("running build differs from staged profile")
     independent_count = topology(env)
     details = [client.call("GET", "/operator/v1/activity/" + sid) for sid in ids]
-    for sid, item in zip(ids, details):
+    for sid, item in zip(ids, details, strict=True):
         if (
             item["submission_id"] != sid
             or item["submission_state"] != "completed"
@@ -809,7 +808,7 @@ def run_cli():
         print(
             "local profile failed: " + safe["error_type"] + ": " + safe["message"], file=sys.stderr
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 if __name__ == "__main__":

@@ -81,7 +81,7 @@ class StartupRecoveryTests(unittest.TestCase):
                     self.open_instance(service.token_file + "-" + phase)
                     mutate = self.registry.mutate
 
-                    def interrupted(actor, request):
+                    def interrupted(actor, request, *, mutate=mutate, service=service, phase=phase):
                         result = mutate(actor, request)
                         if request["operation_id"] == service.operation_prefix + "." + phase:
                             raise RuntimeError("interrupted after commit")
@@ -150,7 +150,7 @@ class StartupRecoveryTests(unittest.TestCase):
         provision = self.registry.provision_credential
 
         def interrupted(*args, **kwargs):
-            result = provision(*args, **kwargs)
+            provision(*args, **kwargs)
             raise RuntimeError("interrupted after credential commit")
 
         with patch.object(self.registry, "provision_credential", side_effect=interrupted):
@@ -210,7 +210,7 @@ class StartupRecoveryTests(unittest.TestCase):
     def test_suspended_and_revoked_accounts_stay_disabled(self):
         self.open_instance()
         ensure_services(self.registry, self.directory)
-        for service, status in zip(SERVICES, ("suspended", "revoked")):
+        for service, status in zip(SERVICES, ("suspended", "revoked"), strict=True):
             self.registry.mutate(
                 "owner.local",
                 {
@@ -224,7 +224,7 @@ class StartupRecoveryTests(unittest.TestCase):
         version = self.registry.version()
         ensure_services(self.registry, self.directory)
         self.assertEqual(self.registry.version(), version)
-        for service, status in zip(SERVICES, ("suspended", "revoked")):
+        for service, status in zip(SERVICES, ("suspended", "revoked"), strict=True):
             self.assertEqual(self.registry.principal(service.principal_id)["status"], status)
 
     def test_bootstrap_does_not_take_over_an_unrelated_reserved_identity(self):

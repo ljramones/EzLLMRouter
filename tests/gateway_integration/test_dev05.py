@@ -321,7 +321,7 @@ class Dev05Tests(unittest.TestCase):
             for item in arrivals
         ]
         for i, step in zip(
-            range(6, 10), ["step.dev03.no_store"] * 2 + ["step.dev03.js.no_store"] * 2
+            range(6, 10), ["step.dev03.no_store"] * 2 + ["step.dev03.js.no_store"] * 2, strict=True
         ):
             store[i].update(
                 step_id=step,

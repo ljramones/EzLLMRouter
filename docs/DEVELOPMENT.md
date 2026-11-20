@@ -16,10 +16,29 @@ listener binds; local IPC pairs support framing checks. The second check runs
 HTTP and TLS fixtures against localhost and requires permission to bind sockets.
 These commands use temporary stores and controlled fixtures, with no model calls.
 
-The strict mypy scope is an explicit eight-file list, including the Python
-deadline transport. Imports use `follow_imports="silent"` so dependency types
-remain available while errors in modules outside that list remain outside the
-blocking scope. This is an incremental check, not whole-project type coverage.
+Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules across `server/`,
+`clients/`, `deploy/`, `worker/`, `tools/` and `tests/`. Formatting is enforced
+across those same trees, currently 406 Python files. Local runtime state under
+`deploy/local/.state/` is explicitly excluded, including when passed directly to
+Ruff. Existing dependency/build exclusions also apply. No new blanket rule
+ignores hide the adopted lint findings.
+
+The strict mypy scope covers 26 modules: the eight previously checked modules,
+all 17 SQL repository modules and provider probes. The repository directory is
+checked as a whole, so new repository modules are included automatically.
+Imports use `follow_imports="silent"` so dependency types remain available while
+errors in modules outside the selected scope remain outside the blocking check.
+This is an incremental check, not whole-project type coverage.
+
+Apply the maintained formatter before committing Python changes:
+
+```sh
+uv run --locked ruff format server clients deploy worker tools tests
+```
+
+Disposable-project regressions invoke the real quality commands and verify that
+unused imports, blind exception assertions, unformatted tests and incorrect uses
+of imported types block the runner. They also verify runtime-state exclusion.
 
 `tools.check` inventories Git-tracked and non-ignored `test_*.py` files under
 `tests/` and `deploy/local/` before running. Every file must have an offline,

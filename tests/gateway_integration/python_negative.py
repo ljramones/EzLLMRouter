@@ -44,7 +44,7 @@ def main():
             if exc.code != "FDC_REJECTED" or exc.http_status != 409:
                 raise
             if count() != before:
-                raise AssertionError("negative reached receiver")
+                raise AssertionError("negative reached receiver") from exc
             print(
                 json.dumps(
                     {

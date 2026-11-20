@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
+import sqlite3
 import unittest
 from datetime import datetime, timezone
 
@@ -65,7 +66,7 @@ class SuccessorStoreTests(unittest.TestCase):
             store.successor_guard_commit(
                 "submission.one", "attempt.one", receipt, "2026-10-26T12:00:01Z", campaign
             )
-            with self.assertRaises(Exception):
+            with self.assertRaises(PermissionError):
                 store.successor_guard_commit(
                     "submission.one", "attempt.one", receipt, "2026-10-26T12:00:02Z", campaign
                 )
@@ -145,7 +146,7 @@ class SuccessorStoreTests(unittest.TestCase):
             record["reservation"]["price_ref"] = price["price_ref"]
             record["reservation"]["usage_ref"] = price["usage_ref"]
             db.successor_create(record)
-            with self.assertRaises(Exception):
+            with self.assertRaises(sqlite3.IntegrityError):
                 db.successor_create(record)
             for ordinal in range(1, 34):
                 component = {

@@ -150,7 +150,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             "total": _total(
                 [
                     computed
-                    for source, computed in zip(fixture["attempts"], all_attempts)
+                    for source, computed in zip(fixture["attempts"], all_attempts, strict=True)
                     if source["story"] == item["id"]
                 ]
             ),

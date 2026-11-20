@@ -117,7 +117,7 @@ class ClientTransportTests(unittest.TestCase):
                 stream = RecordingStream(raw)
                 with httpx.Client(
                     transport=httpx.MockTransport(
-                        lambda _: httpx.Response(
+                        lambda _, *, declared=declared, stream=stream: httpx.Response(
                             200,
                             headers={"Content-Length": declared} if declared else {},
                             stream=stream,

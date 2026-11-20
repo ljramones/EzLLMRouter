@@ -31,7 +31,7 @@ def audit(lineage_root, export_root):
     lineage = json.loads((lineage_root / "SOURCE-LINEAGE.json").read_text())
     snapshots = {row["source_tree"]: row for row in lineage["snapshots"]}
     assert len(snapshots) == len(lineage["snapshots"]) == 22
-    for tree, row in snapshots.items():
+    for _tree, row in snapshots.items():
         source = lineage_root / row["snapshot_path"]
         assert digest(source.read_bytes()) == row["snapshot_sha256"]
         with ZipFile(source) as z:
@@ -66,7 +66,7 @@ def audit(lineage_root, export_root):
         for line in (export_root / "target/release-identity.jsonl").read_text().splitlines()
     ]
     assert len(releases) == len(lineage["releases"]) == 17
-    for index, (actual, row) in enumerate(zip(releases, lineage["releases"])):
+    for index, (actual, row) in enumerate(zip(releases, lineage["releases"], strict=True)):
         plan = plans[row["plan"]]
         assert row["release_index"] == index
         assert row["plan_release_sha256"] == actual["plan_sha256"]

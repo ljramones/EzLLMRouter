@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.core import Coordinator, usage_revision
-from ezllmrouter_server.plans import PlanAuthority, PROVIDER_RECIPE_REF
+from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.personal_campaign import PersonalCampaign
 from ezllmrouter_server.registry import Registry
@@ -178,7 +178,7 @@ class ProviderPlanTests(unittest.TestCase):
                         },
                     },
                 )
-                connection = change(
+                change(
                     "create_connection",
                     "conn.plan",
                     0,
@@ -194,7 +194,7 @@ class ProviderPlanTests(unittest.TestCase):
                         "funding_kind": "personal_testing",
                     },
                 )
-                connection = registry.set_provider_credential(
+                registry.set_provider_credential(
                     "owner.local",
                     "conn.plan",
                     1,
@@ -202,13 +202,13 @@ class ProviderPlanTests(unittest.TestCase):
                     "replace",
                     "test-provider-key-123456",
                 )["record"]
-                connection = change(
+                change(
                     "connection_state",
                     "conn.plan",
                     2,
                     {"status": "active", "reason": "Explicit controlled component"},
                 )
-                connection = change(
+                change(
                     "associate_deployment",
                     "conn.plan",
                     3,

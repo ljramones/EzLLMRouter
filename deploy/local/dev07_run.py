@@ -10,7 +10,6 @@ from __future__ import annotations
 import http.client
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -813,7 +812,7 @@ def main():
             "DEV-07 stopped: " + type(exc).__name__ + "; evidence: " + str(run.path),
             file=sys.stderr,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 if __name__ == "__main__":

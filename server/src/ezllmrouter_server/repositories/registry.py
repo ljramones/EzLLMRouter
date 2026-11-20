@@ -54,7 +54,7 @@ APPLY_UPDATE_CONSOLE_USERS = Query(
 )
 
 
-def LOAD_FOR_UPDATE_SELECT_RECORD(*, column, table):
+def LOAD_FOR_UPDATE_SELECT_RECORD(*, column: str, table: str) -> Query:
     identifier(column)
     identifier(table)
     return Query(f"SELECT record FROM {table} WHERE {column}=?")
@@ -71,7 +71,7 @@ VERSION_SELECT_REGISTRY_META = Query(
 )
 
 
-def RECORD_SELECT_RECORD(*, table, where):
+def RECORD_SELECT_RECORD(*, table: str, where: str) -> Query:
     identifier(table)
     predicate(where)
     return Query(f"SELECT record FROM {table} WHERE {where}")
@@ -194,7 +194,7 @@ SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS = Query(
 )
 
 
-def ACTION_SELECT_RECORD(*, table):
+def ACTION_SELECT_RECORD(*, table: str) -> Query:
     identifier(table)
     return Query(
         f"SELECT record FROM {table} WHERE {('ref' if table == 'registry_models' else 'id')}=?"

@@ -2,7 +2,6 @@
 
 import http.client
 import json
-from pathlib import Path
 import socket
 import threading
 import unittest

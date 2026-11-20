@@ -187,4 +187,4 @@ if __name__ == "__main__":
         main()
     except Exception as exc:
         print("DEV-07 actor failed: " + type(exc).__name__, file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc

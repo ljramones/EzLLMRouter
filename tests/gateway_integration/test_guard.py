@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import sqlite3
 import unittest
 from unittest.mock import patch
 
@@ -219,7 +220,7 @@ class StoreGuardTests(unittest.TestCase):
             }
             store.guard_commit("submission.one", "attempt.one", receipt)
             self.assertEqual(store.guard_record("attempt.one"), receipt)
-            with self.assertRaises(Exception):
+            with self.assertRaises(sqlite3.IntegrityError):
                 store.guard_commit(
                     "submission.one", "attempt.one", {**receipt, "body_sha256": "def"}
                 )

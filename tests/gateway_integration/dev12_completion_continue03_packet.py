@@ -177,10 +177,12 @@ def build(repo, review, export, lineage, input_zip, stage, output):
     ]
     names = [str(path.relative_to(stage)) for path in included]
     assert len(names) == len(set(names))
-    manifest = [f"{digest(path.read_bytes())}  {name}" for path, name in zip(included, names)]
+    manifest = [
+        f"{digest(path.read_bytes())}  {name}" for path, name in zip(included, names, strict=True)
+    ]
     (stage / "MANIFEST.sha256").write_text("\n".join(manifest) + "\n")
     with ZipFile(output, "x", ZIP_DEFLATED, compresslevel=6) as z:
-        for path, name in zip(included, names):
+        for path, name in zip(included, names, strict=True):
             z.write(path, name)
         z.write(stage / "MANIFEST.sha256", "MANIFEST.sha256")
     with ZipFile(output) as z:

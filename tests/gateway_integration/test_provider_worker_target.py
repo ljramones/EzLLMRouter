@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 from datetime import datetime, timedelta, timezone
 import json
 import os
-import sys
 import traceback
 
 import httpx

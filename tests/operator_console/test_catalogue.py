@@ -11,6 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 from ezllmrouter_server.catalogue import validate_catalogue
+from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.registry import Registry, RegistryConflict
 from ezllmrouter_server.store import SQLiteStore
 
@@ -86,7 +87,7 @@ class CatalogueTests(unittest.TestCase):
                 ],
                 False,
             )
-            with self.assertRaises(Exception):
+            with self.assertRaises(ContractError):
                 self.registry.admit("svc.demo", request["subject"], "execution", "class.demo")
             self.assertEqual(self.registry.prices(request["subject"]), [])
             self.assertIsNone(self.registry.grant("svc.demo", request["subject"]))

@@ -4,7 +4,6 @@ import json
 import http.client
 from pathlib import Path
 import socket
-import sqlite3
 import sys
 import tempfile
 import threading

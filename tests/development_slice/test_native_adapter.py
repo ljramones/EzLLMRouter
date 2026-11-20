@@ -1,6 +1,5 @@
 """Container-only actual HTTPX request checks with mocked lower network I/O."""
 
-import json
 import unittest
 from unittest.mock import patch
 

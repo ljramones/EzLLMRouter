@@ -3,7 +3,7 @@
 from ..database import Query, identifier
 
 
-def RECORD_SELECT_RECORD(*, key, table):
+def RECORD_SELECT_RECORD(*, key: str, table: str) -> Query:
     identifier(key)
     identifier(table)
     return Query(f"SELECT record FROM {table} WHERE {key}=?")

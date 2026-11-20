@@ -14,6 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server/src"))
 
 from ezllmrouter_server.core import usage_revision
+from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.registry import Registry, RegistryConflict
 from ezllmrouter_server.store import SQLiteStore
 
@@ -241,15 +242,15 @@ class RegistryTests(unittest.TestCase):
         before = self.authority.epoch
         self.change("set_grant", "svc.beta", 1, {**request["data"], "status": "removed"})
         self.assertEqual(self.authority.epoch, before + 1)
-        with self.assertRaises(Exception):
+        with self.assertRaises(ContractError):
             self.registry.check_current("svc.beta", "cfg.beta", "execution", "class.demo", decision)
         self.change("set_grant", "svc.beta", 2, request["data"])
-        with self.assertRaises(Exception):
+        with self.assertRaises(ContractError):
             self.registry.check_current("svc.beta", "cfg.beta", "execution", "class.demo", decision)
         self.change(
             "principal_state", "svc.beta", 3, {"status": "suspended", "reason": "Test suspension"}
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ContractError):
             self.registry.authenticate(secret, TRUSTED)
 
     def test_failed_audit_is_not_a_successful_change(self):
@@ -258,7 +259,7 @@ class RegistryTests(unittest.TestCase):
             "CREATE TRIGGER deny_registry_audit BEFORE INSERT ON registry_audit "
             "BEGIN SELECT RAISE(ABORT,'test audit failure'); END"
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(sqlite3.IntegrityError):
             self.change(
                 "create_principal",
                 "svc.abort",
@@ -590,7 +591,7 @@ class RegistryTests(unittest.TestCase):
         )["record"]
         self.assertEqual(retired["status"], "revoked")
         self.assertEqual(self.authority.epoch, before + 1)
-        with self.assertRaises(Exception):
+        with self.assertRaises(ContractError):
             self.registry.check_current("svc.demo", "cfg.beta", "execution", "class.demo", decision)
         self.assertEqual(self.registry.grant("svc.demo", "cfg.beta")["status"], "active")
         self.assertEqual(len(self.registry.prices("cfg.beta")), 1)

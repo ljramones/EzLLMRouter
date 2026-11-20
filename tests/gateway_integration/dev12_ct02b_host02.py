@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from hashlib import sha256
 import argparse
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
-import time
 from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -19,13 +16,11 @@ from dev12_completion_preflight import mounted_source_identity
 from dev12_completion_source_custody import source_files
 from dev12_ct02b_supp02 import (
     ADJUDICATION_SHA,
-    ALLOC,
     BUDGET,
     CAMPAIGN,
     CASE,
     EXPIRY,
     GENERATION,
-    ORIGINAL,
     OWNER,
     PREDECESSOR_PACKET_SHA,
     ROOT_BASENAME,
@@ -33,8 +28,6 @@ from dev12_ct02b_supp02 import (
     digest,
     durable_json,
     now,
-    original_snapshot,
-    release_allocation,
     utc,
     verify_legacy,
 )

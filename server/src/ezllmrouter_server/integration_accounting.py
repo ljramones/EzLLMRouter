@@ -1633,7 +1633,7 @@ class ExternalAccounting:
                 else:
                     account_status = "registered_at_start"
 
-                def snapshot_state(sid, expected_kind):
+                def snapshot_state(sid, expected_kind, *, start=start):
                     if not sid or sid not in snapshots:
                         return "missing", None
                     meta, content, digest = snapshots[sid]

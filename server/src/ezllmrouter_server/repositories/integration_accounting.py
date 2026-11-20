@@ -95,7 +95,7 @@ ACTION_SELECT_INTEGRATION_DATASETS = Query(
 )
 
 
-def ACTION_DELETE_RECORD(*, table):
+def ACTION_DELETE_RECORD(*, table: str) -> Query:
     identifier(table)
     return Query(f"DELETE FROM {table} WHERE dataset_id=?")
 

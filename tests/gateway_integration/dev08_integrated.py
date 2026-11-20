@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
 import os
@@ -460,4 +459,4 @@ if __name__ == "__main__":
         run(preflight=sys.argv[1:] == ["--preflight"])
     except Exception as exc:
         print("DEV-08 controlled integration failed: " + type(exc).__name__, file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc

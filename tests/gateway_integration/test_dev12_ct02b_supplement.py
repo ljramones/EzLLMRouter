@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dev12_ct02b_supplement import (
     BUDGET,
     CAMPAIGN,
-    EXPIRY,
     OWNER,
     _insert_once,
     request_pair,
