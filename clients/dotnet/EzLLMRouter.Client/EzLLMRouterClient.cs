@@ -21,6 +21,7 @@ public sealed class EzLLMRouterClient : IDisposable
     public Task<JsonObject> SubmitInRunAsync(JsonObject request, string? runId, int? waitMs = null, CancellationToken cancellationToken = default)
     {
         var body = Protocol.Snapshot(request); var selector = new JsonObject();
+        if (!Schema.Policy(body, false, false)) throw Protocol.Invalid();
         foreach (string key in Protocol.SelectorKeys) selector[key] = At(body, key)?.DeepClone();
         if (!Schema.Named(selector, "0.2", "WorkSelector") || runId is not null && !Id(JsonValue.Create(runId))) throw Protocol.Invalid();
         var headers = Wait(waitMs);

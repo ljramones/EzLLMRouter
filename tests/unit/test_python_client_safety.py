@@ -159,9 +159,7 @@ class ClientTransportTests(unittest.TestCase):
                 self.subTest(client=client_type.__name__),
                 client_type("http://synthetic.invalid", "token") as client,
             ):
-                transport = (
-                    client.transport if isinstance(client, IntegrationClient) else client._transport
-                )
+                transport = client._transport
                 timeout = transport.timeout
                 self.assertEqual(
                     (timeout.connect, timeout.read, timeout.write, timeout.pool), (10, 35, 30, 10)
@@ -171,9 +169,7 @@ class ClientTransportTests(unittest.TestCase):
             with client_type(
                 "http://synthetic.invalid", "token", timeout=httpx.Timeout(2, read=40)
             ) as client:
-                transport = (
-                    client.transport if isinstance(client, IntegrationClient) else client._transport
-                )
+                transport = client._transport
                 self.assertEqual(transport.timeout.connect, 2)
                 self.assertEqual(transport.timeout.read, 40)
 

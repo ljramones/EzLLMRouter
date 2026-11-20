@@ -9,7 +9,9 @@ describe when each capability was introduced.
 Python `>=3.12,<3.13` is supported. The [v2 contract](../../docs/API.md#external-accounting-v2)
 and [examples](../../tests/fixtures/contracts/integration-readiness-v2/examples.json)
 define complete successor event records. Install the private `0.3.0` wheel with
-its frozen HTTPX dependencies.
+its frozen HTTPX dependencies. HTTPX 0.28.1 and HTTPcore 1.0.9 are pinned because
+the total-deadline transport depends on their synchronous network-stream behavior;
+other dependency/Python versions are not qualified by this package.
 
 ```python
 from ezllmrouter_client import IntegrationClient, IntegrationClientError
@@ -68,6 +70,12 @@ The default transport enforces the remaining budget on network operations throug
 HTTPcore 1.0.9, the already locked HTTPX dependency. Synchronous OS DNS resolution
 and address fallback can overrun their budget; a connection returned after expiry
 is closed before a request is sent. Call `close()` or use a context manager.
+
+For a private CA, pass `verify=ssl.create_default_context(cafile="/path/ca.pem")`
+to either client. A CA file path is also accepted through the pinned HTTPX helper.
+The built-in transport uses that trust context and its hostname checks
+and total deadlines. If injecting `transport=`, configure TLS on that transport
+instead; combining it with a non-default `verify=` is rejected.
 `get_status` also accepts `contract_version="0.3"`. The explicit compatibility
 methods `getStatus` and `getCapabilities` delegate to the snake_case API.
 
@@ -82,7 +90,16 @@ The package ships `py.typed` and annotated public methods. JSON payloads remain
 Catch `ClientError` for either client's protocol and transport errors. Accounting
 input failures raise `IntegrationInputError`, which also retains `TypeError`
 compatibility, with code `SCHEMA_INVALID`. Existing protocol-specific error
-classes remain available. Configuration errors remain `TypeError`.
+classes remain available. Closed-client operations raise a typed `CLIENT_CLOSED`
+error with `never` recovery; invalid execution request objects use `SCHEMA_INVALID`.
+Configuration errors remain `TypeError`. Decoded response schema/correspondence failures use
+`PROTOCOL_INVALID`; unreadable or malformed replies retain
+`TRANSPORT_OUTCOME_UNKNOWN`. Valid server errors retain their original code. Missing or
+invalid accounting retry guidance defaults to `query_first` for 5xx responses.
+
+The accounting client no longer exposes its raw transport as a public property.
+Callers that inject a transport can retain their own reference; client shutdown
+continues to close the supplied transport.
 
 HTTPX responses are streamed into a bounded buffer with `Accept-Encoding:
 identity`; compressed responses are rejected before decoding. Wire 0.2 and

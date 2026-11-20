@@ -5,6 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from copy import deepcopy
 import socket
+import ssl
+import shutil
+import subprocess
+import tempfile
+import json
+from pathlib import Path
+from contextlib import suppress
 import threading
 import unittest
 from unittest.mock import patch
@@ -13,6 +20,7 @@ import httpcore
 import httpx
 
 from ezllmrouter_client import (
+    ClientError,
     EzLLMRouterClient,
     EzLLMRouterError,
     IntegrationClient,
@@ -338,6 +346,122 @@ class ClientDeadlineTests(unittest.TestCase):
 
 
 class SocketDeadlineTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("openssl"), "openssl is required for private-CA verification")
+    def test_private_ca_verification_works_for_both_clients_and_default_trust_rejects_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cert, key = Path(temporary) / "cert.pem", Path(temporary) / "key.pem"
+            subprocess.run(
+                [
+                    "openssl",
+                    "req",
+                    "-x509",
+                    "-newkey",
+                    "rsa:2048",
+                    "-nodes",
+                    "-keyout",
+                    str(key),
+                    "-out",
+                    str(cert),
+                    "-days",
+                    "1",
+                    "-subj",
+                    "/CN=service.test",
+                    "-addext",
+                    "subjectAltName=DNS:service.test",
+                ],
+                check=True,
+                capture_output=True,
+                timeout=10,
+            )
+            server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            server_context.load_cert_chain(cert, key)
+            for cls, trusted in (
+                (EzLLMRouterClient, True),
+                (IntegrationClient, True),
+                (EzLLMRouterClient, False),
+            ):
+                with self.subTest(client=cls.__name__, trusted=trusted):
+                    client_socket, peer = socket.socketpair()
+                    requests, failures = [], []
+
+                    class ConnectedSocket:
+                        def setsockopt(self, *_args):
+                            pass
+
+                        def __getattr__(self, name, *, connection=client_socket):
+                            return getattr(connection, name)
+
+                    body = json.dumps(
+                        EXAMPLES["capabilities"]
+                        if cls is EzLLMRouterClient
+                        else {"integration_version": "1"}
+                    ).encode()
+                    header = (
+                        "EzLLMRouter-Contract-Version: 0.2"
+                        if cls is EzLLMRouterClient
+                        else "EzLLMRouter-Integration-Version: 1"
+                    )
+
+                    def server(
+                        *, peer=peer, body=body, header=header, requests=requests, failures=failures
+                    ):
+                        try:
+                            peer.settimeout(2)
+                            with server_context.wrap_socket(peer, server_side=True) as secured:
+                                raw = b""
+                                while b"\r\n\r\n" not in raw:
+                                    chunk = secured.recv(4096)
+                                    if not chunk:
+                                        return
+                                    raw += chunk
+                                requests.append(raw)
+                                secured.sendall(
+                                    (
+                                        "HTTP/1.1 200 OK\r\nConnection: close\r\n"
+                                        + header
+                                        + "\r\nContent-Length: "
+                                        + str(len(body))
+                                        + "\r\n\r\n"
+                                    ).encode()
+                                    + body
+                                )
+                        except ssl.SSLError as error:
+                            failures.append(type(error).__name__)
+                        finally:
+                            peer.close()
+
+                    thread = threading.Thread(target=server)
+                    thread.start()
+                    verify = ssl.create_default_context(cafile=str(cert)) if trusted else True
+                    try:
+                        with (
+                            patch.object(
+                                socket, "create_connection", return_value=ConnectedSocket()
+                            ),
+                            cls(
+                                "https://service.test", "token", verify=verify, total_timeout=2
+                            ) as client,
+                        ):
+                            action = (
+                                client.get_capabilities
+                                if cls is EzLLMRouterClient
+                                else lambda: client.report("dataset.test")
+                            )
+                            if trusted:
+                                self.assertIsInstance(action(), dict)
+                            else:
+                                with self.assertRaises(ClientError):
+                                    action()
+                        thread.join(timeout=3)
+                        self.assertFalse(thread.is_alive())
+                        self.assertEqual(len(requests), int(trusted))
+                        self.assertEqual(bool(failures), not trusted)
+                    finally:
+                        with suppress(OSError):
+                            client_socket.close()
+                            peer.close()
+                        thread.join(timeout=3)
+
     def test_real_blocked_header_and_body_reads_expire_without_a_listener(self):
         for body in (False, True):
             with self.subTest(body=body):

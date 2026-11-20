@@ -198,9 +198,31 @@ func matches(v any, shape Object, defs Object) bool {
 	}
 	return true
 }
+func valuePolicy(value any, nulls, controls bool) bool {
+	switch v := value.(type) {
+	case nil:
+		return nulls
+	case string:
+		return !controls || !strings.ContainsFunc(v, func(r rune) bool { return r < 32 || r == 127 })
+	case Object:
+		for key, item := range v {
+			if !valuePolicy(key, nulls, controls) || !valuePolicy(item, nulls, controls) {
+				return false
+			}
+		}
+	case []any:
+		for _, item := range v {
+			if !valuePolicy(item, nulls, controls) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func named(v any, version, name string) bool {
 	defs := schemas[version]
-	return has(defs, name) && matches(v, field(defs, name), defs)
+	return (version != "0.3" || valuePolicy(v, true, true)) && has(defs, name) && matches(v, field(defs, name), defs)
 }
 func selected(request Object) Object {
 	out := Object{}

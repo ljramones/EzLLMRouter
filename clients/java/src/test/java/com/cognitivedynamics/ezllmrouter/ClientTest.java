@@ -124,7 +124,7 @@ public final class ClientTest {
                     check(List.of("success", "chunked").contains(mode) && eq(result.get("profile"), "initial_1a@1"), "HTTP response accepted: " + mode);
                 } catch (EzLLMRouterException error) {
                     check(!List.of("success", "chunked").contains(mode), "valid HTTP response rejected: " + mode);
-                    check(error.getCode().equals(mode.equals("redirect") ? "INTERNAL_UNAVAILABLE" : "TRANSPORT_OUTCOME_UNKNOWN") && error.getRetryGuidance().equals("query_first"), "HTTP error: " + mode);
+                    check(error.getCode().equals(mode.equals("redirect") ? "PROTOCOL_INVALID" : "TRANSPORT_OUTCOME_UNKNOWN") && error.getRetryGuidance().equals("query_first"), "HTTP error: " + mode);
                 }
             }
         }

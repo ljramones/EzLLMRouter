@@ -66,12 +66,13 @@ npm --prefix clients/js run test:http
 npm --prefix clients/js run test:types
 ```
 
-The JavaScript checks run the 125 shared contract cases against Python's expected
+The JavaScript checks run the 144 shared contract cases against Python's expected
 errors, handles and exact outgoing requests. Additional cases cover streamed byte
 limits, cleanup, strict decoding, new configuration profiles and large embeddings.
 The HTTP fixture also sends an oversized chunked body to exercise native fetch
-cancellation. Its deadline is supplied by the fixture's caller; these checks do
-not establish a default total deadline. See the
+cancellation. Installed-client checks also exercise total fetch/body deadlines,
+reader cleanup and local serialization failures. Real listener-based HTTP checks
+remain a separate target check. See the
 [review follow-up](CODE-REVIEW-FOLLOWUP.md) for remaining work.
 
 Go and Java clients are independent packages with no external runtime dependencies.

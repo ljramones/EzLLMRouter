@@ -54,7 +54,7 @@ func (c *Client) SubmitInRun(ctx context.Context, request Object, runID string, 
 }
 func (c *Client) submit(ctx context.Context, request Object, options *SubmitOptions, runID string) (Object, error) {
 	body, err := snapshot(request)
-	if err != nil || body == nil || !named(selected(body), "0.2", "WorkSelector") {
+	if err != nil || body == nil || !valuePolicy(body, false, false) || !named(selected(body), "0.2", "WorkSelector") {
 		return nil, problem("SCHEMA_INVALID", 0, "never", nil)
 	}
 	h, err := headers(options)

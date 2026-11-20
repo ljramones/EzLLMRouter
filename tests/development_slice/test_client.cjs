@@ -64,12 +64,12 @@ async function main() {
     { contract_version: "0.2", state: "bogus" },
     { ...vectors.reply_delivered, candidate: { ...vectors.reply_delivered.candidate, output_blocks: [] } }]) {
     const { client, calls } = clientFor(value);
-    await rejected(client.submit(vectors.submit_text), "INTERNAL_UNAVAILABLE", selector);
+    await rejected(client.submit(vectors.submit_text), "PROTOCOL_INVALID", selector);
     assert.equal(calls(), 1);
   }
   const statusSelector = { submission_id: "submission.demo" };
   const invalidStatus = clientFor({ ...vectors.status_present, handle: {} });
-  await rejected(invalidStatus.client.getStatus(statusSelector), "INTERNAL_UNAVAILABLE", statusSelector);
+  await rejected(invalidStatus.client.getStatus(statusSelector), "PROTOCOL_INVALID", statusSelector);
   for (const bad of [{ submission_id: "" }, { task_id: {}, step_id: "step.demo",
     step_revision: 1, execution_generation: "generation.demo" }]) {
     const { client, calls } = clientFor(vectors.status_present);
@@ -85,15 +85,15 @@ async function main() {
   const wrongVersion = { ...vectors.reply_delivered, contract_version: "9.9" };
   for (const value of [wrongWork, wrongUsage, wrongTime]) {
     const { client } = clientFor(value);
-    await rejected(client.submit(vectors.submit_text), "INTERNAL_UNAVAILABLE", selector);
+    await rejected(client.submit(vectors.submit_text), "PROTOCOL_INVALID", selector);
   }
   await rejected(clientFor(wrongVersion).client.submit(vectors.submit_text), "UNSUPPORTED_VERSION", selector);
   const otherStatus = structuredClone(vectors.status_present);
   otherStatus.handle.submission_id = "submission.other";
-  await rejected(clientFor(otherStatus).client.getStatus(statusSelector), "INTERNAL_UNAVAILABLE", statusSelector);
+  await rejected(clientFor(otherStatus).client.getStatus(statusSelector), "PROTOCOL_INVALID", statusSelector);
   const mismatchedAttempt = structuredClone(vectors.status_present);
   mismatchedAttempt.attempts[0].usage = availableUsage("attempt.other");
-  await rejected(clientFor(mismatchedAttempt).client.getStatus(statusSelector), "INTERNAL_UNAVAILABLE", statusSelector);
+  await rejected(clientFor(mismatchedAttempt).client.getStatus(statusSelector), "PROTOCOL_INVALID", statusSelector);
   const byWork = { task_id: vectors.submit_text.task_id, step_id: vectors.submit_text.step_id,
     step_revision: vectors.submit_text.step_revision, execution_generation: vectors.submit_text.execution_generation };
   await clientFor(vectors.status_present).client.getStatus(byWork);
@@ -101,8 +101,8 @@ async function main() {
     { submission_id: "submission.demo", work_key: null }, "invalid"]) {
     const badReply = { ...structuredClone(vectors.reply_delivered), handle };
     const badStatus = { ...structuredClone(vectors.status_present), handle };
-    await rejected(clientFor(badReply).client.submit(vectors.submit_text), "INTERNAL_UNAVAILABLE", selector);
-    await rejected(clientFor(badStatus).client.getStatus(byWork), "INTERNAL_UNAVAILABLE", byWork);
+    await rejected(clientFor(badReply).client.submit(vectors.submit_text), "PROTOCOL_INVALID", selector);
+    await rejected(clientFor(badStatus).client.getStatus(byWork), "PROTOCOL_INVALID", byWork);
   }
   for (const kind of ["by_work", "by_id"]) {
     for (const returnOriginal of [true, false]) {
@@ -132,11 +132,11 @@ async function main() {
       assert.ok(requestUrl.includes(kind === "by_id" ? "/submission.demo" : "/task.demo/"));
       release();
       if (returnOriginal) assert.equal((await pending).handle.submission_id, "submission.demo");
-      else await rejected(pending, "INTERNAL_UNAVAILABLE", original);
+      else await rejected(pending, "PROTOCOL_INVALID", original);
     }
   }
   const invalidCaps = clientFor({ ...vectors.capabilities, supported_features: ["bogus"] });
-  await rejected(invalidCaps.client.getCapabilities(), "INTERNAL_UNAVAILABLE");
+  await rejected(invalidCaps.client.getCapabilities(), "PROTOCOL_INVALID");
   let lostCalls = 0;
   const lost = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "token.synthetic",
     fetchImpl: async () => { lostCalls++; throw Error("synthetic transport loss"); } });

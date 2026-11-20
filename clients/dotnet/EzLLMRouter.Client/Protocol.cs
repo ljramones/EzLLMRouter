@@ -23,7 +23,7 @@ internal static class Protocol
             : SelectorKeys.All(key => Eq(At(At(handle, "work_key"), key), At(selector, key)));
         return matches ? handle : null;
     }
-    internal static EzLLMRouterException Bad(int status, JsonObject? selector, JsonObject? handle) => new("INTERNAL_UNAVAILABLE", status, "query_first", selector) { Handle = handle?.DeepClone() as JsonObject };
+    internal static EzLLMRouterException Bad(int status, JsonObject? selector, JsonObject? handle) => new("PROTOCOL_INVALID", status, "query_first", selector) { Handle = handle?.DeepClone() as JsonObject };
     internal static EzLLMRouterException Evidence(JsonNode? evidence, int status, JsonObject? selector, JsonObject? handle, JsonObject envelope) => new(Text(At(evidence, "code")), status, Text(At(evidence, "retry_guidance")), selector)
     { CorrelationId = Text(At(evidence, "correlation_id")), Handle = handle?.DeepClone() as JsonObject,
       AttemptId = Has(envelope, "attempt_id") ? Text(At(envelope, "attempt_id")) : null,

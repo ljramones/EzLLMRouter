@@ -176,7 +176,7 @@ class ModelIdentityTests(unittest.TestCase):
                         client.getStatus({"submission_id": sid})
                 self.assertEqual(
                     (first.exception.code, second.exception.code),
-                    ("INTERNAL_UNAVAILABLE", "INTERNAL_UNAVAILABLE"),
+                    ("PROTOCOL_INVALID", "PROTOCOL_INVALID"),
                 )
                 self._check_js_package(temp, request, invalid_reply, invalid_status, reject=True)
             finally:
@@ -236,7 +236,7 @@ const client = new EzLLMRouterClient({baseUrl: "http://127.0.0.1:8765", token: "
     for (const call of [() => client.submit(data.request),
                         () => client.getStatus({submission_id: data.reply.handle.submission_id})]) {
       try { await call(); throw Error("invalid model accepted"); }
-      catch (error) { if (error.code !== "INTERNAL_UNAVAILABLE") throw error; }
+      catch (error) { if (error.code !== "PROTOCOL_INVALID") throw error; }
     }
   } else {
     const a = await client.submit(data.request);

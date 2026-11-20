@@ -23,7 +23,7 @@ public sealed class IntegrationClient : IDisposable
         {
             var error = At(value, "error"); string code = Text(At(error, "code")), guidance = Text(At(error, "retry_guidance"));
             if (code.Length == 0) throw new EzLLMRouterException("TRANSPORT_OUTCOME_UNKNOWN", status, "query_first");
-            throw new EzLLMRouterException(code, status, guidance.Length == 0 ? "never" : guidance);
+            throw new EzLLMRouterException(code, status, guidance is "never" or "query_first" or "orchestrator_decision" ? guidance : status >= 500 ? "query_first" : "never");
         }
         if (!expected.Contains(status)) throw new EzLLMRouterException("PROTOCOL_INVALID", status, "query_first");
         return value;

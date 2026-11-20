@@ -302,7 +302,7 @@ func TestHTTPTransport(t *testing.T) {
 			}
 			expected := "TRANSPORT_OUTCOME_UNKNOWN"
 			if mode == "redirect" {
-				expected = "INTERNAL_UNAVAILABLE"
+				expected = "PROTOCOL_INVALID"
 			}
 			if failure.Code != expected {
 				t.Fatal(failure)

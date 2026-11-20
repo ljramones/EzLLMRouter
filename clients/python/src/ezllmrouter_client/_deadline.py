@@ -171,12 +171,19 @@ class _ResponseStream(httpx.SyncByteStream):
 
 
 class DeadlineHTTPTransport(httpx.BaseTransport):
-    def __init__(self, *, backend: httpcore.NetworkBackend | None = None):
+    def __init__(
+        self,
+        *,
+        backend: httpcore.NetworkBackend | None = None,
+        verify: ssl.SSLContext | str | bool = True,
+    ):
+        if not isinstance(verify, (ssl.SSLContext, str, bool)):
+            raise TypeError("verify must be an SSLContext, CA file path or boolean")
         self.pool = httpcore.ConnectionPool(
             max_connections=100,
             max_keepalive_connections=20,
             keepalive_expiry=5.0,
-            ssl_context=httpx.create_ssl_context(trust_env=False),
+            ssl_context=httpx.create_ssl_context(verify=verify, trust_env=False),
             retries=0,
             network_backend=_DeadlineBackend(backend or httpcore.SyncBackend()),
         )

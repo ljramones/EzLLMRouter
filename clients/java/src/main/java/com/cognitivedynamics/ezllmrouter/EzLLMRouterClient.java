@@ -30,6 +30,7 @@ public final class EzLLMRouterClient implements AutoCloseable {
     public Map<String, Object> submit(Map<String, Object> request, Integer waitMs) { return submitInRun(request, null, waitMs); }
     public Map<String, Object> submitInRun(Map<String, Object> request, String runId, Integer waitMs) {
         Map<String, Object> body = snapshot(request), selector = new LinkedHashMap<>();
+        if (!Schema.policy(body, false, false)) throw Protocol.invalid();
         for (String key : Protocol.SELECTOR) selector.put(key, body.get(key));
         if (!Schema.named(selector, "0.2", "WorkSelector") || runId != null && !id(runId)) throw Protocol.invalid();
         Map<String, String> headers = new HashMap<>(waitHeader(waitMs));

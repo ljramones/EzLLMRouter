@@ -16,7 +16,16 @@ const streamed: FetchImplementation = async () => ({
   status: 200, ok: true, headers: { get: () => null }, body: { getReader: () => reader },
   json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0),
 });
-new EzLLMRouterClient({baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl: streamed});
+new EzLLMRouterClient({baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl: streamed, timeoutMs: 35000});
+const deadlineAware: FetchImplementation = async (_url, options) => {
+  const aborted: boolean | undefined = options.signal?.aborted;
+  void aborted;
+  return injected(_url, options);
+};
+new IntegrationClient("http://synthetic.invalid", "synthetic", {fetchImpl: deadlineAware, timeoutMs: null});
+declare const accountingError: IntegrationClientError;
+const accountingStatus: number | null = accountingError.http_status;
+void accountingStatus;
 const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token", fetchImpl: injected });
 const capabilities: Promise<Wire02.CapabilityResponse> = client.getCapabilities();
 const status: Promise<Wire02.StatusSnapshot> = client.getStatus({ submission_id: "submission.synthetic" });

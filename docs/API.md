@@ -102,10 +102,19 @@ phase limits; deadline failures preserve query-first recovery and do not replay
 the request. See the [Python guide](../clients/python/README.md) for disabling the
 budget explicitly and the OS DNS/custom-transport limits.
 
-Free text in model results and tool arguments preserves escaped newlines, tabs
+JavaScript clients accept `timeoutMs`, defaulting to 35,000 ms across fetch and
+body reading; `null` explicitly disables the total budget. Both Python clients
+accept `verify=` for a private CA with their built-in deadline transport. Across
+clients, decoded response schema/correspondence violations use `PROTOCOL_INVALID`,
+while unreadable/malformed replies retain `TRANSPORT_OUTCOME_UNKNOWN`. A valid
+server error keeps its public code. Missing/invalid accounting retry
+guidance on 5xx responses defaults to `query_first`; requests are never replayed
+automatically.
+
+Wire 0.2 free text in model results and tool arguments preserves escaped newlines, tabs
 and other valid Unicode content. NUL and lone surrogate code points are rejected.
-Identifiers, timestamps and fields with explicit text restrictions still use
-their schema rules.
+Wire 0.3 strings reject C0 and DEL controls. Identifiers, timestamps and fields
+with explicit text restrictions still use their schema rules.
 
 ## Identity and identifier rules
 

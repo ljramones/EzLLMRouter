@@ -42,10 +42,10 @@ function streamed(chunks, kind = "wire", extraHeaders = {}) {
   return {state, reader, response, fetchImpl};
 }
 
-function operation(kind, fetchImpl) {
-  const settings = {baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl};
+function operation(kind, fetchImpl, timeoutMs) {
+  const settings = {baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl, timeoutMs};
   if (kind === "integration") {
-    return () => new IntegrationClient(settings.baseUrl, settings.token, {fetchImpl}).report("dataset.synthetic");
+    return () => new IntegrationClient(settings.baseUrl, settings.token, {fetchImpl, timeoutMs}).report("dataset.synthetic");
   }
   const client = new EzLLMRouterClient(settings);
   return {wire: () => client.submit(clone(legacy.submit_text)),
@@ -199,7 +199,7 @@ for (const wire of ["0.2", "0.3"]) {
         else reply.handle.submission_id = "submission.foreign";
         await assert.rejects(action(wireClient(reply, wire), kind,
           {submission_id: original.handle.submission_id}), error => {
-          assert.equal(error.code, "INTERNAL_UNAVAILABLE");
+          assert.equal(error.code, "PROTOCOL_INVALID");
           assert.equal(error.retry_guidance, "query_first");
           assert.equal(error.handle, undefined);
           assert.equal(error.work_key, undefined);
@@ -234,7 +234,7 @@ test("wire: a trailing newline cannot turn a foreign submission ID into a recove
   const reply = clone(legacy.status_present);
   reply.handle.submission_id += "\n";
   await assert.rejects(wireClient(reply, "0.2").getStatus({submission_id: "submission.demo"}), error => {
-    assert.equal(error.code, "INTERNAL_UNAVAILABLE");
+    assert.equal(error.code, "PROTOCOL_INVALID");
     assert.equal(error.handle, undefined);
     return true;
   });
@@ -278,14 +278,14 @@ test("successor: embedding profile, model, dimensions and item correspondence st
     const bad = clone(reply);
     bad.result[key] = value;
     await assert.rejects(wireClient(bad, "0.3").submit_embedding(request), error => {
-      assert.equal(error.code, "INTERNAL_UNAVAILABLE");
+      assert.equal(error.code, "PROTOCOL_INVALID");
       assert.deepEqual(error.handle, reply.handle);
       return true;
     });
   }
   const bad = clone(reply);
   bad.result.vectors[0].item_id = "item.foreign";
-  await assert.rejects(wireClient(bad, "0.3").submit_embedding(request), error => error.code === "INTERNAL_UNAVAILABLE");
+  await assert.rejects(wireClient(bad, "0.3").submit_embedding(request), error => error.code === "PROTOCOL_INVALID");
 });
 
 test("successor: new rerank profiles match the request without a synthetic configuration allowlist", async () => {
@@ -296,5 +296,88 @@ test("successor: new rerank profiles match the request without a synthetic confi
   reply.result.ranking_profile_id = "rank.new";
   assert.equal((await wireClient(reply, "0.3").submit_rerank(request)).result.ranking_profile_id, "rank.new");
   reply.result.ranking_profile_id = "rank.foreign";
-  await assert.rejects(wireClient(reply, "0.3").submit_rerank(request), error => error.code === "INTERNAL_UNAVAILABLE");
+  await assert.rejects(wireClient(reply, "0.3").submit_rerank(request), error => error.code === "PROTOCOL_INVALID");
+});
+
+for (const kind of methods) {
+  test(`${kind}: one total deadline bounds a fetch that never resolves`, async () => {
+    let calls=0, signal;
+    const started=performance.now();
+    await unknown(operation(kind,async (_url,options)=>{calls++;signal=options.signal;return new Promise(()=>{});},25),kind,null);
+    assert.equal(calls,1);assert.equal(signal.aborted,true);
+    assert(performance.now()-started<1000);
+  });
+  test(`${kind}: deadline includes a stalled response body and cancels its reader`, async () => {
+    const stream=streamed([],kind);
+    stream.reader.read=()=>new Promise(()=>{});
+    await unknown(operation(kind,stream.fetchImpl,25),kind,200);
+    assert.equal(stream.state.calls.length,1);
+    assert.equal(stream.state.cancelled,1);
+    assert.equal(stream.state.released,1);
+  });
+  test(`${kind}: slow body chunks cannot restart the total deadline`, async () => {
+    const stream=streamed(Array(20).fill(Buffer.from(" ")),kind);
+    const read=stream.reader.read;
+    stream.reader.read=async()=>{await new Promise(resolve=>setTimeout(resolve,8));return read();};
+    await unknown(operation(kind,stream.fetchImpl,25),kind,200);
+    await new Promise(resolve=>setTimeout(resolve,15));
+    assert(stream.state.reads<20);
+    assert.equal(stream.state.calls.length,1);
+    assert.equal(stream.state.cancelled,1);
+    assert.equal(stream.state.released,1);
+  });
+}
+
+test("local circular, BigInt, float and null request values never reach fetch",async()=>{
+  let calls=0;
+  const client=new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"synthetic",fetchImpl:async()=>{calls++;throw Error("unexpected send");}});
+  const circular={};circular.self=circular;
+  for(const value of [circular,1n,1.25,null]){
+    const request=clone(legacy.submit_text);request.extra=value;
+    await assert.rejects(client.submit(request),error=>error instanceof EzLLMRouterError&&error.code==="SCHEMA_INVALID"&&error.retry_guidance==="never");
+  }
+  const integration=new IntegrationClient("http://synthetic.invalid","synthetic",{fetchImpl:async()=>{calls++;throw Error("unexpected send");}});
+  for(const value of [circular,1n])await assert.rejects(integration.submitObservation({extra:value}),error=>error instanceof IntegrationClientError&&error.code==="SCHEMA_INVALID"&&error.retry_guidance==="never");
+  assert.equal(calls,0);
+});
+
+test("credentials stay private in both client diagnostic representations",()=>{
+  const {inspect}=require("node:util"),token="synthetic-private-credential-canary";
+  for(const client of [new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token}),new IntegrationClient("http://synthetic.invalid",token)]){
+    assert.equal(client.token,undefined);
+    assert(!inspect(client,{showHidden:true}).includes(token));
+    assert(!JSON.stringify(client).includes(token));
+  }
+  const error=new IntegrationClientError("SYNTHETIC",503,"query_first");
+  assert.equal(error.http_status,error.httpStatus);
+  assert.equal(error.retry_guidance,error.retryGuidance);
+});
+
+test("timeout configuration and header credentials are validated before fetch",()=>{
+  for(const timeoutMs of [0,-1,1.5,Infinity,NaN,2147483648]){
+    assert.throws(()=>new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"synthetic",timeoutMs}),TypeError);
+    assert.throws(()=>new IntegrationClient("http://synthetic.invalid","synthetic",{timeoutMs}),TypeError);
+  }
+  for(const token of ["with space","bad\r\nheader","nonascii-\u00e9"]){
+    assert.throws(()=>new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token}),TypeError);
+    assert.throws(()=>new IntegrationClient("http://synthetic.invalid",token),TypeError);
+  }
+});
+
+test("late fetch responses are cleaned up after the caller deadline",async()=>{
+  const stream=streamed([],"wire");let resolve;
+  await unknown(operation("wire",()=>new Promise(done=>{resolve=done;}),20),"wire",null);
+  resolve(stream.response);
+  await new Promise(done=>setImmediate(done));
+  assert.equal(stream.state.cancelled,1);assert.equal(stream.state.released,1);
+});
+
+test("completed exchanges clear their deadline timer",async()=>{
+  const row=require("./cases.json").find(row=>row.name==="capabilities");
+  let signal;
+  const client=new EzLLMRouterClient({baseUrl:"http://synthetic.invalid",token:"synthetic",timeoutMs:20,
+    fetchImpl:async(_url,options)=>{signal=options.signal;return new Response(JSON.stringify(row.response),{headers:{"EzLLMRouter-Contract-Version":"0.2"}});}});
+  await client.getCapabilities();
+  await new Promise(done=>setTimeout(done,30));
+  assert.equal(signal.aborted,false);
 });

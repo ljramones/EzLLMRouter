@@ -125,10 +125,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -294,10 +294,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -472,10 +472,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -828,10 +828,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1023,7 +1023,7 @@
     "status": 200,
     "wait_ms": 0,
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -1038,10 +1038,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1334,10 +1334,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1719,10 +1719,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -1979,10 +1979,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2483,10 +2483,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2773,10 +2773,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -2942,10 +2942,10 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Wait-Ms": "0",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Wait-Ms": "0",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -3418,11 +3418,11 @@
           "method": "POST",
           "path": "/v1/submissions",
           "headers": {
+            "EzLLMRouter-Attribution-Version": "1",
+            "EzLLMRouter-Attribution-Run": "run.synthetic",
             "EzLLMRouter-Contract-Version": "0.2",
             "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
-            "EzLLMRouter-Attribution-Version": "1",
-            "EzLLMRouter-Attribution-Run": "run.synthetic",
             "Accept-Encoding": "identity"
           },
           "body": {
@@ -5333,7 +5333,7 @@
       }
     },
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -5540,7 +5540,7 @@
       }
     },
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -5747,7 +5747,7 @@
       }
     },
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -8002,7 +8002,7 @@
       "Location": "https://foreign.invalid"
     },
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 307,
       "selector": {
@@ -9843,7 +9843,7 @@
     },
     "wire": "0.3",
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -10071,7 +10071,7 @@
     },
     "wire": "0.3",
     "expected": {
-      "code": "INTERNAL_UNAVAILABLE",
+      "code": "PROTOCOL_INVALID",
       "retry_guidance": "query_first",
       "http_status": 200,
       "selector": {
@@ -10478,8 +10478,8 @@
           "method": "POST",
           "path": "/integration/v1/datasets",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10523,8 +10523,8 @@
           "method": "POST",
           "path": "/integration/v1/accounts",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10578,8 +10578,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10624,8 +10624,8 @@
           "method": "GET",
           "path": "/integration/v1/events/event.root/receipt?dataset_id=dataset.local.vega.01",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -10672,8 +10672,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10731,8 +10731,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10797,8 +10797,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10861,8 +10861,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10915,8 +10915,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -10966,8 +10966,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11032,8 +11032,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11109,8 +11109,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11186,8 +11186,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11258,8 +11258,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11319,8 +11319,8 @@
           "method": "POST",
           "path": "/integration/v1/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11365,8 +11365,8 @@
           "method": "POST",
           "path": "/integration/v1/accounts/account.synthetic.01/state",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11397,8 +11397,8 @@
           "method": "GET",
           "path": "/integration/v1/reports/usage?dataset_id=dataset.local.vega.01",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11432,8 +11432,8 @@
           "method": "GET",
           "path": "/integration/v1/accounts/account.synthetic.01/eligibility?dataset_id=dataset.local.vega.01&model_id=model.synthetic",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11467,8 +11467,8 @@
           "method": "POST",
           "path": "/integration/v2/datasets",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11512,8 +11512,8 @@
           "method": "POST",
           "path": "/integration/v2/accounts",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11577,8 +11577,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11633,8 +11633,8 @@
           "method": "GET",
           "path": "/integration/v2/events/event.TimeZ/receipt?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -11691,8 +11691,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11768,8 +11768,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11849,8 +11849,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -11930,8 +11930,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12000,8 +12000,8 @@
           "method": "POST",
           "path": "/integration/v2/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12071,8 +12071,8 @@
           "method": "POST",
           "path": "/integration/v2/snapshots",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12126,8 +12126,8 @@
           "method": "GET",
           "path": "/integration/v2/snapshots/feature.synthetic?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12169,8 +12169,8 @@
           "method": "POST",
           "path": "/integration/v2/snapshots",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12212,8 +12212,8 @@
           "method": "GET",
           "path": "/integration/v2/snapshots/feature.not_collected?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12244,8 +12244,8 @@
           "method": "POST",
           "path": "/integration/v2/accounts/account%3Asynthetic%3Av2/state",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12276,8 +12276,8 @@
           "method": "GET",
           "path": "/integration/v2/reports/usage?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12303,8 +12303,8 @@
           "method": "GET",
           "path": "/integration/v2/reports/dataset?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12341,8 +12341,8 @@
           "method": "GET",
           "path": "/integration/v2/accounts/account%3Asynthetic%3Av2/eligibility?dataset_id=dataset.synthetic.v2&model_id=model.synthetic",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12376,8 +12376,8 @@
           "method": "POST",
           "path": "/integration/v3/datasets",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12423,8 +12423,8 @@
           "method": "POST",
           "path": "/integration/v3/accounts",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12489,8 +12489,8 @@
           "method": "POST",
           "path": "/integration/v3/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12544,8 +12544,8 @@
           "method": "GET",
           "path": "/integration/v3/events/event.synthetic.speech.start/receipt?dataset_id=dataset.synthetic.speech",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12601,8 +12601,8 @@
           "method": "POST",
           "path": "/integration/v3/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12673,8 +12673,8 @@
           "method": "POST",
           "path": "/integration/v3/events",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12746,8 +12746,8 @@
           "method": "POST",
           "path": "/integration/v3/snapshots",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12801,8 +12801,8 @@
           "method": "GET",
           "path": "/integration/v3/snapshots/feature.synthetic?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12833,8 +12833,8 @@
           "method": "POST",
           "path": "/integration/v3/accounts/account.synthetic.speech/state",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -12865,8 +12865,8 @@
           "method": "GET",
           "path": "/integration/v3/reports/usage?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12892,8 +12892,8 @@
           "method": "GET",
           "path": "/integration/v3/reports/dataset?dataset_id=dataset.synthetic.v2",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12935,8 +12935,8 @@
           "method": "GET",
           "path": "/integration/v3/accounts/account.synthetic.speech/eligibility?dataset_id=dataset.synthetic.v2&operation_family=generation&capability=generation&selection_kind=known_model&model_id=model.synthetic",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -12981,8 +12981,8 @@
           "method": "GET",
           "path": "/integration/v3/accounts/account.synthetic.speech/eligibility?dataset_id=dataset.synthetic.v2&operation_family=speech_input&capability=transcription&selection_kind=provider_selected",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },
           "body": null
@@ -13014,8 +13014,8 @@
           "method": "POST",
           "path": "/integration/v3/accounts/account.synthetic.speech/permissions",
           "headers": {
-            "Authorization": "Bearer synthetic-token",
             "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
             "Content-Type": "application/json",
             "Accept-Encoding": "identity"
           },
@@ -13212,6 +13212,1093 @@
           "path": "/v1/outcomes/outcome.synthetic",
           "headers": {
             "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "null_request_value",
+    "action": "submit",
+    "args": [
+      {
+        "contract_version": "0.2",
+        "profile": "initial_1a@1",
+        "task_id": "task.demo",
+        "task_class": "class.demo",
+        "step_class": "generic",
+        "step_id": "step.demo",
+        "step_revision": 1,
+        "execution_generation": "gen.1",
+        "purpose": "execution",
+        "requested_configuration_ref": "cfg.demo",
+        "requested_features": [
+          "text"
+        ],
+        "resolved_prompt": {
+          "prompt_id": "prompt.demo",
+          "prompt_version": "v1",
+          "block_ids": [
+            "block.system.1"
+          ],
+          "source_artifact_digest": "sha256:bd831d5b2038c539e0819c280cda8026048723391e6c0e97a471b5b5b6fdc05c"
+        },
+        "messages": [
+          {
+            "role": "system",
+            "blocks": [
+              {
+                "block_id": "block.system.1",
+                "kind": "system_text",
+                "text": "Answer briefly.",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.prompt.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "blocks": [
+              {
+                "block_id": "block.user.1",
+                "kind": "content_text",
+                "text": "Hi",
+                "source_labels": {
+                  "lineage_ids": [
+                    "src.user.1"
+                  ],
+                  "sensitivity": "internal",
+                  "restrictions": []
+                }
+              }
+            ]
+          }
+        ],
+        "generation_settings": {
+          "max_output_tokens": 32,
+          "temperature_decimal": "0",
+          "total_timeout_ms": 1000
+        },
+        "deadline": "2030-01-01T00:00:00Z",
+        "unserializable_null": null
+      }
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "state": "delivered",
+      "handle": {
+        "submission_id": "submission.demo",
+        "work_key": {
+          "principal_id": "svc.demo",
+          "task_id": "task.demo",
+          "step_id": "step.demo",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        }
+      },
+      "candidate": {
+        "candidate_id": "candidate.demo",
+        "attempt_id": "attempt.demo",
+        "execution_generation": "gen.1",
+        "served_destination": {
+          "configuration_ref": "cfg.demo",
+          "service": "service.demo",
+          "endpoint": "endpoint.demo",
+          "model": "model.demo",
+          "model_version": "v1",
+          "processing_region": "region.demo"
+        },
+        "output_blocks": [
+          {
+            "block_id": "block.output.1",
+            "kind": "assistant_text",
+            "text": "Hello.",
+            "source_labels": {
+              "lineage_ids": [
+                "src.candidate.1"
+              ],
+              "sensitivity": "internal",
+              "restrictions": []
+            }
+          }
+        ],
+        "finish_reason": "stop",
+        "structural_status": "pass",
+        "observed_at": "2029-12-31T23:59:03Z",
+        "usage": {
+          "state": "not_recorded"
+        }
+      }
+    },
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "newline_declared_reason",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "reason\n"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "Energy outlook",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "tab_declared_reason",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "reason\t"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "Energy outlook",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "carriage_return_declared_reason",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "reason\r"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "Energy outlook",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "delete_declared_reason",
+    "action": "submit_rerank",
+    "args": [
+      {
+        "contract_version": "0.3",
+        "capability_profile": "retrieval-synthetic@1",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "work_selector": {
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "metadata": {
+          "invocation_mode": "delegated_agent",
+          "root_workflow_id": "workflow.demo",
+          "run_id": "run.vega",
+          "parent_run_id": "run.bud",
+          "initiating_user_id": "user.demo",
+          "commission": {
+            "kind": "asserted",
+            "reference": "commission.demo",
+            "declared_reason": "reason\u007f"
+          },
+          "delegation": [
+            {
+              "from_actor_id": "user.demo",
+              "to_actor_id": "agent.bud",
+              "from_run_id": "run.root",
+              "to_run_id": "run.bud",
+              "declared_reason": "research"
+            },
+            {
+              "from_actor_id": "agent.bud",
+              "to_actor_id": "agent.vega",
+              "from_run_id": "run.bud",
+              "to_run_id": "run.vega",
+              "declared_reason": "rank findings"
+            }
+          ]
+        },
+        "input": {
+          "query": "Energy outlook",
+          "ranking_profile_id": "rank.synthetic.v1",
+          "corpus_version": "corpus.v1",
+          "index_version": "index.v1",
+          "candidates": [
+            {
+              "candidate_id": "doc.1",
+              "content_version": "v1",
+              "content_digest": "sha256:cff67326d7ca9fc19318eb922e29f6ecb3702a57fecbe059211a2d70d4fc91fa",
+              "text": "Sky"
+            },
+            {
+              "candidate_id": "doc.2",
+              "content_version": "v1",
+              "content_digest": "sha256:f2a3e580b4c18e9818ce0affd50f3edaffa2d1bfa6136bfafa9d3f790459efb2",
+              "text": "Earth"
+            },
+            {
+              "candidate_id": "doc.3",
+              "content_version": "v1",
+              "content_digest": "sha256:e522d0dece25c35f51f630e6276cc01c6630f2be8bcfc573cb33f4e69c3ca96f",
+              "text": "River"
+            }
+          ],
+          "top_k": 2
+        },
+        "purpose": "execution",
+        "task_class": "class.demo",
+        "requested_configuration_ref": "cfg.rerank.synthetic",
+        "deadline": "2030-01-01T00:30:00Z",
+        "handling_profile": "public-synthetic-retained@1"
+      }
+    ],
+    "response": {
+      "contract_version": "0.3",
+      "state": "completed",
+      "handle": {
+        "submission_id": "submission.synthetic.1",
+        "work_key": {
+          "principal_id": "svc.vega",
+          "task_id": "task.demo",
+          "step_id": "step.rerank",
+          "step_revision": 1,
+          "execution_generation": "gen.1"
+        },
+        "contract_version": "0.3"
+      },
+      "attempt_id": "attempt.rank",
+      "result": {
+        "attempt_id": "attempt.rank",
+        "contract_version": "0.3",
+        "operation": {
+          "type": "rerank",
+          "version": 1
+        },
+        "ranking_profile_id": "rank.synthetic.v1",
+        "results": [
+          {
+            "rank": 1,
+            "input_index": 1,
+            "candidate_id": "doc.2",
+            "score": "0.9"
+          },
+          {
+            "rank": 2,
+            "input_index": 0,
+            "candidate_id": "doc.1",
+            "score": "0.8"
+          }
+        ]
+      }
+    },
+    "wire": "0.3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "attribution_error_with_success_status",
+    "action": "get_run",
+    "args": [
+      "run.synthetic"
+    ],
+    "response": {
+      "contract_version": "0.2",
+      "error": {
+        "code": "POLICY_DENIED",
+        "correlation_id": "corr.test",
+        "retry_guidance": "never"
+      }
+    },
+    "expected": {
+      "code": "PROTOCOL_INVALID",
+      "retry_guidance": "query_first",
+      "http_status": 200,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/attribution-runs/run.synthetic",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "server_internal_error_preserved",
+    "action": "get_capabilities",
+    "args": [],
+    "response": {
+      "contract_version": "0.2",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "correlation_id": "corr.test",
+        "retry_guidance": "query_first"
+      }
+    },
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/capabilities",
+          "headers": {
+            "EzLLMRouter-Contract-Version": "0.2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v1_newline_dataset",
+    "action": "report",
+    "args": [
+      "dataset.bad\n"
+    ],
+    "response": {
+      "integration_version": "1"
+    },
+    "integration": true,
+    "version": "1",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "v1_503_missing_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "1",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE"
+      }
+    },
+    "integration": true,
+    "version": "1",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v1/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v1_503_invalid_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "1",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "retry_anything"
+      }
+    },
+    "integration": true,
+    "version": "1",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v1/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v1_503_explicit_never_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "1",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "never"
+      }
+    },
+    "integration": true,
+    "version": "1",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "never",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v1/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "1",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v2_newline_dataset",
+    "action": "report",
+    "args": [
+      "dataset.bad\n"
+    ],
+    "response": {
+      "integration_version": "2"
+    },
+    "integration": true,
+    "version": "2",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "v2_503_missing_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "2",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE"
+      }
+    },
+    "integration": true,
+    "version": "2",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v2/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v2_503_invalid_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "2",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "retry_anything"
+      }
+    },
+    "integration": true,
+    "version": "2",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v2/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v2_503_explicit_never_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "2",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "never"
+      }
+    },
+    "integration": true,
+    "version": "2",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "never",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v2/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "2",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v3_newline_dataset",
+    "action": "report",
+    "args": [
+      "dataset.bad\n"
+    ],
+    "response": {
+      "integration_version": "3"
+    },
+    "integration": true,
+    "version": "3",
+    "expected": {
+      "code": "SCHEMA_INVALID",
+      "retry_guidance": "never",
+      "http_status": 0,
+      "selector": null,
+      "handle": null,
+      "calls": []
+    }
+  },
+  {
+    "name": "v3_503_missing_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "3",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE"
+      }
+    },
+    "integration": true,
+    "version": "3",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v3/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v3_503_invalid_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "3",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "retry_anything"
+      }
+    },
+    "integration": true,
+    "version": "3",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "query_first",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v3/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "3",
+            "Authorization": "Bearer synthetic-token",
+            "Accept-Encoding": "identity"
+          },
+          "body": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "v3_503_explicit_never_guidance",
+    "action": "report",
+    "args": [
+      "dataset.test"
+    ],
+    "response": {
+      "integration_version": "3",
+      "error": {
+        "code": "INTERNAL_UNAVAILABLE",
+        "retry_guidance": "never"
+      }
+    },
+    "integration": true,
+    "version": "3",
+    "status": 503,
+    "expected": {
+      "code": "INTERNAL_UNAVAILABLE",
+      "retry_guidance": "never",
+      "http_status": 503,
+      "selector": null,
+      "handle": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/integration/v3/reports/usage?dataset_id=dataset.test",
+          "headers": {
+            "EzLLMRouter-Integration-Version": "3",
             "Authorization": "Bearer synthetic-token",
             "Accept-Encoding": "identity"
           },

@@ -29,7 +29,7 @@ public final class IntegrationClient implements AutoCloseable {
         Map<String, Object> value = response.value(); int status = response.status();
         if (status >= 400) {
             Map<String, Object> error = field(value, "error"); if (text(error.get("code")).isEmpty()) throw Connection.error("TRANSPORT_OUTCOME_UNKNOWN", status, "query_first", null);
-            String guidance = text(error.get("retry_guidance")); throw Connection.error(text(error.get("code")), status, guidance.isEmpty() ? "never" : guidance, null);
+            String guidance = text(error.get("retry_guidance")); throw Connection.error(text(error.get("code")), status, (List.of("never", "query_first", "orchestrator_decision").contains(guidance) ? guidance : status >= 500 ? "query_first" : "never"), null);
         }
         for (int allowed : expected) if (status == allowed) return value;
         throw Connection.error("PROTOCOL_INVALID", status, "query_first", null);

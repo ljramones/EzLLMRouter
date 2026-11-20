@@ -100,6 +100,6 @@ fn native_http() {
         let options = Options { timeout: Some(Duration::from_millis(if mode == "slow" { 150 } else { 35000 })), ..Options::default() };
         let client = Client::with_options(&origin, &format!("synthetic-native-{mode}"), options).unwrap(); let result = client.get_capabilities();
         if matches!(mode, "success" | "chunked") { assert_eq!(result.unwrap()["profile"], "initial_1a@1"); }
-        else { let error = result.unwrap_err(); assert_eq!(error.code, if mode == "redirect" { "INTERNAL_UNAVAILABLE" } else { "TRANSPORT_OUTCOME_UNKNOWN" }); assert!(error.requires_query()); }
+        else { let error = result.unwrap_err(); assert_eq!(error.code, if mode == "redirect" { "PROTOCOL_INVALID" } else { "TRANSPORT_OUTCOME_UNKNOWN" }); assert!(error.requires_query()); }
     }
 }

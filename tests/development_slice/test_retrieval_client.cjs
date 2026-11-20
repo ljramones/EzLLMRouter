@@ -82,7 +82,7 @@ async function main(){
     return true;});
   await assert.rejects(invoke({contract_version:"0.3",code:"WORK_VERSION_CONFLICT",
     correlation_id:"error.synthetic",retry_guidance:"never"},500),cause=>{
-    assert.equal(cause.code,"INTERNAL_UNAVAILABLE");assert.equal(cause.retry_guidance,"query_first");
+    assert.equal(cause.code,"PROTOCOL_INVALID");assert.equal(cause.retry_guidance,"query_first");
     return true;});
   for(const bySubmission of [true,false]){
     const selected=bySubmission?{submission_id:status.handle.submission_id}:
@@ -100,7 +100,7 @@ async function main(){
     if(bySubmission)selected.submission_id="submission.foreign";
     else selected.work_selector.step_id="step.foreign";
     release();
-    await assert.rejects(pending,cause=>{assert.equal(cause.code,"INTERNAL_UNAVAILABLE");return true;});
+    await assert.rejects(pending,cause=>{assert.equal(cause.code,"PROTOCOL_INVALID");return true;});
   }
   process.stdout.write(JSON.stringify({status:"PASS",positive:6,negative:19,
     installed_package:!!process.env.DEV12_JS_CLIENT_DIR})+"\n");

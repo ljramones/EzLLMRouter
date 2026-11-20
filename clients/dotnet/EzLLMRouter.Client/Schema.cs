@@ -19,7 +19,14 @@ internal static class Schema
         }
         return result;
     }
-    internal static bool Named(JsonNode? value, string version, string name) => Bundles.TryGetValue(version, out var defs) && defs[name] is JsonObject shape && Match(value, shape, defs);
+    internal static bool Policy(JsonNode? value, bool nulls, bool controls)
+    {
+        if (value is null) return nulls;
+        if (value is JsonObject obj) return obj.All(e => (!controls || e.Key.All(c => c >= 32 && c != 127)) && Policy(e.Value, nulls, controls));
+        if (value is JsonArray array) return array.All(item => Policy(item, nulls, controls));
+        return !controls || value.GetValueKind() != System.Text.Json.JsonValueKind.String || Text(value).All(c => c >= 32 && c != 127);
+    }
+    internal static bool Named(JsonNode? value, string version, string name) => (version != "0.3" || Policy(value, true, true)) && Bundles.TryGetValue(version, out var defs) && defs[name] is JsonObject shape && Match(value, shape, defs);
     private static long Bound(JsonNode? shape, string key, long fallback) => Has(shape, key) ? Number(At(shape, key)) : fallback;
     private static bool Match(JsonNode? value, JsonNode? shape, JsonObject defs)
     {

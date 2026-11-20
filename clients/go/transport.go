@@ -198,7 +198,7 @@ func errorEvidence(value Object, status int, selector, handle Object) *Error {
 	return e
 }
 func protocolError(status int, selector, handle Object) *Error {
-	e := problem("INTERNAL_UNAVAILABLE", status, "query_first", selector)
+	e := problem("PROTOCOL_INVALID", status, "query_first", selector)
 	e.Handle = handle
 	if handle != nil {
 		e.WorkKey = field(handle, "work_key")

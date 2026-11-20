@@ -6,15 +6,16 @@ import json
 import hashlib
 from pathlib import Path
 import re
+import ssl
 from urllib.parse import quote
 from typing import Any
 
 from ._http import DEFAULT_TIMEOUT, INTEGRATION_RESPONSE_LIMIT
 from ._deadline import DEFAULT_TOTAL_TIMEOUT
-from ._errors import IntegrationClientError, IntegrationInputError
+from ._errors import IntegrationClientError, IntegrationInputError, retry_guidance
 from ._schema_validation import validate
 from ._session import ClientSession
-from ._json import strict_reply
+from ._json import encode_request, strict_reply
 
 SCHEMAS = {
     version: json.loads((Path(__file__).parent / filename).read_text())["$defs"]
@@ -145,10 +146,11 @@ def _snapshot_valid(snapshot: dict[str, Any]) -> bool:
     return True
 
 
-def _decode(raw: bytes) -> Any:
-    if len(raw) > INTEGRATION_RESPONSE_LIMIT:
-        raise ValueError("response limit")
-    return strict_reply(raw)
+def _snapshot_input(value: Any) -> Any:
+    try:
+        return strict_reply(encode_request(value))
+    except (TypeError, ValueError, UnicodeError, OverflowError, RecursionError) as cause:
+        raise IntegrationInputError("SCHEMA_INVALID") from cause
 
 
 def _receipt_valid(
@@ -187,11 +189,17 @@ class IntegrationClient(ClientSession):
         timeout: Any = DEFAULT_TIMEOUT,
         version: str = "1",
         total_timeout: float | None = DEFAULT_TOTAL_TIMEOUT,
+        verify: ssl.SSLContext | str | bool = True,
     ) -> None:
         if version not in SCHEMAS:
             raise TypeError("unsupported integration version")
         super().__init__(
-            base_url, token, transport=transport, timeout=timeout, total_timeout=total_timeout
+            base_url,
+            token,
+            transport=transport,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            verify=verify,
         )
         self.version, self.schema, self.base_path = (
             version,
@@ -200,24 +208,16 @@ class IntegrationClient(ClientSession):
         )
 
     @property
-    def transport(self) -> Any:
-        """Injected/owned transport, retained for existing diagnostic callers."""
-        return self._transport
-
-    @property
     def closed(self) -> bool:
         return self._closed
 
     def _request(
         self, method: str, path: str, body: dict[str, Any] | None, expected: tuple[int, ...]
     ) -> dict[str, Any]:
-        data = (
-            json.dumps(body, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
-                "utf-8"
-            )
-            if body is not None
-            else None
-        )
+        try:
+            data = encode_request(body) if body is not None else None
+        except (TypeError, ValueError, UnicodeError, OverflowError, RecursionError) as cause:
+            raise IntegrationInputError("SCHEMA_INVALID") from cause
         response, value = self._exchange(
             method,
             path,
@@ -235,7 +235,9 @@ class IntegrationClient(ClientSession):
                     "TRANSPORT_OUTCOME_UNKNOWN", response.status_code, "query_first"
                 )
             raise IntegrationClientError(
-                error["code"], response.status_code, error.get("retry_guidance", "never")
+                error["code"],
+                response.status_code,
+                retry_guidance(error.get("retry_guidance"), response.status_code),
             )
         if response.status_code not in expected:
             raise IntegrationClientError("PROTOCOL_INVALID", response.status_code, "query_first")
@@ -282,13 +284,14 @@ class IntegrationClient(ClientSession):
         )
 
     def submit_observation(self, event: dict[str, Any]) -> dict[str, Any]:
+        event = _snapshot_input(event)
         if (
             type(event) is not dict
             or event.get("integration_version") != self.version
             or not _event_valid(event)
         ):
             raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid observation")
-        snapshot = json.loads(json.dumps(event, ensure_ascii=False))
+        snapshot = event
         digest = (
             "sha256:"
             + hashlib.sha256(
@@ -471,6 +474,7 @@ class IntegrationClient(ClientSession):
         )
 
     def submit_snapshot(self, snapshot: dict[str, Any]) -> dict[str, Any]:
+        snapshot = _snapshot_input(snapshot)
         if (
             type(snapshot) is not dict
             or self.version not in ("2", "3")

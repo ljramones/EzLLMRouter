@@ -25,9 +25,16 @@ final class Schema {
         }
         return out;
     }
+    static boolean policy(Object value, boolean nulls, boolean controls) {
+        if (value == null) return nulls;
+        if (value instanceof String string) return !controls || string.chars().noneMatch(c -> c < 32 || c == 127);
+        if (value instanceof Map<?, ?> map) return map.entrySet().stream().allMatch(e -> policy(e.getKey(), nulls, controls) && policy(e.getValue(), nulls, controls));
+        if (value instanceof java.util.List<?> list) return list.stream().allMatch(item -> policy(item, nulls, controls));
+        return true;
+    }
     static boolean named(Object value, String version, String name) {
         Map<String, Object> definitions = BUNDLES.get(version);
-        return definitions != null && definitions.containsKey(name) && matches(value, object(definitions.get(name)), definitions);
+        return (!version.equals("0.3") || policy(value, true, true)) && definitions != null && definitions.containsKey(name) && matches(value, object(definitions.get(name)), definitions);
     }
     private static long bound(Map<String, Object> shape, String key, long fallback) { return shape.get(key) instanceof Long n ? n : fallback; }
     private static boolean matches(Object value, Map<String, Object> shape, Map<String, Object> defs) {

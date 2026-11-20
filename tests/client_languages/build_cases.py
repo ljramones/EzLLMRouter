@@ -444,6 +444,66 @@ def cases():
     envelope = {"contract_version": "0.2", "outcome_version": "1", "receipt": receipt}
     add("report_outcome", "report_outcome", envelope, [event], status=201)
     add("recover_outcome", "get_outcome_receipt", envelope, [event["event_id"]])
+    null_request = deepcopy(request)
+    null_request["unserializable_null"] = None
+    add("null_request_value", "submit", legacy["reply_delivered"], [null_request])
+    for label, control in (
+        ("newline", "\n"),
+        ("tab", "\t"),
+        ("carriage_return", "\r"),
+        ("delete", "\x7f"),
+    ):
+        bad_reason = deepcopy(rerank)
+        bad_reason["metadata"]["commission"]["declared_reason"] = "reason" + control
+        add(label + "_declared_reason", "submit_rerank", completed, [bad_reason], wire="0.3")
+    error_reply = {
+        "contract_version": "0.2",
+        "error": {
+            "code": "POLICY_DENIED",
+            "correlation_id": "corr.test",
+            "retry_guidance": "never",
+        },
+    }
+    add("attribution_error_with_success_status", "get_run", error_reply, [run["run_id"]])
+    add(
+        "server_internal_error_preserved",
+        "get_capabilities",
+        {
+            "contract_version": "0.2",
+            "error": {
+                "code": "INTERNAL_UNAVAILABLE",
+                "correlation_id": "corr.test",
+                "retry_guidance": "query_first",
+            },
+        },
+        status=503,
+    )
+    for version in ("1", "2", "3"):
+        add(
+            f"v{version}_newline_dataset",
+            "report",
+            {"integration_version": version},
+            ["dataset.bad\n"],
+            integration=True,
+            version=version,
+        )
+        for label, guidance in (
+            ("missing", None),
+            ("invalid", "retry_anything"),
+            ("explicit_never", "never"),
+        ):
+            error = {"code": "INTERNAL_UNAVAILABLE"}
+            if guidance is not None:
+                error["retry_guidance"] = guidance
+            add(
+                f"v{version}_503_{label}_guidance",
+                "report",
+                {"integration_version": version, "error": error},
+                ["dataset.test"],
+                integration=True,
+                version=version,
+                status=503,
+            )
     for case in out:
         case["expected"] = evaluate(case)
     return out

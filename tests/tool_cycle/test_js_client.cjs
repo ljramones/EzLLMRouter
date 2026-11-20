@@ -24,9 +24,9 @@ async function check(reply, expectedCode) {
   await check(structuredClone(vectors.reply_tool));
   const malformed = structuredClone(vectors.reply_tool);
   malformed.candidate.output_blocks[0].arguments.key = 1;
-  await check(malformed, "INTERNAL_UNAVAILABLE");
+  await check(malformed, "PROTOCOL_INVALID");
   const duplicate = structuredClone(vectors.reply_tool);
   duplicate.candidate.output_blocks.push({ ...duplicate.candidate.output_blocks[0], block_id: "block.call.2" });
-  await check(duplicate, "INTERNAL_UNAVAILABLE");
+  await check(duplicate, "PROTOCOL_INVALID");
   console.log(JSON.stringify({ test: "installed_js_tool_candidate", positive: 1, malformed_rejected: 2 }));
 })().catch(error => { console.error(error); process.exitCode = 1; });

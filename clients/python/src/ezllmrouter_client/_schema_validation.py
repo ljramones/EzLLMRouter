@@ -6,6 +6,15 @@ import re
 from typing import Any
 
 
+def _pattern_matches(pattern: str, value: str) -> bool:
+    # JSON Schema permits substring patterns. An unescaped terminal dollar
+    # still means the end of the value, including after a final newline.
+    backslashes = len(pattern[:-1]) - len(pattern[:-1].rstrip("\\"))
+    if pattern.endswith("$") and backslashes % 2 == 0:
+        pattern = pattern[:-1] + r"\Z"
+    return re.search(pattern, value) is not None
+
+
 def validate(
     value: Any,
     shape: dict[str, Any],
@@ -67,7 +76,7 @@ def validate(
             and shape.get("minLength", 0) <= len(value) <= shape.get("maxLength", float("inf"))
             and not any(char == "\0" or 0xD800 <= ord(char) <= 0xDFFF for char in value)
             and (not public_text or all(ord(char) >= 32 and ord(char) != 127 for char in value))
-            and ("pattern" not in shape or re.search(shape["pattern"], value) is not None)
+            and ("pattern" not in shape or _pattern_matches(shape["pattern"], value))
         )
     if kind == "integer":
         return (

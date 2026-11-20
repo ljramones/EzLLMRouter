@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ssl
 from types import TracebackType
 from typing import Any, Self
 from urllib.parse import urlsplit
@@ -33,6 +34,7 @@ class ClientSession:
         transport: Any = None,
         timeout: Any = DEFAULT_TIMEOUT,
         total_timeout: float | None = DEFAULT_TOTAL_TIMEOUT,
+        verify: ssl.SSLContext | str | bool = True,
     ) -> None:
         if type(base_url) is not str or type(token) is not str or not token:
             raise TypeError("base_url and token are required")
@@ -61,11 +63,13 @@ class ClientSession:
         if transport is None:
             self._transport = httpx.Client(
                 timeout=timeout,
-                transport=DeadlineHTTPTransport(),
+                transport=DeadlineHTTPTransport(verify=verify),
                 follow_redirects=False,
                 trust_env=False,
             )
         else:
+            if verify is not True:
+                raise TypeError("configure TLS verification on the injected transport")
             if not callable(getattr(transport, "request", None)):
                 raise TypeError("transport must provide request")
             self._transport = transport
@@ -83,7 +87,7 @@ class ClientSession:
 
     def __enter__(self) -> Self:
         if self._closed:
-            raise RuntimeError("client is closed")
+            raise ClientError("CLIENT_CLOSED")
         return self
 
     def __exit__(
@@ -109,7 +113,7 @@ class ClientSession:
         selector: dict[str, Any] | None = None,
     ) -> tuple[BufferedResponse, dict[str, Any]]:
         if self._closed:
-            raise RuntimeError("client is closed")
+            raise error_type("CLIENT_CLOSED")
         request_headers = {
             **(headers or {}),
             version_header: version,

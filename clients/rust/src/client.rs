@@ -18,6 +18,7 @@ impl Client {
     }
     fn submit_inner(&self, request: &Value, run_id: Option<&str>, wait_ms: Option<u32>) -> Result<Value> {
         let body = snapshot(request)?;
+        if !crate::schema::value_policy(&body, false, false) { return Err(Error::invalid()); }
         let selector = Value::Object(SELECTOR.iter().map(|key| ((*key).into(), at(&body, key).clone())).collect());
         if !named(&selector, "0.2", "WorkSelector") { return Err(Error::invalid()); }
         let mut headers = wait_headers(wait_ms)?;

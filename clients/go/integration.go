@@ -36,8 +36,11 @@ func (c *IntegrationClient) request(ctx context.Context, method, path string, bo
 			return nil, problem("TRANSPORT_OUTCOME_UNKNOWN", status, "query_first", nil)
 		}
 		guidance := str(e["retry_guidance"])
-		if guidance == "" {
+		if guidance != "never" && guidance != "query_first" && guidance != "orchestrator_decision" {
 			guidance = "never"
+			if status >= 500 {
+				guidance = "query_first"
+			}
 		}
 		return nil, problem(str(e["code"]), status, guidance, nil)
 	}

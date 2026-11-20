@@ -11,7 +11,7 @@ pub(crate) fn matching_handle<'a>(value: &'a Value, selector: Option<&Value>, ve
     if matches { Some(handle) } else { None }
 }
 pub(crate) fn bad(status: u16, selector: Option<&Value>, handle: Option<&Value>) -> Error {
-    let mut error = Error::new("INTERNAL_UNAVAILABLE", Some(status), "query_first", selector);
+    let mut error = Error::new("PROTOCOL_INVALID", Some(status), "query_first", selector);
     error.handle = handle.cloned(); error.work_key = handle.map(|h| at(h, "work_key").clone()); error
 }
 pub(crate) fn evidence(value: &Value, status: u16, selector: Option<&Value>, handle: Option<&Value>, envelope: &Value) -> Error {

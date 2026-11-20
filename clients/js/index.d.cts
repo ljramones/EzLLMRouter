@@ -22,15 +22,23 @@ export interface FetchResponse {
   json(): Promise<unknown>;
   arrayBuffer(): Promise<ArrayBuffer>;
 }
+export interface FetchAbortSignal {
+  readonly aborted: boolean;
+  readonly reason: unknown;
+  addEventListener(type: "abort", listener: () => void, options?: {once?: boolean}): void;
+  removeEventListener(type: "abort", listener: () => void): void;
+}
+export type FetchSignal = typeof globalThis extends {AbortSignal: {prototype: infer S}} ? S : FetchAbortSignal;
 export interface FetchRequest {
   method: string;
   headers: Record<string, string>;
   body?: string;
   redirect: "manual" | "error";
   cache?: "no-store";
+  signal?: FetchSignal;
 }
 export type FetchImplementation = (url: string, options: FetchRequest) => Promise<FetchResponse>;
-export interface ClientOptions { baseUrl: string; token: string; fetchImpl?: FetchImplementation; }
+export interface ClientOptions { baseUrl: string; token: string; fetchImpl?: FetchImplementation; timeoutMs?: number | null; }
 export interface ErrorDetails {
   selector?: StatusSelector;
   handle?: Wire02.SubmissionHandle | Wire03.Handle;
@@ -125,11 +133,13 @@ export type OperationSelector = {
   | { selection_kind: "known_model"; model_id: string }
   | { selection_kind: "provider_selected" | "not_applicable"; model_id?: never }
 );
-export interface IntegrationOptions<V extends IntegrationVersion> { version?: V; fetchImpl?: FetchImplementation; }
+export interface IntegrationOptions<V extends IntegrationVersion> { version?: V; fetchImpl?: FetchImplementation; timeoutMs?: number | null; }
 export declare class IntegrationClientError extends Error {
   constructor(code: string, httpStatus?: number | null, retryGuidance?: RetryGuidance);
   readonly code: string;
+  readonly http_status: number | null;
   readonly httpStatus: number | null;
+  readonly retry_guidance: RetryGuidance;
   readonly retryGuidance: RetryGuidance;
 }
 export declare class IntegrationClient<V extends IntegrationVersion = "1"> {

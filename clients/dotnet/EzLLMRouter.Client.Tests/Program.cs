@@ -106,7 +106,7 @@ static class Program
         {
             using var client = new EzLLMRouterClient(origin, "synthetic-native-" + mode, timeout: TimeSpan.FromMilliseconds(mode == "slow" ? 150 : 35000));
             try { var response = await client.GetCapabilitiesAsync(); Check((mode is "success" or "chunked") && Text(response["profile"]) == "initial_1a@1", "Unexpected HTTP success: " + mode); }
-            catch (EzLLMRouterException error) { Check(mode is not ("success" or "chunked") && error.Code == (mode == "redirect" ? "INTERNAL_UNAVAILABLE" : "TRANSPORT_OUTCOME_UNKNOWN") && error.RetryGuidance == "query_first", "Native HTTP failure: " + mode); }
+            catch (EzLLMRouterException error) { Check(mode is not ("success" or "chunked") && error.Code == (mode == "redirect" ? "PROTOCOL_INVALID" : "TRANSPORT_OUTCOME_UNKNOWN") && error.RetryGuidance == "query_first", "Native HTTP failure: " + mode); }
         }
         Console.WriteLine(".NET native HTTP checks passed.");
     }

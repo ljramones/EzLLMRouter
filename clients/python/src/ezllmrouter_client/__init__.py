@@ -85,6 +85,8 @@ def _wire_data(value: Any, seen: set[int] | None = None, depth: int = 0) -> None
             raise ValueError("unsafe integer")
         return
     if type(value) is str:
+        if "\0" in value:
+            raise ValueError("invalid request text")
         value.encode("utf-8", "strict")
         return
     if type(value) is bool:
@@ -172,7 +174,7 @@ class EzLLMRouterClient(ClientSession):
             valid = corresponds = False
         if not valid or not corresponds:
             raise EzLLMRouterError(
-                "INTERNAL_UNAVAILABLE",
+                "PROTOCOL_INVALID",
                 status,
                 "query_first",
                 selector=original,
@@ -193,7 +195,7 @@ class EzLLMRouterClient(ClientSession):
             )
         if not 200 <= status < 300:
             raise EzLLMRouterError(
-                "INTERNAL_UNAVAILABLE",
+                "PROTOCOL_INVALID",
                 status,
                 "query_first",
                 selector=original,
@@ -205,7 +207,7 @@ class EzLLMRouterClient(ClientSession):
         self, request: dict[str, Any], options: dict[str, Any] | None, run_id: str | None
     ) -> dict[str, Any]:
         if type(request) is not dict:
-            raise TypeError("request object required")
+            raise EzLLMRouterError("SCHEMA_INVALID")
         try:
             copied = deepcopy(request)
             selected = {k: copied[k] for k in v.SELECTOR}
@@ -257,8 +259,6 @@ class EzLLMRouterClient(ClientSession):
     def _attribution_operation(
         self, method: str, path: str, payload: dict[str, Any] | None, kind: str
     ) -> dict[str, Any]:
-        if self._closed:
-            raise RuntimeError("client is closed")
         try:
             if payload is not None:
                 _wire_data(payload)
@@ -279,7 +279,11 @@ class EzLLMRouterClient(ClientSession):
             error_type=EzLLMRouterError,
             body=body,
         )
-        if set(value) == {"contract_version", "error"} and v.error(value["error"]):
+        if (
+            response.status_code >= 400
+            and set(value) == {"contract_version", "error"}
+            and v.error(value["error"])
+        ):
             err = value["error"]
             raise EzLLMRouterError(
                 err["code"], response.status_code, err["retry_guidance"], err["correlation_id"]
@@ -292,7 +296,7 @@ class EzLLMRouterClient(ClientSession):
             or response.status_code not in ((200, 201) if kind == "receipt" else (200,))
             or type(value[result]) is not dict
         ):
-            raise EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status_code, "query_first")
+            raise EzLLMRouterError("PROTOCOL_INVALID", response.status_code, "query_first")
         item: dict[str, Any] = value[result]
         if kind == "receipt":
             valid = (
@@ -356,7 +360,7 @@ class EzLLMRouterClient(ClientSession):
                 and ("terminal_at" not in item or v.utc(item["terminal_at"]))
             )
         if not valid:
-            raise EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status_code, "query_first")
+            raise EzLLMRouterError("PROTOCOL_INVALID", response.status_code, "query_first")
         return item
 
     def start_run(self, run: dict[str, Any]) -> dict[str, Any]:
@@ -501,7 +505,7 @@ class EzLLMRouterClient(ClientSession):
         if "code" in value:
             if not v03.error_valid(value, response.status_code, kind):
                 raise EzLLMRouterError(
-                    "INTERNAL_UNAVAILABLE", response.status_code, "query_first", selector=selector
+                    "PROTOCOL_INVALID", response.status_code, "query_first", selector=selector
                 )
             raise EzLLMRouterError(
                 value["code"],
@@ -514,7 +518,7 @@ class EzLLMRouterClient(ClientSession):
         usable_handle = _matching_handle(value, selector, successor=True)
         if not v03.response_valid(value, name, response.status_code, selector, request):
             raise EzLLMRouterError(
-                "INTERNAL_UNAVAILABLE",
+                "PROTOCOL_INVALID",
                 response.status_code,
                 "query_first",
                 selector=selector,
@@ -535,7 +539,7 @@ class EzLLMRouterClient(ClientSession):
             )
         if response.status_code not in (200, 202):
             raise EzLLMRouterError(
-                "INTERNAL_UNAVAILABLE", response.status_code, "query_first", selector=selector
+                "PROTOCOL_INVALID", response.status_code, "query_first", selector=selector
             )
         return value
 

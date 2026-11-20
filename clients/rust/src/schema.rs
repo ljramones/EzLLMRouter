@@ -42,8 +42,17 @@ static BUNDLES: LazyLock<BTreeMap<&'static str, Value>> = LazyLock::new(|| {
         (version, bundle["$defs"].clone())
     }).collect()
 });
+pub(crate) fn value_policy(value: &Value, nulls: bool, controls: bool) -> bool {
+    match value {
+        Value::Null => nulls,
+        Value::String(s) => !controls || s.chars().all(|c| c >= ' ' && c != '\u{7f}'),
+        Value::Array(items) => items.iter().all(|item| value_policy(item, nulls, controls)),
+        Value::Object(items) => items.iter().all(|(key, item)| (!controls || key.chars().all(|c| c >= ' ' && c != '\u{7f}')) && value_policy(item, nulls, controls)),
+        _ => true,
+    }
+}
 pub(crate) fn named(value: &Value, version: &str, name: &str) -> bool {
-    BUNDLES.get(version).is_some_and(|defs| defs.get(name).is_some_and(|shape| matches(value, shape, defs)))
+    (version != "0.3" || value_policy(value, true, true)) && BUNDLES.get(version).is_some_and(|defs| defs.get(name).is_some_and(|shape| matches(value, shape, defs)))
 }
 fn bound(shape: &Value, key: &str, fallback: i64) -> i64 { at(shape, key).as_i64().unwrap_or(fallback) }
 fn matches(value: &Value, shape: &Value, defs: &Value) -> bool {

@@ -19,7 +19,7 @@ impl IntegrationClient {
         if status >= 400 {
             let evidence = at(&value, "error"); let code = text(at(evidence, "code")); let guidance = text(at(evidence, "retry_guidance"));
             if code.is_empty() { return Err(Error::new("TRANSPORT_OUTCOME_UNKNOWN", Some(status), "query_first", None)); }
-            return Err(Error::new(code, Some(status), if guidance.is_empty() { "never" } else { guidance }, None));
+            return Err(Error::new(code, Some(status), if matches!(guidance, "never" | "query_first" | "orchestrator_decision") { guidance } else if status >= 500 { "query_first" } else { "never" }, None));
         }
         if !expected.contains(&status) { return Err(Error::new("PROTOCOL_INVALID", Some(status), "query_first", None)); }
         Ok(value)

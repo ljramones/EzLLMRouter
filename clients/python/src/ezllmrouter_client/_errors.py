@@ -29,3 +29,13 @@ class IntegrationClientError(ClientError):
 
 class IntegrationInputError(IntegrationClientError, TypeError):
     """Invalid accounting input; remains catchable as TypeError."""
+
+
+def retry_guidance(value: Any, status: int) -> str:
+    return (
+        value
+        if value in ("never", "query_first", "orchestrator_decision")
+        else "query_first"
+        if status >= 500
+        else "never"
+    )

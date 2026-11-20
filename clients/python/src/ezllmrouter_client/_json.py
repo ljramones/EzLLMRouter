@@ -48,3 +48,40 @@ def strict_reply(data: bytes) -> Any:
 
     check(value)
     return value
+
+
+def encode_request(value: Any) -> bytes:
+    active: set[int] = set()
+
+    def check(item: Any, depth: int = 0) -> None:
+        if depth > 32:
+            raise ValueError("request nesting limit")
+        if item is None or type(item) is bool:
+            return
+        if type(item) is int and abs(item) <= 9007199254740991:
+            return
+        if type(item) is str:
+            if "\0" in item:
+                raise ValueError("invalid request text")
+            item.encode("utf-8", "strict")
+            return
+        if type(item) not in (list, dict) or id(item) in active:
+            raise ValueError("invalid JSON request value")
+        active.add(id(item))
+        try:
+            if type(item) is dict:
+                for key, child in item.items():
+                    if type(key) is not str:
+                        raise ValueError("non-string request key")
+                    check(key, depth + 1)
+                    check(child, depth + 1)
+            else:
+                for child in item:
+                    check(child, depth + 1)
+        finally:
+            active.remove(id(item))
+
+    check(value)
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )

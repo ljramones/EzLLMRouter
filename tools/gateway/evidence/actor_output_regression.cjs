@@ -17,7 +17,7 @@ const tests = [
   ...["first", "after_tool", "after_destination", "after_guard"].map(mode => ({name: "delivered_"+mode, mode})),
   {name:"pending_first_poll", mode:"first", pending: true, waiting:0},
   {name:"pending_multiple_polls", mode:"first", pending:true, waiting:2},
-  {name:"malformed_candidate_no_false_success", mode:"first", failure:"model", error:"INTERNAL_UNAVAILABLE"},
+  {name:"malformed_candidate_no_false_success", mode:"first", failure:"model", error:"PROTOCOL_INVALID"},
   {name:"malformed_json_no_false_success", mode:"first", failure:"json", error:"TRANSPORT_OUTCOME_UNKNOWN"},
   {name:"receiver_unavailable_no_submit", mode:"first", failure:"receiver", error:"receiver unavailable"},
 ];
@@ -111,7 +111,7 @@ async function run(test) {
 (async()=>{
   const results=[];for(const test of tests)results.push(await run(test));
   const failed=results.filter(r=>!r.passed).length;
-  console.log(JSON.stringify({scope:"actual actor and unchanged SDK with fake fetch; no service/provider or Docker execution",
+  console.log(JSON.stringify({scope:"actual actor and installed SDK with fake fetch; no service/provider or Docker execution",
     node:process.version,actor_sha256:hash(actorPath),sdk_sha256:hash(sdkPath),
     passed:results.length-failed,failed,total:results.length,results},null,2));
   if(failed)process.exitCode=1;

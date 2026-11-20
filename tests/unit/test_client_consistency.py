@@ -6,6 +6,7 @@ import httpx
 
 from ezllmrouter_client import (
     ClientError,
+    EzLLMRouterError,
     EzLLMRouterClient,
     IntegrationClient,
     IntegrationInputError,
@@ -16,6 +17,57 @@ from tests.unit import test_python_client_safety as safety
 
 
 class ClientConsistencyTests(unittest.TestCase):
+    def test_closed_clients_and_invalid_wire_objects_use_typed_local_errors(self):
+        for cls in (EzLLMRouterClient, IntegrationClient):
+            with cls("http://synthetic.invalid", "token") as client:
+                self.assertFalse(hasattr(client, "transport"))
+            action = (
+                client.get_capabilities
+                if cls is EzLLMRouterClient
+                else lambda: client.report("dataset.test")
+            )
+            with self.assertRaises(ClientError) as caught:
+                action()
+            self.assertEqual(
+                (caught.exception.code, caught.exception.retry_guidance), ("CLIENT_CLOSED", "never")
+            )
+            with self.assertRaises(ClientError):
+                client.__enter__()
+        with EzLLMRouterClient("http://synthetic.invalid", "token") as client:
+            with self.assertRaises(EzLLMRouterError) as caught:
+                client.submit("invalid")
+            self.assertEqual(caught.exception.code, "SCHEMA_INVALID")
+
+    def test_serialization_failures_are_local_and_never_send(self):
+        calls = []
+        transport = httpx.Client(
+            transport=httpx.MockTransport(lambda request: calls.append(request))
+        )
+        with IntegrationClient("http://synthetic.invalid", "token", transport=transport) as client:
+            circular = {}
+            circular["self"] = circular
+            for value in (circular, {"extra": object()}, {"extra": 1.5}, {"extra": 2**53}):
+                with (
+                    self.subTest(value=type(value).__name__),
+                    self.assertRaises(IntegrationInputError) as caught,
+                ):
+                    client.submit_observation(value)
+                self.assertEqual(
+                    (caught.exception.code, caught.exception.retry_guidance),
+                    ("SCHEMA_INVALID", "never"),
+                )
+        self.assertEqual(calls, [])
+
+    def test_identifier_end_anchors_reject_final_newlines_without_changing_substring_patterns(self):
+        for pattern, value, expected in (
+            ("^[a-z]+$", "dataset\n", False),
+            ("end$", "prefixend", True),
+            ("end$", "end\n", False),
+            (r"cost\$", "cost$ extra", True),
+            ("middle", "prefix-middle-suffix", True),
+        ):
+            self.assertEqual(_valid(value, {"type": "string", "pattern": pattern}), expected)
+
     def test_origins_and_credentials_are_validated_before_allocating_a_transport(self):
         for client_type in (EzLLMRouterClient, IntegrationClient):
             for origin in (

@@ -194,7 +194,7 @@ class SuccessorSdkTests(unittest.TestCase):
             self.invoke(wrong, 500)
         self.assertEqual(
             (error.exception.code, error.exception.retry_guidance),
-            ("INTERNAL_UNAVAILABLE", "query_first"),
+            ("PROTOCOL_INVALID", "query_first"),
         )
 
     def test_reported_zero_is_unknown_not_calculated_or_over_bound(self):

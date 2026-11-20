@@ -148,7 +148,7 @@ class ClientTests(unittest.TestCase):
                     if method == "submit"
                     else (lambda *, client=client: client.getStatus(selected()))
                 )
-                caught = error(call, "INTERNAL_UNAVAILABLE")
+                caught = error(call, "PROTOCOL_INVALID")
                 self.assertEqual(caught.selector, selected())
                 self.assertEqual(len(transport.calls), 1)
                 client.close()
@@ -156,7 +156,7 @@ class ClientTests(unittest.TestCase):
         wrong["handle"]["work_key"]["task_id"] = "task.other"
         client, _ = self.client(wrong)
         self.assertEqual(
-            error(lambda: client.submit(EXAMPLES["submit_text"]), "INTERNAL_UNAVAILABLE").selector,
+            error(lambda: client.submit(EXAMPLES["submit_text"]), "PROTOCOL_INVALID").selector,
             selected(),
         )
         client.close()
@@ -191,7 +191,7 @@ class ClientTests(unittest.TestCase):
                                 lambda *, client=client, selector=selector: client.getStatus(
                                     selector
                                 ),
-                                "INTERNAL_UNAVAILABLE",
+                                "PROTOCOL_INVALID",
                             ).selector,
                             expected,
                         )
@@ -264,7 +264,7 @@ class ClientTests(unittest.TestCase):
             client, transport = self.client(value)
             caught = error(
                 lambda *, client=client: client.submit(EXAMPLES["submit_text"]),
-                "INTERNAL_UNAVAILABLE",
+                "PROTOCOL_INVALID",
             )
             self.assertEqual(caught.selector, selected())
             self.assertEqual(len(transport.calls), 1)

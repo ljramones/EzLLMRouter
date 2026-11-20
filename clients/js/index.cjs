@@ -2,7 +2,7 @@
 
 const VERSION = "0.2";
 const successor = require("./successor.cjs");
-const {readResponse, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT} = require("./http.cjs");
+const {exchange, serializeBody, timeoutMs, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT} = require("./http.cjs");
 const {IntegrationClient, IntegrationClientError} = require("./integration.cjs");
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/;
 const FEATURES = new Set(["text", "tools", "document_text", "background", "nested", "streaming",
@@ -201,39 +201,39 @@ function selectorFrom(request) {
 }
 
 class EzLLMRouterClient {
-  constructor({ baseUrl, token, fetchImpl = globalThis.fetch }) {
+  #token;
+  #fetchImpl;
+  #timeoutMs;
+  constructor({ baseUrl, token, fetchImpl = globalThis.fetch, timeoutMs: budget }) {
     let endpoint;
     try { endpoint = new URL(baseUrl); } catch { throw new TypeError("invalid service origin"); }
     if (typeof baseUrl !== "string" || !["http:", "https:"].includes(endpoint.protocol) ||
         endpoint.username || endpoint.password || endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
-        typeof token !== "string" || !token || typeof fetchImpl !== "function") {
+        typeof token !== "string" || !token || /[^\x21-\x7e]/u.test(token) || /[\x00-\x20\x7f?#\\]/u.test(baseUrl) || typeof fetchImpl !== "function") {
       throw new TypeError("baseUrl, token and fetch are required");
     }
     this.baseUrl = endpoint.origin;
-    this.token = token;
-    this.fetchImpl = fetchImpl;
+    this.#token = token;
+    this.#fetchImpl = fetchImpl;
+    this.#timeoutMs = timeoutMs(budget);
   }
 
   async _request(method, path, body, extraHeaders = {}, workSelector, responseKind = "submit") {
     // Bind response matching and error recovery to the issued operation.
     workSelector = workSelector === undefined ? undefined : Object.freeze({ ...workSelector });
-    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.#token}`,
       "Accept-Encoding": "identity", ...extraHeaders };
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    let response;
+    const encoded = serializeBody(body, EzLLMRouterError, {allowNull: false});
+    let response, value;
     try {
-      response = await this.fetchImpl(this.baseUrl + path, {
-        method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual",
-      });
+      const result = await exchange(this.#fetchImpl, this.baseUrl + path,
+        {method, headers, body: encoded, redirect: "manual"}, WIRE_RESPONSE_LIMIT, this.#timeoutMs);
+      response = result.response;
+      value = successor.strictDecode(result.raw, WIRE_RESPONSE_LIMIT);
     } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "query_first", null, { selector: workSelector, cause });
-    }
-    let value;
-    try {
-      const raw = await readResponse(response, WIRE_RESPONSE_LIMIT);
-      value = successor.strictDecode(raw, WIRE_RESPONSE_LIMIT);
-    } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector: workSelector, cause });
+      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response?.status ?? cause.httpStatus ?? null,
+        "query_first", null, {selector: workSelector, cause});
     }
     if (value?.contract_version !== VERSION || response.headers.get("EzLLMRouter-Contract-Version") !== VERSION) {
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", value?.error?.correlation_id ?? null,
@@ -250,7 +250,7 @@ class EzLLMRouterClient {
         (!value?.handle || handleMatchesSelector(value.handle, workSelector))) :
       responseKind === "status" ? (!value?.handle || handleMatchesSelector(value.handle, workSelector)) : true;
     if (!valid || !corresponds) {
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null,
         { selector: workSelector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     if (value.error || value.state === "failed" || value.state === "rejected") {
@@ -260,7 +260,7 @@ class EzLLMRouterClient {
           work_key: usableHandle?.work_key, selector: workSelector, error: err });
     }
     if (!response.ok && response.status !== 202) {
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null,
         { selector: workSelector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     return value;
@@ -294,18 +294,19 @@ class EzLLMRouterClient {
   submitInRun(request, runId, options) { return this._submit(request, options, runId); }
 
   async _extension(method, path, body, kind) {
-    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": VERSION, Authorization: `Bearer ${this.#token}`,
       "Accept-Encoding": "identity" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
+    const encoded = serializeBody(body, EzLLMRouterError, {allowNull: false});
     let response, value;
     try {
-      response = await this.fetchImpl(this.baseUrl + path, {
-        method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual",
-      });
-      const raw = await readResponse(response, WIRE_RESPONSE_LIMIT);
-      value = successor.strictDecode(raw, WIRE_RESPONSE_LIMIT);
+      const result = await exchange(this.#fetchImpl, this.baseUrl + path,
+        {method, headers, body: encoded, redirect: "manual"}, WIRE_RESPONSE_LIMIT, this.#timeoutMs);
+      response = result.response;
+      value = successor.strictDecode(result.raw, WIRE_RESPONSE_LIMIT);
     } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response?.status ?? null, "query_first", null, { cause });
+      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response?.status ?? cause.httpStatus ?? null,
+        "query_first", null, {cause});
     }
     if (!object(value) || value.contract_version !== VERSION ||
         response.headers.get("EzLLMRouter-Contract-Version") !== VERSION)
@@ -317,14 +318,14 @@ class EzLLMRouterClient {
     const field = kind === "receipt" ? "receipt" : "run";
     if (!keys(value, ["contract_version", version, field]) || value[version] !== "1" ||
         !object(value[field]) || (kind === "receipt" ? ![200, 201].includes(response.status) : response.status !== 200))
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null);
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null);
     const item = value[field];
     if (kind === "receipt") {
       if (!keys(item, ["version", "event_id", "run_id", "kind", "subject_revision", "recorded_at", "event_digest"]) ||
           item.version !== "1" || !["event_id", "run_id", "event_digest"].every(k => id(item[k])) ||
           !count(item.subject_revision) || !utc(item.recorded_at) ||
           !["task_outcome", "step_evaluation"].includes(item.kind))
-        throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null);
+        throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null);
     } else if (!keys(item, ["run_id", "principal_id", "charging_owner_id", "initiating_user_id",
         "agent_id", "agent_version", "parent_run_id", "root_run_id", "task_id", "task_class", "evaluation_ref", "mode",
         "created_at", "status", "request_digest"], ["terminal_at"]) ||
@@ -335,7 +336,7 @@ class EzLLMRouterClient {
         !["direct_human", "autonomous_agent", "user_delegated_agent", "nested_agent"].includes(item.mode) ||
         !["running", "accepted", "rejected", "abandoned"].includes(item.status) ||
         !utc(item.created_at) || (Object.hasOwn(item, "terminal_at") && !utc(item.terminal_at)))
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null);
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null);
     return item;
   }
 
@@ -396,37 +397,34 @@ class EzLLMRouterClient {
   }
 
   async _requestSuccessor(method, path, selector, body, waitMs, kind) {
-    const headers = { "EzLLMRouter-Contract-Version": "0.3", Authorization: `Bearer ${this.token}`,
+    const headers = { "EzLLMRouter-Contract-Version": "0.3", Authorization: `Bearer ${this.#token}`,
       "Accept-Encoding": "identity" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (waitMs !== undefined) headers["EzLLMRouter-Wait-Ms"] = String(waitMs);
-    let response;
+    const encoded = serializeBody(body, EzLLMRouterError);
+    let response, value;
     try {
-      response = await this.fetchImpl(this.baseUrl + path, { method, headers,
-        body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual" });
+      const result = await exchange(this.#fetchImpl, this.baseUrl + path,
+        {method, headers, body: encoded, redirect: "manual"}, SUCCESSOR_RESPONSE_LIMIT, this.#timeoutMs);
+      response = result.response;
+      value = successor.strictDecode(result.raw, SUCCESSOR_RESPONSE_LIMIT);
     } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "query_first", null, { selector, cause });
-    }
-    let value;
-    try {
-      const raw = await readResponse(response, SUCCESSOR_RESPONSE_LIMIT);
-      value = successor.strictDecode(raw, SUCCESSOR_RESPONSE_LIMIT);
-    } catch (cause) {
-      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response.status, "query_first", null, { selector, cause });
+      throw new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", response?.status ?? cause.httpStatus ?? null,
+        "query_first", null, {selector, cause});
     }
     if (value?.contract_version !== "0.3" || response.headers.get("EzLLMRouter-Contract-Version") !== "0.3") {
       throw new EzLLMRouterError("UNSUPPORTED_VERSION", response.status, "never", null, { selector });
     }
     if (Object.hasOwn(value, "code")) {
       if (!successor.errorValid(value, response.status, kind)) {
-        throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null, { selector });
+        throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null, { selector });
       }
       throw new EzLLMRouterError(value.code, response.status, value.retry_guidance, value.correlation_id, { selector });
     }
     const usableHandle = matchingHandle(value?.handle, selector, true);
     if (!successor.responseValid(value,kind === "submit" ? "SubmitReply" : "StatusSnapshot",
         response.status,selector,kind === "submit" ? body : undefined)) {
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null,
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null,
         { selector, handle: usableHandle, work_key: usableHandle?.work_key });
     }
     if (kind === "submit" && value.state === "failed") {
@@ -436,7 +434,7 @@ class EzLLMRouterClient {
           failure_stage: value.failure_stage, error: value.error });
     }
     if (response.status !== 200 && response.status !== 202) {
-      throw new EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status, "query_first", null, { selector });
+      throw new EzLLMRouterError("PROTOCOL_INVALID", response.status, "query_first", null, { selector });
     }
     return value;
   }

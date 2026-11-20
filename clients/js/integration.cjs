@@ -4,7 +4,7 @@ const schemas={"1":require("./integration_schema.json").$defs,
   "2":require("./integration_schema_v2.json").$defs,
   "3":require("./integration_schema_v3.json").$defs};
 const {strictDecode}=require("./successor.cjs");
-const {readResponse,INTEGRATION_RESPONSE_LIMIT}=require("./http.cjs");
+const {exchange,serializeBody,retryGuidance,timeoutMs,INTEGRATION_RESPONSE_LIMIT}=require("./http.cjs");
 const crypto=require("node:crypto");
 const own=(v,k)=>Object.hasOwn(v,k);
 function valid(v,s,schema=schemas["1"]){
@@ -23,7 +23,7 @@ function valid(v,s,schema=schemas["1"]){
     v.length<=(s.maxItems||Infinity)&&(!s.uniqueItems||new Set(v.map(JSON.stringify)).size===v.length)&&
     v.every(x=>valid(x,s.items,schema));
   if(s.type==="integer")return Number.isSafeInteger(v)&&v>=(s.minimum??-Infinity)&&v<=(s.maximum??Infinity);
-  if(s.type==="string")return typeof v==="string"&&(!s.pattern||new RegExp(s.pattern,"u").test(v))&&
+  if(s.type==="string")return typeof v==="string"&&(!s.pattern||new RegExp(s.pattern.endsWith("$") ? s.pattern.slice(0,-1)+"$(?![\\s\\S])" : s.pattern,"u").test(v))&&
     !/[\u0000-\u001f\u007f]/u.test(v);
   return true;
 }
@@ -91,33 +91,37 @@ function receiptValid(value,datasetId,eventId,kind,digest){
 }
 class IntegrationClientError extends Error{
   constructor(code,httpStatus=null,retryGuidance="never"){super(code);
-    this.code=code;this.httpStatus=httpStatus;this.retryGuidance=retryGuidance;}
+    this.code=code;this.http_status=httpStatus;this.retry_guidance=retryGuidance;}
+  get httpStatus(){return this.http_status;}
+  get retryGuidance(){return this.retry_guidance;}
 }
 class IntegrationClient{
-  constructor(baseUrl,token,{fetchImpl=globalThis.fetch,version="1"}={}){
+  #token; #fetchImpl; #timeoutMs;
+  constructor(baseUrl,token,{fetchImpl=globalThis.fetch,version="1",timeoutMs:budget}={}){
     const u=new URL(baseUrl);
     if(!["http:","https:"].includes(u.protocol)||u.username||u.password||u.pathname!=="/"||u.search||u.hash||
-      typeof token!=="string"||!token||typeof fetchImpl!=="function"||!schemas[version])throw TypeError("invalid integration client");
-    this.baseUrl=u.origin;this.token=token;this.fetchImpl=fetchImpl;
+      typeof baseUrl!=="string"||typeof token!=="string"||!token||/[^\x21-\x7e]/u.test(token)||/[\x00-\x20\x7f?#\\]/u.test(baseUrl)||typeof fetchImpl!=="function"||!schemas[version])throw TypeError("invalid integration client");
+    this.baseUrl=u.origin;this.#token=token;this.#fetchImpl=fetchImpl;this.#timeoutMs=timeoutMs(budget);
     this.version=version;this.schema=schemas[version];this.basePath="/integration/v"+version;
   }
   async _request(method,path,body,expected){
-    const headers={Authorization:"Bearer "+this.token,"EzLLMRouter-Integration-Version":this.version,
+    const headers={Authorization:"Bearer "+this.#token,"EzLLMRouter-Integration-Version":this.version,
       "Accept-Encoding":"identity"};
     if(body!==undefined)headers["Content-Type"]="application/json";
-    let response;
-    try{response=await this.fetchImpl(this.baseUrl+path,{method,headers,
-      body:body===undefined?undefined:JSON.stringify(body),redirect:"error",cache:"no-store"});}
-    catch{throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",null,"query_first");}
-    let value;
-    try{value=strictDecode(await readResponse(response,INTEGRATION_RESPONSE_LIMIT),INTEGRATION_RESPONSE_LIMIT);}
-    catch{throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",response.status,"query_first");}
+    const encoded=serializeBody(body,IntegrationClientError);
+    let response,value;
+    try{
+      const result=await exchange(this.#fetchImpl,this.baseUrl+path,
+        {method,headers,body:encoded,redirect:"error",cache:"no-store"},INTEGRATION_RESPONSE_LIMIT,this.#timeoutMs);
+      response=result.response;
+      value=strictDecode(result.raw,INTEGRATION_RESPONSE_LIMIT);
+    }catch(cause){throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",response?.status??cause.httpStatus??null,"query_first");}
     if(response.headers.get("EzLLMRouter-Integration-Version")!==this.version||value?.integration_version!==this.version)
       throw new IntegrationClientError("UNSUPPORTED_VERSION",response.status);
     if(!response.ok){
       if(!value.error||typeof value.error.code!=="string")
         throw new IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN",response.status,"query_first");
-      throw new IntegrationClientError(value.error.code,response.status,value.error.retry_guidance||"never");
+      throw new IntegrationClientError(value.error.code,response.status,retryGuidance(value.error.retry_guidance,response.status));
     }
     if(!expected.includes(response.status))throw new IntegrationClientError("PROTOCOL_INVALID",response.status,"query_first");
     return value;
@@ -131,7 +135,7 @@ class IntegrationClient{
   setAccountPermissions(id,body){if(this.version!=="3"||!valid(id,this.schema.id,this.schema)||
       !valid(body,this.schema.account_permissions,this.schema))throw TypeError("invalid account permissions");
     return this._request("POST",this.basePath+"/accounts/"+encodeURIComponent(id)+"/permissions",body,[200]);}
-  async submitObservation(event){if(event?.integration_version!==this.version||!eventValid(event))throw TypeError("invalid observation");
+  async submitObservation(event){if(event!==undefined)event=JSON.parse(serializeBody(event,IntegrationClientError));if(event?.integration_version!==this.version||!eventValid(event))throw TypeError("invalid observation");
     const snapshot=structuredClone(event);
     const digest="sha256:"+crypto.createHash("sha256").update(JSON.stringify(canonical(snapshot))).digest("hex");
     const reply=await this._request("POST",this.basePath+"/events",snapshot,[200,201]);
@@ -198,7 +202,7 @@ class IntegrationClient{
     return reply;}
   report(datasetId){if(!valid(datasetId,this.schema.id,this.schema))throw TypeError("invalid dataset");
     return this._request("GET",this.basePath+"/reports/usage?dataset_id="+encodeURIComponent(datasetId),undefined,[200]);}
-  submitSnapshot(snapshot){if(!["2","3"].includes(this.version)||snapshot?.integration_version!==this.version||!snapshotValid(snapshot))
+  submitSnapshot(snapshot){if(snapshot!==undefined)snapshot=JSON.parse(serializeBody(snapshot,IntegrationClientError));if(!["2","3"].includes(this.version)||snapshot?.integration_version!==this.version||!snapshotValid(snapshot))
       throw TypeError("invalid snapshot");
     const digest="sha256:"+crypto.createHash("sha256").update(JSON.stringify(canonical(snapshot))).digest("hex");
     return this._request("POST",this.basePath+"/snapshots",snapshot,[200,201]).then(reply=>{

@@ -19,7 +19,7 @@ final class Protocol {
     }
     static EzLLMRouterException invalid() { return Connection.error("SCHEMA_INVALID", 0, "never", null); }
     static EzLLMRouterException bad(int status, Map<String, Object> selector, Map<String, Object> handle) {
-        return new EzLLMRouterException("INTERNAL_UNAVAILABLE", status, "query_first", null, selector, handle, null, null);
+        return new EzLLMRouterException("PROTOCOL_INVALID", status, "query_first", null, selector, handle, null, null);
     }
     static EzLLMRouterException evidence(Map<String, Object> error, int status, Map<String, Object> selector, Map<String, Object> handle, Map<String, Object> envelope) {
         return new EzLLMRouterException(text(error.get("code")), status, text(error.get("retry_guidance")), text(error.get("correlation_id")), selector, handle,

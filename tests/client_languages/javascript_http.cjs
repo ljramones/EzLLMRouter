@@ -19,7 +19,7 @@ const {EzLLMRouterClient, EzLLMRouterError} = load("@cognitivedynamics/ezllmrout
       await assert.rejects(client.getCapabilities(), error => {
         assert(error instanceof EzLLMRouterError, mode);
         assert.equal(error.retry_guidance, "query_first", mode);
-        if (mode === "redirect") assert.equal(error.code, "INTERNAL_UNAVAILABLE");
+        if (mode === "redirect") assert.equal(error.code, "PROTOCOL_INVALID");
         else assert.equal(error.code, "TRANSPORT_OUTCOME_UNKNOWN");
         if (["compressed", "oversize", "truncated", "stream_oversize"].includes(mode)) {
           assert.equal(error.http_status, 200, mode);
