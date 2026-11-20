@@ -57,7 +57,7 @@ def main():
         inside()
         return
     root = Path(__file__).resolve().parents[2]
-    tree = ast.parse((root / "deploy/local/profile.py").read_text())
+    tree = ast.parse((root / "deploy/local/local_profile.py").read_text())
     image = next(
         node.value.value
         for node in tree.body

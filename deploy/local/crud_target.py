@@ -10,7 +10,7 @@ from catalogue_import import OperatorClient
 from crud_browser import run_browser
 import crud_update
 from check import wait_health
-import profile
+import local_profile as profile
 
 
 def require_unchanged_traffic(before, after):
@@ -71,7 +71,7 @@ def verify_records(client, model_ref, user_id, synthetic_ref):
 
 def main():
     if len(sys.argv) != 2:
-        raise SystemExit("usage: crud_target.py crud-20261021-01")
+        raise SystemExit("usage: crud_target.py crud-YYYYMMDD-NN")
     run_id = sys.argv[1]
     crud_update.main()  # claims a fresh namespace and records its own service update result
     run = crud_update.RUNS / run_id

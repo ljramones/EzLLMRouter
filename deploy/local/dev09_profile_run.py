@@ -9,10 +9,11 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 
-import profile
+import local_profile as profile
+import prepare
+from command_support import capture, record
 from check import wait_health
 from dev08_profile_upgrade import running_build
 
@@ -41,25 +42,25 @@ def save(path, name, value):
 
 def command(path, name, argv, env, *, payload=None, timeout=180):
     print("DEV-09 profile: " + name + "…", flush=True)
-    result = subprocess.run(
-        argv,
-        cwd=profile.ROOT,
-        env=env,
-        input=json.dumps(payload) if payload is not None else None,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
+
+    def redact_output(value):
+        value = profile.redact(value)
+        token = (payload or {}).get("token")
+        return value.replace(token, "[REDACTED]") if isinstance(token, str) and token else value
+
+    result = record(
+        path,
+        name,
+        capture(
+            argv,
+            cwd=profile.ROOT,
+            env=env,
+            payload=json.dumps(payload) if payload is not None else None,
+            timeout=timeout,
+        ),
+        redact_output,
     )
-    # None of these commands has credentials in argv. Actor input holds the
-    # credential and is never written to the evidence directory.
-    stdout = profile.redact(result.stdout)
-    stderr = profile.redact(result.stderr)
-    token = (payload or {}).get("token")
-    if isinstance(token, str) and token:
-        stdout, stderr = stdout.replace(token, "[REDACTED]"), stderr.replace(token, "[REDACTED]")
-    (path / (name + ".stdout.txt")).write_text(stdout)
-    (path / (name + ".stderr.txt")).write_text(stderr)
-    (path / (name + ".exit.txt")).write_text(str(result.returncode) + "\n")
+    stdout, stderr = result.stdout, result.stderr
     print("DEV-09 profile: " + name + " exited " + str(result.returncode), flush=True)
     if result.returncode:
         raise RuntimeError(name + " failed; redacted tail: " + stderr[-1200:])
@@ -237,7 +238,13 @@ def exercise(path, run_id, client, env, before):
     auto = row("auto", "autonomous_agent", agent_id=agent, agent_version="v1")
     service_token = profile.secrets_on_disk()[0]["service_token"]
     py = profile.compose_args(
-        "exec", "-T", "service", "python", "-B", "/app/local/dev09_python_actor.py"
+        "exec",
+        "-T",
+        "service",
+        "python",
+        "-B",
+        "-c",
+        (Path(profile.current()["build_dir"]) / "service/local/dev09_python_actor.py").read_text(),
     )
     results = [
         actor(path, "installed-python-direct", py, env, token=tokens[users[0]], rows=[direct])
@@ -368,7 +375,10 @@ def exercise(path, run_id, client, env, before):
         "outcome_revisions": [1, 2],
         "real_provider_calls": 0,
         "synthetic_cost_state": "unknown",
-        "installed_clients": ["Python 0.0.4", "CommonJS 0.0.3"],
+        "installed_clients": {
+            "python": prepare.PYTHON_CLIENT["version"],
+            "javascript": prepare.JS_CLIENT["version"],
+        },
     }
 
 
@@ -476,6 +486,7 @@ def main():
                     "no-new-privileges:true",
                     "--mount",
                     "type=bind,src=" + str(backup) + ",dst=/backup/store.sqlite,readonly",
+                    *profile.fixture_mounts(build),
                     service_image,
                     "python",
                     "-B",

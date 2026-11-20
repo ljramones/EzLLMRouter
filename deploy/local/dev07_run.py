@@ -12,12 +12,12 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 import time
 
 from check import OperatorClient, wait_health
-import profile as local_profile
+import local_profile
+from command_support import capture
 
 
 STATE = local_profile.STATE
@@ -30,7 +30,7 @@ def require(condition, message):
 
 
 def profile_summary(output):
-    """profile.py reports stages before its one final machine-readable row."""
+    """local_profile.py reports stages before its one final machine-readable row."""
     lines = output.splitlines()
     require(bool(lines), "profile summary missing")
     value = json.loads(lines[-1])
@@ -63,12 +63,10 @@ class Run:
 
     def command(self, label, argv, *, input_value=None, timeout=120, env=None):
         data = None if input_value is None else json.dumps(input_value)
-        completed = subprocess.run(
+        completed = capture(
             argv,
             cwd=local_profile.ROOT,
-            input=data,
-            capture_output=True,
-            text=True,
+            payload=data,
             timeout=timeout,
             env=env,
         )
@@ -89,7 +87,7 @@ class Run:
     def profile(self, label, action, env=None):
         return self.command(
             label,
-            [sys.executable, str(local_profile.LOCAL / "profile.py"), action],
+            [sys.executable, str(local_profile.LOCAL / "local_profile.py"), action],
             timeout=1800,
             env=env,
         )
@@ -612,7 +610,7 @@ def main():
     require(os.environ.get("EZLLMROUTER_ARTIFACT_ROOT"), "declared frozen artifact root required")
     run = Run(sys.argv[1])
     try:
-        # Save older command logs separately before profile.py writes new command names.
+        # Save older command logs separately before local_profile.py writes new command names.
         if (STATE / "commands").is_dir():
             shutil.copytree(STATE / "commands", run.path / "pre-dev07-commands")
         run.build = local_profile.current()

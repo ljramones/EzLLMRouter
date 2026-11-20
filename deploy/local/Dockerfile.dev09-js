@@ -1,19 +1,16 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
 ENV npm_config_cache=/tmp/ezllmrouter-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
-COPY client.tgz /opt/ezllmrouter/client.tgz
-COPY client-metadata.json /opt/ezllmrouter/client-metadata.json
-COPY client.tgz.sha256 /opt/ezllmrouter/client.tgz.sha256
-RUN sha256sum -c /opt/ezllmrouter/client.tgz.sha256 \
+COPY client-metadata.json client.tgz.sha256 /opt/ezllmrouter/
+RUN --mount=type=bind,source=client.tgz,target=/opt/ezllmrouter/client.tgz,readonly \
+    sha256sum -c /opt/ezllmrouter/client.tgz.sha256 \
  && mkdir -p /app/consumer \
  && cd /app/consumer \
  && npm install /opt/ezllmrouter/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
- && rm -rf /opt/ezllmrouter/client.tgz /tmp/ezllmrouter-npm-cache \
+ && rm -rf /tmp/ezllmrouter-npm-cache \
  && chmod 0555 /app /app/consumer
-COPY dev09_js_actor.cjs /app/consumer/dev09_js_actor.cjs
-COPY dev10_js_actor.cjs /app/consumer/dev10_js_actor.cjs
-RUN chmod 0444 /app/consumer/dev09_js_actor.cjs /app/consumer/dev10_js_actor.cjs \
- && node -e "const m=require('/opt/ezllmrouter/client-metadata.json'); const p=require('/app/consumer/node_modules/'+m.name+'/package.json'); if(p.version!==m.version)process.exit(1)"
+COPY --chmod=0444 dev09_js_actor.cjs dev10_js_actor.cjs /app/consumer/
+RUN node -e "const m=require('/opt/ezllmrouter/client-metadata.json'); const p=require('/app/consumer/node_modules/'+m.name+'/package.json'); if(p.version!==m.version)process.exit(1)"
 USER node
 WORKDIR /app/consumer
 CMD ["node", "/app/consumer/dev09_js_actor.cjs"]

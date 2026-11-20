@@ -4,20 +4,23 @@
 from __future__ import annotations
 
 import json
+from contextlib import closing
 import hashlib
 import os
 from pathlib import Path
 import secrets
 import sqlite3
 import stat
-import subprocess
 import sys
 from datetime import datetime, timezone
 
-from check import exercise, readback, wait_health
-
 
 ROOT = Path(__file__).resolve().parents[2]
+if not __package__:
+    sys.path.insert(0, str(ROOT))
+from deploy.local.command_support import capture, record
+from deploy.local.check import exercise, readback, wait_health
+
 sys.path.insert(0, str(ROOT / "server/src"))
 from ezllmrouter_server.private_files import read_private, write_private
 
@@ -29,7 +32,8 @@ BASE = "docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8
 NODE = (
     "docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c"
 )
-DOCKER = ["docker", "--context", "desktop-linux"]
+DOCKER_CONTEXT = os.environ.get("EZLLMROUTER_DOCKER_CONTEXT") or os.environ.get("DOCKER_CONTEXT")
+DOCKER = ["docker", *(["--context", DOCKER_CONTEXT] if DOCKER_CONTEXT else [])]
 
 
 def secrets_on_disk():
@@ -139,13 +143,14 @@ def command(name, argv, env=None, allowed=(0,), input_data=None):
     records = STATE / "commands"
     records.mkdir(exist_ok=True)
     print("Local profile: " + name + "…", flush=True)
-    result = subprocess.run(
-        argv, cwd=ROOT, env=env, capture_output=True, text=True, input=input_data, timeout=900
+    result = record(
+        records,
+        name,
+        capture(argv, cwd=ROOT, env=env, payload=input_data, timeout=900),
+        redact,
+        suffix="",
     )
-    stdout, stderr = redact(result.stdout), redact(result.stderr)
-    (records / (name + ".stdout")).write_text(stdout)
-    (records / (name + ".stderr")).write_text(stderr)
-    (records / (name + ".exit")).write_text(str(result.returncode) + "\n")
+    stdout, stderr = result.stdout, result.stderr
     print("Local profile: " + name + " exited " + str(result.returncode), flush=True)
     if result.returncode not in allowed:
         print(name + " failed (exit " + str(result.returncode) + ")", file=sys.stderr)
@@ -179,6 +184,19 @@ def environment(build):
         EZLLMROUTER_DEV07_PYACTOR_IMAGE="ezllmrouter-dev07-pyactor:" + suffix,
         EZLLMROUTER_DEV07_JSACTOR_IMAGE="ezllmrouter-dev07-jsactor:" + suffix,
     )
+
+
+def fixture_mounts(build):
+    source = Path(build["build_dir"]) / "service"
+    mounts = []
+    for name in ("gateway", "dev_slice", "tests"):
+        directory = source / name
+        if not directory.is_dir() or directory.is_symlink():
+            raise ValueError("missing staged fixture directory: " + name)
+        mounts.extend(
+            ("--mount", "type=bind,src=" + str(directory) + ",dst=/app/" + name + ",readonly")
+        )
+    return mounts
 
 
 def compose_args(*args):
@@ -231,7 +249,7 @@ def backup_live_store(env):
     command("backup-copy-" + stamp, [*DOCKER, "cp", container + ":" + inside, str(outside)], env)
     outside.chmod(0o600)
     # The copied file is a consistent snapshot; inspect it without mutating it.
-    with sqlite3.connect("file:" + str(outside) + "?mode=ro", uri=True) as db:
+    with closing(sqlite3.connect("file:" + str(outside) + "?mode=ro", uri=True)) as db:
         if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise RuntimeError("copied SQLite backup failed quick_check")
         submissions = db.execute("SELECT COUNT(*) FROM submissions").fetchone()[0]
@@ -350,7 +368,8 @@ def topology(env):
             "service",
             "python",
             "-B",
-            "/app/gateway/worker_ready.py",
+            "-m",
+            "ezllmrouter_server.gateway.worker_ready",
             "--deadline",
             "5",
             "--allow-activity",
@@ -594,8 +613,8 @@ def capture_failed_start(env):
     ):
         try:
             command(name, args, env, allowed=(0, 1))
-        except Exception:
-            pass
+        except (RuntimeError, OSError) as exc:
+            print(name + " diagnostic failed: " + type(exc).__name__, file=sys.stderr)
     path = STATE / "commands/failure-logs.stdout"
     if path.exists():
         lines = path.read_text().splitlines()[-25:]
@@ -610,9 +629,6 @@ def capture_failed_start(env):
 
 def profile_up(verify_demos=False):
     credentials, password = secrets_on_disk()
-    command(
-        "prepare", [sys.executable, "-I", "-B", str(LOCAL / "prepare.py")], env=os.environ.copy()
-    )
     build = current()
     env = environment(build)
     ensure_owner(env)
@@ -683,14 +699,18 @@ def profile_up(verify_demos=False):
             )
         print("Running console: http://127.0.0.1:8780/")
         print("Operator credential file: " + str(STATE / "operator-password"))
-        print("Stop, preserving metadata volumes: python3 " + str(LOCAL / "profile.py") + " stop")
+        print(
+            "Stop, preserving metadata volumes: python3 "
+            + str(LOCAL / "local_profile.py")
+            + " stop"
+        )
     except Exception:
         if started and created_new:
             capture_failed_start(env)
             try:
                 command("failure-down", compose_args("down", "--remove-orphans"), env)
-            except Exception:
-                pass
+            except (RuntimeError, OSError) as exc:
+                print("startup cleanup failed: " + type(exc).__name__, file=sys.stderr)
         raise
 
 
@@ -710,7 +730,7 @@ def main():
         "build-actors",
     ):
         raise SystemExit(
-            "usage: profile.py prepare|up|up-and-verify|restart|audit|verify-persistence|status|stop|diagnose|backup|build-images|build-actors"
+            "usage: local_profile.py prepare|up|up-and-verify|restart|audit|verify-persistence|status|stop|diagnose|backup|build-images|build-actors"
         )
     action = sys.argv[1]
     if action == "prepare":

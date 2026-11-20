@@ -30,7 +30,7 @@ DEV09_CLIENT = (
 )
 JS_ARCHIVE = JS_CLIENT["name"].lstrip("@").replace("/", "-") + "-" + JS_CLIENT["version"] + ".tgz"
 SOURCE_ROOTS = (
-    "server/src",
+    "server",
     "tests/gateway_integration",
     "tests/development_slice",
     "tests/tool_cycle",
@@ -199,6 +199,7 @@ def prepare_work(work, run, source_hash, artifact):
         check=True,
         env=env,
         stdout=subprocess.DEVNULL,
+        timeout=900,
     )
     source_packet = "DEV-05-SOURCE-" + run.name + ".zip"
     (work / ("DEV-05-SOURCE-" + work.name + ".zip")).rename(work / source_packet)
@@ -220,6 +221,7 @@ def prepare_work(work, run, source_hash, artifact):
             check=True,
             env=env,
             stdout=subprocess.DEVNULL,
+            timeout=900,
         )
     wheel = sdk_out / DEV09_CLIENT
     if not wheel.is_file() or package_artifacts(sdk_out) != {DEV09_CLIENT}:
@@ -329,6 +331,7 @@ def prepare_work(work, run, source_hash, artifact):
         cwd=ROOT,
         env=env,
         stdout=subprocess.DEVNULL,
+        timeout=900,
     )
     js_package = sdk_out / JS_ARCHIVE
     if not js_package.is_file() or package_artifacts(sdk_out) != {DEV09_CLIENT, js_package.name}:

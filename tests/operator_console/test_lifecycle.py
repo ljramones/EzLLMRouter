@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/local"))
-import profile
+import local_profile as profile
 
 
 class LifecycleTests(unittest.TestCase):
@@ -77,6 +77,7 @@ class LifecycleTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(RuntimeError, "readiness deadline"):
                 profile.profile_up()
+        self.assertNotIn("prepare", names)
         self.assertLess(names.index("failure-ps"), names.index("failure-down"))
         self.assertLess(names.index("failure-logs"), names.index("failure-down"))
         self.assertEqual(names.count("failure-down"), 1)
@@ -270,13 +271,14 @@ class LifecycleTests(unittest.TestCase):
         command.assert_not_called()
         self.assertFalse((self.state / "last-persistence-check.json").exists())
 
-    def test_service_image_imports_copied_recipe(self):
+    def test_service_runtime_excludes_test_sources_and_keeps_only_fixture_data(self):
         dockerfile = (ROOT / "deploy/local/Dockerfile.service").read_text()
-        self.assertIn("COPY dev_slice/ /app/dev_slice/", dockerfile)
-        self.assertIn(
-            "/app/dev_slice", dockerfile.split("PYTHONPATH=", 1)[1].splitlines()[0].split(":")
-        )
-        self.assertTrue((ROOT / "tests/development_slice/recipe.py").is_file())
+        validation, runtime = dockerfile.split("FROM dependencies AS runtime", 1)
+        self.assertIn("COPY --chmod=0555 tests/ /app/tests/", validation)
+        self.assertIn("/app/dev_slice/fixture.json /app/dev_slice/fixture.json", runtime)
+        self.assertNotIn("COPY tests/", runtime)
+        self.assertNotIn("COPY gateway/", runtime)
+        self.assertTrue((ROOT / "server/src/ezllmrouter_server/gateway/proxy_recipe.py").is_file())
 
 
 if __name__ == "__main__":

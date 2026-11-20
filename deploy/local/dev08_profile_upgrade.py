@@ -9,7 +9,7 @@ import os
 import re
 import sys
 
-import profile
+import local_profile as profile
 from check import wait_health
 
 

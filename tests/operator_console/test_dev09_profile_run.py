@@ -189,7 +189,7 @@ class ProfileRunnerTests(unittest.TestCase):
             payload = {"token": secret, "rows": []}
             completed = subprocess.CompletedProcess(["actor"], 1, secret, "failed: " + secret)
             with (
-                patch.object(runner.subprocess, "run", return_value=completed),
+                patch.object(subprocess, "run", return_value=completed),
                 patch.object(runner.profile, "redact", side_effect=lambda value: value),
             ):
                 with self.assertRaises(RuntimeError) as failed:

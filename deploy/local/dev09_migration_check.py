@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import os
 from pathlib import Path
 import sqlite3
+from contextlib import closing
 import sys
 import threading
 import uuid
@@ -64,7 +65,7 @@ def main():
     # The owner-created backup is a complete, host-checked snapshot. Only its
     # main file is mounted read-only; SQLite must not create WAL sidecars in
     # the container's non-writable /backup directory.
-    with sqlite3.connect(f"file:{source_path}?mode=ro&immutable=1", uri=True) as source:
+    with closing(sqlite3.connect(f"file:{source_path}?mode=ro&immutable=1", uri=True)) as source:
         if source.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise RuntimeError("backup quick_check failed")
         before = counts(source, TABLES)
@@ -87,7 +88,7 @@ def main():
         legacy = source.execute(
             "SELECT COUNT(*) FROM submissions WHERE json_extract(record,'$.attribution') IS NULL"
         ).fetchone()[0]
-        with sqlite3.connect(copy_path) as target:
+        with closing(sqlite3.connect(copy_path)) as target:
             source.backup(target)
     store = SQLiteStore(copy_path)
     try:

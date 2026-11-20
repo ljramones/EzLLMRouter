@@ -13,7 +13,9 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/local"))
 # Avoid the standard-library module with the same name, used by profilers.
-spec = importlib.util.spec_from_file_location("local_profile", ROOT / "deploy/local/profile.py")
+spec = importlib.util.spec_from_file_location(
+    "local_profile", ROOT / "deploy/local/local_profile.py"
+)
 profile = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
 import initialize_credentials

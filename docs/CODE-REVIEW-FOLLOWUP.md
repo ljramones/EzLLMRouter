@@ -246,14 +246,24 @@ target checks pass.
 
 ## Remaining review work
 
+The deployment cleanup batch replaces `profile.py` with `local_profile.py`,
+shares bounded command capture/private redacted records and source/run helpers,
+and consolidates the host operator transport with response bounds and cleanup.
+Run dates are validated instead of fixed to October 21. Docker context is
+explicitly configurable; up/restart use the prepared build without automatic
+source preparation. Backup/migration connections close, and target cleanup
+attempts every owned removal even after another cleanup fails. Installed-client
+evidence versions come from package metadata. BuildKit mounts prevent wheel and
+client archives entering image layers; service validation sources stay outside
+the final runtime stage. Disposable proof commands explicitly mount staged
+fixtures. Seven new offline regressions cover command timeouts, redaction,
+permissions, profiler coexistence, dates/collisions, tree comparisons and lookup
+bounds. The offline runner passes 817 cases; strict mypy covers 49 modules.
+Evidence is under `.artifacts/code-review/cleanup-pass/deployment/`. Docker builds
+and mounted proof commands have not been run here and remain target gates.
+
 The review is not fully resolved. Continue in this order:
 
-3. **Deployment hygiene:** consolidate command runners and filesystem helpers,
-   resolve the `profile` module name collision, finish timeout/error/connection
-   cleanup, remove dated run IDs and make Docker context selection explicit.
-   Review restart's automatic source preparation, correct stale client-version
-   evidence labels and remove unnecessary image layers/test-source staging
-   (4.3.5 / 5.5).
 4. **Broader typing:** extend strict checks into remaining services and clients.
    The current 38-module scope is not full coverage (4.3.2).
 5. **Test/tooling hygiene:** separate evidence drivers from tests, simplify import

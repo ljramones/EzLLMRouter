@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import http.client
-import json
 import secrets
 import time
+from deploy.local.operator_client import OperatorSession
 
 
 HOST = "127.0.0.1"
@@ -13,40 +12,7 @@ PORT = 8780
 ORIGIN = "http://127.0.0.1:8780"
 
 
-class OperatorClient:
-    def __init__(self, password):
-        self.password = password
-        self.cookie = None
-        self.csrf = None
-
-    def call(self, method, path, body=None):
-        connection = http.client.HTTPConnection(HOST, PORT, timeout=3)
-        headers = {"Host": f"{HOST}:{PORT}", "Origin": ORIGIN}
-        data = None
-        if body is not None:
-            data = json.dumps(body, separators=(",", ":")).encode()
-            headers["Content-Type"] = "application/json"
-        if self.cookie:
-            headers["Cookie"] = self.cookie
-        if method == "POST" and self.csrf:
-            headers["X-EzLLMRouter-CSRF"] = self.csrf
-        try:
-            connection.request(method, path, body=data, headers=headers)
-            response = connection.getresponse()
-            raw = response.read()
-            value = json.loads(raw)
-            if path == "/operator/v1/login" and response.status == 200:
-                self.cookie = response.getheader("Set-Cookie").split(";", 1)[0]
-                self.csrf = value["csrf"]
-            if response.status >= 400:
-                raise RuntimeError(f"operator {response.status} {value.get('error')}")
-            return value
-        finally:
-            connection.close()
-
-    def login(self):
-        self.call("POST", "/operator/v1/login", {"password": self.password})
-
+class OperatorClient(OperatorSession):
     def health(self):
         overview = self.call("GET", "/operator/v1/overview")
         if (

@@ -3,51 +3,27 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import sys
 
 import catalogue_import
-import profile
+import local_profile as profile
+from filesystem_support import same_tree, claim_run_id as claim_namespace
 from check import wait_health
 
 
 RUNS = profile.STATE / "catalogue-runs"
-RUN_ID = re.compile(r"catalogue-20261021-[0-9]{2,4}\Z")
-
-
-def same_tree(left, right):
-    def digest(root):
-        return {
-            str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in root.rglob("*")
-            if p.is_file()
-        }
-
-    return digest(left) == digest(right)
 
 
 def claim_run_id(run_id):
-    if not RUN_ID.fullmatch(run_id):
-        raise SystemExit("usage: catalogue_run.py catalogue-20261021-01")
-    namespace = RUNS / run_id
-    try:
-        namespace.mkdir(mode=0o700, parents=True, exist_ok=False)
-    except FileExistsError:
-        raise SystemExit(
-            f"run ID already exists: {run_id}; existing result location: "
-            f"{namespace / 'result.json'}; no run was started"
-        ) from None
-    namespace.chmod(0o700)
-    return namespace
+    return claim_namespace(RUNS, run_id, "catalogue")
 
 
 def main():
     if len(sys.argv) != 2:
-        raise SystemExit("usage: catalogue_run.py catalogue-20261021-01")
+        raise SystemExit("usage: catalogue_run.py catalogue-YYYYMMDD-01")
     namespace = claim_run_id(sys.argv[1])
     result_path = namespace / "result.json"
     try:

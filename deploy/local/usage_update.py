@@ -3,51 +3,27 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import sys
 
 from catalogue_import import OperatorClient
-import profile
+import local_profile as profile
+from filesystem_support import same_tree, claim_run_id as claim_namespace
 from check import wait_health
 
 
 RUNS = profile.STATE / "usage-runs"
-RUN_ID = re.compile(r"usage-20261021-[0-9]{2,4}\Z")
-
-
-def same_tree(left, right):
-    def inventory(root):
-        return {
-            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in root.rglob("*")
-            if path.is_file()
-        }
-
-    return inventory(left) == inventory(right)
 
 
 def claim_run_id(value):
-    if not RUN_ID.fullmatch(value):
-        raise SystemExit("usage: usage_update.py usage-20261021-01")
-    run = RUNS / value
-    try:
-        run.mkdir(mode=0o700, parents=True, exist_ok=False)
-    except FileExistsError:
-        raise SystemExit(
-            f"run ID already exists: {value}; existing result location: "
-            f"{run / 'result.json'}; no update was started"
-        ) from None
-    run.chmod(0o700)
-    return run
+    return claim_namespace(RUNS, value, "usage")
 
 
 def main():
     if len(sys.argv) != 2:
-        raise SystemExit("usage: usage_update.py usage-20261021-01")
+        raise SystemExit("usage: usage_update.py usage-YYYYMMDD-01")
     run = claim_run_id(sys.argv[1])
     try:
         _, password = profile.secrets_on_disk()

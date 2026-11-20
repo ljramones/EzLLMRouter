@@ -10,9 +10,9 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import time
 
-import profile as local_profile
+import local_profile
+from command_support import target_command
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,28 +20,19 @@ RUNS = ROOT / "deploy/local/.state/dev08-runs"
 
 
 def command(name, argv, run):
-    started = time.time()
-    result = subprocess.run(argv, cwd=ROOT, env=os.environ.copy(), capture_output=True, text=True)
-    (run / (name + ".stdout.txt")).write_text(local_profile.redact(result.stdout))
-    (run / (name + ".stderr.txt")).write_text(local_profile.redact(result.stderr))
-    (run / (name + ".exit.txt")).write_text(str(result.returncode) + "\n")
-    if name == "build-images":
-        # profile.py keeps only the latest command log. Snapshot this attempt's
-        # build detail before any later one-use run can replace that shared log.
-        records = ROOT / "deploy/local/.state/commands"
-        for stage in ("build-receiver", "build-worker", "build-service"):
-            for extension in ("stdout", "stderr", "exit"):
-                source = records / (stage + "." + extension)
-                if source.is_file() and source.stat().st_mtime >= started - 1:
-                    (run / (stage + "." + extension + ".txt")).write_text(
-                        local_profile.redact(source.read_text())
-                    )
-    print("DEV-08 target: " + name + " exited " + str(result.returncode), flush=True)
-    if result.returncode:
-        tail = "\n".join(local_profile.redact(result.stderr).splitlines()[-15:])[:2000]
-        if tail:
-            print(tail, file=sys.stderr)
-    return result.returncode
+    _, code = target_command(
+        name,
+        argv,
+        run,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        redact=local_profile.redact,
+        label="DEV-08 target",
+        records=local_profile.STATE / "commands",
+        timeout=900,
+        allowed=tuple(range(256)),
+    )
+    return code
 
 
 def main():
@@ -80,7 +71,9 @@ def main():
             raise RuntimeError("declared frozen artifact custody missing")
         for name, action in (("prepare", "prepare"), ("build-images", "build-images")):
             code = command(
-                name, [sys.executable, "-B", str(ROOT / "deploy/local/profile.py"), action], run
+                name,
+                [sys.executable, "-B", str(ROOT / "deploy/local/local_profile.py"), action],
+                run,
             )
             meta["stages"].append({"name": name, "exit": code})
             if code:

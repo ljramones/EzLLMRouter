@@ -16,7 +16,7 @@ Set the artifact-store variable in your Terminal:
 
 ```sh
 export EZLLMROUTER_ARTIFACT_ROOT=/absolute/path/to/verified/artifact-store
-uv run --locked python deploy/local/profile.py prepare
+uv run --locked python deploy/local/local_profile.py prepare
 ```
 
 Use the Python and Node versions recorded at the repository root. Source staging
@@ -24,14 +24,36 @@ copies server packages, browser assets, worker code and the selected client
 artifacts into separate contexts. Build fingerprints include the active inputs.
 The worker context contains no service credentials or trusted service package.
 
+`local_profile.py` replaces the former `profile.py`, avoiding the standard-library
+profiler module collision. Docker uses its selected context by default; set
+`EZLLMROUTER_DOCKER_CONTEXT` explicitly to choose a context for these commands.
+`DOCKER_CONTEXT` is also honored. No desktop context is hard-coded.
+
+Preparation is explicit. `up` and `restart` use the last prepared build; they do
+not prepare current source automatically. Run `prepare` separately when you intend
+to adopt changed source. This does not restart any instance on its own.
+
+BuildKit mounts the hash-checked wheel and client archives only during dependency
+installation. Service regressions run in a validation stage; the final service
+image contains the server, console, local entry points and required fixture data,
+without test/evidence Python sources. The worker's target check is also a temporary
+build mount. Isolated owner proof commands mount their separately staged fixtures
+read-only; ordinary profile startup has no fixture-code mounts. These Dockerfile
+changes need qualification in the target Docker environment with the existing
+reviewed lock and pinned images.
+
+Command capture is bounded and records timeouts as exit 124, with redacted output
+in private evidence files. One-use catalogue/CRUD/usage run IDs accept valid
+`YYYYMMDD` dates and reject collisions before starting work.
+
 ## Start and inspect
 
 Run these commands only when you intend to operate the local Docker profile:
 
 ```sh
-uv run --locked python deploy/local/profile.py up
-uv run --locked python deploy/local/profile.py status
-uv run --locked python deploy/local/profile.py audit
+uv run --locked python deploy/local/local_profile.py up
+uv run --locked python deploy/local/local_profile.py status
+uv run --locked python deploy/local/local_profile.py audit
 ```
 
 The console is published at `http://127.0.0.1:8780`. Named accounts follow the
@@ -45,9 +67,9 @@ The service initializes fresh storage and upgrades version 1 or 2 storage to ver
 ## Stop, restart and backup
 
 ```sh
-uv run --locked python deploy/local/profile.py stop
-uv run --locked python deploy/local/profile.py restart
-uv run --locked python deploy/local/profile.py backup
+uv run --locked python deploy/local/local_profile.py stop
+uv run --locked python deploy/local/local_profile.py restart
+uv run --locked python deploy/local/local_profile.py backup
 ```
 
 Normal stop/start retains named volumes. The backup command creates a private,

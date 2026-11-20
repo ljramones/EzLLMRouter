@@ -4,58 +4,30 @@
 from __future__ import annotations
 
 import hashlib
-import http.client
 import json
 from pathlib import Path
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if not __package__:
+    sys.path.insert(0, str(ROOT))
+from deploy.local.operator_client import OperatorSession
+
 SEED = ROOT / "deploy/local/inputs/catalogue.json"
 PASSWORD = ROOT / "deploy/local/.state/operator-password"
 SEED_SHA256 = "1f01fe3ad181905e77738109739cde4ea7f76e55b0f3b245f0da296ad4cfe2bd"
 
 
-class OperatorClient:
+class OperatorClient(OperatorSession):
     def __init__(self, password, port=8780):
-        self.port = port
-        self.cookie = None
-        self.csrf = None
-        response = self.request("POST", "/operator/v1/login", {"password": password})
+        super().__init__(password, port=port)
+        response = self.login()
         if (
-            response["body"].get("principal_id") != "owner.local"
-            or response["body"].get("role") != "registry_admin"
+            response.get("principal_id") != "owner.local"
+            or response.get("role") != "registry_admin"
         ):
             raise RuntimeError("existing owner administrator required")
-        self.cookie = response["cookie"].split(";", 1)[0]
-        self.csrf = response["body"]["csrf"]
-
-    def request(self, method, path, body=None):
-        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
-        headers = {"Host": f"127.0.0.1:{self.port}"}
-        if self.cookie:
-            headers["Cookie"] = self.cookie
-        if method == "POST":
-            headers["Origin"] = f"http://127.0.0.1:{self.port}"
-            headers["Content-Type"] = "application/json"
-            if self.csrf:
-                headers["X-EzLLMRouter-CSRF"] = self.csrf
-        encoded = json.dumps(body, separators=(",", ":")) if body is not None else None
-        try:
-            conn.request(method, path, encoded, headers)
-            result = conn.getresponse()
-            response = {
-                "status": result.status,
-                "cookie": result.getheader("Set-Cookie"),
-                "body": json.loads(result.read()),
-            }
-        finally:
-            conn.close()
-        if response["status"] != 200:
-            raise RuntimeError(
-                f"operator {path} rejected: HTTP {response['status']} "
-                f"{response['body'].get('error', 'UNKNOWN')}"
-            )
-        return response
 
     def get(self, path):
         return self.request("GET", path)["body"]

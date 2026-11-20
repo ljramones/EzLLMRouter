@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
+
 from datetime import datetime, timezone
 import json
 import os
@@ -10,9 +12,9 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import time
 
-import profile as local_profile
+import local_profile
+from command_support import target_command
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,43 +31,18 @@ def absent_resource(error: str, resource: str) -> bool:
 
 
 def command(name, argv, run, *, timeout=180, allowed=(0,)):
-    started = time.time()
-    try:
-        proc = subprocess.run(
-            argv, cwd=ROOT, env=os.environ.copy(), capture_output=True, text=True, timeout=timeout
-        )
-        out, err, code = proc.stdout, proc.stderr, proc.returncode
-    except subprocess.TimeoutExpired as exc:
-        out = (
-            exc.stdout.decode(errors="replace")
-            if isinstance(exc.stdout, bytes)
-            else (exc.stdout or "")
-        )
-        err = (
-            exc.stderr.decode(errors="replace")
-            if isinstance(exc.stderr, bytes)
-            else (exc.stderr or "")
-        )
-        code = 124
-    (run / (name + ".stdout.txt")).write_text(local_profile.redact(out))
-    (run / (name + ".stderr.txt")).write_text(local_profile.redact(err))
-    (run / (name + ".exit.txt")).write_text(str(code) + "\n")
-    if name == "build-images":
-        records = ROOT / "deploy/local/.state/commands"
-        for stage in ("build-receiver", "build-worker", "build-service"):
-            for extension in ("stdout", "stderr", "exit"):
-                source = records / (stage + "." + extension)
-                if source.is_file() and source.stat().st_mtime >= started - 1:
-                    (run / (stage + "." + extension + ".txt")).write_text(
-                        local_profile.redact(source.read_text())
-                    )
-    print("DEV-10 target: " + name + " exited " + str(code), flush=True)
-    if code not in allowed:
-        tail = "\n".join(local_profile.redact(err).splitlines()[-12:])[:1500]
-        if tail:
-            print(tail, file=sys.stderr)
-        raise RuntimeError(name + " failed; inspect separately saved redacted output")
-    return out.strip(), code
+    return target_command(
+        name,
+        argv,
+        run,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        redact=local_profile.redact,
+        label="DEV-10 target",
+        records=local_profile.STATE / "commands",
+        timeout=timeout,
+        allowed=allowed,
+    )
 
 
 def main():
@@ -125,7 +102,7 @@ def main():
         for stage in ("prepare", "build-images"):
             _, code = command(
                 stage,
-                [sys.executable, "-B", str(ROOT / "deploy/local/profile.py"), stage],
+                [sys.executable, "-B", str(ROOT / "deploy/local/local_profile.py"), stage],
                 run,
                 timeout=900,
             )
@@ -188,6 +165,7 @@ def main():
                 "no-new-privileges:true",
                 "-v",
                 volume + ":/link",
+                *local_profile.fixture_mounts(build),
                 env["EZLLMROUTER_SERVICE_IMAGE"],
                 "python",
                 "-B",
@@ -245,6 +223,7 @@ def main():
                 "no-new-privileges:true",
                 "-v",
                 volume + ":/link",
+                *local_profile.fixture_mounts(build),
                 env["EZLLMROUTER_SERVICE_IMAGE"],
                 "python",
                 "-B",
@@ -313,24 +292,35 @@ def main():
         print("DEV-10 target failed: " + str(exc) + "; evidence: " + str(run), file=sys.stderr)
         raise SystemExit(1) from exc
     finally:
-        if started_service:
-            try:
-                command(
-                    "commonjs-service-final-logs", [*DOCKER, "logs", service], run, allowed=(0, 1)
+        with ExitStack() as cleanup:
+            if created_volume:
+                cleanup.callback(command, "remove-link", [*DOCKER, "volume", "rm", volume], run)
+            if started_worker:
+                cleanup.callback(command, "remove-worker", [*DOCKER, "rm", "-f", worker], run)
+            if started_service:
+                cleanup.callback(
+                    command, "remove-commonjs-service", [*DOCKER, "rm", "-f", service], run
                 )
-                command("remove-commonjs-service", [*DOCKER, "rm", "-f", service], run)
-            except Exception:
-                pass
-        if started_worker:
-            try:
-                command(
-                    "worker-logs", [*DOCKER, "logs", "--tail", "40", worker], run, allowed=(0, 1)
-                )
-            except Exception:
-                pass
-            command("remove-worker", [*DOCKER, "rm", "-f", worker], run)
-        if created_volume:
-            command("remove-link", [*DOCKER, "volume", "rm", volume], run)
+            if started_service:
+                try:
+                    command(
+                        "commonjs-service-final-logs",
+                        [*DOCKER, "logs", service],
+                        run,
+                        allowed=(0, 1),
+                    )
+                except (RuntimeError, OSError) as exc:
+                    print("service log capture failed: " + type(exc).__name__, file=sys.stderr)
+            if started_worker:
+                try:
+                    command(
+                        "worker-logs",
+                        [*DOCKER, "logs", "--tail", "40", worker],
+                        run,
+                        allowed=(0, 1),
+                    )
+                except (RuntimeError, OSError) as exc:
+                    print("worker log capture failed: " + type(exc).__name__, file=sys.stderr)
 
 
 if __name__ == "__main__":
