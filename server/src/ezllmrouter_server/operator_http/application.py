@@ -13,9 +13,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TypedDict
 
+from ..identity import DEFAULT_IDENTITY
+from ..external_identity import IdentityLookup
 from ..integration_accounting import ExternalAccounting
 from ..local_connectors import LocalConnectors
-from ..mach33_demo import Mach33Demo
+from ..scripted_demo import ScriptedDemo
 from ..observability import log_failure
 from ..operator_demo import ProviderValidationRunner
 from ..operator_projection import OperatorProjection
@@ -59,7 +61,7 @@ class OperatorApplication:
     jobs: ThreadPoolExecutor
     local_connectors: LocalConnectors | None
     login_throttle: LoginThrottle
-    mach33_demo: Mach33Demo | None
+    scripted_demo: ScriptedDemo | None
     password: str
     projection: OperatorProjection
     provider_validation: ProviderValidationRunner | None
@@ -71,12 +73,21 @@ class OperatorApplication:
     sessions: dict[str, OperatorSession]
     successor_store: SQLiteStore | None
     worker_probe: Callable[[], Mapping[str, JSONValue]]
+    identity_lookup: IdentityLookup | None = None
     secure_cookies: bool = False
     _closing: bool = field(default=False, init=False)
     scheduler_stop: threading.Event = field(default_factory=threading.Event, init=False)
     maintenance_stop: threading.Event = field(default_factory=threading.Event, init=False)
     scheduler_thread: threading.Thread | None = field(default=None, init=False)
     maintenance_thread: threading.Thread | None = field(default=None, init=False)
+
+    @property
+    def owner_id(self) -> str:
+        return self.registry.identity.owner_id if self.registry else DEFAULT_IDENTITY.owner_id
+
+    @property
+    def task_class(self) -> str:
+        return self.registry.identity.task_class if self.registry else DEFAULT_IDENTITY.task_class
 
     def execute(self, operation_id: str, kind: str) -> None:
         try:
@@ -138,7 +149,7 @@ class OperatorApplication:
                 due[key] = (state, now + interval)
                 try:
                     registry.probe_connection(
-                        "owner.local",
+                        self.owner_id,
                         key,
                         connection["revision"],
                         "probe.scheduled." + uuid.uuid4().hex,

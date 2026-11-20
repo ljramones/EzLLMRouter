@@ -6,6 +6,7 @@ import re
 from urllib.parse import urlsplit
 
 
+from .identity import DEFAULT_IDENTITY
 from .identifiers import require_identifier
 
 RATE = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,12})?\Z")
@@ -151,7 +152,7 @@ def operator_reference_price(data, recorded_at):
     )
 
 
-def validate_catalogue(subject, data):
+def validate_catalogue(subject, data, *, owner_id=DEFAULT_IDENTITY.owner_id):
     """Return a reference-only registry record from one researched seed entry."""
     if type(data) is not dict or set(data) != {"entry", "sources"}:
         raise ValueError("invalid catalogue import")
@@ -241,7 +242,7 @@ def validate_catalogue(subject, data):
         "status": "catalogued",
         "revision": 1,
         "destination": None,
-        "owner": "owner.local",
+        "owner": owner_id,
         "capabilities": [],
         "purposes": [],
         "task_classes": [],

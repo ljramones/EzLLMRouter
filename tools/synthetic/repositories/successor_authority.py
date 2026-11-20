@@ -1,6 +1,6 @@
 """SQL owned by the successor_authority repository."""
 
-from ..database import Query
+from ezllmrouter_server.database import Query
 
 
 ACTION_UPDATE_DEV12_AUTHORITY = Query("UPDATE dev12_authority SET state=? WHERE authority_id=?")

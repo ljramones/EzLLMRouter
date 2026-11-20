@@ -99,7 +99,7 @@ class DatabaseCredentialStore:
     def _owner(self, principal, dataset_id):
         dataset = self.registry.integration._dataset(dataset_id)
         self.registry.integration._authorize(principal, dataset, "admin")
-        if principal["principal_id"] != "owner.local":
+        if principal["principal_id"] != self.registry.identity.owner_id:
             raise IntegrationError("POLICY_DENIED", 403)
         return dataset
 
@@ -146,7 +146,11 @@ class DatabaseCredentialStore:
             return {"key_id": identifier, "rewritten": self.reencrypt_secrets()}
 
     def _settings(self, provider):
-        return {"origin": PROVIDERS[provider][1], "location": "commercial", "site": "owner.local"}
+        return {
+            "origin": PROVIDERS[provider][1],
+            "location": "commercial",
+            "site": self.registry.identity.owner_id,
+        }
 
     def _discover(self, binding, version=None, *, secret=None):
         result = self.discover(
@@ -308,7 +312,7 @@ class DatabaseCredentialStore:
 
     def list_for(self, principal, dataset_id):
         if (
-            principal["principal_id"] != "svc.vega.credential-consumer"
+            principal["principal_id"] != self.registry.identity.credential_consumer_id
             or principal["kind"] != "service"
         ):
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -611,12 +615,15 @@ class DatabaseCredentialStore:
 
     def resolve_for(self, principal, dataset_id, account_id, model_id, operation_family, purpose):
         if (
-            principal["principal_id"] != "svc.vega.credential-consumer"
+            principal["principal_id"] != self.registry.identity.credential_consumer_id
             or principal["kind"] != "service"
         ):
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
         dataset = self.registry.integration._dataset(dataset_id)
-        if principal["owner"] != dataset["owner_id"] or purpose != "vega-provider-dispatch":
+        if (
+            principal["owner"] != dataset["owner_id"]
+            or purpose != self.registry.identity.credential_release_purpose
+        ):
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
 
         def release():

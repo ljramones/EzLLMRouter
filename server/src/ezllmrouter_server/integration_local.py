@@ -19,7 +19,9 @@ from .private_files import secret_text, write_private
 from .user_management import UserManager, UserError
 from .operator_projection import OperatorProjection
 from .operator_web import serve as operator_serve
-from .mach33_demo import Mach33Demo
+from .scripted_demo import ScriptedDemo
+from .identity import InstanceIdentity
+from .external_identity import IdentityLookup
 from .registry import Registry
 from .store import SQLiteStore
 from .instance_lock import InstanceLease, InstanceBusy
@@ -63,6 +65,21 @@ def _stop_operator(server, thread):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    defaults = InstanceIdentity()
+    parser.add_argument("--platform-id", default="platform.local")
+    parser.add_argument("--owner-id", default=defaults.owner_id)
+    parser.add_argument("--task-class", default=defaults.task_class)
+    parser.add_argument("--credential-consumer-id", default=defaults.credential_consumer_id)
+    parser.add_argument("--credential-release-purpose", default=defaults.credential_release_purpose)
+    parser.add_argument(
+        "--identity-origin", help="optional HTTPS or loopback user-display service origin"
+    )
+    parser.add_argument(
+        "--identity-cookie",
+        action="append",
+        default=[],
+        help="exact cookie name to forward to the configured identity origin",
+    )
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--secrets-dir", type=Path)
     parser.add_argument("--web-root", type=Path)
@@ -81,16 +98,29 @@ def main(argv=None):
     )
     parser.add_argument(
         "--demo-scope",
-        dest="mach33_demo_scope",
+        dest="scripted_demo_scope",
         type=Path,
         help="absolute private immutable scripted demo scope; separate from the service database",
-    )
-    parser.add_argument(
-        "--mach33-demo-scope", dest="mach33_demo_scope", type=Path, help=argparse.SUPPRESS
     )
     parser.add_argument("--version", action="version", version=RELEASE)
     args = parser.parse_args(argv)
     configure_logging()
+    try:
+        identity = InstanceIdentity(
+            args.owner_id,
+            args.task_class,
+            args.credential_consumer_id,
+            args.credential_release_purpose,
+        )
+        if bool(args.identity_origin) != bool(args.identity_cookie):
+            raise ValueError("identity origin and cookie allowlist must be configured together")
+        identity_lookup = (
+            IdentityLookup(args.identity_origin, tuple(args.identity_cookie))
+            if args.identity_origin
+            else None
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if (
         args.accounting_retention_days is not None
         and not 1 <= args.accounting_retention_days <= 397
@@ -129,9 +159,9 @@ def main(argv=None):
         or not args.web_root.is_absolute()
     ):
         parser.error("absolute secrets and web roots required")
-    if args.mach33_demo_scope and not args.mach33_demo_scope.is_absolute():
+    if args.scripted_demo_scope and not args.scripted_demo_scope.is_absolute():
         parser.error("absolute demo scope required")
-    mach33_demo = Mach33Demo(args.mach33_demo_scope) if args.mach33_demo_scope else None
+    scripted_demo = ScriptedDemo(args.scripted_demo_scope) if args.scripted_demo_scope else None
     feature_policy = None
     if args.feature_policy_file:
         policy_path = args.feature_policy_file
@@ -150,7 +180,7 @@ def main(argv=None):
             type(feature_policy) is not dict
             or set(feature_policy) != {"mode", "policy_id", "approved_by", "max_days_by_class"}
             or feature_policy["mode"] != "approved"
-            or feature_policy["approved_by"] != "owner.local"
+            or feature_policy["approved_by"] != identity.owner_id
             or type(feature_policy["policy_id"]) is not str
             or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}", feature_policy["policy_id"])
             or type(feature_policy["max_days_by_class"]) is not dict
@@ -178,6 +208,7 @@ def main(argv=None):
             legacy_destination=DEST,
             legacy_token=secrets.token_urlsafe(48),
             legacy_trusted={"principal_id": "svc.bootstrap", "charging_owner_id": "team.bootstrap"},
+            identity=identity,
             integration_feature_policy=feature_policy,
             integration_accounting_retention_days=args.accounting_retention_days,
         )
@@ -190,16 +221,16 @@ def main(argv=None):
         registry.integration_credentials = DatabaseCredentialStore(
             registry, args.secrets_dir / "integration.keys.json"
         )
-        if not registry.integration.datasets(registry.principal("owner.local"))["items"]:
+        if not registry.integration.datasets(registry.principal(identity.owner_id))["items"]:
             from .integration_accounting import _time
 
             registry.integration.create_dataset(
-                registry.principal("owner.local"),
+                registry.principal(identity.owner_id),
                 {
                     "dataset_id": "dataset.synthetic.credentials.local",
-                    "platform_id": "platform.vega.local",
+                    "platform_id": args.platform_id,
                     "environment_id": "environment.synthetic.credentials.local",
-                    "owner_id": "owner.local",
+                    "owner_id": identity.owner_id,
                     "ingest_principal_id": "svc.integration",
                     "activated_at": _time(),
                 },
@@ -207,7 +238,7 @@ def main(argv=None):
         password = _secret(args.secrets_dir / "operator.password")
         # The wire admin credential is deliberately process-local; only the
         # operator password persists. Refresh the file with the issued token.
-        admin_token = registry.issue_local_operator_token("owner.local")
+        admin_token = registry.issue_local_operator_token(identity.owner_id)
         admin_path = args.secrets_dir / "admin.token"
         write_private(admin_path, (admin_token + "\n").encode("ascii"), replace=True)
 
@@ -235,7 +266,8 @@ def main(argv=None):
             sender_status=lambda: {"state": "disabled"},
             registry=registry,
             integration_only=True,
-            mach33_demo=mach33_demo,
+            identity_lookup=identity_lookup,
+            scripted_demo=scripted_demo,
         )
         cleanup.callback(operator.operator_jobs.shutdown, wait=True)
         cleanup.callback(operator.server_close)

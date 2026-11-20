@@ -255,7 +255,7 @@ def responses_expectation(projected: dict) -> dict:
 def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -> dict:
     plan = invocation.plan
     if plan.get("plan_version") == "dev12-plan@1":
-        from .dev12_guard import check_synthetic_request
+        from .retrieval_guard import check_synthetic_request
 
         return check_synthetic_request(request, invocation, body)
     provider_route = plan.get("destination", {}).get("service") == "openai.responses.v1"

@@ -1,6 +1,9 @@
 """Operator reports handlers."""
 
 from datetime import datetime, timezone
+from importlib.metadata import PackageNotFoundError, version
+
+from .. import __version__
 from urllib.parse import parse_qs
 
 from ..demo_workspace import project_demo
@@ -10,8 +13,21 @@ from ..reporting import usage_costs
 from ..successor_reporting import usage_report
 
 
+def package_versions():
+    packages = {"server": __version__}
+    for key, distribution in (
+        ("python_client", "cognitivedynamics-ezllmrouter-client"),
+        ("litellm", "litellm"),
+    ):
+        try:
+            packages[key] = version(distribution)
+        except PackageNotFoundError:
+            packages[key] = None
+    return packages
+
+
 class ReportsRoutes:
-    def get_operator_v1_dev12_usage(self, path, session, body, scope):
+    def get_operator_v1_retrieval_usage(self, path, session, body, scope):
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if any((len(values) != 1 for values in query.values())) or set(query) - {
             "from",
@@ -43,7 +59,7 @@ class ReportsRoutes:
                 extra=(
                     (
                         "Content-Disposition",
-                        "attachment; filename=ezllmrouter-dev12-synthetic-usage.json",
+                        "attachment; filename=ezllmrouter-retrieval-synthetic-usage.json",
                     ),
                 )
                 if export
@@ -82,7 +98,7 @@ class ReportsRoutes:
                 "candidate_access",
             )
             return self._send_csv(
-                "ezllmrouter-dev12-synthetic-usage.csv", columns, report["attempts"]
+                "ezllmrouter-retrieval-synthetic-usage.csv", columns, report["attempts"]
             )
         raise ValueError("invalid synthetic report export")
 
@@ -327,11 +343,10 @@ class ReportsRoutes:
                 if self.application.registry and self.application.registry.provider_execution_ready
                 else "LIVE SYNTHETIC DEVELOPMENT",
                 "build": self.application.build,
-                "packages": {"python_client": "0.0.4", "litellm": "1.105.1"},
+                "packages": package_versions(),
                 "environment": "local isolated synthetic HTTP/1.1 and selected provider HTTPS"
                 if self.application.registry and self.application.registry.provider_execution_ready
                 else "local isolated synthetic HTTP/1.1",
-                "milestones": ["DEV-04 Run-11", "DEV-05 Run-16"],
             },
         )
 

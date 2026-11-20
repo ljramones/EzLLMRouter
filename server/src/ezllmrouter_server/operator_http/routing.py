@@ -125,13 +125,17 @@ ROUTES = (
     ),
     Route(
         "GET",
-        "/operator/v1/integration/vega-me",
-        "get_operator_v1_integration_vega_me",
+        "/operator/v1/integration/identity",
+        "get_operator_v1_integration_identity",
         "account",
         query=False,
     ),
     Route(
-        "GET", "/operator/v1/mach33-demo/", "get_operator_v1_mach33_demo", "account", family=True
+        "GET",
+        "/operator/v1/scripted-demo/",
+        "get_operator_v1_scripted_demo",
+        "account",
+        family=True,
     ),
     Route(
         "GET",
@@ -143,8 +147,8 @@ ROUTES = (
     ),
     Route(
         "GET",
-        "/operator/v1/dev12-usage",
-        "get_operator_v1_dev12_usage",
+        "/operator/v1/retrieval-usage",
+        "get_operator_v1_retrieval_usage",
         "resource",
         requires="successor_store",
     ),

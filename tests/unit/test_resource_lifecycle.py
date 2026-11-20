@@ -29,7 +29,7 @@ from ezllmrouter_server.runtime_resources import (
     LoopThread,
     ServiceClosing,
 )
-from ezllmrouter_server.successor_service import SuccessorService
+from tools.synthetic.successor_service import SuccessorService
 from tests.development_slice import test_core as core_fixtures
 from tests.operator_console import test_integration_credentials as credential_fixtures
 from tests.unit import test_accounting_recovery as recovery_fixtures
@@ -464,8 +464,8 @@ class SuccessorResourceTests(unittest.TestCase):
     def service(self):
         from datetime import datetime, timedelta, timezone
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
         from tests.development_slice import test_dev12_service_states as fixtures
 
         example = next(

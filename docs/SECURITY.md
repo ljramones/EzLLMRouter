@@ -68,6 +68,29 @@ The trusted sender validates current authority at transmission, records intent,
 and retains uncertain outcomes for recovery. A successful admission is not
 permanent authority to send. External accounting never dispatches a model call.
 
+## Instance identity and optional display lookup
+
+`Registry(identity=InstanceIdentity(...))` configures the owner ID, default task
+class, credential consumer principal and release purpose. The accounting CLI
+exposes `--owner-id`, `--task-class`, `--credential-consumer-id` and
+`--credential-release-purpose`. Defaults preserve the existing local identities;
+they are not hard-coded authorization checks. `--platform-id` selects the platform
+for a newly created default dataset. Existing dataset identities are preserved.
+
+Changing owner settings does not rename or migrate persisted principals: opening
+a registry with an unknown configured owner fails. Changing the credential
+consumer requires provisioning that explicit service principal and preserving
+its private bootstrap token. Existing grants, revisions and audit history remain
+authoritative; changing the default task class does not grant its use.
+
+The operator makes no external display-user request unless both
+`--identity-origin` and one or more `--identity-cookie` values are set. Origins
+must use HTTPS or loopback HTTP; each cookie name matches exactly. Only those
+cookies go to the configured `/api/me`, with a two-second socket timeout and a
+4 KiB body bound. Redirects are not followed, and only string `id` and `name`
+fields return to the console. This optional display lookup grants no router
+permissions. The operator session cookie is not implicitly forwarded.
+
 ## Dependency and artifact policy
 
 The development environment is pinned by the root `uv.lock`. The isolated gateway

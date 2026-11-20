@@ -24,8 +24,8 @@ import httpx
 from cryptography.hazmat.primitives import serialization
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
 from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_integrated import fixture, observations, runtime_source_identity
@@ -132,7 +132,7 @@ def run():
             "/link/dev12-worker.sock", receiver_port, (root / "cert.pem").read_text(), TEST_KEY
         )
         coordinator = Coordinator(store, {token: trusted}, {}, {}, {}, None, None, {}, {}, None)
-        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
+        from tools.synthetic.successor_assembly import attach_standalone_synthetic
 
         successor = attach_standalone_synthetic(
             coordinator,

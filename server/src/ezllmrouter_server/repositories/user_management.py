@@ -49,7 +49,7 @@ ADMIN_SELECT_REGISTRY_PRINCIPALS = Query("SELECT record FROM registry_principals
 ACTION_SELECT_CONSOLE_USERS = Query("SELECT 1 FROM console_users LIMIT 1")
 
 ACTION_SELECT_REGISTRY_PRINCIPALS = Query(
-    "SELECT record FROM registry_principals ORDER BY id='owner.local' DESC,id"
+    "SELECT record FROM registry_principals ORDER BY id=? DESC,id"
 )
 
 AUTHENTICATE_SELECT_CONSOLE_USERS = Query(

@@ -2,26 +2,11 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
 import json
 from pathlib import Path
 
-from .reporting import Totals, _descendants, _group
-
-
-def _total(items):
-    total = Totals()
-    for item in items:
-        total.add(item)
-    return total.public()
-
-
-def _amount(attempt, rate):
-    value = (
-        Decimal(attempt["input"]) * Decimal(rate["input_per_1000_usd"])
-        + Decimal(attempt["output"]) * Decimal(rate["output_per_1000_usd"])
-    ) / Decimal(1000)
-    return format(value.quantize(Decimal("0.01")), ".2f")
+from .reporting import _descendants, _group
+from .demo_common import LABEL, amount, total, basis
 
 
 def project_demo(fixture_path, *, story="main", actor="", person="", provider=""):
@@ -87,9 +72,8 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             "agent_id": runs[source["run"]].get("agent_id"),
             "currency": "USD",
             "cost_status": "calculated",
-            "amount_decimal": _amount(source, rate),
-            "basis": f"{source['input']} input × USD {rate['input_per_1000_usd']}/1k + "
-            f"{source['output']} output × USD {rate['output_per_1000_usd']}/1k",
+            "amount_decimal": amount(source, rate),
+            "basis": basis(source, rate),
             "attempt_id": source["id"],
             "run_id": source["run"],
         }
@@ -136,7 +120,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             {
                 "cost_status": "calculated",
                 "currency": "USD",
-                "amount_decimal": _amount(source, providers[source["provider"]]),
+                "amount_decimal": amount(source, providers[source["provider"]]),
             }
         )
     story_totals = [
@@ -147,7 +131,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             "outcome": item["outcome"],
             "task_class": item["task_class"],
             "root_run": item["root_run"],
-            "total": _total(
+            "total": total(
                 [
                     computed
                     for source, computed in zip(fixture["attempts"], all_attempts, strict=True)
@@ -179,17 +163,17 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             workflows.append(
                 {
                     **run,
-                    "direct": _total(direct),
-                    "delegated": _total(delegated),
-                    "inclusive": _total(inclusive),
+                    "direct": total(direct),
+                    "delegated": total(delegated),
+                    "inclusive": total(inclusive),
                 }
             )
         full_visible = [item for item in attempts if item["at"] <= cutoff]
         snapshots.append(
             {
                 "at": cutoff,
-                "total": _total(visible),
-                "full_total": _total(full_visible),
+                "total": total(visible),
+                "full_total": total(full_visible),
                 "attempts": visible,
                 "event_ids": visible_events,
                 "actor": _group(visible, "actor"),
@@ -202,7 +186,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         )
     return {
         "identity": fixture["identity"],
-        "label": "DEMO — scripted activity and simulated USD; no real provider calls",
+        "label": LABEL,
         "collection": "legacy",
         "stories": story_totals,
         "selected_story": story,
@@ -212,7 +196,7 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         "selected_provider": provider,
         "actors": fixture["actors"],
         "rates": providers,
-        "all_total": _total(all_attempts),
+        "all_total": total(all_attempts),
         "end": end,
         "events": events,
         "attempts": attempts,

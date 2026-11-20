@@ -1,8 +1,6 @@
 """Operator integration handlers."""
 
 import json
-from http import cookies
-from http.client import HTTPConnection
 from urllib.parse import parse_qs
 
 from ..integration_accounting import IntegrationError, route_id
@@ -10,39 +8,15 @@ from ..observability import log_failure
 
 
 class IntegrationRoutes:
-    def get_operator_v1_integration_vega_me(self, path, session, body, scope):
+    def get_operator_v1_integration_identity(self, path, session, body, scope):
         if not self.application.integration_only or session[1]["role"] != "registry_admin":
             return self._fail(404, "NOT_FOUND")
-        jar = cookies.SimpleCookie()
-        try:
-            jar.load(self.headers.get("Cookie", ""))
-        except cookies.CookieError:
-            return self._send(200, {"user": None})
-        session_cookies = [
-            f"{name}={morsel.value}"
-            for name, morsel in jar.items()
-            if name == "m33_session" or name.startswith("m33_session_")
-        ]
-        if not session_cookies:
-            return self._send(200, {"user": None})
-        connection = HTTPConnection("127.0.0.1", 3049, timeout=2)
-        try:
-            connection.request("GET", "/api/me", headers={"Cookie": "; ".join(session_cookies)})
-            response = connection.getresponse()
-            body = response.read(4097)
-            if response.status != 200 or len(body) > 4096:
-                return self._send(200, {"user": None})
-            identity = json.loads(body).get("user") or {}
-            if not isinstance(identity.get("id"), str) or not isinstance(identity.get("name"), str):
-                return self._send(200, {"user": None})
-            return self._send(200, {"user": {"id": identity["id"], "name": identity["name"]}})
-        except (OSError, ValueError, json.JSONDecodeError):
-            return self._send(200, {"user": None})
-        finally:
-            connection.close()
+        lookup = self.application.identity_lookup
+        user = lookup(self.headers.get("Cookie", "")) if lookup else None
+        return self._send(200, {"user": user})
 
-    def get_operator_v1_mach33_demo(self, path, session, body, scope):
-        if self.application.mach33_demo is None or session[1]["role"] not in (
+    def get_operator_v1_scripted_demo(self, path, session, body, scope):
+        if self.application.scripted_demo is None or session[1]["role"] not in (
             "registry_admin",
             "read_only_operator",
         ):
@@ -50,9 +24,9 @@ class IntegrationRoutes:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if any((len(value) != 1 for value in query.values())):
             raise ValueError("invalid demo selector")
-        if path.path == "/operator/v1/mach33-demo/report":
+        if path.path == "/operator/v1/scripted-demo/report":
             selected = {key: values[0] for key, values in query.items() if key != "export"}
-            report = self.application.mach33_demo.report(selected)
+            report = self.application.scripted_demo.report(selected)
             export = query.get("export", [None])[0]
             if export in (None, "json"):
                 return self._send(
@@ -99,16 +73,18 @@ class IntegrationRoutes:
                     (
                         {
                             **row,
-                            "demo_provenance": self.application.mach33_demo.meta["required_banner"],
+                            "demo_provenance": self.application.scripted_demo.meta[
+                                "required_banner"
+                            ],
                         }
                         for row in report["attempts"]
                     ),
                 )
             raise ValueError("invalid demo export")
-        if path.path == "/operator/v1/mach33-demo/workflow" and set(query) == {"workflow_id"}:
+        if path.path == "/operator/v1/scripted-demo/workflow" and set(query) == {"workflow_id"}:
             try:
                 return self._send(
-                    200, self.application.mach33_demo.workflow(query["workflow_id"][0])
+                    200, self.application.scripted_demo.workflow(query["workflow_id"][0])
                 )
             except KeyError:
                 return self._fail(404, "NOT_FOUND")

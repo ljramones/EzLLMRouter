@@ -20,8 +20,8 @@ sys.path[:0] = [
 ]
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
 from ezllmrouter_server.store import SQLiteStore  # noqa: E402
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority  # noqa: E402
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign  # noqa: E402
 from ezllmrouter_server.successor_plan import execution_eligible, mint_plan  # noqa: E402
 from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
 import owned_tls_sender_transport as tls_sender  # noqa: E402

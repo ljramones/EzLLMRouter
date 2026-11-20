@@ -20,9 +20,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-from ezllmrouter_server.successor_service import SuccessorService
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_service import SuccessorService
 from ezllmrouter_server.web import serve
 from dev12_completion_sync_first_owner import synchronized_pair
 

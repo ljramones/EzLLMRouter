@@ -23,9 +23,9 @@ from ezllmrouter_server.operator_web import _accounting_maintenance
 from ezllmrouter_server.personal_campaign import PersonalCampaign
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore, encode
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-from ezllmrouter_server.successor_service import SuccessorService
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_service import SuccessorService
 
 ROOT = Path(__file__).resolve().parents[2]
 EXTERNAL = json.loads(

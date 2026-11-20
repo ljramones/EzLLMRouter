@@ -28,7 +28,7 @@ class RegistryRoutes:
                 return self._fail(403, "OPERATOR_REQUIRED")
             return self._send(200, {"items": self.application.registry.list_connections()})
         if path.path == "/operator/v1/personal-campaign" and (not path.query):
-            if actor != "owner.local" or not getattr(
+            if actor != self.application.owner_id or not getattr(
                 self.application.registry, "personal_campaign", None
             ):
                 return self._fail(403, "OWNER_REQUIRED")
@@ -69,7 +69,7 @@ class RegistryRoutes:
                     model
                     for model in models
                     if self.application.registry.explain(
-                        actor, model["configuration_ref"], "execution", "class.demo"
+                        actor, model["configuration_ref"], "execution", self.application.task_class
                     )["allowed"]
                 ]
             return self._send(
@@ -96,9 +96,9 @@ class RegistryRoutes:
             if not model:
                 return self._fail(404, "NOT_FOUND")
             if not admin_view and (
-                not self.application.registry.explain(actor, ref, "execution", "class.demo")[
-                    "allowed"
-                ]
+                not self.application.registry.explain(
+                    actor, ref, "execution", self.application.task_class
+                )["allowed"]
             ):
                 return self._fail(404, "NOT_FOUND")
             grants = []
@@ -231,27 +231,29 @@ class RegistryRoutes:
             return self._fail(503, "REGISTRY_UNAVAILABLE")
 
     def post_operator_v1_personal_campaign(self, path, session, body, scope):
-        if session[1]["principal_id"] != "owner.local" or not getattr(
+        if session[1]["principal_id"] != self.application.owner_id or not getattr(
             self.application.registry, "personal_campaign", None
         ):
             return self._fail(403, "OWNER_REQUIRED")
         try:
             if set(body) == {"action", "configuration"} and body["action"] == "configure":
                 result = self.application.registry.personal_campaign.configure(
-                    "owner.local", body["configuration"]
+                    self.application.owner_id, body["configuration"]
                 )
             elif set(body) == {"action"} and body["action"] in ("active", "paused", "closed"):
                 result = self.application.registry.personal_campaign.transition(
-                    "owner.local", body["action"]
+                    self.application.owner_id, body["action"]
                 )
             elif set(body) == {"action"} and body["action"] == "reconcile":
                 result = {
                     "reconciled_attempts": self.application.registry.personal_campaign.reconcile_recorded_usage(
-                        "owner.local"
+                        self.application.owner_id
                     )
                 }
             elif set(body) == {"action"} and body["action"] == "revalidate":
-                result = self.application.registry.personal_campaign.revalidate("owner.local")
+                result = self.application.registry.personal_campaign.revalidate(
+                    self.application.owner_id
+                )
             else:
                 return self._fail(400, "INVALID_CAMPAIGN")
             return self._send(200, result)
@@ -388,7 +390,7 @@ class RegistryRoutes:
                         else self.application.provider_validation.principal_id,
                         body["configuration_ref"],
                         "execution",
-                        "class.demo",
+                        self.application.task_class,
                     )["allowed"]
                 )
             ):

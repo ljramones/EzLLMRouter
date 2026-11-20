@@ -146,6 +146,16 @@ password change have limited access until that change is complete.
 See [users and permissions](USER-MANAGEMENT.md) for account endpoints and
 [local connectors](LOCAL-CONNECTORS.md) for connection endpoints.
 
+Scripted-demo projections use `/operator/v1/scripted-demo/`; synthetic retrieval
+usage uses `/operator/v1/retrieval-usage`. These replace the former product and
+milestone route names; bundled browser consumers use the descriptive paths.
+Stored records, schema IDs, digest domains and historical evidence IDs retain
+their adopted values. The supported scripted-demo CLI option is `--demo-scope`.
+
+`/operator/v1/integration/identity` returns no external user by default. An
+administrator may explicitly configure an identity lookup as described in the
+[security guide](SECURITY.md#instance-identity-and-optional-display-lookup).
+
 Provider probes return a safe failed observation with reason `invalid_settings`
 for invalid adapter/settings input, before network access. Unsupported operations
 return `unsupported` / `operation_not_implemented`; malformed replies remain

@@ -162,7 +162,7 @@ class HTTPStructureTests(UserHTTPFixture):
                 "/operator/v1/integration/datasets",
             ):
                 self.assertEqual(self.request("GET", path)[0], 404)
-        self.assertEqual(self.request("GET", "/operator/v1/dev12-usage")[0], 404)
+        self.assertEqual(self.request("GET", "/operator/v1/retrieval-usage")[0], 404)
         self.assertEqual(self.request("GET", "/operator/v1/activity?limit=2&limit=3")[0], 400)
         self.assertEqual(self.request("GET", "/operator/v1/integration/vega-me?extra=1")[0], 400)
 
@@ -199,7 +199,7 @@ class HTTPStructureTests(UserHTTPFixture):
             "not_a_column": "discard me",
         }
         report = {"attempts": [attempt]}
-        application.mach33_demo = SimpleNamespace(
+        application.scripted_demo = SimpleNamespace(
             meta={"required_banner": "DEMO, synthetic only"},
             report=Mock(return_value=report),
         )
@@ -209,14 +209,17 @@ class HTTPStructureTests(UserHTTPFixture):
             patch.object(self.registry.integration, "report", return_value=report),
         ):
             for path, filename in (
-                ("/operator/v1/dev12-usage?export=csv", "ezllmrouter-dev12-synthetic-usage.csv"),
+                (
+                    "/operator/v1/retrieval-usage?export=csv",
+                    "ezllmrouter-retrieval-synthetic-usage.csv",
+                ),
                 ("/operator/v1/usage-costs?export=csv", "ezllmrouter-usage-costs.csv"),
                 (
                     "/operator/v1/integration/report?dataset_id=demo&export=csv",
                     "ezllmrouter-integration-report.csv",
                 ),
                 (
-                    "/operator/v1/mach33-demo/report?export=csv",
+                    "/operator/v1/scripted-demo/report?export=csv",
                     "ezllmrouter-scripted-demo-report.csv",
                 ),
             ):
@@ -240,7 +243,7 @@ class HTTPStructureTests(UserHTTPFixture):
                         self.assertEqual(row["native_units"], '{"a": 1, "z": 2}')
                         self.assertEqual(json.loads(row["eligibility_record"]), {"answer": True})
                         self.assertEqual(json.loads(row["selected_action"]), {"a": "hello"})
-                    if "mach33-demo" in path:
+                    if "scripted-demo" in path:
                         self.assertEqual(row["demo_provenance"], "DEMO, synthetic only")
 
     def test_json_export_keeps_attachment_and_object_values(self):

@@ -58,6 +58,7 @@ MODULES = (
     "tests.unit.test_accounting_recovery",
     "tests.unit.test_python_client_safety",
     "tests.unit.test_client_consistency",
+    "tests.unit.test_runtime_cleanup",
     "tests.client_parity.test_python_client",
     "tests.client_parity.test_actor_logic",
     "tests.client_parity.test_fixture_routes",
@@ -126,6 +127,10 @@ FRONTEND_TESTS = (
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
     "server/src/ezllmrouter_server/identifiers.py",
+    "server/src/ezllmrouter_server/identity.py",
+    "server/src/ezllmrouter_server/external_identity.py",
+    "server/src/ezllmrouter_server/_metadata.py",
+    "server/src/ezllmrouter_server/gateway/provider_reply.py",
     "server/src/ezllmrouter_server/formatting.py",
     "server/src/ezllmrouter_server/json_validation.py",
     "server/src/ezllmrouter_server/errors.py",

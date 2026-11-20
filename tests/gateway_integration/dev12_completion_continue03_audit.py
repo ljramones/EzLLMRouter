@@ -223,7 +223,7 @@ def audit(root, source):
         (source / "tests/gateway_integration/dev12_completion_sync_first_owner.py").read_bytes()
     )
     assert contention["service_source_sha256"] == digest(
-        (source / "server/src/ezllmrouter_server/successor_service.py").read_bytes()
+        (source / "tools/synthetic/successor_service.py").read_bytes()
     )
     disposition = document(source / "docs/development/dev-12/A2-A4-CONTINUE-03-DISPOSITION.json")
     assert len(disposition["cells"]) == 7

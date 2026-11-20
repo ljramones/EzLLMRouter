@@ -18,7 +18,7 @@ sys.path[:0] = [
     str(Path(__file__).resolve().parent),
     str(ROOT / "tests/development_slice"),
 ]
-from ezllmrouter_server.gateway.dev12_guard import check_synthetic_request  # noqa: E402
+from ezllmrouter_server.gateway.retrieval_guard import check_synthetic_request  # noqa: E402
 from ezllmrouter_server.gateway.guard import GuardRejected  # noqa: E402
 
 
@@ -93,8 +93,10 @@ class FinalTimeoutTests(unittest.TestCase):
             ("text", {**exact, "read": "5"}, False),
         )
         with (
-            patch("ezllmrouter_server.gateway.dev12_guard.classify_request", return_value="ACCEPT"),
-            patch("ezllmrouter_server.gateway.dev12_guard.plan_valid", return_value=True),
+            patch(
+                "ezllmrouter_server.gateway.retrieval_guard.classify_request", return_value="ACCEPT"
+            ),
+            patch("ezllmrouter_server.gateway.retrieval_guard.plan_valid", return_value=True),
         ):
             for name, timeout, valid in cases:
                 with self.subTest(name=name):

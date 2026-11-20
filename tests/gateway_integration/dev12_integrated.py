@@ -35,8 +35,8 @@ from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.operator_web import serve as serve_operator
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.successor_contract import content_digest
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
 from ezllmrouter_server.web import serve
 from dev12_executor import Dev12SyntheticExecutor
 from dev12_tls_receiver import TEST_KEY
@@ -400,7 +400,7 @@ def run():
                 == record["trusted_identity"]["identity_binding_id"]
             )
             coordinator = Coordinator(store, legacy, {}, {}, {}, None, None, {}, {}, None)
-            from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
+            from tools.synthetic.successor_assembly import attach_standalone_synthetic
 
             successor = attach_standalone_synthetic(
                 coordinator,
@@ -546,10 +546,10 @@ def run():
                     "/operator/v1/login", json={"password": "dev12.synthetic.operator." + "x" * 32}
                 )
                 login.raise_for_status()
-                report_response = browser.get("/operator/v1/dev12-usage")
+                report_response = browser.get("/operator/v1/retrieval-usage")
                 report_response.raise_for_status()
                 report = report_response.json()
-                csv_response = browser.get("/operator/v1/dev12-usage?export=csv")
+                csv_response = browser.get("/operator/v1/retrieval-usage?export=csv")
                 csv_response.raise_for_status()
                 exported = list(csv.DictReader(io.StringIO(csv_response.text)))
                 if (

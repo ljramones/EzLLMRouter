@@ -115,7 +115,7 @@ class SingleUseSupplementTests(unittest.TestCase):
 
     def test_real_campaign_persists_small_limits_before_listener(self):
         from ezllmrouter_server.store import SQLiteStore
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
 
         with TemporaryDirectory(dir=os.environ.get("DEV12_TEST_SCRATCH", ROOT)) as directory:
             store = SQLiteStore(Path(directory) / "finite.sqlite")

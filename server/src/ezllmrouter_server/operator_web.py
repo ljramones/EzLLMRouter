@@ -67,9 +67,10 @@ def serve(
     provider_validation=None,
     successor_store=None,
     integration_only=False,
-    mach33_demo=None,
+    scripted_demo=None,
     bootstrap_password_file=None,
     public_origin=None,
+    identity_lookup=None,
 ):
     if not password or len(password) < 32:
         raise ValueError("unsafe operator binding or credential")
@@ -94,13 +95,14 @@ def serve(
         allowed_hosts=policy.hosts,
         allowed_origins=policy.origins,
         secure_cookies=policy.secure_cookies,
+        identity_lookup=identity_lookup,
         build=build,
         fixture=fixture,
         integration_only=integration_only,
         jobs=jobs,
         local_connectors=local_connectors,
         login_throttle=login_throttle,
-        mach33_demo=mach33_demo,
+        scripted_demo=scripted_demo,
         password=password,
         projection=projection,
         provider_validation=provider_validation,

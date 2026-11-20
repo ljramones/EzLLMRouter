@@ -1,6 +1,6 @@
 """SQL owned by the successor_campaign repository."""
 
-from ..database import Query
+from ezllmrouter_server.database import Query
 
 
 RESERVE_INSERT_DEV12_CAMPAIGN_ATTEMPTS = Query(

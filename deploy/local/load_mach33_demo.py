@@ -72,7 +72,7 @@ def install(package, scope):
     ):
         raise ValueError("unsafe demo fixture")
     scope_record = {
-        "schema": "ezllmrouter.mach33_demo_scope.v1",
+        "schema": "ezllmrouter.scripted_demo_scope.v1",
         "dataset_id": metadata["dataset_id"],
         "fixture_sha256": digest(fixture_bytes),
         "manifest_sha256": digest(manifest_bytes),

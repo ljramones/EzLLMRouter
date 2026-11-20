@@ -388,7 +388,7 @@ async function integrationAccounting(){
       integrationAccountingNavigate(params);return;
     }
     $("view-title").textContent="Accounting · "+integrationAccountingTabs.find(([id])=>id===tab)[1];
-    await mach33DemoView(root,route,tab);return;
+    await scriptedDemoView(root,route,tab);return;
   }
   if(source==="native"){
     root.append(node("p","Native EzLLMRouter submissions in this operator profile. External observations are on the other Accounting sections. Other service profiles have separate stores and authorization.","scope-note"));
@@ -404,7 +404,7 @@ async function integrationAccounting(){
     const source=datasets.find(item=>item.dataset_id.includes("credentials"))||dataset;
     const metadata=await Promise.allSettled([
       api("/operator/v1/integration/connections?dataset_id="+encodeURIComponent(source.dataset_id)),
-      api("/operator/v1/integration/vega-me")
+      api("/operator/v1/integration/identity")
     ]);
     if(metadata.some(item=>item.status==="rejected"&&item.reason.staleView))return;
     if(window.location.hash!==routeHash)return;

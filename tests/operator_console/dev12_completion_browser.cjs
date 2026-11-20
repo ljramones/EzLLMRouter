@@ -193,7 +193,7 @@ function requestsSince(events, browserUrl) {
 async function probe(browser, expectedFingerprint) {
   const result = await browser.evalJs("(async()=>{const [build,response]=await Promise.all(["+
     "fetch('/operator/v1/build',{credentials:'same-origin',cache:'no-store',redirect:'error'}),"+
-    "fetch('/operator/v1/dev12-usage',{credentials:'same-origin',cache:'no-store',redirect:'error'})]);"+
+    "fetch('/operator/v1/retrieval-usage',{credentials:'same-origin',cache:'no-store',redirect:'error'})]);"+
     "if(!build.ok||!response.ok)throw Error('authenticated probe failed');"+
     "return {build:await build.json(),report:await response.json()}})()");
   assert(result.build.build.fingerprint === expectedFingerprint,

@@ -10,7 +10,6 @@ from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
 from .cache_accounting import exposure_bound
 from .canonical import ContractError
 from .formatting import money, utc_timestamp
-from .observability import log_failure
 from .repositories import personal_campaign as _queries
 from .store import encode
 
@@ -22,8 +21,7 @@ def _amount(value):
         raise ValueError("invalid allowance")
     try:
         number = Decimal(value)
-    except Exception as exc:
-        log_failure("personal_campaign._amount.failed")
+    except InvalidOperation as exc:
         raise ValueError("invalid allowance") from exc
     if not number.is_finite() or number <= 0 or number.as_tuple().exponent < -9:
         raise ValueError("invalid allowance")
@@ -93,7 +91,7 @@ class PersonalCampaign:
         )
 
     def configure(self, actor, data):
-        if actor != "owner.local" or set(data) != {
+        if actor != self.registry.identity.owner_id or set(data) != {
             "connection_id",
             "configuration_ref",
             "principal_id",
@@ -175,7 +173,7 @@ class PersonalCampaign:
             return self.store.database.transaction(action)
 
     def transition(self, actor, state):
-        if actor != "owner.local" or state not in ("active", "paused", "closed"):
+        if actor != self.registry.identity.owner_id or state not in ("active", "paused", "closed"):
             raise ValueError("invalid campaign action")
 
         def action():
@@ -203,7 +201,7 @@ class PersonalCampaign:
 
     def revalidate(self, actor):
         """Bind current key/model/rate revisions without resetting spent attempts."""
-        if actor != "owner.local":
+        if actor != self.registry.identity.owner_id:
             raise PermissionError("OWNER_REQUIRED")
 
         def action():
@@ -234,7 +232,7 @@ class PersonalCampaign:
                     record["principal_id"],
                     record["configuration_ref"],
                     "execution",
-                    "class.demo",
+                    self.registry.identity.task_class,
                     ("text",),
                 )["allowed"]
             ):
@@ -281,7 +279,7 @@ class PersonalCampaign:
             record["principal_id"],
             record["configuration_ref"],
             "execution",
-            "class.demo",
+            self.registry.identity.task_class,
             ("text",),
         )["allowed"]:
             raise ValueError("campaign model permission or caller grant is missing")
@@ -413,7 +411,7 @@ class PersonalCampaign:
 
     def reconcile_recorded_usage(self, actor):
         """Owner-requested local reconciliation; never replays provider work."""
-        if actor != "owner.local":
+        if actor != self.registry.identity.owner_id:
             raise PermissionError("OWNER_REQUIRED")
 
         def action():

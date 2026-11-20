@@ -159,7 +159,7 @@ function dev12Inspector(item){const box=panel("Synthetic operation detail");
     ["Reservation", "fictional USD "+item.reservation_decimal],
     ["Current exposure · "+item.exposure_state_as_of+" UTC",item.exposure_state],
     ["Result access",item.candidate_access]]));return box;}
-async function dev12SyntheticUsage(root){let report;try{report=await api("/operator/v1/dev12-usage?"+dev12Query());}
+async function dev12SyntheticUsage(root){let report;try{report=await api("/operator/v1/retrieval-usage?"+dev12Query());}
   catch(error){if(error.message==="NOT_FOUND")return false;throw error;}
   const box=panel("Standalone retrieval · controlled synthetic profile");box.classList.add("dev12-report");
   box.append(node("p",`DEMO — controlled synthetic embedding and rerank operations. Fictional USD only; no commercial provider calls. Usage revision cutoff: ${report.usage_cutoff||"latest"}. Exposure and delivery states are current as of ${report.operational_as_of} UTC, independently of that cutoff. Delegation is caller-reported.`,"scope-note"));
@@ -186,7 +186,7 @@ async function dev12SyntheticUsage(root){let report;try{report=await api("/opera
     card("Current held reservations",report.total.current_held_reservations),
     card("Current held fictional USD",report.total.current_held_bound_usd));box.append(cards);
   const actions=crudActions();for(const format of ["csv","json"]){actions.append(crudButton("Export synthetic "+format.toUpperCase(),async()=>{
-    try{const response=await fetch("/operator/v1/dev12-usage?"+dev12Query({export:format}),
+    try{const response=await fetch("/operator/v1/retrieval-usage?"+dev12Query({export:format}),
       {credentials:"same-origin",cache:"no-store",redirect:"error"});if(!response.ok)throw Error(String(response.status));
       const blob=await response.blob(),url=URL.createObjectURL(blob),link=node("a");
       link.href=url;link.download="ezllmrouter-synthetic-usage."+format;document.body.append(link);link.click();link.remove();

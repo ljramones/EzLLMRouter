@@ -1,3 +1,5 @@
 """CognitiveDynamics EzLLMRouter server domain and HTTP boundary."""
 
-__version__ = "0.3.3"
+from ._metadata import release_version
+
+__version__ = release_version("cognitivedynamics-ezllmrouter-server", __file__)

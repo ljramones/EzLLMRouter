@@ -79,6 +79,7 @@ def verify_lock_inventory(lock, wheels):
 
 def source_mapping(root, dev05=False, *, fixtures=False):
     source_files = [
+        ("server/pyproject.toml", "service/server/pyproject.toml"),
         ("tests/gateway_integration/run.sh", "harness/run.sh"),
         ("tests/gateway_integration/boundary_steps.sh", "harness/boundary_steps.sh"),
         ("tests/gateway_integration/choice_b_steps.sh", "harness/choice_b_steps.sh"),
@@ -169,6 +170,12 @@ def source_mapping(root, dev05=False, *, fixtures=False):
                 ("tools/gateway/service_fixture.py", "service/gateway/service_fixture.py"),
                 ("tools/gateway/worker_fixture.py", "worker/fixture/worker_fixture.py"),
             ]
+        )
+    if fixtures:
+        source_files.append(("tools/__init__.py", "service/server/tools/__init__.py"))
+        source_files.extend(
+            (str(path.relative_to(root)), "service/server/" + str(path.relative_to(root)))
+            for path in sorted((root / "tools/synthetic").rglob("*.py"))
         )
     server_source = root / "server/src"
     for package in ("ezllmrouter_server",):

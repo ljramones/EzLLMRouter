@@ -61,10 +61,10 @@ def main():
         with httpx.Client(
             base_url=origin, timeout=5, trust_env=False, headers={"Origin": origin}
         ) as client:
-            denied = client.get("/operator/v1/dev12-usage")
+            denied = client.get("/operator/v1/retrieval-usage")
             login = client.post("/operator/v1/login", json={"password": secret})
-            report_response = client.get("/operator/v1/dev12-usage?export=json")
-            csv_response = client.get("/operator/v1/dev12-usage?export=csv")
+            report_response = client.get("/operator/v1/retrieval-usage?export=json")
+            csv_response = client.get("/operator/v1/retrieval-usage?export=csv")
             ui_response = client.get("/usage_costs_view.js")
         report = report_response.json()
         rows = list(csv.DictReader(io.StringIO(csv_response.text)))

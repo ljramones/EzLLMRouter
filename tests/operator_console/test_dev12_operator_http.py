@@ -54,11 +54,11 @@ class SyntheticOperatorHTTPTests(unittest.TestCase):
                     self.assertEqual(json.load(response)["role"], "registry_admin")
                 headers = {"Cookie": cookie, "Origin": origin}
                 with urlopen(
-                    Request(origin + "/operator/v1/dev12-usage", headers=headers), timeout=5
+                    Request(origin + "/operator/v1/retrieval-usage", headers=headers), timeout=5
                 ) as response:
                     self.assertEqual(json.load(response)["total"]["attempts"], 0)
                 with urlopen(
-                    Request(origin + "/operator/v1/dev12-usage?export=csv", headers=headers),
+                    Request(origin + "/operator/v1/retrieval-usage?export=csv", headers=headers),
                     timeout=5,
                 ) as response:
                     self.assertTrue(response.read().startswith(b"attempt_id,submission_id"))

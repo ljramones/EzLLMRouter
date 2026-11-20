@@ -1,4 +1,4 @@
-"""Read-only projection of an isolated, immutable Mach33 demo scope."""
+"""Read-only projection of an isolated, immutable scripted demo scope."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _date(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-class Mach33Demo:
+class ScriptedDemo:
     def __init__(self, scope):
         root = Path(scope)
         scope_record = json.loads((root / "scope.json").read_text())
@@ -288,7 +288,7 @@ class Mach33Demo:
                 }
             )
         return {
-            "schema": "ezllmrouter.mach33_demo_report.v1",
+            "schema": "ezllmrouter.scripted_demo_report.v1",
             "dataset_id": self.meta["dataset_id"],
             "display_name": self.meta["display_name"],
             "banner": NOTICE,
@@ -382,7 +382,7 @@ class Mach33Demo:
                 }
             )
         return {
-            "schema": "ezllmrouter.mach33_demo_workflow.v1",
+            "schema": "ezllmrouter.scripted_demo_workflow.v1",
             "dataset_id": self.meta["dataset_id"],
             "banner": NOTICE,
             "synthetic": True,

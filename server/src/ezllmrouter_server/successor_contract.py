@@ -22,7 +22,6 @@ from .json_validation import (
     decode_json,
     validate_json,
 )
-from .observability import log_failure
 
 SAFE = MAX_SAFE_INTEGER
 SCHEMAS = json.loads(files("ezllmrouter_server").joinpath("dev12/schemas.json").read_text())
@@ -296,8 +295,7 @@ def decimal_valid(value, score=False):
         return False
     try:
         number = Decimal(value)
-    except Exception:
-        log_failure("successor_contract.decimal_valid.failed")
+    except InvalidOperation:
         return False
     if number.is_zero() and number.is_signed():
         return False

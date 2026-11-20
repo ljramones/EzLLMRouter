@@ -11,6 +11,7 @@ import httpx
 
 from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.canonical import ContractError
+from .provider_reply import candidate_from_provider
 from .guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL
 from ezllmrouter_server.observability import log_failure
 from .proxy_recipe import PROXY_MODEL, require_public_destination
@@ -201,37 +202,13 @@ class LiteLLMAsgiAdapter:
                 raise OSError("lower provider outcome uncertain")
             if response.status_code != 200:
                 return {"status": response.status_code, "body": None}
-            return {"status": 200, "body": self._candidate(response.json())}
+            return {"status": 200, "body": candidate_from_provider(response.json())}
         except Exception as exc:
             if not isinstance(exc, (ContractError, GuardRejected)):
                 log_failure("gateway.asgi.request_failed")
             raise
         finally:
             ACTIVE.reset(token)
-
-    @staticmethod
-    def _candidate(provider: dict) -> dict:
-        choice = provider["choices"][0]
-        message = choice["message"]
-        result = {"finish_reason": choice.get("finish_reason")}
-        if isinstance(message.get("content"), str):
-            result["text"] = message["content"]
-        if isinstance(message.get("tool_calls"), list):
-            result["tool_calls"] = [
-                {
-                    "id": call["id"],
-                    "name": call["function"]["name"],
-                    "arguments_json": call["function"]["arguments"],
-                }
-                for call in message["tool_calls"]
-            ]
-        usage = provider.get("usage")
-        if isinstance(usage, dict):
-            result["usage"] = {
-                "input_tokens": usage.get("prompt_tokens"),
-                "output_tokens": usage.get("completion_tokens"),
-            }
-        return result
 
     async def _cleanup(self):
         client = getattr(self, "guarded_client", None)

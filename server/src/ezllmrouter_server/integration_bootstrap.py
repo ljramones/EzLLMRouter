@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .errors import ServerError
+from .identity import DEFAULT_IDENTITY
 from .private_files import read_private, secret_text
 from .registry import Registry, RegistryConflict
 
@@ -32,7 +33,7 @@ SERVICES = (
         "isolated local integration",
     ),
     ServiceIdentity(
-        "svc.vega.credential-consumer",
+        DEFAULT_IDENTITY.credential_consumer_id,
         "Vega credential consumer",
         "consumer.token",
         "op.integration.consumer",
@@ -67,8 +68,12 @@ def ensure_services(registry: Registry, directory: Path) -> None:
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     if directory.is_symlink() or directory.stat().st_mode & 0o077:
         raise BootstrapError("secrets directory must be owner-only and must not be a symlink")
+    services = (
+        SERVICES[0],
+        replace(SERVICES[1], principal_id=registry.identity.credential_consumer_id),
+    )
     with registry.send_authority.gate:
-        for service in SERVICES:
+        for service in services:
             try:
                 _ensure_service(registry, directory, service)
             except RegistryConflict as exc:
@@ -96,7 +101,7 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
         # Replaying the original command proves this is our unfinished account,
         # rather than an unrelated identity using a reserved bootstrap name.
         registry.mutate(
-            "owner.local",
+            registry.identity.owner_id,
             {
                 "operation_id": service.operation_prefix + ".principal",
                 "action": "create_principal",
@@ -105,7 +110,7 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
                 "data": {
                     "display_name": service.display_name,
                     "kind": "service",
-                    "owner": "owner.local",
+                    "owner": registry.identity.owner_id,
                     "role": "ordinary",
                 },
             },
@@ -113,7 +118,7 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
     # For an already-bound inactive identity, this must replay the committed
     # operation; its old expected revision prevents accidental replacement.
     registry.provision_credential(
-        "owner.local",
+        registry.identity.owner_id,
         service.principal_id,
         1,
         service.operation_prefix + ".credential",
@@ -125,7 +130,7 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
             f"{path.name} does not match the database; restore its original token file"
         )
     registry.mutate(
-        "owner.local",
+        registry.identity.owner_id,
         {
             "operation_id": service.operation_prefix + ".activate",
             "action": "principal_state",

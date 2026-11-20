@@ -17,7 +17,8 @@ from dev12_tls_transport import OwnedSyntheticTLSHTTPTransport
 from guard import ACTIVE, GuardRejected, GuardTransport, Invocation
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.successor_contract import config_for, price_for
-from ezllmrouter_server.successor_plan import execution_eligible, recipe_for
+from ezllmrouter_server.successor_plan import execution_eligible
+from ezllmrouter_server.retrieval_descriptor import recipe_for
 
 
 def now():

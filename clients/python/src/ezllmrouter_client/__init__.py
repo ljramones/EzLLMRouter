@@ -23,7 +23,9 @@ from . import _validation as v
 from . import _successor_validation as v03
 from ._http import WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT
 
-__version__ = "0.3.0"
+from ._metadata import release_version
+
+__version__ = release_version("cognitivedynamics-ezllmrouter-client", __file__)
 
 
 class EzLLMRouterError(ClientError):

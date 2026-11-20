@@ -37,6 +37,7 @@ from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
 from .cache_accounting import validate_contract
 from .canonical import ContractError
 from .catalogue import operator_reference_price, validate_catalogue
+from .identity import DEFAULT_IDENTITY, InstanceIdentity
 from .integration_accounting import ExternalAccounting
 from .provider_adapters import ADAPTERS, PROVIDERS, validate_settings
 from .provider_adapters import probe as provider_probe
@@ -109,7 +110,9 @@ class Registry:
         integration_feature_policy=None,
         integration_accounting_retention_days=None,
         runtime_ready=None,
+        identity: InstanceIdentity = DEFAULT_IDENTITY,
     ):
+        self.identity = identity
         self.store = store
         self.send_authority = send_authority
         self.runtime_ready = (
@@ -128,6 +131,8 @@ class Registry:
         self._operator_tokens = {}
         self._token_lock = threading.Lock()
         self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
+        if self.principal(self.identity.owner_id) is None:
+            raise ValueError("configured owner does not match the persisted registry")
         self.attribution = AttributionLedger(self)
         self.integration = ExternalAccounting(self)
         self.integration.feature_policy = integration_feature_policy
@@ -180,20 +185,20 @@ class Registry:
                         "status": "enabled",
                         "revision": 1,
                         "destination": {k: destination[k] for k in DESTINATION},
-                        "owner": "owner.local",
+                        "owner": self.identity.owner_id,
                         "capabilities": ["text", "tools"],
                         "purposes": ["execution"],
-                        "task_classes": ["class.demo"],
+                        "task_classes": [self.identity.task_class],
                         "handling": ["no.content.store"],
-                        "approved_by": "owner.local",
+                        "approved_by": self.identity.owner_id,
                         "approved_at": at,
                         "legacy_unpriced": True,
                     }
                     owner = {
-                        "principal_id": "owner.local",
+                        "principal_id": self.identity.owner_id,
                         "display_name": "Local owner",
                         "kind": "human",
-                        "owner": "owner.local",
+                        "owner": self.identity.owner_id,
                         "status": "active",
                         "role": "registry_admin",
                         "revision": 1,
@@ -215,8 +220,8 @@ class Registry:
                         "status": "active",
                         "revision": 1,
                         "purposes": ["execution"],
-                        "task_classes": ["class.demo"],
-                        "actor": "owner.local",
+                        "task_classes": [self.identity.task_class],
+                        "actor": self.identity.owner_id,
                         "at": at,
                     }
                     db.execute(
@@ -248,7 +253,7 @@ class Registry:
                         db.execute(_queries.ACTION_INSERT_REGISTRY_META, (key, value))
                     db.execute(
                         _queries.ACTION_INSERT_REGISTRY_AUDIT,
-                        ("owner.local", "bootstrap", "local.synthetic", None, 1, 1, at),
+                        (self.identity.owner_id, "bootstrap", "local.synthetic", None, 1, 1, at),
                     )
                 return int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
 
@@ -913,7 +918,7 @@ class Registry:
                 if action_name == "import_catalogue":
                     if expected != 0:
                         raise RegistryConflict("catalogue creation requires revision zero")
-                    candidate = validate_catalogue(subject, data)
+                    candidate = validate_catalogue(subject, data, owner_id=self.identity.owner_id)
                     row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (subject,)).fetchone()
                     if row:
                         existing = json.loads(row[0])
@@ -1204,7 +1209,7 @@ class Registry:
             "controlled",
         ):
             raise ValueError("invalid funding provenance")
-        if funding_kind == "personal_testing" and data["owner"] != "owner.local":
+        if funding_kind == "personal_testing" and data["owner"] != self.identity.owner_id:
             raise ValueError("personal testing must use the existing owner identity")
         record = {
             "connection_id": subject,
@@ -1316,7 +1321,7 @@ class Registry:
     def _apply_import_catalogue(self, db, actor, action, subject, expected, data):
         if expected != 0:
             raise RegistryConflict("catalogue creation requires revision zero")
-        record = validate_catalogue(subject, data)
+        record = validate_catalogue(subject, data, owner_id=self.identity.owner_id)
         db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
         return record
 

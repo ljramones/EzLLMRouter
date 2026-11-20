@@ -27,7 +27,7 @@ ASSETS: Mapping[str, tuple[str, str]] = MappingProxyType(
             "demo_workspace_team_view.js",
             "text/javascript; charset=utf-8",
         ),
-        "/mach33_demo_view.js": ("mach33_demo_view.js", "text/javascript; charset=utf-8"),
+        "/scripted_demo_view.js": ("scripted_demo_view.js", "text/javascript; charset=utf-8"),
         "/app.css": ("app.css", "text/css; charset=utf-8"),
         "/integration_console.css": ("integration_console.css", "text/css; charset=utf-8"),
     }

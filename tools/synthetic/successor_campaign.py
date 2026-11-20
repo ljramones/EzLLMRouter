@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from .repositories import successor_campaign as _queries
+from tools.synthetic.repositories import successor_campaign as _queries
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
 
-from .store import encode
-from .successor_contract import REGISTRATIONS
+from ezllmrouter_server.store import encode
+from ezllmrouter_server.successor_contract import REGISTRATIONS
 
 
 def _instant(value):

@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 
 from litellm.types.llms.openai import ResponseAPIUsage
-from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
+from ezllmrouter_server.gateway.provider_reply import candidate_from_provider
 
 
 class FrozenUsagePresenceTests(unittest.TestCase):
@@ -37,7 +37,7 @@ class FrozenUsagePresenceTests(unittest.TestCase):
                     ],
                     "usage": usage.model_dump(mode="json", exclude_unset=True),
                 }
-                result = ChoiceBSenderAdapter._candidate(provider, responses=True)["usage"]
+                result = candidate_from_provider(provider, responses=True)["usage"]
                 selected = result["input_tokens_details"]
                 if expected == "absent":
                     self.assertNotIn("cache_write_tokens", selected)

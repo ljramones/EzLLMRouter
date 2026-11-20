@@ -81,10 +81,10 @@ def main():
         with httpx.Client(
             base_url=origin, timeout=10, trust_env=False, headers={"Origin": origin}
         ) as client:
-            denied = client.get("/operator/v1/dev12-usage")
+            denied = client.get("/operator/v1/retrieval-usage")
             login = client.post("/operator/v1/login", json={"password": password})
-            report_response = client.get("/operator/v1/dev12-usage?export=json")
-            csv_response = client.get("/operator/v1/dev12-usage?export=csv")
+            report_response = client.get("/operator/v1/retrieval-usage?export=json")
+            csv_response = client.get("/operator/v1/retrieval-usage?export=csv")
             ui_response = client.get("/usage_costs_view.js")
         assert (
             denied.status_code,

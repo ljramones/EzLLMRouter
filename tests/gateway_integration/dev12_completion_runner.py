@@ -1606,10 +1606,10 @@ class CompletionRuntime:
         from ezllmrouter_server.operator_web import serve as serve_operator
         from ezllmrouter_server.registry import Registry
         from ezllmrouter_server.store import SQLiteStore
-        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
-        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from tools.synthetic.successor_assembly import attach_standalone_synthetic
+        from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts
         from ezllmrouter_server.web import serve
         from dev12_executor import Dev12SyntheticExecutor
         from dev12_integrated import certificate, free_port
@@ -1848,10 +1848,10 @@ class CompletionRuntime:
         from ezllmrouter_server.operator_web import serve as serve_operator
         from ezllmrouter_server.registry import Registry
         from ezllmrouter_server.store import SQLiteStore
-        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
-        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from tools.synthetic.successor_assembly import attach_standalone_synthetic
+        from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts
         from ezllmrouter_server.web import serve
         from dev12_executor import Dev12SyntheticExecutor
         from dev12_integrated import certificate, free_port
@@ -2106,10 +2106,10 @@ class CompletionRuntime:
         from ezllmrouter_server.operator_web import serve as serve_operator
         from ezllmrouter_server.registry import Registry
         from ezllmrouter_server.store import SQLiteStore
-        from ezllmrouter_server.successor_assembly import attach_standalone_synthetic
-        from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from tools.synthetic.successor_assembly import attach_standalone_synthetic
+        from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts
         from ezllmrouter_server.web import serve
         import sqlite3
 

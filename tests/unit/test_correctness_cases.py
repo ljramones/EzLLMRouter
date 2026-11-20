@@ -19,7 +19,7 @@ from ezllmrouter_server import (
 )
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.identifiers import require_identifier, valid_identifier
-from ezllmrouter_server.mach33_demo import Mach33Demo
+from ezllmrouter_server.scripted_demo import ScriptedDemo
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.store import encode
 from tests.development_slice import test_core as core_fixtures
@@ -562,7 +562,7 @@ class DemoCutoffAndGraphTests(unittest.TestCase):
                 }
             )
         )
-        return Mach33Demo(self.root)
+        return ScriptedDemo(self.root)
 
     def test_attempt_without_a_qualifying_revision_is_explicitly_unknown(self):
         demo = self.load()

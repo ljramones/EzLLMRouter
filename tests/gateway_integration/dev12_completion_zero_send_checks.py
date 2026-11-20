@@ -21,9 +21,9 @@ sys.path.insert(0, str(ROOT / "server/src"))
 from cryptography.hazmat.primitives import serialization
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.successor_authority import SyntheticSuccessorAuthority
-from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
-from ezllmrouter_server.successor_service import SuccessorService
+from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
+from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
+from tools.synthetic.successor_service import SuccessorService
 
 
 def digest(path):

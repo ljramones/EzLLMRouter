@@ -10,13 +10,19 @@ from concurrent.futures import TimeoutError
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
-from .canonical import ContractError
-from .formatting import utc_timestamp
-from .observability import log_failure
-from .repositories import successor_service as _queries
-from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
-from .states import CandidateAccess, DeliveryState, DispatchState, SettlementState, SubmissionState
-from .successor_contract import (
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.formatting import utc_timestamp
+from ezllmrouter_server.observability import log_failure
+from tools.synthetic.repositories import successor_service as _queries
+from ezllmrouter_server.runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
+from ezllmrouter_server.states import (
+    CandidateAccess,
+    DeliveryState,
+    DispatchState,
+    SettlementState,
+    SubmissionState,
+)
+from ezllmrouter_server.successor_contract import (
     SCHEMAS,
     classify_request,
     digest,
@@ -26,7 +32,7 @@ from .successor_contract import (
     work_digest,
     work_projection,
 )
-from .successor_plan import execution_eligible, mint_plan
+from ezllmrouter_server.successor_plan import execution_eligible, mint_plan
 
 
 def utc_now():
@@ -555,14 +561,14 @@ class SuccessorService:
                 raise ContractError("RESULT_INVALID", 502)
             response_observed = True
             if "usage_component" not in outcome:
-                from .successor_contract import price_for
+                from ezllmrouter_server.successor_contract import price_for
 
                 component = {
                     "component": price_for(record["request"])["component"],
                     "presence": "absent",
                 }
             elif outcome["usage_component"] is None:
-                from .successor_contract import price_for
+                from ezllmrouter_server.successor_contract import price_for
 
                 component = {
                     "component": price_for(record["request"])["component"],
@@ -581,7 +587,7 @@ class SuccessorService:
                     record["reservation"]["max_exposure_decimal"],
                 )
             except (ValueError, KeyError, TypeError, AttributeError):
-                from .successor_contract import price_for
+                from ezllmrouter_server.successor_contract import price_for
 
                 # JSON decoding permits escaped lone surrogates. ASCII escaping
                 # makes the invalid-evidence digest total without changing the

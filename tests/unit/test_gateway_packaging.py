@@ -112,7 +112,12 @@ class GatewayPackagingTests(unittest.TestCase):
         self.addCleanup(sys.path.remove, str(ROOT / "tests/gateway_integration"))
         for name in MODULES:
             self.assertIs(
-                import_module(name), import_module("ezllmrouter_server.gateway." + name), name
+                import_module(name),
+                import_module(
+                    "ezllmrouter_server.gateway."
+                    + ("retrieval_guard" if name == "dev12_guard" else name)
+                ),
+                name,
             )
         guard = import_module("ezllmrouter_server.gateway.guard")
         owned = import_module("ezllmrouter_server.gateway.owned_sender_transport")
@@ -175,7 +180,7 @@ from ezllmrouter_server.schema import VERSION
 assert store.db.execute('PRAGMA user_version').fetchone() == (VERSION,)
 store.close()
 for name in ('guard', 'choice_b_sender', 'adapter', 'owned_sender_transport', 'owned_tls_sender_transport',
-             'proxy_recipe', 'worker_ready', 'dev12_guard', 'choice_b_wire'):
+             'proxy_recipe', 'worker_ready', 'retrieval_guard', 'choice_b_wire'):
     module = importlib.import_module('ezllmrouter_server.gateway.' + name)
     assert 'service/server' in module.__file__
 assert 'litellm' not in sys.modules and 'openai' not in sys.modules
@@ -220,6 +225,11 @@ print(json.dumps({'worker': 'isolated', 'service_importable': False}))
                 "service/gateway/service_fixture.py",
                 "worker/fixture/worker_fixture.py",
             }
+            extras.add("service/server/tools/__init__.py")
+            extras.update(
+                "service/server/" + str(path.relative_to(ROOT))
+                for path in (ROOT / "tools/synthetic").rglob("*.py")
+            )
             self.assertTrue(extras.isdisjoint(normal))
             self.assertEqual(fixture - normal, extras)
         self.assertEqual(

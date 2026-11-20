@@ -198,7 +198,7 @@ def preflight(root, output):
             allocated_usd=Decimal("0.010000000"),
         )
     source = HERE / "dev12_completion_sync_first_owner.py"
-    service = HERE.parents[1] / "server/src/ezllmrouter_server/successor_service.py"
+    service = HERE.parents[1] / "tools/synthetic/successor_service.py"
     document = {
         "kind": "dev12_completion02_sync_http_first_owner_preflight_v1",
         "status": "BLOCKED_BY_CURRENT_AUTHORITY"

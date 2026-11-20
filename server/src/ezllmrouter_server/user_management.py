@@ -163,7 +163,10 @@ class UserManager:
             if db.execute(_queries.ACTION_SELECT_CONSOLE_USERS).fetchone():
                 return
             principals = [
-                json.loads(row[0]) for row in db.execute(_queries.ACTION_SELECT_REGISTRY_PRINCIPALS)
+                json.loads(row[0])
+                for row in db.execute(
+                    _queries.ACTION_SELECT_REGISTRY_PRINCIPALS, (self.registry.identity.owner_id,)
+                )
             ]
             principal = next(
                 (
@@ -363,7 +366,7 @@ class UserManager:
                 "principal_id": "user." + uuid.uuid4().hex,
                 "display_name": display,
                 "kind": "human",
-                "owner": "owner.local",
+                "owner": self.registry.identity.owner_id,
                 "status": data["status"],
                 "role": data["role"],
                 "credential_state": "console_password",

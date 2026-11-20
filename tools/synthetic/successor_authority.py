@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from .repositories import successor_authority as _queries
+from tools.synthetic.repositories import successor_authority as _queries
 
-from .observability import log_failure
+from ezllmrouter_server.observability import log_failure
 
 import base64
 from copy import deepcopy
 import json
 import threading
 
-from .store import encode
+from ezllmrouter_server.store import encode
 
 
 REVISION_NAMES = (

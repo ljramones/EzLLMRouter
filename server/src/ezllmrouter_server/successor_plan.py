@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 from decimal import Decimal
 
+from .retrieval_descriptor import execution_descriptor
 from .successor_contract import (
     SCHEMAS,
     canonical,
@@ -26,17 +27,6 @@ from .successor_contract import (
 def signing_message(plan):
     unsigned = {key: value for key, value in plan.items() if key != "signature"}
     return ("ezllmrouter-plan-v1\n" + canonical(unsigned)).encode("utf-8")
-
-
-def recipe_for(request, work_hash, config, descriptor):
-    return {
-        "work_digest": work_hash,
-        "operation": request["operation"],
-        "adapter_ref": config["adapter_ref"],
-        "route": descriptor["route"],
-        "handling_profile": request["handling_profile"],
-        "timeout_ms": descriptor["timeout_ms"],
-    }
 
 
 def mint_plan(
@@ -59,30 +49,7 @@ def mint_plan(
     if not config or not price:
         raise ValueError("unregistered synthetic operation")
     bound = tariff(request, price)["bound"]
-    route = (
-        "/synthetic/v1/rerank"
-        if request["operation"]["type"] == "rerank"
-        else "/synthetic/v1/embeddings"
-    )
-    descriptor = {
-        "profile": "retrieval-synthetic@1",
-        "method": "POST",
-        "route": route,
-        "host": "synthetic.invalid",
-        "transport": "trusted_sender_tls@1",
-        "content_type": "application/json",
-        "adapter_ref": config["adapter_ref"],
-        "timeout_ms": 5000,
-        "max_request_bytes": 262144,
-        "max_response_bytes": 65536,
-        "handling_profile": request["handling_profile"],
-        "retention_seconds": 604800,
-        "lifecycle": "synchronous_one_attempt",
-        "deadline": request["deadline"],
-    }
-    descriptor["recipe_digest"] = digest(
-        "ezllmrouter-preparation-v1\n", recipe_for(request, work_hash, config, descriptor)
-    )
+    descriptor = execution_descriptor(request, work_hash, config)
     reservation = {
         "reservation_id": "reservation." + attempt_id,
         "budget_account_id": budget_account_id,
@@ -190,32 +157,7 @@ def plan_valid(
         tariff(request, price)["bound"]
     ):
         return False
-    route = (
-        "/synthetic/v1/rerank"
-        if request["operation"]["type"] == "rerank"
-        else "/synthetic/v1/embeddings"
-    )
-    if (
-        descriptor["profile"] != "retrieval-synthetic@1"
-        or descriptor["route"] != route
-        or descriptor["adapter_ref"] != config["adapter_ref"]
-        or descriptor["handling_profile"] != request["handling_profile"]
-        or descriptor["deadline"] != request["deadline"]
-        or descriptor["host"] != "synthetic.invalid"
-        or descriptor["method"] != "POST"
-        or descriptor["transport"] != "trusted_sender_tls@1"
-        or descriptor["content_type"] != "application/json"
-        or descriptor["lifecycle"] != "synchronous_one_attempt"
-        or descriptor["timeout_ms"] != 5000
-        or descriptor["max_request_bytes"] != 262144
-        or descriptor["max_response_bytes"] != 65536
-        or descriptor["retention_seconds"] != 604800
-        or descriptor["recipe_digest"]
-        != digest(
-            "ezllmrouter-preparation-v1\n",
-            recipe_for(request, admitted_work_hash, config, descriptor),
-        )
-    ):
+    if descriptor != execution_descriptor(request, admitted_work_hash, config):
         return False
     return utc_second(plan["expires_at"]) and plan["expires_at"] <= request["deadline"]
 

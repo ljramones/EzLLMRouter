@@ -7,7 +7,7 @@ this module never selects a commercial provider or creates credentials.
 
 from __future__ import annotations
 
-from .successor_service import SuccessorService
+from tools.synthetic.successor_service import SuccessorService
 
 
 def attach_standalone_synthetic(

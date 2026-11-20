@@ -34,7 +34,6 @@ def check_synthetic_request(request, invocation, body):
         or str(request.url) != origin + descriptor["route"]
         or descriptor["transport"] != "trusted_sender_tls@1"
         or descriptor["content_type"] != "application/json"
-        or descriptor["timeout_ms"] != 5000
         or len(body) > descriptor["max_request_bytes"]
     ):
         raise GuardRejected()
@@ -70,7 +69,9 @@ def check_synthetic_request(request, invocation, body):
         type(timeout) is not dict
         or set(timeout) != phases
         or any(
-            type(value) not in (int, float) or not math.isfinite(value) or value != 5
+            type(value) not in (int, float)
+            or not math.isfinite(value)
+            or value != descriptor["timeout_ms"] / 1000
             for value in timeout.values()
         )
     ):

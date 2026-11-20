@@ -1064,7 +1064,7 @@ def recovery_chain(runtime, case):
     }
     before = _census(runtime)
     if variant == "retained_receipt":
-        from ezllmrouter_server.successor_receiver_evidence import DurableReceiverReceipts
+        from tools.synthetic.successor_receiver_evidence import DurableReceiverReceipts
 
         with runtime.store._lock:
             record = runtime.store.successor_get(sid)
@@ -1856,7 +1856,7 @@ def native_accounting(runtime, case):
         # adopted historical-underbound read/settlement path in a distinct,
         # zero-send imported fixture scope; leave the live campaign untouched.
         from ezllmrouter_server.store import SQLiteStore
-        from ezllmrouter_server.successor_campaign import FiniteSuccessorCampaign
+        from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
         from ezllmrouter_server.successor_contract import (
             native_usage_row,
             price_for,

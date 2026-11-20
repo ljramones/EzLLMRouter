@@ -57,6 +57,23 @@ passes 802 cases and the built client wheel passes 37 selected tests, including
 all 125 shared contract cases. Evidence is under ignored
 `.artifacts/code-review/cleanup-pass/client/`.
 
+The runtime cleanup batch adds explicit instance identity configuration and an
+opt-in, exact-cookie identity lookup. Defaults preserve existing principals and
+purpose strings; unknown owner changes fail without rewriting history. Synthetic
+successor service, allowance, authority, assembly, receipt evidence and their
+queries move to `tools/synthetic`, absent from the production wheel and default
+staging. Fixture staging explicitly includes them. Descriptor minting/validation,
+provider reply projection and demo arithmetic/rendering share helpers. Ordinary
+invalid decimals no longer log unexpected-error stacks. Runtime versions come
+from distribution/project metadata, and build reports no longer claim stale
+client versions or milestone qualification. Scripted-demo and retrieval-usage
+implementation/UI routes use descriptive names; adopted wire schemas and IDs
+are unchanged. Eight new boundary tests join the offline runner, now 810 cases;
+strict mypy covers 47 modules. Both built wheels pass 142 selected tests, with
+117 packaged files checked byte-for-byte against source and imported module
+origins verified. Evidence is under `.artifacts/code-review/cleanup-pass/runtime/`.
+Browser, real listener/TLS and frozen-worker checks remain target gates.
+
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
 from the tests despite a successful local pack.
@@ -231,12 +248,6 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-2. **Remaining runtime coupling, naming and packaging:** remove fixed consumer,
-   purpose, identity/class and integration-forwarding assumptions; replace
-   milestone names and hidden aliases; derive release metadata from one source.
-   Consolidate remaining descriptor, demo and gateway duplication, narrow expected
-   parser-error handling, and separate fixture-only successor code from the
-   production wheel (4.2.7 / 4.3.5 / 5.1 / 5.3).
 3. **Deployment hygiene:** consolidate command runners and filesystem helpers,
    resolve the `profile` module name collision, finish timeout/error/connection
    cleanup, remove dated run IDs and make Docker context selection explicit.

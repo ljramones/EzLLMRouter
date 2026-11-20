@@ -1,6 +1,6 @@
 """SQL owned by the successor_service repository."""
 
-from ..database import Query
+from ezllmrouter_server.database import Query
 
 
 RECOVER_INCOMPLETE_SELECT_DEV12_SUBMISSIONS = Query(

@@ -23,7 +23,7 @@ ROUTE_WORDS = frozenset(
         "check availability nearby find discover provision demos launch snapshots eligibility accounts "
         "app.js app.css index.html integration_console.css users_view.js local_connectors_view.js "
         "catalogue_view.js activity_usage_view.js crud_view.js providers_view.js source_pages.js usage_costs_view.js "
-        "demo_workspace_view.js demo_workspace_team_view.js mach33_demo_view.js integration_view.js integration_console.js "
+        "demo_workspace_view.js demo_workspace_team_view.js scripted_demo_view.js integration_view.js integration_console.js "
         "integration_accounting.js"
     ).split()
 )

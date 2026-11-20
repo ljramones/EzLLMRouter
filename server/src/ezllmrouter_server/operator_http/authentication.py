@@ -137,13 +137,13 @@ class AuthenticationRoutes:
             principal = self.application.registry.principal(principal_id)
         elif hmac.compare_digest(self.application.password.encode(), body["password"].encode()):
             principal = (
-                self.application.registry.principal("owner.local")
+                self.application.registry.principal(self.application.owner_id)
                 if self.application.registry
                 else None
             )
             if self.application.registry and (not principal or principal["status"] != "active"):
                 return self._login_rejected(outcome, 401, "AUTH_FAILED")
-            principal_id = "owner.local"
+            principal_id = self.application.owner_id
         elif self.application.registry:
             try:
                 principal = self.application.registry.credential_principal(
@@ -183,7 +183,7 @@ class AuthenticationRoutes:
                 item.update(details)
                 if (
                     registry
-                    and principal_id == "owner.local"
+                    and principal_id == self.application.owner_id
                     and item["role"] == "registry_admin"
                     and registry.personal_campaign
                     and not item["must_change_password"]

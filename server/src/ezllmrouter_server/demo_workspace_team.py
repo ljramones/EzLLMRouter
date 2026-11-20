@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .demo_workspace import _amount, _total
+from .demo_common import LABEL, amount, total, basis
 from .reporting import _descendants, _group
 
 
@@ -110,9 +110,8 @@ def project_team_demo(
             "rate_ref": "demo.rate.v1." + source["provider"].split(".")[-1],
             "currency": "USD",
             "cost_status": "calculated",
-            "amount_decimal": _amount(source, rate),
-            "basis": f"{source['input']} input × USD {rate['input_per_1000_usd']}/1k + "
-            f"{source['output']} output × USD {rate['output_per_1000_usd']}/1k",
+            "amount_decimal": amount(source, rate),
+            "basis": basis(source, rate),
         }
         all_attempts.append(attempt)
         if source["story"] in selected:
@@ -211,17 +210,17 @@ def project_team_demo(
                 {
                     **run,
                     "root_run_id": root_run(run["run_id"]),
-                    "direct": _total(direct),
-                    "delegated": _total([a for a in inclusive if a["run"] != run["run_id"]]),
-                    "inclusive": _total(inclusive),
+                    "direct": total(direct),
+                    "delegated": total([a for a in inclusive if a["run"] != run["run_id"]]),
+                    "inclusive": total(inclusive),
                 }
             )
         shown = [event for event in events if event["at"] <= cutoff]
         snapshots.append(
             {
                 "at": cutoff,
-                "total": _total(visible),
-                "full_total": _total(full_visible),
+                "total": total(visible),
+                "full_total": total(full_visible),
                 "attempts": visible,
                 "event_ids": [event["id"] for event in shown],
                 "outcomes": [
@@ -238,7 +237,7 @@ def project_team_demo(
         )
     return {
         "identity": team["identity"],
-        "label": "DEMO — scripted activity and simulated USD; no real provider calls",
+        "label": LABEL,
         "collection": collection,
         "selected_story": story,
         "selected_story_ids": selected,
@@ -248,13 +247,13 @@ def project_team_demo(
         "actors": list(actors.values()),
         "rates": legacy["rates"],
         "stories": [
-            {**item, "total": _total([a for a in all_attempts if a["story"] == item["id"]])}
+            {**item, "total": total([a for a in all_attempts if a["story"] == item["id"]])}
             for item in stories
         ],
-        "all_total": _total(attempts),
-        "legacy_total": _total([a for a in all_attempts if a["story"] in legacy_ids]),
-        "team_total": _total([a for a in all_attempts if a["story"] in team_ids]),
-        "expanded_total": _total(all_attempts),
+        "all_total": total(attempts),
+        "legacy_total": total([a for a in all_attempts if a["story"] in legacy_ids]),
+        "team_total": total([a for a in all_attempts if a["story"] in team_ids]),
+        "expanded_total": total(all_attempts),
         "end": end,
         "events": events,
         "attempts": attempts,

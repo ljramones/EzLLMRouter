@@ -59,14 +59,14 @@ def run():
                     "/operator/v1/login", json={"password": "dev12.synthetic.operator." + "x" * 32}
                 )
                 login.raise_for_status()
-                report_response = client.get("/operator/v1/dev12-usage")
+                report_response = client.get("/operator/v1/retrieval-usage")
                 report_response.raise_for_status()
                 report = report_response.json()
-                csv_response = client.get("/operator/v1/dev12-usage?export=csv")
+                csv_response = client.get("/operator/v1/retrieval-usage?export=csv")
                 csv_response.raise_for_status()
                 rows = list(csv.DictReader(io.StringIO(csv_response.text)))
                 filtered_response = client.get(
-                    "/operator/v1/dev12-usage", params={"actor_id": "agent.vega"}
+                    "/operator/v1/retrieval-usage", params={"actor_id": "agent.vega"}
                 )
                 filtered_response.raise_for_status()
                 filtered = filtered_response.json()

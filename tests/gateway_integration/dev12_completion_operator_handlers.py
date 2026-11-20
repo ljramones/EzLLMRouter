@@ -133,7 +133,7 @@ def _read(client, filters=None, export=None):
     params = dict(filters or {})
     if export is not None:
         params["export"] = export
-    url = "/operator/v1/dev12-usage" + ("?" + urlencode(params) if params else "")
+    url = "/operator/v1/retrieval-usage" + ("?" + urlencode(params) if params else "")
     response = client.get(url)
     if response.status_code != 200:
         return {"status": response.status_code, "body": response.text[:2000]}
