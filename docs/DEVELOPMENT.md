@@ -44,17 +44,45 @@ of imported types block the runner. They also verify runtime-state exclusion.
 `tools.check` inventories Git-tracked and non-ignored `test_*.py` files under
 `tests/` and `deploy/local/` before running. Every file must have an offline,
 loopback or standalone-script registration, or an explicit reason in
-`EXCLUDED_TESTS`. Missing classifications fail the check. The current exclusions
-need the frozen gateway runtime or retained run evidence; they are not passing
+`EXCLUDED_TESTS`. Missing classifications fail the check. Class-level
+registrations must cover every local test class, including inherited classes; method-only selectors cannot
+stand in for a whole class. Empty and entirely skipped suites fail. Module,
+standalone-script and JavaScript failures are collected before the runner exits.
+`tests/javascript_inventory.json` assigns every test JS/TS source to console,
+installed-client, offline, target or helper execution, with reasons for target
+and helper files. An added unclassified file fails the audit.
+The current exclusions need the frozen gateway runtime or retained run evidence; they are not passing
 development tests. In particular, the AnyIO counterexamples require the frozen
 4.15.1 wheels, while the development lock uses 4.16.0.
 
 Loopback modules allow localhost and local IPC only. Per-module interpreters
 isolate loaded fixtures and environment changes. Ordinary tests import the
 installed development packages and package-qualified fixtures. Standalone
-source-copy checks retain their explicit source/dependency roots. The network guard applies to
-Python socket operations in those interpreters; subprocess consumers and
-deployment containers have their own fixture and isolation checks.
+source-copy checks retain their explicit source/dependency roots. The accidental
+network guard covers Python socket/DNS/UDP operations and wraps
+Python child commands before their target code, preserving `-I`/`-S`. Children
+and grandchildren inherit the guard even with a replaced environment. Node
+children receive a preload guarding sockets, DNS, UDP and native fetch. Native
+subprocesses are limited to audited local Git/OpenSSL operations, offline npm
+with scripts disabled, and the existing shell syntax/exit-code fixtures. New
+commands require an explicit runner decision. These language hooks prevent
+accidental test network use; they are not an OS sandbox for hostile code or
+native extensions. Target containers and native-language harnesses retain their
+own fixture/isolation checks.
+
+Optional Python line coverage needs no additional dependency:
+
+```sh
+uv run --locked python -m tools.check --coverage
+```
+
+Each run creates a fresh directory under `.artifacts/coverage/`, collecting
+service/Python-client source execution in module interpreters, worker threads
+and guarded Python children. `summary.json` lists source hashes, executable and
+executed line counts, missing lines and an aggregate percentage. The bytecode
+line-table measurement includes unexecuted source files; it does not measure
+branches, native code or JavaScript, and imposes no coverage threshold. Add
+`--loopback` in a target environment to measure its HTTP fixtures too.
 
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable
@@ -119,15 +147,20 @@ Credential initialization has a separate Linux capability check:
 python3 -I -S tests/security/check_credential_init.py
 ```
 
-It runs only the initializer in the digest-pinned Python base image with
-`CAP_CHOWN`, a read-only root filesystem, no network and a temporary credentials
-filesystem. It checks initial creation and replacement, service ownership and
-mode `0400`. It does not start or restart a deployment. This requires Docker
-with ARM64 execution support: the reused local-profile base digest identifies
-an ARM64 image, and the command explicitly requests `linux/arm64`. The
-`credential-init` CI job uses the native `ubuntu-24.04-arm` runner; other CI jobs
-retain their own platforms. Setting `--platform` alone does not enable emulation
-on an AMD64 host.
+It uses the real Compose configuration in a uniquely named temporary project.
+Two separate initializer containers create and replace credentials on the same
+named volume, retaining Compose's `CAP_CHOWN`, root identity, read-only root
+filesystem, no-new-privileges and disabled network. A third container uses the
+service's UID and read-only credential mount: it reads the replacement and fails
+both writing and changing its mode. Initializer checks retain ownership and mode
+`0400`. Cleanup removes only that isolated project's volumes. No deployment is
+started or restarted.
+
+This requires Docker with ARM64 execution support: the digest-pinned local-profile
+base is ARM64, and the fixture explicitly requests `linux/arm64`. The
+`credential-init` CI job uses `ubuntu-24.04-arm`; other jobs retain their own
+platforms. Setting `--platform` alone does not enable emulation on AMD64. A
+source/configuration unit check is not a passing Docker capability check.
 
 ## Browser journeys
 

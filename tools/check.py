@@ -7,17 +7,20 @@ remain explicit owner-operated workflows, outside this regression command.
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Mapping, Sequence
+import ast
+import json
+import os
+import tempfile
+from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
 from pathlib import Path
-import ipaddress
 import runpy
-import socket
 import subprocess
 import sys
 from typing import Any
 import unittest
-from unittest.mock import patch
+
+from .test_network import block_network as block_network
 
 ROOT = Path(__file__).resolve().parents[1]
 OPERATOR_TESTS = (
@@ -119,14 +122,19 @@ EXCLUDED_TESTS = {
     "tests/gateway_integration/test_provider_worker_target.py": "Standalone frozen-worker discriminator invoked by Dockerfile.worker; not a unittest module.",
     "tests/gateway_integration/test_run10_held_timeout.py": "Explicit evidence audit requiring --repo, --runtime and --timeout-source from a retained run.",
 }
-FRONTEND_TESTS = (
-    "test_console_navigation.cjs",
-    "test_users_view.cjs",
-    "test_local_connectors_view.cjs",
-    "test_catalogue_view.cjs",
-    "test_activity_usage_view.cjs",
-    "test_crud_view.cjs",
-    "test_provider_index.cjs",
+
+
+def javascript_inventory(root: Path = ROOT) -> dict[str, Any]:
+    return dict(json.loads((root / "tests/javascript_inventory.json").read_text()))
+
+
+FRONTEND_TESTS = tuple(
+    Path(path).name
+    for path, entry in javascript_inventory().items()
+    if entry["runner"] == "console"
+)
+JAVASCRIPT_SCRIPTS = tuple(
+    entry["argv"] for entry in javascript_inventory().values() if entry["runner"] == "offline"
 )
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
@@ -159,10 +167,6 @@ TYPED_PATHS = (
 )
 
 
-def denied_network(*_args: object, **_kwargs: object) -> None:
-    raise AssertionError("network/socket operation in the offline regression suite")
-
-
 def test_inventory_errors(
     root: Path = ROOT,
     modules: Sequence[str] = MODULES + LOOPBACK_MODULES,
@@ -189,6 +193,7 @@ def test_inventory_errors(
         path for path in source_files if Path(path).match("test_*.py") and (root / path).is_file()
     }
     registered = set(scripts)
+    registrations: dict[str, list[str | None]] = {}
     errors = []
     for name in modules:
         parts = name.split(".")
@@ -197,7 +202,51 @@ def test_inventory_errors(
         if registered_path is None:
             errors.append("Missing registered test module: " + name)
         else:
-            registered.add(registered_path.as_posix())
+            key = registered_path.as_posix()
+            registered.add(key)
+            length = len(registered_path.with_suffix("").parts)
+            selector = ".".join(parts[length:]) or None
+            registrations.setdefault(key, []).append(selector)
+    for path, selectors in registrations.items():
+        if None in selectors:
+            continue
+        tree = ast.parse((root / path).read_text())
+        aliases = {"TestCase", "unittest.TestCase"}
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module == "unittest":
+                aliases.update(
+                    name.asname or name.name for name in node.names if name.name == "TestCase"
+                )
+            elif isinstance(node, ast.Import):
+                aliases.update(
+                    (name.asname or name.name) + ".TestCase"
+                    for name in node.names
+                    if name.name == "unittest"
+                )
+        classes: set[str] = set()
+        definitions = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+        while True:
+            found = {
+                node.name
+                for node in definitions
+                if any(
+                    isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and child.name.startswith("test_")
+                    for child in node.body
+                )
+                or any(ast.unparse(base) in aliases | classes for base in node.bases)
+            }
+            if found <= classes:
+                break
+            classes.update(found)
+        for selector in selectors:
+            if selector and "." in selector:
+                errors.append("Register the whole test class: " + path + ":" + selector)
+        selected = {selector.split(".")[0] for selector in selectors if selector}
+        for name in sorted(classes - selected):
+            errors.append("Unregistered test class: " + path + ":" + name)
+        for name in sorted(selected - classes):
+            errors.append("Missing registered test class: " + path + ":" + name)
     for path in sorted(discovered - registered - excluded.keys()):
         errors.append("Unclassified test file: " + path)
     for path, reason in excluded.items():
@@ -212,44 +261,48 @@ def test_inventory_errors(
     return errors
 
 
-def block_network(stack: ExitStack, *, loopback: bool = False) -> None:
-    def local(host: object) -> bool:
-        try:
-            name = host.decode("ascii") if isinstance(host, bytes) else host
-            return (
-                name == "localhost"
-                or isinstance(name, str)
-                and ipaddress.ip_address(name).is_loopback
-            )
-        except (ValueError, UnicodeError):
-            return False
-
-    def guarded(operation: Callable[..., Any]) -> Callable[..., Any]:
-        def call(connection: socket.socket, address: Any, *args: Any, **kwargs: Any) -> Any:
-            if connection.family != socket.AF_UNIX and (
-                not isinstance(address, tuple) or not local(address[0])
+def javascript_inventory_errors(root: Path = ROOT) -> list[str]:
+    source = subprocess.check_output(
+        [
+            "git",
+            "-C",
+            str(root),
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            "tests",
+        ],
+        text=True,
+    ).split("\0")
+    found = {
+        path
+        for path in source
+        if Path(path).suffix in {".js", ".cjs", ".mjs", ".ts", ".cts", ".mts"}
+        and (root / path).is_file()
+    }
+    inventory = javascript_inventory(root)
+    errors = [
+        "Unclassified JavaScript/TypeScript file: " + path
+        for path in sorted(found - inventory.keys())
+    ]
+    for path, entry in inventory.items():
+        if not (root / path).is_file():
+            errors.append("Missing JavaScript inventory file: " + path)
+        if entry.get("runner") not in {"console", "client", "offline", "target", "helper"}:
+            errors.append("Invalid JavaScript runner: " + path)
+        elif entry["runner"] in {"console", "client", "offline"}:
+            if (
+                not isinstance(entry.get("argv"), list)
+                or not entry["argv"]
+                or not all(type(arg) is str for arg in entry["argv"])
             ):
-                denied_network()
-            return operation(connection, address, *args, **kwargs)
-
-        return call
-
-    resolve = socket.getaddrinfo
-
-    def local_resolve(host: Any, *args: Any, **kwargs: Any) -> Any:
-        if not local(host):
-            denied_network()
-        addresses = resolve(host, *args, **kwargs)
-        if any(not local(address[4][0]) for address in addresses):
-            denied_network()
-        return addresses
-
-    for attribute in ("connect", "connect_ex", "bind"):
-        operation = guarded(getattr(socket.socket, attribute)) if loopback else denied_network
-        stack.enter_context(patch.object(socket.socket, attribute, operation))
-    stack.enter_context(
-        patch.object(socket, "getaddrinfo", local_resolve if loopback else denied_network)
-    )
+                errors.append("Missing JavaScript command: " + path)
+        elif not isinstance(entry.get("reason"), str) or not entry["reason"].strip():
+            errors.append("Missing JavaScript classification reason: " + path)
+    return errors
 
 
 def run_script(name: str) -> int:
@@ -257,6 +310,10 @@ def run_script(name: str) -> int:
         raise ValueError("unknown regression script")
     sys.argv = [name, "--source-root", str(ROOT)]
     with ExitStack() as stack:
+        if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
+            from .test_coverage import LineCoverage
+
+            stack.enter_context(LineCoverage(os.environ["EZLLMROUTER_TEST_COVERAGE"]))
         block_network(stack)
         try:
             runpy.run_path(str(ROOT / name), run_name="__main__")
@@ -268,19 +325,30 @@ def run_script(name: str) -> int:
 def run_module(name: str, *, loopback: bool) -> bool:
     # Per-module interpreters isolate environment changes and loaded fixture state.
     with ExitStack() as stack:
+        if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
+            from .test_coverage import LineCoverage
+
+            stack.enter_context(LineCoverage(os.environ["EZLLMROUTER_TEST_COVERAGE"]))
         block_network(stack, loopback=loopback)
         suite = unittest.defaultTestLoader.loadTestsFromName(name)
         result = unittest.TextTestRunner(verbosity=1).run(suite)
-        return result.wasSuccessful() and result.testsRun > 0
+        return result.wasSuccessful() and result.testsRun > len(result.skipped)
 
 
 def run(argv: list[str]) -> None:
     print("+ " + " ".join(argv), flush=True)
-    subprocess.run(argv, cwd=ROOT, check=True, timeout=180)
+    from .test_network import child_environment
+
+    subprocess.run(argv, cwd=ROOT, env=child_environment(), check=True, timeout=180)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--coverage",
+        action="store_true",
+        help="write Python line coverage under .artifacts/coverage",
+    )
     parser.add_argument("--tests-only", action="store_true", help="omit Ruff and mypy")
     parser.add_argument("--loopback", action="store_true", help="also run local HTTP fixtures")
     parser.add_argument("--http-only", action="store_true", help="run only local HTTP fixtures")
@@ -291,7 +359,13 @@ def main() -> int:
         return run_script(args.test_script)
     if args.test_module:
         return 0 if run_module(args.test_module, loopback=args.loopback) else 1
-    inventory_errors = test_inventory_errors()
+    coverage_directory = None
+    if args.coverage:
+        parent = ROOT / ".artifacts/coverage"
+        parent.mkdir(parents=True, exist_ok=True)
+        coverage_directory = tempfile.mkdtemp(prefix="python-", dir=parent)
+        os.environ["EZLLMROUTER_TEST_COVERAGE"] = coverage_directory
+    inventory_errors = test_inventory_errors() + javascript_inventory_errors()
     if inventory_errors:
         print("\n".join(inventory_errors), file=sys.stderr)
         return 1
@@ -329,15 +403,34 @@ def main() -> int:
                 command.append("--loopback")
             try:
                 run(command)
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
                 failures.append(name)
         if not args.http_only:
             for name in SCRIPT_TESTS:
-                run([sys.executable, "-B", "-m", "tools.check", "--test-script", name])
+                try:
+                    run([sys.executable, "-B", "-m", "tools.check", "--test-script", name])
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+                    failures.append(name)
             for name in FRONTEND_TESTS:
-                run(["node", "tests/operator_console/" + name])
+                try:
+                    run(["node", "tests/operator_console/" + name])
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+                    failures.append(name)
+            for command in JAVASCRIPT_SCRIPTS:
+                try:
+                    run(list(command))
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+                    failures.append(" ".join(command))
+        if coverage_directory is not None:
+            from .test_coverage import report
+
+            summary = report(coverage_directory)
+            print(
+                f"Python line coverage: {summary['percent']}% ({summary['executed']}/{summary['executable']}); {coverage_directory}/summary.json",
+                flush=True,
+            )
         if failures:
-            print("Failed modules: " + ", ".join(failures), file=sys.stderr)
+            print("Failed checks: " + ", ".join(failures), file=sys.stderr)
             return 1
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as error:
         print(f"Quality check failed: {type(error).__name__}", file=sys.stderr)

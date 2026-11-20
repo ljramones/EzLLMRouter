@@ -1,6 +1,8 @@
 """Run JavaScript runtime regressions against a fresh, locally packed consumer."""
 
 import argparse
+from contextlib import ExitStack
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -15,6 +17,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--http", action="store_true")
     args = parser.parse_args()
+    spec = importlib.util.spec_from_file_location("test_network", ROOT / "tools/test_network.py")
+    network = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(network)
+    with ExitStack() as stack:
+        network.block_network(stack, loopback=args.http)
+        run_checks(args)
+
+
+def run_checks(args):
     artifacts = ROOT / ".artifacts"
     artifacts.mkdir(exist_ok=True)
     env = {
@@ -86,22 +97,18 @@ def main():
                 shutil.copy2(ROOT / source, target / Path(source).name)
             shutil.copy2(vectors, target / "vectors.json")
             shutil.copy2(request, target / "request.json")
+        shutil.copy2(ROOT / "tests/foundation/js-consumer/require.cjs", consumer / "require.cjs")
+        inventory = json.loads((ROOT / "tests/javascript_inventory.json").read_text())
+        replacements = {
+            "repo": str(ROOT),
+            "consumer": str(consumer),
+            "installed": str(installed),
+            "request": str(request),
+        }
         commands = [
-            ["node", "--test", str(ROOT / "tests/client_languages/javascript_contracts.cjs")],
-            ["node", "--test", str(ROOT / "tests/client_languages/javascript_safety.cjs")],
-            ["node", str(ROOT / "tests/development_slice/test_client.cjs")],
-            ["node", str(ROOT / "tests/development_slice/test_retrieval_client.cjs")],
-            ["node", str(consumer / "tool/test_js_client.cjs")],
-            ["node", str(consumer / "actor/test_actor_logic.cjs")],
-            ["node", str(ROOT / "tests/gateway_integration/test_js_actor_recovery.cjs")],
-            [
-                "node",
-                str(ROOT / "tools/gateway/evidence/actor_output_regression.cjs"),
-                str(ROOT / "tools/gateway/evidence/js_text.cjs"),
-                str(installed / "index.cjs"),
-                str(request),
-            ],
-            ["node", str(ROOT / "tests/security/node_client_transport.cjs"), directory],
+            [argument.format_map(replacements) for argument in entry["argv"]]
+            for entry in inventory.values()
+            if entry["runner"] == "client"
         ]
         if args.http:
             commands = [
@@ -114,8 +121,14 @@ def main():
                     "js",
                 ]
             ]
+        failures = []
         for command in commands:
-            subprocess.run(command, env=env, cwd=ROOT, check=True, timeout=120)
+            try:
+                subprocess.run(command, env=env, cwd=ROOT, check=True, timeout=120)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+                failures.append(" ".join(command))
+        if failures:
+            raise SystemExit("Failed installed JavaScript checks: " + "; ".join(failures))
         print("Installed JavaScript client runtime checks passed.")
 
 

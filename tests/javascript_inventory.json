@@ -1,0 +1,242 @@
+{
+  "tests/client_languages/javascript_contracts.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "--test",
+      "{repo}/tests/client_languages/javascript_contracts.cjs"
+    ]
+  },
+  "tests/client_languages/javascript_http.cjs": {
+    "runner": "target",
+    "reason": "Native fetch loopback fixture, run by tests/client_languages/check_javascript.py --http."
+  },
+  "tests/client_languages/javascript_safety.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "--test",
+      "{repo}/tests/client_languages/javascript_safety.cjs"
+    ]
+  },
+  "tests/client_languages/typescript/consumer.cts": {
+    "runner": "target",
+    "reason": "Consumer compiled from a fresh npm package by tests/client_languages/check_typescript.sh using pinned TypeScript."
+  },
+  "tests/client_languages/typescript/consumer.mts": {
+    "runner": "target",
+    "reason": "Consumer compiled from a fresh npm package by tests/client_languages/check_typescript.sh using pinned TypeScript."
+  },
+  "tests/client_parity/integration_js.cjs": {
+    "runner": "helper",
+    "reason": "Actor/transport fixture consumed by the registered parity, installed-client or explicit tool-cycle harness."
+  },
+  "tests/client_parity/test_actor_logic.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{consumer}/actor/test_actor_logic.cjs"
+    ]
+  },
+  "tests/development_slice/driver.cjs": {
+    "runner": "helper",
+    "reason": "Actor/transport fixture consumed by the registered parity, installed-client or explicit tool-cycle harness."
+  },
+  "tests/development_slice/run_dev12_installed_sdk.cjs": {
+    "runner": "target",
+    "reason": "Installed-SDK proof requires an explicit private tarball, request fixture and network-disabled disposable runtime; never auto-dispatch provider work."
+  },
+  "tests/development_slice/test_client.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{repo}/tests/development_slice/test_client.cjs"
+    ]
+  },
+  "tests/development_slice/test_retrieval_client.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{repo}/tests/development_slice/test_retrieval_client.cjs"
+    ]
+  },
+  "tests/fixtures/contracts/dev12-successor-01/conformance/check.cjs": {
+    "runner": "offline",
+    "argv": [
+      "node",
+      "tests/fixtures/contracts/dev12-successor-01/conformance/check.cjs"
+    ]
+  },
+  "tests/fixtures/contracts/dev12-successor-01/conformance/reference.cjs": {
+    "runner": "helper",
+    "reason": "Pure reference imported by the registered conformance/check.cjs runner."
+  },
+  "tests/fixtures/contracts/integration-readiness-v2/build_schema.cjs": {
+    "runner": "helper",
+    "reason": "Contract-schema generator; must not rewrite adopted resources during regression checks."
+  },
+  "tests/foundation/js-consumer/require.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{consumer}/require.cjs"
+    ]
+  },
+  "tests/gateway_integration/test_js_actor_recovery.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{repo}/tests/gateway_integration/test_js_actor_recovery.cjs"
+    ]
+  },
+  "tests/integration_readiness/browser_smoke.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/correction02_js_actor.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/correction03_js_actor.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/correction_browser_smoke.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/correction_js_actor.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/js_actor.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/integration_readiness/speech_v3_js_actor.cjs": {
+    "runner": "target",
+    "reason": "Owner-operated accounting/browser evidence actor requiring its explicit local fixture or retained-run inputs; not an offline regression entry point."
+  },
+  "tests/operator_console/test_activity_usage_view.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_activity_usage_view.cjs"
+    ]
+  },
+  "tests/operator_console/test_catalogue_view.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_catalogue_view.cjs"
+    ]
+  },
+  "tests/operator_console/test_console_navigation.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_console_navigation.cjs"
+    ]
+  },
+  "tests/operator_console/test_crud_view.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_crud_view.cjs"
+    ]
+  },
+  "tests/operator_console/test_local_connectors_view.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_local_connectors_view.cjs"
+    ]
+  },
+  "tests/operator_console/test_provider_index.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_provider_index.cjs"
+    ]
+  },
+  "tests/operator_console/test_users_view.cjs": {
+    "runner": "console",
+    "argv": [
+      "node",
+      "tests/operator_console/test_users_view.cjs"
+    ]
+  },
+  "tests/playwright/fixtures.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/playwright.config.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/accounting-connections.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/auth.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/catalogue.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/connectors.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/navigation.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/permissions.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/providers.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/reports.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/users.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/security/node_client_transport.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{repo}/tests/security/node_client_transport.cjs",
+      "{consumer}"
+    ]
+  },
+  "tests/tool_cycle/js_actor.cjs": {
+    "runner": "helper",
+    "reason": "Actor/transport fixture consumed by the registered parity, installed-client or explicit tool-cycle harness."
+  },
+  "tests/tool_cycle/test_js_client.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{consumer}/tool/test_js_client.cjs"
+    ]
+  },
+  "tools/gateway/evidence/actor_output_regression.cjs": {
+    "runner": "client",
+    "argv": [
+      "node",
+      "{repo}/tools/gateway/evidence/actor_output_regression.cjs",
+      "{repo}/tools/gateway/evidence/js_text.cjs",
+      "{installed}/index.cjs",
+      "{request}"
+    ]
+  }
+}

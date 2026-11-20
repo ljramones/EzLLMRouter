@@ -62,12 +62,21 @@ class WorkerReadyFixture:
         self.threads.append(thread)
 
     def run_probe(self, deadline="0.4", allow_activity=False):
+        entry = ["-m", "ezllmrouter_server.gateway.worker_ready"]
+        if isinstance(self, WorkerReadyOfflineTests):
+            # Exercise the child's real retry/deadline path without opening a
+            # named IPC endpoint outside the offline socket-pair fixtures.
+            entry = [
+                "-c",
+                "from unittest.mock import patch; from ezllmrouter_server.gateway import worker_ready; "
+                "guard=patch.object(worker_ready.socket.socket,'connect',side_effect=FileNotFoundError('synthetic absent endpoint')); "
+                "guard.start(); worker_ready.main()",
+            ]
         result = subprocess.run(
             [
                 sys.executable,
                 "-B",
-                "-m",
-                "ezllmrouter_server.gateway.worker_ready",
+                *entry,
                 "--socket",
                 str(self.path),
                 "--deadline",

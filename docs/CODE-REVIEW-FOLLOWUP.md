@@ -367,7 +367,7 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 873 unittest cases, seven console scripts and 293 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 889 unittest cases, seven console scripts and 355 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
 | 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
@@ -376,7 +376,7 @@ also passes. A pending or unavailable check is never a passing result.
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
 | 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | In progress | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
+| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage measures 86.02% (4.4.4). |
 | 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
 
 ### Implementation pass: items 2–5
@@ -433,7 +433,7 @@ The authorized coding batch is now implemented:
    failures, then cover Python schema/status/retry handling, credential/transport
    exposure, private CAs and the remaining cross-language validation differences.
 
-Then address item 6's crash/recovery details and item 10's test-runner gaps.
+Items 6 and 10 are implemented in the subsequent pass below.
 Item 1 remains a release gate for target verification; item 9 stays deferred as
 requested. Keep item 11's broad structural work after the correctness fixes.
 
@@ -505,14 +505,15 @@ Validation:
 
 No deployment was restarted, no provider inference was issued, and frozen worker
 inputs/migrations were unchanged. Item 1 remains open for target qualification;
-item 9 remains deferred. The recommended next coding work is item 6 (persistence
-recovery), followed by item 10 (test-runner gaps); item 11 remains structural work.
+item 9 remains deferred. Items 6 (persistence recovery) and 10 (test-runner gaps) were selected for the
+subsequent pass below; item 11 remains structural work.
 
-### Active pass: items 6 and 10
+### Implementation pass: items 6 and 10
 
-The prior commits are pushed through `c2712db`. Persistence recovery and test-runner
-work are authorized together, with separate commits, focused regressions and final
-validation evidence to follow. Deployment/toolchain checks remain distinct gates.
+Persistence recovery and test-runner changes follow the pushed `c2712db` baseline
+in separate commits. Item 6 is delivered in `1ec40a6`; the item 10 commit records
+the runner changes and combined evidence below. Deployment/toolchain checks
+remain distinct gates.
 
 
 ### Implementation pass: item 6
@@ -538,3 +539,55 @@ states/counters and readiness requires both execution and sender-check pools rea
 The 62 focused persistence/database/resource/observation tests pass. Final combined
 suite, package and coverage evidence is recorded with item 10 below. Frozen worker
 inputs, migrations, deployment state and provider execution are unchanged.
+
+
+### Implementation pass: item 10 and combined validation
+
+The runner audits every local class when a file is registered by class, including
+inherited classes and TestCase aliases, and rejects method-only registrations.
+The JavaScript/TypeScript inventory classifies 45 sources with executable commands
+or explicit target/helper reasons. Both runners consume it. The previously
+orphaned CommonJS package-import check now runs against a fresh installed package;
+installed-SDK evidence actors retain explicit target status.
+
+Python socket/DNS/UDP guards now propagate through Python children/grandchildren,
+including isolated `-I -S` consumers and replaced environments. Node children use
+a socket/DNS/UDP/fetch preload; native helper commands are restricted to audited
+local operations. The existing shell capture fixture explicitly wraps its Python
+consumer. These are accidental-network guards, not an OS sandbox for hostile code
+or native extensions. Empty/all-skipped modules fail, and module, script, console
+and installed-client runtime failures are collected before exit.
+
+Credential qualification now reads Compose's actual isolation and credential
+mounts. Two separate initializer containers create/replace credentials on one
+fresh named volume, then a service-UID container verifies persisted replacement
+and read-only access. Configuration regressions reject tmpfs, extra capabilities,
+external volumes and live-profile volume names. This source/configuration work
+passes; the actual Linux ARM64 Docker run remains pending under item 1.
+
+Combined verification:
+
+- **889 unittest cases** across **104 module registrations**, two script suites,
+  seven console scripts and the **522-check** JavaScript conformance script pass.
+- Ruff passes; **423 Python files** satisfy formatting and strict mypy passes on
+  **51 source files**. The isolated-child guard, class/JS inventories, failure
+  collection and coverage recorder have executable regression cases.
+- Fresh server/client wheels match **119 namespace files** byte-for-byte and pass
+  **355 installed-wheel tests**, including the new recovery regressions. Server
+  wheel SHA-256: `997a35d09fa06704706a8f705f773947c28bb3d6dbffc55677f680d73331a437`.
+- Guarded installed JavaScript checks pass **144 shared cases**, **52 safety
+  cases**, package import, client/actor/transport checks and nine output cases.
+- `tools.check --coverage` measures **86.02%** Python executable-line coverage
+  (**16,994 / 19,756** lines) for service and Python client source. Fresh per-run
+  JSON retains file hashes and missing lines, including wholly unexecuted files.
+  This bytecode line-table measurement includes worker threads and guarded Python
+  children; it makes no branch/native/JavaScript coverage claim or threshold.
+- Evidence is retained under ignored `.artifacts/code-review/items-6-10/` and
+  `.artifacts/coverage/python-uacjjhuz/`.
+
+Items 6 and 10 are **Implemented**. Item 1 still requires actual Docker, real
+HTTP/TLS, browsers, named-volume credential permissions and frozen-worker checks.
+Item 8's Rust/.NET/TypeScript target checks remain pending. Item 9 stays deferred
+at the owner's request, and item 11 remains the broad structural cleanup. No
+profile restart, provider inference, frozen-input update or migration change was
+performed in this pass.
