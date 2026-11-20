@@ -354,25 +354,38 @@ frozen worker requirements, wheel inventory and migration bytes are unchanged.
 
 ## Remaining review work
 
-The review is not fully resolved. Continue in this order:
+This is the maintained checklist from the conversation, with stable numbers.
+Update the status and evidence as each batch proceeds. Last updated: 2026-11-20.
+The six release-fix groups above are implemented at `ee6c444`; their outstanding
+target checks are tracked in item 1.
 
-1. **Target qualification:** build and exercise the changed service and worker
-   images with the reviewed inputs; rerun browser and actual HTTP/TLS fixtures,
-   credential initialization, Rust and the frozen worker in their target environments.
-2. **Blocking work:** move large reports, sender database work and password
-   verification off shared locks/event loops (report 3: 4.1.3, 4.2.2, 4.3.3).
-3. **Logging:** treat routine wire rejections and idle closes appropriately and
-   derive route labels from the route table (4.3.4–4.3.5).
-4. **Dependency and CI coverage:** declare server gateway extras, exercise the
-   shipped lock in CI and harden remaining bootstrap/action/toolchain inputs
-   (4.4.1–4.4.3). Frozen checks now have runners; they still need target execution.
-5. **Clients:** distinguish local JS serialization failures from uncertain sends,
-   add a JS total deadline, and address the remaining parity/error-mapping details
-   (4.5.1–4.5.3).
-6. **Typing and the testing roadmap:** extend the current 51-file strict scope
-   and measure subsystem coverage. Complete process-termination recovery,
-   backup/restore, platform, generated-input and sustained performance tests.
-   Existing synthetic benchmarks do not establish production capacity.
+Statuses: **Open** means work has not started; **In progress** means active work;
+**Implemented** means source changes and local checks pass, with any remaining
+target checks stated explicitly; **Complete** means the required verification
+also passes. A pending or unavailable check is never a passing result.
+
+| # | Workstream | Status | Remaining scope / evidence |
+| --- | --- | --- | --- |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 846 unittest cases, seven console scripts and 245 packaged-wheel tests at `ee6c444`. |
+| 2 | Blocking work and performance | In progress | Paginate usage attempts and filter/select latest revisions in SQL; move decoding outside shared locks, sender database work off its event loop, and password hashing outside shared locks (4.1.3, 4.2.2, 4.3.3). |
+| 3 | Remaining authentication/HTTP hardening | In progress | Login backoff and unknown-user handling; password-change throttling; non-ASCII CSRF handling; asset-read and invalid-body responses; CSP/HTTPS headers and CSV export safety (4.3.1, 4.3.5). |
+| 4 | Gateway correctness | In progress | Definite classification of pre-send failures; trusted header/receipt field restrictions; campaign authority invalidation; separation of worker/service socket ownership (4.2.3). |
+| 5 | Worker lifecycle and diagnostics | In progress | Graceful shutdown, bounded handler joins, diagnostic rotation and observable diagnostic drops (4.2.3). |
+| 6 | Persistence recovery | Open | Orphaned vault versions, preservation of savepoint errors, coherent admission snapshots, probe-idempotency window and failed-executor recovery (4.1.4). |
+| 7 | Logging | Open | Routine wire rejections and idle connections; route labels derived from routing; distinct Coordinator failure events (4.3.4–4.3.5, 5.1). |
+| 8 | Client fixes | Open | JS total deadline and local serialization errors; Python regex/status/retry/CA handling; exposed credentials/transports and remaining cross-language validation differences (4.5.1–4.5.3). |
+| 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
+| 10 | Test-runner gaps | Open | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
+| 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
+
+### Active pass: items 2–5
+
+The user authorized these four workstreams together. Preserve revocation,
+first-byte ownership, financial uncertainty and existing audit/history semantics
+while removing blocking work. Keep commits reviewable by concern, record focused
+regressions and the full applicable checks, and update the table before handoff.
+Investigation is underway; no code changes or passing results are claimed yet
+for this pass.
 
 Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts
