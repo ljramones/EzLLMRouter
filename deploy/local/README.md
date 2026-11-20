@@ -56,6 +56,24 @@ secrets, connector keyring directory and provider vault. Follow
 [encryption and recovery](../../docs/ENCRYPTION.md) for the full file set and
 maintenance commands. Keep credentials and generated artifacts out of Git.
 
+## Provisioning an identity credential
+
+`python deploy/local/provision.py PRINCIPAL_ID EXPECTED_REVISION` reserves an
+owner-only `.state/provisioned/PRINCIPAL_ID.credential` file and writes a private
+`PRINCIPAL_ID.provision.json` receipt containing the operation ID and expected
+revision before issuing the management request. It never overwrites either file
+or automatically repeats the issuance.
+
+The credential is flushed and synced before success output. Output failure,
+Ctrl-C or connection-close failure does not delete a saved credential. If the
+reply is lost or persistence fails after possible issuance, the command retains
+the reservation and operation receipt. An empty or partial credential file is
+not a usable credential: inspect the principal's current revision and resolve
+the uncertain issuance through an explicit credential rotation. Keep the files
+until that review is complete. Failures before issuance remove only files
+created by the current invocation. The receipt contains no credential and does
+not establish whether the server committed the operation.
+
 Local tests and package builds do not establish Docker deployment or production
 acceptance. Use the [development checks](../../docs/DEVELOPMENT.md) and
 [security policy](../../docs/SECURITY.md) when validating a new profile.

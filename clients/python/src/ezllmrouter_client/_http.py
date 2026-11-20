@@ -9,11 +9,12 @@ from typing import Any
 
 import httpx
 
+from ._deadline import DEFAULT_TOTAL_TIMEOUT, deadline_scope, remaining
+
 DEFAULT_TIMEOUT = httpx.Timeout(connect=10, read=35, write=30, pool=10)
 WIRE_RESPONSE_LIMIT = 1024 * 1024
 SUCCESSOR_RESPONSE_LIMIT = 16 * 1024 * 1024
 INTEGRATION_RESPONSE_LIMIT = 16 * 1024 * 1024
-READ_CHUNK_BYTES = 64 * 1024
 
 
 class ResponseReadError(ValueError):
@@ -60,11 +61,16 @@ def bounded_request(
     headers: Mapping[str, str],
     limit: int,
     content: bytes | None = None,
+    total_timeout: float | None = DEFAULT_TOTAL_TIMEOUT,
 ) -> BufferedResponse:
     headers = {**headers, "Accept-Encoding": "identity"}
-    with _response(transport, method, url, headers, content) as response:
+    with (
+        deadline_scope(total_timeout),
+        _response(transport, method, url, headers, content) as response,
+    ):
         status = response.status_code
         try:
+            remaining()
             received_headers = httpx.Headers(response.headers)
             if received_headers.get("Content-Encoding", "identity").strip().lower() != "identity":
                 raise ValueError("encoded responses are not supported")
@@ -75,14 +81,18 @@ def bounded_request(
                 raise ValueError("invalid or excessive content length")
             raw = getattr(response, "iter_raw", None)
             if callable(raw) and not getattr(response, "is_stream_consumed", False):
-                chunks = raw(chunk_size=min(READ_CHUNK_BYTES, limit + 1))
+                # Observe each transport chunk: coalescing into 64 KiB can hide
+                # a slow stream from the deadline for an arbitrarily long time.
+                chunks = raw()
             else:
                 chunks = (response.content,)
             body = bytearray()
             for chunk in chunks:
+                remaining()
                 if not isinstance(chunk, bytes) or len(chunk) > limit - len(body):
                     raise ValueError("response exceeds its byte limit")
                 body.extend(chunk)
+            remaining()
             if declared is not None and len(body) != int(declared):
                 raise ValueError("response length mismatch")
             return BufferedResponse(status, received_headers, bytes(body))

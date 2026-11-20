@@ -12,6 +12,7 @@ from urllib.parse import quote, urlsplit
 from . import _validation as v
 from . import _successor_validation as v03
 from ._http import DEFAULT_TIMEOUT, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT, bounded_request
+from ._deadline import DEFAULT_TOTAL_TIMEOUT, DeadlineHTTPTransport, total_timeout as _total_timeout
 from ._json import strict_reply as _strict_reply
 
 __version__ = "0.3.0"
@@ -92,11 +93,13 @@ class EzLLMRouterClient:
 
     ``base_url`` is the EzLLMRouter service URL, ``token`` its bearer credential.
     Default connect/read/write/pool timeouts are 10/35/30/10 seconds, allowing
-    a 30-second server response wait. Callers may override them. Redirects,
+    a 30-second server response wait. The total HTTP budget defaults to 60
+    seconds; ``total_timeout=`` overrides it independently of phase timeouts. Redirects,
     environment proxy inheritance and automatic request retries are disabled.
     """
 
-    def __init__(self, base_url: str, token: str, *, transport=None, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, base_url: str, token: str, *, transport=None, timeout=DEFAULT_TIMEOUT,
+                 total_timeout=DEFAULT_TOTAL_TIMEOUT):
         if type(base_url) is not str or type(token) is not str or not token:
             raise TypeError("base_url and token are required")
         parsed = urlsplit(base_url)
@@ -105,9 +108,11 @@ class EzLLMRouterClient:
             raise TypeError("base_url must be an HTTP(S) service URL")
         self.base_url = base_url.rstrip("/")
         self.token = token
+        self._total_timeout = _total_timeout(total_timeout)
         if transport is None:
             import httpx
-            self._transport = httpx.Client(timeout=timeout, follow_redirects=False, trust_env=False)
+            self._transport = httpx.Client(timeout=timeout, transport=DeadlineHTTPTransport(),
+                                           follow_redirects=False, trust_env=False)
         else:
             if not callable(getattr(transport, "request", None)):
                 raise TypeError("transport must provide request")
@@ -146,7 +151,7 @@ class EzLLMRouterClient:
             headers["EzLLMRouter-Attribution-Run"] = attribution_run_id
         try:
             response = bounded_request(self._transport, method, self.base_url + path,
-                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT)
+                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT, total_timeout=self._total_timeout)
         except Exception as cause:
             raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(cause, "status_code", None),
                                    "query_first", selector=original) from cause
@@ -231,7 +236,7 @@ class EzLLMRouterClient:
             headers["Content-Type"] = "application/json"
         try:
             response = bounded_request(self._transport, method, self.base_url + path,
-                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT)
+                headers=headers, content=body, limit=WIRE_RESPONSE_LIMIT, total_timeout=self._total_timeout)
             value = _strict_reply(response.content)
         except Exception as exc:
             raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None),
@@ -346,7 +351,7 @@ class EzLLMRouterClient:
             headers["EzLLMRouter-Wait-Ms"] = str(wait_ms)
         try:
             response = bounded_request(self._transport, method, self.base_url + path,
-                headers=headers, content=body, limit=SUCCESSOR_RESPONSE_LIMIT)
+                headers=headers, content=body, limit=SUCCESSOR_RESPONSE_LIMIT, total_timeout=self._total_timeout)
         except Exception as cause:
             raise EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", getattr(cause, "status_code", None), "query_first",
                                selector=selector) from cause

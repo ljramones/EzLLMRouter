@@ -52,11 +52,15 @@ name = "cognitivedynamics-ezllmrouter-client"
 version = "0.3.0"
 source = { editable = "clients/python" }
 dependencies = [
+    { name = "httpcore" },
     { name = "httpx" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "httpx", specifier = "==0.28.1" }]
+requires-dist = [
+    { name = "httpcore", specifier = "==1.0.9" },
+    { name = "httpx", specifier = "==0.28.1" },
+]
 
 [[package]]
 name = "cognitivedynamics-ezllmrouter-server"

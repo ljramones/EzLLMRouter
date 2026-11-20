@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote, urlsplit
 
 from ._http import DEFAULT_TIMEOUT, INTEGRATION_RESPONSE_LIMIT, bounded_request
+from ._deadline import DEFAULT_TOTAL_TIMEOUT, DeadlineHTTPTransport, total_timeout as _total_timeout
 from ._json import strict_reply
 
 SCHEMAS = {version: json.loads((Path(__file__).parent / filename).read_text())["$defs"]
@@ -145,7 +146,8 @@ def _receipt_valid(value, dataset_id, event_id, kind=None, digest=None):
 
 
 class IntegrationClient:
-    def __init__(self, base_url, token, *, transport=None, timeout=DEFAULT_TIMEOUT, version="1"):
+    def __init__(self, base_url, token, *, transport=None, timeout=DEFAULT_TIMEOUT, version="1",
+                 total_timeout=DEFAULT_TOTAL_TIMEOUT):
         if type(base_url) is not str or type(token) is not str:
             raise TypeError("invalid integration client configuration")
         parsed = urlsplit(base_url)
@@ -154,10 +156,12 @@ class IntegrationClient:
                 parsed.username or parsed.password or parsed.query or parsed.fragment or version not in SCHEMAS):
             raise TypeError("invalid integration client configuration")
         self.base_url, self.token = base_url.rstrip("/"), token
+        self._total_timeout = _total_timeout(total_timeout)
         self.version, self.schema, self.base_path = version, SCHEMAS[version], "/integration/v" + version
         if transport is None:
             import httpx
-            self.transport = httpx.Client(timeout=timeout, follow_redirects=False, trust_env=False)
+            self.transport = httpx.Client(timeout=timeout, transport=DeadlineHTTPTransport(),
+                                          follow_redirects=False, trust_env=False)
         else:
             if not callable(getattr(transport, "request", None)):
                 raise TypeError("transport must provide request")
@@ -190,7 +194,7 @@ class IntegrationClient:
             data = None
         try:
             response = bounded_request(self.transport, method, self.base_url + path,
-                headers=headers, content=data, limit=INTEGRATION_RESPONSE_LIMIT)
+                headers=headers, content=data, limit=INTEGRATION_RESPONSE_LIMIT, total_timeout=self._total_timeout)
         except Exception as exc:
             raise IntegrationClientError("TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None), "query_first") from exc
         try:

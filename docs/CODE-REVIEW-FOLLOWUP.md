@@ -26,6 +26,9 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.3.4: JavaScript client drift | All JavaScript protocols use a shared streamed byte reader and strict decoder: 1 MiB for wire 0.2/attribution, 16 MiB for wire 0.3/accounting. Results match submitted profiles instead of a synthetic configuration list. Error handles are validated against the original selector and copied; foreign/malformed handles are discarded. Installed-package checks cover all 125 shared contract cases and 35 additional transport/recovery/result cases, including exact byte-cap boundaries, an embedding above 64 KiB and newly registered profiles. |
 | 5.1: Credential gate held during provider discovery | Connect, refresh and replacement release the gate for network discovery, then recheck dataset and captured binding revision before publishing. Tests hold discovery while credential release, key rotation, disable and permission changes complete. Overlapping replacements reserve distinct versions, reject stale results and clean up unused versions. |
 | 5.1: Session lock held across database work | Authentication snapshots sessions under a short dictionary lock, reads account state under the database gate, then verifies session identity and expiry before publishing. Login rechecks account/auth version after password verification. Database operations, wire-token creation/revocation and response writes run outside the session lock. Thread regressions cover logout, expiry, password change/reset, permission changes and replacement races. Expired/invalid sessions and rejected logins discard their associated wire credentials. |
+| 4.3.5: Python client has no total response deadline | Both clients default to a configurable 60-second HTTP budget. The owned HTTPX transport clamps pool/connect/TLS/write/read operations to the remaining monotonic budget through public HTTPcore interfaces, including incomplete headers and slow bodies. Uncoalesced response chunks also bound cooperative injected streams. Socket-pair tests exercise real blocked reads without listeners; deterministic tests cover all four protocol paths, connection reuse, independent concurrent budgets and query-first errors without replay. OS DNS can overrun, but late connections are closed before sending; custom transports own their blocking I/O deadlines. |
+| 4.3.5: Provisioning deletes an issued credential after interruption | Reserve credential custody and sync an operation receipt before issuance. Preserve both after possible issuance, including Ctrl-C, broken output, failed fsync, malformed/lost replies and connection-close failure. Existing files block another invocation. Only failures before issuance remove unused files created by that invocation. An uncertain reply can still leave an empty/partial credential, requiring revision inspection and explicit rotation. |
+| 4.3.2: Imported types erased by mypy skip | Use `follow_imports="silent"` and include the new deadline transport in the strict eight-file scope. Broader lint rules, formatting, test linting and further module coverage remain open. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -33,7 +36,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 582 unittest cases plus
+The expanded offline Python/component runner passes: 606 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -71,6 +74,19 @@ sockaddrs, SNI, address rejection, invalid trust material, connection/handshake/
 failures and declared/streamed response limits. Four selected regressions also
 reject the pre-fix implementations from `ed48930`. Actual IPv6/TLS networking and
 the browser suite have not been rerun for this batch.
+
+The deadline/provisioning batch adds 24 offline tests: 14 deadline tests and ten
+provisioning custody tests. The deadline tests combine the actual HTTPX/HTTPcore
+HTTP/1.1 parser with a controlled backend and exercise real blocked header/body
+reads through socket pairs. They do not qualify real TCP/TLS or DNS behavior.
+HTTPcore 1.0.9 is now an explicit client dependency because its public transport
+API is used directly; the selected packages, versions, hashes and frozen gateway
+inputs are unchanged. The offline lock check passes.
+
+The built Python wheel passes the deadline tests and all 125 shared contract
+cases using isolated package imports. Separate baseline probes confirm the old
+reader accepts a stream beyond the new default budget and the old provisioning
+command deletes the saved credential after broken output.
 
 The local deployment evidence driver now observes the durable guard receipt
 and held receiver request before revocation. It no longer reads private pool

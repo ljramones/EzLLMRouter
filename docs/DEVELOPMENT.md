@@ -16,6 +16,11 @@ listener binds; local IPC pairs support framing checks. The second check runs
 HTTP and TLS fixtures against localhost and requires permission to bind sockets.
 These commands use temporary stores and controlled fixtures, with no model calls.
 
+The strict mypy scope is an explicit eight-file list, including the Python
+deadline transport. Imports use `follow_imports="silent"` so dependency types
+remain available while errors in modules outside that list remain outside the
+blocking scope. This is an incremental check, not whole-project type coverage.
+
 `tools.check` inventories Git-tracked and non-ignored `test_*.py` files under
 `tests/` and `deploy/local/` before running. Every file must have an offline,
 loopback or standalone-script registration, or an explicit reason in

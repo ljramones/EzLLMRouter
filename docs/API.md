@@ -94,6 +94,12 @@ follow redirects or replay an operation automatically. The Java guide describes
 the JDK's connection and idempotent transport retry behavior. See the client guides for
 supported execution profiles and response-recovery methods.
 
+Both Python clients accept `total_timeout=` in seconds, defaulting to a 60-second
+budget for each HTTP exchange. It is independent of the connect/read/write/pool
+phase limits; deadline failures preserve query-first recovery and do not replay
+the request. See the [Python guide](../clients/python/README.md) for disabling the
+budget explicitly and the OS DNS/custom-transport limits.
+
 Free text in model results and tool arguments preserves escaped newlines, tabs
 and other valid Unicode content. NUL and lone surrogate code points are rejected.
 Identifiers, timestamps and fields with explicit text restrictions still use

@@ -56,8 +56,19 @@ with EzLLMRouterClient(base_url="http://service:8765", token="local-token") as c
 The default HTTPX transport disables redirects, proxy inheritance and retries.
 Default connect/read/write/pool timeouts are 10/35/30/10 seconds, allowing the
 server's maximum 30-second response wait. `timeout=` can override these HTTPX
-settings; explicitly passing `None` disables them. Call `close()` or use a context
-manager. `get_status` and `get_capabilities` are aliases; `get_status` also accepts
+settings; explicitly passing `None` disables those phase limits. Each HTTP exchange
+also has a **60-second total budget**, including pool wait, connection, TLS,
+request writes, response headers and body. Set `total_timeout=15` on either client
+to choose another positive number of seconds, or `total_timeout=None` to disable
+the total budget explicitly. `timeout=None` alone retains the total budget.
+Slow response bytes cannot keep restarting it. Deadline failures retain the
+existing query-first recovery behavior and never replay a request.
+
+The default transport enforces the remaining budget on network operations through
+HTTPcore 1.0.9, the already locked HTTPX dependency. Synchronous OS DNS resolution
+and address fallback can overrun their budget; a connection returned after expiry
+is closed before a request is sent. Call `close()` or use a context manager.
+`get_status` and `get_capabilities` are aliases; `get_status` also accepts
 `contract_version="0.3"`.
 
 HTTPX responses are streamed into a bounded buffer with `Accept-Encoding:
@@ -69,7 +80,9 @@ server configuration references without a client-side fixture allowlist.
 
 For tests, `transport=` accepts an object with `request` and optional `close`
 methods. A transport providing the HTTPX `stream` interface uses bounded reads;
-a request-only transport is responsible for its own buffering. Responses close
+a request-only transport is responsible for its own buffering. Injected transports
+also own their blocking I/O deadlines; the client checks elapsed time whenever
+they return a response or chunk. Responses close
 on success, malformed data, size rejection and interrupted reads.
 
 A lost or unparseable response raises `EzLLMRouterError` with

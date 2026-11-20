@@ -77,6 +77,8 @@ MODULES = (
     "tests.unit.test_database_concurrency",
     "tests.unit.test_operator_sessions",
     "tests.unit.test_provider_transport",
+    "tests.unit.test_client_deadlines",
+    "tests.unit.test_provision_recovery",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
@@ -119,6 +121,7 @@ TYPED_FILES = (
     "server/src/ezllmrouter_server/schema.py",
     "tools/check.py",
     "clients/python/src/ezllmrouter_client/_http.py",
+    "clients/python/src/ezllmrouter_client/_deadline.py",
     "clients/python/src/ezllmrouter_client/_json.py",
 )
 

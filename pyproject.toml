@@ -32,4 +32,4 @@ select = ["E9", "F821", "F822", "F823"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-follow_imports = "skip"
+follow_imports = "silent"
