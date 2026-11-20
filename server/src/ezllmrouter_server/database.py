@@ -71,14 +71,38 @@ class Database:
         self._connection = connection
         self._gate = gate
         self._transaction = transaction
+        self._read_depth = 0
 
     @contextmanager
     def read(self) -> Iterator[Database]:
         with self._gate:
-            yield self
+            outer = self._read_depth == 0
+            owns_snapshot = outer and not self._connection.in_transaction
+            was_read_only = False
+            if outer:
+                was_read_only = bool(self._connection.execute("PRAGMA query_only").fetchone()[0])
+                self._connection.execute("PRAGMA query_only=ON")
+            self._read_depth += 1
+            try:
+                if owns_snapshot:
+                    self._connection.execute("BEGIN")
+                yield self
+                if owns_snapshot:
+                    self._connection.execute("COMMIT")
+            finally:
+                if owns_snapshot and self._connection.in_transaction:
+                    self._connection.execute("ROLLBACK")
+                self._read_depth -= 1
+                if outer:
+                    self._connection.execute(
+                        "PRAGMA query_only=" + ("ON" if was_read_only else "OFF")
+                    )
 
     def transaction(self, action: Callable[[], T]) -> T:
-        return self._transaction(action)
+        with self._gate:
+            if self._read_depth:
+                raise RuntimeError("cannot start a write transaction inside a read scope")
+            return self._transaction(action)
 
     def execute(self, query: Query, parameters: Parameters = ()) -> Result:
         if not isinstance(query, Query):

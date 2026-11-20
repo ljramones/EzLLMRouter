@@ -18,13 +18,13 @@ These commands use temporary stores and controlled fixtures, with no model calls
 
 Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules across `server/`,
 `clients/`, `deploy/`, `worker/`, `tools/` and `tests/`. Formatting is enforced
-across those same trees, currently 406 Python files. Local runtime state under
+across those same trees, currently 410 Python files. Local runtime state under
 `deploy/local/.state/` is explicitly excluded, including when passed directly to
 Ruff. Existing dependency/build exclusions also apply. No new blanket rule
 ignores hide the adopted lint findings.
 
-The strict mypy scope covers 26 modules: the eight previously checked modules,
-all 17 SQL repository modules and provider probes. The repository directory is
+The strict mypy scope covers 27 modules: the eight previously checked modules,
+all 18 SQL repository modules and provider probes. The repository directory is
 checked as a whole, so new repository modules are included automatically.
 Imports use `follow_imports="silent"` so dependency types remain available while
 errors in modules outside the selected scope remain outside the blocking check.

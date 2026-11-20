@@ -213,7 +213,7 @@ class ObservationMigrationTests(unittest.TestCase):
         for _ in range(2):
             store = SQLiteStore(self.path)
             try:
-                self.assertEqual(schema.validate(store.db), 2)
+                self.assertEqual(schema.validate(store.db), schema.VERSION)
                 self.assertEqual(
                     store.db.execute(
                         "SELECT sha256 FROM schema_revisions WHERE version=1"

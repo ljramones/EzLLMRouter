@@ -458,16 +458,16 @@ class AttributionLedger:
             raise ContractError("POLICY_DENIED", 403)
         if step:
             with self.store.database.read():
-                rows = self.store.database.execute(
-                    _queries.APPEND_OUTCOME_SELECT_SUBMISSIONS
-                ).fetchall()
-            if not any(
-                (r := json.loads(row[0])).get("attribution", {}).get("run_id") == run["run_id"]
-                and r["work_key"]["step_id"] == body["step_id"]
-                and r["work_key"]["step_revision"] == body["step_revision"]
-                and r["work_key"]["execution_generation"] == body["execution_generation"]
-                for row in rows
-            ):
+                found = self.store.database.execute(
+                    _queries.APPEND_OUTCOME_SELECT_SUBMISSIONS,
+                    (
+                        run["run_id"],
+                        body["step_id"],
+                        body["step_revision"],
+                        body["execution_generation"],
+                    ),
+                ).fetchone()
+            if not found:
                 raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         subject = encode(
             [

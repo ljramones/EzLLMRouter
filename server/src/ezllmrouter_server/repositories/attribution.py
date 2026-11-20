@@ -1,11 +1,17 @@
 """SQL owned by the attribution repository."""
 
-from ..database import Query, identifier
+from ..database import Query
 
 
 def RECORD_SELECT_RECORD(*, key: str, table: str) -> Query:
-    identifier(key)
-    identifier(table)
+    if key != "id" or table not in {
+        "registry_agents",
+        "registry_agent_permissions",
+        "registry_principals",
+        "registry_outcome_authorities",
+        "attribution_runs",
+    }:
+        raise ValueError("unsupported attribution table or key")
     return Query(f"SELECT record FROM {table} WHERE {key}=?")
 
 
@@ -51,7 +57,12 @@ OUTCOME_RECEIPT_SELECT_ATTRIBUTION_OUTCOMES = Query(
     "SELECT receipt FROM attribution_outcomes WHERE principal_id=? AND event_id=?"
 )
 
-APPEND_OUTCOME_SELECT_SUBMISSIONS = Query("SELECT record FROM submissions")
+APPEND_OUTCOME_SELECT_SUBMISSIONS = Query(
+    "SELECT 1 FROM submissions WHERE json_extract(record,'$.attribution.run_id')=? "
+    "AND json_extract(record,'$.work_key.step_id')=? "
+    "AND json_extract(record,'$.work_key.step_revision')=? "
+    "AND json_extract(record,'$.work_key.execution_generation')=? LIMIT 1"
+)
 
 SAVE_SELECT_ATTRIBUTION_OUTCOMES_2 = Query(
     "SELECT MAX(revision) FROM attribution_outcomes WHERE subject=?"

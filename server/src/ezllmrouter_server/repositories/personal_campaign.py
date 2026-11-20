@@ -53,18 +53,16 @@ ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_2 = Query(
 )
 
 ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3 = Query(
-    "SELECT attempt_id,bound_decimal,state,usage_revision,campaign_id FROM "
-    "personal_campaign_attempts"
+    "SELECT p.attempt_id,p.bound_decimal,p.state,p.usage_revision,p.campaign_id,u.usage FROM "
+    "personal_campaign_attempts p LEFT JOIN usage_revisions u ON u.attempt_id=p.attempt_id "
+    "AND u.revision=(SELECT MAX(revision) FROM usage_revisions WHERE attempt_id=p.attempt_id) "
+    "WHERE p.state <> 'released'"
 )
 
 RECOVER_SELECT_PERSONAL_CAMPAIGNS = Query("SELECT record FROM personal_campaigns WHERE id=?")
 
 ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_4 = Query(
     "SELECT 1 FROM personal_campaign_attempts WHERE campaign_id=? LIMIT 1"
-)
-
-ACTION_SELECT_USAGE_REVISIONS = Query(
-    "SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1"
 )
 
 SUMMARY_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS = Query(

@@ -422,15 +422,12 @@ class PersonalCampaign:
             rows = self.store.database.execute(
                 _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS_3
             ).fetchall()
-            for attempt_id, bound, state, prior_revision, campaign_id in rows:
+            for attempt_id, bound, state, prior_revision, campaign_id, raw_usage in rows:
                 if state == "released":
                     continue
-                row = self.store.database.execute(
-                    _queries.ACTION_SELECT_USAGE_REVISIONS, (attempt_id,)
-                ).fetchone()
-                if not row:
+                if raw_usage is None:
                     continue
-                usage = json.loads(row[0])
+                usage = json.loads(raw_usage)
                 revision = usage.get("revision")
                 cost = usage.get("cost", {})
                 if (

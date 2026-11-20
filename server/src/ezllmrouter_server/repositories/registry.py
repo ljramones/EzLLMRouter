@@ -2,6 +2,21 @@
 
 from ..database import Query, identifier, predicate
 
+_RECORD_KEYS = {
+    "registry_models": "ref",
+    "registry_principals": "id",
+    "registry_connections": "id",
+    "registry_source_permissions": "id",
+    "registry_agents": "id",
+    "registry_deployments": "id",
+}
+
+
+def _record_key(table: str) -> str:
+    if table not in _RECORD_KEYS:
+        raise ValueError("unsupported registry table")
+    return _RECORD_KEYS[table]
+
 
 APPLY_INSERT_REGISTRY_MODELS = Query("INSERT INTO registry_models VALUES (?,?)")
 
@@ -56,7 +71,8 @@ APPLY_UPDATE_CONSOLE_USERS = Query(
 
 def LOAD_FOR_UPDATE_SELECT_RECORD(*, column: str, table: str) -> Query:
     identifier(column)
-    identifier(table)
+    if column != _record_key(table):
+        raise ValueError("unsupported registry key")
     return Query(f"SELECT record FROM {table} WHERE {column}=?")
 
 
@@ -72,8 +88,14 @@ VERSION_SELECT_REGISTRY_META = Query(
 
 
 def RECORD_SELECT_RECORD(*, table: str, where: str) -> Query:
-    identifier(table)
     predicate(where)
+    expected = (
+        "principal_id=? AND config_ref=?"
+        if table == "registry_grants"
+        else _record_key(table) + "=?"
+    )
+    if where != expected:
+        raise ValueError("unsupported registry predicate")
     return Query(f"SELECT record FROM {table} WHERE {where}")
 
 
@@ -195,10 +217,8 @@ SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS = Query(
 
 
 def ACTION_SELECT_RECORD(*, table: str) -> Query:
-    identifier(table)
-    return Query(
-        f"SELECT record FROM {table} WHERE {('ref' if table == 'registry_models' else 'id')}=?"
-    )
+    column = _record_key(table)
+    return Query(f"SELECT record FROM {table} WHERE {column}=?")
 
 
 APPLY_SELECT_REGISTRY_DEPLOYMENTS_2 = Query(
@@ -218,3 +238,37 @@ APPLY_SELECT_REGISTRY_CONNECTIONS_3 = Query(
 )
 
 APPLY_SELECT_REGISTRY_PRICES_2 = Query("SELECT 1 FROM registry_prices WHERE config_ref=?")
+
+
+def grants(*, principal_id: str | None = None, configuration_ref: str | None = None) -> Query:
+    filters = []
+    if principal_id is not None:
+        filters.append("g.principal_id=?")
+    if configuration_ref is not None:
+        filters.append("g.config_ref=?")
+    return Query(
+        "SELECT g.record FROM registry_grants g "
+        "JOIN registry_principals p ON p.id=g.principal_id "
+        + ("WHERE " + " AND ".join(filters) if filters else "")
+        + " ORDER BY g.principal_id,g.config_ref"
+    )
+
+
+INVENTORY_MODELS = Query(
+    "SELECT record FROM registry_models WHERE ref IN ("
+    "SELECT json_extract(record,'$.model_ref') FROM registry_deployments "
+    "WHERE json_extract(record,'$.connection_id')=?1 UNION "
+    "SELECT json_extract(record,'$.configuration_ref') FROM registry_deployments "
+    "WHERE json_extract(record,'$.connection_id')=?1)"
+)
+INVENTORY_PRICES = Query(
+    "SELECT record FROM registry_prices WHERE config_ref IN ("
+    "SELECT json_extract(record,'$.configuration_ref') FROM registry_deployments "
+    "WHERE json_extract(record,'$.connection_id')=?) ORDER BY rowid"
+)
+INVENTORY_GRANTS = Query(
+    "SELECT g.record FROM registry_grants g JOIN registry_principals p ON p.id=g.principal_id "
+    "WHERE g.config_ref IN (SELECT json_extract(record,'$.configuration_ref') "
+    "FROM registry_deployments WHERE json_extract(record,'$.connection_id')=?) "
+    "ORDER BY g.principal_id"
+)

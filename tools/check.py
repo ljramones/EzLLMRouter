@@ -75,6 +75,7 @@ MODULES = (
     "tests.unit.test_gateway_runtime_safety",
     "tests.unit.test_observation_retention",
     "tests.unit.test_database_concurrency",
+    "tests.unit.test_database_batch",
     "tests.unit.test_operator_sessions",
     "tests.unit.test_provider_transport",
     "tests.unit.test_client_deadlines",

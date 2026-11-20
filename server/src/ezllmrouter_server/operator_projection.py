@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .repositories import operator_projection as _queries
+from .repositories.store import LATEST_USAGE
 
 from datetime import datetime, timezone
 import json
@@ -74,16 +75,17 @@ class OperatorProjection:
         self.store = store
         self.principal_id = principal_id
         self.send_events_path = Path(send_events_path) if send_events_path else None
-        with store.database.read():
+
+        def recover():
             # An interrupted local launcher has no automatic replay path.
             store.database.execute(_queries.INIT_UPDATE_OPERATOR_LAUNCHES)
             # A restarted operator never repeats an ambiguous external request.
             store.database.execute(_queries.INIT_UPDATE_OPERATOR_PROVIDER_VALIDATIONS)
 
+        store.database.transaction(recover)
+
     def _latest_usage(self, attempt_id):
-        row = self.store.database.execute(
-            _queries.LATEST_USAGE_SELECT_USAGE_REVISIONS, (attempt_id,)
-        ).fetchone()
+        row = self.store.database.execute(LATEST_USAGE, (attempt_id,)).fetchone()
         return _usage(row[0] if row else None)
 
     def _summary(self, raw, intent_raw=None):
@@ -263,15 +265,17 @@ class OperatorProjection:
             ).fetchall()
             truncated = len(rows) > 10000
             rows = rows[:10000]
-            summaries = [self._summary(raw, intent) for raw, intent, _ in rows]
-            latest = [self._latest_usage(item["attempt_id"]) for item in summaries]
+            summaries = [self._summary(raw, intent) for raw, intent, _, _ in rows]
+            latest = [_usage(usage) for _, _, _, usage in rows]
         observations = self._send_observations({item["attempt_id"] for item in summaries})
         groups = {}
         from decimal import Decimal
 
         known_cost = {}
         cost_unknown = 0
-        for item, usage, (_, intent_raw, receipt_raw) in zip(summaries, latest, rows, strict=True):
+        for item, usage, (_, intent_raw, receipt_raw, _) in zip(
+            summaries, latest, rows, strict=True
+        ):
             cost = usage["cost"]
             if cost["status"] == "calculated" and cost.get("currency") == "USD":
                 known_cost["USD"] = known_cost.get("USD", Decimal(0)) + Decimal(
@@ -403,8 +407,9 @@ class OperatorProjection:
         if state not in ("completed", "failed", "outcome_unknown") or type(lookups) is not int:
             raise ValueError("invalid launch result")
         ids = [x for x in submission_ids if _identifier(x)]
-        with self.store.database.read():
-            self.store.database.execute(
+
+        def action():
+            result = self.store.database.execute(
                 _queries.FINISH_LAUNCH_UPDATE_OPERATOR_LAUNCHES,
                 (
                     state,
@@ -417,6 +422,10 @@ class OperatorProjection:
                     operation_id,
                 ),
             )
+
+            return result.rowcount == 1
+
+        return self.store.database.transaction(action)
 
     def record_launch_submission(self, operation_id, submission_id):
         if not _identifier(operation_id) or not _identifier(submission_id):
@@ -521,16 +530,20 @@ class OperatorProjection:
     def record_provider_validation_submission(self, operation_id, submission_id):
         if not _identifier(operation_id) or not _identifier(submission_id):
             raise ValueError("invalid provider validation handle")
-        with self.store.database.read():
+
+        def action():
             self.store.database.execute(
                 _queries.RECORD_PROVIDER_VALIDATION_SUBMISSION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
                 (submission_id, datetime.now(timezone.utc).isoformat(), operation_id),
             )
 
+        return self.store.database.transaction(action)
+
     def finish_provider_validation(self, operation_id, state, error_code=None):
         if not _identifier(operation_id) or state not in ("completed", "failed", "outcome_unknown"):
             raise ValueError("invalid provider validation result")
-        with self.store.database.read():
+
+        def action():
             self.store.database.execute(
                 _queries.FINISH_PROVIDER_VALIDATION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
                 (
@@ -542,6 +555,8 @@ class OperatorProjection:
                     operation_id,
                 ),
             )
+
+        return self.store.database.transaction(action)
 
     def provider_validation(self, operation_id):
         if not _identifier(operation_id):

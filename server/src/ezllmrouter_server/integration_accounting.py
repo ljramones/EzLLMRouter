@@ -376,10 +376,16 @@ class ExternalAccounting:
         self._expire_snapshots()
 
     def _expire_snapshots(self):
+        # Avoid a write transaction when the indexed expiry range is empty.
+        at = _time()
+        with self.store.database.read():
+            if not self.store.database.execute(_queries.EXPIRED_SNAPSHOT_EXISTS, (at,)).fetchone():
+                return 0
+
         # Content is purged, while identity, digest and expiry evidence remain.
         def action():
             return self.store.database.execute(
-                _queries.ACTION_UPDATE_INTEGRATION_SNAPSHOTS, (_time(),)
+                _queries.ACTION_UPDATE_INTEGRATION_SNAPSHOTS, (at,)
             ).rowcount
 
         return self.store.database.transaction(action)
@@ -400,17 +406,31 @@ class ExternalAccounting:
         """
         now = datetime.fromisoformat(_time().replace("Z", "+00:00"))
 
+        db = self.store.database
+
+        def due(raw, days, activated_at):
+            try:
+                return _cohort_expiry(json.loads(raw), days, activated_at) <= now
+            except (ValueError, KeyError, TypeError):
+                log_failure("accounting_retention_metadata_invalid")
+                return False
+
+        with db.read():
+            candidates = [
+                did
+                for did, raw, days, activated_at in db.execute(
+                    _queries.ACTION_SELECT_INTEGRATION_DATASETS
+                )
+                if due(raw, days, activated_at)
+            ]
+        if not candidates:
+            return 0
+
         def action():
-            db = self.store.database
-            rows = db.execute(_queries.ACTION_SELECT_INTEGRATION_DATASETS).fetchall()
             expired = []
-            for did, raw, days, activated_at in rows:
-                try:
-                    expiry = _cohort_expiry(json.loads(raw), days, activated_at)
-                except (ValueError, KeyError, TypeError):
-                    log_failure("accounting_retention_metadata_invalid")
-                    continue  # Do not guess a purge policy for an unmanaged cohort.
-                if expiry <= now:
+            for did in candidates:
+                row = db.execute(_queries.DATASET_SELECT_INTEGRATION_DATASETS, (did,)).fetchone()
+                if row and due(*row):
                     expired.append(did)
             for did in expired:
                 db.execute(_queries.ACTION_INSERT_INTEGRATION_EXPIRED_DATASETS, (did, _time()))
@@ -427,8 +447,8 @@ class ExternalAccounting:
                 ):
                     db.execute(_queries.ACTION_DELETE_RECORD(table=table), (did,))
                 db.execute(_queries.ACTION_DELETE_INTEGRATION_ACCOUNT_HISTORY, (did,))
-                db.execute(_queries.ACTION_DELETE_INTEGRATION_DATASETS, (did,))
                 db.execute(_queries.ACTION_DELETE_INTEGRATION_DATASET_RETENTION, (did,))
+                db.execute(_queries.ACTION_DELETE_INTEGRATION_DATASETS, (did,))
             return len(expired)
 
         return self.store.database.transaction(action)
@@ -790,16 +810,12 @@ class ExternalAccounting:
 
     def _check_lineage(self, db, event):
         did = event["dataset_id"]
-        starts = {
-            row[0]: json.loads(row[1])
-            for row in db.execute(_queries.ACTION_SELECT_INTEGRATION_ATTEMPTS, (did,))
-        }
-        accepted_links = {
-            link["attempt_id"]: link
-            for (raw,) in db.execute(_queries.CHECK_LINEAGE_SELECT_INTEGRATION_EVENTS, (did,))
-            for link in (json.loads(raw),)
-        }
         aid = event["attempt_id"]
+        component = db.execute(
+            _queries.LINEAGE_COMPONENT, (did, aid, event.get("predecessor_attempt_id"))
+        ).fetchall()
+        starts = {key: json.loads(raw) for key, raw, _ in component if raw is not None}
+        accepted_links = {key: json.loads(raw) for key, _, raw in component if raw is not None}
         if event["kind"] == "attempt_started":
             prior_link = accepted_links.get(aid)
             if prior_link and (
@@ -886,13 +902,17 @@ class ExternalAccounting:
                 ).fetchone()
             ):
                 raise IntegrationError("EVENT_CONFLICT", 409)
-            seen = {current_aid}
-            cursor = predecessor
-            while cursor:
-                if cursor in seen:
+        # Visit each predecessor edge once, including long retry chains.
+        checked = set()
+        for current_aid in affected:
+            path = set()
+            cursor = current_aid
+            while cursor and cursor not in checked:
+                if cursor in path:
                     raise IntegrationError("SEMANTIC_INVALID")
-                seen.add(cursor)
+                path.add(cursor)
                 cursor = links.get(cursor, (None, None, None))[1]
+            checked.update(path)
 
     def _check_decision_evidence(self, db, event):
         evidence = event["eligibility_evidence"]
@@ -1191,13 +1211,13 @@ class ExternalAccounting:
                     "snapshot_digest": digest,
                     "status": json.loads(old[1])["status"],
                 }
-            for aid, raw in db.execute(_queries.ACTION_SELECT_INTEGRATION_ATTEMPTS, (did,)):
+            for aid, raw in db.execute(_queries.SNAPSHOT_START_REFERENCES, (did, sid)):
                 attempt = json.loads(raw)
                 if attempt.get("context_ref") == sid and (
                     aid != record["attempt_id"] or record["snapshot_kind"] != "feature"
                 ):
                     raise IntegrationError("EVENT_CONFLICT", 409)
-            for aid, raw in db.execute(_queries.ACTION_SELECT_INTEGRATION_EVENTS, (did,)):
+            for aid, raw in db.execute(_queries.SNAPSHOT_DECISION_REFERENCES, (did, sid)):
                 decision = json.loads(raw)
                 if decision.get("decision_ref") == sid and (
                     aid != record["attempt_id"] or record["snapshot_kind"] != "decision"
@@ -1326,7 +1346,9 @@ class ExternalAccounting:
                 )
             ]
             history = defaultdict(list)
-            for (raw,) in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY):
+            for (raw,) in db.execute(
+                _queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY, (dataset_id,)
+            ):
                 item = json.loads(raw)
                 if item["dataset_id"] == dataset_id:
                     history[item["account_id"]].append(item)
@@ -1512,7 +1534,7 @@ class ExternalAccounting:
                 }
                 account_history = defaultdict(list)
                 for (raw,) in self.store.database.execute(
-                    _queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY
+                    _queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY, (dataset_id,)
                 ):
                     item = json.loads(raw)
                     if item["dataset_id"] == dataset_id:

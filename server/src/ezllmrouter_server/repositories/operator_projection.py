@@ -15,7 +15,7 @@ ACTION_INSERT_OPERATOR_LAUNCHES = Query("INSERT INTO operator_launches VALUES (?
 
 FINISH_LAUNCH_UPDATE_OPERATOR_LAUNCHES = Query(
     "UPDATE operator_launches SET "
-    "state=?,updated_at=?,submission_ids=?,caller_lookups=?,error_code=? WHERE operation_id=?"
+    "state=?,updated_at=?,submission_ids=?,caller_lookups=?,error_code=? WHERE operation_id=? AND state='running'"
 )
 
 ACTION_INSERT_OPERATOR_PROVIDER_VALIDATIONS = Query(
@@ -30,10 +30,6 @@ RECORD_PROVIDER_VALIDATION_SUBMISSION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS = Que
 FINISH_PROVIDER_VALIDATION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS = Query(
     "UPDATE operator_provider_validations SET state=?,updated_at=?,error_code=? WHERE "
     "operation_id=? AND state='running'"
-)
-
-LATEST_USAGE_SELECT_USAGE_REVISIONS = Query(
-    "SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1"
 )
 
 ACTION_UPDATE_OPERATOR_LAUNCHES = Query(
@@ -66,7 +62,11 @@ DETAIL_SELECT_GUARD_DISPATCHES = Query(
 
 def USAGE_ORDER_SUBMISSIONS(*, principal_id: str) -> Query:
     return Query(
-        "SELECT s.record,i.intent,g.receipt FROM submissions s LEFT JOIN intents i ON i.submission_id=s.submission_id LEFT JOIN guard_dispatches g ON g.submission_id=s.submission_id "
+        "SELECT s.record,i.intent,g.receipt,u.usage FROM submissions s "
+        "LEFT JOIN intents i ON i.submission_id=s.submission_id "
+        "LEFT JOIN guard_dispatches g ON g.submission_id=s.submission_id "
+        "LEFT JOIN usage_revisions u ON u.attempt_id=json_extract(s.record,'$.attempt_id') "
+        "AND u.revision=(SELECT MAX(revision) FROM usage_revisions WHERE attempt_id=u.attempt_id) "
         + ("" if principal_id == "*" else "WHERE s.principal_id=? ")
         + "ORDER BY s.rowid DESC LIMIT 10001"
     )

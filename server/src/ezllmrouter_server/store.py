@@ -8,6 +8,7 @@ from .database import Database
 import json
 import sqlite3
 import threading
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
@@ -21,7 +22,7 @@ class Store(Protocol):
     def create(self, record: dict, reserve=None) -> None: ...
     def intent(self, submission_id: str, attempt_id: str, intent: dict) -> None: ...
     def guard_commit(self, submission_id: str, attempt_id: str, receipt: dict) -> None: ...
-    def update(self, submission_id: str, fields: dict, usage: dict | None = None) -> None: ...
+    def update(self, submission_id: str, fields: dict, usage: dict | None = None) -> dict: ...
     def mark_wait_expired_no_store(self, submission_id: str, at: str) -> dict: ...
     def complete_candidate(
         self,
@@ -78,13 +79,13 @@ class SQLiteStore:
         )
 
     @classmethod
-    def open_existing(cls, path):
+    def open_existing(cls, path, *, read_only=False):
         """Open for offline maintenance without creating a database or running schema setup."""
         result = cls.__new__(cls)
         result.path = str(path)
         result._lock = threading.RLock()
         result.db = sqlite3.connect(
-            Path(path).as_uri() + "?mode=rw",
+            Path(path).as_uri() + ("?mode=ro" if read_only else "?mode=rw"),
             uri=True,
             check_same_thread=False,
             isolation_level=None,
@@ -355,20 +356,30 @@ class SQLiteStore:
         """
         instant = datetime.fromisoformat(now.replace("Z", "+00:00"))
 
+        # Broad indexed cutoff includes the boundary second; Python keeps the
+        # exact timestamp comparison, including fractional seconds.
+        cutoff = (instant - timedelta(days=7) + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        def candidates():
+            found = []
+            for sid, raw in self.database.execute(
+                _queries.ACTION_SELECT_DEV12_SUBMISSIONS, (cutoff,)
+            ):
+                record = json.loads(raw)
+                origin = datetime.fromisoformat(
+                    record["result_available_at"].replace("Z", "+00:00")
+                )
+                if origin + timedelta(days=7) <= instant:
+                    found.append((sid, record))
+            return found
+
+        with self.database.read():
+            if not candidates():
+                return []
+
         def action():
             expired = []
-            for sid, raw in self.database.execute(
-                _queries.ACTION_SELECT_DEV12_SUBMISSIONS
-            ).fetchall():
-                record = json.loads(raw)
-                origin = record.get("result_available_at")
-                if (
-                    record.get("submission_state") != "completed"
-                    or not origin
-                    or instant
-                    < datetime.fromisoformat(origin.replace("Z", "+00:00")) + timedelta(days=7)
-                ):
-                    continue
+            for sid, record in candidates():
                 record.pop("result", None)
                 record["candidate_access"] = "expired"
                 record["updated_at"] = now
@@ -379,10 +390,22 @@ class SQLiteStore:
                 expired.append(sid)
             return expired
 
-        return self._transaction(action)
+        return self.database.transaction(action)
 
     def _transaction(self, action):
         with self._lock:
+            if self.db.in_transaction:
+                # A unique live name lets independent domains compose safely.
+                savepoint = "nested_" + uuid.uuid4().hex
+                self.db.execute(f"SAVEPOINT {savepoint}")
+                try:
+                    result = action()
+                except BaseException:
+                    self.db.execute(f"ROLLBACK TO {savepoint}")
+                    self.db.execute(f"RELEASE {savepoint}")
+                    raise
+                self.db.execute(f"RELEASE {savepoint}")
+                return result
             self.db.execute("BEGIN IMMEDIATE")
             try:
                 result = action()
@@ -517,9 +540,7 @@ class SQLiteStore:
                 if not row:
                     raise KeyError(submission_id)
                 attempt_id = json.loads(row[0])["attempt_id"]
-                prior = self.database.execute(
-                    _queries.GET_SELECT_USAGE_REVISIONS, (attempt_id,)
-                ).fetchone()
+                prior = self.database.execute(_queries.LATEST_USAGE, (attempt_id,)).fetchone()
                 if prior:
                     latest_usage = {"state": "available", "revision": json.loads(prior[0])}
             if "candidate" in new_fields and new_fields["candidate"] is not None:
@@ -598,7 +619,7 @@ class SQLiteStore:
                 latest_usage = {"state": "available", "revision": revision_data}
             else:
                 prior = self.database.execute(
-                    _queries.GET_SELECT_USAGE_REVISIONS, (record["attempt_id"],)
+                    _queries.LATEST_USAGE, (record["attempt_id"],)
                 ).fetchone()
                 if prior:
                     latest_usage = {"state": "available", "revision": json.loads(prior[0])}
@@ -632,20 +653,44 @@ class SQLiteStore:
         return self._transaction(action)
 
     def get(self, submission_id):
-        with self._lock:
+        def load():
             row = self.database.execute(
                 _queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)
             ).fetchone()
             if not row:
                 return None
-            record = json.loads(row[0])
-            expiry = record.get("content_expires_at")
-            if (
-                record.get("candidate")
+            return json.loads(row[0])
+
+        def with_usage(record):
+            if record is None:
+                return None
+            usage = self.database.execute(_queries.LATEST_USAGE, (record["attempt_id"],)).fetchone()
+            record["usage"] = (
+                {"state": "available", "revision": json.loads(usage[0])}
+                if usage
+                else {"state": "not_recorded"}
+            )
+            return record
+
+        def expired(record):
+            expiry = record.get("content_expires_at") if record else None
+            return bool(
+                record
+                and record.get("candidate")
                 and expiry
                 and datetime.fromisoformat(expiry.replace("Z", "+00:00"))
                 <= datetime.now(timezone.utc)
-            ):
+            )
+
+        with self.database.read():
+            record = load()
+            if not expired(record):
+                return with_usage(record)
+
+        def expire():
+            # Re-read after acquiring write ownership; never overwrite a newer revision.
+            record = load()
+            if expired(record):
                 record["candidate"] = None
                 record["candidate_access"] = "expired"
                 record["status_revision"] += 1
@@ -653,15 +698,9 @@ class SQLiteStore:
                 self.database.execute(
                     _queries.UPDATE_IN_TX_UPDATE_SUBMISSIONS, (encode(record), submission_id)
                 )
-            usage = self.database.execute(
-                _queries.GET_SELECT_USAGE_REVISIONS, (record["attempt_id"],)
-            ).fetchone()
-            record["usage"] = (
-                {"state": "available", "revision": json.loads(usage[0])}
-                if usage
-                else {"state": "not_recorded"}
-            )
-            return record
+            return with_usage(record)
+
+        return self.database.transaction(expire)
 
     def by_work(self, key):
         with self._lock:

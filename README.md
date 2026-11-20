@@ -259,8 +259,8 @@ ownership, shared transactions, dispatch boundaries and verification.
 
 ## Development status
 
-The current database uses versioned migrations and upgrades version 1 to version 2
-atomically. The local test suite
+The current database uses versioned migrations and upgrades versions 1 and 2 to
+version 3 atomically. The local test suite
 covers accounting, credential recovery, authorization and operator workflows.
 Docker deployment, live-provider execution and production qualification require
 their own validation. Learned routing remains future work.

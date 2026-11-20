@@ -14,8 +14,9 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 3.3: Silent test omissions | The runner rejects unclassified Python test files. It registers offline, loopback and standalone suites, and records five runtime/evidence-dependent exclusions. Expired fixture clocks and broken installed-consumer setup are repaired. Separate CI jobs run installed JavaScript runtime and actual HTTP checks. |
 | 4.1.1: Pre-transmit exception strands an attempt | Unexpected errors at the final authority check enter the existing no-send failure path. Runtime, database and type-error regressions verify terminal status, no adapter calls and no repeated dispatch. |
 | 4.1.2: Unbounded probe observations and inventory decoding | New schema version 2 adds connection and inventory indexes, retaining 20 recent diagnostics plus up to three inventory anchors per connection. Inventory and permission reads decode at most three records. Regressions cover 2,000 historical rows, indexed query plans, partial/failed discovery fallback, pruning, version 1 upgrade/restart, exact price preservation and full rollback on migration failure. The adopted version 1 SQL remains unchanged. |
-| 4.1.3: Rejected database changed to WAL | Validate ownership/schema before setting journal mode. Rejection preserves the database bytes and creates no WAL/SHM sidecars. Other findings in this subsection remain open. |
-| 4.1.3: Dataset purge races | Account, event, snapshot, recorded eligibility and credential mutations recheck dataset existence inside their publishing transaction. Purge also removes encrypted credential versions, bindings and operation records atomically. Deterministic thread regressions cover eleven delayed writer paths and discovery returning after purge; no orphan rows or credentials reappear. Other persistence findings remain open. |
+| 4.1.3: Rejected database changed to WAL | Validate ownership/schema before setting journal mode. Rejection preserves the database bytes and creates no WAL/SHM sidecars. |
+| 4.1.3: Dataset purge races | Account, event, snapshot, recorded eligibility and credential mutations recheck dataset existence inside their publishing transaction. Purge also removes encrypted credential versions, bindings and operation records atomically. Deterministic thread regressions cover eleven delayed writer paths and discovery returning after purge; no orphan rows or credentials reappear. |
+| 4.1.3 / 5.10: Database boundaries and query growth | Version 3 adds 26 indexes and prospective dataset/credential ownership constraints without rewriting history. Read scopes enforce SQLite read-only snapshots; nested writes use savepoints. Usage and campaign reconciliation batch latest revisions, inventory batches models/prices/grants, grant views use scoped bulk reads, attribution uses indexed step existence, account history is dataset-scoped, and lineage/snapshot validation avoids unrelated records. Maintenance avoids idle write transactions. A read-only audit reports preserved historical ownership violations. |
 | 4.1.3 / 5.2 edge cases: IPv6 probe failure and TLS socket leak | Provider metadata probes connect using the approved DNS result's socket family and complete sockaddr, preserving IPv6 flow/scope fields and the original hostname for TLS verification. Trust configuration is created before opening a socket. Raw sockets, TLS streams and response readers close on success and transport/size failures. IPv4 preference, address-policy rejection and the response cap remain covered. |
 | 4.2.1: Inconsistent worker/sender timeouts | One bounded absolute attempt deadline reaches worker dispatch, relay waits, provider reading and first-byte gates. Text execution rejects timeout values above five minutes before admission. Tests cover the limit and a 60-second budget. |
 | 4.2.2: Worker error races a trusted relay | Await the trusted relay even after a worker error. Abandonment is recorded under the authority gate and checked before commit and first byte. Failure classification uses socket acceptance; in-flight paid response content and usage survive a worker error. |
@@ -29,7 +30,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.3.5: Python client has no total response deadline | Both clients default to a configurable 60-second HTTP budget. The owned HTTPX transport clamps pool/connect/TLS/write/read operations to the remaining monotonic budget through public HTTPcore interfaces, including incomplete headers and slow bodies. Uncoalesced response chunks also bound cooperative injected streams. Socket-pair tests exercise real blocked reads without listeners; deterministic tests cover all four protocol paths, connection reuse, independent concurrent budgets and query-first errors without replay. OS DNS can overrun, but late connections are closed before sending; custom transports own their blocking I/O deadlines. |
 | 4.3.5: Provisioning deletes an issued credential after interruption | Reserve credential custody and sync an operation receipt before issuance. Preserve both after possible issuance, including Ctrl-C, broken output, failed fsync, malformed/lost replies and connection-close failure. Existing files block another invocation. Only failures before issuance remove unused files created by that invocation. An uncertain reply can still leave an empty/partial credential, requiring revision inspection and explicit rotation. |
 | 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP routing, shared exports and duplication still need structural cleanup. |
-| 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. Strict mypy now covers 26 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
+| 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. Strict mypy now covers 27 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -37,7 +38,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 610 unittest cases plus
+The expanded offline Python/component runner passes: 634 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -63,10 +64,24 @@ needs only its runtime, wire codec and standalone logger; fixture scripts
 require an explicit harness source map. The frozen Docker/worker and real HTTP
 checks still require their target environment.
 
-The database batch adds 14 focused tests. Migration checks verify upgrade and
+The earlier retention/concurrency batch adds 14 focused tests. Migration checks verify upgrade and
 rollback against a version 1 database; concurrency checks use held provider
 fixtures and explicit thread barriers without real sockets or provider calls.
-The server wheel includes both numbered migration resources.
+The server wheel includes all three numbered migration resources.
+
+The query/transaction database batch adds 24 offline regressions for version 2
+upgrade/restart and failed-upgrade rollback, byte-exact historical preservation,
+read snapshots, write rejection, savepoints, candidate expiry, terminal launcher
+state, query growth, late lineage, snapshot binding/expiry, batched inventory and
+campaign reconciliation, ownership constraints, report truncation and indexed plans.
+A built server wheel is checked with isolated imports and fresh/upgraded databases.
+
+A disposable benchmark seeds 1,000, 10,000 and 100,000 attempts per domain, plus two
+controlled usage revisions per attempt. Usage reports use one query and retain their
+10,000-row cap; independent ingestion uses 12 reads at every size. Eight-thread
+single/two-connection runs complete 24,000 mixed operations without SQLite errors;
+all integrity checks pass. Timings and limits are recorded in the [database guide](DATABASE.md).
+This is local synthetic metadata evidence, not production throughput qualification.
 
 The session/probe batch adds 23 offline tests: 14 exercise real operator handlers
 with memory streams and explicit thread barriers; nine exercise the real HTTP
@@ -124,12 +139,12 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Address full scans, N+1 queries, executor shutdown and remaining token/future
-   lifecycle issues. Other persistence details remain open; the single
-   SQLite connection still serializes database access.
+1. Address executor shutdown and remaining token/future lifecycle issues. The
+   database query/transaction batch is complete; the single SQLite connection still
+   serializes access and broader deployment/performance qualification remains.
 2. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
    large functions with focused behavior tests. Continue strict typing into the
-   remaining service/client modules; the expanded 26-module scope is not full
+   remaining service/client modules; the expanded 27-module scope is not full
    coverage (4.3.2).
 3. Continue the platform, process recovery, generated-input and performance work
    in the testing roadmap and complete the outstanding target checks.

@@ -106,10 +106,7 @@ class RegistryRoutes:
                 return self._fail(404, "NOT_FOUND")
             grants = []
             if admin_view:
-                grants = [
-                    self.application.registry.grant(principal["principal_id"], ref)
-                    for principal in self.application.registry.list_principals()
-                ]
+                grants = self.application.registry.grants(configuration_ref=ref)
             return self._send(
                 200,
                 {
@@ -130,12 +127,15 @@ class RegistryRoutes:
                 model["configuration_ref"]: model
                 for model in self.application.registry.list_models()
             }
+            grants_by_principal = {}
+            for grant in self.application.registry.grants(
+                principal_id=None if admin_view else actor
+            ):
+                if grant["configuration_ref"] in models:
+                    grants_by_principal.setdefault(grant["principal_id"], []).append(grant)
             items = []
             for principal in principals:
-                grants = [
-                    self.application.registry.grant(principal["principal_id"], ref)
-                    for ref in models
-                ]
+                grants = grants_by_principal.get(principal["principal_id"], [])
                 items.append(
                     {
                         **principal,
@@ -166,7 +166,11 @@ class RegistryRoutes:
                 model["configuration_ref"]: model
                 for model in self.application.registry.list_models()
             }
-            grants = [self.application.registry.grant(principal_id, ref) for ref in models]
+            grants = [
+                grant
+                for grant in self.application.registry.grants(principal_id=principal_id)
+                if grant["configuration_ref"] in models
+            ]
             return self._send(
                 200,
                 {

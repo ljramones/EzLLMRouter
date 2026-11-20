@@ -65,7 +65,9 @@ SUCCESSOR_TOTALS_SELECT_DEV12_SUBMISSIONS = Query(
 
 ACTION_SELECT_DEV12_SUBMISSIONS = Query(
     "SELECT submission_id,record FROM dev12_submissions WHERE "
-    "json_extract(record,'$.candidate_access')='present'"
+    "json_extract(record,'$.candidate_access')='present' "
+    "AND json_extract(record,'$.submission_state')='completed' "
+    "AND json_extract(record,'$.result_available_at')<=?"
 )
 
 ACTION_SELECT_INTENTS = Query("SELECT intent FROM intents WHERE submission_id=? AND attempt_id=?")
@@ -74,7 +76,7 @@ GUARD_RECORD_SELECT_GUARD_DISPATCHES = Query(
     "SELECT receipt FROM guard_dispatches WHERE attempt_id=?"
 )
 
-GET_SELECT_USAGE_REVISIONS = Query(
+LATEST_USAGE = Query(
     "SELECT usage FROM usage_revisions WHERE attempt_id=? ORDER BY revision DESC LIMIT 1"
 )
 

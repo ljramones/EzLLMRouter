@@ -5,7 +5,7 @@ from importlib.resources import files
 import sqlite3
 
 APPLICATION_ID = 0x455A4C4C
-MIGRATIONS = ("v001_initial.sql", "v002_observation_retention.sql")
+MIGRATIONS = ("v001_initial.sql", "v002_observation_retention.sql", "v003_database_queries.sql")
 VERSION = len(MIGRATIONS)
 
 

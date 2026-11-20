@@ -287,6 +287,21 @@ class Registry:
             "registry_grants", "principal_id=? AND config_ref=?", (principal_id, ref)
         )
 
+    def grants(self, *, principal_id=None, configuration_ref=None):
+        values = []
+        if principal_id is not None:
+            identifier(principal_id)
+            values.append(principal_id)
+        if configuration_ref is not None:
+            identifier(configuration_ref)
+            values.append(configuration_ref)
+        with self.store.database.read():
+            rows = self.store.database.execute(
+                _queries.grants(principal_id=principal_id, configuration_ref=configuration_ref),
+                values,
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
     def prices(self, ref):
         identifier(ref)
         with self.store.database.read():
@@ -368,6 +383,22 @@ class Registry:
                     _queries.SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (connection_id,)
                 ).fetchall()
             }
+            deployments = self.deployments(connection_id)
+            models = {
+                item["configuration_ref"]: item
+                for (raw,) in self.store.database.execute(
+                    _queries.INVENTORY_MODELS, (connection_id,)
+                )
+                for item in (json.loads(raw),)
+            }
+            prices_by_ref = {}
+            for (raw,) in self.store.database.execute(_queries.INVENTORY_PRICES, (connection_id,)):
+                item = json.loads(raw)
+                prices_by_ref.setdefault(item["configuration_ref"], []).append(item)
+            grants_by_ref = {}
+            for (raw,) in self.store.database.execute(_queries.INVENTORY_GRANTS, (connection_id,)):
+                item = json.loads(raw)
+                grants_by_ref.setdefault(item["configuration_ref"], []).append(item)
         latest = observations[0] if observations else None
         saved = next(
             (item for item in observations if item["state"] in ("observed", "partial")), None
@@ -387,19 +418,18 @@ class Registry:
         snapshot_names = set(saved["models"] if saved else ())
         if prior_complete:
             snapshot_names.update(prior_complete["models"])
-        deployments = self.deployments(connection_id)
         by_id = {item["serving_id"]: item for item in deployments}
         names = snapshot_names | set(by_id)
         rows = []
         for serving_id in sorted(names):
             deployment = by_id.get(serving_id)
             model = (
-                self.model(deployment["model_ref"])
+                models.get(deployment["model_ref"])
                 if deployment and deployment.get("model_ref")
                 else None
             )
             configuration = (
-                self.model(deployment["configuration_ref"])
+                models.get(deployment["configuration_ref"])
                 if deployment and deployment.get("configuration_ref")
                 else None
             )
@@ -409,19 +439,13 @@ class Registry:
                 if permission is not None
                 else bool(deployment and deployment["execution_approved"])
             )
-            prices = self.prices(configuration["configuration_ref"]) if configuration else []
+            prices = (
+                prices_by_ref.get(configuration["configuration_ref"], []) if configuration else []
+            )
             price = prices[-1] if prices else None
-            grants = []
-            if configuration:
-                grants = [
-                    grant
-                    for principal in self.list_principals()
-                    if (
-                        grant := self.grant(
-                            principal["principal_id"], configuration["configuration_ref"]
-                        )
-                    )
-                ]
+            grants = (
+                grants_by_ref.get(configuration["configuration_ref"], []) if configuration else []
+            )
             rows.append(
                 {
                     "serving_id": serving_id,
