@@ -44,6 +44,19 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 3.10: Output budget and invalid probe settings | Text admission caps output at 32,768 tokens before durable admission; existing campaign/model limits can be lower. Probe validation returns safe `invalid_settings` observations without network access, preserving unsupported-operation and malformed-response classifications. |
 | Demo cutoff/cycle and tariff drift | Attempts with no qualifying revision have explicit unknown usage/cost; future attempts/revisions are excluded and replacement counts cannot be negative. Workflow traversal rejects cycles/missing parents. Synthetic rates, minima, quantum and domains now come from the packaged tariff resource, with registration and maximum-bound checks; existing tariff goldens remain unchanged. |
 
+The client consistency batch consolidates all four HTTP exchanges and their
+version, header, decoding and transport-error handling into one session. Public
+methods and both validators are annotated; all ten client modules pass strict
+mypy. Both protocol error types share `ClientError`; accounting input errors keep
+`TypeError` compatibility. Origins reject paths, credentials, queries and
+fragments before allocating HTTP resources. Credentials are private and redacted
+in ordinary diagnostics. Snake_case methods are primary, with documented legacy
+camelCase wrappers. The wheel includes `py.typed` and omits unused registrations.
+Seven new offline regressions cover these boundaries. The full offline runner
+passes 802 cases and the built client wheel passes 37 selected tests, including
+all 125 shared contract cases. Evidence is under ignored
+`.artifacts/code-review/cleanup-pass/client/`.
+
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
 from the tests despite a successful local pack.
@@ -218,11 +231,6 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. **Python client consistency and API polish:** unify the remaining request
-   pipelines, header/error handling, exception root and schema-validator policies.
-   Add public typing and `py.typed`, address the Python naming convention, tighten
-   base-URL validation, review credential exposure and remove unused resources
-   (5.4 / report-1 6.6–6.7).
 2. **Remaining runtime coupling, naming and packaging:** remove fixed consumer,
    purpose, identity/class and integration-forwarding assumptions; replace
    milestone names and hidden aliases; derive release metadata from one source.

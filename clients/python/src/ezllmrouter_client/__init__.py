@@ -8,18 +8,25 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
+from typing import Any
+
+from ._errors import ClientError
+from ._session import ClientSession
+from .integration import IntegrationClient
+from ._errors import (
+    IntegrationClientError as IntegrationClientError,
+    IntegrationInputError as IntegrationInputError,
+)
 
 from . import _validation as v
 from . import _successor_validation as v03
-from ._http import DEFAULT_TIMEOUT, WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT, bounded_request
-from ._deadline import DEFAULT_TOTAL_TIMEOUT, DeadlineHTTPTransport, total_timeout as _total_timeout
-from ._json import strict_reply as _strict_reply
+from ._http import WIRE_RESPONSE_LIMIT, SUCCESSOR_RESPONSE_LIMIT
 
 __version__ = "0.3.0"
 
 
-class EzLLMRouterError(Exception):
+class EzLLMRouterError(ClientError):
     """Typed protocol or transport error with query-first recovery context."""
 
     def __init__(
@@ -29,33 +36,32 @@ class EzLLMRouterError(Exception):
         retry_guidance: str = "never",
         correlation_id: str | None = None,
         *,
-        selector: dict | None = None,
-        handle: dict | None = None,
+        selector: dict[str, Any] | None = None,
+        handle: dict[str, Any] | None = None,
         attempt_id: str | None = None,
         failure_stage: str | None = None,
-        error: dict | None = None,
-    ):
-        super().__init__(code)
-        self.code = code
-        self.http_status = http_status
-        self.retry_guidance = retry_guidance
-        self.correlation_id = correlation_id
-        self.selector = selector
+        error: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(code, http_status, retry_guidance, correlation_id, selector=selector)
         self.handle = handle
         self.attempt_id = attempt_id
         self.failure_stage = failure_stage
         self.work_key = (
             handle["work_key"]
-            if (v.handle(handle) or type(handle) is dict and v03.named_shape(handle, "Handle"))
+            if handle is not None and (v.handle(handle) or v03.named_shape(handle, "Handle"))
             else None
         )
         self.error = error
 
 
-def _matching_handle(value, selected, *, successor=False):
+def _matching_handle(
+    value: Any, selected: dict[str, Any] | None, *, successor: bool = False
+) -> dict[str, Any] | None:
     if type(value) is not dict or selected is None:
         return None
     handle = value.get("handle")
+    if type(handle) is not dict:
+        return None
     if successor:
         matches = v03.matches_selector(handle, selected)
     elif not v.handle(handle):
@@ -67,7 +73,7 @@ def _matching_handle(value, selected, *, successor=False):
     return deepcopy(handle) if matches else None
 
 
-def _wire_data(value, seen=None, depth=0):
+def _wire_data(value: Any, seen: set[int] | None = None, depth: int = 0) -> None:
     if depth > 32:
         raise ValueError("request nesting limit")
     if value is None or type(value) is float:
@@ -100,7 +106,7 @@ def _wire_data(value, seen=None, depth=0):
         seen.remove(id(value))
 
 
-class EzLLMRouterClient:
+class EzLLMRouterClient(ClientSession):
     """Synchronous client; call ``close`` or use ``with``.
 
     ``base_url`` is the EzLLMRouter service URL, ``token`` its bearer credential.
@@ -110,130 +116,37 @@ class EzLLMRouterClient:
     environment proxy inheritance and automatic request retries are disabled.
     """
 
-    def __init__(
-        self,
-        base_url: str,
-        token: str,
-        *,
-        transport=None,
-        timeout=DEFAULT_TIMEOUT,
-        total_timeout=DEFAULT_TOTAL_TIMEOUT,
-    ):
-        if type(base_url) is not str or type(token) is not str or not token:
-            raise TypeError("base_url and token are required")
-        parsed = urlsplit(base_url)
-        if (
-            parsed.scheme not in ("http", "https")
-            or not parsed.hostname
-            or parsed.username
-            or parsed.password
-            or parsed.query
-            or parsed.fragment
-        ):
-            raise TypeError("base_url must be an HTTP(S) service URL")
-        self.base_url = base_url.rstrip("/")
-        self.token = token
-        self._total_timeout = _total_timeout(total_timeout)
-        if transport is None:
-            import httpx
-
-            self._transport = httpx.Client(
-                timeout=timeout,
-                transport=DeadlineHTTPTransport(),
-                follow_redirects=False,
-                trust_env=False,
-            )
-        else:
-            if not callable(getattr(transport, "request", None)):
-                raise TypeError("transport must provide request")
-            self._transport = transport
-        self._closed = False
-
-    def close(self):
-        if not self._closed:
-            self._closed = True
-            close = getattr(self._transport, "close", None)
-            if callable(close):
-                close()
-
-    def __enter__(self):
-        if self._closed:
-            raise RuntimeError("client is closed")
-        return self
-
-    def __exit__(self, _type, _value, _traceback):
-        self.close()
-
     def _perform(
         self,
         method: str,
         path: str,
-        selected: dict | None,
+        selected: dict[str, Any] | None,
         kind: str,
         *,
         body: bytes | None = None,
         wait_ms: int | None = None,
         attribution_run_id: str | None = None,
-    ):
-        if self._closed:
-            raise RuntimeError("client is closed")
-        # Independent primitive snapshot: caller mutation cannot change recovery.
+    ) -> dict[str, Any]:
         original = dict(selected) if selected is not None else None
-        headers = {
-            "EzLLMRouter-Contract-Version": v.VERSION,
-            "Authorization": f"Bearer {self.token}",
-        }
-        if body is not None:
-            headers["Content-Type"] = "application/json"
+        headers = {}
         if wait_ms is not None:
             headers["EzLLMRouter-Wait-Ms"] = str(wait_ms)
         if attribution_run_id is not None:
             headers["EzLLMRouter-Attribution-Version"] = "1"
             headers["EzLLMRouter-Attribution-Run"] = attribution_run_id
-        try:
-            response = bounded_request(
-                self._transport,
-                method,
-                self.base_url + path,
-                headers=headers,
-                content=body,
-                limit=WIRE_RESPONSE_LIMIT,
-                total_timeout=self._total_timeout,
-            )
-        except Exception as cause:
-            raise EzLLMRouterError(
-                "TRANSPORT_OUTCOME_UNKNOWN",
-                getattr(cause, "status_code", None),
-                "query_first",
-                selector=original,
-            ) from cause
+        response, value = self._exchange(
+            method,
+            path,
+            version_header="EzLLMRouter-Contract-Version",
+            version_field="contract_version",
+            version=v.VERSION,
+            limit=WIRE_RESPONSE_LIMIT,
+            error_type=EzLLMRouterError,
+            body=body,
+            headers=headers,
+            selector=original,
+        )
         status = response.status_code
-        try:
-            value = _strict_reply(response.content)
-        except (
-            AttributeError,
-            TypeError,
-            UnicodeError,
-            ValueError,
-            OverflowError,
-            RecursionError,
-        ) as cause:
-            raise EzLLMRouterError(
-                "TRANSPORT_OUTCOME_UNKNOWN", status, "query_first", selector=original
-            ) from cause
-        if (
-            type(value) is not dict
-            or value.get("contract_version") != v.VERSION
-            or response.headers.get("EzLLMRouter-Contract-Version") != v.VERSION
-        ):
-            correlation = (
-                value.get("error", {}).get("correlation_id")
-                if type(value) is dict and type(value.get("error")) is dict
-                else None
-            )
-            raise EzLLMRouterError(
-                "UNSUPPORTED_VERSION", status, "never", correlation, selector=original
-            )
         usable_handle = _matching_handle(value, original)
         try:
             envelope_error = "error" in value and "state" not in value
@@ -286,7 +199,9 @@ class EzLLMRouterClient:
             )
         return value
 
-    def _submit(self, request: dict, options: dict | None, run_id: str | None):
+    def _submit(
+        self, request: dict[str, Any], options: dict[str, Any] | None, run_id: str | None
+    ) -> dict[str, Any]:
         if type(request) is not dict:
             raise TypeError("request object required")
         try:
@@ -324,16 +239,22 @@ class EzLLMRouterClient:
             attribution_run_id=run_id,
         )
 
-    def submit(self, request: dict, options: dict | None = None):
+    def submit(
+        self, request: dict[str, Any], options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return self._submit(request, options, None)
 
-    def submit_in_run(self, request: dict, run_id: str, options: dict | None = None):
+    def submit_in_run(
+        self, request: dict[str, Any], run_id: str, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Bind an unchanged strict wire-0.2 request to a preauthorized v1 run."""
         if not v.identifier(run_id):
             raise EzLLMRouterError("SCHEMA_INVALID")
         return self._submit(request, options, run_id)
 
-    def _attribution_operation(self, method: str, path: str, payload: dict | None, kind: str):
+    def _attribution_operation(
+        self, method: str, path: str, payload: dict[str, Any] | None, kind: str
+    ) -> dict[str, Any]:
         if self._closed:
             raise RuntimeError("client is closed")
         try:
@@ -346,33 +267,16 @@ class EzLLMRouterClient:
                 body = None
         except (TypeError, ValueError, UnicodeError, OverflowError, RecursionError) as exc:
             raise EzLLMRouterError("SCHEMA_INVALID") from exc
-        headers = {
-            "EzLLMRouter-Contract-Version": v.VERSION,
-            "Authorization": f"Bearer {self.token}",
-        }
-        if body is not None:
-            headers["Content-Type"] = "application/json"
-        try:
-            response = bounded_request(
-                self._transport,
-                method,
-                self.base_url + path,
-                headers=headers,
-                content=body,
-                limit=WIRE_RESPONSE_LIMIT,
-                total_timeout=self._total_timeout,
-            )
-            value = _strict_reply(response.content)
-        except Exception as exc:
-            raise EzLLMRouterError(
-                "TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None), "query_first"
-            ) from exc
-        if (
-            type(value) is not dict
-            or value.get("contract_version") != v.VERSION
-            or response.headers.get("EzLLMRouter-Contract-Version") != v.VERSION
-        ):
-            raise EzLLMRouterError("UNSUPPORTED_VERSION", response.status_code)
+        response, value = self._exchange(
+            method,
+            path,
+            version_header="EzLLMRouter-Contract-Version",
+            version_field="contract_version",
+            version=v.VERSION,
+            limit=WIRE_RESPONSE_LIMIT,
+            error_type=EzLLMRouterError,
+            body=body,
+        )
         if set(value) == {"contract_version", "error"} and v.error(value["error"]):
             err = value["error"]
             raise EzLLMRouterError(
@@ -387,7 +291,7 @@ class EzLLMRouterClient:
             or type(value[result]) is not dict
         ):
             raise EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status_code, "query_first")
-        item = value[result]
+        item: dict[str, Any] = value[result]
         if kind == "receipt":
             valid = (
                 set(item)
@@ -453,7 +357,7 @@ class EzLLMRouterClient:
             raise EzLLMRouterError("INTERNAL_UNAVAILABLE", response.status_code, "query_first")
         return item
 
-    def start_run(self, run: dict):
+    def start_run(self, run: dict[str, Any]) -> dict[str, Any]:
         required = {"version", "run_id", "task_id", "task_class", "evaluation_ref", "mode"}
         if (
             type(run) is not dict
@@ -485,14 +389,14 @@ class EzLLMRouterClient:
             raise EzLLMRouterError("SCHEMA_INVALID")
         return self._attribution_operation("POST", "/v1/attribution-runs", deepcopy(run), "run")
 
-    def get_run(self, run_id: str):
+    def get_run(self, run_id: str) -> dict[str, Any]:
         if not v.identifier(run_id):
             raise EzLLMRouterError("SCHEMA_INVALID")
         return self._attribution_operation(
             "GET", "/v1/attribution-runs/" + quote(run_id, safe=""), None, "run"
         )
 
-    def report_outcome(self, event: dict):
+    def report_outcome(self, event: dict[str, Any]) -> dict[str, Any]:
         required = {
             "version",
             "event_id",
@@ -538,14 +442,16 @@ class EzLLMRouterClient:
             raise EzLLMRouterError("SCHEMA_INVALID")
         return self._attribution_operation("POST", "/v1/outcomes", deepcopy(event), "receipt")
 
-    def get_outcome_receipt(self, event_id: str):
+    def get_outcome_receipt(self, event_id: str) -> dict[str, Any]:
         if not v.identifier(event_id):
             raise EzLLMRouterError("SCHEMA_INVALID")
         return self._attribution_operation(
             "GET", "/v1/outcomes/" + quote(event_id, safe=""), None, "receipt"
         )
 
-    def getStatus(self, selector: dict, *, contract_version: str = "0.2"):
+    def get_status(
+        self, selector: dict[str, Any], *, contract_version: str = "0.2"
+    ) -> dict[str, Any]:
         if contract_version == "0.3":
             return self.get_successor_status(selector)
         if contract_version != "0.2":
@@ -565,44 +471,31 @@ class EzLLMRouterClient:
         return self._perform("GET", path, selected, "status")
 
     def _successor_request(
-        self, method, path, selector, *, body=None, wait_ms=None, kind="submit", request=None
-    ):
-        if self._closed:
-            raise RuntimeError("client is closed")
-        headers = {"EzLLMRouter-Contract-Version": "0.3", "Authorization": f"Bearer {self.token}"}
-        if body is not None:
-            headers["Content-Type"] = "application/json"
+        self,
+        method: str,
+        path: str,
+        selector: dict[str, Any],
+        *,
+        body: bytes | None = None,
+        wait_ms: int | None = None,
+        kind: str = "submit",
+        request: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        headers = {}
         if wait_ms is not None:
             headers["EzLLMRouter-Wait-Ms"] = str(wait_ms)
-        try:
-            response = bounded_request(
-                self._transport,
-                method,
-                self.base_url + path,
-                headers=headers,
-                content=body,
-                limit=SUCCESSOR_RESPONSE_LIMIT,
-                total_timeout=self._total_timeout,
-            )
-        except Exception as cause:
-            raise EzLLMRouterError(
-                "TRANSPORT_OUTCOME_UNKNOWN",
-                getattr(cause, "status_code", None),
-                "query_first",
-                selector=selector,
-            ) from cause
-        try:
-            value = _strict_reply(response.content)
-        except (UnicodeError, ValueError, TypeError, RecursionError) as cause:
-            raise EzLLMRouterError(
-                "TRANSPORT_OUTCOME_UNKNOWN", response.status_code, "query_first", selector=selector
-            ) from cause
-        if (
-            type(value) is not dict
-            or value.get("contract_version") != "0.3"
-            or response.headers.get("EzLLMRouter-Contract-Version") != "0.3"
-        ):
-            raise EzLLMRouterError("UNSUPPORTED_VERSION", response.status_code, selector=selector)
+        response, value = self._exchange(
+            method,
+            path,
+            version_header="EzLLMRouter-Contract-Version",
+            version_field="contract_version",
+            version="0.3",
+            limit=SUCCESSOR_RESPONSE_LIMIT,
+            error_type=EzLLMRouterError,
+            body=body,
+            headers=headers,
+            selector=selector,
+        )
         if "code" in value:
             if not v03.error_valid(value, response.status_code, kind):
                 raise EzLLMRouterError(
@@ -644,7 +537,9 @@ class EzLLMRouterClient:
             )
         return value
 
-    def _submit_successor(self, request, expected_operation, options):
+    def _submit_successor(
+        self, request: dict[str, Any], expected_operation: str, options: dict[str, Any] | None
+    ) -> dict[str, Any]:
         if (
             type(request) is not dict
             or request.get("operation") != {"type": expected_operation, "version": 1}
@@ -673,13 +568,17 @@ class EzLLMRouterClient:
             request=deepcopy(request),
         )
 
-    def submit_embedding(self, request: dict, options: dict | None = None):
+    def submit_embedding(
+        self, request: dict[str, Any], options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return self._submit_successor(request, "embedding.create", options)
 
-    def submit_rerank(self, request: dict, options: dict | None = None):
+    def submit_rerank(
+        self, request: dict[str, Any], options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return self._submit_successor(request, "rerank", options)
 
-    def get_successor_status(self, selector: dict):
+    def get_successor_status(self, selector: dict[str, Any]) -> dict[str, Any]:
         selected = deepcopy(selector)
         if type(selected) is not dict or not v03.named_shape(selected, "StatusQuery"):
             raise EzLLMRouterError("SCHEMA_INVALID")
@@ -695,19 +594,23 @@ class EzLLMRouterClient:
             "GET", path, selected.get("work_selector", selected), kind="status"
         )
 
-    def getCapabilities(self):
+    def get_capabilities(self) -> dict[str, Any]:
         return self._perform("GET", "/v1/capabilities", None, "capabilities")
 
-    def get_status(self, selector: dict, *, contract_version: str = "0.2"):
-        return self.getStatus(selector, contract_version=contract_version)
+    def getStatus(
+        self, selector: dict[str, Any], *, contract_version: str = "0.2"
+    ) -> dict[str, Any]:
+        """Compatibility spelling; prefer get_status."""
+        return self.get_status(selector, contract_version=contract_version)
 
-    def get_capabilities(self):
-        return self.getCapabilities()
+    def getCapabilities(self) -> dict[str, Any]:
+        """Compatibility spelling; prefer get_capabilities."""
+        return self.get_capabilities()
 
-
-from .integration import IntegrationClient, IntegrationClientError
 
 __all__ = [
+    "ClientError",
+    "IntegrationInputError",
     "EzLLMRouterClient",
     "EzLLMRouterError",
     "IntegrationClient",

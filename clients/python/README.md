@@ -42,7 +42,7 @@ reference assessments next to the immutable event records. The client returns
 these fields without changing or repeating the underlying work.
 
 `ezllmrouter_client.EzLLMRouterClient` is a synchronous wire-0.2 client for the
-currently enabled text `submit`, `getStatus` and `getCapabilities` operations.
+currently enabled text `submit`, `get_status` and `get_capabilities` operations.
 It connects only to a EzLLMRouter service. It does not call a model provider.
 
 ```python
@@ -50,7 +50,7 @@ from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 
 with EzLLMRouterClient(base_url="http://service:8765", token="local-token") as client:
     reply = client.submit(request, {"wait_ms": 3000})
-    status = client.getStatus({"submission_id": reply["handle"]["submission_id"]})
+    status = client.get_status({"submission_id": reply["handle"]["submission_id"]})
 ```
 
 The default HTTPX transport disables redirects, proxy inheritance and retries.
@@ -68,8 +68,21 @@ The default transport enforces the remaining budget on network operations throug
 HTTPcore 1.0.9, the already locked HTTPX dependency. Synchronous OS DNS resolution
 and address fallback can overrun their budget; a connection returned after expiry
 is closed before a request is sent. Call `close()` or use a context manager.
-`get_status` and `get_capabilities` are aliases; `get_status` also accepts
-`contract_version="0.3"`.
+`get_status` also accepts `contract_version="0.3"`. The explicit compatibility
+methods `getStatus` and `getCapabilities` delegate to the snake_case API.
+
+Both clients require an HTTP(S) origin, with no credentials, path, query or
+fragment. A trailing slash is accepted. Tokens must be nonempty ASCII bearer
+credentials without whitespace. Credentials are private; client representations
+and ordinary attribute-dictionary diagnostics redact them. This does not make
+in-process secrets inaccessible to code that deliberately inspects private state.
+
+The package ships `py.typed` and annotated public methods. JSON payloads remain
+`dict[str, Any]`; wire schemas and runtime validation define their field shapes.
+Catch `ClientError` for either client's protocol and transport errors. Accounting
+input failures raise `IntegrationInputError`, which also retains `TypeError`
+compatibility, with code `SCHEMA_INVALID`. Existing protocol-specific error
+classes remain available. Configuration errors remain `TypeError`.
 
 HTTPX responses are streamed into a bounded buffer with `Accept-Encoding:
 identity`; compressed responses are rejected before decoding. Wire 0.2 and

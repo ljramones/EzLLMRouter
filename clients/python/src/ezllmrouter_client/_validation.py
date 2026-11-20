@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
+from typing import Any
+from collections.abc import Callable
 
 VERSION = "0.2"
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}\Z")
@@ -46,27 +48,27 @@ SELECTOR = ("task_id", "step_id", "step_revision", "execution_generation")
 WORK_KEY = ("principal_id",) + SELECTOR
 
 
-def shape(value, required, optional=()):
-    return (
+def shape(value: Any, required: Any, optional: Any = ()) -> bool:
+    return bool(
         type(value) is dict
         and set(required) <= value.keys()
         and value.keys() <= set(required) | set(optional)
     )
 
 
-def identifier(value):
-    return type(value) is str and ID.fullmatch(value) is not None
+def identifier(value: Any) -> bool:
+    return bool(type(value) is str and ID.fullmatch(value) is not None)
 
 
-def positive(value):
-    return type(value) is int and 0 < value <= 9007199254740991
+def positive(value: Any) -> bool:
+    return bool(type(value) is int and 0 < value <= 9007199254740991)
 
 
-def nonnegative(value):
-    return type(value) is int and 0 <= value <= 9007199254740991
+def nonnegative(value: Any) -> bool:
+    return bool(type(value) is int and 0 <= value <= 9007199254740991)
 
 
-def utc(value):
+def utc(value: Any) -> bool:
     if type(value) is not str or UTC.fullmatch(value) is None:
         return False
     try:
@@ -76,8 +78,8 @@ def utc(value):
         return False
 
 
-def selector(value):
-    return (
+def selector(value: Any) -> bool:
+    return bool(
         shape(value, SELECTOR)
         and identifier(value["task_id"])
         and identifier(value["step_id"])
@@ -86,8 +88,8 @@ def selector(value):
     )
 
 
-def handle(value):
-    return (
+def handle(value: Any) -> bool:
+    return bool(
         shape(value, ("submission_id", "work_key"))
         and identifier(value["submission_id"])
         and shape(value["work_key"], WORK_KEY)
@@ -96,8 +98,8 @@ def handle(value):
     )
 
 
-def error(value):
-    return (
+def error(value: Any) -> bool:
+    return bool(
         shape(value, ("code", "correlation_id", "retry_guidance"), ("safe_message",))
         and value["code"] in ERROR_CODES
         and identifier(value["correlation_id"])
@@ -106,16 +108,16 @@ def error(value):
     )
 
 
-def knowledge(value):
+def knowledge(value: Any) -> bool:
     if type(value) is not dict:
         return False
     if value.get("state") == "known":
-        return shape(value, ("state", "count")) and nonnegative(value["count"])
-    return value.get("state") in ("unknown", "not_applicable") and shape(value, ("state",))
+        return bool(shape(value, ("state", "count")) and nonnegative(value["count"]))
+    return bool(value.get("state") in ("unknown", "not_applicable") and shape(value, ("state",)))
 
 
-def labels(value):
-    return (
+def labels(value: Any) -> bool:
+    return bool(
         shape(value, ("lineage_ids", "sensitivity", "restrictions"))
         and type(value["lineage_ids"]) is list
         and bool(value["lineage_ids"])
@@ -128,7 +130,7 @@ def labels(value):
     )
 
 
-def output_block(value):
+def output_block(value: Any) -> bool:
     if (
         type(value) is not dict
         or not identifier(value.get("block_id"))
@@ -136,12 +138,12 @@ def output_block(value):
     ):
         return False
     if value.get("kind") == "assistant_text":
-        return (
+        return bool(
             shape(value, ("block_id", "kind", "text", "source_labels"))
             and type(value["text"]) is str
         )
     if value.get("kind") == "tool_call":
-        return (
+        return bool(
             shape(value, ("block_id", "kind", "call_id", "tool_name", "arguments", "source_labels"))
             and identifier(value["call_id"])
             and value["tool_name"] == "lookup"
@@ -152,7 +154,7 @@ def output_block(value):
     return False
 
 
-def destination(value):
+def destination(value: Any) -> bool:
     required = (
         "configuration_ref",
         "service",
@@ -161,24 +163,26 @@ def destination(value):
         "model_version",
         "processing_region",
     )
-    return shape(value, required, ("pool", "quantization")) and all(map(identifier, value.values()))
+    return bool(
+        shape(value, required, ("pool", "quantization")) and all(map(identifier, value.values()))
+    )
 
 
-def cost(value):
+def cost(value: Any) -> bool:
     if (
         type(value) is not dict
         or type(value.get("currency")) is not str
         or re.fullmatch(r"[A-Z]{3}", value["currency"]) is None
     ):
         return False
-    money = (
+    money: Callable[[Any], bool] = (
         lambda x: type(x) is str and re.fullmatch(r"(0|[1-9][0-9]*)(\.[0-9]{1,9})?", x) is not None
     )
     state = value.get("status")
     if state == "unknown":
-        return shape(value, ("status", "currency"))
+        return bool(shape(value, ("status", "currency")))
     if state in ("reported", "calculated", "reconciled"):
-        return (
+        return bool(
             shape(value, ("status", "currency", "amount_decimal", "source_ref"), ("zero_basis",))
             and money(value["amount_decimal"])
             and identifier(value["source_ref"])
@@ -189,7 +193,7 @@ def cost(value):
             )
         )
     if state == "estimated":
-        return (
+        return bool(
             shape(
                 value,
                 (
@@ -210,11 +214,11 @@ def cost(value):
     return False
 
 
-def usage(value):
+def usage(value: Any) -> bool:
     if type(value) is not dict:
         return False
     if value.get("state") == "not_recorded":
-        return shape(value, ("state",))
+        return bool(shape(value, ("state",)))
     if not shape(value, ("state", "revision")) or value["state"] != "available":
         return False
     r = value["revision"]
@@ -259,7 +263,7 @@ def usage(value):
         "output_text",
         "output_reasoning",
     )
-    return (
+    return bool(
         shape(n, categories + ("other_billable",))
         and all(knowledge(n[k]) for k in categories)
         and type(n["other_billable"]) is list
@@ -274,7 +278,7 @@ def usage(value):
     )
 
 
-def candidate(value):
+def candidate(value: Any) -> bool:
     required = (
         "candidate_id",
         "attempt_id",
@@ -288,7 +292,7 @@ def candidate(value):
     )
     if not shape(value, required, ("provider_request_id", "structural_code")):
         return False
-    return (
+    return bool(
         all(identifier(value[k]) for k in ("candidate_id", "attempt_id", "execution_generation"))
         and destination(value["served_destination"])
         and type(value["output_blocks"]) is list
@@ -308,7 +312,7 @@ def candidate(value):
     )
 
 
-def attempt(value):
+def attempt(value: Any) -> bool:
     required = (
         "attempt_id",
         "execution_generation",
@@ -320,7 +324,7 @@ def attempt(value):
         "generation_state",
         "usage",
     )
-    return (
+    return bool(
         shape(value, required, ("provider_request_id", "cancel_evidence_ref"))
         and identifier(value["attempt_id"])
         and identifier(value["execution_generation"])
@@ -344,22 +348,25 @@ def attempt(value):
     )
 
 
-def usage_matches(a, b):
-    return a["state"] == b["state"] and (
-        a["state"] != "available"
-        or (
-            a["revision"]["attempt_id"] == b["revision"]["attempt_id"]
-            and a["revision"]["revision"] == b["revision"]["revision"]
+def usage_matches(a: Any, b: Any) -> bool:
+    return bool(
+        a["state"] == b["state"]
+        and (
+            a["state"] != "available"
+            or (
+                a["revision"]["attempt_id"] == b["revision"]["attempt_id"]
+                and a["revision"]["revision"] == b["revision"]["revision"]
+            )
         )
     )
 
 
-def reply(value, status):
+def reply(value: Any, status: Any) -> bool:
     if type(value) is not dict or value.get("contract_version") != VERSION:
         return False
     state = value.get("state")
     if state == "delivered":
-        return (
+        return bool(
             status == 200
             and shape(value, ("contract_version", "state", "handle", "candidate"))
             and handle(value["handle"])
@@ -373,14 +380,14 @@ def reply(value, status):
             )
         )
     if state == "pending":
-        return (
+        return bool(
             status == 202
             and shape(value, ("contract_version", "state", "handle", "pending_result_policy"))
             and handle(value["handle"])
             and value["pending_result_policy"] in ("pollable_if_retained", "metadata_only_no_store")
         )
     if state == "failed":
-        return (
+        return bool(
             status >= 400
             and shape(
                 value,
@@ -392,7 +399,7 @@ def reply(value, status):
             and value["failure_stage"] in ("before_transmit", "after_transmit")
         )
     if state == "rejected":
-        return (
+        return bool(
             status >= 400
             and shape(value, ("contract_version", "state", "selector", "error"))
             and selector(value["selector"])
@@ -401,7 +408,7 @@ def reply(value, status):
     return False
 
 
-def status_snapshot(value, status):
+def status_snapshot(value: Any, status: Any) -> bool:
     required = (
         "contract_version",
         "handle",
@@ -475,15 +482,15 @@ def status_snapshot(value, status):
     ):
         return False
     if value["submission_state"] in ("failed_before_transmit", "failed_after_transmit"):
-        return (
+        return bool(
             error(value.get("terminal_failure"))
             and identifier(value.get("terminal_attempt_id"))
             and any(a["attempt_id"] == value["terminal_attempt_id"] for a in attempts)
         )
-    return "terminal_failure" not in value and "terminal_attempt_id" not in value
+    return bool("terminal_failure" not in value and "terminal_attempt_id" not in value)
 
 
-def capabilities(value, status):
+def capabilities(value: Any, status: Any) -> bool:
     if (
         status != 200
         or not shape(
@@ -494,20 +501,24 @@ def capabilities(value, status):
     ):
         return False
     supported, disabled = value["supported_features"], value["disabled_features"]
-    return all(
-        type(x) is list
-        and all(type(f) is str and f in FEATURES for f in x)
-        and len(set(x)) == len(x)
-        for x in (supported, disabled)
-    ) and not set(supported) & set(disabled)
+    return bool(
+        all(
+            type(x) is list
+            and all(type(f) is str and f in FEATURES for f in x)
+            and len(set(x)) == len(x)
+            for x in (supported, disabled)
+        )
+        and not set(supported) & set(disabled)
+    )
 
 
-def correspondence(value, selected, kind):
+def correspondence(value: Any, selected: Any, kind: Any) -> bool:
     if kind == "capabilities" or "error" in value and "state" not in value:
         return True
     if kind == "submit" and value.get("state") == "rejected":
-        return selector(value.get("selector")) and all(
-            value["selector"][k] == selected[k] for k in SELECTOR
+        return bool(
+            selector(value.get("selector"))
+            and all(value["selector"][k] == selected[k] for k in SELECTOR)
         )
     if "handle" not in value:
         return True
@@ -515,5 +526,5 @@ def correspondence(value, selected, kind):
     if not handle(h):
         return False
     if "submission_id" in selected:
-        return h["submission_id"] == selected["submission_id"]
-    return all(h["work_key"][k] == selected[k] for k in SELECTOR)
+        return bool(h["submission_id"] == selected["submission_id"])
+    return bool(all(h["work_key"][k] == selected[k] for k in SELECTOR))

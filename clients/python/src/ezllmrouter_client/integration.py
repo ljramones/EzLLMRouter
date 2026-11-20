@@ -6,11 +6,14 @@ import json
 import hashlib
 from pathlib import Path
 import re
-from datetime import datetime, timezone
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
+from typing import Any
 
-from ._http import DEFAULT_TIMEOUT, INTEGRATION_RESPONSE_LIMIT, bounded_request
-from ._deadline import DEFAULT_TOTAL_TIMEOUT, DeadlineHTTPTransport, total_timeout as _total_timeout
+from ._http import DEFAULT_TIMEOUT, INTEGRATION_RESPONSE_LIMIT
+from ._deadline import DEFAULT_TOTAL_TIMEOUT
+from ._errors import IntegrationClientError, IntegrationInputError
+from ._schema_validation import validate
+from ._session import ClientSession
 from ._json import strict_reply
 
 SCHEMAS = {
@@ -24,66 +27,12 @@ SCHEMAS = {
 SCHEMA = SCHEMAS["1"]
 
 
-def _valid(value, shape, definitions=SCHEMA):
-    if "$ref" in shape:
-        definition = shape["$ref"].rsplit("/", 1)[1]
-        if definition == "utc":
-            if (
-                type(value) is not str
-                or re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", value) is None
-            ):
-                return False
-            try:
-                return datetime.fromisoformat(
-                    value.replace("Z", "+00:00")
-                ).utcoffset() == timezone.utc.utcoffset(None)
-            except ValueError:
-                return False
-        return _valid(value, definitions[definition], definitions)
-    if "oneOf" in shape:
-        return sum(_valid(value, item, definitions) for item in shape["oneOf"]) == 1
-    if "const" in shape and value != shape["const"]:
-        return False
-    if "enum" in shape and value not in shape["enum"]:
-        return False
-    kind = shape.get("type")
-    if kind == "object":
-        return (
-            type(value) is dict
-            and set(shape.get("required", ())) <= set(value)
-            and (
-                shape.get("additionalProperties") is not False
-                or set(value) <= set(shape["properties"])
-            )
-            and all(
-                _valid(item, shape["properties"][key], definitions)
-                for key, item in value.items()
-                if key in shape["properties"]
-            )
-        )
-    if kind == "array":
-        return (
-            type(value) is list
-            and shape.get("minItems", 0) <= len(value) <= shape.get("maxItems", 10**9)
-            and (
-                not shape.get("uniqueItems")
-                or len({json.dumps(x, sort_keys=True) for x in value}) == len(value)
-            )
-            and all(_valid(item, shape["items"], definitions) for item in value)
-        )
-    if kind == "integer":
-        return type(value) is int and shape.get("minimum", -(10**30)) <= value <= shape.get(
-            "maximum", 10**30
-        )
-    if kind == "string":
-        return type(value) is str and (
-            "pattern" not in shape or re.fullmatch(shape["pattern"], value) is not None
-        )
-    return True
+def _valid(value: Any, shape: dict[str, Any], definitions: dict[str, Any] = SCHEMA) -> bool:
+    return validate(value, shape, definitions)
 
 
-def _event_valid(event):
-    definitions = SCHEMAS.get(event.get("integration_version")) if type(event) is dict else None
+def _event_valid(event: dict[str, Any]) -> bool:
+    definitions = SCHEMAS.get(event.get("integration_version", "")) if type(event) is dict else None
     if definitions is None or not _valid(event, definitions["event"], definitions):
         return False
     if event["kind"] in ("activity", "attempt_started") and (
@@ -156,8 +105,10 @@ def _event_valid(event):
     return True
 
 
-def _snapshot_valid(snapshot):
-    schema = SCHEMAS.get(snapshot.get("integration_version")) if type(snapshot) is dict else None
+def _snapshot_valid(snapshot: dict[str, Any]) -> bool:
+    schema = (
+        SCHEMAS.get(snapshot.get("integration_version", "")) if type(snapshot) is dict else None
+    )
     if schema is None or snapshot["integration_version"] not in ("2", "3"):
         return False
     if not _valid(snapshot, schema["snapshot"], schema):
@@ -194,19 +145,15 @@ def _snapshot_valid(snapshot):
     return True
 
 
-class IntegrationClientError(Exception):
-    def __init__(self, code, http_status=None, retry_guidance="never"):
-        super().__init__(code)
-        self.code, self.http_status, self.retry_guidance = code, http_status, retry_guidance
-
-
-def _decode(raw):
+def _decode(raw: bytes) -> Any:
     if len(raw) > INTEGRATION_RESPONSE_LIMIT:
         raise ValueError("response limit")
     return strict_reply(raw)
 
 
-def _receipt_valid(value, dataset_id, event_id, kind=None, digest=None):
+def _receipt_valid(
+    value: Any, dataset_id: str, event_id: str, kind: str | None = None, digest: str | None = None
+) -> bool:
     return (
         type(value) is dict
         and value.get("dataset_id") == dataset_id
@@ -230,108 +177,57 @@ def _receipt_valid(value, dataset_id, event_id, kind=None, digest=None):
     )
 
 
-class IntegrationClient:
+class IntegrationClient(ClientSession):
     def __init__(
         self,
-        base_url,
-        token,
+        base_url: str,
+        token: str,
         *,
-        transport=None,
-        timeout=DEFAULT_TIMEOUT,
-        version="1",
-        total_timeout=DEFAULT_TOTAL_TIMEOUT,
-    ):
-        if type(base_url) is not str or type(token) is not str:
-            raise TypeError("invalid integration client configuration")
-        parsed = urlsplit(base_url)
-        if (
-            type(base_url) is not str
-            or type(token) is not str
-            or not token
-            or parsed.scheme not in ("http", "https")
-            or not parsed.hostname
-            or parsed.username
-            or parsed.password
-            or parsed.query
-            or parsed.fragment
-            or version not in SCHEMAS
-        ):
-            raise TypeError("invalid integration client configuration")
-        self.base_url, self.token = base_url.rstrip("/"), token
-        self._total_timeout = _total_timeout(total_timeout)
+        transport: Any = None,
+        timeout: Any = DEFAULT_TIMEOUT,
+        version: str = "1",
+        total_timeout: float | None = DEFAULT_TOTAL_TIMEOUT,
+    ) -> None:
+        if version not in SCHEMAS:
+            raise TypeError("unsupported integration version")
+        super().__init__(
+            base_url, token, transport=transport, timeout=timeout, total_timeout=total_timeout
+        )
         self.version, self.schema, self.base_path = (
             version,
             SCHEMAS[version],
             "/integration/v" + version,
         )
-        if transport is None:
-            import httpx
 
-            self.transport = httpx.Client(
-                timeout=timeout,
-                transport=DeadlineHTTPTransport(),
-                follow_redirects=False,
-                trust_env=False,
+    @property
+    def transport(self) -> Any:
+        """Injected/owned transport, retained for existing diagnostic callers."""
+        return self._transport
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def _request(
+        self, method: str, path: str, body: dict[str, Any] | None, expected: tuple[int, ...]
+    ) -> dict[str, Any]:
+        data = (
+            json.dumps(body, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
+                "utf-8"
             )
-        else:
-            if not callable(getattr(transport, "request", None)):
-                raise TypeError("transport must provide request")
-            self.transport = transport
-        self.closed = False
-
-    def close(self):
-        if not self.closed:
-            self.closed = True
-            close = getattr(self.transport, "close", None)
-            if callable(close):
-                close()
-
-    def __enter__(self):
-        if self.closed:
-            raise RuntimeError("client closed")
-        return self
-
-    def __exit__(self, *_):
-        self.close()
-
-    def _request(self, method, path, body, expected):
-        if self.closed:
-            raise RuntimeError("client closed")
-        headers = {
-            "Authorization": "Bearer " + self.token,
-            "EzLLMRouter-Integration-Version": self.version,
-        }
-        if body is not None:
-            headers["Content-Type"] = "application/json"
-            data = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        else:
-            data = None
-        try:
-            response = bounded_request(
-                self.transport,
-                method,
-                self.base_url + path,
-                headers=headers,
-                content=data,
-                limit=INTEGRATION_RESPONSE_LIMIT,
-                total_timeout=self._total_timeout,
-            )
-        except Exception as exc:
-            raise IntegrationClientError(
-                "TRANSPORT_OUTCOME_UNKNOWN", getattr(exc, "status_code", None), "query_first"
-            ) from exc
-        try:
-            value = _decode(response.content)
-        except (ValueError, UnicodeError, TypeError, RecursionError) as exc:
-            raise IntegrationClientError(
-                "TRANSPORT_OUTCOME_UNKNOWN", response.status_code, "query_first"
-            ) from exc
-        if (
-            type(value) is not dict
-            or response.headers.get("EzLLMRouter-Integration-Version") != self.version
-            or value.get("integration_version") != self.version
-        ):
-            raise IntegrationClientError("UNSUPPORTED_VERSION", response.status_code)
+            if body is not None
+            else None
+        )
+        response, value = self._exchange(
+            method,
+            path,
+            version_header="EzLLMRouter-Integration-Version",
+            version_field="integration_version",
+            version=self.version,
+            limit=INTEGRATION_RESPONSE_LIMIT,
+            error_type=IntegrationClientError,
+            body=data,
+        )
         if response.status_code >= 400:
             error = value.get("error")
             if type(error) is not dict or type(error.get("code")) is not str:
@@ -345,21 +241,21 @@ class IntegrationClient:
             raise IntegrationClientError("PROTOCOL_INVALID", response.status_code, "query_first")
         return value
 
-    def create_dataset(self, body):
+    def create_dataset(self, body: dict[str, Any] | None) -> dict[str, Any]:
         if not _valid(body, self.schema["dataset"], self.schema):
-            raise TypeError("invalid dataset")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid dataset")
         return self._request("POST", self.base_path + "/datasets", body, (200, 201))
 
-    def register_account(self, body):
+    def register_account(self, body: dict[str, Any] | None) -> dict[str, Any]:
         if not _valid(body, self.schema["account"], self.schema):
-            raise TypeError("invalid account")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid account")
         return self._request("POST", self.base_path + "/accounts", body, (200, 201))
 
-    def set_account_state(self, account_id, body):
+    def set_account_state(self, account_id: str, body: dict[str, Any] | None) -> dict[str, Any]:
         if not _valid(account_id, self.schema["id"], self.schema) or not _valid(
             body, self.schema["account_state"], self.schema
         ):
-            raise TypeError("invalid account state")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid account state")
         return self._request(
             "POST",
             self.base_path + "/accounts/" + quote(account_id, safe="") + "/state",
@@ -367,13 +263,17 @@ class IntegrationClient:
             (200,),
         )
 
-    def set_account_permissions(self, account_id, body):
+    def set_account_permissions(
+        self, account_id: str, body: dict[str, Any] | None
+    ) -> dict[str, Any]:
         if (
             self.version != "3"
             or not _valid(account_id, self.schema["id"], self.schema)
             or not _valid(body, self.schema["account_permissions"], self.schema)
         ):
-            raise TypeError("invalid account permissions")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid account permissions"
+            )
         return self._request(
             "POST",
             self.base_path + "/accounts/" + quote(account_id, safe="") + "/permissions",
@@ -381,13 +281,13 @@ class IntegrationClient:
             (200,),
         )
 
-    def submit_observation(self, event):
+    def submit_observation(self, event: dict[str, Any]) -> dict[str, Any]:
         if (
             type(event) is not dict
             or event.get("integration_version") != self.version
             or not _event_valid(event)
         ):
-            raise TypeError("invalid observation")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid observation")
         snapshot = json.loads(json.dumps(event, ensure_ascii=False))
         digest = (
             "sha256:"
@@ -404,11 +304,13 @@ class IntegrationClient:
             raise IntegrationClientError("PROTOCOL_INVALID", retry_guidance="query_first")
         return reply
 
-    def recover_receipt(self, dataset_id, event_id):
+    def recover_receipt(self, dataset_id: str, event_id: str) -> dict[str, Any]:
         if not _valid(dataset_id, self.schema["id"], self.schema) or not _valid(
             event_id, self.schema["id"], self.schema
         ):
-            raise TypeError("invalid receipt selector")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid receipt selector"
+            )
         reply = self._request(
             "GET",
             self.base_path
@@ -423,7 +325,7 @@ class IntegrationClient:
             raise IntegrationClientError("PROTOCOL_INVALID", retry_guidance="query_first")
         return reply
 
-    def eligibility(self, dataset_id, account_id, model_id):
+    def eligibility(self, dataset_id: str, account_id: str, model_id: str) -> dict[str, Any]:
         if self.version == "3":
             return self.operation_eligibility(
                 dataset_id,
@@ -439,7 +341,9 @@ class IntegrationClient:
             _valid(item, self.schema["id"], self.schema)
             for item in (dataset_id, account_id, model_id)
         ):
-            raise TypeError("invalid eligibility selector")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid eligibility selector"
+            )
         reply = self._request(
             "GET",
             self.base_path
@@ -484,7 +388,9 @@ class IntegrationClient:
                 raise IntegrationClientError("PROTOCOL_INVALID", retry_guidance="query_first")
         return reply
 
-    def operation_eligibility(self, dataset_id, account_id, selector):
+    def operation_eligibility(
+        self, dataset_id: str, account_id: str, selector: dict[str, Any]
+    ) -> dict[str, Any]:
         if (
             self.version != "3"
             or not all(_valid(x, self.schema["id"], self.schema) for x in (dataset_id, account_id))
@@ -506,7 +412,9 @@ class IntegrationClient:
             or selector["selection_kind"] != "known_model"
             and selector["operation_family"] not in ("speech_input", "speech_output")
         ):
-            raise TypeError("invalid operation eligibility selector")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid operation eligibility selector"
+            )
         query = "?dataset_id=" + quote(dataset_id, safe="")
         for key in ("operation_family", "capability", "selection_kind", "model_id"):
             if key in selector:
@@ -552,9 +460,9 @@ class IntegrationClient:
             raise IntegrationClientError("PROTOCOL_INVALID", retry_guidance="query_first")
         return reply
 
-    def report(self, dataset_id):
+    def report(self, dataset_id: str) -> dict[str, Any]:
         if not _valid(dataset_id, self.schema["id"], self.schema):
-            raise TypeError("invalid dataset")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid dataset")
         return self._request(
             "GET",
             self.base_path + "/reports/usage?dataset_id=" + quote(dataset_id, safe=""),
@@ -562,14 +470,14 @@ class IntegrationClient:
             (200,),
         )
 
-    def submit_snapshot(self, snapshot):
+    def submit_snapshot(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         if (
             type(snapshot) is not dict
             or self.version not in ("2", "3")
             or snapshot.get("integration_version") != self.version
             or not _snapshot_valid(snapshot)
         ):
-            raise TypeError("invalid snapshot")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError("invalid snapshot")
         digest = (
             "sha256:"
             + hashlib.sha256(
@@ -586,11 +494,13 @@ class IntegrationClient:
             raise IntegrationClientError("PROTOCOL_INVALID", retry_guidance="query_first")
         return reply
 
-    def snapshot(self, dataset_id, snapshot_id):
+    def snapshot(self, dataset_id: str, snapshot_id: Any) -> dict[str, Any]:
         if self.version not in ("2", "3") or not all(
             _valid(item, self.schema["id"], self.schema) for item in (dataset_id, snapshot_id)
         ):
-            raise TypeError("invalid snapshot selector")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid snapshot selector"
+            )
         return self._request(
             "GET",
             self.base_path
@@ -602,9 +512,11 @@ class IntegrationClient:
             (200,),
         )
 
-    def export_dataset(self, dataset_id):
+    def export_dataset(self, dataset_id: str) -> dict[str, Any]:
         if self.version not in ("2", "3") or not _valid(dataset_id, self.schema["id"], self.schema):
-            raise TypeError("invalid dataset selector")
+            raise IntegrationInputError("SCHEMA_INVALID") from ValueError(
+                "invalid dataset selector"
+            )
         return self._request(
             "GET",
             self.base_path + "/reports/dataset?dataset_id=" + quote(dataset_id, safe=""),
