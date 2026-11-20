@@ -7,7 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
-from socket_lease import remove_stale_socket
+from deploy.local.socket_lease import remove_stale_socket
 
 
 class SocketLeaseTests(unittest.TestCase):

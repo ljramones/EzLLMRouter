@@ -36,7 +36,7 @@ for i in range(60):
   logrun d05-js-package compose exec -T js_choice_b node -e \
     'const p=require.resolve("@cognitivedynamics/ezllmrouter-client");const m=require("/app/consumer/node_modules/@cognitivedynamics/ezllmrouter-client/package.json");console.log(JSON.stringify({version:m.version,path:p}))'
   logrun d05-worker-identities compose exec -T service_choice_b \
-    python -B /app/gateway/worker_ready.py
+    python -B -m ezllmrouter_server.gateway.worker_ready
   logrun d05-worker-isolation compose exec -T worker_choice_b python -c \
     'import json,os,pathlib,socket; routes=pathlib.Path("/proc/net/route").read_text().splitlines(); assert not any(len(x.split())>1 and x.split()[1]=="00000000" for x in routes[1:]); assert "EZLLMROUTER_DEV_TOKEN" not in os.environ and "EZLLMROUTER_DEV04_PROVIDER_KEY" not in os.environ; assert not any(pathlib.Path(x).exists() for x in ("/app/server","/app/dev_slice","/app/gateway")); s=socket.socket(); s.settimeout(.5); rc=s.connect_ex(("127.0.0.1",8766)); s.close(); assert rc != 0; print(json.dumps({"network_mode":"none","default_route":False,"direct_receiver_connect_errno":rc,"trusted_code_mounted":False,"trusted_credentials_in_environment":False}))'
   logrun d05-guard-component compose exec -T service_choice_b python -B /app/gateway/test_guard.py -q

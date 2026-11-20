@@ -32,7 +32,7 @@ def identity():
     }
 
 
-class WorkerReadyTests(unittest.TestCase):
+class WorkerReadyFixture:
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="dev05-worker-ready-")
         self.addCleanup(self.temp.cleanup)
@@ -66,7 +66,8 @@ class WorkerReadyTests(unittest.TestCase):
             [
                 sys.executable,
                 "-B",
-                str(ROOT / "server/src/ezllmrouter_server/gateway/worker_ready.py"),
+                "-m",
+                "ezllmrouter_server.gateway.worker_ready",
                 "--socket",
                 str(self.path),
                 "--deadline",
@@ -84,6 +85,8 @@ class WorkerReadyTests(unittest.TestCase):
         self.assertTrue(all(command == {"kind": "module_identity"} for command in self.commands))
         return result
 
+
+class WorkerReadyTests(WorkerReadyFixture, unittest.TestCase):
     def test_delayed_socket_handshake_and_strict_json_consumer(self):
         self.start_server(delay=0.12)
         result = self.run_probe()
@@ -102,15 +105,6 @@ class WorkerReadyTests(unittest.TestCase):
         result = self.run_probe()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(self.commands), 1)
-
-    def test_never_ready_is_bounded(self):
-        start = time.monotonic()
-        result = self.run_probe("0.2")
-        self.assertEqual(result.returncode, 1)
-        self.assertEqual(result.stdout, "")
-        self.assertIn("worker identity socket not ready by deadline", result.stderr)
-        self.assertLess(time.monotonic() - start, 1.0)
-        self.assertEqual(self.commands, [])
 
     def test_failed_worker_stale_endpoint_is_bounded(self):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stale:
@@ -148,6 +142,17 @@ class WorkerReadyTests(unittest.TestCase):
         result = self.run_probe(allow_activity=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), active)
+
+
+class WorkerReadyOfflineTests(WorkerReadyFixture, unittest.TestCase):
+    def test_never_ready_is_bounded(self):
+        start = time.monotonic()
+        result = self.run_probe("0.2")
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("worker identity socket not ready by deadline", result.stderr)
+        self.assertLess(time.monotonic() - start, 1.0)
+        self.assertEqual(self.commands, [])
 
     def test_live_profile_rejects_malformed_attempt_counter(self):
         for counts in ({"attempt." + "b" * 32: 0}, {"wrong": 1}, {"attempt." + "b" * 32: True}, []):

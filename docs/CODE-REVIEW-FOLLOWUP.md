@@ -291,6 +291,19 @@ consumer checks and Playwright type checking pass. The updated actual HTTP test
 was attempted here and listener binding is still denied. Evidence, path maps and
 resource hashes are under `.artifacts/code-review/cleanup-pass/tooling/`.
 
+A subsequent CI fixture repair gives the CommonJS personal-campaign test its own
+complete cache-aware price contract while retaining the historical controlled
+fixture's price. The shared setup now runs offline through normal admission and
+settlement, including rejection after credential rotation. Worker readiness uses
+the installed package's module entry point; its four listener-free checks run in
+the offline suite. All loopback suites also load under an offline import check,
+which covers the corrected client-boundary and socket-lease imports. The full
+runner passes 827 cases and seven component scripts; 416 Python files pass
+formatting and strict typing covers 51 modules. The CommonJS fixture now reaches
+listener creation here, where the executor denies binding. Its actual wire
+exchange and live worker handshakes still require the target checks. The log is
+`.artifacts/code-review/cleanup-pass/tooling/ci-fixture-regressions.log`.
+
 ## Remaining review work
 
 The review is not fully resolved. Continue in this order:

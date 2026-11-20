@@ -18,6 +18,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ToolingBoundaryTests(unittest.TestCase):
+    def test_loopback_suites_load_without_fixture_paths(self):
+        code = """
+import sys
+sys.path.insert(0, sys.argv[1])
+from contextlib import ExitStack
+import unittest
+from tools.check import LOOPBACK_MODULES, block_network
+before = sys.path[:]
+loader = unittest.TestLoader()
+with ExitStack() as stack:
+    block_network(stack)
+    for name in LOOPBACK_MODULES:
+        suite = loader.loadTestsFromName(name)
+        if not suite.countTestCases():
+            raise RuntimeError('empty loopback suite: ' + name)
+if loader.errors:
+    raise RuntimeError('\\n'.join(loader.errors))
+if sys.path != before:
+    raise RuntimeError('loopback imports changed sys.path')
+"""
+        result = subprocess.run(
+            [sys.executable, "-I", "-B", "-c", code, str(ROOT)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_staged_actor_runs_from_private_stdin_without_an_image_source_file(self):
         source = (ROOT / "tools/operator/dev09_python_actor.py").read_text()
         code = (

@@ -29,6 +29,8 @@ from ezllmrouter_server.gateway.proxy_recipe import (
     proxy_policy,
     public_destination,
 )
+from tests.gateway_integration.campaign_fixture import campaign_registry
+from tools.gateway.evidence.dev08_integrated import TEST_TOKEN, fixture_paths
 
 
 class Authority:
@@ -426,6 +428,70 @@ class ProviderPlanTests(unittest.TestCase):
                     coordinator.pool.shutdown(wait=True)
             finally:
                 store.close()
+
+
+class ClientCampaignFixtureTests(unittest.TestCase):
+    def setUp(self):
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        fixture_path, request_path = fixture_paths()
+        self.fixture = json.loads(fixture_path.read_text())
+        self.request = json.loads(request_path.read_text())
+        self.store, self.authority, self.registry, self.config = self.enterContext(
+            campaign_registry(root, self.fixture)
+        )
+
+    def test_client_campaign_fixture_settles_through_normal_admission(self):
+        fixture = self.fixture
+        adapter = Adapter()
+        adapter.return_details = True
+        coordinator = Coordinator(
+            self.store,
+            {TEST_TOKEN: fixture["trusted_context"]},
+            public_destination(fixture),
+            fixture["prompt_blocks"],
+            fixture["allowed_lineages"],
+            PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), self.registry),
+            adapter,
+            fixture["retention"],
+            fixture["classification"],
+            GatewayProxyRecipe(controlled_provider_proof=True),
+            trusted_source_labels=fixture["trusted_source_labels"],
+            registry=self.registry,
+        )
+        self.addCleanup(coordinator.close)
+        self.assertFalse(self.registry.controlled_provider_proof)
+        token = self.registry.issue_local_operator_token("owner.local")
+        self.request["requested_configuration_ref"] = self.config["configuration_ref"]
+        self.request["step_id"] = "step.dev10.js.personal"
+        self.request["execution_generation"] = "gen.dev10.js.personal"
+        _, reply = coordinator.submit(
+            self.request, coordinator.authenticate(token), credential=token, wait_ms=10000
+        )
+        self.assertEqual(reply["state"], "delivered")
+        cost = reply["candidate"]["usage"]["revision"]["cost"]
+        self.assertEqual(cost["status"], "calculated")
+        self.assertEqual(cost["amount_decimal"], "0.000009000")
+        self.assertEqual(cost["source_ref"], "test.dev10.js.price.v2")
+        summary = self.registry.personal_campaign.summary()
+        self.assertEqual(summary["request_count"], 1)
+        self.assertEqual(summary["incurred_decimal"], "0.000009000")
+        self.assertEqual(summary["outstanding_decimal"], "0")
+        self.assertEqual(len(adapter.sent), 1)
+
+    def test_client_campaign_fixture_rejects_rotated_authority(self):
+        campaign = self.registry.personal_campaign
+        campaign.transition("owner.local", "paused")
+        connection = self.registry.connection("conn.dev08-controlled")
+        self.registry.set_provider_credential(
+            "owner.local",
+            connection["connection_id"],
+            connection["revision"],
+            "op.dev10.js.rotate",
+            "replace",
+            "test-provider-key-rotated",
+        )
+        with self.assertRaisesRegex(ValueError, "campaign authority is stale"):
+            campaign.transition("owner.local", "active")
 
 
 if __name__ == "__main__":

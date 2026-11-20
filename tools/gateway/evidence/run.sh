@@ -278,8 +278,8 @@ if [[ "$phase" == dev05 ]]; then
   logrun dev05-component "$python_tool" -B -m tools.check --test-module tests.gateway_integration.test_guarded_tool_execution
   logrun dev05-capture-regression "$python_tool" -I -B \
     "$root/tests/gateway_integration/test_runtime_capture.py" -q
-  logrun dev05-worker-readiness-regression "$python_tool" -I -B \
-    "$root/tests/gateway_integration/test_worker_ready.py" -q
+  logrun dev05-worker-readiness-regression "$python_tool" -B -m tools.check \
+    --test-module tests.gateway_integration.test_worker_ready --loopback
   logrun dev05-python-actor-modes "$python_tool" -I -B \
     "$root/tests/gateway_integration/test_python_actor_recovery.py" -q
   logrun dev05-js-actor-modes "$node24_tool" \

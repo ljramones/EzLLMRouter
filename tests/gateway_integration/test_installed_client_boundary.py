@@ -6,7 +6,6 @@ import shutil
 
 import json
 import subprocess
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import threading
@@ -22,7 +21,6 @@ from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.web import serve
 from ezllmrouter_server.provider_vault import ProviderVault
-from ezllmrouter_server.personal_campaign import PersonalCampaign
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.canonical import ContractError
 from tools.gateway.evidence.dev08_integrated import (
@@ -36,7 +34,8 @@ from ezllmrouter_server.gateway.proxy_recipe import (
     proxy_policy,
     public_destination,
 )
-from test_provider_plan import Adapter
+from tests.gateway_integration.campaign_fixture import campaign_registry
+from tests.gateway_integration.test_provider_plan import Adapter
 
 
 @unittest.skipUnless(shutil.which("node"), "node is required for this fixture")
@@ -45,54 +44,18 @@ class ClientBoundaryTests(unittest.TestCase):
         fixture_path, request_path = fixture_paths()
         fixture = json.loads(fixture_path.read_text())
         request = json.loads(request_path.read_text())
-        with tempfile.TemporaryDirectory() as scratch:
-            root = Path(scratch)
-            cert, _ = certificate(root)
-            store, authority, registry, config = prepare_registry(
-                root,
-                fixture,
-                "https://localhost:8766",
-                cert.read_text(),
-                funding_kind="personal_testing",
-            )
+        with (
+            tempfile.TemporaryDirectory() as scratch,
+            campaign_registry(Path(scratch), fixture) as (
+                store,
+                authority,
+                registry,
+                config,
+            ),
+        ):
             adapter = Adapter()
             adapter.return_details = True
-            registry.controlled_provider_proof = False
-            registry.mutate(
-                "owner.local",
-                {
-                    "operation_id": "op.dev10.js.grant",
-                    "action": "set_grant",
-                    "subject": "owner.local",
-                    "expected_revision": 0,
-                    "data": {
-                        "configuration_ref": config["configuration_ref"],
-                        "status": "active",
-                        "purposes": ["execution"],
-                        "task_classes": ["class.demo"],
-                    },
-                },
-            )
-            campaign = PersonalCampaign(store, registry)
-            registry.personal_campaign = campaign
-            campaign.configure(
-                "owner.local",
-                {
-                    "connection_id": "conn.dev08-controlled",
-                    "configuration_ref": config["configuration_ref"],
-                    "principal_id": "owner.local",
-                    "currency": "USD",
-                    "allowance_decimal": "0.02",
-                    "per_request_decimal": "0.01",
-                    "max_requests": 1,
-                    "max_input_bytes": 4096,
-                    "max_output_tokens": 32,
-                    "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1))
-                    .isoformat()
-                    .replace("+00:00", "Z"),
-                },
-            )
-            campaign.transition("owner.local", "active")
+            campaign = registry.personal_campaign
             token = registry.issue_local_operator_token("owner.local")
             coordinator = Coordinator(
                 store,
@@ -143,8 +106,7 @@ class ClientBoundaryTests(unittest.TestCase):
             finally:
                 wire.shutdown()
                 wire.server_close()
-                coordinator.pool.shutdown(wait=True)
-                store.close()
+                coordinator.close()
 
     def test_source_permission_is_exact_and_revokes_queued_plan(self):
         fixture = json.loads(fixture_paths()[0].read_text())
