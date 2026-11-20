@@ -304,6 +304,15 @@ listener creation here, where the executor denies binding. Its actual wire
 exchange and live worker handshakes still require the target checks. The log is
 `.artifacts/code-review/cleanup-pass/tooling/ci-fixture-regressions.log`.
 
+A browser CI follow-up fixes Build & context rendering after historical
+milestones were removed from the API. The page uses current build/package
+metadata and displays the server version. Its new offline regression reproduces
+the former `milestones.join` exception and passes with the fix, including when
+LiteLLM is absent. All seven console scripts, nine browser-fixture tests and
+Playwright type checking pass. The focused three-browser run was attempted but
+stopped at the executor's denied fixture bind; browser verification remains a
+CI gate. Evidence is under `.artifacts/code-review/build-context/`.
+
 ## Remaining review work
 
 The review is not fully resolved. Continue in this order:

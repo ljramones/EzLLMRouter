@@ -61,6 +61,28 @@ function harness({pathname="/",hash="#/users"}={}){
       const form=elements["view-content"].querySelector("form"),input=form.querySelector("input[name=name]");input.value="Unsaved edit";input.oninput();return form;}};
 }
 
+test("Build & context renders current metadata without historical milestones",async()=>{
+  for(const litellm of [null,"1.105.1"]){
+    const h=harness(),data={
+      profile:"LIVE SYNTHETIC DEVELOPMENT",
+      build:{commit:"review-commit",tree:"review-tree",fingerprint:"review-fingerprint",dirty:false},
+      packages:{server:"9.8.7",python_client:"6.5.4",litellm},
+      environment:"local isolated synthetic HTTP/1.1"
+    };
+    h.read(url=>{assert.equal(url,"/operator/v1/build");return response(data);});
+    h.run('state.role="registry_admin";state.view="build"');await h.run("render()");
+    assert.equal(h.run("state.lastDiagnostic"),null);
+    assert.equal(h.elements["view-title"].textContent,"Build & context");
+    const content=h.elements["view-content"].textContent;
+    for(const value of ["Running source and environment",data.build.commit,data.build.tree,
+      data.build.fingerprint,data.environment,data.packages.server,data.packages.python_client,
+      litellm??"Unavailable"])assert(content.includes(value),value);
+    assert.doesNotMatch(content,/Unable to load current data|Milestone context/);
+    assert.equal(h.elements["view-content"].getAttribute("aria-busy"),"false");
+    assert.equal(h.document.activeElement,h.elements["view-title"]);
+  }
+});
+
 test("late success, failure and expired-session responses cannot replace the current screen",async()=>{
   for(const outcome of ["success","failure","expired","network"]){
     const h=harness(),pending=deferred();h.read(url=>url==="/operator/v1/connections"?pending.promise:response({items:[]}));
