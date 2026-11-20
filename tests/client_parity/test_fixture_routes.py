@@ -2,15 +2,13 @@
 
 from pathlib import Path
 import json
-import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from native_adapter import NativeSyntheticAdapter
-from synthetic_routes import fixture_destination
+
+from tests.development_slice.native_adapter import NativeSyntheticAdapter
+from tests.development_slice.synthetic_routes import fixture_destination
 
 BASE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())["destination"]
 

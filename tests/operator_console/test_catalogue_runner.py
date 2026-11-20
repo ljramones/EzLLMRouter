@@ -1,15 +1,14 @@
 """A reused catalogue run ID fails before any upgrade stage or evidence write."""
 
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import catalogue_run
+
+from deploy.local import catalogue_run as catalogue_run
 
 
 class RunIdTests(unittest.TestCase):

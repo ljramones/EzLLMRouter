@@ -1,11 +1,12 @@
 """Public/private model mapping against actual DEV-04 configuration and packaged clients."""
 
+import shutil
+
 from copy import deepcopy
 import json
 import os
 from pathlib import Path
 import subprocess
-import sys
 import tarfile
 import tempfile
 import unittest
@@ -13,16 +14,7 @@ import unittest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
-sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-sys.path.insert(
-    0,
-    str(
-        ROOT
-        / "tests/gateway_integration/inputs/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"
-    ),
-)
+
 
 from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 from ezllmrouter_server.core import Coordinator
@@ -113,6 +105,7 @@ class WireTransport:
         pass
 
 
+@unittest.skipUnless(shutil.which("node"), "node is required for this fixture")
 class ModelIdentityTests(unittest.TestCase):
     def test_actual_dev04_signed_public_identity_and_packaged_clients(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -1,5 +1,18 @@
 """Compare selected published-wheel Python files with the inspected sdist."""
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+        if (_parent / "server/tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent / "server"))
+            break
+
+
 from pathlib import Path
 import hashlib
 import json

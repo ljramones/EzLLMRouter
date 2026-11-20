@@ -1,20 +1,20 @@
 """Pure domain/store tests; no acquired package import or network."""
 
+from tests.support import wait_until
+
 import copy
 import hashlib
 import json
 import sqlite3
 from pathlib import Path
-import sys
 import tempfile
 import threading
-import time
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
+
 from ezllmrouter_server.canonical import (
     ContractError,
     jcs,
@@ -25,7 +25,7 @@ from ezllmrouter_server.canonical import (
 )
 from ezllmrouter_server.core import Coordinator, usage_revision
 from ezllmrouter_server.store import SQLiteStore
-from recipe import SyntheticTextRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticTextRecipe
 
 VECTORS = json.loads(
     (
@@ -60,12 +60,11 @@ def patched(base, operations):
 
 
 def wait_future_release(coordinator, submission_id):
-    for _ in range(100):
+    def released():
         with coordinator._futures_lock:
-            if submission_id not in coordinator._futures:
-                return
-        time.sleep(0.01)
-    raise AssertionError("terminal Future remained reachable")
+            return submission_id not in coordinator._futures
+
+    wait_until(released)
 
 
 class FakeAuthority:
@@ -84,11 +83,12 @@ class FakeAuthority:
         }
 
     def verify(self, plan, digest, policy):
-        assert plan["work_digest"] == digest and policy == "policy.dev01"
+        if not (plan["work_digest"] == digest and policy == "policy.dev01"):
+            raise AssertionError("fixture invariant failed")
 
 
 class FakeAdapter:
-    def __init__(self, status=200, body=None, delay=0, unknown=False):
+    def __init__(self, status=200, body=None, release=None, unknown=False):
         self.sent = []
         self.status = status
         self.body = (
@@ -96,7 +96,7 @@ class FakeAdapter:
             if body is not None
             else {"text": "Hello.", "usage": {"input_tokens": 3, "output_tokens": 1}}
         )
-        self.delay = delay
+        self.release = release
         self.unknown = unknown
 
     def prepare(self, body):
@@ -114,10 +114,11 @@ class FakeAdapter:
         }
 
     def send(self, prepared, timeout_ms, expected):
-        assert self.describe(prepared, timeout_ms, FIXTURE["destination"]) == expected
+        if not (self.describe(prepared, timeout_ms, FIXTURE["destination"]) == expected):
+            raise AssertionError("fixture invariant failed")
         self.sent.append(prepared)
-        if self.delay:
-            time.sleep(self.delay)
+        if self.release is not None and not self.release.wait(3):
+            raise AssertionError("test adapter was not released")
         if self.unknown:
             raise OSError("ambiguous")
         return {"status": self.status, "body": self.body}
@@ -298,20 +299,20 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(self.store.intent_count(reply["handle"]["submission_id"]), 0)
 
     def test_no_store_wait_expiry(self):
-        adapter = FakeAdapter(delay=0.05)
+        release = threading.Event()
+        adapter = FakeAdapter(release=release)
         retention = {
             "retention_class": "no_store",
             "policy_version": "retention.dev01",
             "content_store_allowed": False,
         }
         c = self.coordinator(adapter=adapter, retention=retention)
+        self.addCleanup(release.set)
         status, reply = c.submit(REQUEST, self.trusted, 0)
         self.assertEqual((status, reply["pending_result_policy"]), (202, "metadata_only_no_store"))
         sid = reply["handle"]["submission_id"]
-        for _ in range(100):
-            if c.status(sid, self.trusted)["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        release.set()
+        wait_until(lambda: c.status(sid, self.trusted)["submission_state"] == "completed")
         snapshot = c.status(sid, self.trusted)
         self.assertEqual(snapshot["candidate_access"], "not_retained")
         self.assertEqual(snapshot["result_unavailable_reason"], "wait_expired_no_store")
@@ -443,10 +444,10 @@ class CoreTests(unittest.TestCase):
                     gate.set()
                     for blocker in blockers:
                         blocker.result(timeout=3)
-                for _ in range(100):
-                    if store.get(sid)["submission_state"] == "failed_before_transmit":
-                        break
-                    time.sleep(0.01)
+                wait_until(
+                    lambda store=store, sid=sid: store.get(sid)["submission_state"]
+                    == "failed_before_transmit"
+                )
                 self.assertEqual(store.get(sid)["submission_state"], "failed_before_transmit")
                 self.assertEqual(adapter.sent, [])
 
@@ -482,13 +483,10 @@ class CoreTests(unittest.TestCase):
                     gate.set()
                     for blocker in blockers:
                         blocker.result(timeout=3)
-                for _ in range(100):
-                    if store.get(sid)["submission_state"] in (
-                        "completed",
-                        "failed_before_transmit",
-                    ):
-                        break
-                    time.sleep(0.01)
+                wait_until(
+                    lambda store=store, sid=sid: store.get(sid)["submission_state"]
+                    in ("completed", "failed_before_transmit")
+                )
                 self.assertEqual(
                     store.get(sid)["submission_state"],
                     "completed" if field == "expires_at" else "failed_before_transmit",
@@ -518,13 +516,10 @@ class CoreTests(unittest.TestCase):
                     gate.set()
                     for blocker in blockers:
                         blocker.result(timeout=3)
-                for _ in range(100):
-                    if store.get(sid)["submission_state"] in (
-                        "completed",
-                        "failed_before_transmit",
-                    ):
-                        break
-                    time.sleep(0.01)
+                wait_until(
+                    lambda store=store, sid=sid: store.get(sid)["submission_state"]
+                    in ("completed", "failed_before_transmit")
+                )
                 self.assertEqual(
                     store.get(sid)["submission_state"],
                     "failed_before_transmit" if changed else "completed",
@@ -540,10 +535,7 @@ class CoreTests(unittest.TestCase):
         c.config["model"] = "model.changed_after_dispatch"
         adapter.release.set()
         sid = reply["handle"]["submission_id"]
-        for _ in range(100):
-            if self.store.get(sid)["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        wait_until(lambda: self.store.get(sid)["submission_state"] == "completed")
         snapshot = c.status(sid, self.trusted)
         self.assertEqual(snapshot["candidate"]["served_destination"]["model"], "model.demo")
         self.assertEqual(json.loads(adapter.sent[0])["model"], "model.demo")
@@ -568,10 +560,7 @@ class CoreTests(unittest.TestCase):
         c.retention["content_store_allowed"] = True
         adapter.release.set()
         sid = reply["handle"]["submission_id"]
-        for _ in range(100):
-            if self.store.get(sid)["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        wait_until(lambda: self.store.get(sid)["submission_state"] == "completed")
         snapshot = c.status(sid, self.trusted)
         self.assertEqual(snapshot["candidate_access"], "not_retained")
         self.assertEqual(snapshot["result_unavailable_reason"], "wait_expired_no_store")

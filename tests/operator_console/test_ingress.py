@@ -3,15 +3,14 @@
 from pathlib import Path
 import socket
 import socketserver
-import sys
 import tempfile
 import threading
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import console_ingress
+
+from deploy.local import console_ingress as console_ingress
 
 
 class Echo(socketserver.BaseRequestHandler):

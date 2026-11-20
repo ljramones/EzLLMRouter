@@ -8,7 +8,10 @@ import socket
 import socketserver
 import time
 
-from runtime_resources import BoundedThreadingMixIn
+if __package__:
+    from ezllmrouter_server.runtime_resources import BoundedThreadingMixIn
+else:
+    from runtime_resources import BoundedThreadingMixIn
 
 
 TARGET = Path("/console/operator.sock")

@@ -1,14 +1,12 @@
 """Real SQLite projection tests: no content export, revision replacement and launcher custody."""
 
 import json
-import os
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
+
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.store import SQLiteStore
 

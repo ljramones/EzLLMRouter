@@ -2,13 +2,11 @@
 
 from copy import deepcopy
 import json
-import os
 from pathlib import Path
-import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
+
 from ezllmrouter_server.operator_demo import DemoRunner, ProviderValidationRunner
 
 
@@ -25,7 +23,8 @@ class FakeClient:
         pass
 
     def submit(self, request, options):
-        assert options == {"wait_ms": 3000}
+        if not (options == {"wait_ms": 3000}):
+            raise AssertionError("fixture invariant failed")
         request = deepcopy(request)
         self.requests.append(request)
         sid = "submission." + str(len(self.requests))

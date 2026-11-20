@@ -290,7 +290,7 @@ class Instance:
 
     def start(self, initial=False):
         self.open_store(initial)
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
         self.server = serve(
             "127.0.0.1",
             self.port,

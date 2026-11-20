@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import re
 import shlex
-import sys
 import threading
 import unittest
 from unittest.mock import patch
@@ -16,7 +15,7 @@ from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.canonical import ContractError  # noqa: E402
 from ezllmrouter_server.web import serve  # noqa: E402
 
@@ -26,7 +25,7 @@ REAL_URLOPEN = urllib.request.urlopen
 
 
 def exact_probe(case):
-    text = (ROOT / "tests/gateway_integration/boundary_steps.sh").read_text()
+    text = (ROOT / "tools/gateway/evidence/boundary_steps.sh").read_text()
     pattern = (
         r"  logrun d04-"
         + str(case)
@@ -53,7 +52,8 @@ class CoordinatorDouble:
 
     def capabilities(self, trusted):
         self.capability_calls += 1
-        assert trusted["principal_id"] == "synthetic.readiness"
+        if not (trusted["principal_id"] == "synthetic.readiness"):
+            raise AssertionError("fixture invariant failed")
         return {"contract_version": "0.2", "profile": "initial_1a@1", "features": ["text"]}
 
     def submit(self, *_args, **_kwargs):
@@ -76,8 +76,10 @@ class ReadinessTests(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
         cls.thread.join(timeout=3)
-        assert not cls.thread.is_alive()
-        assert cls.coordinator.submissions == 0
+        if not (not cls.thread.is_alive()):
+            raise AssertionError("fixture invariant failed")
+        if not (cls.coordinator.submissions == 0):
+            raise AssertionError("fixture invariant failed")
 
     def setUp(self):
         self.requests = []
@@ -97,8 +99,10 @@ class ReadinessTests(unittest.TestCase):
             if always_unavailable or len(self.requests) <= fail_first:
                 raise urllib.error.URLError(ConnectionRefusedError("controlled not listening"))
             url = urlsplit(request.full_url)
-            assert url.hostname == "127.0.0.1" and url.port in (8771, 8772)
-            assert url.path == "/v1/capabilities"
+            if not (url.hostname == "127.0.0.1" and url.port in (8771, 8772)):
+                raise AssertionError("fixture invariant failed")
+            if not (url.path == "/v1/capabilities"):
+                raise AssertionError("fixture invariant failed")
             headers = dict(request.header_items())
             if strip_version:
                 headers = {
@@ -188,7 +192,7 @@ class ReadinessTests(unittest.TestCase):
             self.assertEqual(role, "python_consumer")
             self.assertIn('os.environ["EZLLMROUTER_DEV_TOKEN"]', code)
             self.assertNotIn(TOKEN, code)
-        compose = (ROOT / "tests/gateway_integration/compose.yaml").read_text()
+        compose = (ROOT / "tools/gateway/evidence/compose.yaml").read_text()
         netns = compose.split("  netns:", 1)[1].split("  receiver:", 1)[0]
         consumer = compose.split("  python_consumer:", 1)[1].split("  js_consumer:", 1)[0]
         self.assertNotIn("EZLLMROUTER_DEV_TOKEN", netns)

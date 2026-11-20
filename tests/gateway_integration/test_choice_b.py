@@ -3,21 +3,19 @@
 import base64
 from concurrent.futures import Future
 import json
-import os
 from pathlib import Path
 import shlex
 import shutil
 import socket
 import struct
-import sys
 import tempfile
 import threading
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-from choice_b_wire import LIMIT, receive, send  # noqa: E402
+
+from ezllmrouter_server.gateway.choice_b_wire import LIMIT, receive, send  # noqa: E402
 from tools.gateway.stage import source_mapping
 from ezllmrouter_server.runtime_resources import LoopThread
 
@@ -88,7 +86,7 @@ class ChoiceBComponentTests(unittest.TestCase):
                 validate_worker_source_context(context)
 
     def test_verifier_parses_pretty_single_document_and_jsonl_rows(self):
-        from verify_choice_b import one, rows
+        from tools.gateway.evidence.verify_choice_b import one, rows
 
         modules = """{
   "boundary": "separate trusted Choice B sender",
@@ -188,7 +186,7 @@ class ChoiceBComponentTests(unittest.TestCase):
                 validate_worker_source_context(context)
 
     def test_worker_has_separate_network_and_no_trusted_environment(self):
-        compose = (ROOT / "tests/gateway_integration/compose.yaml").read_text()
+        compose = (ROOT / "tools/gateway/evidence/compose.yaml").read_text()
         worker = compose.split("  worker_choice_b:", 1)[1].split("  service_choice_b:", 1)[0]
         sender = compose.split("  service_choice_b:", 1)[1].split("  python_choice_b:", 1)[0]
         self.assertIn("network_mode: none", worker)
@@ -202,8 +200,6 @@ class ChoiceBComponentTests(unittest.TestCase):
         self.assertIn("choice_b_data:/data", sender)
 
     def test_sender_claims_one_registered_attempt_and_rejects_forgery(self):
-        for source in (ROOT / "server/src", ROOT / "tests/development_slice"):
-            sys.path.insert(0, str(source))
         from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
         from ezllmrouter_server.gateway.guard import Invocation
 
@@ -258,8 +254,6 @@ class ChoiceBComponentTests(unittest.TestCase):
             adapter.process_relay(envelope)
 
     def test_trusted_relay_checks_and_commits_one_exact_request(self):
-        for source in (ROOT / "server/src", ROOT / "tests/development_slice"):
-            sys.path.insert(0, str(source))
         import httpx
         from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
         from ezllmrouter_server.gateway.guard import (
@@ -268,7 +262,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             PROVIDER_URL,
             provider_expectation,
         )
-        from test_guard import invocation
+        from tests.gateway_integration.test_guard import invocation
 
         arrivals, receipts = [], []
 
@@ -301,8 +295,6 @@ class ChoiceBComponentTests(unittest.TestCase):
             "body_b64": base64.b64encode(prepared.content).decode("ascii"),
             "timeout": {"connect": 1.0, "read": 1.0, "write": 1.0, "pool": 1.0},
         }
-        original_provider_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
-        os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = adapter.provider_key
         try:
             result = adapter.process_relay(envelope)
             self.assertEqual(result["status"], 200)
@@ -380,10 +372,6 @@ class ChoiceBComponentTests(unittest.TestCase):
             self.assertEqual(len(arrivals), 1)
             self.assertEqual(len(receipts), 1)
         finally:
-            if original_provider_key is None:
-                os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
-            else:
-                os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = original_provider_key
             adapter._runtime.close(adapter.guard.aclose())
 
 

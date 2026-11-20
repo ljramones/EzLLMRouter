@@ -4,19 +4,19 @@ import contextlib
 import io
 import json
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import local_profile as profile
+
+from deploy.local import local_profile as profile
 
 
 class Client:
     def call(self, method, path):
-        assert method == "GET"
+        if not (method == "GET"):
+            raise AssertionError("fixture invariant failed")
         number = int(path.rsplit(".", 1)[1])
         return {
             "submission_id": f"submission.{number}",

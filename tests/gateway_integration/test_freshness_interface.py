@@ -5,7 +5,6 @@ import glob
 import hashlib
 import inspect
 from pathlib import Path
-import sys
 import unittest
 
 
@@ -32,7 +31,7 @@ for package in (
     wheel = Path(matches[0])
     if package in EXPECTED and hashlib.sha256(wheel.read_bytes()).hexdigest() != EXPECTED[package]:
         raise RuntimeError("frozen wheel hash mismatch: " + package)
-    sys.path.insert(0, str(wheel))
+
 
 import httpcore  # noqa: E402
 import httpx  # noqa: E402

@@ -240,19 +240,22 @@ before choosing a rewrite.
 | `web/` | Operator console HTML, CSS, and JavaScript. |
 | `deploy/local/` | Frozen-input Docker profile and lifecycle tools. |
 | `tests/` | Contract fixtures, clients, accounting, gateway, sender, and console checks. |
-| `tools/gateway/` | Local synthetic launchers, source staging and evidence export/verification tools. |
+| `tools/gateway/`, `tools/operator/` | Explicit staging, one-off qualification, browser proof and evidence commands. |
+| `tools/synthetic/` | Disposable synthetic execution and allowance harnesses. |
 | `docs/` | Current architecture, API, operating and development guides. |
 
-Gateway runtime imports use `ezllmrouter_server.gateway`. The older flat imports and
-script paths remain compatibility shims, sharing the same guard context and
-exception classes. Local profile staging takes implementations from the runtime
-package and worker source, and takes launch/export tools from `tools/gateway`.
-The service package does not include the isolated worker, local launchers or
-evidence exporters. Its gateway modules use the local profile's reviewed HTTPX
-and HTTPcore closure; importing the base service or gateway package does not load
-LiteLLM. Frozen dependencies, image digests and retained evidence are unchanged.
-Older qualification runners remain under `tests/gateway_integration`; this move
-covers the runtime implementation and active staging, launch and export tools.
+Gateway runtime imports use `ezllmrouter_server.gateway`. Flat compatibility
+modules have been removed; tests and tools use the canonical packages directly.
+Local profile staging takes runtime implementations from the server package and
+worker source. One-off qualification and export commands live in
+`tools/gateway/evidence` and `tools/operator`; repeatable regression tests remain
+under `tests`. Disposable successor execution lives in `tools/synthetic`, outside
+the service wheel and explicit in fixture staging. The final service image keeps
+its runtime namespace and data separately from validation tools.
+
+Gateway modules use the local profile's reviewed HTTPX and HTTPcore closure;
+importing the service or gateway package leaves LiteLLM unloaded. Frozen
+dependencies, image digests, adopted contract IDs and retained evidence are unchanged.
 
 See [database and operator server structure](docs/DATABASE.md) for schema
 ownership, shared transactions, dispatch boundaries and verification.

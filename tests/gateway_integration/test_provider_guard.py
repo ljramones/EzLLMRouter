@@ -6,15 +6,13 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
-import sys
 import unittest
 
 import httpx
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
+
 from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation
 from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe
 

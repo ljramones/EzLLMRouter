@@ -207,7 +207,8 @@ def integration(revision=1, mutation=False, fail_commit=False, timeout_ms=1000):
                 def rows(name):
                     from ezllmrouter_server.gateway.guard import flush_events
 
-                    assert flush_events(timeout=2), "diagnostic test events did not drain"
+                    if not (flush_events(timeout=2)):
+                        raise AssertionError("diagnostic test events did not drain")
                     p = Path(tmp) / name
                     return [json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
 

@@ -22,23 +22,23 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 OPERATOR_TESTS = (
     "attribution cache_accounting catalogue catalogue_runner connector_availability "
-    "crud_update demo dev07_actor dev07_runner dev08_profile_upgrade dev08_target dev09_demo_workspace "
-    "dev09_profile_run dev09_reporting dev09_team_demo "
+    "crud_update demo attribution_actor attribution_runner profile_upgrade build_target demo_workspace "
+    "profile_report_runner reporting team_demo "
     "lifecycle live_audit local_connectors local_connectors_web "
     "model_route personal_campaign prepare projection registry registry_core "
     "usage_update user_management user_management_web"
 ).split()
 DEVELOPMENT_TESTS = (
-    "core crypto dev12_accounting_states dev12_correction dev12_late_evidence "
-    "dev12_plan dev12_reporting dev12_sdk dev12_service_states dev12_store "
-    "dev12_successor_contract native_adapter"
+    "core crypto retrieval_accounting_states retrieval_correction retrieval_late_evidence "
+    "retrieval_plans retrieval_reporting retrieval_client retrieval_service_states retrieval_store "
+    "retrieval_contract native_adapter"
 ).split()
 GATEWAY_TESTS = (
-    "guard provider_guard provider_plan dev12_guard_timeout core_bridge choice_b "
-    "dev05 dev05_capture provider_worker_diagnostic dev12_first_write "
-    "dev05_python_actor dev12_completion_preflight "
-    "dev12_completion_supplement dev12_ct02b_supp02 dev12_ct02b_supplement "
-    "dev12_receiver_decode dev12_tls_receiver_modes "
+    "guard provider_guard provider_plan retrieval_guard_timeout core_bridge choice_b "
+    "guarded_tool_execution runtime_capture provider_worker_diagnostic retrieval_first_write "
+    "python_actor_recovery completion_preflight "
+    "completion_supplement first_owner_supplement_followup first_owner_supplement "
+    "retrieval_receiver_decode retrieval_tls_receiver_modes "
     "model_identity owned_sender_transport"
 ).split()
 SCRIPT_TESTS = (
@@ -60,6 +60,7 @@ MODULES = (
     "tests.unit.test_python_client_safety",
     "tests.unit.test_client_consistency",
     "tests.unit.test_runtime_cleanup",
+    "tests.unit.test_tooling_hygiene",
     "tests.client_parity.test_python_client",
     "tests.client_parity.test_actor_logic",
     "tests.client_parity.test_fixture_routes",
@@ -95,19 +96,19 @@ LOOPBACK_MODULES = (
     "tests.development_slice.test_http",
     "tests.operator_console.test_web",
     "tests.operator_console.test_registry_web",
-    "tests.operator_console.test_dev09_http",
+    "tests.operator_console.test_report_http",
     "tests.operator_console.test_integration_credentials.CredentialHTTPTests",
     "tests.operator_console.test_integration_accounting",
     "tests.operator_console.test_providers",
     "tests.operator_console.test_socket_lease",
-    "tests.development_slice.test_dev12_web",
-    "tests.gateway_integration.test_dev12_sync_first_owner",
+    "tests.development_slice.test_retrieval_http",
+    "tests.gateway_integration.test_synchronous_first_owner",
     "tests.gateway_integration.test_owned_tls_sender_transport",
     "tests.gateway_integration.test_readiness",
     "tests.gateway_integration.test_worker_ready",
-    "tests.operator_console.test_dev12_operator_http",
+    "tests.operator_console.test_retrieval_operator_http",
     "tests.operator_console.test_ingress",
-    "tests.gateway_integration.test_dev08_client_boundary",
+    "tests.gateway_integration.test_installed_client_boundary",
 )
 EXCLUDED_TESTS = {
     "tests/gateway_integration/test_freshness_interface.py": "Explicit counterexamples against hash-checked gateway wheels (AnyIO 4.15.1); the development lock uses 4.16.0.",
@@ -123,7 +124,7 @@ FRONTEND_TESTS = (
     "test_catalogue_view.cjs",
     "test_activity_usage_view.cjs",
     "test_crud_view.cjs",
-    "test_dev09_provider_index.cjs",
+    "test_provider_index.cjs",
 )
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
@@ -143,6 +144,8 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/database.py",
     "server/src/ezllmrouter_server/schema.py",
     "tools/check.py",
+    "tools/gateway/paths.py",
+    "tests/support.py",
     "deploy/local/command_support.py",
     "deploy/local/filesystem_support.py",
     "clients/python/src/ezllmrouter_client",
@@ -180,7 +183,9 @@ def test_inventory_errors(
         ],
         text=True,
     ).split("\0")
-    discovered = {path for path in source_files if Path(path).match("test_*.py")}
+    discovered = {
+        path for path in source_files if Path(path).match("test_*.py") and (root / path).is_file()
+    }
     registered = set(scripts)
     errors = []
     for name in modules:
@@ -259,20 +264,7 @@ def run_script(name: str) -> int:
 
 
 def run_module(name: str, *, loopback: bool) -> bool:
-    # Each module runs in a separate interpreter: legacy fixture path imports
-    # and environment changes cannot contaminate another module's tests.
-    sys.path.insert(0, str(ROOT / "server/src"))
-    sys.path.insert(0, str(ROOT / "clients/python/src"))
-    # Historical test fixtures use plain sibling imports; isolate and define
-    # their search path here instead of depending on unittest's working dir.
-    sys.path.insert(0, str(ROOT / "tests/development_slice"))
-    sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-    parts = name.split(".")
-    for end in range(len(parts), 0, -1):
-        parent = ROOT.joinpath(*parts[:end]).with_suffix(".py")
-        if parent.is_file():
-            sys.path.insert(0, str(parent.parent))
-            break
+    # Per-module interpreters isolate environment changes and loaded fixture state.
     with ExitStack() as stack:
         block_network(stack, loopback=loopback)
         suite = unittest.defaultTestLoader.loadTestsFromName(name)

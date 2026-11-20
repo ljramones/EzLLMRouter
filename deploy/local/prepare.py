@@ -39,6 +39,7 @@ SOURCE_ROOTS = (
     "clients/js",
     "deploy/local",
     "tools/gateway",
+    "tools/operator",
     "worker",
     "web",
 )
@@ -235,7 +236,7 @@ def prepare_work(work, run, source_hash, artifact):
         build / "worker/test_provider_worker_target.py",
     )
     shutil.copy2(
-        ROOT / "tests/gateway_integration/dev07_target_preflight.py",
+        ROOT / "tools/gateway/evidence/dev07_target_preflight.py",
         build / "service/gateway/dev07_target_preflight.py",
     )
     for name in (
@@ -245,7 +246,7 @@ def prepare_work(work, run, source_hash, artifact):
         "dev11_cache_target.py",
         "dev11_browser_service.py",
     ):
-        shutil.copy2(ROOT / "tests/gateway_integration" / name, build / "service/gateway" / name)
+        shutil.copy2(ROOT / "tools/gateway/evidence" / name, build / "service/gateway" / name)
     local = build / "service/local"
     local.mkdir()
     for source, name in (
@@ -261,10 +262,10 @@ def prepare_work(work, run, source_hash, artifact):
     # Disposable installed-client actors for the DEV-07 target matrix use the
     # current SDK sources, packaged offline by the context builder.
     shutil.copy2(
-        ROOT / "tests/gateway_integration/dev07_actor.py", build / "python/actors/dev07_actor.py"
+        ROOT / "tools/gateway/evidence/dev07_actor.py", build / "python/actors/dev07_actor.py"
     )
     shutil.copy2(
-        ROOT / "tests/gateway_integration/dev07_actor.cjs", build / "js/actors/dev07_actor.cjs"
+        ROOT / "tools/gateway/evidence/dev07_actor.cjs", build / "js/actors/dev07_actor.cjs"
     )
     ingress = build / "ingress"
     ingress.mkdir()
@@ -293,17 +294,15 @@ def prepare_work(work, run, source_hash, artifact):
     (target_tests / "__init__.py").write_text("")
     for name in (
         "test_attribution.py",
-        "test_dev09_reporting.py",
-        "test_dev09_http.py",
+        "test_reporting.py",
+        "test_report_http.py",
         "test_registry_core.py",
         "dev09_accounting_fixture.json",
     ):
         shutil.copy2(ROOT / "tests/operator_console" / name, target_tests / name)
     for relative in (
-        "gateway_integration/dev05_fixture.json",
         "development_slice/request.json",
         "development_slice/fixture.json",
-        "development_slice/recipe.py",
     ):
         target = build / "service/tests" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -313,17 +312,15 @@ def prepare_work(work, run, source_hash, artifact):
         build / "service/gateway/dev09_migration_check.py",
     )
     shutil.copy2(
-        ROOT / "tests/operator_console/dev09_python_actor.py",
+        ROOT / "tools/operator/dev09_python_actor.py",
         build / "service/local/dev09_python_actor.py",
     )
     dev09_js = build / "dev09_js"
     dev09_js.mkdir()
     shutil.copy2(ROOT / "deploy/local/Dockerfile.dev09-js", dev09_js / "Dockerfile")
+    shutil.copy2(ROOT / "tools/operator/dev09_js_actor.cjs", dev09_js / "dev09_js_actor.cjs")
     shutil.copy2(
-        ROOT / "tests/operator_console/dev09_js_actor.cjs", dev09_js / "dev09_js_actor.cjs"
-    )
-    shutil.copy2(
-        ROOT / "tests/gateway_integration/dev10_js_actor.cjs", dev09_js / "dev10_js_actor.cjs"
+        ROOT / "tools/gateway/evidence/dev10_js_actor.cjs", dev09_js / "dev10_js_actor.cjs"
     )
     subprocess.run(
         ("npm", "pack", "--offline", "--pack-destination", str(sdk_out), "./clients/js"),

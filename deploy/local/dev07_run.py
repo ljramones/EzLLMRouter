@@ -7,6 +7,13 @@ Each namespace is single use; after an uncertain send the run stops for review.
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 import http.client
 import json
 import os
@@ -15,9 +22,9 @@ import shutil
 import sys
 import time
 
-from check import OperatorClient, wait_health
-import local_profile
-from command_support import capture
+from deploy.local.check import OperatorClient, wait_health
+from deploy.local import local_profile
+from deploy.local.command_support import capture
 
 
 STATE = local_profile.STATE

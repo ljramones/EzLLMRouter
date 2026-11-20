@@ -18,10 +18,10 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parents[2]
 if not __package__:
     sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "server/src"))
 from deploy.local.command_support import capture, record
 from deploy.local.check import exercise, readback, wait_health
 
-sys.path.insert(0, str(ROOT / "server/src"))
 from ezllmrouter_server.private_files import read_private, write_private
 
 LOCAL = ROOT / "deploy/local"

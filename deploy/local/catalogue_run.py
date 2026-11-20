@@ -3,15 +3,22 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 import json
 import os
 from pathlib import Path
 import sys
 
-import catalogue_import
-import local_profile as profile
-from filesystem_support import same_tree, claim_run_id as claim_namespace
-from check import wait_health
+from deploy.local import catalogue_import
+from deploy.local import local_profile as profile
+from deploy.local.filesystem_support import same_tree, claim_run_id as claim_namespace
+from deploy.local.check import wait_health
 
 
 RUNS = profile.STATE / "catalogue-runs"

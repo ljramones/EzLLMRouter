@@ -36,7 +36,8 @@ RUN --network=none python -B -m unittest tests.operator_console.test_attribution
     tests.operator_console.test_registry_core
 
 FROM dependencies AS runtime
-COPY --from=validation /app/server/ /app/server/
+COPY --from=validation /app/server/ezllmrouter_server/ /app/server/ezllmrouter_server/
+COPY --from=validation /app/server/pyproject.toml /app/server/pyproject.toml
 COPY --from=validation /app/web/ /app/web/
 COPY --from=validation /app/dev_slice/fixture.json /app/dev_slice/fixture.json
 COPY --from=validation /app/local/local_service.py /app/local/initialize_credentials.py /app/local/socket_lease.py /app/local/request.json /app/local/scenarios.json /app/local/build-identity.json /app/local/

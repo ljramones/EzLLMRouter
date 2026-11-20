@@ -2,6 +2,19 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+        if (_parent / "server/tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent / "server"))
+            break
+
+
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from email.parser import BytesParser

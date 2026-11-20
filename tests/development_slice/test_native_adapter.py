@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import patch
 
 from ezllmrouter_server.canonical import ContractError
-from native_adapter import NativeSyntheticAdapter
-from recipe import SyntheticTextRecipe
+from tests.development_slice.native_adapter import NativeSyntheticAdapter
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticTextRecipe
 
 
 class Response:
@@ -51,7 +51,7 @@ class AdapterTests(unittest.TestCase):
         self.adapter = NativeSyntheticAdapter(self.controls["url"], "receiver")
 
     def test_positive_request_is_actual_checked_request(self):
-        with patch("native_adapter.httpx.Client", Client):
+        with patch("tests.development_slice.native_adapter.httpx.Client", Client):
             result = self.adapter.send(self.expected, 1000, self.controls)
         self.assertEqual(result["status"], 200)
         self.assertEqual(len(Client.sent), 1)
@@ -59,7 +59,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_body_or_url_drift_rejected_before_lower_send(self):
         wrong = self.expected.replace(b"model.demo", b"model.other")
-        with patch("native_adapter.httpx.Client", Client):
+        with patch("tests.development_slice.native_adapter.httpx.Client", Client):
             with self.assertRaises(ContractError):
                 self.adapter.send(wrong, 1000, self.controls)
             self.adapter.url = "http://receiver:8766/v1/chat/completions?mutated=1"

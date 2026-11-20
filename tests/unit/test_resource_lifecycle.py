@@ -466,7 +466,7 @@ class SuccessorResourceTests(unittest.TestCase):
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
         from tools.synthetic.successor_authority import SyntheticSuccessorAuthority
         from tools.synthetic.successor_campaign import FiniteSuccessorCampaign
-        from tests.development_slice import test_dev12_service_states as fixtures
+        from tests.development_slice import test_retrieval_service_states as fixtures
 
         example = next(
             row for row in fixtures.VECTORS["examples"] if row["id"] == "DIRECT_DOCUMENT"

@@ -6,8 +6,8 @@ if __package__:
     from . import choice_b_service, service_main
     from .fixture_adapters import FixtureAsgiAdapter, FixtureSenderAdapter
 else:
-    import choice_b_service
-    import service_main
+    from tools.gateway import choice_b_service as choice_b_service
+    from tools.gateway import service_main as service_main
     from fixture_adapters import FixtureAsgiAdapter, FixtureSenderAdapter
 
 

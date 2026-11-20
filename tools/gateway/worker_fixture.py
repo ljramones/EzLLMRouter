@@ -4,7 +4,7 @@ import asyncio
 
 import httpx
 
-import choice_b_worker as runtime
+from worker import choice_b_worker as runtime
 
 
 class FixtureWorker(runtime.Worker):

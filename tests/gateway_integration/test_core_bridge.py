@@ -4,20 +4,18 @@ from copy import deepcopy
 from pathlib import Path
 import hashlib
 import json
-import sys
 import tempfile
 import unittest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
 
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
-from recipe import SyntheticDevelopmentRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticDevelopmentRecipe
 
 
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
@@ -45,7 +43,8 @@ class GatewayAdapterStub:
         }
 
     def send_with_context(self, prepared, timeout_ms, expected, context):
-        assert self.describe(prepared, timeout_ms, context["plan"]["destination"]) == expected
+        if not (self.describe(prepared, timeout_ms, context["plan"]["destination"]) == expected):
+            raise AssertionError("fixture invariant failed")
         if self.revoke:
             self.revoke()
         context["fresh_check"]()

@@ -1,23 +1,23 @@
 """Offline component controls; fake transport is not the independent receiver."""
 
+from tests.support import wait_for_value
+
 from copy import deepcopy
 import hashlib
 import json
 import os
 from pathlib import Path
-import sys
 import tempfile
 import threading
-import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
+
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
-from recipe import SyntheticDevelopmentRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticDevelopmentRecipe
 
 FIXTURE = json.loads((ROOT / "tests/development_slice/fixture.json").read_text())
 BASE = json.loads((ROOT / "tests/development_slice/request.json").read_text())
@@ -593,12 +593,10 @@ class ToolCoreTests(unittest.TestCase):
         finally:
             release.set()
             worker.join(3)
-        until = time.monotonic() + 2
-        while time.monotonic() < until:
-            status = self.coordinator.status(sid, self.trusted)
-            if status["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        status = wait_for_value(
+            lambda: self.coordinator.status(sid, self.trusted),
+            lambda status: status["submission_state"] == "completed",
+        )
         self.assertEqual(status["candidate_access"], "not_retained")
         self.assertEqual(status["result_unavailable_reason"], "wait_expired_no_store")
         self.assertNotIn("candidate", status)
@@ -652,12 +650,10 @@ class ToolCoreTests(unittest.TestCase):
             release.set()
             changed.set()
             worker.join(3)
-        until = time.monotonic() + 2
-        while time.monotonic() < until:
-            status = self.coordinator.status(sid, self.trusted)
-            if status["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        status = wait_for_value(
+            lambda: self.coordinator.status(sid, self.trusted),
+            lambda status: status["submission_state"] == "completed",
+        )
         self.assertEqual(status["candidate_access"], "present")
 
     def test_stricter_current_handling_applies_to_live_output_and_store(self):
@@ -954,12 +950,10 @@ class ToolCoreTests(unittest.TestCase):
         )
         self.assertEqual((code, pending["pending_result_policy"]), (202, "metadata_only_no_store"))
         gate.set()
-        until = time.monotonic() + 2
-        while time.monotonic() < until:
-            status = self.coordinator.status(pending["handle"]["submission_id"], self.trusted)
-            if status["submission_state"] == "completed":
-                break
-            time.sleep(0.01)
+        status = wait_for_value(
+            lambda: self.coordinator.status(pending["handle"]["submission_id"], self.trusted),
+            lambda status: status["submission_state"] == "completed",
+        )
         self.assertEqual(status["candidate_access"], "not_retained")
         self.assertEqual(status["result_unavailable_reason"], "wait_expired_no_store")
         self.assertNotIn("candidate", status)

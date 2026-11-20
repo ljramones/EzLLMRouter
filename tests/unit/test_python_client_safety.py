@@ -16,7 +16,7 @@ from ezllmrouter_client import (
 from ezllmrouter_client import _successor_validation as validation
 from ezllmrouter_client._http import ResponseReadError, bounded_request
 from tests.client_parity import test_python_client as legacy
-from tests.development_slice import test_dev12_sdk as successor
+from tests.development_slice import test_retrieval_client as successor
 
 ROOT = Path(__file__).resolve().parents[2]
 VECTORS = json.loads(

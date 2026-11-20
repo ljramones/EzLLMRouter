@@ -3,6 +3,13 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 from datetime import datetime, timezone
 import json
 import os
@@ -11,8 +18,8 @@ import re
 import subprocess
 import sys
 
-import local_profile
-from command_support import target_command
+from deploy.local import local_profile
+from deploy.local.command_support import target_command
 
 
 ROOT = Path(__file__).resolve().parents[2]

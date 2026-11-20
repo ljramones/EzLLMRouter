@@ -3,15 +3,13 @@
 import json
 import http.client
 from pathlib import Path
-import socket
-import sys
 import tempfile
 import threading
 import unittest
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.integration_credentials import DatabaseCredentialStore
 from ezllmrouter_server.integration_accounting import ExternalAccounting, IntegrationError
 from ezllmrouter_server.registry import Registry
@@ -545,10 +543,8 @@ class CredentialHTTPTests(unittest.TestCase):
     connect = CredentialTests.connect
 
     def test_owner_http_journey_and_nonowner_boundary(self):
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", 0))
-            operator_port = probe.getsockname()[1]
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
+        operator_port = 0
         origin = f"http://127.0.0.1:{operator_port}"
 
         class NoRunner:
@@ -569,6 +565,8 @@ class CredentialHTTPTests(unittest.TestCase):
             registry=self.registry,
             integration_only=True,
         )
+        operator_port = server.server_port
+        origin = f"http://127.0.0.1:{operator_port}"
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         self.addCleanup(
@@ -727,10 +725,9 @@ class CredentialHTTPTests(unittest.TestCase):
             )[0],
             403,
         )
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", 0))
-            api_port = probe.getsockname()[1]
+        api_port = 0
         api = serve_api("127.0.0.1", api_port, SimpleNamespace(registry=self.registry))
+        api_port = api.server_port
         api_thread = threading.Thread(target=api.serve_forever)
         api_thread.start()
         self.addCleanup(lambda: (api.shutdown(), api.server_close(), api_thread.join(timeout=3)))

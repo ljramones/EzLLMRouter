@@ -80,10 +80,13 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 795 unittest cases plus
-seven console component scripts, Ruff and strict mypy across 38 modules.
-Installed JavaScript runtime checks and packaged TypeScript consumer checks
-pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
+The expanded offline Python/component runner passes: 820 unittest cases plus
+seven console component scripts, Ruff and strict mypy across 51 modules.
+Installed JavaScript runtime checks and packaged TypeScript consumers pass with
+the existing TypeScript 5.9.3 compiler; Playwright type checking also passes.
+JavaScript and Python pass all 125 shared contract cases. Previously recorded
+Go, Java and .NET results cover that corpus; those native clients were not rerun
+for this cleanup pass.
 
 The owner Terminal subsequently passed
 `python3 -I -S tests/client_languages/check_javascript.py --http`: actual fetch,
@@ -244,8 +247,6 @@ these changes do not authorize dependency replacement or an existing profile
 restart. Do not declare the review release gate complete until the required
 target checks pass.
 
-## Remaining review work
-
 The deployment cleanup batch replaces `profile.py` with `local_profile.py`,
 shares bounded command capture/private redacted records and source/run helpers,
 and consolidates the host operator transport with response bounds and cleanup.
@@ -262,16 +263,41 @@ bounds. The offline runner passes 817 cases; strict mypy covers 49 modules.
 Evidence is under `.artifacts/code-review/cleanup-pass/deployment/`. Docker builds
 and mounted proof commands have not been run here and remain target gates.
 
+The test/tooling cleanup moves gateway evidence commands and operator/browser
+proof drivers into `tools/`, removes flat runtime/evidence shims and duplicate
+worker support copies, and replaces fixture path injection with package imports.
+Repeatable milestone-named tests have descriptive names. Shared custody/transport
+helpers remove repetition between separately scoped historical supplements.
+Poll loops use bounded observable-state helpers, the no-store fixture uses an
+event instead of a fixed delay, and the operator updates Host/Origin policy to
+its actual bound ephemeral port. HTTP tests retain that bound socket rather than
+closing a temporary port reservation. Imported reporting tests no longer execute
+twice; helper assertions survive optimized Python, expected equality assertions
+use unittest methods, environment overrides restore reliably, and optional tool
+fixtures explain missing prerequisites. JavaScript has standard npm test commands
+and omits unused registration data. Contracts, frozen inputs, prices and recorded
+proof identities retain their bytes/values.
+
+Four new offline tests cover canonical imports, extracted-source roots, ephemeral
+operator policy and private-stdin actors executed without image source files.
+The full runner passes 820 cases and seven component scripts; 415 Python files
+pass formatting, and strict typing covers 51 modules. Both built wheels pass 204
+selected tests; all 117 packaged files match source and imported namespaces come
+from the extracted wheels. Positive and negative installed-wheel consumer checks
+verify Python typing. An isolated copy of the validation-stage inputs passes 15
+regressions and imports its HTTP test with the built client; Docker build execution
+remains a separate target check. Installed JavaScript, packaged TypeScript 5.9.3
+consumer checks and Playwright type checking pass. The updated actual HTTP test
+was attempted here and listener binding is still denied. Evidence, path maps and
+resource hashes are under `.artifacts/code-review/cleanup-pass/tooling/`.
+
+## Remaining review work
+
 The review is not fully resolved. Continue in this order:
 
-4. **Broader typing:** extend strict checks into remaining services and clients.
-   The current 38-module scope is not full coverage (4.3.2).
-5. **Test/tooling hygiene:** separate evidence drivers from tests, simplify import
-   strategies and compatibility shims, remove duplicated harnesses and improve
-   naming. Finish port-allocation race, sleep, missing-tool and assertion cleanup;
-   standardize JavaScript test entry points and reduce production dependence on
-   test fixtures (5.6).
-6. **Validation and the testing roadmap:** rerun browsers and actual HTTP/TLS
+1. **Broader typing:** extend strict checks into remaining services and clients.
+   The current 51-module scope is not full coverage (4.3.2).
+2. **Validation and the testing roadmap:** rerun browsers and actual HTTP/TLS
    fixtures after the fixes, confirm credential initialization on the corrected
    ARM64 CI runner, qualify Rust and the isolated frozen worker in their target
    environments, and measure subsystem coverage. Complete process-termination

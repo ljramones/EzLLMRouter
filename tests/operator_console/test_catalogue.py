@@ -2,14 +2,13 @@
 
 import json
 from pathlib import Path
-import sys
 import tempfile
 import threading
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.catalogue import validate_catalogue
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.registry import Registry, RegistryConflict

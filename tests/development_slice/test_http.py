@@ -4,7 +4,6 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import sys
 import tempfile
 import threading
 import unittest
@@ -12,14 +11,12 @@ from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
 TEST_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(TEST_DIR))
+
 REPO_SERVER = TEST_DIR.parents[1] / "server/src"
-if REPO_SERVER.exists():
-    sys.path.insert(0, str(REPO_SERVER))
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
-from recipe import SyntheticDevelopmentRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticDevelopmentRecipe
 
 FIXTURE = json.loads((TEST_DIR / "fixture.json").read_text())
 REQUEST = json.loads((TEST_DIR / "request.json").read_text())
@@ -45,7 +42,8 @@ class FakeAuthority:
         }
 
     def verify(self, plan, wd, version):
-        assert plan["work_digest"] == wd and version == self.policy["policy_version"]
+        if not (plan["work_digest"] == wd and version == self.policy["policy_version"]):
+            raise AssertionError("fixture invariant failed")
 
 
 class FakeAdapter:
@@ -71,7 +69,8 @@ class FakeAdapter:
         }
 
     def send(self, raw, timeout_ms, expected):
-        assert self.describe(raw, timeout_ms, FIXTURE["destination"]) == expected
+        if not (self.describe(raw, timeout_ms, FIXTURE["destination"]) == expected):
+            raise AssertionError("fixture invariant failed")
         self.sent.append(raw)
         if self.unknown:
             raise OSError("ambiguous synthetic loss")

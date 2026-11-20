@@ -1,21 +1,15 @@
 """Local deterministic controls for the bounded owned-socket sender."""
 
 import asyncio
+from tests.support import async_wait_until
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import socket
-import sys
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-for source in (
-    ROOT / "tests/gateway_integration",
-    ROOT / "server/src",
-    ROOT / "tests/development_slice",
-):
-    sys.path.insert(0, str(source))
 import httpcore  # noqa: E402
 import httpx  # noqa: E402
 from ezllmrouter_server.gateway.guard import (
@@ -31,7 +25,7 @@ from ezllmrouter_server.gateway.owned_sender_transport import (
     OwnedHTTPTransport,
     OwnedSocketStream,
 )  # noqa: E402
-from test_guard import invocation as guard_invocation  # noqa: E402
+from tests.gateway_integration.test_guard import invocation as guard_invocation  # noqa: E402
 
 
 def local_invocation(attempt="attempt.owned.local", authority_epoch=0):
@@ -150,13 +144,10 @@ class OwnedSenderTests(unittest.TestCase):
             try:
                 await asyncio.wait_for(entered.wait(), 2)
                 second_task = asyncio.create_task(request(second))
-                for _ in range(100):
-                    if (
-                        len(transport.pool._requests) == 2
-                        and transport.pool._requests[-1].is_queued()
-                    ):
-                        break
-                    await asyncio.sleep(0.002)
+                await async_wait_until(
+                    lambda: len(transport.pool._requests) == 2
+                    and transport.pool._requests[-1].is_queued()
+                )
                 self.assertEqual(len(transport.pool._requests), 2)
                 self.assertTrue(transport.pool._requests[-1].is_queued())
                 self.assertFalse(second.first_bytes_accepted)
@@ -334,7 +325,7 @@ class OwnedSenderTests(unittest.TestCase):
                     ACTIVE.reset(token)
 
             task = asyncio.create_task(blocked_write())
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
             self.assertFalse(task.done())
             self.assertFalse(item.first_bytes_accepted)
             authority.revoke()
@@ -376,10 +367,7 @@ class OwnedSenderTests(unittest.TestCase):
                     ACTIVE.reset(token)
 
             task = asyncio.create_task(send())
-            for _ in range(50):
-                if item.first_bytes_accepted:
-                    break
-                await asyncio.sleep(0.002)
+            await async_wait_until(lambda: item.first_bytes_accepted)
             self.assertTrue(item.first_bytes_accepted)
             self.assertFalse(task.done())
             authority.revoke()
@@ -439,7 +427,7 @@ class OwnedSenderTests(unittest.TestCase):
                     ACTIVE.reset(token)
 
             task = asyncio.create_task(send())
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
             self.assertFalse(task.done())
             task.cancel()
             with self.assertRaises(asyncio.CancelledError):
@@ -476,10 +464,7 @@ class OwnedSenderTests(unittest.TestCase):
                     ACTIVE.reset(token)
 
             task = asyncio.create_task(send())
-            for _ in range(50):
-                if item.first_bytes_accepted:
-                    break
-                await asyncio.sleep(0.002)
+            await async_wait_until(lambda: item.first_bytes_accepted)
             self.assertTrue(item.first_bytes_accepted)
             self.assertFalse(task.done())
             task.cancel()

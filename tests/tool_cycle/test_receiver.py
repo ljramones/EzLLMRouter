@@ -1,18 +1,8 @@
 """Independent receiver parser controls using manually constructed transport data."""
 
-import importlib.util
-import os
-from pathlib import Path
 import unittest
 
-os.environ.setdefault(
-    "EZLLMROUTER_RECEIVER_LOG",
-    "/private/tmp/ezllmrouter-dev-03/run-20261018-01/receiver-test-unused.jsonl",
-)
-path = Path(__file__).resolve().parents[1] / "development_slice/receiver.py"
-spec = importlib.util.spec_from_file_location("synthetic_receiver_test", path)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+from tests.development_slice import receiver as module
 
 
 class ReceiverTests(unittest.TestCase):

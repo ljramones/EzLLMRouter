@@ -18,6 +18,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--source-root", required=True, type=Path)
@@ -193,8 +194,12 @@ class TestAdapter(LiteLLMAsgiAdapter):
 class RetryCauseTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.old_env = {k: os.environ.get(k) for k in ("EZLLMROUTER_DEV04_GUARD_EVENTS",)}
-        os.environ["EZLLMROUTER_DEV04_GUARD_EVENTS"] = str(Path(self.temp.name) / "events.jsonl")
+        environment = patch.dict(
+            os.environ,
+            {"EZLLMROUTER_DEV04_GUARD_EVENTS": str(Path(self.temp.name) / "events.jsonl")},
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
         self.coordinator = None
         self.adapter = None
         self.store = None
@@ -206,11 +211,6 @@ class RetryCauseTests(unittest.TestCase):
             self.adapter.close()
         if self.store:
             self.store.close()
-        for k, v in self.old_env.items():
-            if v is None:
-                os.environ.pop(k, None)
-            else:
-                os.environ[k] = v
         self.temp.cleanup()
 
     def execute(self, fail=False, retries=None, mutation="", lower_mode="ok", timeout_ms=1000):

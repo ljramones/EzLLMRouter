@@ -10,9 +10,9 @@ from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
-from native_adapter import NativeSyntheticAdapter
-from recipe import SyntheticDevelopmentRecipe
-from synthetic_routes import fixture_destination
+from tests.development_slice.native_adapter import NativeSyntheticAdapter
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticDevelopmentRecipe
+from tests.development_slice.synthetic_routes import fixture_destination
 
 fixture = json.loads(Path(__file__).with_name("fixture.json").read_text())
 token = os.environ["EZLLMROUTER_DEV_TOKEN"].strip()

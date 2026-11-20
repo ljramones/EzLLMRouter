@@ -26,7 +26,7 @@ MODULES = (
     "owned_tls_sender_transport",
     "proxy_recipe",
     "worker_ready",
-    "dev12_guard",
+    "retrieval_guard",
 )
 
 
@@ -107,18 +107,11 @@ class GatewayPackagingTests(unittest.TestCase):
                 shutil.copy2(source, destination / source.name)
         return destination
 
-    def test_legacy_imports_share_one_guard_context_and_exception_type(self):
-        sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-        self.addCleanup(sys.path.remove, str(ROOT / "tests/gateway_integration"))
+    def test_canonical_imports_share_one_guard_context_and_exception_type(self):
+        package_root = Path(import_module("ezllmrouter_server.gateway").__file__).parent
         for name in MODULES:
-            self.assertIs(
-                import_module(name),
-                import_module(
-                    "ezllmrouter_server.gateway."
-                    + ("retrieval_guard" if name == "dev12_guard" else name)
-                ),
-                name,
-            )
+            module = import_module("ezllmrouter_server.gateway." + name)
+            self.assertTrue(Path(module.__file__).is_relative_to(package_root))
         guard = import_module("ezllmrouter_server.gateway.guard")
         owned = import_module("ezllmrouter_server.gateway.owned_sender_transport")
         self.assertIs(guard.ACTIVE, owned.ACTIVE)
@@ -169,10 +162,6 @@ from ezllmrouter_server import registry, operator_web
 from ezllmrouter_server import secret_rotation
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.gateway import guard, choice_b_sender, adapter, synthetic_recipe
-import guard as old_guard
-import recipe as old_recipe
-assert old_guard is guard
-assert old_recipe.SyntheticDevelopmentRecipe is synthetic_recipe.SyntheticDevelopmentRecipe
 assert 'service/server' in str(Path(ezllmrouter_server.__file__))
 assert 'service/server' in secret_rotation.__file__
 store = SQLiteStore('staged.sqlite')
@@ -218,20 +207,16 @@ print(json.dumps({'worker': 'isolated', 'service_importable': False}))
 
     def test_fault_fixtures_require_explicit_staging_and_are_absent_from_runtime(self):
         for dev05 in (False, True):
-            normal = {target for _, target in source_mapping(ROOT, dev05)}
-            fixture = {target for _, target in source_mapping(ROOT, dev05, fixtures=True)}
-            extras = {
-                "service/gateway/fixture_adapters.py",
-                "service/gateway/service_fixture.py",
-                "worker/fixture/worker_fixture.py",
+            normal = {source for source, _ in source_mapping(ROOT, dev05)}
+            explicit = {source for source, _ in source_mapping(ROOT, dev05, fixtures=True)}
+            required = {
+                "tools/gateway/fixture_adapters.py",
+                "tools/gateway/service_fixture.py",
+                "tools/gateway/worker_fixture.py",
+                "tools/synthetic/successor_service.py",
             }
-            extras.add("service/server/tools/__init__.py")
-            extras.update(
-                "service/server/" + str(path.relative_to(ROOT))
-                for path in (ROOT / "tools/synthetic").rglob("*.py")
-            )
-            self.assertTrue(extras.isdisjoint(normal))
-            self.assertEqual(fixture - normal, extras)
+            self.assertTrue(required.isdisjoint(normal))
+            self.assertTrue(required <= explicit)
         self.assertEqual(
             (ROOT / "server/src/ezllmrouter_server/observability.py").read_bytes(),
             next(
@@ -243,28 +228,12 @@ print(json.dumps({'worker': 'isolated', 'service_importable': False}))
 
     def test_staged_runtime_implementation_inputs_are_not_test_sources(self):
         mappings = dict((target, source) for source, target in source_mapping(ROOT, True))
-        for target, source in mappings.items():
-            if target.startswith(("service/server/", "worker/")) and target.endswith(".py"):
-                self.assertFalse(source.startswith("tests/"), (source, target))
-        for target in (
-            "service/gateway/guard.py",
-            "service/gateway/choice_b_sender.py",
-            "service/gateway/adapter.py",
-            "service/gateway/owned_sender_transport.py",
-            "service/gateway/owned_tls_sender_transport.py",
-            "service/gateway/service_main.py",
-            "service/gateway/choice_b_service.py",
-            "receiver/receiver.py",
-        ):
-            self.assertTrue(mappings[target].startswith("tools/gateway/"), target)
+        for name in MODULES:
+            target = "service/server/ezllmrouter_server/gateway/" + name + ".py"
+            self.assertTrue(mappings[target].startswith("server/src/ezllmrouter_server/"))
+        self.assertFalse(any("/compat/" in source for source in mappings.values()))
 
-    def test_old_and_new_evidence_imports_share_the_same_functions(self):
-        legacy = import_module("tests.gateway_integration.capture_runtime")
-        current = import_module("tools.gateway.evidence.capture_runtime")
-        self.assertIs(legacy.capture, current.capture)
-        self.assertIs(legacy.CaptureLimit, current.CaptureLimit)
-
-    def test_local_launch_modules_are_safe_to_import_without_credentials(self):
-        for name in ("service_main", "choice_b_service", "receiver"):
-            module = import_module("tools.gateway." + name)
-            self.assertTrue(callable(module.main))
+    def test_evidence_has_one_implementation_outside_the_test_tree(self):
+        module = import_module("tools.gateway.evidence.capture_runtime")
+        self.assertTrue(Path(module.__file__).is_relative_to(ROOT / "tools/gateway/evidence"))
+        self.assertFalse((ROOT / "tests/gateway_integration/capture_runtime.py").exists())

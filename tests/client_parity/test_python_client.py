@@ -52,7 +52,8 @@ def selected():
 def error(call, code):
     with unittest.TestCase().assertRaises(EzLLMRouterError) as caught:
         call()
-    assert caught.exception.code == code, (caught.exception.code, code)
+    if not (caught.exception.code == code):
+        raise AssertionError((caught.exception.code, code))
     return caught.exception
 
 

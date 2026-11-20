@@ -5,13 +5,12 @@ from __future__ import annotations
 import json
 import pathlib
 import sqlite3
-import sys
 import tempfile
 import threading
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 
 from ezllmrouter_server.core import usage_revision
 from ezllmrouter_server.canonical import ContractError

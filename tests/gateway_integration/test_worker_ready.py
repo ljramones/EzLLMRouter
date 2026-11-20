@@ -14,10 +14,10 @@ from unittest.mock import patch
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from choice_b_wire import receive, send
-from verify_dev05 import one
-import worker_ready
+
+from ezllmrouter_server.gateway.choice_b_wire import receive, send
+from tools.gateway.evidence.verify_dev05 import one
+from ezllmrouter_server.gateway import worker_ready as worker_ready
 
 
 def identity():
@@ -66,7 +66,7 @@ class WorkerReadyTests(unittest.TestCase):
             [
                 sys.executable,
                 "-B",
-                str(ROOT / "tests/gateway_integration/worker_ready.py"),
+                str(ROOT / "server/src/ezllmrouter_server/gateway/worker_ready.py"),
                 "--socket",
                 str(self.path),
                 "--deadline",
@@ -205,11 +205,11 @@ class WorkerReadyTests(unittest.TestCase):
                 "-c",
                 script,
                 "bash",
-                str(ROOT / "tests/gateway_integration/dev05_steps.sh"),
+                str(ROOT / "tools/gateway/evidence/dev05_steps.sh"),
                 str(run),
                 str(self.root),
                 sys.executable,
-                str(ROOT / "tests/gateway_integration/capture_runtime.py"),
+                str(ROOT / "tools/gateway/evidence/capture_runtime.py"),
             ],
             capture_output=True,
             text=True,

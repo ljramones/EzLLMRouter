@@ -3,14 +3,21 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 from datetime import datetime, timezone
 import json
 import os
 import re
 import sys
 
-import local_profile as profile
-from check import wait_health
+from deploy.local import local_profile as profile
+from deploy.local.check import wait_health
 
 
 RUNS = profile.STATE / "dev08-profile-runs"

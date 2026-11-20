@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
+import shutil
+
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import pathlib
 import ssl
 import subprocess
-import sys
 import tempfile
 import threading
 import time
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.provider_adapters import probe, validate_settings
 from ezllmrouter_server.registry import Registry, RegistryConflict
 from ezllmrouter_server.store import SQLiteStore
@@ -98,6 +99,7 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+@unittest.skipUnless(shutil.which("openssl"), "openssl is required for this fixture")
 class ProviderTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

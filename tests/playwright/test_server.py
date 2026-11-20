@@ -19,6 +19,7 @@ from tests.playwright import server as fixture
 class MemoryServer:
     def __init__(self, address, handler):
         self.server_port = address[1] or 48761
+        self.server_address = (address[0], self.server_port)
         self.handler = handler
         self.stopped = threading.Event()
 

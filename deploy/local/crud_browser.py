@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 import hashlib
 import json
 from pathlib import Path
 import time
 
-from browser_cdp import HeadlessChrome
+from deploy.local.browser_cdp import HeadlessChrome
 
 
 HELPERS = r"""

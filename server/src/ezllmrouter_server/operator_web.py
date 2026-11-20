@@ -122,6 +122,12 @@ def serve(
             if socket_path is None
             else UnixOperatorServer(socket_path, OperatorHandler, port)
         )
+        if socket_path is None and port == 0:
+            bound = OperatorPolicy.build(
+                host, server.server_address[1], allowed_hosts, unix_socket=False, public_origin=None
+            )
+            application.allowed_hosts = bound.hosts
+            application.allowed_origins = bound.origins
     except BaseException:
         try:
             application.close()

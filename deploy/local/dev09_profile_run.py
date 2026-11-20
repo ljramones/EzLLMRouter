@@ -3,6 +3,13 @@
 
 from __future__ import annotations
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
@@ -11,11 +18,11 @@ from pathlib import Path
 import re
 import sys
 
-import local_profile as profile
-import prepare
-from command_support import capture, record
-from check import wait_health
-from dev08_profile_upgrade import running_build
+from deploy.local import local_profile as profile
+from deploy.local import prepare
+from deploy.local.command_support import capture, record
+from deploy.local.check import wait_health
+from deploy.local.dev08_profile_upgrade import running_build
 
 
 RUNS = profile.STATE / "dev09-profile-runs"

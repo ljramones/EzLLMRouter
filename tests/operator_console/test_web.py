@@ -4,23 +4,21 @@ import http.client
 import json
 import os
 from pathlib import Path
-import socket
-import sys
 import tempfile
 import threading
-import time
 import unittest
+from tests.support import wait_for_value
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT / "server/src")))
+
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.operator_web import serve
 from ezllmrouter_server.store import SQLiteStore
 
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import check
-import console_ingress
+
+from deploy.local import check as check
+from deploy.local import console_ingress as console_ingress
 
 
 class Runner:
@@ -39,10 +37,8 @@ class WebTests(unittest.TestCase):
         self.store = SQLiteStore(Path(self.tmp.name) / "state.sqlite")
         self.projection = OperatorProjection(self.store, "svc.demo")
         self.runner = Runner()
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", 0))
-            self.port = probe.getsockname()[1]
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
+        self.port = 0
         self.origin = f"http://127.0.0.1:{self.port}"
         self.server = serve(
             "127.0.0.1",
@@ -56,6 +52,8 @@ class WebTests(unittest.TestCase):
             worker_probe=lambda: {"state": "live"},
             sender_status=lambda: {"state": "live"},
         )
+        self.port = self.server.server_port
+        self.origin = f"http://127.0.0.1:{self.port}"
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 
@@ -149,13 +147,10 @@ class WebTests(unittest.TestCase):
             )[0],
             202,
         )
-        for _ in range(50):
-            status, _, raw = self.request(
-                "GET", "/operator/v1/launch/operation.demo", cookie=cookie
-            )
-            if json.loads(raw)["state"] == "completed":
-                break
-            time.sleep(0.01)
+        status, _, raw = wait_for_value(
+            lambda: self.request("GET", "/operator/v1/launch/operation.demo", cookie=cookie),
+            lambda response: json.loads(response[2])["state"] == "completed",
+        )
         self.assertEqual(status, 200)
         self.assertEqual(self.runner.calls, ["text"])
         self.assertEqual(
@@ -198,7 +193,7 @@ class WebTests(unittest.TestCase):
 
     def test_unix_console_through_fixed_loopback_relay(self):
         path = Path(self.tmp.name) / "operator.sock"
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
         uds = serve(
             "127.0.0.1",
             8780,

@@ -1,11 +1,12 @@
 """Container-only Ed25519 plan path check; does not print key material."""
 
+from tests.support import wait_until
+
 import base64
 import copy
 import json
 import unittest
 import threading
-import time
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ezllmrouter_server.canonical import (
@@ -19,7 +20,10 @@ from ezllmrouter_server.canonical import (
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
-from recipe import SyntheticDevelopmentRecipe, SyntheticTextRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import (
+    SyntheticDevelopmentRecipe,
+    SyntheticTextRecipe,
+)
 
 
 class SignedPlanTests(unittest.TestCase):
@@ -52,7 +56,7 @@ class SignedPlanTests(unittest.TestCase):
         authority.verify(plan, wd, fixture["policy"]["policy_version"])
         envelope = plan["signature_envelope"]
         unsigned = {k: v for k, v in plan.items() if k != "signature_envelope"}
-        assert envelope["signed_plan_digest"] == digest(jcs(unsigned))
+        self.assertEqual(envelope["signed_plan_digest"], digest(jcs(unsigned)))
         oracle = (
             "ezllmrouter-plan-v0.2\nEd25519\n"
             + fixture["policy"]["key_id"]
@@ -82,7 +86,7 @@ class SignedPlanTests(unittest.TestCase):
             try:
                 authority.verify(altered, wd, fixture["policy"]["policy_version"])
             except ContractError as exc:
-                assert exc.code == "PLAN_INVALID_OR_STALE"
+                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
             else:
                 raise AssertionError("tampered plan accepted")
         for field in ["key_id", "key_version", "signed_plan_digest"]:
@@ -90,7 +94,7 @@ class SignedPlanTests(unittest.TestCase):
             try:
                 authority.verify(changed, wd, fixture["policy"]["policy_version"])
             except ContractError as exc:
-                assert exc.code == "PLAN_INVALID_OR_STALE"
+                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
             else:
                 raise AssertionError("framing field tamper accepted: " + field)
         for field in [
@@ -112,7 +116,7 @@ class SignedPlanTests(unittest.TestCase):
             try:
                 authority.verify(plan, wd, authority.policy["policy_version"])
             except ContractError as exc:
-                assert exc.code == "PLAN_INVALID_OR_STALE"
+                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
             else:
                 raise AssertionError("current authority drift accepted: " + field)
             finally:
@@ -162,7 +166,7 @@ class SignedPlanTests(unittest.TestCase):
             blockers = [coordinator.pool.submit(gate.wait, 3) for _ in range(4)]
             try:
                 code, reply = coordinator.submit(request, current, 0, "token.synthetic")
-                assert code == 202
+                self.assertEqual(code, 202)
                 sid = reply["handle"]["submission_id"]
                 current["expires_at"] = "2099-01-01T00:00:00Z"
                 if changed:
@@ -171,14 +175,15 @@ class SignedPlanTests(unittest.TestCase):
                 gate.set()
                 for blocker in blockers:
                     blocker.result(timeout=3)
-            for _ in range(100):
-                if store.get(sid)["submission_state"] in ("completed", "failed_before_transmit"):
-                    break
-                time.sleep(0.01)
-            assert store.get(sid)["submission_state"] == (
-                "failed_before_transmit" if changed else "completed"
+            wait_until(
+                lambda store=store, sid=sid: store.get(sid)["submission_state"]
+                in ("completed", "failed_before_transmit")
             )
-            assert len(adapter.sent) == (0 if changed else 1)
+            self.assertEqual(
+                store.get(sid)["submission_state"],
+                "failed_before_transmit" if changed else "completed",
+            )
+            self.assertEqual(len(adapter.sent), 0 if changed else 1)
             coordinator.pool.shutdown(wait=True)
             store.close()
 
@@ -237,20 +242,27 @@ class SignedPlanTests(unittest.TestCase):
         )
         try:
             code, reply = coordinator.submit(restricted, trusted, 3000, "token.synthetic")
-            assert code == 200 and reply["state"] == "delivered" and len(adapter.sent) == 1
+            self.assertTrue(
+                code == 200 and reply["state"] == "delivered" and (len(adapter.sent) == 1)
+            )
             signed = authority.plans[-1]
             authority.verify(signed, signed["work_digest"], authority.policy["policy_version"])
-            assert signed["classification_snapshot"]["combined_restrictions"] == [
-                "no.content.store"
-            ]
-            assert signed["effective_retention"]["content_store_allowed"] is False
-            assert reply["candidate"]["output_blocks"][0]["source_labels"] == {
-                "lineage_ids": ["src.candidate.synthetic"],
-                "sensitivity": "confidential",
-                "restrictions": ["no.content.store"],
-            }
+            self.assertEqual(
+                signed["classification_snapshot"]["combined_restrictions"], ["no.content.store"]
+            )
+            self.assertTrue(signed["effective_retention"]["content_store_allowed"] is False)
+            self.assertEqual(
+                reply["candidate"]["output_blocks"][0]["source_labels"],
+                {
+                    "lineage_ids": ["src.candidate.synthetic"],
+                    "sensitivity": "confidential",
+                    "restrictions": ["no.content.store"],
+                },
+            )
             status = coordinator.status(reply["handle"]["submission_id"], trusted)
-            assert status["candidate_access"] == "not_retained" and "candidate" not in status
+            self.assertTrue(
+                status["candidate_access"] == "not_retained" and "candidate" not in status
+            )
         finally:
             coordinator.pool.shutdown(wait=True)
             store.close()

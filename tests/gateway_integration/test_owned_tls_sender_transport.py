@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+
 import asyncio
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -9,7 +11,6 @@ import json
 from pathlib import Path
 import ssl
 import subprocess
-import sys
 import tempfile
 import threading
 import unittest
@@ -17,9 +18,8 @@ import unittest
 import httpx
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
+
 from ezllmrouter_server.gateway.guard import ACTIVE, Invocation, GuardRejected
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
 from ezllmrouter_server.gateway.owned_tls_sender_transport import OwnedTLSHTTPTransport
@@ -43,6 +43,7 @@ class Receiver(BaseHTTPRequestHandler):
         pass
 
 
+@unittest.skipUnless(shutil.which("openssl"), "openssl is required for this fixture")
 class OwnedTLSProof(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

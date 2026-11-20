@@ -1,5 +1,18 @@
 """Cross-check independent receiver arrivals with durable guard acknowledgments."""
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+        if (_parent / "server/tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent / "server"))
+            break
+
+
 from pathlib import Path
 import json
 import sys

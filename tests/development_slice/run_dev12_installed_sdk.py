@@ -42,7 +42,7 @@ def main():
                 "-s",
                 "tests/development_slice",
                 "-p",
-                "test_dev12_sdk.py",
+                "test_retrieval_client.py",
                 "-v",
             ),
             env=environment,

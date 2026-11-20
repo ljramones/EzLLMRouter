@@ -5,13 +5,12 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import pathlib
-import sys
 import tempfile
 import threading
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.personal_campaign import PersonalCampaign
 from ezllmrouter_server.registry import Registry

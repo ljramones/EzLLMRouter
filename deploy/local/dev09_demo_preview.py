@@ -38,7 +38,7 @@ def main():
     if not 1024 <= args.port <= 65535:
         parser.error("port must be between 1024 and 65535")
     credential = secrets.token_urlsafe(36)
-    fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+    fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
     with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-demo-preview-") as temporary:
         store = SQLiteStore(Path(temporary) / "preview.sqlite")
         server = None

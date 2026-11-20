@@ -1,5 +1,7 @@
 """New regression files must run or carry a maintained exclusion reason."""
 
+import shutil
+
 from pathlib import Path
 from contextlib import ExitStack
 import socket
@@ -11,6 +13,7 @@ from unittest.mock import Mock, patch
 from tools.check import block_network, test_inventory_errors as audit
 
 
+@unittest.skipUnless(shutil.which("git"), "git is required for this fixture")
 class InventoryTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()

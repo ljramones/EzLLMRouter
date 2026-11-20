@@ -1,15 +1,14 @@
 """The service-only update cannot reuse its one-use evidence namespace."""
 
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import usage_update
+
+from deploy.local import usage_update as usage_update
 
 
 class UpdateNamespaceTests(unittest.TestCase):

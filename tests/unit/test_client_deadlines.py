@@ -21,7 +21,7 @@ from ezllmrouter_client import (
 from ezllmrouter_client import _deadline as deadlines
 from ezllmrouter_client._http import ResponseReadError, bounded_request
 from tests.client_parity.test_python_client import EXAMPLES
-from tests.development_slice.test_dev12_sdk import REQUEST
+from tests.development_slice.test_retrieval_client import REQUEST
 
 
 class Clock:

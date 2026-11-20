@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path
-import sys
 import tempfile
 import threading
 import unittest
@@ -15,9 +14,7 @@ import unittest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
 
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.core import Coordinator, usage_revision
@@ -113,7 +110,7 @@ class ProviderPlanTests(unittest.TestCase):
         self.assertEqual(revision["cost"]["amount_decimal"], "0.000026000")
 
     def test_exact_provider_deployment_uses_existing_admission_and_signed_plan(self):
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
         request = json.loads((ROOT / "tests/development_slice/request.json").read_text())
         token = "test-service-provider-token-000000000000000000"
         with tempfile.TemporaryDirectory() as scratch:

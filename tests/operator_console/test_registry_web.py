@@ -3,21 +3,18 @@
 import http.client
 import json
 from pathlib import Path
-import socket
-import sys
 import tempfile
 import threading
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "deploy/local"))
+
 
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.operator_web import serve
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
-import catalogue_import
+from deploy.local import catalogue_import as catalogue_import
 
 
 class Authority:
@@ -47,7 +44,7 @@ class RegistryWebTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.store = SQLiteStore(Path(self.tmp.name) / "store.sqlite")
-        fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+        fixture = json.loads((ROOT / "tools/gateway/evidence/dev05_fixture.json").read_text())
         self.registry = Registry(
             self.store,
             Authority(),
@@ -61,9 +58,7 @@ class RegistryWebTests(unittest.TestCase):
         )
         self.projection = OperatorProjection(self.store, "svc.demo")
         self.provider_runner = ValidationRunner()
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", 0))
-            self.port = probe.getsockname()[1]
+        self.port = 0
         self.origin = f"http://127.0.0.1:{self.port}"
         self.server = serve(
             "127.0.0.1",
@@ -79,6 +74,8 @@ class RegistryWebTests(unittest.TestCase):
             registry=self.registry,
             provider_validation=self.provider_runner,
         )
+        self.port = self.server.server_port
+        self.origin = f"http://127.0.0.1:{self.port}"
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 

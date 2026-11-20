@@ -14,7 +14,8 @@ try:
     try:
         instance.__init__()
     except RuntimeError as error:
-        assert str(error) == "alternate or pre-cached LiteLLM HTTP session"
+        if not (str(error) == "alternate or pre-cached LiteLLM HTTP session"):
+            raise AssertionError("fixture invariant failed") from error
         print(
             json.dumps(
                 {"alternate_handler_startup": "rejected", "error_type": type(error).__name__}

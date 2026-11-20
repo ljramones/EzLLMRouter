@@ -15,9 +15,19 @@ from contextlib import ExitStack
 
 import httpx
 
-from runtime_resources import BoundedUnixServer, LoopThread
-from choice_b_wire import async_exchange, receive, remaining_seconds, send
-from worker_logging import configure_logging, log_failure
+if __package__:
+    from ezllmrouter_server.runtime_resources import BoundedUnixServer, LoopThread
+    from ezllmrouter_server.gateway.choice_b_wire import (
+        async_exchange,
+        receive,
+        remaining_seconds,
+        send,
+    )
+    from ezllmrouter_server.observability import configure_logging, log_failure
+else:
+    from runtime_resources import BoundedUnixServer, LoopThread
+    from choice_b_wire import async_exchange, receive, remaining_seconds, send
+    from worker_logging import configure_logging, log_failure
 
 
 PROVIDER_URL = "http://127.0.0.1:8766/v1/chat/completions"

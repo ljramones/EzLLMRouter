@@ -8,8 +8,14 @@
   "types": "./index.d.cts",
   "exports": {
     ".": {
-      "import": { "types": "./index.d.mts", "default": "./index.mjs" },
-      "require": { "types": "./index.d.cts", "default": "./index.cjs" },
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.cts",
+        "default": "./index.cjs"
+      },
       "default": "./index.cjs"
     }
   },
@@ -28,7 +34,11 @@
     "integration_schema.json",
     "integration_schema_v2.json",
     "integration_schema_v3.json",
-    "dev12_schemas.json",
-    "dev12_registrations.json"
-  ]
+    "dev12_schemas.json"
+  ],
+  "scripts": {
+    "test": "python3 -I -S ../../tests/client_languages/check_javascript.py",
+    "test:http": "python3 -I -S ../../tests/client_languages/check_javascript.py --http",
+    "test:types": "bash ../../tests/client_languages/check_typescript.sh"
+  }
 }

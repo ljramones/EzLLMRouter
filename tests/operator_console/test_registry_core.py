@@ -7,23 +7,22 @@ covered separately; this component test does not claim that target proof.
 from copy import deepcopy
 import hashlib
 import json
+from importlib.resources import files
 from pathlib import Path
-import sys
 import tempfile
 import threading
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
-sys.path.insert(0, str(ROOT / "tests/development_slice"))
+
 
 from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.core import Coordinator
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
-from recipe import SyntheticTextRecipe
+from ezllmrouter_server.gateway.synthetic_recipe import SyntheticTextRecipe
 
-FIXTURE = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
+FIXTURE = json.loads(files("tools.gateway.evidence").joinpath("dev05_fixture.json").read_text())
 REQUEST = json.loads((ROOT / "tests/development_slice/request.json").read_text())
 TOKEN = "synthetic-dev07-coordinator-token-000000000000000000"
 

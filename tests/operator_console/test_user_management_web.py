@@ -19,6 +19,8 @@ from ezllmrouter_server.operator_web import serve
 class MemoryServer:
     def __init__(self, address, handler):
         self.address, self.handler = address, handler
+        self.server_port = address[1] if isinstance(address, tuple) else 48761
+        self.server_address = address
 
     def server_close(self):
         pass
@@ -54,7 +56,7 @@ class UserHTTPFixture(UserFixture):
         handler.requestline = method + " " + path + " HTTP/1.1"
         handler.client_address = ("127.0.0.1", 12345)
         handler.headers = Message()
-        handler.headers["Host"] = "127.0.0.1:48761"
+        handler.headers["Host"] = f"127.0.0.1:{self.server.server_port}"
         if origin:
             handler.headers["Origin"] = origin
         if self.cookie:

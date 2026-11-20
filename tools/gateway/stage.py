@@ -80,20 +80,20 @@ def verify_lock_inventory(lock, wheels):
 def source_mapping(root, dev05=False, *, fixtures=False):
     source_files = [
         ("server/pyproject.toml", "service/server/pyproject.toml"),
-        ("tests/gateway_integration/run.sh", "harness/run.sh"),
-        ("tests/gateway_integration/boundary_steps.sh", "harness/boundary_steps.sh"),
-        ("tests/gateway_integration/choice_b_steps.sh", "harness/choice_b_steps.sh"),
-        ("tests/gateway_integration/compose.yaml", "harness/compose.yaml"),
+        ("tools/gateway/evidence/run.sh", "harness/run.sh"),
+        ("tools/gateway/evidence/boundary_steps.sh", "harness/boundary_steps.sh"),
+        ("tools/gateway/evidence/choice_b_steps.sh", "harness/choice_b_steps.sh"),
+        ("tools/gateway/evidence/compose.yaml", "harness/compose.yaml"),
         ("tools/gateway/stage.py", "harness/stage.py"),
         ("tools/gateway/evidence/receipts.py", "harness/receipts.py"),
         ("tools/gateway/evidence/review_gate.py", "harness/review_gate.py"),
         ("tools/gateway/evidence/source_correspondence.py", "harness/source_correspondence.py"),
         ("tools/gateway/evidence/verify_runtime.py", "harness/verify_runtime.py"),
-        ("tests/gateway_integration/correlate_partial.py", "harness/correlate_partial.py"),
-        ("tests/gateway_integration/verify_boundary.py", "harness/verify_boundary.py"),
-        ("tests/gateway_integration/verify_choice_b.py", "harness/verify_choice_b.py"),
+        ("tools/gateway/evidence/correlate_partial.py", "harness/correlate_partial.py"),
+        ("tools/gateway/evidence/verify_boundary.py", "harness/verify_boundary.py"),
+        ("tools/gateway/evidence/verify_choice_b.py", "harness/verify_choice_b.py"),
         (
-            "tests/gateway_integration/verify_choice_b_freshness.py",
+            "tools/gateway/evidence/verify_choice_b_freshness.py",
             "harness/verify_choice_b_freshness.py",
         ),
         ("tests/gateway_integration/test_core_bridge.py", "harness/test_core_bridge.py"),
@@ -109,29 +109,18 @@ def source_mapping(root, dev05=False, *, fixtures=False):
             "harness/test_run10_held_timeout.py",
         ),
         (
-            "tests/gateway_integration/inputs/litellm_completion_timeout_1_105_1.py",
+            "tools/gateway/evidence/inputs/litellm_completion_timeout_1_105_1.py",
             "harness/litellm_completion_timeout_1_105_1.py",
         ),
         ("tests/gateway_integration/test_retry_cause.py", "service/gateway/test_retry_cause.py"),
         ("tests/gateway_integration/test_alt_handler.py", "service/gateway/test_alt_handler.py"),
-        ("tests/gateway_integration/verify_actor_output.py", "harness/verify_actor_output.py"),
-        ("tests/gateway_integration/Dockerfile.service", "service/Dockerfile"),
-        ("tests/gateway_integration/Dockerfile.worker", "worker/Dockerfile"),
-        ("tests/gateway_integration/Dockerfile.receiver", "receiver/Dockerfile"),
-        ("tests/gateway_integration/Dockerfile.python-consumer", "python/Dockerfile"),
-        ("tests/gateway_integration/Dockerfile.js-consumer", "js/Dockerfile"),
-        ("tools/gateway/compat/guard.py", "service/gateway/guard.py"),
+        ("tools/gateway/evidence/verify_actor_output.py", "harness/verify_actor_output.py"),
+        ("tools/gateway/evidence/Dockerfile.service", "service/Dockerfile"),
+        ("tools/gateway/evidence/Dockerfile.worker", "worker/Dockerfile"),
+        ("tools/gateway/evidence/Dockerfile.receiver", "receiver/Dockerfile"),
+        ("tools/gateway/evidence/Dockerfile.python-consumer", "python/Dockerfile"),
+        ("tools/gateway/evidence/Dockerfile.js-consumer", "js/Dockerfile"),
         ("tests/gateway_integration/test_guard.py", "service/gateway/test_guard.py"),
-        ("tools/gateway/compat/adapter.py", "service/gateway/adapter.py"),
-        ("tools/gateway/compat/choice_b_sender.py", "service/gateway/choice_b_sender.py"),
-        (
-            "tools/gateway/compat/owned_sender_transport.py",
-            "service/gateway/owned_sender_transport.py",
-        ),
-        (
-            "tools/gateway/compat/owned_tls_sender_transport.py",
-            "service/gateway/owned_tls_sender_transport.py",
-        ),
         ("tools/gateway/choice_b_service.py", "service/gateway/choice_b_service.py"),
         (
             "server/src/ezllmrouter_server/gateway/choice_b_wire.py",
@@ -141,16 +130,15 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         ("worker/choice_b_worker.py", "worker/choice_b_worker.py"),
         ("server/src/ezllmrouter_server/observability.py", "worker/worker_logging.py"),
         ("server/src/ezllmrouter_server/runtime_resources.py", "worker/runtime_resources.py"),
-        ("tools/gateway/compat/proxy_recipe.py", "service/gateway/proxy_recipe.py"),
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
         ("tools/gateway/receiver.py", "receiver/receiver.py"),
-        ("tests/gateway_integration/python_text.py", "python/actors/python_text.py"),
-        ("tests/gateway_integration/python_negative.py", "python/actors/python_negative.py"),
-        ("tests/gateway_integration/python_boundary.py", "python/actors/python_boundary.py"),
-        ("tests/gateway_integration/python_wait.py", "python/actors/python_wait.py"),
-        ("tests/gateway_integration/js_text.cjs", "js/actors/js_text.cjs"),
+        ("tools/gateway/evidence/python_text.py", "python/actors/python_text.py"),
+        ("tools/gateway/evidence/python_negative.py", "python/actors/python_negative.py"),
+        ("tools/gateway/evidence/python_boundary.py", "python/actors/python_boundary.py"),
+        ("tools/gateway/evidence/python_wait.py", "python/actors/python_wait.py"),
+        ("tools/gateway/evidence/js_text.cjs", "js/actors/js_text.cjs"),
         (
-            "tests/gateway_integration/actor_output_regression.cjs",
+            "tools/gateway/evidence/actor_output_regression.cjs",
             "js/actors/actor_output_regression.cjs",
         ),
         ("tests/tool_cycle/python_actor.py", "python/actors/python_actor.py"),
@@ -161,7 +149,6 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         ("tests/development_slice/request.json", "js/actors/request.json"),
         ("tests/development_slice/request.json", "service/dev_slice/request.json"),
         ("tests/development_slice/fixture.json", "service/dev_slice/fixture.json"),
-        ("tools/gateway/compat/recipe.py", "service/dev_slice/recipe.py"),
     ]
     if fixtures:
         source_files.extend(
@@ -172,10 +159,21 @@ def source_mapping(root, dev05=False, *, fixtures=False):
             ]
         )
     if fixtures:
-        source_files.append(("tools/__init__.py", "service/server/tools/__init__.py"))
         source_files.extend(
             (str(path.relative_to(root)), "service/server/" + str(path.relative_to(root)))
             for path in sorted((root / "tools/synthetic").rglob("*.py"))
+        )
+    source_files.append(("tools/__init__.py", "service/server/tools/__init__.py"))
+    for path in sorted((root / "tools/gateway").rglob("*")):
+        if not path.is_file() or path.suffix not in {".py", ".json", ".sh", ".cjs"}:
+            continue
+        if (
+            path.name in {"fixture_adapters.py", "service_fixture.py", "worker_fixture.py"}
+            and not fixtures
+        ):
+            continue
+        source_files.append(
+            (str(path.relative_to(root)), "service/server/" + str(path.relative_to(root)))
         )
     server_source = root / "server/src"
     for package in ("ezllmrouter_server",):
@@ -186,35 +184,37 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         )
     if dev05:
         source_files = [
-            ("tests/gateway_integration/dev05_fixture.json", target)
+            ("tools/gateway/evidence/dev05_fixture.json", target)
             if target == "service/dev_slice/fixture.json"
             else (source, target)
             for source, target in source_files
         ]
         source_files.extend(
             [
-                ("tests/gateway_integration/dev05_steps.sh", "harness/dev05_steps.sh"),
-                ("tools/gateway/compat/worker_ready.py", "service/gateway/worker_ready.py"),
+                ("tools/gateway/evidence/dev05_steps.sh", "harness/dev05_steps.sh"),
                 ("tests/gateway_integration/test_worker_ready.py", "harness/test_worker_ready.py"),
                 ("tools/gateway/evidence/capture_runtime.py", "harness/capture_runtime.py"),
                 ("tools/gateway/evidence/verify_dev05.py", "harness/verify_dev05.py"),
                 ("tools/gateway/evidence/scan_dev05_logs.py", "harness/scan_dev05_logs.py"),
-                ("tests/gateway_integration/test_dev05.py", "harness/test_dev05.py"),
+                (
+                    "tests/gateway_integration/test_guarded_tool_execution.py",
+                    "harness/test_guarded_tool_execution.py",
+                ),
                 (
                     "tests/gateway_integration/test_work_identity.py",
                     "service/gateway/test_work_identity.py",
                 ),
                 (
-                    "tests/gateway_integration/test_dev05_capture.py",
-                    "harness/test_dev05_capture.py",
+                    "tests/gateway_integration/test_runtime_capture.py",
+                    "harness/test_runtime_capture.py",
                 ),
                 (
-                    "tests/gateway_integration/test_dev05_python_actor.py",
-                    "harness/test_dev05_python_actor.py",
+                    "tests/gateway_integration/test_python_actor_recovery.py",
+                    "harness/test_python_actor_recovery.py",
                 ),
                 (
-                    "tests/gateway_integration/test_dev05_js_actor.cjs",
-                    "harness/test_dev05_js_actor.cjs",
+                    "tests/gateway_integration/test_js_actor_recovery.cjs",
+                    "harness/test_js_actor_recovery.cjs",
                 ),
                 ("tests/tool_cycle/test_python_client.py", "python/actors/test_python_client.py"),
                 ("tests/tool_cycle/test_js_client.cjs", "js/actors/test_js_client.cjs"),

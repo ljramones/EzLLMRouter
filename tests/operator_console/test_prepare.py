@@ -1,18 +1,20 @@
 """Build identity follows source bytes and ignores local filesystem debris."""
 
+import shutil
+
 from pathlib import Path
 import subprocess
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import prepare
+
+from deploy.local import prepare as prepare
 
 
+@unittest.skipUnless(shutil.which("git"), "git is required for this fixture")
 class PrepareTests(unittest.TestCase):
     def test_fingerprint_uses_nonignored_git_source_only(self):
         with tempfile.TemporaryDirectory() as directory:

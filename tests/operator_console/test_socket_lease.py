@@ -2,12 +2,11 @@
 
 from pathlib import Path
 import socket
-import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
+
 from socket_lease import remove_stale_socket
 
 

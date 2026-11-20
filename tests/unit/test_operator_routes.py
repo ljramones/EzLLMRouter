@@ -17,7 +17,7 @@ class OperatorRouteTests(UserHTTPFixture):
         self.server.application.integration_only = False
         self.server.application.fixture = json.loads(
             (
-                Path(__file__).resolve().parents[1] / "gateway_integration/dev05_fixture.json"
+                Path(__file__).resolve().parents[2] / "tools/gateway/evidence/dev05_fixture.json"
             ).read_text()
         )
         for path in (

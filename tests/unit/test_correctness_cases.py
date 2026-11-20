@@ -23,9 +23,9 @@ from ezllmrouter_server.scripted_demo import ScriptedDemo
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.store import encode
 from tests.development_slice import test_core as core_fixtures
-from tests.development_slice import test_dev12_successor_contract as successor_fixtures
+from tests.development_slice import test_retrieval_contract as successor_fixtures
 from tests.operator_console import test_catalogue as catalogue_fixtures
-from tests.operator_console import test_dev09_reporting as reporting_fixtures
+from tests.operator_console import test_reporting as reporting_fixtures
 from tests.operator_console import test_registry_core as registry_fixtures
 
 

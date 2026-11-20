@@ -5,21 +5,20 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
+
 # Avoid the standard-library module with the same name, used by profilers.
 spec = importlib.util.spec_from_file_location(
     "local_profile", ROOT / "deploy/local/local_profile.py"
 )
 profile = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
-import initialize_credentials
-import prepare
+from deploy.local import initialize_credentials as initialize_credentials
+from deploy.local import prepare as prepare
 
 
 class SecretCustodyTests(unittest.TestCase):

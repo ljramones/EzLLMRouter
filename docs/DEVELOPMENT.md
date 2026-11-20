@@ -18,14 +18,15 @@ These commands use temporary stores and controlled fixtures, with no model calls
 
 Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules across `server/`,
 `clients/`, `deploy/`, `worker/`, `tools/` and `tests/`. Formatting is enforced
-across those same trees, currently 415 Python files. Local runtime state under
+across those same trees. Local runtime state under
 `deploy/local/.state/` is explicitly excluded, including when passed directly to
 Ruff. Existing dependency/build exclusions also apply. No new blanket rule
 ignores hide the adopted lint findings.
 
-The strict mypy scope covers 28 modules: the eight previously checked modules,
-all 18 SQL repository modules, provider probes and shared identifier rules. The repository directory is
-checked as a whole, so new repository modules are included automatically.
+Strict mypy checks the modules selected by `TYPED_PATHS` in `tools/check.py`,
+including the full Python client, all runtime SQL repositories, provider probes,
+shared validation/identity/filesystem helpers and selected operator boundaries.
+The client and repository directories are checked as a whole, including new modules.
 Imports use `follow_imports="silent"` so dependency types remain available while
 errors in modules outside the selected scope remain outside the blocking check.
 This is an incremental check, not whole-project type coverage.
@@ -49,7 +50,9 @@ development tests. In particular, the AnyIO counterexamples require the frozen
 4.15.1 wheels, while the development lock uses 4.16.0.
 
 Loopback modules allow localhost and local IPC only. Per-module interpreters
-isolate fixture imports and environment changes. The network guard applies to
+isolate loaded fixtures and environment changes. Ordinary tests import the
+installed development packages and package-qualified fixtures. Standalone
+source-copy checks retain their explicit source/dependency roots. The network guard applies to
 Python socket operations in those interpreters; subprocess consumers and
 deployment containers have their own fixture and isolation checks.
 
@@ -58,8 +61,9 @@ installed consumer. The HTTP variant uses actual Node fetch against a disposable
 localhost fixture:
 
 ```sh
-python3 -I -S tests/client_languages/check_javascript.py
-python3 -I -S tests/client_languages/check_javascript.py --http
+npm --prefix clients/js test
+npm --prefix clients/js run test:http
+npm --prefix clients/js run test:types
 ```
 
 The JavaScript checks run the 125 shared contract cases against Python's expected
@@ -162,6 +166,25 @@ traces, a JSON result file and an HTML report under ignored
 `.artifacts/playwright/`. Fixtures use synthetic credentials because traces can
 include entered values and HTTP bodies.
 Run `npm run report` to inspect the local HTML report.
+
+## Fixture and evidence organization
+
+One-off gateway qualification and forensic commands live under
+`tools/gateway/evidence/`; operator browser proofs and actors live under
+`tools/operator/`. Runtime compatibility shims are removed. Historical proof IDs,
+recorded source commits and contract fixtures preserve their original identities;
+new source packets record the relocated paths. Synthetic successor authority,
+allowance, execution and receipt helpers live in `tools/synthetic/`, outside the
+production wheel. Staging includes them only in explicit fixture mode.
+
+Repeatable HTTP tests bind the server directly to port zero and use its actual
+bound port, including the operator Host/Origin policy. Observable-state waits
+have bounded shared helpers, and synchronization uses events where the test needs
+a held execution. Intentional timeout, delayed-start and slow-response faults
+retain their explicit timing. Tool-dependent unit fixtures explain missing
+Git/Node/OpenSSL skips; those skips do not establish target qualification.
+Assertions in repeatable tests stay active under optimized Python. Named client
+and retrieval tests use descriptive filenames instead of development milestones.
 
 ## Gateway negative controls
 

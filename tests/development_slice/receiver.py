@@ -7,7 +7,6 @@ import json
 import os
 import time
 
-arrivals = Path(os.environ["EZLLMROUTER_RECEIVER_LOG"])
 mode = os.environ.get("EZLLMROUTER_RECEIVER_MODE", "normal")
 if mode not in ("normal", "fail", "delay", "drop", "partial"):
     raise ValueError("unsupported synthetic receiver mode")
@@ -28,6 +27,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
+        arrivals = Path(os.environ["EZLLMROUTER_RECEIVER_LOG"])
         if self.path != "/observations":
             return self.send_json(404, {"error": "missing"})
         records = (
@@ -38,6 +38,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(200, {"arrivals": records})
 
     def do_POST(self):
+        arrivals = Path(os.environ["EZLLMROUTER_RECEIVER_LOG"])
         if self.path != "/v1/chat/completions":
             return self.send_json(404, {"error": "missing"})
         size = int(self.headers.get("Content-Length", "0"))

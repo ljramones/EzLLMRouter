@@ -1,15 +1,14 @@
 """The CRUD update must preserve one-use owner evidence namespaces."""
 
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "deploy/local"))
-import crud_update
+
+from deploy.local import crud_update as crud_update
 
 
 class CrudUpdateNamespaceTests(unittest.TestCase):

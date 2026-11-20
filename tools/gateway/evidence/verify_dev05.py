@@ -1,5 +1,18 @@
 """Strict DEV-05 client/tool evidence checks; stdout files are single JSON documents."""
 
+if not __package__:
+    import sys
+    from pathlib import Path
+
+    for _parent in Path(__file__).resolve().parents:
+        if (_parent / "tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent))
+            break
+        if (_parent / "server/tools/gateway/__init__.py").is_file():
+            sys.path.insert(0, str(_parent / "server"))
+            break
+
+
 import json
 from pathlib import Path
 import sys

@@ -6,9 +6,7 @@ import http.client
 import io
 import json
 from pathlib import Path
-import socket
 import sqlite3
-import sys
 import tempfile
 import threading
 import unittest
@@ -16,7 +14,7 @@ from unittest import mock
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.integration_accounting import IntegrationError
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
@@ -84,10 +82,9 @@ class IntegrationTests(unittest.TestCase):
             },
         )
         self.admin_token = self.registry.issue_local_operator_token("owner.local")
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", 0))
-            self.port = probe.getsockname()[1]
+        self.port = 0
         self.http = serve("127.0.0.1", self.port, SimpleNamespace(registry=self.registry))
+        self.port = self.http.server_port
         self.thread = threading.Thread(target=self.http.serve_forever)
         self.thread.start()
         self.addCleanup(self._stop)

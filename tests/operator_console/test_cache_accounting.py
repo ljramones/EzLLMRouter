@@ -5,11 +5,10 @@ from __future__ import annotations
 from copy import deepcopy
 from decimal import Decimal
 from pathlib import Path
-import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server/src"))
+
 from ezllmrouter_server.cache_accounting import (
     CONTRACT,
     SEMANTICS,
