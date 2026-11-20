@@ -70,24 +70,52 @@ class ResourcePrimitiveTests(unittest.TestCase):
         self.assertTrue(pool._slots.acquire(blocking=False))
         self.assertFalse(pool._slots.acquire(blocking=False))
 
-    def test_submit_failure_after_enqueue_cannot_execute_the_rejected_work_later(self):
+    def test_submit_failure_after_enqueue_replaces_pool_without_running_rejected_work(self):
         pool = BoundedExecutor(max_workers=1, max_pending=1, thread_name_prefix="resource-test")
         self.addCleanup(pool.shutdown)
-        queued = []
-        action = Mock()
+        queued, action = [], Mock()
+        old = pool._pool
 
         def fail_after_enqueue(wrapper):
             queued.append(wrapper)
             raise RuntimeError("controlled thread creation failure")
 
-        with patch.object(pool._pool, "submit", side_effect=fail_after_enqueue):
+        with patch.object(old, "submit", side_effect=fail_after_enqueue):
             with self.assertRaises(RuntimeError):
                 pool.submit(action)
-            with self.assertRaises(RuntimeError):
-                pool.submit(action)
+        self.assertEqual(pool.submit(lambda: "recovered").result(timeout=2), "recovered")
         self.assertEqual(len(queued), 1)
         queued[0]()
         action.assert_not_called()
+        self.assertEqual(pool.status()["submit_failures"], 1)
+        self.assertEqual(pool.status()["recoveries"], 1)
+
+    def test_failed_executor_drains_accepted_work_before_becoming_ready_again(self):
+        pool = BoundedExecutor(max_workers=2, max_pending=3, thread_name_prefix="resource-test")
+        entered, release, completed = threading.Event(), threading.Event(), threading.Event()
+        self.addCleanup(pool.shutdown)
+        self.addCleanup(release.set)
+
+        def held():
+            entered.set()
+            if not release.wait(3):
+                raise AssertionError("accepted work not released")
+            return "paid result"
+
+        first = pool.submit(held)
+        first.add_done_callback(lambda _: completed.set())
+        self.assertTrue(entered.wait(1))
+        with patch.object(pool._pool, "submit", side_effect=RuntimeError("transient submit")):
+            with self.assertRaises(RuntimeError):
+                pool.submit(lambda: "rejected")
+        self.assertEqual(pool.status()["state"], "recovering")
+        with self.assertRaisesRegex(RuntimeError, "recovering"):
+            pool.submit(lambda: "too early")
+        release.set()
+        self.assertTrue(completed.wait(2))
+        self.assertEqual(first.result(timeout=1), "paid result")
+        self.assertEqual(pool.status()["state"], "ready")
+        self.assertEqual(pool.submit(lambda: "next").result(timeout=1), "next")
 
     def test_admission_close_waits_for_existing_callers_and_rejects_new_ones(self):
         gate = AdmissionGate()

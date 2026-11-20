@@ -142,6 +142,20 @@ class ObservationRetentionTests(unittest.TestCase):
             self.registry.probe_connection(
                 "owner.local", self.connection, 1, "probe.new", "inventory"
             )
+        self.registry.provider_vault = SimpleNamespace(resolve=lambda *_: "synthetic-credential")
+        with patch.object(
+            registry_module,
+            "provider_probe",
+            return_value={"state": "failed", "reason": "synthetic_failure", "models": []},
+        ) as probe:
+            self.registry.probe_connection(
+                "owner.local", self.connection, 1, "probe.new", "inventory"
+            )
+            probe.assert_not_called()
+            self.registry.probe_connection(
+                "owner.local", self.connection, 1, "probe.retention.2", "inventory"
+            )
+            probe.assert_called_once()
         records = self.store.db.execute(
             "SELECT operation_id FROM registry_observations WHERE connection_id=?",
             (self.connection,),

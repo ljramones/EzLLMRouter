@@ -170,6 +170,12 @@ for invalid adapter/settings input, before network access. Unsupported operation
 return `unsupported` / `operation_not_implemented`; malformed replies remain
 `malformed_response` failures. Neither settings nor credentials enter the result.
 
+Probe operation IDs deduplicate while the observation is retained: the newest 20
+per connection plus up to three inventory anchors. Retrying a pruned ID can run a
+new metadata probe. Use a new ID for a deliberate new probe; the observation
+window is not a permanent operation ledger. Execution and credential-operation
+receipts retain their separate durability rules.
+
 The immutable demo projection represents an existing attempt with no qualifying
 usage revision at its report cutoff as unknown usage and cost. Future attempts
 and revisions are excluded, and replacement counts stay non-negative. Workflow

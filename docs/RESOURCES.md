@@ -22,6 +22,12 @@ recoverable work handle and HTTP 503. It does not invoke the provider or leave a
 successor reservation inflight. A failed executor submission is also gated against
 Python's enqueue-before-thread-creation behavior: the rejected action cannot run
 later if another thread drains that queue.
+A submission failure moves the pool into `recovering`: accepted actions drain
+once, then a fresh bounded pool accepts new work. The rejected action is never
+replayed. If replacement allocation fails, status and later submissions retry
+allocation while readiness remains unavailable. Shutdown prevents recovery.
+The sender status exposes execution/check-pool state, inflight count, capacity,
+submission failures and recoveries; service readiness requires both pools ready.
 
 Completed execution futures are removed under a lock. Durable SQLite submissions,
 results and usage remain available independently of the in-memory futures.

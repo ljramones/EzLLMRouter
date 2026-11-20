@@ -372,11 +372,11 @@ also passes. A pending or unavailable check is never a passing result.
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
-| 6 | Persistence recovery | Open | Orphaned vault versions, preservation of savepoint errors, coherent admission snapshots, probe-idempotency window and failed-executor recovery (4.1.4). |
+| 6 | Persistence recovery | Implemented — local checks pass | Authorized retries replace only uncommitted vault successors; ambiguous commits retain sealed files. Nested rollback preserves the original error; admission uses one snapshot. Probe retry retention is documented/tested. Failed executors drain accepted work, replace their pool and expose readiness/counters (4.1.4). |
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
 | 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | Open | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
+| 10 | Test-runner gaps | In progress | Class and JS inventories; subprocess/network isolation; all-skipped suites; failure collection; credential-volume ownership and coverage measurement (4.4.4). |
 | 11 | Structural cleanup | Open | Expand strict typing; split large HTTP/Coordinator functions; complete Store protocol; reduce duplicated SQL/helpers and dynamic wiring; standardize timestamps; retire codenames and remaining evidence under tests; record digest-domain/version decisions and filesystem constraints (4.1.4, 4.2.3, 4.3.5, 4.4.4, 5). |
 
 ### Implementation pass: items 2–5
@@ -507,3 +507,34 @@ No deployment was restarted, no provider inference was issued, and frozen worker
 inputs/migrations were unchanged. Item 1 remains open for target qualification;
 item 9 remains deferred. The recommended next coding work is item 6 (persistence
 recovery), followed by item 10 (test-runner gaps); item 11 remains structural work.
+
+### Active pass: items 6 and 10
+
+The prior commits are pushed through `c2712db`. Persistence recovery and test-runner
+work are authorized together, with separate commits, focused regressions and final
+validation evidence to follow. Deployment/toolchain checks remain distinct gates.
+
+
+### Implementation pass: item 6
+
+Persistence recovery now permits an authorized credential replacement to overwrite
+only the sealed version immediately above the committed version. A restart after
+sealing no longer wedges later replacement. Ambiguous commit acknowledgements
+preserve the selected file, and idempotent retries restore the authority epoch and
+resume retired-file cleanup. No unrelated vault files are swept.
+
+Nested savepoint cleanup preserves the action's original exception after SQLite
+has already rolled back; rollback errors add safe type-only notes. Registry
+explanation, admission and current-authority checks now share one read snapshot
+across policy, destination and price selection. Probe operation IDs retain the
+existing bounded observation window; API/database guidance and a prune/retry
+regression make that limit explicit.
+
+A failed executor submission cannot replay rejected work. Accepted actions drain
+once before a fresh bounded pool accepts new work; failed replacement remains
+visibly recovering and shutdown prevents replacement. Sender status includes pool
+states/counters and readiness requires both execution and sender-check pools ready.
+
+The 62 focused persistence/database/resource/observation tests pass. Final combined
+suite, package and coverage evidence is recorded with item 10 below. Frozen worker
+inputs, migrations, deployment state and provider execution are unchanged.

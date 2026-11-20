@@ -576,11 +576,13 @@ class Registry:
                     old_version = record["credential_version"]
                     next_version = old_version + 1
             if prior:
+                self.send_authority.epoch = self.version()
                 self.provider_vault.remove(connection_id, reply["record"]["credential_version"] - 1)
                 return reply
-            sealed = None
             if mode == "replace":
-                sealed = self.provider_vault.seal(connection_id, next_version, secret)
+                self.provider_vault.seal(
+                    connection_id, next_version, secret, committed_version=old_version
+                )
             try:
 
                 def action():
@@ -625,8 +627,9 @@ class Registry:
 
                 reply, revision = self.store.database.transaction(action)
             except BaseException:
-                if sealed:
-                    sealed.unlink(missing_ok=True)
+                # COMMIT may have succeeded even if its acknowledgement failed.
+                # Retain the staged file; a later authorized retry can overwrite
+                # it only while it is strictly ahead of the committed version.
                 raise
             self.send_authority.epoch = revision
             self.provider_vault.remove(connection_id, old_version)
@@ -826,64 +829,69 @@ class Registry:
         return trusted
 
     def explain(self, principal_id, ref, purpose, task_class, features=("text",)):
-        principal = self.principal(principal_id)
-        model = self.model(ref)
-        grant = self.grant(principal_id, ref)
-        reason = (
-            "PRINCIPAL_NOT_ACTIVE"
-            if not principal or principal["status"] != "active"
-            else "MODEL_NOT_ENABLED"
-            if not model or model["status"] != "enabled"
-            else "SOURCE_MODEL_DISALLOWED"
-            if model and self.readiness(model) == "source_model_disallowed"
-            else "TRANSPORT_UNAVAILABLE"
-            if self.readiness(model) not in ("synthetic_http1_ready", "provider_https_configured")
-            else "CAPABILITY_UNSUPPORTED"
-            if not set(features) <= set(model["capabilities"])
-            else "GRANT_MISSING"
-            if not grant or grant["status"] != "active"
-            else "PURPOSE_DENIED"
-            if purpose not in grant["purposes"] or purpose not in model["purposes"]
-            else "TASK_CLASS_DENIED"
-            if task_class not in grant["task_classes"] or task_class not in model["task_classes"]
-            else "ALLOWED"
-        )
-        return {
-            "allowed": reason == "ALLOWED",
-            "reason": reason,
-            "principal_revision": principal["revision"] if principal else None,
-            "model_revision": model["revision"] if model else None,
-            "grant_revision": grant["revision"] if grant else None,
-            "authority_revision": self.version(),
-        }
+        with self.store.database.read():
+            principal = self.principal(principal_id)
+            model = self.model(ref)
+            grant = self.grant(principal_id, ref)
+            reason = (
+                "PRINCIPAL_NOT_ACTIVE"
+                if not principal or principal["status"] != "active"
+                else "MODEL_NOT_ENABLED"
+                if not model or model["status"] != "enabled"
+                else "SOURCE_MODEL_DISALLOWED"
+                if model and self.readiness(model) == "source_model_disallowed"
+                else "TRANSPORT_UNAVAILABLE"
+                if self.readiness(model)
+                not in ("synthetic_http1_ready", "provider_https_configured")
+                else "CAPABILITY_UNSUPPORTED"
+                if not set(features) <= set(model["capabilities"])
+                else "GRANT_MISSING"
+                if not grant or grant["status"] != "active"
+                else "PURPOSE_DENIED"
+                if purpose not in grant["purposes"] or purpose not in model["purposes"]
+                else "TASK_CLASS_DENIED"
+                if task_class not in grant["task_classes"]
+                or task_class not in model["task_classes"]
+                else "ALLOWED"
+            )
+            return {
+                "allowed": reason == "ALLOWED",
+                "reason": reason,
+                "principal_revision": principal["revision"] if principal else None,
+                "model_revision": model["revision"] if model else None,
+                "grant_revision": grant["revision"] if grant else None,
+                "authority_revision": self.version(),
+            }
 
     def admit(self, principal_id, ref, purpose, task_class, features=("text",)):
-        decision = self.explain(principal_id, ref, purpose, task_class, features)
-        if not decision["allowed"]:
-            raise ContractError("POLICY_DENIED", 403)
-        model = self.model(ref)
-        prices = self.prices(ref)
-        active = prices[-1] if prices else None
-        if not model["legacy_unpriced"] and active is None:
-            raise ContractError("POLICY_DENIED", 403)
-        return deepcopy(model["destination"]), {
-            **decision,
-            "features": list(features),
-            "price_version": active["price_version"] if active else "synthetic.unpriced.v1",
-            "usage_semantics_version": active["usage_semantics_version"]
-            if active
-            else "synthetic.text.v1",
-            "price_schedule": active,
-        }
+        with self.store.database.read():
+            decision = self.explain(principal_id, ref, purpose, task_class, features)
+            if not decision["allowed"]:
+                raise ContractError("POLICY_DENIED", 403)
+            model = self.model(ref)
+            prices = self.prices(ref)
+            active = prices[-1] if prices else None
+            if not model["legacy_unpriced"] and active is None:
+                raise ContractError("POLICY_DENIED", 403)
+            return deepcopy(model["destination"]), {
+                **decision,
+                "features": list(features),
+                "price_version": active["price_version"] if active else "synthetic.unpriced.v1",
+                "usage_semantics_version": active["usage_semantics_version"]
+                if active
+                else "synthetic.text.v1",
+                "price_schedule": active,
+            }
 
     def check_current(self, principal_id, ref, purpose, task_class, decision):
-        current = self.explain(principal_id, ref, purpose, task_class, decision["features"])
-        if (
-            not current["allowed"]
-            or current["authority_revision"] != decision["authority_revision"]
-        ):
-            raise ContractError("PLAN_INVALID_OR_STALE", 409)
-        return self.model(ref)["destination"]
+        with self.store.database.read():
+            current = self.explain(principal_id, ref, purpose, task_class, decision["features"])
+            if (
+                not current["allowed"]
+                or current["authority_revision"] != decision["authority_revision"]
+            ):
+                raise ContractError("PLAN_INVALID_OR_STALE", 409)
+            return self.model(ref)["destination"]
 
     def mutate(self, actor, request):
         """Strict idempotent management command; returns committed safe record."""

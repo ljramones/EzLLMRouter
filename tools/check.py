@@ -92,6 +92,7 @@ MODULES = (
     "tests.unit.test_client_deadlines",
     "tests.unit.test_provision_recovery",
     "tests.unit.test_quality_gates",
+    "tests.unit.test_persistence_recovery",
 )
 LOOPBACK_MODULES = (
     "tests.development_slice.test_http",

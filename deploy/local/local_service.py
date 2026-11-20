@@ -105,6 +105,12 @@ def main():
             context_sender=lambda *args: adapter.send_with_context(*args),
         )
         cleanup.callback(coordinator.close)
+        registry.runtime_ready = lambda: (
+            adapter.server_thread.is_alive()
+            and not authority.is_revoked()
+            and coordinator.pool.status()["state"] == "ready"
+            and adapter.guard.checks.status()["state"] == "ready"
+        )
         projection = OperatorProjection(store, trusted["principal_id"], "/data/send-events.jsonl")
         runner = DemoRunner(request, scenarios, "http://127.0.0.1:8773", token)
         provider_validation = ProviderValidationRunner(
@@ -138,9 +144,9 @@ def main():
 
         def sender_status():
             return {
-                "state": "live"
-                if adapter.server_thread.is_alive() and not authority.is_revoked()
-                else "unavailable",
+                "state": "live" if registry.runtime_ready() else "unavailable",
+                "execution_pool": coordinator.pool.status(),
+                "send_check_pool": adapter.guard.checks.status(),
                 "exclusive_synthetic_provider": False,
                 "selected_provider_ready": registry.personal_campaign.summary()["effective_state"]
                 == "active",

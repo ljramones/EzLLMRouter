@@ -50,16 +50,51 @@ class BoundedExecutor:
         if max_pending < max_workers or max_workers < 1:
             raise ValueError("invalid executor capacity")
         self._slots = threading.BoundedSemaphore(max_pending)
-        self._submission_lock = threading.Lock()
+        self._submission_lock = threading.RLock()
         self._closed = False
-        self._pool = ThreadPoolExecutor(
-            max_workers=max_workers, thread_name_prefix=thread_name_prefix
-        )
+        self._pool_options = {"max_workers": max_workers, "thread_name_prefix": thread_name_prefix}
+        self._max_pending = max_pending
+        self._inflight = 0
+        self._failed = False
+        self._failures = self._recoveries = 0
+        self._pool = ThreadPoolExecutor(**self._pool_options)
+
+    def _recover(self):
+        if self._closed or not self._failed or self._inflight:
+            return
+        try:
+            replacement = ThreadPoolExecutor(**self._pool_options)
+        except Exception:
+            return  # Remains visibly unavailable; a later status/submit retries.
+        self._pool.shutdown(wait=False, cancel_futures=False)
+        self._pool = replacement
+        self._failed = False
+        self._recoveries += 1
+
+    def status(self):
+        with self._submission_lock:
+            self._recover()
+            return {
+                "state": "closed" if self._closed else "recovering" if self._failed else "ready",
+                "inflight": self._inflight,
+                "capacity": self._max_pending,
+                "submit_failures": self._failures,
+                "recoveries": self._recoveries,
+            }
+
+    def _completed(self, _future):
+        self._slots.release()
+        with self._submission_lock:
+            self._inflight -= 1
+            self._recover()
 
     def submit(self, action, *args, **kwargs):
         with self._submission_lock:
             if self._closed:
                 raise RuntimeError("execution pool is closed")
+            self._recover()
+            if self._failed:
+                raise RuntimeError("execution pool is recovering")
             if not self._slots.acquire(blocking=False):
                 raise RuntimeError("execution capacity exhausted")
             ready = threading.Event()
@@ -73,16 +108,20 @@ class BoundedExecutor:
                     return action(*args, **kwargs)
                 return None
 
+            self._inflight += 1
             try:
                 future = self._pool.submit(execute)
             except BaseException:
-                self._closed = True
+                self._failed = True
+                self._failures += 1
+                self._inflight -= 1
                 ready.set()
                 self._slots.release()
+                self._recover()
                 raise
             accepted = True
             ready.set()
-            future.add_done_callback(lambda _: self._slots.release())
+            future.add_done_callback(self._completed)
             return future
 
     def shutdown(self, wait=True, *, cancel_futures=False):

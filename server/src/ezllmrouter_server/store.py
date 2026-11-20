@@ -471,6 +471,15 @@ class SQLiteStore:
 
         return self.database.transaction(action)
 
+    def _rollback_preserving_error(self, error):
+        try:
+            if self.db.in_transaction:
+                self.db.execute("ROLLBACK")
+            return not self.db.in_transaction
+        except sqlite3.Error as cleanup:
+            error.add_note("rollback failed: " + type(cleanup).__name__)
+            return False
+
     def _transaction(self, action):
         with self._lock:
             if self.db.in_transaction:
@@ -479,9 +488,14 @@ class SQLiteStore:
                 self.db.execute(f"SAVEPOINT {savepoint}")
                 try:
                     result = action()
-                except BaseException:
-                    self.db.execute(f"ROLLBACK TO {savepoint}")
-                    self.db.execute(f"RELEASE {savepoint}")
+                except BaseException as exc:
+                    if self.db.in_transaction:
+                        try:
+                            self.db.execute(f"ROLLBACK TO {savepoint}")
+                            self.db.execute(f"RELEASE {savepoint}")
+                        except sqlite3.Error as cleanup:
+                            exc.add_note("nested rollback failed: " + type(cleanup).__name__)
+                            self._rollback_preserving_error(exc)
                     raise
                 self.db.execute(f"RELEASE {savepoint}")
                 return result
@@ -489,19 +503,17 @@ class SQLiteStore:
             try:
                 result = action()
             except BaseException as exc:
-                if self.db.in_transaction:
-                    self.db.execute("ROLLBACK")
+                rolled_back = self._rollback_preserving_error(exc)
                 try:
-                    exc.ezllmrouter_definite_rollback = True
+                    exc.ezllmrouter_definite_rollback = rolled_back
                 except (AttributeError, TypeError):
                     pass
                 raise
             # A COMMIT exception may be ambiguous, even if ROLLBACK succeeds.
             try:
                 self.db.execute("COMMIT")
-            except BaseException:
-                if self.db.in_transaction:
-                    self.db.execute("ROLLBACK")
+            except BaseException as exc:
+                self._rollback_preserving_error(exc)
                 raise
             return result
 

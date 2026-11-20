@@ -140,6 +140,15 @@ procedure rather than deleting a potentially committed credential or keyring.
 
 ## Resume provider credential cleanup
 
+If the process stops after sealing a successor version but before committing its
+registry record, the next authorized replacement atomically replaces that
+unselected successor file. The exclusive store lease and send-authority gate
+serialize this decision against the committed credential version. A selected
+version is never overwritten. Failed or ambiguous transaction acknowledgements
+retain the staged file because the database may already select it; retry the
+original operation to obtain its durable receipt and resume retired-file cleanup.
+Unrelated vault files are preserved for inspection.
+
 Execution provider credential replacement/removal commits its registry record,
 audit and idempotency receipt before deleting the retired sealed file. If that
 file cleanup fails, correct the filesystem fault and repeat the original request

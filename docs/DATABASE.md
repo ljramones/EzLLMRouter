@@ -50,12 +50,17 @@ or private transaction implementation.
 `database.read()` holds the database gate and a SQLite read snapshot across a
 group of reads. SQLite `query_only` rejects writes in that scope; nested reads
 share the snapshot and restore the previous connection setting on exit. A read
-cannot be promoted into a write transaction.
+cannot be promoted into a write transaction. Registry explanation, admission and current-authority checks hold one such scope
+across policy revisions, destination selection and prices, so a concurrent writer
+cannot produce a mixed admission record.
 
 `database.transaction(action)` shares one transaction across repository domains,
 including credential changes, audit rows, budget reservations and sender ownership.
 Nested write actions use savepoints: an inner failure rolls back its own changes,
-and an outer failure also rolls back successful inner actions. Operator recovery
+and an outer failure also rolls back successful inner actions. If SQLite already
+rolled back a transaction, savepoint cleanup preserves the original exception.
+Rollback failures add only their exception type as a note; they do not replace
+the action/commit error or establish a definite rollback. Operator recovery
 and completion writes use transactions. Legacy candidate expiry rechecks the latest
 record inside a write transaction before changing its status revision. Results are materialized while the gate is held and the SQLite cursor
 is closed before a result is returned. Connection setup, commit/rollback and

@@ -54,12 +54,27 @@ class ProviderVault:
         except (OSError, ValueError, TypeError) as exc:
             raise SecretBoxError("PROVIDER_CREDENTIAL_UNAVAILABLE") from exc
 
-    def seal(self, connection_id, version, secret):
+    def seal(self, connection_id, version, secret, *, committed_version=None):
         validate_secret(secret)
+        if committed_version is not None and (
+            type(committed_version) is not int
+            or committed_version < 0
+            or type(version) is not int
+            or version != committed_version + 1
+        ):
+            raise ValueError(
+                "staging requires the version immediately after the committed credential"
+            )
         envelope = self.box.seal(secret, credential_context(connection_id, version))
         path = self._path(connection_id, version)
         with self._gate:
-            write_private(path, json.dumps(envelope, sort_keys=True).encode())
+            # Registry holds the exclusive service/send gates and supplies the
+            # committed version. Only that uncommitted successor may be replaced.
+            write_private(
+                path,
+                json.dumps(envelope, sort_keys=True).encode(),
+                replace=committed_version is not None,
+            )
         return path
 
     def resolve(self, connection_id, version):

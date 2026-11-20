@@ -57,6 +57,20 @@ class DatabaseTests(unittest.TestCase):
             ("1",),
         )
 
+    def test_sqlite_automatic_rollback_preserves_nested_original_exception(self):
+        store = self.store()
+        original = sqlite3.OperationalError("private original error")
+
+        def inner():
+            store.db.execute("ROLLBACK")
+            raise original
+
+        with self.assertRaises(sqlite3.OperationalError) as caught:
+            store.database.transaction(lambda: store.database.transaction(inner))
+        self.assertIs(caught.exception, original)
+        self.assertTrue(original.ezllmrouter_definite_rollback)
+        self.assertFalse(store.db.in_transaction)
+
     def test_current_schema_contains_all_domains_and_records_each_revision(self):
         store = self.store()
         self.assertEqual(schema.validate(store.db), schema.VERSION)
