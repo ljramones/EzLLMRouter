@@ -10,10 +10,21 @@ from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
 from .cache_accounting import exposure_bound
 from .canonical import ContractError
 from .formatting import money, utc_timestamp
+from .identifiers import valid_identifier
 from .repositories import personal_campaign as _queries
 from .store import encode
 
 CENT_NANO = Decimal("0.000000001")
+
+
+def _exposure(bound, cost, state):
+    if state == "released":
+        return Decimal(0)
+    if state == "settled":
+        return Decimal(cost if cost is not None else bound)
+    if state in ("over_bound", "acknowledged"):
+        return max(Decimal(bound), Decimal(cost or "0"))
+    return Decimal(bound)
 
 
 def _amount(value):
@@ -150,9 +161,13 @@ class PersonalCampaign:
             old = self._record(self.store.database)
             if old and old["state"] not in ("draft", "paused", "closed"):
                 raise ValueError("existing campaign and exposure must be retained")
-            if self.store.database.execute(
-                _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS
-            ).fetchone():
+            if (
+                old
+                and old["state"] != "closed"
+                and self.store.database.execute(
+                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (old["id"],)
+                ).fetchone()
+            ):
                 raise ValueError("unresolved exposure prevents a new allowance")
             if old and old["state"] != "closed":
                 if self.store.database.execute(
@@ -185,7 +200,7 @@ class PersonalCampaign:
                     raise ValueError("campaign already active")
                 self._current(record)
                 if self.store.database.execute(
-                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS
+                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (record["id"],)
                 ).fetchone():
                     raise ValueError("unresolved exposure prevents activation")
             record["state"] = state
@@ -210,7 +225,7 @@ class PersonalCampaign:
                 not record
                 or record["state"] != "paused"
                 or self.store.database.execute(
-                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS
+                    _queries.ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (record["id"],)
                 ).fetchone()
             ):
                 raise ValueError("pause and resolve all exposure before revalidation")
@@ -251,6 +266,78 @@ class PersonalCampaign:
             )
             self._audit(self.store.database, "revalidate", actor)
             return record
+
+        with self.registry.send_authority.gate:
+            return self.store.database.transaction(action)
+
+    def acknowledge_exposure(self, actor, data):
+        """Charge unresolved exposure to its allowance without inventing provider usage."""
+        if actor != self.registry.identity.owner_id:
+            raise PermissionError("OWNER_REQUIRED")
+        if (
+            type(data) is not dict
+            or set(data) != {"campaign_id", "attempt_id", "expected_revision", "reason"}
+            or not valid_identifier(data["campaign_id"])
+            or not valid_identifier(data["attempt_id"])
+            or type(data["expected_revision"]) is not int
+            or data["expected_revision"] < 1
+            or type(data["reason"]) is not str
+            or not 1 <= len(data["reason"].strip()) <= 512
+            or "\x00" in data["reason"]
+        ):
+            raise ValueError("invalid exposure acknowledgement")
+        try:
+            data["reason"].encode("utf-8", "strict")
+        except UnicodeError as exc:
+            raise ValueError("invalid exposure acknowledgement reason") from exc
+
+        def action():
+            db = self.store.database
+            row = db.execute(_queries.ACKNOWLEDGE_SELECT_ATTEMPT, (data["attempt_id"],)).fetchone()
+            saved = db.execute(
+                _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (data["campaign_id"],)
+            ).fetchone()
+            if not row or not saved or row[3] != data["campaign_id"]:
+                raise ValueError("campaign attempt unavailable")
+            campaign = json.loads(saved[0])
+            if campaign["owner"] != actor:
+                raise PermissionError("OWNER_REQUIRED")
+            history = campaign.setdefault("exposure_acknowledgements", [])
+            if row[2] == "acknowledged":
+                prior = next(
+                    (
+                        entry
+                        for entry in reversed(history)
+                        if entry["attempt_id"] == data["attempt_id"]
+                    ),
+                    None,
+                )
+                if prior and prior["reason"] == data["reason"].strip():
+                    return prior
+                raise ValueError("exposure already acknowledged")
+            if (
+                campaign["revision"] != data["expected_revision"]
+                or campaign["state"] not in ("paused", "closed")
+                or row[2] not in ("unknown", "over_bound")
+            ):
+                raise ValueError("pause and review unresolved exposure before acknowledgement")
+            acknowledgement = {
+                "attempt_id": data["attempt_id"],
+                "campaign_id": data["campaign_id"],
+                "reason": data["reason"].strip(),
+                "actor": actor,
+                "at": utc_timestamp(datetime.now(timezone.utc)),
+                "charged_decimal": money(_exposure(row[0], row[1], "acknowledged")),
+                "usage_revision": row[4],
+            }
+            history.append(acknowledgement)
+            campaign["revision"] += 1
+            db.execute(_queries.ACKNOWLEDGE_UPDATE_ATTEMPT, (data["attempt_id"],))
+            db.execute(
+                _queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS, (encode(campaign), campaign["id"])
+            )
+            self._audit(db, "acknowledge_exposure", actor, campaign_id=campaign["id"])
+            return acknowledgement
 
         with self.registry.send_authority.gate:
             return self.store.database.transaction(action)
@@ -315,10 +402,7 @@ class PersonalCampaign:
             _queries.RESERVE_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (campaign["id"],)
         ).fetchall()
         exposure = sum(
-            (
-                Decimal(cost if state == "settled" else bound if state != "released" else "0")
-                for bound, cost, state in rows
-            ),
+            (_exposure(bound, cost, state) for bound, cost, state in rows),
             Decimal(0),
         )
         if (
@@ -482,13 +566,20 @@ class PersonalCampaign:
             prior_count = self.store.database.execute(
                 _queries.SUMMARY_SELECT_PERSONAL_CAMPAIGNS
             ).fetchone()[0]
+            prior_unresolved = (
+                self.store.database.execute(
+                    _queries.SUMMARY_SELECT_PRIOR_UNRESOLVED, (campaign["id"],)
+                ).fetchall()
+                if campaign
+                else []
+            )
         if not campaign:
             return {"state": "not_configured", "effective_state": "not_configured", "attempts": []}
         incurred = sum(
             (
-                Decimal(cost)
-                for _, _, _, cost, state, _ in rows
-                if cost is not None and state in ("settled", "over_bound")
+                _exposure(bound, cost, state)
+                for _, _, bound, cost, state, _ in rows
+                if state in ("settled", "over_bound", "acknowledged")
             ),
             Decimal(0),
         )
@@ -511,6 +602,17 @@ class PersonalCampaign:
             **campaign,
             "effective_state": effective_state,
             "previous_campaigns": max(0, prior_count - 1),
+            "unresolved_prior_attempts": [
+                {
+                    "attempt_id": attempt,
+                    "bound_decimal": bound,
+                    "cost_decimal": cost,
+                    "state": state,
+                    "campaign_id": campaign_id,
+                    "campaign_revision": json.loads(saved)["revision"],
+                }
+                for attempt, bound, cost, state, campaign_id, saved in prior_unresolved
+            ],
             "incurred_decimal": money(incurred),
             "outstanding_decimal": money(outstanding),
             "available_decimal": money(available),

@@ -136,15 +136,24 @@ class LeaseTests(unittest.TestCase):
         self.store = SQLiteStore(self.path)
         self.addCleanup(self.store.close)
 
-    def test_multiple_service_readers_block_exclusive_maintenance(self):
-        second = SQLiteStore.open_existing(self.path)
-        self.addCleanup(second.close)
+    def test_service_is_exclusive_and_offline_readers_share_the_lease(self):
         with self.assertRaises(InstanceBusy):
-            SQLiteStore.open_existing(self.path, maintenance=True)
+            SQLiteStore(self.path)
+        with self.assertRaises(InstanceBusy):
+            SQLiteStore.open_existing(self.path)
         self.store.close()
+        second = SQLiteStore.open_existing(self.path, read_only=True)
+        self.addCleanup(second.close)
+        third = SQLiteStore.open_existing(self.path, read_only=True)
+        self.addCleanup(third.close)
         with self.assertRaises(InstanceBusy):
             SQLiteStore.open_existing(self.path, maintenance=True)
+        with self.assertRaises(InstanceBusy):
+            SQLiteStore(self.path)
         second.close()
+        with self.assertRaises(InstanceBusy):
+            SQLiteStore.open_existing(self.path, maintenance=True)
+        third.close()
         maintenance_store = SQLiteStore.open_existing(self.path, maintenance=True)
         self.addCleanup(maintenance_store.close)
         with self.assertRaises(InstanceBusy):
@@ -158,6 +167,24 @@ class LeaseTests(unittest.TestCase):
         )
         command = [sys.executable, "-I", "-S", "-c", script, str(self.path)]
         self.assertEqual(subprocess.run(command, capture_output=True, timeout=10).returncode, 7)
+        self.store.close()
+        result = subprocess.run(command, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_second_service_process_cannot_open_the_live_database(self):
+        before = list(self.store.db.iterdump())
+        script = (
+            "import sys; sys.path.insert(0, " + repr(str(ROOT / "server/src")) + ")\n"
+            "from ezllmrouter_server.store import SQLiteStore\n"
+            "from ezllmrouter_server.instance_lock import InstanceBusy\n"
+            "try:\n store=SQLiteStore(sys.argv[1])\n"
+            "except InstanceBusy:\n sys.exit(7)\n"
+            "else:\n store.close()\n"
+        )
+        command = [sys.executable, "-I", "-c", script, str(self.path)]
+        result = subprocess.run(command, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 7, result.stderr)
+        self.assertEqual(list(self.store.db.iterdump()), before)
         self.store.close()
         result = subprocess.run(command, capture_output=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)

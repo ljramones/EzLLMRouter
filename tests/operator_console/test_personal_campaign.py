@@ -365,6 +365,168 @@ class CampaignTests(unittest.TestCase):
             self.store.db.execute("SELECT COUNT(*) FROM personal_campaigns").fetchone()[0], 2
         )
 
+    def acknowledgement(self, attempt, **changes):
+        campaign = self.campaign.summary()
+        return {
+            "campaign_id": campaign["id"],
+            "attempt_id": attempt["attempt_id"],
+            "expected_revision": campaign["revision"],
+            "reason": "Owner accepts the unresolved charge",
+            **changes,
+        }
+
+    def test_unknown_exposure_can_be_acknowledged_without_inventing_usage(self):
+        self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        attempt = self._reserve("acknowledged")
+        self.campaign.settle(attempt["attempt_id"])
+        request = self.acknowledgement(attempt)
+        acknowledged = self.campaign.acknowledge_exposure("owner.local", request)
+        self.assertEqual(self.campaign.acknowledge_exposure("owner.local", request), acknowledged)
+        summary = self.campaign.summary()
+        self.assertEqual(summary["attempts"][0]["state"], "acknowledged")
+        self.assertIsNone(summary["attempts"][0]["cost_decimal"])
+        self.assertEqual(summary["incurred_decimal"], summary["attempts"][0]["bound_decimal"])
+        self.assertEqual(summary["outstanding_decimal"], "0")
+        self.assertEqual(summary["request_count"], 1)
+        self.assertEqual(len(summary["exposure_acknowledgements"]), 1)
+        self.assertEqual(
+            self.store.db.execute(
+                "SELECT COUNT(*) FROM personal_campaign_audit WHERE action='acknowledge_exposure'"
+            ).fetchone()[0],
+            1,
+        )
+        self.assertEqual(
+            self.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 0
+        )
+        self.campaign.transition("owner.local", "active")
+        self._reserve("after-acknowledgement")
+
+    def test_exposure_acknowledgement_requires_owner_review_and_a_terminal_attempt(self):
+        self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        attempt = self._reserve("review")
+        request = self.acknowledgement(attempt)
+        with self.assertRaises(PermissionError):
+            self.campaign.acknowledge_exposure("user.other", request)
+        with self.assertRaises(ValueError):
+            self.campaign.acknowledge_exposure("owner.local", request)
+        self.campaign.settle(attempt["attempt_id"])
+        with self.assertRaises(ValueError):
+            self.campaign.acknowledge_exposure("owner.local", request)
+        request = self.acknowledgement(attempt, reason="")
+        with self.assertRaises(ValueError):
+            self.campaign.acknowledge_exposure("owner.local", request)
+        self.assertEqual(self.campaign.summary()["attempts"][0]["state"], "unknown")
+
+    def test_closed_exposure_is_retained_without_blocking_a_new_explicit_allowance(self):
+        first = self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        attempt = self._reserve("old-unknown")
+        self.campaign.settle(attempt["attempt_id"])
+        self.campaign.transition("owner.local", "closed")
+        self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        summary = self.campaign.summary()
+        self.assertEqual(summary["request_count"], 0)
+        prior = summary["unresolved_prior_attempts"][0]
+        self.assertEqual(
+            (prior["attempt_id"], prior["campaign_id"], prior["state"]),
+            (attempt["attempt_id"], first["id"], "unknown"),
+        )
+        self.campaign.acknowledge_exposure(
+            "owner.local",
+            {
+                "campaign_id": prior["campaign_id"],
+                "attempt_id": prior["attempt_id"],
+                "expected_revision": prior["campaign_revision"],
+                "reason": "Close prior exposure",
+            },
+        )
+        self.assertEqual(self.campaign.summary()["unresolved_prior_attempts"], [])
+        self.assertEqual(self.campaign.summary()["state"], "active")
+        self.store.db.execute(
+            "INSERT INTO usage_revisions VALUES (?,?,?,?)",
+            (
+                attempt["attempt_id"],
+                2,
+                attempt["submission_id"],
+                encode(
+                    {
+                        "revision": 2,
+                        "cost": {
+                            "status": "calculated",
+                            "currency": "USD",
+                            "amount_decimal": "0.003",
+                        },
+                    }
+                ),
+            ),
+        )
+        self.assertEqual(self.campaign.reconcile_recorded_usage("owner.local"), 1)
+        self.assertEqual(self.campaign.summary()["state"], "active")
+        self.assertEqual(
+            self.campaign.summary()["unresolved_prior_attempts"][0]["state"], "over_bound"
+        )
+        self.campaign.transition("owner.local", "paused")
+        self.campaign.revalidate("owner.local")
+        self.campaign.transition("owner.local", "active")
+
+    def test_recorded_usage_can_reconcile_an_acknowledgement_without_erasing_its_audit(self):
+        self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        attempt = self._reserve("late-after-acknowledgement")
+        self.campaign.settle(attempt["attempt_id"])
+        self.campaign.acknowledge_exposure("owner.local", self.acknowledgement(attempt))
+        self.store.db.execute(
+            "INSERT INTO usage_revisions VALUES (?,?,?,?)",
+            (
+                attempt["attempt_id"],
+                2,
+                attempt["submission_id"],
+                encode(
+                    {
+                        "revision": 2,
+                        "cost": {
+                            "status": "calculated",
+                            "currency": "USD",
+                            "amount_decimal": "0.00002",
+                        },
+                    }
+                ),
+            ),
+        )
+        self.assertEqual(self.campaign.reconcile_recorded_usage("owner.local"), 1)
+        summary = self.campaign.summary()
+        self.assertEqual(summary["attempts"][0]["state"], "settled")
+        self.assertEqual(summary["incurred_decimal"], "0.00002")
+        self.assertEqual(len(summary["exposure_acknowledgements"]), 1)
+
+    def test_acknowledged_over_bound_cost_keeps_the_higher_charge_for_admission(self):
+        self.campaign.configure(
+            "owner.local",
+            {
+                **self.config,
+                "allowance_decimal": "0.0032",
+                "per_request_decimal": "0.0032",
+            },
+        )
+        self.campaign.transition("owner.local", "active")
+        attempt = self._reserve("over-bound-acknowledgement")
+        self.campaign.settle(
+            attempt["attempt_id"],
+            {
+                "revision": 1,
+                "cost": {"status": "calculated", "currency": "USD", "amount_decimal": "0.002"},
+            },
+        )
+        result = self.campaign.acknowledge_exposure("owner.local", self.acknowledgement(attempt))
+        self.assertEqual(result["charged_decimal"], "0.002")
+        self.assertEqual(self.campaign.summary()["incurred_decimal"], "0.002")
+        self.campaign.transition("owner.local", "active")
+        with self.assertRaises(ContractError):
+            self._reserve("over-remaining-allowance")
+
     def test_missing_keyring_and_corrupt_ciphertext_fail_closed(self):
         self.vault.seal("conn.personal", 1, "distinctive-synthetic-secret")
         root = pathlib.Path(self.temp.name) / "vault"

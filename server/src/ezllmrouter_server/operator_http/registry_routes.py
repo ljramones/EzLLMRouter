@@ -254,11 +254,24 @@ class RegistryRoutes:
                 result = self.application.registry.personal_campaign.revalidate(
                     self.application.owner_id
                 )
+            elif body.get("action") == "acknowledge_exposure" and set(body) == {
+                "action",
+                "campaign_id",
+                "attempt_id",
+                "expected_revision",
+                "reason",
+            }:
+                result = self.application.registry.personal_campaign.acknowledge_exposure(
+                    self.application.owner_id,
+                    {key: value for key, value in body.items() if key != "action"},
+                )
             else:
                 return self._fail(400, "INVALID_CAMPAIGN")
             return self._send(200, result)
         except ValueError:
             return self._fail(409, "CAMPAIGN_NOT_ELIGIBLE")
+        except PermissionError:
+            return self._fail(403, "OWNER_REQUIRED")
         except Exception:
             log_failure("operator_http.registry_routes.post_operator_v1_personal_campaign.failed")
             return self._fail(503, "CAMPAIGN_UNAVAILABLE")

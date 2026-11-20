@@ -253,6 +253,8 @@ class CoreTests(unittest.TestCase):
         snapshot = c.status(sid, self.trusted)
         self.assertEqual(snapshot["candidate"]["candidate_id"], reply["candidate"]["candidate_id"])
         self.assertEqual(len(self.adapter.sent), 1)
+        c.close()
+        self.store.close()
         other = SQLiteStore(Path(self.tmp.name) / "dev.sqlite")
         try:
             self.assertEqual(other.get(sid)["submission_state"], "completed")

@@ -40,8 +40,23 @@ RECOVER_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS = Query(
 )
 
 ACTION_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS = Query(
-    "SELECT 1 FROM personal_campaign_attempts WHERE state IN "
+    "SELECT 1 FROM personal_campaign_attempts WHERE campaign_id=? AND state IN "
     "('reserved','unknown','over_bound') LIMIT 1"
+)
+
+ACKNOWLEDGE_SELECT_ATTEMPT = Query(
+    "SELECT bound_decimal,cost_decimal,state,campaign_id,usage_revision FROM personal_campaign_attempts "
+    "WHERE attempt_id=?"
+)
+
+ACKNOWLEDGE_UPDATE_ATTEMPT = Query(
+    "UPDATE personal_campaign_attempts SET state='acknowledged' WHERE attempt_id=?"
+)
+
+SUMMARY_SELECT_PRIOR_UNRESOLVED = Query(
+    "SELECT p.attempt_id,p.bound_decimal,p.cost_decimal,p.state,p.campaign_id,c.record "
+    "FROM personal_campaign_attempts p JOIN personal_campaigns c ON c.id=p.campaign_id "
+    "WHERE p.campaign_id<>? AND p.state IN ('reserved','unknown','over_bound') ORDER BY p.rowid"
 )
 
 CHECK_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS = Query(

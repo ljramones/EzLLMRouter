@@ -55,7 +55,7 @@ class SQLiteStore:
     def __init__(self, path: str | Path):
         self.path = str(path)
         self._lock = threading.RLock()
-        self._lease = InstanceLease(self.path, create=True)
+        self._lease = InstanceLease(self.path, exclusive=self.path != ":memory:", create=True)
         connection = None
         try:
             connection = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
@@ -99,7 +99,7 @@ class SQLiteStore:
         result = cls.__new__(cls)
         result.path = str(path)
         result._lock = threading.RLock()
-        result._lease = InstanceLease(path, exclusive=maintenance)
+        result._lease = InstanceLease(path, exclusive=maintenance or not read_only)
         connection = None
         try:
             connection = sqlite3.connect(

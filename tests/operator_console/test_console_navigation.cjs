@@ -83,6 +83,23 @@ test("Build & context renders current metadata without historical milestones",as
   }
 });
 
+test("exposure acknowledgement requires confirmation and preserves the reviewed revision and reason",async()=>{
+  const h=harness();h.run('sourceDetail=async()=>{}');
+  const call='sourceAcknowledgeExposure({id:"campaign.one",revision:7,currency:"USD"},{attempt_id:"attempt.unknown",bound_decimal:"0.001",cost_decimal:null})';
+  h.run(call);assert.equal(h.requests.length,0);assert.equal(h.elements["view-content"].querySelector("form"),null);
+  h.confirm(true);h.run(call);
+  const form=h.elements["view-content"].querySelector("form");
+  form.querySelector("input[name=reason]").value="Accept the unresolved possible charge";
+  await form.onsubmit({preventDefault(){}});
+  assert.equal(h.requests.length,1);
+  assert.equal(h.requests[0].url,"/operator/v1/personal-campaign");
+  assert.deepEqual(JSON.parse(h.requests[0].options.body),{
+    action:"acknowledge_exposure",campaign_id:"campaign.one",attempt_id:"attempt.unknown",
+    expected_revision:7,reason:"Accept the unresolved possible charge"
+  });
+  assert.match(h.confirmations[1],/full reservation.*USD 0\.001/);
+});
+
 test("late success, failure and expired-session responses cannot replace the current screen",async()=>{
   for(const outcome of ["success","failure","expired","network"]){
     const h=harness(),pending=deferred();h.read(url=>url==="/operator/v1/connections"?pending.promise:response({items:[]}));

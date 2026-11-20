@@ -193,16 +193,26 @@ async function sourceApiSetup(detail){
       personal.append(definition([["Campaign",campaign.effective_state.replaceAll("_"," ")],["Owner", "Larry Mitchell · "+campaign.owner],
         ["Model",selected?selected.serving_id+" · "+campaign.configuration_ref:campaign.configuration_ref],["Authorized caller",campaign.principal_id],
         ["Allowance",campaign.currency+" "+campaign.allowance_decimal],
-        ["Calculated/reported cost",campaign.currency+" "+campaign.incurred_decimal],
+        ["Recorded cost and accepted exposure",campaign.currency+" "+campaign.incurred_decimal],
         ["Outstanding exposure",campaign.currency+" "+campaign.outstanding_decimal],
         ["Available for another request",campaign.currency+" "+campaign.available_decimal],
         ["Requests",campaign.request_count+" / "+campaign.max_requests],
         ["Per-request ceiling",campaign.currency+" "+campaign.per_request_decimal],
         ["Expiry",campaign.expires_at],["Earlier campaigns retained",campaign.previous_campaigns]]));
-      personal.append(node("p","Calculated amounts use provider-reported token counts and the approved EzLLMRouter rate, not an invoice. Unknown cost retains its full reservation. An unresolved attempt pauses new paid work.","scope-note"));
-      if(campaign.attempts.length){const rows=table(["Attempt","Submission","Reserved","Calculated","State"],
+      personal.append(node("p","Calculated amounts use provider-reported token counts and the approved EzLLMRouter rate, not an invoice. Unknown cost retains its full reservation. Acknowledging exposure counts the full reservation or higher recorded cost against this allowance; provider usage remains unchanged.","scope-note"));
+      if(campaign.attempts.length){const rows=table(["Attempt","Submission","Reserved","Calculated","State","Recovery"],
         campaign.attempts.map(a=>[a.attempt_id,a.submission_id,a.bound_decimal,
-          a.cost_decimal??"Unknown",a.state]));personal.append(rows);}
+          a.cost_decimal??"Unknown",a.state,
+          state.role==="registry_admin"&&["paused","closed"].includes(campaign.state)&&["unknown","over_bound"].includes(a.state)?
+            crudButton("Acknowledge exposure",()=>sourceAcknowledgeExposure(campaign,a)):"—"]));personal.append(rows);}
+      if(campaign.unresolved_prior_attempts?.length){
+        personal.append(node("h3","Unresolved exposure from earlier allowances"),table(
+          ["Campaign","Attempt","Reserved","Recorded cost","State","Recovery"],
+          campaign.unresolved_prior_attempts.map(a=>[a.campaign_id,a.attempt_id,a.bound_decimal,
+            a.cost_decimal??"Unknown",a.state,state.role==="registry_admin"&&["unknown","over_bound"].includes(a.state)?
+              crudButton("Acknowledge exposure",()=>sourceAcknowledgeExposure(
+                {id:a.campaign_id,revision:a.campaign_revision,currency:campaign.currency},a)):"—"])));
+      }
       if(state.role==="registry_admin"){
         const actions=crudActions();
         if(campaign.state==="draft"||campaign.state==="paused")actions.append(crudButton("Activate allowance",
@@ -255,6 +265,17 @@ function sourceCampaignForm(connection,deployments){
         max_output_tokens:Number(v.max_output_tokens),expires_at:new Date(v.expires_at).toISOString()}}});
     });
   form.box.insertBefore(node("p","This saves a draft only. Select the exact approved deployment, caller grant, currency and limits before activating. No provider call runs on save or activation.","scope-note"),form.box.firstChild);
+  crudOpen(form);
+}
+function sourceAcknowledgeExposure(campaign,attempt){
+  if(!window.confirm(`Count the unresolved charge for ${attempt.attempt_id} against ${campaign.id}? The full reservation (${campaign.currency} ${attempt.bound_decimal}) or higher recorded cost (${attempt.cost_decimal??"unknown"}) stays charged to this allowance. Provider usage remains unchanged; this sends no provider request.`))return;
+  const form=crudForm("Acknowledge unresolved exposure",[{name:"reason",label:"Reason for accepting this exposure"}],
+    "Acknowledge exposure",()=>sourceDetail(),async values=>{
+      await api("/operator/v1/personal-campaign",{method:"POST",csrf:true,body:{
+        action:"acknowledge_exposure",campaign_id:campaign.id,attempt_id:attempt.attempt_id,
+        expected_revision:campaign.revision,reason:values.reason}});
+    });
+  form.box.append(node("p","The possible charge remains counted against this allowance. This records your reason and retains the attempt and its usage history.","scope-note"));
   crudOpen(form);
 }
 async function sourceCampaignAction(action){

@@ -81,10 +81,12 @@ class DatabaseTests(unittest.TestCase):
     def test_future_versions_and_changed_migration_hashes_fail_closed(self):
         store = self.store()
         store.db.execute(f"PRAGMA user_version={schema.VERSION + 1}")
+        store.close()
         with self.assertRaises(RuntimeError):
             SQLiteStore(self.path)
-        store.db.execute(f"PRAGMA user_version={schema.VERSION}")
-        store.db.execute("UPDATE schema_revisions SET sha256='tampered'")
+        with sqlite3.connect(self.path) as connection:
+            connection.execute(f"PRAGMA user_version={schema.VERSION}")
+            connection.execute("UPDATE schema_revisions SET sha256='tampered'")
         with self.assertRaisesRegex(RuntimeError, "revision"):
             SQLiteStore(self.path)
 

@@ -4,14 +4,51 @@ import json
 from email.message import Message
 from pathlib import Path
 import threading
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.operator_web import serve
+from tests.operator_console.test_user_management import PASSWORD
 from tests.operator_console.test_user_management_web import MemoryServer, UserHTTPFixture
 
 
 class OperatorRouteTests(UserHTTPFixture):
+    def test_exposure_acknowledgement_is_owner_only_and_passes_the_reviewed_fields(self):
+        campaign = Mock()
+        campaign.acknowledge_exposure.return_value = {"charged_decimal": "0.001"}
+        self.registry.personal_campaign = campaign
+        body = {
+            "action": "acknowledge_exposure",
+            "campaign_id": "personal.local.1",
+            "attempt_id": "attempt.unknown",
+            "expected_revision": 3,
+            "reason": "Accept uncertainty",
+        }
+        path = "/operator/v1/personal-campaign"
+        self.assertEqual(self.request("POST", path, body)[0], 401)
+        self.ready_admin()
+        self.server.application.integration_only = False
+        self.assertEqual(self.request("POST", path, body, csrf=False)[0], 403)
+        campaign.acknowledge_exposure.assert_not_called()
+        status, _, reply = self.request("POST", path, body)
+        self.assertEqual((status, reply), (200, {"charged_decimal": "0.001"}))
+        campaign.acknowledge_exposure.assert_called_once_with(
+            "owner.local", {key: value for key, value in body.items() if key != "action"}
+        )
+        other = self.create("other-admin", "registry_admin")
+        password = "Another administrator password"
+        self.users.change_password(
+            other["principal_id"],
+            {
+                "current_password": PASSWORD,
+                "new_password": password,
+            },
+        )
+        self.login("other-admin", password)
+        status, _, reply = self.request("POST", path, body)
+        self.assertEqual((status, reply), (403, {"error": "OWNER_REQUIRED"}))
+        self.assertEqual(campaign.acknowledge_exposure.call_count, 1)
+
     def test_account_registry_and_report_routes_use_current_server_context(self):
         self.ready_admin()
         self.server.application.integration_only = False
