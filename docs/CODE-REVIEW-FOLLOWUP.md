@@ -368,7 +368,7 @@ also passes. A pending or unavailable check is never a passing result.
 | --- | --- | --- | --- |
 | 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 846 unittest cases, seven console scripts and 245 packaged-wheel tests at `ee6c444`. |
 | 2 | Blocking work and performance | In progress | Paginate usage attempts and filter/select latest revisions in SQL; move decoding outside shared locks, sender database work off its event loop, and password hashing outside shared locks (4.1.3, 4.2.2, 4.3.3). |
-| 3 | Remaining authentication/HTTP hardening | In progress | Login backoff and unknown-user handling; password-change throttling; non-ASCII CSRF handling; asset-read and invalid-body responses; CSP/HTTPS headers and CSV export safety (4.3.1, 4.3.5). |
+| 3 | Remaining authentication/HTTP hardening | Implemented — local regressions pass | Login backoff and unknown-user handling; password-change throttling; non-ASCII CSRF handling; asset-read and invalid-body responses; CSP/HTTPS headers and CSV export safety (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | In progress | Definite classification of pre-send failures; trusted header/receipt field restrictions; campaign authority invalidation; separation of worker/service socket ownership (4.2.3). |
 | 5 | Worker lifecycle and diagnostics | In progress | Graceful shutdown, bounded handler joins, diagnostic rotation and observable diagnostic drops (4.2.3). |
 | 6 | Persistence recovery | Open | Orphaned vault versions, preservation of savepoint errors, coherent admission snapshots, probe-idempotency window and failed-executor recovery (4.1.4). |
@@ -384,8 +384,13 @@ The user authorized these four workstreams together. Preserve revocation,
 first-byte ownership, financial uncertainty and existing audit/history semantics
 while removing blocking work. Keep commits reviewable by concern, record focused
 regressions and the full applicable checks, and update the table before handoff.
-Investigation is underway; no code changes or passing results are claimed yet
-for this pass.
+Item 3 is implemented: separate unknown-user login budgets and progressive
+backoff, password-change throttling, robust CSRF/body/asset failures, CSP and
+conditional HSTS, and spreadsheet-safe CSV exports. Password reset hashing and
+verification also run outside shared locks, with revision checks before saving
+(part of item 2). Focused regressions pass: security polish (21), user management
+(15), HTTP structure (20), and credential management (6); Ruff passes. Full-suite
+and target-environment checks remain pending. Items 2, 4 and 5 continue below.
 
 Broader GitHub Actions hardening is deferred to a separate activity at the owner's
 request. This includes reviewing and pinning the remaining CI bootstrap artifacts

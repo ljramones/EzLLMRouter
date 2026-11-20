@@ -106,57 +106,77 @@ class LoginThrottle:
     def __init__(self, clock=time.monotonic):
         self.clock, self.lock = clock, threading.Lock()
         self.attempts = defaultdict(deque)
+        self.unknown_attempts = defaultdict(deque)
         self.pending = {}
+        self._unknown_pending = set()
         self._key = secrets.token_bytes(32)
 
-    def begin(self, peer, subject=None):
+    def begin(self, peer, subject=None, *, known=True):
         identity = (
-            "peer\0" + peer + ("\0account\0" + subject if subject is not None else "\0credential")
+            ("peer\0" + peer + ("\0account\0" + subject if subject is not None else "\0credential"))
+            if known
+            else "unknown\0" + peer
         )
         key = hmac.new(self._key, identity.encode(), hashlib.sha256).hexdigest()
         now = self.clock()
         with self.lock:
-            for old in tuple(self.attempts):
-                while self.attempts[old] and self.attempts[old][0] <= now - 60:
-                    self.attempts[old].popleft()
-                if not self.attempts[old]:
-                    del self.attempts[old]
+            for bucket in (self.attempts, self.unknown_attempts):
+                for old in tuple(bucket):
+                    while bucket[old] and bucket[old][0] <= now - 60:
+                        bucket[old].popleft()
+                    if not bucket[old]:
+                        del bucket[old]
+            bucket = self.attempts if known else self.unknown_attempts
             active = list(self.pending.values())
+            bucket_active = {
+                value
+                for ticket, value in self.pending.items()
+                if (ticket in self._unknown_pending) == (not known)
+            }
+            failures = bucket.get(key, ())
+            backoff = min(2.0, 0.05 * 2 ** min(len(failures) - 5, 6)) if len(failures) >= 5 else 0
             if (
                 len(active) >= 8
-                or active.count(key) >= 2
-                or len(self.attempts.get(key, ())) + active.count(key) >= 20
+                or active.count(key) >= (2 if known else 1)
+                or (not known and self._unknown_pending)
+                or len(failures) + active.count(key) >= (20 if known else 10)
+                or (failures and now - failures[-1] < backoff)
             ):
                 return None
             if (
-                key not in self.attempts
+                key not in bucket
                 and key not in active
-                and len(set(active) | self.attempts.keys()) >= 512
+                and len(set(bucket) | bucket_active) >= (512 if known else 64)
             ):
                 oldest = min(
-                    (old for old in self.attempts if old not in active),
-                    key=lambda old: self.attempts[old][-1],
+                    (old for old in bucket if old not in active),
+                    key=lambda old: bucket[old][-1],
                     default=None,
                 )
                 if oldest is None:
                     return None
-                del self.attempts[oldest]
+                del bucket[oldest]
             ticket = object()
             self.pending[ticket] = key
+            if not known:
+                self._unknown_pending.add(ticket)
             return ticket
 
     def finish(self, ticket, *, failed=False, success=False):
         with self.lock:
             key = self.pending.pop(ticket)
+            bucket = self.unknown_attempts if ticket in self._unknown_pending else self.attempts
+            self._unknown_pending.discard(ticket)
             if success:
-                self.attempts.pop(key, None)
+                bucket.pop(key, None)
             elif failed:
-                self.attempts[key].append(self.clock())
+                bucket[key].append(self.clock())
 
 
 class UserManager:
     def __init__(self, registry, *, bootstrap_password_file=None, bootstrap_password=None):
         self.registry, self.store = registry, registry.store
+        self.password_throttle = LoginThrottle()
         self.bootstrap_password_file = (
             Path(bootstrap_password_file)
             if bootstrap_password_file
@@ -260,6 +280,15 @@ class UserManager:
         if not context or context["auth_version"] != row[2]:
             raise UserError("AUTH_FAILED", 401)
         return context
+
+    def has_username(self, name):
+        with self.store.database.read():
+            return (
+                self.store.database.execute(
+                    _queries.AUTHENTICATE_SELECT_CONSOLE_USERS, (name,)
+                ).fetchone()
+                is not None
+            )
 
     def _admin(self, db, actor):
         if not authority.authorized(db, actor):
@@ -439,28 +468,45 @@ class UserManager:
 
     def reset_password(self, actor, principal_id, data):
         self._fields(data, ("password", "expected_revision"))
+        with self.store.database.read():
+            self._admin(self.store.database, actor)
+            row, principal = self._load(self.store.database, principal_id)
+            self._expected(data, principal)
+            prior_hash, auth_version = row[1], row[3]
+        if password_matches(data["password"], prior_hash):
+            raise UserError("PASSWORD_MUST_DIFFER")
         hashed = password_hash(data["password"])
 
         def change(db):
             row, principal = self._load(db, principal_id)
             self._expected(data, principal)
-            if password_matches(data["password"], row[1]):
-                raise UserError("PASSWORD_MUST_DIFFER")
+            if row[3] != auth_version:
+                raise UserError("USER_CONFLICT", 409)
             db.execute(_queries.CHANGE_UPDATE_CONSOLE_USERS_3, (hashed, timestamp(), principal_id))
             return principal, principal["revision"]
 
         return self._write(actor, "reset_console_password", change)
 
-    def change_password(self, principal_id, data):
+    def change_password(self, principal_id, data, *, peer="local"):
         self._fields(data, ("current_password", "new_password"))
         validate_password(data["new_password"])
         context = self.context(principal_id)
         if not context:
             raise UserError("AUTH_REQUIRED", 401)
+        ticket = self.password_throttle.begin(peer, principal_id)
+        if ticket is None:
+            raise UserError("PASSWORD_RATE_LIMITED", 429)
+        failed = False
+        verified = False
         try:
-            self.authenticate(context["username"], data["current_password"])
-        except UserError as exc:
-            raise UserError("CURRENT_PASSWORD_INCORRECT") from exc
+            try:
+                self.authenticate(context["username"], data["current_password"])
+                verified = True
+            except UserError as exc:
+                failed = exc.status == 401
+                raise UserError("CURRENT_PASSWORD_INCORRECT") from exc
+        finally:
+            self.password_throttle.finish(ticket, failed=failed, success=verified)
         if data["current_password"] == data["new_password"]:
             raise UserError("PASSWORD_MUST_DIFFER")
         hashed = password_hash(data["new_password"])

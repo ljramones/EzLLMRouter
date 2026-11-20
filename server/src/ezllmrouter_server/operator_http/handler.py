@@ -1,6 +1,5 @@
 """HTTP entry points with explicit routing; authentication precedes body reads."""
 
-import hmac
 import json
 from typing import TYPE_CHECKING, cast
 from urllib.parse import urlsplit
@@ -84,8 +83,12 @@ class OperatorHandler(
         if path.fragment:
             return self._fail(400, "INVALID_PATH")
         route = self._route("GET", path.path, query=bool(path.query))
-        if self._dispatch(route, "asset", path=path):
-            return
+        try:
+            if self._dispatch(route, "asset", path=path):
+                return
+        except OSError:
+            log_failure("operator_http.asset.unavailable")
+            return self._fail(503, "ASSET_UNAVAILABLE")
         session = self._session()
         if not session:
             return self._fail(401, "AUTH_REQUIRED")
@@ -132,9 +135,7 @@ class OperatorHandler(
             if not session:
                 self.close_connection = True
                 return self._fail(401, "AUTH_REQUIRED")
-            if not hmac.compare_digest(
-                self.headers.get("X-EzLLMRouter-CSRF", ""), session[1]["csrf"]
-            ):
+            if not self._csrf_ok(session):
                 self.close_connection = True
                 return self._fail(403, "CSRF_REJECTED")
         try:
@@ -147,7 +148,7 @@ class OperatorHandler(
         session = self._session()
         if not session:
             return self._fail(401, "AUTH_REQUIRED")
-        if not hmac.compare_digest(self.headers.get("X-EzLLMRouter-CSRF", ""), session[1]["csrf"]):
+        if not self._csrf_ok(session):
             return self._fail(403, "CSRF_REJECTED")
         if session[1].get("must_change_password") and self.path not in (
             "/operator/v1/account/password",
@@ -175,7 +176,7 @@ class OperatorHandler(
         if not session:
             self.close_connection = True
             return self._fail(401, "AUTH_REQUIRED")
-        if not hmac.compare_digest(self.headers.get("X-EzLLMRouter-CSRF", ""), session[1]["csrf"]):
+        if not self._csrf_ok(session):
             self.close_connection = True
             return self._fail(403, "CSRF_REJECTED")
         try:

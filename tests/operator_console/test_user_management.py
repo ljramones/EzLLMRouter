@@ -1,6 +1,7 @@
 """Real SQLite account lifecycle, password verification, and permission tests."""
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import tempfile
 import threading
@@ -11,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 from ezllmrouter_server.registry import Registry
 from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server import user_management
 from ezllmrouter_server.user_management import (
     LoginThrottle,
     UserError,
@@ -282,6 +284,74 @@ class UserTests(UserFixture):
             ticket = throttle.begin("local", "admin")
             self.assertIsNotNone(ticket)
             throttle.finish(ticket, failed=True)
+            now[0] += 2
         self.assertIsNone(throttle.begin("local", "admin"))
-        now[0] = 60
+        now[0] += 60
         self.assertIsNotNone(throttle.begin("local", "admin"))
+
+    def test_password_reset_verification_does_not_hold_the_send_or_database_gate(self):
+        user = self.create()
+        entered, release = threading.Event(), threading.Event()
+        original = user_management.password_matches
+
+        def compare(*args):
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return original(*args)
+
+        with (
+            ThreadPoolExecutor(max_workers=2) as executor,
+            patch.object(user_management, "password_matches", side_effect=compare),
+        ):
+            pending = executor.submit(
+                self.users.reset_password,
+                "owner.local",
+                user["principal_id"],
+                {
+                    "password": "Replacement password outside locks",
+                    "expected_revision": user["revision"],
+                },
+            )
+            try:
+                self.assertTrue(entered.wait(3))
+                changed = executor.submit(
+                    self.update, user, display_name="Changed during verification"
+                ).result(timeout=1)
+                self.assertGreater(changed["revision"], user["revision"])
+            finally:
+                release.set()
+            with self.assertRaises(UserError) as stale:
+                pending.result(timeout=3)
+            self.assertEqual(stale.exception.code, "USER_CONFLICT")
+
+    def test_password_change_verification_has_its_own_failure_backoff(self):
+        user = self.create()
+        now = [0]
+        self.users.password_throttle = LoginThrottle(clock=lambda: now[0])
+        for _ in range(5):
+            with self.assertRaises(UserError) as rejected:
+                self.users.change_password(
+                    user["principal_id"],
+                    {
+                        "current_password": "incorrect",
+                        "new_password": "Another password after verification",
+                    },
+                )
+            self.assertEqual(rejected.exception.code, "CURRENT_PASSWORD_INCORRECT")
+        with self.assertRaises(UserError) as throttled:
+            self.users.change_password(
+                user["principal_id"],
+                {
+                    "current_password": PASSWORD,
+                    "new_password": "Another password after verification",
+                },
+            )
+        self.assertEqual(throttled.exception.status, 429)
+        now[0] = 60
+        self.users.change_password(
+            user["principal_id"],
+            {
+                "current_password": PASSWORD,
+                "new_password": "Another password after verification",
+            },
+        )

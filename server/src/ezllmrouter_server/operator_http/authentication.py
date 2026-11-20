@@ -131,7 +131,12 @@ class AuthenticationRoutes:
                 subject = username(body["username"])
             except UserError as exc:
                 return self._fail(exc.status, exc.code)
-        ticket = self.application.login_throttle.begin(peer, subject)
+        try:
+            known = subject is None or self.application.accounts.has_username(subject)
+        except Exception:
+            log_failure("operator_http.authentication.unavailable")
+            return self._fail(503, "AUTH_UNAVAILABLE")
+        ticket = self.application.login_throttle.begin(peer, subject, known=known)
         if ticket is None:
             return self._fail(429, "LOGIN_RATE_LIMITED")
         outcome = {"failed": False, "success": False}

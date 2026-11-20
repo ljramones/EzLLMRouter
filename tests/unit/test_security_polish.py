@@ -27,9 +27,11 @@ from tests.operator_console.test_user_management_web import MemoryServer, UserHT
 
 class ThrottleTests(unittest.TestCase):
     def test_pending_attempts_reserve_the_remaining_failure_budget(self):
-        throttle = LoginThrottle()
+        clock = [0]
+        throttle = LoginThrottle(clock=lambda: clock[0])
         for _ in range(19):
             throttle.finish(throttle.begin("local", "admin"), failed=True)
+            clock[0] += 2
         ticket = throttle.begin("local", "admin")
         self.assertIsNotNone(ticket)
         self.assertIsNone(throttle.begin("local", "admin"))
@@ -49,10 +51,12 @@ class ThrottleTests(unittest.TestCase):
         self.assertFalse(throttle.pending)
 
     def test_failure_budget_is_per_peer_and_account(self):
-        throttle = LoginThrottle()
+        clock = [0]
+        throttle = LoginThrottle(clock=lambda: clock[0])
         for _ in range(20):
             ticket = throttle.begin("first-peer", "alice")
             throttle.finish(ticket, failed=True)
+            clock[0] += 2
         self.assertIsNone(throttle.begin("first-peer", "alice"))
         other_peer = throttle.begin("second-peer", "alice")
         self.assertIsNotNone(other_peer)
@@ -79,8 +83,9 @@ class ThrottleTests(unittest.TestCase):
         self.assertFalse(throttle.attempts)
         for _ in range(20):
             throttle.finish(throttle.begin("local", "alice"), failed=True)
+            clock[0] += 2
         self.assertIsNone(throttle.begin("local", "alice"))
-        clock[0] = 60
+        clock[0] += 60
         self.assertIsNotNone(throttle.begin("local", "alice"))
 
     def test_failure_identity_memory_is_bounded_and_contains_no_username(self):
@@ -99,6 +104,32 @@ class ThrottleTests(unittest.TestCase):
         self.assertNotIn("private-user", repr(throttle.attempts))
         clock[0] = 60
         self.assertIsNotNone(throttle.begin("local", "new-user"))
+
+    def test_backoff_and_unknown_names_have_independent_bounded_capacity(self):
+        now = [0]
+        throttle = LoginThrottle(clock=lambda: now[0])
+        for index in range(5):
+            ticket = throttle.begin("untrusted", "unknown-" + str(index), known=False)
+            self.assertIsNotNone(ticket)
+            throttle.finish(ticket, failed=True)
+        self.assertEqual(len(throttle.unknown_attempts), 1)
+        self.assertFalse(throttle.attempts)
+        self.assertIsNone(throttle.begin("untrusted", "another-name", known=False))
+        admin = throttle.begin("untrusted", "admin")
+        self.assertIsNotNone(admin)
+        throttle.finish(admin, success=True)
+        now[0] = 0.05
+        pending = throttle.begin("untrusted", "unknown-again", known=False)
+        self.assertIsNotNone(pending)
+        self.assertIsNone(throttle.begin("other-peer", "also-unknown", known=False))
+        known = throttle.begin("other-peer", "known-user")
+        self.assertIsNotNone(known)
+        throttle.finish(known, success=True)
+        throttle.finish(pending, failed=True)
+        now[0] = 0.10
+        self.assertIsNone(throttle.begin("untrusted", "unknown-again", known=False))
+        now[0] = 0.16
+        self.assertIsNotNone(throttle.begin("untrusted", "unknown-again", known=False))
 
 
 class ExposurePolicyTests(unittest.TestCase):
@@ -199,8 +230,9 @@ class LoginHTTPTests(UserHTTPFixture):
         self.assertFalse(self.server.application.login_throttle.attempts)
 
     def test_local_failed_account_does_not_lock_out_another_account(self):
+        self.server.application.login_throttle = LoginThrottle(clock=lambda: 0)
         with patch.object(self.users, "authenticate", side_effect=UserError("AUTH_FAILED", 401)):
-            for _ in range(20):
+            for _ in range(5):
                 self.assertEqual(
                     self.request(
                         "POST", "/operator/v1/login", {"username": "blocked", "password": "wrong"}

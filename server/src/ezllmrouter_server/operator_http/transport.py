@@ -1,6 +1,7 @@
 """Operator transport handlers."""
 
 import json
+import hmac
 
 from .common import _pairs, _reject_number, csv_bytes
 
@@ -33,8 +34,10 @@ class TransportRoutes:
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+            "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         )
+        if self.application.secure_cookies:
+            self.send_header("Strict-Transport-Security", "max-age=31536000")
         for name, value in extra:
             self.send_header(name, value)
         self.end_headers()
@@ -59,6 +62,17 @@ class TransportRoutes:
         if mutation:
             return origin in self.application.allowed_origins
         return origin is None or origin in self.application.allowed_origins
+
+    def _csrf_ok(self, session):
+        values = self.headers.get_all("X-EzLLMRouter-CSRF")
+        if not values or len(values) != 1:
+            return False
+        try:
+            return hmac.compare_digest(
+                values[0].encode("utf-8"), session[1]["csrf"].encode("utf-8")
+            )
+        except UnicodeError:
+            return False
 
     def _body_limit(self):
         if self.path.startswith("/operator/v1/local-connectors"):

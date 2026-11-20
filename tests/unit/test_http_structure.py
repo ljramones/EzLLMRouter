@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 from ezllmrouter_server.observability import EventFormatter
 from ezllmrouter_server.operator_http import reports
+from ezllmrouter_server.operator_http.common import csv_bytes
 from ezllmrouter_server.operator_http.routing import Route, Router
 from ezllmrouter_server.web import serve as serve_wire
 
@@ -115,6 +116,15 @@ class HTTPFramingTests(UserHTTPFixture):
         self.assertEqual(reply.count(b"HTTP/1.1 "), 2, reply)
 
 
+class SpreadsheetCSVTests(unittest.TestCase):
+    def test_formula_text_is_inert_and_exact_decimal_strings_remain_numeric(self):
+        unsafe = ("=1+1", "+cmd", "-cmd", "@SUM(A1)", " \t=1+1", "\ttext", "\ntext")
+        rows = [{"model": value, "amount": "-0.000000123"} for value in unsafe]
+        result = list(csv.DictReader(io.StringIO(csv_bytes(("model", "amount"), rows).decode())))
+        self.assertEqual([row["model"] for row in result], ["'" + value for value in unsafe])
+        self.assertTrue(all(row["amount"] == "-0.000000123" for row in result))
+
+
 class RouterTests(unittest.TestCase):
     def test_specific_paths_win_independently_of_registration_order(self):
         exact = Route("GET", "/items/availability", "availability", "account", query=False)
@@ -143,6 +153,30 @@ class RouterTests(unittest.TestCase):
 
 
 class HTTPStructureTests(UserHTTPFixture):
+    def test_non_ascii_csrf_is_rejected_without_losing_the_session(self):
+        self.ready_admin()
+        saved = self.csrf
+        self.csrf = "non-ascii-\u00e9"
+        status, _, body = self.request("POST", "/operator/v1/logout", {})
+        self.assertEqual((status, body), (403, {"error": "CSRF_REJECTED"}))
+        self.csrf = saved
+        self.assertEqual(self.request("GET", "/operator/v1/session")[0], 200)
+
+    def test_asset_read_failure_returns_a_safe_response(self):
+        with patch.object(Path, "read_bytes", side_effect=PermissionError("private fixture path")):
+            status, _, body = self.request("GET", "/app.js")
+        self.assertEqual((status, body), (503, {"error": "ASSET_UNAVAILABLE"}))
+
+    def test_form_action_is_restricted_and_hsts_follows_the_https_policy(self):
+        status, headers, _ = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn("form-action 'self'", headers["Content-Security-Policy"])
+        self.assertIsNone(headers.get("Strict-Transport-Security"))
+        self.server.application.secure_cookies = True
+        self.assertEqual(
+            self.request("GET", "/")[1]["Strict-Transport-Security"], "max-age=31536000"
+        )
+
     def test_public_assets_keep_exact_bytes_types_and_security_headers(self):
         root = Path(__file__).resolve().parents[2] / "web"
         for path, filename, mime in (

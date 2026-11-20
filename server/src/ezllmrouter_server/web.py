@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import uuid
 
 from .canonical import ContractError, SAFE, ident, strict_loads
+from .csv_export import spreadsheet_row
 from .identifiers import valid_identifier
 from .integration_accounting import IntegrationError, route_id
 
@@ -351,15 +352,21 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     writer = csv.DictWriter(out, columns, extrasaction="ignore")
                     writer.writeheader()
                     writer.writerows(
-                        {
-                            **row,
-                            **{
-                                key: json.dumps(row[key], sort_keys=True)
-                                if row.get(key) is not None
-                                else ""
-                                for key in ("native_units", "eligibility_record", "selected_action")
-                            },
-                        }
+                        spreadsheet_row(
+                            {
+                                **row,
+                                **{
+                                    key: json.dumps(row[key], sort_keys=True)
+                                    if row.get(key) is not None
+                                    else ""
+                                    for key in (
+                                        "native_units",
+                                        "eligibility_record",
+                                        "selected_action",
+                                    )
+                                },
+                            }
+                        )
                         for row in report["attempts"]
                     )
                     return self._integration_reply(200, None, csv_body=out.getvalue())

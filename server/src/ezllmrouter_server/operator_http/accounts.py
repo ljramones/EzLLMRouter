@@ -18,7 +18,8 @@ class AccountsRoutes:
         actor = session[1]["principal_id"]
         try:
             if self.path == "/operator/v1/account/password" and (not delete):
-                self.application.accounts.change_password(actor, body)
+                peer = self.client_address[0] if isinstance(self.client_address, tuple) else "local"
+                self.application.accounts.change_password(actor, body, peer=peer)
                 with self.application.session_lock:
                     item = self.application.sessions.pop(session[0], None)
                 if item and item.get("wire_token"):

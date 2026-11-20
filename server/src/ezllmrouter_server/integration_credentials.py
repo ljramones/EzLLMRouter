@@ -21,6 +21,13 @@ from .repositories import integration_credentials as _queries
 from .secret_box import SecretBox, validate_secret
 from .store import encode
 
+
+def _body_dataset(body):
+    if type(body) is not dict:
+        raise IntegrationError("SCHEMA_INVALID")
+    return body.get("dataset_id")
+
+
 PROVIDERS = {
     "openai": ("openai.responses.v1", "https://api.openai.com"),
     "anthropic": ("anthropic.messages.2023-06-01", "https://api.anthropic.com"),
@@ -451,7 +458,7 @@ class DatabaseCredentialStore:
             return self._public(item)
 
     def refresh(self, principal, account_id, body):
-        self._owner(principal, body.get("dataset_id"))
+        self._owner(principal, _body_dataset(body))
         with self._gate:
             item = self._current(
                 principal, body["dataset_id"], account_id, body.get("expected_revision")
@@ -476,7 +483,7 @@ class DatabaseCredentialStore:
             return self.store.database.transaction(commit)
 
     def replace(self, principal, account_id, body):
-        self._owner(principal, body.get("dataset_id"))
+        self._owner(principal, _body_dataset(body))
         secret = body.get("api_key")
         dataset_id, expected_revision = body["dataset_id"], body.get("expected_revision")
         with self._gate:
@@ -546,7 +553,7 @@ class DatabaseCredentialStore:
                 )
 
     def disable(self, principal, account_id, body):
-        self._owner(principal, body.get("dataset_id"))
+        self._owner(principal, _body_dataset(body))
         with self._gate:
             item = self._binding(account_id)
             if item["dataset_id"] != body["dataset_id"] or item["revision"] != body.get(
@@ -586,7 +593,7 @@ class DatabaseCredentialStore:
 
     def retire(self, principal, account_id, body):
         """Delete a predecessor only after the owner supplies the consumer's acknowledged version."""
-        self._owner(principal, body.get("dataset_id"))
+        self._owner(principal, _body_dataset(body))
         with self._gate:
             item = self._binding(account_id)
             version = body.get("version")

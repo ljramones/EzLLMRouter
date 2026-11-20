@@ -134,6 +134,19 @@ class CredentialTests(unittest.TestCase):
             },
         )
 
+    def test_credential_mutations_reject_non_object_bodies_without_discovery(self):
+        for name in ("refresh", "replace", "disable", "retire"):
+            for body in (None, [], "text", 12):
+                with (
+                    self.subTest(operation=name, body=body),
+                    self.assertRaises(IntegrationError) as rejected,
+                ):
+                    getattr(self.credentials, name)(self.owner, "account.invalid-body", body)
+                self.assertEqual(
+                    (rejected.exception.code, rejected.exception.status), ("SCHEMA_INVALID", 400)
+                )
+        self.assertEqual(self.calls, [])
+
     def test_connect_save_restart_replace_and_restrict(self):
         pending = self.connect()
         self.assertEqual(pending["state"], "pending")

@@ -6,6 +6,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import TypeVar
 
 from ..json_validation import reject_number, unique_pairs
+from ..csv_export import spreadsheet_row
 
 T = TypeVar("T")
 SESSION_SECONDS = 1800
@@ -24,5 +25,5 @@ def csv_bytes(columns: Sequence[str], rows: Iterable[Mapping[str, object]]) -> b
     out = io.StringIO()
     writer = csv.DictWriter(out, columns, extrasaction="ignore")
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(spreadsheet_row(row) for row in rows)
     return out.getvalue().encode("utf-8")
