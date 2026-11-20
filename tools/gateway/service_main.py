@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import os
+from contextlib import ExitStack
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -92,7 +93,11 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
     try:
         server.serve_forever()
     finally:
-        adapter.close()
+        with ExitStack() as cleanup:
+            cleanup.callback(coordinator.store.close)
+            cleanup.callback(adapter.close)
+            cleanup.callback(coordinator.close)
+            cleanup.callback(server.server_close)
 
 
 if __name__ == "__main__":

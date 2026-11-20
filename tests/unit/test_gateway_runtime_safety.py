@@ -54,6 +54,9 @@ class RecordSocket:
         send(SimpleNamespace(sendall=self.incoming.write), value)
         self.incoming.seek(0)
 
+    def settimeout(self, timeout):
+        self.timeout = timeout
+
     def recv(self, count):
         return self.incoming.read(count)
 

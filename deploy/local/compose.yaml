@@ -73,6 +73,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     volumes:
       - "${EZLLMROUTER_INGRESS_SCRIPT:?}:/console_ingress.py:ro"
+      - "${EZLLMROUTER_INGRESS_RESOURCES:?}:/runtime_resources.py:ro"
       - console_link_data:/console
     command: ["python", "-B", "/console_ingress.py"]
     depends_on: [netns, service]

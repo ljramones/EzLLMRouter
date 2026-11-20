@@ -172,7 +172,10 @@ class AuthenticationRoutes:
                         for key, old in tuple(self.application.sessions.items()):
                             if old["expires"] <= now:
                                 discarded.append(self.application.sessions.pop(key))
-                        if len(self.application.sessions) >= 64:
+                        if getattr(self.application, "_closing", False):
+                            failure = (503, "SERVICE_UNAVAILABLE")
+                            discarded.append(item)
+                        elif len(self.application.sessions) >= 64:
                             failure = (429, "SESSION_LIMIT")
                             discarded.append(item)
                         else:

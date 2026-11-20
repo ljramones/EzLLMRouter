@@ -65,6 +65,7 @@ modules own SQL queries; shared transactions keep accounting, credentials,
 permissions and audit entries consistent. The operator server separates transport,
 authentication, route dispatch and per-server application state.
 
-See the [API guide](API.md), [security policy](SECURITY.md), and
+See [resource ownership and shutdown](RESOURCES.md), the [API guide](API.md),
+[security policy](SECURITY.md), and
 [development checks](DEVELOPMENT.md). Learned routing and production deployment
 qualification remain future work.

@@ -10,7 +10,6 @@ an independent receiver or proof that the proposed max_retries reaches LiteLLM.
 
 from __future__ import annotations
 import argparse
-import asyncio
 from copy import deepcopy
 import hashlib
 import json
@@ -18,7 +17,6 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-import threading
 import unittest
 
 parser = argparse.ArgumentParser()
@@ -57,6 +55,7 @@ if (ROOT / "wheels").is_dir():
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
@@ -149,9 +148,8 @@ class RetryASGIDouble:
 
 class TestAdapter(LiteLLMAsgiAdapter):
     def __init__(self, forced_retries=None, mutation="", lower_mode="ok"):
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop, daemon=True)
-        self.thread.start()
+        self._runtime = LoopThread("ezllmrouter-fixture-loop")
+        self.loop, self.thread = self._runtime.loop, self._runtime.thread
         self.proxy_mutation = mutation
         self.lower_calls = []
         self.lower_timeouts = []

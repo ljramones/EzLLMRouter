@@ -6,6 +6,9 @@ from pathlib import Path
 import select
 import socket
 import socketserver
+import time
+
+from runtime_resources import BoundedThreadingMixIn
 
 
 TARGET = Path("/console/operator.sock")
@@ -23,23 +26,33 @@ class Handler(socketserver.BaseRequestHandler):
                 upstream.close()
             return
         with upstream:
-            upstream.settimeout(None)
+            upstream.settimeout(5)
+            self.request.settimeout(5)
+            expires = time.monotonic() + 360
             streams = (self.request, upstream)
             try:
                 while True:
-                    readable, _, _ = select.select(streams, [], [], 30)
+                    remaining = expires - time.monotonic()
+                    if remaining <= 0:
+                        return
+                    readable, _, _ = select.select(streams, [], [], min(30, remaining))
                     if not readable:
                         return
                     for source in readable:
                         data = source.recv(65536)
                         if not data:
                             return
-                        (upstream if source is self.request else self.request).sendall(data)
+                        destination = upstream if source is self.request else self.request
+                        remaining = expires - time.monotonic()
+                        if remaining <= 0:
+                            return
+                        destination.settimeout(min(5, remaining))
+                        destination.sendall(data)
             except OSError:
                 return
 
 
-class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class Server(BoundedThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
     daemon_threads = True
 

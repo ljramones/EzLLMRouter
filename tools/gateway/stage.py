@@ -139,6 +139,7 @@ def source_mapping(root, dev05=False, *, fixtures=False):
         ("server/src/ezllmrouter_server/gateway/choice_b_wire.py", "worker/choice_b_wire.py"),
         ("worker/choice_b_worker.py", "worker/choice_b_worker.py"),
         ("server/src/ezllmrouter_server/observability.py", "worker/worker_logging.py"),
+        ("server/src/ezllmrouter_server/runtime_resources.py", "worker/runtime_resources.py"),
         ("tools/gateway/compat/proxy_recipe.py", "service/gateway/proxy_recipe.py"),
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
         ("tools/gateway/receiver.py", "receiver/receiver.py"),

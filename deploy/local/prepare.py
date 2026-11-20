@@ -267,6 +267,10 @@ def prepare_work(work, run, source_hash, artifact):
     ingress = build / "ingress"
     ingress.mkdir()
     shutil.copy2(ROOT / "deploy/local/console_ingress.py", ingress / "console_ingress.py")
+    shutil.copy2(
+        ROOT / "server/src/ezllmrouter_server/runtime_resources.py",
+        ingress / "runtime_resources.py",
+    )
     service_client = build / "service/client"
     service_client.mkdir()
     shutil.copy2(wheel, service_client / DEV09_CLIENT)

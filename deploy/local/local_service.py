@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import ExitStack
 import json
 import os
 import signal
@@ -60,101 +61,116 @@ def main():
     build = json.loads(Path("/app/local/build-identity.json").read_text())
     trusted = dict(fixture["trusted_context"])
     identity = {token: trusted}
-    store = SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"])
-    protected = store.database.execute(startup_queries.PROTECTED_PROVIDER_CREDENTIALS).fetchall()
-    used_vault = store.database.execute(startup_queries.USED_PROVIDER_VAULT).fetchone()
-    vault = ProviderVault("/data/provider-vault", require_existing=bool(used_vault))
-    for connection_id, version in protected:
-        vault.resolve(
-            connection_id, version
-        )  # Fail startup if recovery material is missing or corrupt.
-    remove_stale_socket(Path("/link/sender.sock"))
-    remove_stale_socket(Path("/console/operator.sock"))
-    authority = LocalSendAuthority()
-    registry = Registry(
-        store,
-        authority,
-        legacy_destination=public_destination(fixture),
-        legacy_token=token,
-        legacy_trusted=trusted,
-        provider_vault=vault,
-        provider_execution_ready=True,
-    )
-    registry.personal_campaign = PersonalCampaign(store, registry)
-    adapter = ChoiceBSenderAdapter(authority, registry=registry)
-    registry.runtime_ready = lambda: adapter.server_thread.is_alive() and not authority.is_revoked()
-    coordinator = Coordinator(
-        store,
-        identity,
-        public_destination(fixture),
-        fixture["prompt_blocks"],
-        fixture["allowed_lineages"],
-        PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), registry=registry),
-        adapter,
-        fixture["retention"],
-        fixture["classification"],
-        GatewayProxyRecipe(),
-        trusted_source_labels=fixture["trusted_source_labels"],
-        registry=registry,
-    )
-    projection = OperatorProjection(store, trusted["principal_id"], "/data/send-events.jsonl")
-    runner = DemoRunner(request, scenarios, "http://127.0.0.1:8773", token)
-    provider_validation = ProviderValidationRunner(
-        request, "http://127.0.0.1:8773", token, trusted["principal_id"]
-    )
-    wire = serve_wire("127.0.0.1", 8773, coordinator)
+    with ExitStack() as cleanup:
+        store = SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"])
+        cleanup.callback(store.close)
+        protected = store.database.execute(
+            startup_queries.PROTECTED_PROVIDER_CREDENTIALS
+        ).fetchall()
+        used_vault = store.database.execute(startup_queries.USED_PROVIDER_VAULT).fetchone()
+        vault = ProviderVault("/data/provider-vault", require_existing=bool(used_vault))
+        for connection_id, version in protected:
+            vault.resolve(
+                connection_id, version
+            )  # Fail startup if recovery material is missing or corrupt.
+        remove_stale_socket(Path("/link/sender.sock"))
+        remove_stale_socket(Path("/console/operator.sock"))
+        authority = LocalSendAuthority()
+        registry = Registry(
+            store,
+            authority,
+            legacy_destination=public_destination(fixture),
+            legacy_token=token,
+            legacy_trusted=trusted,
+            provider_vault=vault,
+            provider_execution_ready=True,
+        )
+        registry.personal_campaign = PersonalCampaign(store, registry)
+        adapter = ChoiceBSenderAdapter(authority, registry=registry)
+        cleanup.callback(adapter.close)
+        registry.runtime_ready = (
+            lambda: adapter.server_thread.is_alive() and not authority.is_revoked()
+        )
+        coordinator = Coordinator(
+            store,
+            identity,
+            public_destination(fixture),
+            fixture["prompt_blocks"],
+            fixture["allowed_lineages"],
+            PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture), registry=registry),
+            adapter,
+            fixture["retention"],
+            fixture["classification"],
+            GatewayProxyRecipe(),
+            trusted_source_labels=fixture["trusted_source_labels"],
+            registry=registry,
+        )
+        cleanup.callback(coordinator.close)
+        projection = OperatorProjection(store, trusted["principal_id"], "/data/send-events.jsonl")
+        runner = DemoRunner(request, scenarios, "http://127.0.0.1:8773", token)
+        provider_validation = ProviderValidationRunner(
+            request, "http://127.0.0.1:8773", token, trusted["principal_id"]
+        )
+        server_threads = {}
 
-    def worker_status():
-        value = probe(Path("/link/worker.sock"), deadline_seconds=1, require_empty=False)
-        return {
-            "state": "live",
-            "transport": value["selected_transport"],
-            "observed_attempts": len(value["relay_attempt_counts"]),
-        }
+        def close_server(server):
+            try:
+                thread = server_threads.get(server)
+                if thread is not None and thread.is_alive():
+                    server.shutdown()
+                    thread.join()
+            finally:
+                server.server_close()
 
-    def sender_status():
-        return {
-            "state": "live"
-            if adapter.server_thread.is_alive() and not authority.is_revoked()
-            else "unavailable",
-            "exclusive_synthetic_provider": False,
-            "selected_provider_ready": registry.personal_campaign.summary()["effective_state"]
-            == "active",
-        }
+        wire = serve_wire("127.0.0.1", 8773, coordinator)
+        cleanup.callback(close_server, wire)
 
-    operator = serve_operator(
-        "127.0.0.1",
-        8780,
-        socket_path="/console/operator.sock",
-        projection=projection,
-        runner=runner,
-        password=password,
-        fixture=fixture,
-        build=build,
-        web_root="/app/web",
-        worker_probe=worker_status,
-        sender_status=sender_status,
-        registry=registry,
-        provider_validation=provider_validation,
-    )
-    stop = threading.Event()
-    signal.signal(signal.SIGTERM, lambda *_: stop.set())
-    signal.signal(signal.SIGINT, lambda *_: stop.set())
-    threads = [
-        threading.Thread(target=server.serve_forever, daemon=True) for server in (wire, operator)
-    ]
-    for thread in threads:
-        thread.start()
-    try:
+        def worker_status():
+            value = probe(Path("/link/worker.sock"), deadline_seconds=1, require_empty=False)
+            return {
+                "state": "live",
+                "transport": value["selected_transport"],
+                "observed_attempts": len(value["relay_attempt_counts"]),
+            }
+
+        def sender_status():
+            return {
+                "state": "live"
+                if adapter.server_thread.is_alive() and not authority.is_revoked()
+                else "unavailable",
+                "exclusive_synthetic_provider": False,
+                "selected_provider_ready": registry.personal_campaign.summary()["effective_state"]
+                == "active",
+            }
+
+        operator = serve_operator(
+            "127.0.0.1",
+            8780,
+            socket_path="/console/operator.sock",
+            projection=projection,
+            runner=runner,
+            password=password,
+            fixture=fixture,
+            build=build,
+            web_root="/app/web",
+            worker_probe=worker_status,
+            sender_status=sender_status,
+            registry=registry,
+            provider_validation=provider_validation,
+        )
+        cleanup.callback(close_server, operator)
+        stop = threading.Event()
+        signal.signal(signal.SIGTERM, lambda *_: stop.set())
+        signal.signal(signal.SIGINT, lambda *_: stop.set())
+        threads = [
+            threading.Thread(target=server.serve_forever, daemon=True)
+            for server in (wire, operator)
+        ]
+
+        for server, thread in zip((wire, operator), threads, strict=True):
+            server_threads[server] = thread
+            thread.start()
         stop.wait()
-    finally:
-        for server in (operator, wire):
-            server.shutdown()
-            server.server_close()
-        operator.operator_jobs.shutdown(wait=True)
-        coordinator.pool.shutdown(wait=True)
-        adapter.close()
-        store.close()
 
 
 if __name__ == "__main__":

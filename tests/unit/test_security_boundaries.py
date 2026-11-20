@@ -247,27 +247,25 @@ class HTTPBudgetTests(unittest.TestCase):
         server._connection_slots.release()
 
     def test_absolute_input_deadline_interrupts_a_dribbling_connection(self):
+        from ezllmrouter_server.http_server import _InputReader
+
         handler = SafeHTTPRequestHandler.__new__(SafeHTTPRequestHandler)
         handler.connection = Mock()
-        timer = Mock()
-        callbacks = []
-
-        def make_timer(seconds, callback):
-            self.assertEqual(seconds, REQUEST_TIMEOUT_SECONDS)
-            callbacks.append(callback)
-            return timer
-
-        def slow_input():
-            callbacks[0]()
-
-        with (
-            patch("ezllmrouter_server.http_server.threading.Timer", side_effect=make_timer),
-            patch("http.server.BaseHTTPRequestHandler.handle_one_request", side_effect=slow_input),
-        ):
-            handler.handle_one_request()
+        handler._input_deadline = 15
+        raw = Mock()
+        raw.readinto.return_value = 1
+        reader = _InputReader(raw, handler)
+        with patch("ezllmrouter_server.http_server.time.monotonic", side_effect=[0, 4, 8, 12, 16]):
+            for _ in range(4):
+                self.assertEqual(reader.readinto(bytearray(1)), 1)
+            with self.assertRaises(TimeoutError):
+                reader.readinto(bytearray(1))
+        self.assertEqual(
+            [call.args[0] for call in handler.connection.settimeout.call_args_list], [15, 11, 7, 3]
+        )
         handler.connection.shutdown.assert_called_once()
-        timer.start.assert_called_once()
-        timer.cancel.assert_called_once()
+        reader.close()
+        raw.close.assert_called_once()
 
     def test_body_completion_cancels_input_deadline_before_long_processing(self):
         handler = SafeHTTPRequestHandler.__new__(SafeHTTPRequestHandler)

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
+
 from .repositories import successor_service as _queries
 
 from .observability import log_failure
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from concurrent.futures import TimeoutError
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import threading
 import sqlite3
 import uuid
 
@@ -74,8 +77,14 @@ class SuccessorService:
         self.read_allowed = read_allowed
         self.usage_write_allowed = usage_write_allowed
         self.receiver_receipts = receiver_receipts
-        self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="ezllmrouter-dev12")
+        self.pool = BoundedExecutor(max_workers=2, thread_name_prefix="ezllmrouter-execution")
+        self._admission = AdmissionGate()
         self.futures = {}
+        self._futures_lock = threading.Lock()
+
+    def close(self):
+        self._admission.close()
+        self.pool.shutdown(wait=True)
 
     def _update(self, *args, **kwargs):
         # Authority/campaign writers and first-write checks take gate before DB.
@@ -325,7 +334,7 @@ class SuccessorService:
             status = (
                 503
                 if record["failure_stage"] == "before_send"
-                and record["failure"]["code"] == "INTENT_PERSIST_FAILED"
+                and record["failure"]["code"] in {"INTENT_PERSIST_FAILED", "INTERNAL_UNAVAILABLE"}
                 else 409
                 if record["failure_stage"] == "before_send"
                 else 502
@@ -355,6 +364,13 @@ class SuccessorService:
         )
 
     def submit(self, request, trusted, wait_ms, *, credential):
+        try:
+            with self._admission.enter():
+                return self._submit(request, trusted, wait_ms, credential=credential)
+        except ServiceClosing as exc:
+            raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
+
+    def _submit(self, request, trusted, wait_ms, *, credential):
         if type(wait_ms) is not int or not 0 <= wait_ms <= 30000:
             raise ContractError("SCHEMA_INVALID", 400)
         context = self._context(credential, trusted)
@@ -468,8 +484,34 @@ class SuccessorService:
             raise ContractError("WORK_CONFLICT", 409) from None
         except (ValueError, PermissionError) as exc:
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403) from exc
-        future = self.pool.submit(self._execute, record, trusted)
-        self.futures[sid] = future
+        try:
+            future = self.pool.submit(self._execute, record, trusted)
+        except Exception:
+            log_failure("successor_execution_schedule_failed")
+            with self.authority.gate:
+                self._update(
+                    sid,
+                    {
+                        "submission_state": "failed",
+                        "dispatch_state": "blocked",
+                        "delivery_state": "pending",
+                        "candidate_access": "unavailable_due_failure",
+                        "failure_stage": "before_send",
+                        "failure": error_response("INTERNAL_UNAVAILABLE"),
+                    },
+                    self.clock(),
+                )
+                self.allowance.finish(aid)
+            return self._reply(self.store.successor_get(sid))
+        with self._futures_lock:
+            self.futures[sid] = future
+
+        def release(done):
+            with self._futures_lock:
+                if self.futures.get(sid) is done:
+                    self.futures.pop(sid, None)
+
+        future.add_done_callback(release)
         remaining = max(
             0,
             (

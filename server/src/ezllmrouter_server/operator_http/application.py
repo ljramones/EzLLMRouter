@@ -1,6 +1,7 @@
 """Per-server operator state, execution and background-job lifecycle."""
 
 from dataclasses import dataclass
+from contextlib import ExitStack
 from .common import threading, time, uuid, log_failure
 
 
@@ -93,6 +94,7 @@ class OperatorApplication:
                 due.pop(key, None)
 
     def start(self, maintenance):
+        self._closing = False
         self.scheduler_stop = threading.Event()
         self.maintenance_stop = threading.Event()
         self.scheduler_thread = None
@@ -111,13 +113,30 @@ class OperatorApplication:
             self.maintenance_thread.start()
 
     def close(self):
-        if hasattr(self, "scheduler_stop"):
-            self.scheduler_stop.set()
-            self.maintenance_stop.set()
-            if self.maintenance_thread is not None and self.maintenance_thread.ident is not None:
-                self.maintenance_thread.join()
-            if self.scheduler_thread is not None and self.scheduler_thread.ident is not None:
-                self.scheduler_thread.join()
-        self.jobs.shutdown(wait=True, cancel_futures=True)
-        if self.local_connectors:
-            self.local_connectors.close()
+        with self.session_lock:
+            self._closing = True
+        with ExitStack() as cleanup:
+            if self.local_connectors:
+                cleanup.callback(self.local_connectors.close)
+            token_cleanup = ExitStack()
+            cleanup.callback(token_cleanup.close)
+            cleanup.callback(self.jobs.shutdown, wait=True, cancel_futures=False)
+            if hasattr(self, "scheduler_stop"):
+                self.scheduler_stop.set()
+                self.maintenance_stop.set()
+                if (
+                    self.maintenance_thread is not None
+                    and self.maintenance_thread.ident is not None
+                ):
+                    self.maintenance_thread.join()
+                if self.scheduler_thread is not None and self.scheduler_thread.ident is not None:
+                    self.scheduler_thread.join()
+            with self.session_lock:
+                discarded = tuple(self.sessions.values())
+                self.sessions.clear()
+            if self.registry:
+                for item in discarded:
+                    if item.get("wire_token"):
+                        token_cleanup.callback(
+                            self.registry.revoke_local_operator_token, item["wire_token"]
+                        )

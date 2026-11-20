@@ -18,7 +18,7 @@ These commands use temporary stores and controlled fixtures, with no model calls
 
 Ruff checks `E9`, all Pyflakes (`F`) and all Bugbear (`B`) rules across `server/`,
 `clients/`, `deploy/`, `worker/`, `tools/` and `tests/`. Formatting is enforced
-across those same trees, currently 410 Python files. Local runtime state under
+across those same trees, currently 413 Python files. Local runtime state under
 `deploy/local/.state/` is explicitly excluded, including when passed directly to
 Ruff. Existing dependency/build exclusions also apply. No new blanket rule
 ignores hide the adopted lint findings.

@@ -192,7 +192,12 @@ print(json.dumps({'runtime': 'staged package', 'optional_worker_imports': False}
                     shutil.copy2(ROOT / source, directory / Path(target).name)
             self.assertEqual(
                 sorted(path.name for path in directory.iterdir()),
-                ["choice_b_wire.py", "choice_b_worker.py", "worker_logging.py"],
+                [
+                    "choice_b_wire.py",
+                    "choice_b_worker.py",
+                    "runtime_resources.py",
+                    "worker_logging.py",
+                ],
             )
             script = """
 import importlib.util, json

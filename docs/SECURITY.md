@@ -11,7 +11,10 @@ Credential stores use independent encryption keyrings. Secret resolution is
 permission checked and audited without logging plaintext credentials. See
 [encryption and rotation](ENCRYPTION.md) and [users and permissions](USER-MANAGEMENT.md).
 
-HTTP servers bound concurrent connections and socket/input timeouts. Logs use
+HTTP, Unix IPC and console ingress listeners bound concurrent connections and
+socket waits. HTTP input uses an absolute deadline without per-request timer
+threads. Execution queues and ephemeral operator credentials are also bounded;
+see [runtime resource ownership](RESOURCES.md). Logs use
 structured metadata and exclude credentials, prompts and response bodies.
 Treat model-server origins and service credentials as trusted configuration.
 

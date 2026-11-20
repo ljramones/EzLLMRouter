@@ -100,6 +100,7 @@ def serve(
         successor_store=successor_store,
         worker_probe=worker_probe,
     )
+    server = None
     try:
         server = (
             ThreadingHTTPServer((host, port), OperatorHandler)
@@ -109,8 +110,14 @@ def serve(
         if socket_path is not None:
             os.chmod(socket_path, 0o600)
     except BaseException:
-        application.close()
-        jobs.shutdown(wait=False, cancel_futures=True)
+        try:
+            application.close()
+        finally:
+            try:
+                if server is not None:
+                    server.server_close()
+            finally:
+                jobs.shutdown(wait=True, cancel_futures=True)
         raise
     server.application = application
     server.operator_jobs = jobs
@@ -118,14 +125,20 @@ def serve(
     try:
         application.start(_accounting_maintenance)
     except BaseException:
-        application.close()
-        server.server_close()
+        try:
+            application.close()
+        finally:
+            server.server_close()
         raise
     original_close = server.server_close
 
     def close():
-        application.close()
-        original_close()
+        with application.session_lock:
+            application._closing = True
+        try:
+            original_close()
+        finally:
+            application.close()
 
     server.server_close = close
     return server

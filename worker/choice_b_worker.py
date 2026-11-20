@@ -10,13 +10,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import socket
 import socketserver
-import threading
+from contextlib import ExitStack
 
 import httpx
 
-from choice_b_wire import receive, remaining_seconds, send
+from runtime_resources import BoundedUnixServer, LoopThread
+from choice_b_wire import async_exchange, receive, remaining_seconds, send
 from worker_logging import configure_logging, log_failure
 
 
@@ -75,15 +75,10 @@ class RelayTransport(httpx.AsyncBaseTransport):
             "timeout": request.extensions.get("timeout"),
         }
 
-        def exchange():
-            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
-                stream.settimeout(remaining_seconds(*budget) + 2)
-                stream.connect(str(LINK / "sender.sock"))
-                send(stream, envelope)
-                return receive(stream)
-
         try:
-            result = await asyncio.to_thread(exchange)
+            result = await async_exchange(
+                LINK / "sender.sock", envelope, remaining_seconds(*budget) + 2
+            )
         except Exception as exc:
             log_failure("gateway.worker.relay_failed")
             raise httpx.TransportError("trusted sender unavailable") from exc
@@ -119,19 +114,39 @@ class Worker:
         os.environ["OPENAI_API_KEY"] = WORKER_KEY
         os.environ["LITELLM_DONT_SHOW_FEEDBACK_BOX"] = "true"
         os.environ["LITELLM_LOG"] = "ERROR"
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(
-            target=self._run_loop, daemon=True, name="dev04-litellm-worker"
-        )
-        self.thread.start()
-        asyncio.run_coroutine_threadsafe(self._start(), self.loop).result(timeout=45)
+        self._runtime = LoopThread("ezllmrouter-isolated-worker")
+        self.loop, self.thread = self._runtime.loop, self._runtime.thread
+        try:
+            self._runtime.call(self._start(), timeout=45)
+        except BaseException:
+            try:
+                self.close()
+            except Exception:
+                log_failure("gateway.worker.startup_cleanup_failed")
+            raise
 
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+    async def _cleanup(self):
+        handler = getattr(self, "responses_handler", None)
+        try:
+            if handler is not None:
+                await handler.client.aclose()
+        finally:
+            client = getattr(self, "client", None)
+            try:
+                if client is not None:
+                    await client.aclose()
+            finally:
+                module = getattr(self, "_litellm", None)
+                if module is not None and module.aclient_session is client:
+                    module.aclient_session = None
+
+    def close(self):
+        self._runtime.close(self._cleanup())
 
     async def _start(self):
         import litellm
+
+        self._litellm = litellm
 
         if litellm.aclient_session is not None or litellm.client_session is not None:
             raise RuntimeError("alternate LiteLLM HTTP session")
@@ -275,36 +290,48 @@ class Worker:
             raise
 
 
-class _ThreadingUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
-    daemon_threads = True
-    allow_reuse_address = False
-
-
 def handle_command(worker, stream):
     try:
-        result = worker.dispatch(receive(stream))
+        result = worker.dispatch(receive(stream, timeout=5))
     except Exception as exc:
         log_failure("gateway.worker.command_failed")
         result = {"error_type": type(exc).__name__}
     try:
-        send(stream, result)
+        send(stream, result, timeout=5)
     except Exception:
         log_failure("gateway.worker.reply_failed")
 
 
 def _serve():
-    worker = Worker()
     path = LINK / "worker.sock"
     if path.exists() or path.is_symlink():
         raise RuntimeError("Choice B worker socket collision")
+    with ExitStack() as cleanup:
+        worker = Worker()
+        cleanup.callback(worker.close)
 
-    class Handler(socketserver.BaseRequestHandler):
-        def handle(self):
-            handle_command(worker, self.request)
+        class Handler(socketserver.BaseRequestHandler):
+            def handle(self):
+                handle_command(worker, self.request)
 
-    server = _ThreadingUnixServer(str(path), Handler)
-    os.chmod(path, 0o600)
-    server.serve_forever()
+        server = BoundedUnixServer(str(path), Handler, bind_and_activate=False)
+        cleanup.callback(server.server_close)
+        server.server_bind()
+        status = path.lstat()
+        identity = (status.st_dev, status.st_ino)
+
+        def remove_socket():
+            try:
+                current = path.lstat()
+            except FileNotFoundError:
+                return
+            if (current.st_dev, current.st_ino) == identity:
+                path.unlink()
+
+        cleanup.callback(remove_socket)
+        os.chmod(path, 0o600)
+        server.server_activate()
+        server.serve_forever()
 
 
 def main():

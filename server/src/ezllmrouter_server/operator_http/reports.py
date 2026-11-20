@@ -409,9 +409,15 @@ class ReportsRoutes:
             try:
                 fresh = self.application.projection.begin_launch(body["operation_id"], kind)
                 if fresh:
-                    self.application.jobs.submit(
-                        self.application.execute, body["operation_id"], kind
-                    )
+                    try:
+                        self.application.jobs.submit(
+                            self.application.execute, body["operation_id"], kind
+                        )
+                    except RuntimeError:
+                        self.application.projection.finish_launch(
+                            body["operation_id"], "failed", [], error_code="INTERNAL_UNAVAILABLE"
+                        )
+                        return self._fail(503, "INTERNAL_UNAVAILABLE")
                 return self._send(202, self.application.projection.launch(body["operation_id"]))
             except (ValueError, TypeError):
                 return self._fail(409, "INVALID_OPERATION")

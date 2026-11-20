@@ -5,10 +5,11 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from contextlib import suppress
 import socket
-import socketserver
-import threading
+import io
 import time
 import uuid
+
+from .runtime_resources import BoundedThreadingMixIn as _BoundedThreadingMixIn
 
 from .observability import REQUEST_CORRELATION, log_failure, log_http_request
 
@@ -16,33 +17,7 @@ REQUEST_TIMEOUT_SECONDS = 15
 MAX_CONNECTIONS = 32
 
 
-class BoundedThreadingMixIn(socketserver.ThreadingMixIn):
-    daemon_threads = True
-    block_on_close = False
-
-    def __init__(self, *args, max_connections=MAX_CONNECTIONS, **kwargs):
-        if type(max_connections) is not int or max_connections < 1:
-            raise ValueError("max_connections must be a positive integer")
-        self._connection_slots = threading.BoundedSemaphore(max_connections)
-        super().__init__(*args, **kwargs)
-
-    def process_request(self, request, client_address):
-        if not self._connection_slots.acquire(blocking=False):
-            # Do not start a thread or attempt to read an excess connection.
-            self.shutdown_request(request)
-            return
-        try:
-            super().process_request(request, client_address)
-        except BaseException:
-            self._connection_slots.release()
-            raise
-
-    def process_request_thread(self, request, client_address):
-        try:
-            super().process_request_thread(request, client_address)
-        finally:
-            self._connection_slots.release()
-
+class BoundedThreadingMixIn(_BoundedThreadingMixIn):
     def handle_error(self, request, client_address):
         log_failure("http_connection_failed")
 
@@ -51,8 +26,39 @@ class BoundedHTTPServer(BoundedThreadingMixIn, HTTPServer):
     request_queue_size = MAX_CONNECTIONS
 
 
+class _InputReader(io.RawIOBase):
+    """Enforce the whole-input budget at every underlying socket read."""
+
+    def __init__(self, raw, handler):
+        self.raw, self.handler = raw, handler
+
+    def readable(self):
+        return True
+
+    def readinto(self, buffer):
+        deadline = self.handler._input_deadline
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self.handler._expire_input()
+                raise TimeoutError("HTTP input deadline expired")
+            self.handler.connection.settimeout(remaining)
+        return self.raw.readinto(buffer)
+
+    def close(self):
+        if not self.closed:
+            self.raw.close()
+        super().close()
+
+
 class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
     timeout = REQUEST_TIMEOUT_SECONDS
+
+    def setup(self):
+        super().setup()
+        raw = self.rfile.detach() if isinstance(self.rfile, io.BufferedReader) else self.rfile
+        self.rfile = io.BufferedReader(_InputReader(raw, self))
+        self._input_deadline = None
 
     @property
     def diagnostic_id(self):
@@ -66,9 +72,7 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
         context = REQUEST_CORRELATION.set(self.diagnostic_id)
         self._response_status = 0
         started = time.monotonic()
-        self._input_timer = threading.Timer(REQUEST_TIMEOUT_SECONDS, self._expire_input)
-        self._input_timer.daemon = True
-        self._input_timer.start()
+        self._input_deadline = time.monotonic() + REQUEST_TIMEOUT_SECONDS
         try:
             super().handle_one_request()
         finally:
@@ -87,9 +91,10 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             self.connection.shutdown(socket.SHUT_RDWR)
 
     def _finish_input(self):
-        timer = getattr(self, "_input_timer", None)
-        if timer is not None:
-            timer.cancel()
+        self._input_deadline = None
+        connection = getattr(self, "connection", None)
+        if connection is not None:
+            connection.settimeout(self.timeout)
 
     def parse_request(self):
         accepted = super().parse_request()

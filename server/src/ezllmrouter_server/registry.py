@@ -132,6 +132,7 @@ class Registry:
         self.controlled_provider_proof = controlled_provider_proof
         self._probe_lock = threading.Lock()
         self._operator_tokens = {}
+        self._token_lock = threading.Lock()
         self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
         self.attribution = AttributionLedger(self)
         self.integration = ExternalAccounting(self)
@@ -771,16 +772,22 @@ class Registry:
         if type(token) is not str or len(token) < 32:
             raise ContractError("AUTHENTICATION_FAILED", 401)
         verifier = hashlib.sha256(token.encode()).hexdigest()
-        with self.store.database.read():
+        with self._token_lock:
+            self._prune_operator_tokens(time.monotonic())
             ephemeral = self._operator_tokens.get(verifier)
-            if ephemeral and ephemeral[1] > time.monotonic():
-                principal = self.principal(ephemeral[0])
-                if (
-                    principal
-                    and principal["status"] == "active"
-                    and (not kind or principal["kind"] == kind)
-                ):
-                    return principal
+        if ephemeral:
+            principal = self.principal(ephemeral[0])
+            with self._token_lock:
+                current = self._operator_tokens.get(verifier)
+                valid = current is ephemeral and current[1] > time.monotonic()
+            if (
+                valid
+                and principal
+                and principal["status"] == "active"
+                and (not kind or principal["kind"] == kind)
+            ):
+                return principal
+        with self.store.database.read():
             row = self.store.database.execute(
                 _queries.CREDENTIAL_PRINCIPAL_SELECT_REGISTRY_CREDENTIALS, (verifier,)
             ).fetchone()
@@ -788,6 +795,12 @@ class Registry:
         if not principal or principal["status"] != "active" or (kind and principal["kind"] != kind):
             raise ContractError("AUTHENTICATION_FAILED", 401)
         return principal
+
+    def _prune_operator_tokens(self, at):
+        # Caller owns the memory lock; never wait for the database while holding it.
+        for verifier, (_, expiry) in tuple(self._operator_tokens.items()):
+            if expiry <= at:
+                self._operator_tokens.pop(verifier, None)
 
     def issue_local_operator_token(self, principal_id):
         """Server-only wire credential for one authenticated loopback session."""
@@ -799,7 +812,10 @@ class Registry:
         ):
             raise PermissionError("ADMIN_REQUIRED")
         token = secrets.token_urlsafe(48)
-        with self.store.database.read():
+        with self._token_lock:
+            self._prune_operator_tokens(time.monotonic())
+            if len(self._operator_tokens) >= 4096:
+                raise RuntimeError("operator credential capacity exhausted")
             self._operator_tokens[hashlib.sha256(token.encode()).hexdigest()] = (
                 principal_id,
                 time.monotonic() + 1800,
@@ -807,7 +823,7 @@ class Registry:
         return token
 
     def revoke_local_operator_token(self, token):
-        with self.store.database.read():
+        with self._token_lock:
             self._operator_tokens.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
     def authenticate(self, token, template):

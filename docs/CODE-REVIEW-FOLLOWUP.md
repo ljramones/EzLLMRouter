@@ -31,6 +31,7 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 4.3.5: Provisioning deletes an issued credential after interruption | Reserve credential custody and sync an operation receipt before issuance. Preserve both after possible issuance, including Ctrl-C, broken output, failed fsync, malformed/lost replies and connection-close failure. Existing files block another invocation. Only failures before issuance remove unused files created by that invocation. An uncertain reply can still leave an empty/partial credential, requiring revision inspection and explicit rotation. |
 | 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP routing, shared exports and duplication still need structural cleanup. |
 | 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. Strict mypy now covers 27 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
+| 4.2.7 / 5.11 / 3.10: Resource ownership and lifecycle | Coordinator and successor expose draining, idempotent close methods; execution queues and completed-future retention are bounded. Sender/worker IPC and ingress have connection limits and whole-frame/write deadlines. Worker socket exchange is async and cancellable; rejected executor submissions cannot execute later. Gateway startup failures close partial clients, listeners and loop threads. HTTP input enforces its deadline without per-request timer threads. Registry wire tokens expire/prune under a short memory lock; operator shutdown revokes session tokens and blocks late publication. Local-service startup/shutdown unwinds resources in dependency order. |
 
 The .NET package test also now uses a fresh package cache for each restore.
 Previously, an existing package with the same version could hide SDK changes
@@ -38,7 +39,7 @@ from the tests despite a successful local pack.
 
 ## Validation and outstanding gates
 
-The expanded offline Python/component runner passes: 634 unittest cases plus
+The expanded offline Python/component runner passes: 675 unittest cases plus
 the console component checks, Ruff and the existing strict mypy scope.
 Installed JavaScript runtime checks and packaged TypeScript consumer checks
 pass. JavaScript, Go, Java and .NET pass all 125 shared cases against their built clients.
@@ -82,6 +83,15 @@ controlled usage revisions per attempt. Usage reports use one query and retain t
 single/two-connection runs complete 24,000 mixed operations without SQLite errors;
 all integrity checks pass. Timings and limits are recorded in the [database guide](DATABASE.md).
 This is local synthetic metadata evidence, not production throughput qualification.
+
+The resource batch adds 41 offline tests using socket pairs, real event loops,
+thread barriers and disposable stores. Tests retain paid results while shutdown
+waits, prove that rejected queued work cannot execute later, verify native queue
+and socket limits, settle unscheduled successor reservations, purge/revoke tokens,
+and inject constructor/client/listener cleanup failures. The server wheel and
+explicit standalone worker source context are checked without importing LiteLLM.
+See [runtime resources](RESOURCES.md) for limits and ownership. The loopback suite
+and a rebuilt frozen-worker deployment still require their separate target run.
 
 The session/probe batch adds 23 offline tests: 14 exercise real operator handlers
 with memory streams and explicit thread barriers; nine exercise the real HTTP
@@ -139,14 +149,11 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Address executor shutdown and remaining token/future lifecycle issues. The
-   database query/transaction batch is complete; the single SQLite connection still
-   serializes access and broader deployment/performance qualification remains.
-2. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
+1. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
    large functions with focused behavior tests. Continue strict typing into the
    remaining service/client modules; the expanded 27-module scope is not full
    coverage (4.3.2).
-3. Continue the platform, process recovery, generated-input and performance work
+2. Continue the platform, process recovery, generated-input and performance work
    in the testing roadmap and complete the outstanding target checks.
 
 GitHub Actions hardening is deferred to a separate activity at the owner's

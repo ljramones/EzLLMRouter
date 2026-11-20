@@ -10,7 +10,6 @@ only the worker/SDK transformation and lower provider are controlled doubles.
 
 from __future__ import annotations
 import argparse
-import asyncio
 import base64
 from concurrent.futures import Future
 from copy import deepcopy
@@ -60,6 +59,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ezllmrouter_server.canonical import SAFE
 from ezllmrouter_server.core import Coordinator
+from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
@@ -98,9 +98,8 @@ class ControlledWorkerAdapter(ChoiceBSenderAdapter):
         self.registry = {}
         self.claimed = set()
         self.lock = threading.Lock()
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop)
-        self.thread.start()
+        self._runtime = LoopThread("ezllmrouter-fixture-loop")
+        self.loop, self.thread = self._runtime.loop, self._runtime.thread
         self.mutation = mutation
         self.invocations = []
         self.relay_errors = []
@@ -165,12 +164,7 @@ class ControlledWorkerAdapter(ChoiceBSenderAdapter):
         }
 
     def close(self):
-        self._call(self.guard.aclose()).result(timeout=5)
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join(timeout=5)
-        if self.thread.is_alive():
-            raise RuntimeError("test thread did not close")
-        self.loop.close()
+        self._runtime.close(self.guard.aclose())
 
 
 def integration(revision=1, mutation=False, fail_commit=False, timeout_ms=1000):

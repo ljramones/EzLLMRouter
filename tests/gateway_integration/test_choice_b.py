@@ -1,7 +1,6 @@
 """Local source, sender-admission and Unix-record gates before target execution."""
 
 import base64
-import asyncio
 from concurrent.futures import Future
 import json
 import os
@@ -20,9 +19,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 from choice_b_wire import LIMIT, receive, send  # noqa: E402
 from tools.gateway.stage import source_mapping
+from ezllmrouter_server.runtime_resources import LoopThread
 
 
-WORKER_SOURCE_FILES = {"choice_b_worker.py", "choice_b_wire.py", "worker_logging.py"}
+WORKER_SOURCE_FILES = {
+    "choice_b_worker.py",
+    "choice_b_wire.py",
+    "worker_logging.py",
+    "runtime_resources.py",
+}
 
 
 def stage_worker_source_context(root, destination, *, fixtures=False):
@@ -58,8 +63,10 @@ def validate_worker_source_context(context, *, fixtures=False):
     for name in sources:
         if not (context / name).is_file():
             raise AssertionError("worker COPY source is not a staged file: " + name)
-    if len(sources) != 3 or set(sources) != WORKER_SOURCE_FILES:
-        raise AssertionError("worker COPY must name exactly the runtime, wire and safe logger")
+    if len(sources) != 4 or set(sources) != WORKER_SOURCE_FILES:
+        raise AssertionError(
+            "worker COPY must name exactly the runtime, wire, safe logger and resource helpers"
+        )
     observed = {
         path.relative_to(context).as_posix() for path in context.rglob("*") if path.is_file()
     }
@@ -144,7 +151,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             path = context / "Dockerfile"
             current = path.read_text()
             changed = current.replace(
-                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
+                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py runtime_resources.py /app/worker/",
                 "COPY worker/ /app/worker/",
             )
             self.assertNotEqual(current, changed)
@@ -158,7 +165,7 @@ class ChoiceBComponentTests(unittest.TestCase):
             path = context / "Dockerfile"
             current = path.read_text()
             changed = current.replace(
-                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
+                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py runtime_resources.py /app/worker/",
                 "COPY . /app/worker/",
             )
             self.assertNotEqual(current, changed)
@@ -274,12 +281,8 @@ class ChoiceBComponentTests(unittest.TestCase):
         adapter.registry = {}
         adapter.claimed = set()
         adapter.lock = threading.Lock()
-        adapter.loop = asyncio.new_event_loop()
-        thread = threading.Thread(
-            target=lambda: (asyncio.set_event_loop(adapter.loop), adapter.loop.run_forever()),
-            daemon=True,
-        )
-        thread.start()
+        adapter._runtime = LoopThread("ezllmrouter-relay-fixture")
+        adapter.loop = adapter._runtime.loop
         adapter.guard = GuardTransport(httpx.MockTransport(lower))
         context = invocation(aid="attempt.choice-b.exact", commit=receipts.append)
         adapter.registry[context.attempt_id] = context
@@ -381,11 +384,7 @@ class ChoiceBComponentTests(unittest.TestCase):
                 os.environ.pop("EZLLMROUTER_DEV04_PROVIDER_KEY", None)
             else:
                 os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = original_provider_key
-            asyncio.run_coroutine_threadsafe(adapter.guard.aclose(), adapter.loop).result(timeout=3)
-            adapter.loop.call_soon_threadsafe(adapter.loop.stop)
-            thread.join(timeout=3)
-            self.assertFalse(thread.is_alive())
-            adapter.loop.close()
+            adapter._runtime.close(adapter.guard.aclose())
 
 
 if __name__ == "__main__":

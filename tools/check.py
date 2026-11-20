@@ -72,6 +72,7 @@ MODULES = (
     "tests.playwright.test_server",
     "tests.unit.test_check_inventory",
     "tests.unit.test_gateway_lifecycle",
+    "tests.unit.test_resource_lifecycle",
     "tests.unit.test_gateway_runtime_safety",
     "tests.unit.test_observation_retention",
     "tests.unit.test_database_concurrency",

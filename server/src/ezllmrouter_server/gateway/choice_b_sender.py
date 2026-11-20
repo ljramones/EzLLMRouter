@@ -10,14 +10,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import socket
 import socketserver
+from contextlib import ExitStack
 import threading
 import time
 
 import httpx
 
-from .choice_b_wire import receive, remaining_seconds, send
+from ezllmrouter_server.runtime_resources import BoundedUnixServer, LoopThread
+from .choice_b_wire import exchange, receive, remaining_seconds, send
 from ezllmrouter_server.canonical import ContractError, SAFE
 from .guard import (
     ACTIVE,
@@ -57,11 +58,6 @@ async def read_response(response):
         await response.aclose()
 
 
-class _ThreadingUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
-    daemon_threads = True
-    allow_reuse_address = False
-
-
 class ChoiceBSenderAdapter:
     """Single-use trusted attempt registry and pinned lower transport."""
 
@@ -73,45 +69,55 @@ class ChoiceBSenderAdapter:
         self.registry: dict[str, Invocation] = {}
         self.claimed: set[str] = set()
         self.lock = threading.Lock()
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(
-            target=self._run_loop, daemon=True, name="dev04-trusted-sender"
-        )
-        self.thread.start()
-        self._call(self._start_lower()).result(timeout=5)
-        path = LINK / "sender.sock"
-        if path.exists() or path.is_symlink():
+        self._close_lock = threading.Lock()
+        self._closed = False
+        self._socket_identity = None
+        self.server = self.server_thread = None
+        self._socket_path = LINK / "sender.sock"
+        if self._socket_path.exists() or self._socket_path.is_symlink():
             raise RuntimeError("Choice B sender socket collision")
-        adapter = self
+        self._runtime = LoopThread("ezllmrouter-trusted-sender")
+        self.loop, self.thread = self._runtime.loop, self._runtime.thread
+        try:
+            self._runtime.call(self._start_lower(), timeout=5)
+            adapter = self
 
-        class Handler(socketserver.BaseRequestHandler):
-            def handle(self):
-                adapter.handle_relay(self.request)
+            class Handler(socketserver.BaseRequestHandler):
+                def handle(self):
+                    adapter.handle_relay(self.request)
 
-        self.server = _ThreadingUnixServer(str(path), Handler)
-        os.chmod(path, 0o600)
-        self.server_thread = threading.Thread(
-            target=self.server.serve_forever, daemon=True, name="dev04-sender-uds"
-        )
-        self.server_thread.start()
+            self.server = BoundedUnixServer(
+                str(self._socket_path), Handler, bind_and_activate=False
+            )
+            self.server.server_bind()
+            status = self._socket_path.lstat()
+            self._socket_identity = (status.st_dev, status.st_ino)
+            os.chmod(self._socket_path, 0o600)
+            self.server.server_activate()
+            self.server_thread = threading.Thread(
+                target=self.server.serve_forever, daemon=True, name="ezllmrouter-sender-ipc"
+            )
+            self.server_thread.start()
+        except BaseException:
+            try:
+                self.close()
+            except Exception:
+                log_failure("gateway.sender.startup_cleanup_failed")
+            raise
 
     def handle_relay(self, stream):
         try:
-            result = self.process_relay(receive(stream))
+            result = self.process_relay(receive(stream, timeout=5))
         except Exception as exc:
             log_failure("gateway.relay.command_failed")
             result = {"error_type": type(exc).__name__}
         try:
-            send(stream, result)
+            send(stream, result, timeout=5)
         except Exception:
             log_failure("gateway.relay.reply_failed")
 
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
     def _call(self, coro) -> Future:
-        return asyncio.run_coroutine_threadsafe(coro, self.loop)
+        return self._runtime.submit(coro)
 
     async def _start_lower(self):
         self.lower = OwnedHTTPTransport(self.authority)
@@ -200,11 +206,7 @@ class ChoiceBSenderAdapter:
 
     @staticmethod
     def _worker_command(value, timeout):
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
-            stream.settimeout(timeout)
-            stream.connect(str(LINK / "worker.sock"))
-            send(stream, value)
-            return receive(stream)
+        return exchange(LINK / "worker.sock", value, timeout)
 
     def send_with_context(self, prepared, timeout_ms, expected, guard_context):
         actual = self.describe(prepared, timeout_ms, guard_context["plan"]["destination"])
@@ -222,6 +224,8 @@ class ChoiceBSenderAdapter:
         except GuardRejected as exc:
             raise ContractError("FDC_REJECTED", 409) from exc
         with self.lock:
+            if getattr(self, "_closed", False):
+                raise ContractError("FDC_REJECTED", 409)
             if invocation.attempt_id in self.registry:
                 raise ContractError("FDC_REJECTED", 409)
             self.registry[invocation.attempt_id] = invocation
@@ -486,11 +490,38 @@ class ChoiceBSenderAdapter:
             }
         return result
 
+    def _remove_socket(self):
+        try:
+            status = self._socket_path.lstat()
+        except FileNotFoundError:
+            return
+        if (status.st_dev, status.st_ino) == self._socket_identity:
+            self._socket_path.unlink()
+
+    async def _cleanup(self):
+        transport = getattr(self, "guard", None) or getattr(self, "lower", None)
+        if transport is not None:
+            await transport.aclose()
+
     def close(self):
-        self.server.shutdown()
-        self.server.server_close()
-        (LINK / "sender.sock").unlink()
-        self._call(self.guard.aclose()).result(timeout=5)
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join(timeout=5)
-        flush_events()
+        with self._close_lock:
+            if self._closed:
+                return
+            self._closed = True
+            with self.lock:
+                invocations = tuple(self.registry.values())
+            for invocation in invocations:
+                with invocation.authority_gate:
+                    invocation.abandoned = True
+                    if invocation.relay_future is not None:
+                        invocation.relay_future.cancel()
+            # Every callback runs even if another cleanup step fails.
+            with ExitStack() as cleanup:
+                cleanup.callback(flush_events)
+                cleanup.callback(self._runtime.close, self._cleanup())
+                cleanup.callback(self._remove_socket)
+                if self.server is not None:
+                    cleanup.callback(self.server.server_close)
+                if self.server_thread is not None and self.server_thread.is_alive():
+                    self.server.shutdown()
+                    self.server_thread.join(timeout=5)

@@ -170,6 +170,9 @@ def environment(build):
         os.environ,
         EZLLMROUTER_PYTHON_IMAGE=BASE,
         EZLLMROUTER_INGRESS_SCRIPT=str(Path(build["build_dir"]) / "ingress/console_ingress.py"),
+        EZLLMROUTER_INGRESS_RESOURCES=str(
+            Path(build["build_dir"]) / "ingress/runtime_resources.py"
+        ),
         EZLLMROUTER_RECEIVER_IMAGE="ezllmrouter-dev06-receiver:" + suffix,
         EZLLMROUTER_WORKER_IMAGE="ezllmrouter-dev06-worker:" + suffix,
         EZLLMROUTER_SERVICE_IMAGE="ezllmrouter-dev06-service:" + suffix,

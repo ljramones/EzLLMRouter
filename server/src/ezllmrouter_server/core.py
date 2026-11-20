@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
+
+from concurrent.futures import TimeoutError
 from copy import deepcopy
 from contextvars import copy_context
 from datetime import datetime, timezone
@@ -293,12 +295,22 @@ class Coordinator:
         self.trusted_source_labels = trusted_source_labels or {}
         self.registry = registry
         self.faults = faults or {}
-        self.pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ezllmrouter-dev01")
+        self.pool = BoundedExecutor(max_workers=4, thread_name_prefix="ezllmrouter-execution")
+        self._admission = AdmissionGate()
         self._futures = {}
         self._futures_lock = threading.Lock()
         # A process-local key authenticates complete live no-store blocks without
         # persisting their content or accepting a caller-supplied receipt.
         self._live_source_key = secrets.token_bytes(32)
+
+    def close(self):
+        self._admission.close()
+        try:
+            successor = getattr(self, "successor", None)
+            if successor is not None:
+                successor.close()
+        finally:
+            self.pool.shutdown(wait=True)
 
     def _live_source_tag(self, block):
         return hmac.new(self._live_source_key, jcs(block), hashlib.sha256).hexdigest()
@@ -435,6 +447,13 @@ class Coordinator:
                     raise ContractError("SOURCE_INVALID", 422)
 
     def submit(self, req, trusted, wait_ms=1000, credential=None, run_id=None):
+        try:
+            with self._admission.enter():
+                return self._submit(req, trusted, wait_ms, credential=credential, run_id=run_id)
+        except ServiceClosing as exc:
+            raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
+
+    def _submit(self, req, trusted, wait_ms=1000, credential=None, run_id=None):
         if type(wait_ms) is not int or not 0 <= wait_ms <= 30000:
             raise ContractError("SCHEMA_INVALID", 400)
         decision = None

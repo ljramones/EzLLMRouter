@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import os
+from contextlib import ExitStack
 import socketserver
 import sys
 import threading
@@ -109,7 +110,11 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
         control.shutdown()
         control.server_close()
         control_path.unlink()
-        adapter.close()
+        with ExitStack() as cleanup:
+            cleanup.callback(coordinator.store.close)
+            cleanup.callback(adapter.close)
+            cleanup.callback(coordinator.close)
+            cleanup.callback(server.server_close)
 
 
 if __name__ == "__main__":

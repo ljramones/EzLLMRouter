@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 from concurrent.futures import Future
 import hashlib
 import json
-import threading
 from pathlib import Path
 
 import httpx
 
+from ezllmrouter_server.runtime_resources import LoopThread
 from ezllmrouter_server.canonical import ContractError
 from .guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL
 from ezllmrouter_server.observability import log_failure
@@ -45,21 +44,25 @@ class LiteLLMAsgiAdapter:
     def __init__(self, *, lower=None, request_timeout=1.0):
         self.lower_transport = lower
         self.request_timeout = request_timeout
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop, name="dev04-proxy-asgi", daemon=True)
-        self.thread.start()
-        self._call(self._start()).result(timeout=45)
-
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        self._runtime = LoopThread("ezllmrouter-proxy-asgi")
+        self.loop, self.thread = self._runtime.loop, self._runtime.thread
+        try:
+            self._runtime.call(self._start(), timeout=45)
+        except BaseException:
+            try:
+                self.close()
+            except Exception:
+                log_failure("gateway.proxy.startup_cleanup_failed")
+            raise
 
     def _call(self, coroutine) -> Future:
-        return asyncio.run_coroutine_threadsafe(coroutine, self.loop)
+        return self._runtime.submit(coroutine)
 
     async def _start(self):
         # Set the selected SDK client before importing the proxy or caching SDK clients.
         import litellm
+
+        self._litellm = litellm
 
         selected_timeout = self.request_timeout
         lower = self.lower_transport
@@ -221,7 +224,17 @@ class LiteLLMAsgiAdapter:
             }
         return result
 
+    async def _cleanup(self):
+        client = getattr(self, "guarded_client", None)
+        try:
+            if client is not None:
+                await client.aclose()
+            elif self.lower_transport is not None:
+                await self.lower_transport.aclose()
+        finally:
+            module = getattr(self, "_litellm", None)
+            if module is not None and module.aclient_session is client:
+                module.aclient_session = None
+
     def close(self):
-        self._call(self.guarded_client.aclose()).result(timeout=5)
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join(timeout=5)
+        self._runtime.close(self._cleanup())
