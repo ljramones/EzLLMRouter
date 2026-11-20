@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -93,6 +94,47 @@ class ProjectionTests(unittest.TestCase):
     def tearDown(self):
         self.store.close()
         self.tmp.cleanup()
+
+    def test_overview_aggregates_scoped_states_without_decoding_submission_records(self):
+        states = (
+            "completed",
+            "failed_before_transmit",
+            "failed_after_transmit",
+            "outcome_unknown",
+            "future_state",
+            None,
+        )
+        for index, state in enumerate(states):
+            self.store.create(
+                record(
+                    f"submission.count.{index}",
+                    f"attempt.count.{index}",
+                    f"step.count.{index}",
+                    state=state,
+                )
+            )
+        with patch(
+            "ezllmrouter_server.operator_projection.json.loads",
+            side_effect=AssertionError("overview decoded a row"),
+        ):
+            self.assertEqual(
+                self.projection.overview_counts(),
+                {
+                    "submissions": 8,
+                    "completed": 1,
+                    "known_failures": 2,
+                    "unknown_outcomes": 1,
+                    "blocked_before_send": 1,
+                },
+            )
+            self.assertEqual(self.projection.overview_counts("*")["submissions"], 9)
+            self.assertEqual(self.projection.overview_counts("other.principal")["submissions"], 1)
+            self.assertTrue(
+                all(
+                    value == 0
+                    for value in self.projection.overview_counts("absent.principal").values()
+                )
+            )
 
     def test_allowlisted_activity_and_detail(self):
         page = self.projection.activity(page=1, limit=1)

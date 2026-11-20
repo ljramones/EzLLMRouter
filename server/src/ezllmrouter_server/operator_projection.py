@@ -359,28 +359,20 @@ class OperatorProjection:
 
     def overview_counts(self, principal_id=None):
         principal_id = self.principal_id if principal_id is None else principal_id
-        with self.store.database.read():
-            rows = self.store.database.execute(
+        with self.store.database.snapshot() as db:
+            rows = db.execute(
                 _queries.OVERVIEW_COUNTS_SELECT_SUBMISSIONS(principal_id=principal_id),
                 () if principal_id == "*" else (principal_id,),
             ).fetchall()
-            counts = {
-                "submissions": len(rows),
-                "completed": 0,
-                "known_failures": 0,
-                "unknown_outcomes": 0,
-                "blocked_before_send": 0,
-            }
-            for (raw,) in rows:
-                state = json.loads(raw).get("submission_state")
-                counts["completed"] += state == "completed"
-                counts["known_failures"] += state in (
-                    "failed_before_transmit",
-                    "failed_after_transmit",
-                )
-                counts["unknown_outcomes"] += state == "outcome_unknown"
-                counts["blocked_before_send"] += state == "failed_before_transmit"
-        return counts
+        states = dict(rows)
+        return {
+            "submissions": sum(states.values()),
+            "completed": states.get("completed", 0),
+            "known_failures": states.get("failed_before_transmit", 0)
+            + states.get("failed_after_transmit", 0),
+            "unknown_outcomes": states.get("outcome_unknown", 0),
+            "blocked_before_send": states.get("failed_before_transmit", 0),
+        }
 
     def begin_launch(self, operation_id, kind):
         if not _identifier(operation_id) or kind not in ("text", "tool", "no_store_text"):

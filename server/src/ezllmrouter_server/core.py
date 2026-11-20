@@ -676,7 +676,7 @@ class Coordinator:
                 return 202, self._pending(duplicate)
             raise ContractError("WORK_CONFLICT", 409) from caught_error
         except Exception as exc:
-            log_failure("core.Coordinator.submit.failed")
+            log_failure("core.Coordinator.admission_persist.failed")
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
         admitted = AdmittedWork(
             admitted_classification=admitted_classification,
@@ -757,7 +757,7 @@ class Coordinator:
             body = json.loads(expected)
             prepared = self.adapter.prepare(body)
         except Exception:
-            log_failure("core.Coordinator.submit.failed")
+            log_failure("core.Coordinator.request_prepare.failed")
             self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
             return 409, self._failed_reply(
                 admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
@@ -768,7 +768,7 @@ class Coordinator:
             observed_request = self.adapter.describe(prepared, timeout_ms, admitted.admitted_config)
             preparation_match = prepared == expected and observed_request == expected_request
         except Exception:
-            log_failure("core.Coordinator.submit.failed")
+            log_failure("core.Coordinator.request_describe.failed")
             preparation_match = False
         if not preparation_match:
             self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
@@ -797,11 +797,11 @@ class Coordinator:
         try:
             self.store.intent(admitted.sid, admitted.aid, intent)
         except Exception as exc:
-            log_failure("core.Coordinator.submit.failed")
+            log_failure("core.Coordinator.intent_persist.failed")
             try:
                 self._failed(admitted.sid, admitted.aid, "INTENT_PERSIST_FAILED", "before_transmit")
             except Exception:
-                log_failure("core.Coordinator.submit.failed")
+                log_failure("core.Coordinator.intent_failure_persist.failed")
                 raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
             return 503, self._failed_reply(
                 admitted.handle, admitted.aid, "INTENT_PERSIST_FAILED", "before_transmit"
@@ -844,7 +844,7 @@ class Coordinator:
                 self.store.mark_wait_expired_no_store(admitted.sid, now())
             return 202, pending
         except Exception as exc:
-            log_failure("core.Coordinator.submit.failed")
+            log_failure("core.Coordinator.attempt_wait.failed")
             # Intent remains recoverable by work key. An unavailable store cannot
             # honestly produce a durable post-transmit terminal result.
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc

@@ -74,7 +74,9 @@ def USAGE_ORDER_SUBMISSIONS(*, principal_id: str) -> Query:
 
 def OVERVIEW_COUNTS_SELECT_SUBMISSIONS(*, principal_id: str) -> Query:
     return Query(
-        "SELECT record FROM submissions" + ("" if principal_id == "*" else " WHERE principal_id=?")
+        "SELECT json_extract(record,'$.submission_state'),COUNT(*) FROM submissions"
+        + ("" if principal_id == "*" else " WHERE principal_id=?")
+        + " GROUP BY json_extract(record,'$.submission_state')"
     )
 
 

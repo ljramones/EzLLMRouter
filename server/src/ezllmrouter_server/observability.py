@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from contextvars import ContextVar
+from functools import lru_cache
 import json
 import logging
 from pathlib import PurePath
@@ -15,7 +16,7 @@ from urllib.parse import urlsplit
 LOGGER = logging.getLogger("ezllmrouter")
 LOGGER.addHandler(logging.NullHandler())
 REQUEST_CORRELATION: ContextVar[str | None] = ContextVar("request_correlation", default=None)
-ROUTE_WORDS = frozenset(
+_BASE_ROUTE_WORDS = frozenset(
     (
         "operator v1 v2 v3 integration capabilities session login logout account password users principals models "
         "connections local-connectors registry providers activity usage usage-costs overview config build access explain "
@@ -29,6 +30,19 @@ ROUTE_WORDS = frozenset(
 )
 
 
+@lru_cache(maxsize=1)
+def route_words() -> frozenset[str]:
+    # This module is also copied as a standalone worker logger. Only HTTP
+    # processes need the operator router; keep the worker copy stdlib-only.
+    if not __package__:
+        return _BASE_ROUTE_WORDS
+    from .operator_http.routing import ROUTES
+
+    return _BASE_ROUTE_WORDS | frozenset(
+        segment for route in ROUTES for segment in route.path.split("/") if segment
+    )
+
+
 class EventFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         event = {
@@ -38,6 +52,7 @@ class EventFormatter(logging.Formatter):
         }
         for key in (
             "exception_type",
+            "code",
             "stack",
             "correlation_id",
             "status",
@@ -90,6 +105,15 @@ def log_failure(
     LOGGER.error(event, extra=fields)
 
 
+def log_rejection(event: str, *, code: str, status: int) -> None:
+    """Expected domain errors carry a public code, never a stack or message."""
+    fields: dict[str, object] = {"event": event, "code": code, "status": status}
+    correlation = REQUEST_CORRELATION.get()
+    if correlation is not None:
+        fields["correlation_id"] = correlation
+    LOGGER.info(event, extra=fields)
+
+
 def log_http_request(
     method: str, path: str, status: int, elapsed_ms: int, correlation_id: str
 ) -> None:
@@ -98,7 +122,7 @@ def log_http_request(
     except ValueError:
         segments = ["invalid"]
     route = "/" + "/".join(
-        segment if segment in ROUTE_WORDS else ":id" for segment in segments[:10] if segment
+        segment if segment in route_words() else ":id" for segment in segments[:10] if segment
     )
     LOGGER.info(
         "http_request",

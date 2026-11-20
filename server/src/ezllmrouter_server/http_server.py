@@ -8,6 +8,7 @@ import socket
 import io
 import time
 import uuid
+import sys
 
 from .runtime_resources import BoundedThreadingMixIn as _BoundedThreadingMixIn
 
@@ -31,6 +32,7 @@ class _InputReader(io.RawIOBase):
 
     def __init__(self, raw, handler):
         self.raw, self.handler = raw, handler
+        self.received = 0
 
     def readable(self):
         return True
@@ -43,12 +45,28 @@ class _InputReader(io.RawIOBase):
                 self.handler._expire_input()
                 raise TimeoutError("HTTP input deadline expired")
             self.handler.connection.settimeout(remaining)
-        return self.raw.readinto(buffer)
+        count = self.raw.readinto(buffer)
+        self.received += count or 0
+        return count
 
     def close(self):
         if not self.closed:
             self.raw.close()
         super().close()
+
+
+class _BufferedInput(io.BufferedReader):
+    consumed = 0
+
+    def readline(self, *args):
+        value = super().readline(*args)
+        self.consumed += len(value)
+        return value
+
+    def read(self, *args):
+        value = super().read(*args)
+        self.consumed += len(value)
+        return value
 
 
 class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -57,7 +75,7 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
     def setup(self):
         super().setup()
         raw = self.rfile.detach() if isinstance(self.rfile, io.BufferedReader) else self.rfile
-        self.rfile = io.BufferedReader(_InputReader(raw, self))
+        self.rfile = _BufferedInput(_InputReader(raw, self))
         self._input_deadline = None
 
     @property
@@ -69,6 +87,8 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_one_request(self):
         self._diagnostic_id = "request." + uuid.uuid4().hex
         self.command, self.path = "OTHER", "/"
+        self.raw_requestline = b""
+        self._request_start_offset = self.rfile.consumed
         self._body_bytes_read = 0
         self._body_read = False
         self.headers = None
@@ -80,14 +100,20 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             super().handle_one_request()
         finally:
             self._finish_input()
-            log_http_request(
-                getattr(self, "command", "OTHER"),
-                getattr(self, "path", "/"),
-                self._response_status,
-                int((time.monotonic() - started) * 1000),
-                self.diagnostic_id,
-            )
+            if self._request_observed():
+                log_http_request(
+                    getattr(self, "command", "OTHER"),
+                    getattr(self, "path", "/"),
+                    self._response_status,
+                    int((time.monotonic() - started) * 1000),
+                    self.diagnostic_id,
+                )
             REQUEST_CORRELATION.reset(context)
+
+    def _request_observed(self):
+        # Received minus consumed includes bytes already buffered by an earlier
+        # pipelined read, including an incomplete next request line.
+        return bool(self.raw_requestline) or self.rfile.raw.received > self._request_start_offset
 
     def _expire_input(self):
         with suppress(OSError):
@@ -147,4 +173,6 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
         return  # Access events use allowlisted routes, never raw HTTP messages.
 
     def log_error(self, *_args):
+        if isinstance(sys.exception(), TimeoutError) and not self._request_observed():
+            return
         log_failure("http_request_failed")

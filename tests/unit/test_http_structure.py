@@ -12,6 +12,8 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from ezllmrouter_server.observability import EventFormatter
+from ezllmrouter_server import http_server
+from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.operator_http import reports
 from ezllmrouter_server.operator_http.common import csv_bytes
 from ezllmrouter_server.operator_http.routing import Route, Router
@@ -48,6 +50,73 @@ class HTTPFramingTests(UserHTTPFixture):
             thread.join(timeout=3)
             self.assertFalse(thread.is_alive())
             self.assertEqual(errors, [])
+
+    def test_expected_wire_rejection_has_public_code_and_no_error_stack(self):
+        coordinator = SimpleNamespace(
+            registry=None,
+            authenticate=Mock(side_effect=ContractError("AUTHENTICATION_FAILED", 401)),
+        )
+        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+            server = serve_wire("127.0.0.1", 48761, coordinator)
+        request = b"GET /v1/capabilities?private=canary HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer private-token\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\n"
+        with self.assertLogs("ezllmrouter", level="INFO") as logged:
+            reply = self.exchange(server, request)
+        self.assertIn(b"401", reply)
+        rejections = [record for record in logged.records if hasattr(record, "code")]
+        self.assertEqual(len(rejections), 1)
+        entry = json.loads(EventFormatter().format(rejections[0]))
+        self.assertEqual((entry["level"], entry["code"]), ("INFO", "AUTHENTICATION_FAILED"))
+        self.assertNotIn("stack", entry)
+        self.assertTrue(all(record.levelname != "ERROR" for record in logged.records))
+        self.assertNotIn("private-token", str(entry))
+        self.assertNotIn("canary", str(entry))
+
+    def test_idle_keepalive_is_quiet_but_partial_request_timeouts_are_visible(self):
+        coordinator = SimpleNamespace(
+            registry=None,
+            authenticate=lambda _: {},
+            capabilities=lambda _: {"contract_version": "0.2"},
+        )
+        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+            server = serve_wire("127.0.0.1", 48761, coordinator)
+        for request, expected_access, expected_errors in (
+            (b"", 0, 0),
+            (
+                b"GET /v1/capabilities HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer test\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\n",
+                1,
+                0,
+            ),
+            (b"GE", 1, 1),
+            # A partial next request already buffered by the first read is active.
+            (
+                b"GET /v1/capabilities HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer test\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\nGE",
+                2,
+                1,
+            ),
+        ):
+            client, peer = socket.socketpair()
+
+            def handle(*, peer=peer):
+                with peer:
+                    server.handler(peer, ("127.0.0.1", 12345), server)
+
+            with (
+                patch.object(http_server, "REQUEST_TIMEOUT_SECONDS", 0.03),
+                patch.object(http_server, "log_http_request") as access,
+                patch.object(http_server, "log_failure") as failure,
+            ):
+                thread = threading.Thread(target=handle)
+                thread.start()
+                try:
+                    if request:
+                        client.sendall(request)
+                    thread.join(timeout=2)
+                    self.assertFalse(thread.is_alive())
+                    self.assertEqual(access.call_count, expected_access)
+                    self.assertEqual(failure.call_count, expected_errors)
+                finally:
+                    client.close()
+                    thread.join(timeout=1)
 
     def test_operator_unread_body_is_never_parsed_as_another_request(self):
         inner = b"GET /operator/v1/session HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n\r\n"

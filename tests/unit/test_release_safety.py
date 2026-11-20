@@ -3,6 +3,7 @@
 import io
 import json
 from decimal import Decimal
+from copy import deepcopy
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -18,6 +19,28 @@ from ezllmrouter_server import observability
 class CoreFailureTests(unittest.TestCase):
     setUp = core_fixtures.CoreTests.setUp
     coordinator = core_fixtures.CoreTests.coordinator
+
+    def test_preparation_and_intent_failures_have_distinct_safe_events(self):
+        for index, (owner, method, event, status) in enumerate(
+            (
+                (self.adapter, "prepare", "core.Coordinator.request_prepare.failed", 409),
+                (self.store, "intent", "core.Coordinator.intent_persist.failed", 503),
+            )
+        ):
+            request = deepcopy(core_fixtures.REQUEST)
+            request["step_id"] = f"step.logging.{index}"
+            coordinator = self.coordinator()
+            with (
+                patch.object(owner, method, side_effect=RuntimeError("private failure")),
+                self.assertLogs("ezllmrouter", level="ERROR") as captured,
+            ):
+                code, _ = coordinator.submit(request, self.trusted, 1000)
+            self.assertEqual(code, status)
+            self.assertEqual(captured.records[0].event, event)
+            self.assertNotIn(
+                "private failure", observability.EventFormatter().format(captured.records[0])
+            )
+            self.assertEqual(self.adapter.sent, [])
 
     def test_plan_issuance_failures_are_durable_before_send_failures(self):
         for index, failure in enumerate(
@@ -215,6 +238,33 @@ class ToolResponseTests(unittest.TestCase):
 
 
 class LoggingTests(unittest.TestCase):
+    def test_operator_route_labels_follow_the_route_table_and_hide_selectors(self):
+        from ezllmrouter_server.operator_http.routing import ROUTES
+
+        for route in ROUTES:
+            with (
+                self.subTest(path=route.path),
+                self.assertLogs("ezllmrouter", level="INFO") as logged,
+            ):
+                observability.log_http_request(
+                    route.method,
+                    route.path
+                    + (
+                        ("" if route.path.endswith("/") else "/") + "private-secret"
+                        if route.family
+                        else ""
+                    )
+                    + "?token=secret",
+                    200,
+                    1,
+                    "request.test",
+                )
+            public = json.loads(observability.EventFormatter().format(logged.records[0]))
+            for segment in route.path.split("/"):
+                if segment:
+                    self.assertIn(segment, public["route"].split("/"))
+            self.assertNotIn("secret", str(public))
+
     def test_structured_failure_logs_stack_locations_without_secret_values(self):
         handlers = observability.LOGGER.handlers[:]
         level, propagate = observability.LOGGER.level, observability.LOGGER.propagate

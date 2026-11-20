@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from .observability import log_failure
+from .observability import log_failure, log_rejection
+from .errors import RequestError
 
 from .http_server import BoundedHTTPServer as ThreadingHTTPServer, SafeHTTPRequestHandler
 import json
@@ -22,6 +23,12 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
 
         def log_message(self, _format, *_args):
             return  # Never log token, prompt, response body, or query.
+
+        def _log_error(self, event, exc):
+            if isinstance(exc, RequestError) and exc.status < 500:
+                log_rejection(event + ".rejected", code=exc.code, status=exc.status)
+            else:
+                log_failure(event + ".failed", exc)
 
         def _reply(self, status, value):
             body = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -372,7 +379,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     return self._integration_reply(200, None, csv_body=out.getvalue())
                 raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
             except Exception as exc:
-                log_failure("web.serve.Handler._integration_get.failed")
+                self._log_error("web.serve.Handler._integration_get", exc)
                 self._integration_error(exc)
 
         def _integration_post(self):
@@ -425,7 +432,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                     raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
                 self._integration_reply(status, reply)
             except Exception as exc:
-                log_failure("web.serve.Handler._integration_post.failed")
+                self._log_error("web.serve.Handler._integration_post", exc)
                 self._integration_error(exc)
 
         def do_GET(self):
@@ -497,7 +504,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                 else:
                     raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
             except Exception as exc:
-                log_failure("web.serve.Handler.do_GET.failed")
+                self._log_error("web.serve.Handler.do_GET", exc)
                 self._error(exc)
 
         def do_POST(self):
@@ -579,7 +586,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
                 )
                 self._reply(status, reply)
             except Exception as exc:
-                log_failure("web.serve.Handler.do_POST.failed")
+                self._log_error("web.serve.Handler.do_POST", exc)
                 self._error(exc)
 
     server = ThreadingHTTPServer((host, port), Handler)
