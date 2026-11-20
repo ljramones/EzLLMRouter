@@ -25,7 +25,7 @@ def serve(host: str, port: int, coordinator, *, integration_only=False):
             return  # Never log token, prompt, response body, or query.
 
         def _log_error(self, event, exc):
-            if isinstance(exc, RequestError) and exc.status < 500:
+            if isinstance(exc, RequestError):
                 log_rejection(event + ".rejected", code=exc.code, status=exc.status)
             else:
                 log_failure(event + ".failed", exc)

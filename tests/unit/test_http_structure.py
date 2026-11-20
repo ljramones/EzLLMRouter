@@ -52,24 +52,25 @@ class HTTPFramingTests(UserHTTPFixture):
             self.assertEqual(errors, [])
 
     def test_expected_wire_rejection_has_public_code_and_no_error_stack(self):
-        coordinator = SimpleNamespace(
-            registry=None,
-            authenticate=Mock(side_effect=ContractError("AUTHENTICATION_FAILED", 401)),
-        )
-        with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
-            server = serve_wire("127.0.0.1", 48761, coordinator)
-        request = b"GET /v1/capabilities?private=canary HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer private-token\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\n"
-        with self.assertLogs("ezllmrouter", level="INFO") as logged:
-            reply = self.exchange(server, request)
-        self.assertIn(b"401", reply)
-        rejections = [record for record in logged.records if hasattr(record, "code")]
-        self.assertEqual(len(rejections), 1)
-        entry = json.loads(EventFormatter().format(rejections[0]))
-        self.assertEqual((entry["level"], entry["code"]), ("INFO", "AUTHENTICATION_FAILED"))
-        self.assertNotIn("stack", entry)
-        self.assertTrue(all(record.levelname != "ERROR" for record in logged.records))
-        self.assertNotIn("private-token", str(entry))
-        self.assertNotIn("canary", str(entry))
+        for code, status in (("AUTHENTICATION_FAILED", 401), ("INTERNAL_UNAVAILABLE", 503)):
+            coordinator = SimpleNamespace(
+                registry=None,
+                authenticate=Mock(side_effect=ContractError(code, status)),
+            )
+            with patch("ezllmrouter_server.web.ThreadingHTTPServer", MemoryServer):
+                server = serve_wire("127.0.0.1", 48761, coordinator)
+            request = b"GET /v1/capabilities?private=canary HTTP/1.1\r\nHost: 127.0.0.1:48761\r\nAuthorization: Bearer private-token\r\nEzLLMRouter-Contract-Version: 0.2\r\n\r\n"
+            with self.assertLogs("ezllmrouter", level="INFO") as logged:
+                reply = self.exchange(server, request)
+            self.assertIn(str(status).encode(), reply)
+            rejections = [record for record in logged.records if hasattr(record, "code")]
+            self.assertEqual(len(rejections), 1)
+            entry = json.loads(EventFormatter().format(rejections[0]))
+            self.assertEqual((entry["level"], entry["code"]), ("INFO", code))
+            self.assertNotIn("stack", entry)
+            self.assertTrue(all(record.levelname != "ERROR" for record in logged.records))
+            self.assertNotIn("private-token", str(entry))
+            self.assertNotIn("canary", str(entry))
 
     def test_idle_keepalive_is_quiet_but_partial_request_timeouts_are_visible(self):
         coordinator = SimpleNamespace(
