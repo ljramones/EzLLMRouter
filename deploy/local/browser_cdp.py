@@ -1,4 +1,5 @@
 """Small local Chrome DevTools client for the one-use operator browser check."""
+
 from __future__ import annotations
 
 import base64
@@ -23,17 +24,24 @@ class DevTools:
         self.sock = socket.create_connection((url.hostname, url.port), timeout=15)
         self.sock.settimeout(30)
         key = base64.b64encode(secrets.token_bytes(16)).decode()
-        headers = (f"GET {url.path} HTTP/1.1\r\nHost: {url.hostname}:{url.port}\r\n"
-                   f"Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
-                   "Sec-WebSocket-Version: 13\r\n\r\n")
+        headers = (
+            f"GET {url.path} HTTP/1.1\r\nHost: {url.hostname}:{url.port}\r\n"
+            f"Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n\r\n"
+        )
         self.sock.sendall(headers.encode("ascii"))
         response = bytearray()
         while not response.endswith(b"\r\n\r\n"):
             response.extend(self.sock.recv(1))
             if len(response) > 8192:
                 raise RuntimeError("DevTools handshake too large")
-        expected = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest())
-        if not response.startswith(b"HTTP/1.1 101") or b"Sec-WebSocket-Accept: " + expected not in response:
+        expected = base64.b64encode(
+            hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()
+        )
+        if (
+            not response.startswith(b"HTTP/1.1 101")
+            or b"Sec-WebSocket-Accept: " + expected not in response
+        ):
             raise RuntimeError("DevTools handshake rejected")
         self.sequence = 0
         self.dialogs = []
@@ -61,11 +69,13 @@ class DevTools:
         else:
             head.extend((0x80 | 127, *length.to_bytes(8, "big")))
         mask = secrets.token_bytes(4)
-        self.sock.sendall(bytes(head) + mask + bytes(byte ^ mask[i % 4] for i, byte in enumerate(data)))
+        self.sock.sendall(
+            bytes(head) + mask + bytes(byte ^ mask[i % 4] for i, byte in enumerate(data))
+        )
 
     def _read(self):
         first, second = self._exact(2)
-        length = second & 0x7f
+        length = second & 0x7F
         if length == 126:
             length = int.from_bytes(self._exact(2), "big")
         elif length == 127:
@@ -74,7 +84,7 @@ class DevTools:
         data = self._exact(length)
         if mask:
             data = bytes(byte ^ mask[i % 4] for i, byte in enumerate(data))
-        opcode = first & 0x0f
+        opcode = first & 0x0F
         if opcode == 9:
             self._send(data, 10)
             return self._read()
@@ -104,11 +114,20 @@ class DevTools:
             return item.get("result", {})
 
     def evaluate(self, expression):
-        result = self.call("Runtime.evaluate", {"expression": expression,
-            "awaitPromise": True, "returnByValue": True, "userGesture": True})
+        result = self.call(
+            "Runtime.evaluate",
+            {
+                "expression": expression,
+                "awaitPromise": True,
+                "returnByValue": True,
+                "userGesture": True,
+            },
+        )
         if "exceptionDetails" in result:
             detail = result["exceptionDetails"]
-            description = detail.get("exception", {}).get("description", detail.get("text", "error"))
+            description = detail.get("exception", {}).get(
+                "description", detail.get("text", "error")
+            )
             raise RuntimeError("browser script failed: " + str(description)[:400])
         return result.get("result", {}).get("value")
 
@@ -133,11 +152,23 @@ class HeadlessChrome:
         profile.mkdir(mode=0o700, exist_ok=False)
         self.profile = profile
         self.log = (self.run / "chrome.stderr.txt").open("wb")
-        self.process = subprocess.Popen([str(CHROME), "--headless=new", "--no-first-run",
-            "--no-default-browser-check", "--remote-debugging-port=0", "--window-size=1440,1000",
-            "--disable-background-networking", "--disable-component-update", "--no-sync",
-            "--user-data-dir=" + str(profile), "about:blank"],
-            stdout=subprocess.DEVNULL, stderr=self.log)
+        self.process = subprocess.Popen(
+            [
+                str(CHROME),
+                "--headless=new",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--remote-debugging-port=0",
+                "--window-size=1440,1000",
+                "--disable-background-networking",
+                "--disable-component-update",
+                "--no-sync",
+                "--user-data-dir=" + str(profile),
+                "about:blank",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=self.log,
+        )
         port_file = profile / "DevToolsActivePort"
         deadline = time.monotonic() + 20
         while not port_file.is_file():
@@ -147,7 +178,9 @@ class HeadlessChrome:
                 raise RuntimeError("headless Chrome readiness deadline")
             time.sleep(0.1)
         port = int(port_file.read_text().splitlines()[0])
-        request = Request(f"http://127.0.0.1:{port}/json/new?" + quote(self.url, safe=""), method="PUT")
+        request = Request(
+            f"http://127.0.0.1:{port}/json/new?" + quote(self.url, safe=""), method="PUT"
+        )
         with urlopen(request, timeout=5) as response:
             target = json.load(response)
         self.client = DevTools(target["webSocketDebuggerUrl"])

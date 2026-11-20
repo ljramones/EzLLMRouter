@@ -1,4 +1,5 @@
 """Independent arrival correlation for one recorded, completed synthetic exercise."""
+
 import contextlib
 import io
 import json
@@ -17,13 +18,20 @@ class Client:
     def call(self, method, path):
         assert method == "GET"
         number = int(path.rsplit(".", 1)[1])
-        return {"submission_id": f"submission.{number}", "attempt_id": f"attempt.{number}",
-                "submission_state": "completed", "dispatch_state": "response_observed",
-                "intent": {"present": True},
-                "dispatch_receipt": {"present": True, "body_sha256": f"{number:064x}",
-                                     "body_bytes": 100 + number},
-                "candidate_access": "not_retained" if number == 4 else "present",
-                "content_store_allowed": number != 4}
+        return {
+            "submission_id": f"submission.{number}",
+            "attempt_id": f"attempt.{number}",
+            "submission_state": "completed",
+            "dispatch_state": "response_observed",
+            "intent": {"present": True},
+            "dispatch_receipt": {
+                "present": True,
+                "body_sha256": f"{number:064x}",
+                "body_bytes": 100 + number,
+            },
+            "candidate_access": "not_retained" if number == 4 else "present",
+            "content_store_allowed": number != 4,
+        }
 
 
 class LiveAuditTests(unittest.TestCase):
@@ -31,25 +39,46 @@ class LiveAuditTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.state = Path(self.tmp.name)
-        (self.state / "last-explicit-exercise.json").write_text(json.dumps({
-            "kind": "DEV-06 explicit synthetic operator exercise",
-            "before_submissions": 3, "after_submissions": 7,
-            "caller_lookups": 1, "provider_requests_expected_delta": 4,
-            "submission_ids": [f"submission.{n}" for n in range(1, 5)],
-            "no_store_submission_id": "submission.4"}))
-        self.arrivals = [{"attempt_id": f"attempt.{n}", "body_sha256": f"{n:064x}",
-                          "body_bytes": 100 + n} for n in range(1, 8)]
+        (self.state / "last-explicit-exercise.json").write_text(
+            json.dumps(
+                {
+                    "kind": "DEV-06 explicit synthetic operator exercise",
+                    "before_submissions": 3,
+                    "after_submissions": 7,
+                    "caller_lookups": 1,
+                    "provider_requests_expected_delta": 4,
+                    "submission_ids": [f"submission.{n}" for n in range(1, 5)],
+                    "no_store_submission_id": "submission.4",
+                }
+            )
+        )
+        self.arrivals = [
+            {"attempt_id": f"attempt.{n}", "body_sha256": f"{n:064x}", "body_bytes": 100 + n}
+            for n in range(1, 8)
+        ]
         self.patched = patch.object(profile, "STATE", self.state)
         self.patched.start()
         self.addCleanup(self.patched.stop)
 
     def audit(self, rows):
-        with patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)), \
-                patch.object(profile, "wait_health", return_value=(Client(), {
-                    "build": {"fingerprint": "f" * 64}, "service": {"state": "live"},
-                    "worker": {"state": "live"}, "sender": {"state": "live"}})), \
-                patch.object(profile, "topology", return_value=len(rows)), \
-                patch.object(profile, "command", return_value=(json.dumps(rows), 0)):
+        with (
+            patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)),
+            patch.object(
+                profile,
+                "wait_health",
+                return_value=(
+                    Client(),
+                    {
+                        "build": {"fingerprint": "f" * 64},
+                        "service": {"state": "live"},
+                        "worker": {"state": "live"},
+                        "sender": {"state": "live"},
+                    },
+                ),
+            ),
+            patch.object(profile, "topology", return_value=len(rows)),
+            patch.object(profile, "command", return_value=(json.dumps(rows), 0)),
+        ):
             with contextlib.redirect_stdout(io.StringIO()):
                 profile.audit_live({"fingerprint": "f" * 64}, {})
 

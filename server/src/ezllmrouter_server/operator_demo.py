@@ -1,4 +1,5 @@
 """Fixed synthetic caller workflows through the installed wire-0.2 client."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -10,6 +11,7 @@ class DemoRunner:
     def __init__(self, request, scenarios, service_url, token, client_factory=None):
         if client_factory is None:
             from ezllmrouter_client import EzLLMRouterClient
+
             client_factory = EzLLMRouterClient
         self.request = request
         self.scenarios = scenarios
@@ -43,36 +45,56 @@ class DemoRunner:
         request["step_id"] = f"step.dev06.{kind}.{suffix}"
         request["execution_generation"] = "gen." + uuid.uuid4().hex
         request["messages"][1]["blocks"][0]["text"] = (
-            "Use lookup for synthetic." if kind == "tool" else "Hi")
+            "Use lookup for synthetic." if kind == "tool" else "Hi"
+        )
         if kind == "no_store_text":
             request["messages"][1]["blocks"][0]["source_labels"] = {
-                "lineage_ids": ["src.user.no_store"], "sensitivity": "confidential",
-                "restrictions": ["no.content.store"]}
+                "lineage_ids": ["src.user.no_store"],
+                "sensitivity": "confidential",
+                "restrictions": ["no.content.store"],
+            }
         if kind == "tool":
             request["requested_features"] = ["text", "tools"]
             request["tool_definitions"] = [deepcopy(self.scenarios["tool_definition"])]
             request["tool_choice"] = "auto"
         with self.client_factory(self.service_url, self.token) as client:
-            first, first_id = self._candidate(client, request, on_handle,
-                                               no_store=kind == "no_store_text")
+            first, first_id = self._candidate(
+                client, request, on_handle, no_store=kind == "no_store_text"
+            )
             if kind != "tool":
                 # The candidate is deliberately not returned to the console.
                 return {"submission_ids": [first_id], "caller_lookups": 0}
-            if first.get("finish_reason") != "tool_calls" or len(first.get("output_blocks", [])) != 1:
+            if (
+                first.get("finish_reason") != "tool_calls"
+                or len(first.get("output_blocks", [])) != 1
+            ):
                 raise RuntimeError("DEMO_TOOL_SHAPE")
             call = first["output_blocks"][0]
-            if (call.get("kind") != "tool_call" or call.get("tool_name") != "lookup" or
-                    call.get("arguments") != {"key": "synthetic"}):
+            if (
+                call.get("kind") != "tool_call"
+                or call.get("tool_name") != "lookup"
+                or call.get("arguments") != {"key": "synthetic"}
+            ):
                 raise RuntimeError("DEMO_TOOL_SHAPE")
             # This caller alone executes the fixed harmless lookup.
             result = {"value": "synthetic"}
             followup = deepcopy(request)
             followup["execution_generation"] = "gen." + uuid.uuid4().hex
             followup["messages"].append({"role": "assistant", "blocks": [call]})
-            followup["messages"].append({"role": "tool", "blocks": [{
-                "block_id": "block.result.1", "kind": "tool_result", "call_id": call["call_id"],
-                "result_value": result,
-                "source_labels": deepcopy(self.scenarios["result_source_labels"])}]})
+            followup["messages"].append(
+                {
+                    "role": "tool",
+                    "blocks": [
+                        {
+                            "block_id": "block.result.1",
+                            "kind": "tool_result",
+                            "call_id": call["call_id"],
+                            "result_value": result,
+                            "source_labels": deepcopy(self.scenarios["result_source_labels"]),
+                        }
+                    ],
+                }
+            )
             second, second_id = self._candidate(client, followup, on_handle)
             if second.get("finish_reason") != "stop":
                 raise RuntimeError("DEMO_FINAL_SHAPE")
@@ -85,6 +107,7 @@ class ProviderValidationRunner:
     def __init__(self, request, service_url, token, principal_id, client_factory=None):
         if client_factory is None:
             from ezllmrouter_client import EzLLMRouterClient
+
             client_factory = EzLLMRouterClient
         self.request = request
         self.service_url = service_url

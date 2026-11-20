@@ -1,4 +1,5 @@
 """Local Unix-socket startup and strict identity-output controls; no model calls."""
+
 import json
 from pathlib import Path
 import socket
@@ -20,10 +21,15 @@ import worker_ready
 
 
 def identity():
-    return {"boundary": "network-disabled LiteLLM ASGI worker",
-            "selected_transport": "RelayTransport", "relay_attempt_counts": {},
-            **{name: {"path": "/synthetic/" + name, "sha256": "a" * 64}
-               for name in ("litellm", "proxy", "openai_sdk", "httpx")}}
+    return {
+        "boundary": "network-disabled LiteLLM ASGI worker",
+        "selected_transport": "RelayTransport",
+        "relay_attempt_counts": {},
+        **{
+            name: {"path": "/synthetic/" + name, "sha256": "a" * 64}
+            for name in ("litellm", "proxy", "openai_sdk", "httpx")
+        },
+    }
 
 
 class WorkerReadyTests(unittest.TestCase):
@@ -56,16 +62,26 @@ class WorkerReadyTests(unittest.TestCase):
         self.threads.append(thread)
 
     def run_probe(self, deadline="0.4", allow_activity=False):
-        result = subprocess.run([sys.executable, "-B",
-                                 str(ROOT / "tests/gateway_integration/worker_ready.py"),
-                                 "--socket", str(self.path), "--deadline", deadline,
-                                 *(["--allow-activity"] if allow_activity else [])],
-                                capture_output=True, text=True, check=False, timeout=3)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                str(ROOT / "tests/gateway_integration/worker_ready.py"),
+                "--socket",
+                str(self.path),
+                "--deadline",
+                deadline,
+                *(["--allow-activity"] if allow_activity else []),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=3,
+        )
         for thread in self.threads:
             thread.join(timeout=3)
             self.assertFalse(thread.is_alive())
-        self.assertTrue(all(command == {"kind": "module_identity"}
-                            for command in self.commands))
+        self.assertTrue(all(command == {"kind": "module_identity"} for command in self.commands))
         return result
 
     def test_delayed_socket_handshake_and_strict_json_consumer(self):
@@ -134,8 +150,7 @@ class WorkerReadyTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout), active)
 
     def test_live_profile_rejects_malformed_attempt_counter(self):
-        for counts in ({"attempt." + "b" * 32: 0}, {"wrong": 1},
-                       {"attempt." + "b" * 32: True}, []):
+        for counts in ({"attempt." + "b" * 32: 0}, {"wrong": 1}, {"attempt." + "b" * 32: True}, []):
             with self.subTest(counts=counts):
                 value = identity()
                 value["relay_attempt_counts"] = counts
@@ -166,24 +181,40 @@ class WorkerReadyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         run = self.root / "run-20261020-95"
         run.mkdir()
-        for name, value in (("d05-worker-identities.argv", "worker_ready.py --socket worker.sock\n"),
-                            ("d05-worker-identities.stdout", result.stdout),
-                            ("d05-worker-identities.stderr", result.stderr),
-                            ("d05-worker-identities.exit", str(result.returncode) + "\n"),
-                            ("work.exit", "1\n"), ("run.exit", "1\n")):
+        for name, value in (
+            ("d05-worker-identities.argv", "worker_ready.py --socket worker.sock\n"),
+            ("d05-worker-identities.stdout", result.stdout),
+            ("d05-worker-identities.stderr", result.stderr),
+            ("d05-worker-identities.exit", str(result.returncode) + "\n"),
+            ("work.exit", "1\n"),
+            ("run.exit", "1\n"),
+        ):
             (run / name).write_text(value)
-        script = ('source "$1"; run_dir=$2; result_dir=$3; capture_tool=$4; '
-                  'capture_script=$5; python_tool=/usr/bin/true; started=1; built_images=(); '
-                  'compose() { if [[ "$1" == logs && "$*" == *worker_choice_b* ]]; '
-                  'then printf "synthetic worker startup failure\\n"; fi; }; '
-                  'capture() { "$capture_tool" -I -B "$capture_script" '
-                  '"$run_dir" "$result_dir" DEV-05; }; '
-                  'finish_dev05 1')
+        script = (
+            'source "$1"; run_dir=$2; result_dir=$3; capture_tool=$4; '
+            "capture_script=$5; python_tool=/usr/bin/true; started=1; built_images=(); "
+            'compose() { if [[ "$1" == logs && "$*" == *worker_choice_b* ]]; '
+            'then printf "synthetic worker startup failure\\n"; fi; }; '
+            'capture() { "$capture_tool" -I -B "$capture_script" '
+            '"$run_dir" "$result_dir" DEV-05; }; '
+            "finish_dev05 1"
+        )
         finished = subprocess.run(
-            ["bash", "-c", script, "bash", str(ROOT / "tests/gateway_integration/dev05_steps.sh"),
-             str(run), str(self.root), sys.executable,
-             str(ROOT / "tests/gateway_integration/capture_runtime.py")],
-            capture_output=True, text=True, check=False)
+            [
+                "bash",
+                "-c",
+                script,
+                "bash",
+                str(ROOT / "tests/gateway_integration/dev05_steps.sh"),
+                str(run),
+                str(self.root),
+                sys.executable,
+                str(ROOT / "tests/gateway_integration/capture_runtime.py"),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         self.assertEqual(finished.returncode, 1, finished.stderr)
         self.assertEqual((run / "capture.exit").read_text(), "0\n")
         self.assertEqual((run / "worker-startup-logs.exit").read_text(), "0\n")
@@ -192,10 +223,13 @@ class WorkerReadyTests(unittest.TestCase):
             self.assertEqual(archive.read("work.exit"), b"1\n")
             self.assertEqual(archive.read("run.exit"), b"1\n")
             self.assertEqual(archive.read("d05-worker-identities.exit"), b"1\n")
-            self.assertIn(b"worker identity socket not ready by deadline",
-                          archive.read("d05-worker-identities.stderr"))
-            self.assertIn(b"synthetic worker startup failure",
-                          archive.read("worker-startup-logs.stdout"))
+            self.assertIn(
+                b"worker identity socket not ready by deadline",
+                archive.read("d05-worker-identities.stderr"),
+            )
+            self.assertIn(
+                b"synthetic worker startup failure", archive.read("worker-startup-logs.stdout")
+            )
             self.assertNotIn("token", archive.namelist())
             self.assertNotIn("provider-key", archive.namelist())
         self.assertEqual(self.commands, [])

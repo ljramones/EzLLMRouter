@@ -1,4 +1,5 @@
 """Credential failure capture and persistent-profile preparation boundaries."""
+
 import json
 import contextlib
 import io
@@ -40,8 +41,11 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), original)
         self.assertFalse((self.state / "operator-password").exists())
         stderr = io.StringIO()
-        with patch.object(sys, "argv", ["profile.py", "up"]), \
-                contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+        with (
+            patch.object(sys, "argv", ["profile.py", "up"]),
+            contextlib.redirect_stderr(stderr),
+            self.assertRaises(SystemExit),
+        ):
             profile.run_cli()
         self.assertIn("partial local credentials", stderr.getvalue())
         diagnostic = json.loads((self.state / "last-error.json").read_text())
@@ -62,13 +66,15 @@ class LifecycleTests(unittest.TestCase):
             names.append(name)
             return ("127.0.0.1:8780" if name == "console-port" else ""), 0
 
-        with patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)), \
-                patch.object(profile, "current", return_value={"fingerprint": "f" * 64}), \
-                patch.object(profile, "environment", return_value={}), \
-                patch.object(profile, "ensure_owner"), \
-                patch.object(profile, "build_images"), \
-                patch.object(profile, "wait_health", side_effect=RuntimeError("readiness deadline")), \
-                patch.object(profile, "command", side_effect=fake_command):
+        with (
+            patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)),
+            patch.object(profile, "current", return_value={"fingerprint": "f" * 64}),
+            patch.object(profile, "environment", return_value={}),
+            patch.object(profile, "ensure_owner"),
+            patch.object(profile, "build_images"),
+            patch.object(profile, "wait_health", side_effect=RuntimeError("readiness deadline")),
+            patch.object(profile, "command", side_effect=fake_command),
+        ):
             with self.assertRaisesRegex(RuntimeError, "readiness deadline"):
                 profile.profile_up()
         self.assertLess(names.index("failure-ps"), names.index("failure-down"))
@@ -82,13 +88,15 @@ class LifecycleTests(unittest.TestCase):
             names.append(name)
             return "", 0
 
-        with patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)), \
-                patch.object(profile, "current", return_value={"fingerprint": "f" * 64}), \
-                patch.object(profile, "environment", return_value={}), \
-                patch.object(profile, "ensure_owner"), \
-                patch.object(profile, "build_images"), \
-                patch.object(profile, "wait_health") as health, \
-                patch.object(profile, "command", side_effect=fake_command):
+        with (
+            patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)),
+            patch.object(profile, "current", return_value={"fingerprint": "f" * 64}),
+            patch.object(profile, "environment", return_value={}),
+            patch.object(profile, "ensure_owner"),
+            patch.object(profile, "build_images"),
+            patch.object(profile, "wait_health") as health,
+            patch.object(profile, "command", side_effect=fake_command),
+        ):
             with self.assertRaisesRegex(RuntimeError, "console loopback port binding missing"):
                 profile.profile_up()
         health.assert_not_called()
@@ -104,11 +112,13 @@ class LifecycleTests(unittest.TestCase):
             return ("service Exited (1)" if name == "diagnose-ps" else "service traceback"), 0
 
         output = io.StringIO()
-        with patch.object(sys, "argv", ["profile.py", "diagnose"]), \
-                patch.object(profile, "current", return_value={"fingerprint": "f" * 64}), \
-                patch.object(profile, "environment", return_value={}), \
-                patch.object(profile, "command", side_effect=fake_command), \
-                contextlib.redirect_stdout(output):
+        with (
+            patch.object(sys, "argv", ["profile.py", "diagnose"]),
+            patch.object(profile, "current", return_value={"fingerprint": "f" * 64}),
+            patch.object(profile, "environment", return_value={}),
+            patch.object(profile, "command", side_effect=fake_command),
+            contextlib.redirect_stdout(output),
+        ):
             profile.main()
         self.assertEqual(names, ["diagnose-ps", "diagnose-logs"])
         self.assertIn("service traceback", output.getvalue())
@@ -121,12 +131,14 @@ class LifecycleTests(unittest.TestCase):
             names.append((name, argv))
             return "", 0
 
-        with patch.object(sys, "argv", ["profile.py", "restart"]), \
-                patch.object(profile, "current", return_value={"fingerprint": "f" * 64}), \
-                patch.object(profile, "environment", return_value={}), \
-                patch.object(profile, "ensure_owner") as owner, \
-                patch.object(profile, "command", side_effect=fake_command), \
-                patch.object(profile, "profile_up") as up:
+        with (
+            patch.object(sys, "argv", ["profile.py", "restart"]),
+            patch.object(profile, "current", return_value={"fingerprint": "f" * 64}),
+            patch.object(profile, "environment", return_value={}),
+            patch.object(profile, "ensure_owner") as owner,
+            patch.object(profile, "command", side_effect=fake_command),
+            patch.object(profile, "profile_up") as up,
+        ):
             profile.main()
         owner.assert_called_once_with({})
         up.assert_called_once_with()
@@ -137,70 +149,122 @@ class LifecycleTests(unittest.TestCase):
     def test_audit_uses_existing_owned_build_without_prepare_or_restart(self):
         (self.state / "PROFILE-OWNER.json").write_text("{}")
         build = {"fingerprint": "f" * 64}
-        with patch.object(sys, "argv", ["profile.py", "audit"]), \
-                patch.object(profile, "current", return_value=build), \
-                patch.object(profile, "environment", return_value={}), \
-                patch.object(profile, "ensure_owner") as owner, \
-                patch.object(profile, "audit_live") as audit, \
-                patch.object(profile, "command") as command:
+        with (
+            patch.object(sys, "argv", ["profile.py", "audit"]),
+            patch.object(profile, "current", return_value=build),
+            patch.object(profile, "environment", return_value={}),
+            patch.object(profile, "ensure_owner") as owner,
+            patch.object(profile, "audit_live") as audit,
+            patch.object(profile, "command") as command,
+        ):
             profile.main()
         owner.assert_called_once_with({})
         audit.assert_called_once_with(build, {})
         command.assert_not_called()
 
     def test_persistence_reuses_images_and_volumes_without_send(self):
-        receipt = {"submission_ids": ["s1", "s2", "s3", "s4"],
-                   "no_store_submission_id": "s4", "after_submissions": 7}
+        receipt = {
+            "submission_ids": ["s1", "s2", "s3", "s4"],
+            "no_store_submission_id": "s4",
+            "after_submissions": 7,
+        }
         (self.state / "last-explicit-exercise.json").write_text(json.dumps(receipt))
-        (self.state / "last-live-audit.json").write_text(json.dumps({
-            "kind": "DEV-06 read-only live correlation",
-            "build": {"fingerprint": "f" * 64}, "matched_exercise_attempts": 4,
-            "single_arrival_per_receiver_attempt": True,
-            "topology_negative_added_arrivals": False, "receiver_arrivals_total": 7}))
-        overview = {"build": {"fingerprint": "f" * 64},
-                    "counts": {"submissions": 7, "completed": 7,
-                               "known_failures": 0, "unknown_outcomes": 0}}
+        (self.state / "last-live-audit.json").write_text(
+            json.dumps(
+                {
+                    "kind": "DEV-06 read-only live correlation",
+                    "build": {"fingerprint": "f" * 64},
+                    "matched_exercise_attempts": 4,
+                    "single_arrival_per_receiver_attempt": True,
+                    "topology_negative_added_arrivals": False,
+                    "receiver_arrivals_total": 7,
+                }
+            )
+        )
+        overview = {
+            "build": {"fingerprint": "f" * 64},
+            "counts": {
+                "submissions": 7,
+                "completed": 7,
+                "known_failures": 0,
+                "unknown_outcomes": 0,
+            },
+        }
         names = []
 
         def fake_command(name, argv, env=None, allowed=(0,)):
             names.append((name, argv))
             return "127.0.0.1:8780" if name == "console-port" else "", 0
 
-        with patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)), \
-                patch.object(profile, "wait_health", return_value=(object(), overview)), \
-                patch.object(profile, "readback", return_value={"retained_submission_ids": 4,
-                    "no_store_candidate_access": "not_retained"}) as readback, \
-                patch.object(profile, "receiver_count", return_value=7) as count, \
-                patch.object(profile, "topology", return_value=7) as topology, \
-                patch.object(profile, "command", side_effect=fake_command):
+        with (
+            patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)),
+            patch.object(profile, "wait_health", return_value=(object(), overview)),
+            patch.object(
+                profile,
+                "readback",
+                return_value={
+                    "retained_submission_ids": 4,
+                    "no_store_candidate_access": "not_retained",
+                },
+            ) as readback,
+            patch.object(profile, "receiver_count", return_value=7) as count,
+            patch.object(profile, "topology", return_value=7) as topology,
+            patch.object(profile, "command", side_effect=fake_command),
+        ):
             with contextlib.redirect_stdout(io.StringIO()):
                 profile.verify_persistence({"fingerprint": "f" * 64}, {})
-        self.assertEqual([name for name, _ in names],
-                         ["persistence-stop", "persistence-up", "console-port"])
+        self.assertEqual(
+            [name for name, _ in names], ["persistence-stop", "persistence-up", "console-port"]
+        )
         self.assertEqual(names[0][1][-2:], ["down", "--remove-orphans"])
         self.assertEqual(names[1][1][-3:], ["up", "-d", "--no-build"])
         self.assertNotIn("-v", names[0][1])
         self.assertEqual(readback.call_count, 2)
         self.assertEqual(count.call_count, 2)
         topology.assert_called_once()
-        self.assertEqual(json.loads((self.state / "last-persistence-check.json").read_text())
-                         ["new_provider_requests"], 0)
+        self.assertEqual(
+            json.loads((self.state / "last-persistence-check.json").read_text())[
+                "new_provider_requests"
+            ],
+            0,
+        )
 
     def test_persistence_refuses_nonquiescent_profile_before_stop(self):
-        (self.state / "last-explicit-exercise.json").write_text(json.dumps({
-            "submission_ids": ["s1", "s2", "s3", "s4"],
-            "no_store_submission_id": "s4", "after_submissions": 7}))
-        (self.state / "last-live-audit.json").write_text(json.dumps({
-            "kind": "DEV-06 read-only live correlation",
-            "build": {"fingerprint": "f" * 64}, "matched_exercise_attempts": 4,
-            "single_arrival_per_receiver_attempt": True,
-            "topology_negative_added_arrivals": False, "receiver_arrivals_total": 7}))
-        overview = {"build": {"fingerprint": "f" * 64},
-                    "counts": {"submissions": 7, "completed": 6,
-                               "known_failures": 0, "unknown_outcomes": 0}}
-        with patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)), \
-                patch.object(profile, "wait_health", return_value=(object(), overview)), \
-                patch.object(profile, "command") as command:
+        (self.state / "last-explicit-exercise.json").write_text(
+            json.dumps(
+                {
+                    "submission_ids": ["s1", "s2", "s3", "s4"],
+                    "no_store_submission_id": "s4",
+                    "after_submissions": 7,
+                }
+            )
+        )
+        (self.state / "last-live-audit.json").write_text(
+            json.dumps(
+                {
+                    "kind": "DEV-06 read-only live correlation",
+                    "build": {"fingerprint": "f" * 64},
+                    "matched_exercise_attempts": 4,
+                    "single_arrival_per_receiver_attempt": True,
+                    "topology_negative_added_arrivals": False,
+                    "receiver_arrivals_total": 7,
+                }
+            )
+        )
+        overview = {
+            "build": {"fingerprint": "f" * 64},
+            "counts": {
+                "submissions": 7,
+                "completed": 6,
+                "known_failures": 0,
+                "unknown_outcomes": 0,
+            },
+        }
+        with (
+            patch.object(profile, "secrets_on_disk", return_value=({}, "p" * 40)),
+            patch.object(profile, "wait_health", return_value=(object(), overview)),
+            patch.object(profile, "command") as command,
+        ):
             with self.assertRaisesRegex(RuntimeError, "not quiescent"):
                 profile.verify_persistence({"fingerprint": "f" * 64}, {})
         command.assert_not_called()
@@ -209,7 +273,9 @@ class LifecycleTests(unittest.TestCase):
     def test_service_image_imports_copied_recipe(self):
         dockerfile = (ROOT / "deploy/local/Dockerfile.service").read_text()
         self.assertIn("COPY dev_slice/ /app/dev_slice/", dockerfile)
-        self.assertIn("/app/dev_slice", dockerfile.split("PYTHONPATH=", 1)[1].splitlines()[0].split(":"))
+        self.assertIn(
+            "/app/dev_slice", dockerfile.split("PYTHONPATH=", 1)[1].splitlines()[0].split(":")
+        )
         self.assertTrue((ROOT / "tests/development_slice/recipe.py").is_file())
 
 

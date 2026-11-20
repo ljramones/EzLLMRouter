@@ -1,4 +1,5 @@
 """Create a compact, self-auditing correction-01 review ZIP from retained evidence."""
+
 from __future__ import annotations
 
 import hashlib
@@ -48,8 +49,11 @@ def main() -> None:
         "tests/integration_readiness/package_correction_review.py",
         "tests/operator_console/test_integration_accounting.py",
     )
-    source_files += tuple(p.relative_to(repo).as_posix() for p in
-                          sorted((repo / "tests/fixtures/contracts/integration-readiness-v2").iterdir()) if p.is_file())
+    source_files += tuple(
+        p.relative_to(repo).as_posix()
+        for p in sorted((repo / "tests/fixtures/contracts/integration-readiness-v2").iterdir())
+        if p.is_file()
+    )
     for rel in source_files:
         target = review / rel
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -94,10 +98,12 @@ def main() -> None:
         candidate / "packages/cognitivedynamics_ezllmrouter_client-0.2.0-py3-none-any.whl",
         candidate / "packages/cognitivedynamics-ezllmrouter-client-0.2.0.tgz",
     )
-    (review / "RELEASE-ARTIFACTS.sha256").write_text("".join(
-        f"{sha(path)}  {path.stat().st_size} bytes  {path.relative_to(candidate).as_posix()}\n"
-        for path in packages
-    ))
+    (review / "RELEASE-ARTIFACTS.sha256").write_text(
+        "".join(
+            f"{sha(path)}  {path.stat().st_size} bytes  {path.relative_to(candidate).as_posix()}\n"
+            for path in packages
+        )
+    )
     (review / "INDEX.md").write_text(
         "# Integration correction 01 — independent review index\n\n"
         f"Baseline `{START}`; tested product/client source `{PRODUCT}`; final record `{final}`. "
@@ -122,9 +128,9 @@ def main() -> None:
     )
     root_manifest = review / "MANIFEST.sha256"
     entries = sorted(p for p in review.rglob("*") if p.is_file() and p != root_manifest)
-    root_manifest.write_text("".join(
-        f"{sha(p)}  {p.relative_to(review).as_posix()}\n" for p in entries
-    ))
+    root_manifest.write_text(
+        "".join(f"{sha(p)}  {p.relative_to(review).as_posix()}\n" for p in entries)
+    )
     archive = candidate / "ezllmrouter-integration-correction01-review.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(p for p in review.rglob("*") if p.is_file()):
@@ -132,16 +138,22 @@ def main() -> None:
     with zipfile.ZipFile(archive) as zf:
         archived = set(zf.namelist())
         lines = zf.read("MANIFEST.sha256").decode().splitlines()
-        manifest_entries = {path: digest for digest, path in
-                            (line.split("  ", 1) for line in lines)}
-        if (len(archived) != len(zf.namelist()) or len(lines) != len(manifest_entries) or
-                set(manifest_entries) != archived - {"MANIFEST.sha256"}):
+        manifest_entries = {
+            path: digest for digest, path in (line.split("  ", 1) for line in lines)
+        }
+        if (
+            len(archived) != len(zf.namelist())
+            or len(lines) != len(manifest_entries)
+            or set(manifest_entries) != archived - {"MANIFEST.sha256"}
+        ):
             raise ValueError("review manifest does not cover the exact archive payload set")
         for path, expected in manifest_entries.items():
             if hashlib.sha256(zf.read(path)).hexdigest() != expected:
                 raise ValueError("review payload hash mismatch: " + path)
-    print(f"{archive}\n{archive.stat().st_size} bytes\nSHA-256 {sha(archive)}\n"
-          f"{len(entries)} payload files; manifest SHA-256 {sha(review / 'MANIFEST.sha256')}")
+    print(
+        f"{archive}\n{archive.stat().st_size} bytes\nSHA-256 {sha(archive)}\n"
+        f"{len(entries)} payload files; manifest SHA-256 {sha(review / 'MANIFEST.sha256')}"
+    )
 
 
 if __name__ == "__main__":

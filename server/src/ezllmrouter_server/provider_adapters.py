@@ -3,6 +3,7 @@
 These probes are explicit administrator actions. They never generate model work.
 The selected wire operation is fixed by the adapter, not by registry data.
 """
+
 from __future__ import annotations
 
 import http.client
@@ -21,27 +22,64 @@ class ProbeError(ValueError):
 
 
 ADAPTERS = {
-    "openai.responses.v1": {"provider": "openai", "access": ("GET", "/v1/models"),
-                            "inventory": ("GET", "/v1/models"),
-                            "readiness": None, "inference": "Responses text candidate · frozen target pending"},
-    "anthropic.messages.2023-06-01": {"provider": "anthropic", "access": ("GET", "/v1/models"),
-                                       "inventory": ("GET", "/v1/models"),
-                                       "readiness": None, "inference": None},
-    "gemini.developer.v1beta": {"provider": "google", "access": ("GET", "/v1beta/models"),
-                                "inventory": ("GET", "/v1beta/models"),
-                                "readiness": None, "inference": None},
-    "vllm.openai-compatible.v1": {"provider": "vllm", "access": ("GET", "/v1/models"),
-                                   "inventory": ("GET", "/v1/models"),
-                                   "readiness": ("GET", "/health"), "inference": None},
-    "xai.responses.v1": {"provider": "xai", "access": ("GET", "/v1/models"),
-                         "inventory": ("GET", "/v1/models"), "readiness": None, "inference": None},
-    "deepseek.chat.v1": {"provider": "deepseek", "access": None, "inventory": None, "readiness": None, "inference": None},
+    "openai.responses.v1": {
+        "provider": "openai",
+        "access": ("GET", "/v1/models"),
+        "inventory": ("GET", "/v1/models"),
+        "readiness": None,
+        "inference": "Responses text candidate · frozen target pending",
+    },
+    "anthropic.messages.2023-06-01": {
+        "provider": "anthropic",
+        "access": ("GET", "/v1/models"),
+        "inventory": ("GET", "/v1/models"),
+        "readiness": None,
+        "inference": None,
+    },
+    "gemini.developer.v1beta": {
+        "provider": "google",
+        "access": ("GET", "/v1beta/models"),
+        "inventory": ("GET", "/v1beta/models"),
+        "readiness": None,
+        "inference": None,
+    },
+    "vllm.openai-compatible.v1": {
+        "provider": "vllm",
+        "access": ("GET", "/v1/models"),
+        "inventory": ("GET", "/v1/models"),
+        "readiness": ("GET", "/health"),
+        "inference": None,
+    },
+    "xai.responses.v1": {
+        "provider": "xai",
+        "access": ("GET", "/v1/models"),
+        "inventory": ("GET", "/v1/models"),
+        "readiness": None,
+        "inference": None,
+    },
+    "deepseek.chat.v1": {
+        "provider": "deepseek",
+        "access": None,
+        "inventory": None,
+        "readiness": None,
+        "inference": None,
+    },
 }
-PROVIDERS = {"openai": "OpenAI", "anthropic": "Anthropic", "google": "Google Gemini Developer API",
-             "vllm": "vLLM private or lab", "xai": "xAI", "deepseek": "DeepSeek"}
-PUBLIC_HOSTS = {"openai": "api.openai.com", "anthropic": "api.anthropic.com",
-                "google": "generativelanguage.googleapis.com", "xai": "api.x.ai",
-                "deepseek": "api.deepseek.com"}
+PROVIDERS = {
+    "openai": "OpenAI",
+    "anthropic": "Anthropic",
+    "google": "Google Gemini Developer API",
+    "vllm": "vLLM private or lab",
+    "xai": "xAI",
+    "deepseek": "DeepSeek",
+}
+PUBLIC_HOSTS = {
+    "openai": "api.openai.com",
+    "anthropic": "api.anthropic.com",
+    "google": "generativelanguage.googleapis.com",
+    "xai": "api.x.ai",
+    "deepseek": "api.deepseek.com",
+}
 
 
 def validate_settings(adapter_id, settings, *, controlled=False):
@@ -49,7 +87,9 @@ def validate_settings(adapter_id, settings, *, controlled=False):
         raise ValueError("unsupported API adapter")
     provider = ADAPTERS[adapter_id]["provider"]
     required = {"origin", "location", "site"}
-    optional = {"project"} if provider == "openai" else {"workspace"} if provider == "anthropic" else set()
+    optional = (
+        {"project"} if provider == "openai" else {"workspace"} if provider == "anthropic" else set()
+    )
     if provider == "vllm":
         optional = {"ca_pem", "engine_version"}
     elif controlled:
@@ -62,24 +102,39 @@ def validate_settings(adapter_id, settings, *, controlled=False):
         raise ValueError("commercial adapter requires commercial location")
     if provider == "vllm" and settings["location"] == "commercial":
         raise ValueError("vLLM requires private or lab location")
-    if (type(settings["site"]) is not str or not 1 <= len(settings["site"]) <= 100 or
-            any(ord(c) < 32 for c in settings["site"])):
+    if (
+        type(settings["site"]) is not str
+        or not 1 <= len(settings["site"]) <= 100
+        or any(ord(c) < 32 for c in settings["site"])
+    ):
         raise ValueError("invalid site")
     for key in optional - {"ca_pem"}:
-        if key in settings and (type(settings[key]) is not str or
-                                not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", settings[key])):
+        if key in settings and (
+            type(settings[key]) is not str
+            or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", settings[key])
+        ):
             raise ValueError("invalid adapter scope")
-    if "ca_pem" in settings and (type(settings["ca_pem"]) is not str or
-                                  len(settings["ca_pem"]) > 8192 or
-                                  not settings["ca_pem"].startswith("-----BEGIN CERTIFICATE-----\n")):
+    if "ca_pem" in settings and (
+        type(settings["ca_pem"]) is not str
+        or len(settings["ca_pem"]) > 8192
+        or not settings["ca_pem"].startswith("-----BEGIN CERTIFICATE-----\n")
+    ):
         raise ValueError("invalid certificate trust material")
     if type(settings["origin"]) is not str or len(settings["origin"]) > 512:
         raise ValueError("invalid HTTPS origin")
     url = urlsplit(settings["origin"])
-    if (url.scheme != "https" or not url.hostname or url.username or url.password or
-            url.path not in ("", "/") or url.query or url.fragment or
-            not 1 <= (url.port or 443) <= 65535 or ":" in url.hostname or
-            (url.port not in (None, 443) and provider != "vllm" and not controlled)):
+    if (
+        url.scheme != "https"
+        or not url.hostname
+        or url.username
+        or url.password
+        or url.path not in ("", "/")
+        or url.query
+        or url.fragment
+        or not 1 <= (url.port or 443) <= 65535
+        or ":" in url.hostname
+        or (url.port not in (None, 443) and provider != "vllm" and not controlled)
+    ):
         raise ValueError("invalid HTTPS origin")
     if not controlled and provider != "vllm" and url.hostname != PUBLIC_HOSTS[provider]:
         raise ValueError("commercial origin is not approved")
@@ -120,9 +175,13 @@ def _wire_get(settings, provider, path, headers, *, timeout, controlled):
     url = urlsplit(settings["origin"])
     host, port = url.hostname, url.port or 443
     addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-    if not addresses or any(not _allowed_ip(item[4][0], provider, controlled=controlled) for item in addresses):
+    if not addresses or any(
+        not _allowed_ip(item[4][0], provider, controlled=controlled) for item in addresses
+    ):
         raise ProbeError("destination_rejected")
-    family, kind, protocol, _, address = sorted(addresses, key=lambda item: item[0] != socket.AF_INET)[0]
+    family, kind, protocol, _, address = sorted(
+        addresses, key=lambda item: item[0] != socket.AF_INET
+    )[0]
     try:
         context = ssl.create_default_context(cadata=settings.get("ca_pem"))
     except ValueError as exc:
@@ -133,7 +192,9 @@ def _wire_get(settings, provider, path, headers, *, timeout, controlled):
         raw.connect(address)
         with context.wrap_socket(raw, server_hostname=host) as tls:
             tls.settimeout(timeout)
-            request = "GET " + path + " HTTP/1.1\r\nHost: " + host + (f":{port}" if port != 443 else "")
+            request = (
+                "GET " + path + " HTTP/1.1\r\nHost: " + host + (f":{port}" if port != 443 else "")
+            )
             request += "\r\nAccept: application/json\r\nConnection: close\r\n"
             for name, value in headers.items():
                 request += name + ": " + value + "\r\n"
@@ -162,13 +223,24 @@ def _xai_bad_request_reason(content_type, data):
         return "provider_rejected_request"
     error = body.get("error")
     code = error.get("code") if type(error) is dict else body.get("code")
-    message = error.get("message") if type(error) is dict else error if type(error) is str else body.get("message")
+    message = (
+        error.get("message")
+        if type(error) is dict
+        else error
+        if type(error) is str
+        else body.get("message")
+    )
     if type(code) is str and code.lower().replace("-", "_") in (
-            "invalid_api_key", "incorrect_api_key", "invalid_authentication"):
+        "invalid_api_key",
+        "incorrect_api_key",
+        "invalid_authentication",
+    ):
         return "credential_rejected"
     if type(message) is str:
         lower = message.lower()
-        if "api key" in lower and any(word in lower for word in ("incorrect", "invalid", "expired")):
+        if "api key" in lower and any(
+            word in lower for word in ("incorrect", "invalid", "expired")
+        ):
             return "credential_rejected"
     return "provider_rejected_request"
 
@@ -187,9 +259,16 @@ def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=
         path, seen, pages = spec[1], set(), 0
         while True:
             try:
-                status, content_type, data = _wire_get(settings, provider, path,
-                    _headers(adapter_id, credential, settings) if operation in ("access", "inventory") else {},
-                    timeout=timeout, controlled=controlled)
+                status, content_type, data = _wire_get(
+                    settings,
+                    provider,
+                    path,
+                    _headers(adapter_id, credential, settings)
+                    if operation in ("access", "inventory")
+                    else {},
+                    timeout=timeout,
+                    controlled=controlled,
+                )
                 if status == 401:
                     raise ProbeError("credential_rejected")
                 if status == 403:
@@ -197,20 +276,31 @@ def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=
                 if status == 429:
                     raise ProbeError("rate_limited")
                 if status == 400:
-                    raise ProbeError(_xai_bad_request_reason(content_type, data) if provider == "xai"
-                                     else "provider_rejected_request")
+                    raise ProbeError(
+                        _xai_bad_request_reason(content_type, data)
+                        if provider == "xai"
+                        else "provider_rejected_request"
+                    )
                 if status == 404:
                     raise ProbeError("discovery_not_supported")
                 if status != 200:
                     raise ProbeError("provider_unavailable")
                 if operation == "readiness":
-                    return {"state": "reachable", "reason": "vllm_health_200_not_model_capacity", "models": []}
+                    return {
+                        "state": "reachable",
+                        "reason": "vllm_health_200_not_model_capacity",
+                        "models": [],
+                    }
                 if "application/json" not in content_type.lower():
                     raise ProbeError("malformed_response")
                 value = json.loads(data)
                 if type(value) is not dict:
                     raise ProbeError("malformed_response")
-                items = value.get("data") if provider in ("openai", "anthropic", "xai", "vllm") else value.get("models")
+                items = (
+                    value.get("data")
+                    if provider in ("openai", "anthropic", "xai", "vllm")
+                    else value.get("models")
+                )
                 if type(items) is not list or len(items) > 1000:
                     raise ProbeError("malformed_response")
                 page_ids = []
@@ -223,12 +313,20 @@ def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=
                         raise ProbeError("malformed_response")
                     page_ids.append(identifier)
                     display = item.get("display_name") or item.get("name") or identifier
-                    details[identifier] = {"id": identifier,
-                                           "name": display if type(display) is str and len(display) <= 256 else identifier}
+                    details[identifier] = {
+                        "id": identifier,
+                        "name": display
+                        if type(display) is str and len(display) <= 256
+                        else identifier,
+                    }
                 models.extend(page_ids)
                 pages += 1
                 if operation == "access":
-                    return {"state": "observed", "reason": "credential_accepted_for_model_listing_only", "models": []}
+                    return {
+                        "state": "observed",
+                        "reason": "credential_accepted_for_model_listing_only",
+                        "models": [],
+                    }
                 if provider == "anthropic" and value.get("has_more") is True:
                     token = value.get("last_id")
                     parameter = "after_id"
@@ -236,28 +334,61 @@ def probe(adapter_id, settings, credential, operation, *, timeout=3, controlled=
                     token = value["nextPageToken"]
                     parameter = "pageToken"
                 else:
-                    return {"state": "observed", "reason": "inventory_not_inference_entitlement",
-                            "models": sorted(set(models)), "details": [details[key] for key in sorted(details)],
-                            "has_more": False, "pages": pages}
-                if (type(token) is not str or not 1 <= len(token) <= 256 or
-                        any(ord(char) < 33 for char in token) or token in seen):
+                    return {
+                        "state": "observed",
+                        "reason": "inventory_not_inference_entitlement",
+                        "models": sorted(set(models)),
+                        "details": [details[key] for key in sorted(details)],
+                        "has_more": False,
+                        "pages": pages,
+                    }
+                if (
+                    type(token) is not str
+                    or not 1 <= len(token) <= 256
+                    or any(ord(char) < 33 for char in token)
+                    or token in seen
+                ):
                     raise ProbeError("malformed_pagination")
                 seen.add(token)
                 if pages >= 10 or len(models) >= 5000:
-                    return {"state": "partial", "reason": "inventory_page_limit",
-                            "models": sorted(set(models)), "details": [details[key] for key in sorted(details)],
-                            "has_more": True, "pages": pages}
+                    return {
+                        "state": "partial",
+                        "reason": "inventory_page_limit",
+                        "models": sorted(set(models)),
+                        "details": [details[key] for key in sorted(details)],
+                        "has_more": True,
+                        "pages": pages,
+                    }
                 path = spec[1] + "?" + parameter + "=" + quote(token, safe="")
-            except (ProbeError, socket.timeout, TimeoutError, ssl.SSLError, OSError,
-                    json.JSONDecodeError, UnicodeError, TypeError) as exc:
+            except (
+                ProbeError,
+                socket.timeout,
+                TimeoutError,
+                ssl.SSLError,
+                OSError,
+                json.JSONDecodeError,
+                UnicodeError,
+                TypeError,
+            ) as exc:
                 if not models or operation != "inventory":
                     raise
-                reason = (exc.reason if isinstance(exc, ProbeError) else "timeout" if isinstance(
-                    exc, (socket.timeout, TimeoutError)) else "network_or_tls_failure" if isinstance(
-                    exc, (ssl.SSLError, OSError)) else "malformed_response")
-                return {"state": "partial", "reason": "later_page_" + reason,
-                        "models": sorted(set(models)), "details": [details[key] for key in sorted(details)],
-                        "has_more": True, "pages": pages}
+                reason = (
+                    exc.reason
+                    if isinstance(exc, ProbeError)
+                    else "timeout"
+                    if isinstance(exc, (socket.timeout, TimeoutError))
+                    else "network_or_tls_failure"
+                    if isinstance(exc, (ssl.SSLError, OSError))
+                    else "malformed_response"
+                )
+                return {
+                    "state": "partial",
+                    "reason": "later_page_" + reason,
+                    "models": sorted(set(models)),
+                    "details": [details[key] for key in sorted(details)],
+                    "has_more": True,
+                    "pages": pages,
+                }
     except ProbeError as exc:
         return {"state": "failed", "reason": exc.reason, "models": []}
     except (socket.timeout, TimeoutError):

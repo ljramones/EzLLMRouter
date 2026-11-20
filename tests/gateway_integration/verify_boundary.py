@@ -1,11 +1,14 @@
 """Check bounded DEV-04 boundary records without masking a demonstrated limit."""
+
 import json
 from pathlib import Path
 import sys
 
 
 def rows(run, name):
-    return [json.loads(line) for line in (run / (name + ".stdout")).read_text().splitlines() if line]
+    return [
+        json.loads(line) for line in (run / (name + ".stdout")).read_text().splitlines() if line
+    ]
 
 
 def one(run, name):
@@ -22,7 +25,10 @@ def matched(arrivals, receipts):
         if receipt is None:
             continue
         assert (receipt["body_sha256"], receipt["body_bytes"], receipt["method"]) == (
-            arrival["body_sha256"], arrival["body_bytes"], arrival["method"])
+            arrival["body_sha256"],
+            arrival["body_bytes"],
+            arrival["method"],
+        )
     return by_attempt
 
 
@@ -35,8 +41,12 @@ def errors(run):
     assert len(arrivals) == len(receipts) == len(sdk) == 7
     assert len({row["attempt_id"] for row in arrivals}) == 7
     assert set(row["attempt_id"] for row in arrivals) == set(matched(arrivals, receipts))
-    assert all(row["matched_sdk_clients"] == 1 and row["effective_max_retries"] == 0
-               and row["selected_pool_requests_at_send_end"] == 0 for row in sdk)
+    assert all(
+        row["matched_sdk_clients"] == 1
+        and row["effective_max_retries"] == 0
+        and row["selected_pool_requests_at_send_end"] == 0
+        for row in sdk
+    )
     for attempt in {row["attempt_id"] for row in arrivals}:
         stages = [row["stage"] for row in events if row["attempt_id"] == attempt]
         assert stages[:3] == ["entered", "commit_acknowledged", "released_to_lower_transport"]
@@ -48,22 +58,35 @@ def errors(run):
         assert actor["receiver_delta"] == 1
         record = records["step.dev04.boundary." + mode]
         if mode == "close":
-            assert (actor["submission_state"], actor["usage_state"]) == ("outcome_unknown", "not_recorded")
-            assert record["submission_state"] == "outcome_unknown" and record["terminal_code"] is None
+            assert (actor["submission_state"], actor["usage_state"]) == (
+                "outcome_unknown",
+                "not_recorded",
+            )
+            assert (
+                record["submission_state"] == "outcome_unknown" and record["terminal_code"] is None
+            )
         else:
             assert (actor["public_code"], actor["http_status"]) == ("REMOTE_EXECUTION_FAILED", 502)
             assert (record["submission_state"], record["terminal_code"]) == (
-                "failed_after_transmit", "REMOTE_EXECUTION_FAILED")
+                "failed_after_transmit",
+                "REMOTE_EXECUTION_FAILED",
+            )
         assert int((run / ("d04-4-" + mode + "-horizon.stdout")).read_text()) >= 5000
         assert (run / ("d04-4-" + mode + "-before-horizon.stdout")).read_bytes() == (
-            run / ("d04-4-" + mode + "-after-horizon.stdout")).read_bytes()
+            run / ("d04-4-" + mode + "-after-horizon.stdout")
+        ).read_bytes()
     assert any(row["stage"] == "lower_error" for row in events)
-    return {"case": "D04-4", "observed_provider_arrivals": 7,
-            "controlled_negatives": ["422", "503", "close"],
-            "known_remote_errors": 2, "unknown_outcomes": 1,
-            "guard_entries_per_attempt": 1, "effective_sdk_retries": 0,
-            "selected_pool_requests_at_send_end": 0,
-            "complete_proxy_task_drain": "not_established"}
+    return {
+        "case": "D04-4",
+        "observed_provider_arrivals": 7,
+        "controlled_negatives": ["422", "503", "close"],
+        "known_remote_errors": 2,
+        "unknown_outcomes": 1,
+        "guard_entries_per_attempt": 1,
+        "effective_sdk_retries": 0,
+        "selected_pool_requests_at_send_end": 0,
+        "complete_proxy_task_drain": "not_established",
+    }
 
 
 def wait(run):
@@ -79,14 +102,27 @@ def wait(run):
     sdk = rows(run, "d04-5-sdk")
     matched(receiver, receipts)
     stages = {row["stage"]: row for row in events if row["attempt_id"] == queued}
-    queue = next(row for row in pool if row["attempt_id"] == queued and
-                 row["event"] == "queued_in_selected_httpcore_pool")
+    queue = next(
+        row
+        for row in pool
+        if row["attempt_id"] == queued and row["event"] == "queued_in_selected_httpcore_pool"
+    )
     revoked = next(row for row in authority if row["event"] == "authority_revoked_after_pool_queue")
     assert stages["entered"]["monotonic_ns"] < stages["commit_acknowledged"]["monotonic_ns"]
-    assert stages["commit_acknowledged"]["monotonic_ns"] < stages["released_to_lower_transport"]["monotonic_ns"]
-    assert stages["released_to_lower_transport"]["monotonic_ns"] < queue["monotonic_ns"] < revoked["monotonic_ns"]
-    first_write = [row for row in trace if row["attempt_id"] == queued and
-                   row["event"].endswith("send_request_headers.started")]
+    assert (
+        stages["commit_acknowledged"]["monotonic_ns"]
+        < stages["released_to_lower_transport"]["monotonic_ns"]
+    )
+    assert (
+        stages["released_to_lower_transport"]["monotonic_ns"]
+        < queue["monotonic_ns"]
+        < revoked["monotonic_ns"]
+    )
+    first_write = [
+        row
+        for row in trace
+        if row["attempt_id"] == queued and row["event"].endswith("send_request_headers.started")
+    ]
     arrival = [row for row in receiver if row.get("attempt_id") == queued]
     if first_write:
         assert first_write[0]["monotonic_ns"] > revoked["monotonic_ns"]
@@ -107,20 +143,30 @@ def wait(run):
     assert all(row["effective_max_retries"] == 0 for row in sdk)
     assert int((run / "d04-5-stale-horizon.stdout").read_text()) >= 5000
     assert (run / "d04-5-stale-before-horizon.stdout").read_bytes() == (
-        run / "d04-5-stale-after-horizon.stdout").read_bytes()
+        run / "d04-5-stale-after-horizon.stdout"
+    ).read_bytes()
     assert int((run / "d04-5-swap-horizon.stdout").read_text()) >= 5000
     assert (run / "d04-5-swap-before-horizon.stdout").read_bytes() == (
-        run / "d04-5-swap-after-horizon.stdout").read_bytes()
-    for name in ("d04-5-positive-before", "d04-5-positive-after-stale", "d04-5-positive-after-swap"):
+        run / "d04-5-swap-after-horizon.stdout"
+    ).read_bytes()
+    for name in (
+        "d04-5-positive-before",
+        "d04-5-positive-after-stale",
+        "d04-5-positive-after-swap",
+    ):
         assert one(run, name)["state"] == "delivered"
-    return {"case": "D04-5", "queued_attempt_id": queued,
-            "guard_commit_before_real_pool_queue": True,
-            "authority_changed_while_queued": True,
-            "first_request_write_after_change": bool(first_write),
-            "stale_provider_arrival": bool(arrival),
-            "disposition": "BOUNDARY_LIMIT_FOUND" if arrival else "NO_STALE_SEND_OBSERVED",
-            "distinct_overlap_contexts": 2, "swapped_context_receiver_delta": 0,
-            "pool_assignment_instant": "not_directly_timestamped"}
+    return {
+        "case": "D04-5",
+        "queued_attempt_id": queued,
+        "guard_commit_before_real_pool_queue": True,
+        "authority_changed_while_queued": True,
+        "first_request_write_after_change": bool(first_write),
+        "stale_provider_arrival": bool(arrival),
+        "disposition": "BOUNDARY_LIMIT_FOUND" if arrival else "NO_STALE_SEND_OBSERVED",
+        "distinct_overlap_contexts": 2,
+        "swapped_context_receiver_delta": 0,
+        "pool_assignment_instant": "not_directly_timestamped",
+    }
 
 
 def bypass(run):
@@ -137,13 +183,18 @@ def bypass(run):
     assert one(run, "d04-6-alt-handler-startup")["alternate_handler_startup"] == "rejected"
     assert int((run / "d04-6-horizon.stdout").read_text()) >= 5000
     assert (run / "d04-6-before-horizon.stdout").read_bytes() == (
-        run / "d04-6-after-horizon.stdout").read_bytes()
+        run / "d04-6-after-horizon.stdout"
+    ).read_bytes()
     selected = [row for row in probes if row["probe"] != "deliberate_arbitrary_raw_client"]
-    return {"case": "D04-6", "selected_handler_probes": selected,
-            "deliberate_raw_client_arrivals": 1, "receiver_rejected_raw_payload": True,
-            "selected_handler_bypass_observed": any(row["receiver_delta"] for row in selected),
-            "alternate_handler_startup": "rejected",
-            "disposition": "BOUNDARY_LIMIT_FOUND"}
+    return {
+        "case": "D04-6",
+        "selected_handler_probes": selected,
+        "deliberate_raw_client_arrivals": 1,
+        "receiver_rejected_raw_payload": True,
+        "selected_handler_bypass_observed": any(row["receiver_delta"] for row in selected),
+        "alternate_handler_startup": "rejected",
+        "disposition": "BOUNDARY_LIMIT_FOUND",
+    }
 
 
 def main():

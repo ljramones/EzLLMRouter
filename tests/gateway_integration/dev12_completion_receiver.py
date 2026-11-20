@@ -4,6 +4,7 @@ The extra selectors below create bounded malformed responses while preserving
 the same durable arrival and native-usage receipt path as ordinary responses.
 They never contact an external provider.
 """
+
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -60,20 +61,37 @@ class Handler(BaseHTTPRequestHandler):
         except (UnicodeError, ValueError):
             body = None
         attempt = self.headers.get("X-EzLLMRouter-Attempt")
-        authorized = (self.headers.get("Authorization") == "Bearer " + TEST_KEY and
-                      self.headers.get("Content-Type") == "application/json" and
-                      type(body) is dict and type(attempt) is str and
-                      len(attempt) <= 160)
+        authorized = (
+            self.headers.get("Authorization") == "Bearer " + TEST_KEY
+            and self.headers.get("Content-Type") == "application/json"
+            and type(body) is dict
+            and type(attempt) is str
+            and len(attempt) <= 160
+        )
         valid = authorized and (
-            (self.path == "/synthetic/v1/embeddings" and body.get("operation") == "embedding.create@1" and
-             body.get("configuration_ref") == "cfg.embed.synthetic" and
-             body.get("role") in ("document", "query") and type(body.get("items")) is list) or
-            (self.path == "/synthetic/v1/rerank" and body.get("operation") == "rerank@1" and
-             body.get("configuration_ref") in ("cfg.rerank.synthetic", "cfg.rerank.synthetic.a") and
-             type(body.get("candidates")) is list))
-        row = {"attempt_id": attempt, "path": self.path,
-               "body_sha256": hashlib.sha256(raw).hexdigest(), "body_bytes": len(raw),
-               "request_valid": bool(valid), "received_at_ns": time.time_ns()}
+            (
+                self.path == "/synthetic/v1/embeddings"
+                and body.get("operation") == "embedding.create@1"
+                and body.get("configuration_ref") == "cfg.embed.synthetic"
+                and body.get("role") in ("document", "query")
+                and type(body.get("items")) is list
+            )
+            or (
+                self.path == "/synthetic/v1/rerank"
+                and body.get("operation") == "rerank@1"
+                and body.get("configuration_ref")
+                in ("cfg.rerank.synthetic", "cfg.rerank.synthetic.a")
+                and type(body.get("candidates")) is list
+            )
+        )
+        row = {
+            "attempt_id": attempt,
+            "path": self.path,
+            "body_sha256": hashlib.sha256(raw).hexdigest(),
+            "body_bytes": len(raw),
+            "request_valid": bool(valid),
+            "received_at_ns": time.time_ns(),
+        }
         self.durable_row(self.log_path, row)
         if not valid:
             self.reply(400, {"error": "controlled request rejected"})
@@ -83,17 +101,37 @@ class Handler(BaseHTTPRequestHandler):
             quantity = len(body["items"])
             item_ids = {item.get("item_id") for item in body["items"] if type(item) is dict}
         else:
-            component = "search_units" if body["configuration_ref"].endswith(".a") else "document_units"
-            quantity = ((len(body["candidates"]) + 9) // 10 if component == "search_units"
-                        else len(body["candidates"]))
-            item_ids = {item.get("candidate_id") for item in body["candidates"]
-                        if type(item) is dict}
-        usage = {"component": component, "presence": "known", "evidence": "reported",
-                 "quantity": quantity, "source_ref": "receiver.synthetic.dev12"}
+            component = (
+                "search_units" if body["configuration_ref"].endswith(".a") else "document_units"
+            )
+            quantity = (
+                (len(body["candidates"]) + 9) // 10
+                if component == "search_units"
+                else len(body["candidates"])
+            )
+            item_ids = {
+                item.get("candidate_id") for item in body["candidates"] if type(item) is dict
+            }
+        usage = {
+            "component": component,
+            "presence": "known",
+            "evidence": "reported",
+            "quantity": quantity,
+            "source_ref": "receiver.synthetic.dev12",
+        }
         if "doc.unknown.no_evidence" not in item_ids:
-            self.durable_row(self.receipt_path, {"kind": "native_usage_receipt", "attempt_id": attempt,
-                "path": self.path, "body_sha256": row["body_sha256"], "body_bytes": len(raw),
-                "received_at_ns": row["received_at_ns"], "usage_component": usage})
+            self.durable_row(
+                self.receipt_path,
+                {
+                    "kind": "native_usage_receipt",
+                    "attempt_id": attempt,
+                    "path": self.path,
+                    "body_sha256": row["body_sha256"],
+                    "body_bytes": len(raw),
+                    "received_at_ns": row["received_at_ns"],
+                    "usage_component": usage,
+                },
+            )
         if item_ids & {"doc.unknown", "doc.unknown.recoverable", "doc.unknown.no_evidence"}:
             # The independent receiver has the bytes but intentionally gives
             # no result. The sender must preserve possible-send exposure.
@@ -102,26 +140,45 @@ class Handler(BaseHTTPRequestHandler):
             return
         if item_ids & {"doc.failure.known", "doc.failure.absent", "doc.failure.invalid"}:
             # Delivery outcome and financial evidence are independent.
-            reported = ({"component": component, "presence": "absent"}
-                        if "doc.failure.absent" in item_ids else []
-                        if "doc.failure.invalid" in item_ids else usage)
+            reported = (
+                {"component": component, "presence": "absent"}
+                if "doc.failure.absent" in item_ids
+                else []
+                if "doc.failure.invalid" in item_ids
+                else usage
+            )
             self.reply(502, {"usage_component": reported})
             return
         if self.path.endswith("/embeddings"):
             values = ["0.1", "0.2", "0.3"]
-            result = {"contract_version": "0.3", "attempt_id": attempt,
-                      "operation": {"type": "embedding.create", "version": 1},
-                      "profile_id": "space.synthetic.v1", "model_ref": "model.embed.synthetic.v1",
-                      "dimensions": 3,
-                      "vectors": [{"input_index": index, "item_id": item["item_id"], "values": values}
-                                  for index, item in enumerate(body["items"])]}
+            result = {
+                "contract_version": "0.3",
+                "attempt_id": attempt,
+                "operation": {"type": "embedding.create", "version": 1},
+                "profile_id": "space.synthetic.v1",
+                "model_ref": "model.embed.synthetic.v1",
+                "dimensions": 3,
+                "vectors": [
+                    {"input_index": index, "item_id": item["item_id"], "values": values}
+                    for index, item in enumerate(body["items"])
+                ],
+            }
         else:
-            result = {"contract_version": "0.3", "attempt_id": attempt,
-                      "operation": {"type": "rerank", "version": 1},
-                      "ranking_profile_id": body["ranking_profile_id"],
-                      "results": [{"rank": index + 1, "input_index": index,
-                                   "candidate_id": item["candidate_id"], "score": "0.9"}
-                                  for index, item in enumerate(body["candidates"][:body["top_k"]])]}
+            result = {
+                "contract_version": "0.3",
+                "attempt_id": attempt,
+                "operation": {"type": "rerank", "version": 1},
+                "ranking_profile_id": body["ranking_profile_id"],
+                "results": [
+                    {
+                        "rank": index + 1,
+                        "input_index": index,
+                        "candidate_id": item["candidate_id"],
+                        "score": "0.9",
+                    }
+                    for index, item in enumerate(body["candidates"][: body["top_k"]])
+                ],
+            }
         if "doc.result.short" in item_ids and self.path.endswith("/embeddings"):
             result["vectors"] = result["vectors"][:-1]
         elif "doc.result.dimension" in item_ids and self.path.endswith("/embeddings"):

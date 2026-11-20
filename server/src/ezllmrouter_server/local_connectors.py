@@ -1,4 +1,5 @@
 """Local model-server inventory and explicit connection/model selection."""
+
 from __future__ import annotations
 
 from .repositories import local_connectors as _queries
@@ -29,13 +30,26 @@ KINDS = {
     "vllm": {"name": "vLLM", "default_url": "http://localhost:8000", "api": "openai"},
     "llamacpp": {"name": "llama.cpp", "default_url": "http://localhost:8080", "api": "openai"},
     "localai": {"name": "LocalAI", "default_url": "http://localhost:8080", "api": "openai"},
-    "openai_compatible": {"name": "Other OpenAI-compatible server", "default_url": "http://localhost:8000", "api": "openai"},
+    "openai_compatible": {
+        "name": "Other OpenAI-compatible server",
+        "default_url": "http://localhost:8000",
+        "api": "openai",
+    },
 }
 MAX_MODELS = 1000
 MAX_RESPONSE = 1024 * 1024
 ROUTES = {"/api/tags", "/api/ps", "/api/version", "/v1/models"}
-NETWORKS = tuple(ipaddress.ip_network(value) for value in
-                 ("127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "::1/128", "fc00::/7"))
+NETWORKS = tuple(
+    ipaddress.ip_network(value)
+    for value in (
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "::1/128",
+        "fc00::/7",
+    )
+)
 COMMON_SERVERS = (
     ("ollama", 11434, "Ollama API", "Ollama"),
     ("openai_compatible", 1234, "Local model API :1234", "Often LM Studio"),
@@ -58,7 +72,9 @@ def allowed_address(value):
         address = ipaddress.ip_address(value)
         if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
             address = address.ipv4_mapped
-        return any(address.version == network.version and address in network for network in NETWORKS)
+        return any(
+            address.version == network.version and address in network for network in NETWORKS
+        )
     except ValueError:
         return False
 
@@ -72,9 +88,16 @@ def normalize_url(value, kind="openai_compatible"):
     try:
         url = urlsplit(value)
         port = url.port
-        if (url.scheme not in ("http", "https") or not url.hostname or url.username is not None or
-                url.password is not None or url.query or url.fragment or
-                (port is not None and not 1 <= port <= 65535) or "%" in url.hostname):
+        if (
+            url.scheme not in ("http", "https")
+            or not url.hostname
+            or url.username is not None
+            or url.password is not None
+            or url.query
+            or url.fragment
+            or (port is not None and not 1 <= port <= 65535)
+            or "%" in url.hostname
+        ):
             raise ValueError()
         host = url.hostname.encode("idna").decode("ascii").lower()
         try:
@@ -150,8 +173,10 @@ def _read_json(base_url, path, api_key, *, timeout=3):
         authority = ("[" + host + "]") if ":" in host else host
         if port != (443 if url.scheme == "https" else 80):
             authority += ":" + str(port)
-        request = (f"GET {path} HTTP/1.1\r\nHost: {authority}\r\nAccept: application/json\r\n"
-                   "Accept-Encoding: identity\r\nConnection: close\r\n")
+        request = (
+            f"GET {path} HTTP/1.1\r\nHost: {authority}\r\nAccept: application/json\r\n"
+            "Accept-Encoding: identity\r\nConnection: close\r\n"
+        )
         if api_key:
             request += "Authorization: Bearer " + api_key + "\r\n"
         stream.sendall((request + "\r\n").encode("ascii"))
@@ -168,7 +193,11 @@ def _read_json(base_url, path, api_key, *, timeout=3):
         if response.status != 200:
             raise ConnectorError("SERVER_UNAVAILABLE", 502)
         content_type = response.getheader("Content-Type", "").split(";", 1)[0].strip().lower()
-        if not (content_type == "application/json" or content_type.startswith("application/") and content_type.endswith("+json")):
+        if not (
+            content_type == "application/json"
+            or content_type.startswith("application/")
+            and content_type.endswith("+json")
+        ):
             raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
         if response.getheader("Content-Encoding", "identity").lower() != "identity":
             raise ConnectorError("COMPRESSED_RESPONSE_NOT_SUPPORTED", 502)
@@ -211,8 +240,12 @@ def _read_json(base_url, path, api_key, *, timeout=3):
 def _text(value, secret, *, required=False, limit=240):
     if value is None and not required:
         return None
-    if (type(value) is not str or not value or len(value) > limit or
-            any(ord(char) < 32 for char in value)):
+    if (
+        type(value) is not str
+        or not value
+        or len(value) > limit
+        or any(ord(char) < 32 for char in value)
+    ):
         raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
     if secret and secret in value:
         if required:
@@ -234,34 +267,57 @@ def discover(kind, base_url, api_key="", *, read=None):
     base_url = normalize_url(base_url, kind)
     spec = KINDS[kind]
     value = read(base_url, "/api/tags" if spec["api"] == "ollama" else "/v1/models", api_key)
-    rows = value.get("models" if spec["api"] == "ollama" else "data") if type(value) is dict else None
+    rows = (
+        value.get("models" if spec["api"] == "ollama" else "data") if type(value) is dict else None
+    )
     if type(rows) is not list or any(type(row) is not dict for row in rows):
         raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-    result = {"state": "observed", "models": [], "checked_at": timestamp(),
-              "complete": len(rows) <= MAX_MODELS and not bool(value.get("has_more") or value.get("next_page")),
-              "server_version": None, "loaded_inventory_available": False, "warnings": []}
+    result = {
+        "state": "observed",
+        "models": [],
+        "checked_at": timestamp(),
+        "complete": len(rows) <= MAX_MODELS
+        and not bool(value.get("has_more") or value.get("next_page")),
+        "server_version": None,
+        "loaded_inventory_available": False,
+        "warnings": [],
+    }
     seen = set()
     for row in rows[:MAX_MODELS]:
-        model_id = _text((row.get("model") or row.get("name")) if spec["api"] == "ollama" else row.get("id"), api_key, required=True)
+        model_id = _text(
+            (row.get("model") or row.get("name")) if spec["api"] == "ollama" else row.get("id"),
+            api_key,
+            required=True,
+        )
         if model_id in seen:
             raise ConnectorError("DUPLICATE_MODEL_ID", 502)
         seen.add(model_id)
         details = row.get("details") if type(row.get("details")) is dict else {}
         model = {"id": model_id, "loaded": None}
         if spec["api"] == "ollama":
-            model.update(size_bytes=_integer(row.get("size")), modified_at=_text(row.get("modified_at"), api_key),
-                         digest=_text(row.get("digest"), api_key), family=_text(details.get("family"), api_key),
-                         format=_text(details.get("format"), api_key),
-                         parameter_size=_text(details.get("parameter_size"), api_key),
-                         quantization=_text(details.get("quantization_level"), api_key))
+            model.update(
+                size_bytes=_integer(row.get("size")),
+                modified_at=_text(row.get("modified_at"), api_key),
+                digest=_text(row.get("digest"), api_key),
+                family=_text(details.get("family"), api_key),
+                format=_text(details.get("format"), api_key),
+                parameter_size=_text(details.get("parameter_size"), api_key),
+                quantization=_text(details.get("quantization_level"), api_key),
+            )
         else:
-            model.update(owned_by=_text(row.get("owned_by"), api_key),
-                         context_window=_integer(row.get("max_model_len") or row.get("context_length")))
+            model.update(
+                owned_by=_text(row.get("owned_by"), api_key),
+                context_window=_integer(row.get("max_model_len") or row.get("context_length")),
+            )
         result["models"].append(model)
     if spec["api"] == "ollama":
         try:
             loaded = read(base_url, "/api/ps", api_key)
-            if type(loaded) is not dict or type(loaded.get("models")) is not list or len(loaded["models"]) > MAX_MODELS:
+            if (
+                type(loaded) is not dict
+                or type(loaded.get("models")) is not list
+                or len(loaded["models"]) > MAX_MODELS
+            ):
                 raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
             loaded_models = {}
             for row in loaded["models"]:
@@ -279,7 +335,9 @@ def discover(kind, base_url, api_key="", *, read=None):
             result["warnings"].append({"operation": "loaded_models", "code": exc.code})
         try:
             version = read(base_url, "/api/version", api_key)
-            result["server_version"] = _text(version.get("version") if type(version) is dict else None, api_key, required=True)
+            result["server_version"] = _text(
+                version.get("version") if type(version) is dict else None, api_key, required=True
+            )
         except ConnectorError as exc:
             result["warnings"].append({"operation": "server_version", "code": exc.code})
     return result
@@ -299,15 +357,19 @@ def reencrypt_connectors(store, box):
     def rewrite():
         changed = 0
         for identifier, raw in store.database.execute(
-                _queries.REWRITE_SELECT_LOCAL_CONNECTORS).fetchall():
+            _queries.REWRITE_SELECT_LOCAL_CONNECTORS
+        ).fetchall():
             envelope = json.loads(raw)
             context = connector_context(identifier)
             value = box.open(envelope, context)
             if envelope["key_id"] != box.active_id:
-                store.database.execute(_queries.REWRITE_UPDATE_LOCAL_CONNECTORS,
-                                 (encode(box.seal(value, context)), identifier))
+                store.database.execute(
+                    _queries.REWRITE_UPDATE_LOCAL_CONNECTORS,
+                    (encode(box.seal(value, context)), identifier),
+                )
                 changed += 1
         return changed
+
     return store.database.transaction(rewrite)
 
 
@@ -349,7 +411,7 @@ class LocalConnectors:
         try:
             return encode(self.box.seal(value, connector_context(connector_id)))
         except Exception as exc:
-            log_failure('local_connectors.LocalConnectors._seal.failed')
+            log_failure("local_connectors.LocalConnectors._seal.failed")
             raise ConnectorError("CREDENTIAL_STORAGE_UNAVAILABLE", 503) from exc
 
     def _resolve(self, connector_id, sealed):
@@ -358,7 +420,7 @@ class LocalConnectors:
         try:
             return self.box.open(json.loads(sealed), connector_context(connector_id))
         except Exception as exc:
-            log_failure('local_connectors.LocalConnectors._resolve.failed')
+            log_failure("local_connectors.LocalConnectors._resolve.failed")
             raise ConnectorError("CREDENTIAL_UNAVAILABLE", 503) from exc
 
     def reencrypt_secrets(self):
@@ -370,34 +432,64 @@ class LocalConnectors:
 
     @staticmethod
     def _configuration(record):
-        return hashlib.sha256(encode({key: record[key] for key in
-            ("kind", "base_url", "credential_version")}).encode()).hexdigest()
+        return hashlib.sha256(
+            encode(
+                {key: record[key] for key in ("kind", "base_url", "credential_version")}
+            ).encode()
+        ).hexdigest()
 
     def _public(self, record):
         discovery = record["discovery"]
         current = discovery.get("configuration") == self._configuration(record)
         available = {model["id"] for model in discovery.get("models", [])}
-        usable = bool(record["enabled"] and current and discovery["state"] == "observed" and
-                      discovery.get("complete") and record["selected_models"] and
-                      set(record["selected_models"]) <= available)
-        return {**record, "status": "connected" if usable else "needs_attention" if record["enabled"] else
-                "disabled" if record["selected_models"] else "not_configured", "usable": usable,
-                "availability": self.monitor.get(record["connector_id"], self._configuration(record))}
+        usable = bool(
+            record["enabled"]
+            and current
+            and discovery["state"] == "observed"
+            and discovery.get("complete")
+            and record["selected_models"]
+            and set(record["selected_models"]) <= available
+        )
+        return {
+            **record,
+            "status": "connected"
+            if usable
+            else "needs_attention"
+            if record["enabled"]
+            else "disabled"
+            if record["selected_models"]
+            else "not_configured",
+            "usable": usable,
+            "availability": self.monitor.get(record["connector_id"], self._configuration(record)),
+        }
 
     def close(self):
         self.monitor.close()
 
     @staticmethod
     def _availability_error(exc):
-        if exc.code in ("CONNECTOR_CHANGED", "CONNECTOR_NOT_FOUND", "ADMIN_REQUIRED", "OPERATOR_REQUIRED"):
+        if exc.code in (
+            "CONNECTOR_CHANGED",
+            "CONNECTOR_NOT_FOUND",
+            "ADMIN_REQUIRED",
+            "OPERATOR_REQUIRED",
+        ):
             return {"state": "unknown", "reason": "CHECK_CANCELLED", "reachable": None}
         if exc.code == "SERVER_CHECK_BLOCKED":
             return {"state": "blocked", "reason": exc.code, "reachable": None}
         if exc.code in ("SERVER_UNREACHABLE", "SERVER_TIMEOUT", "SERVER_NAME_NOT_RESOLVED"):
             return {"state": "offline", "reason": exc.code, "reachable": False}
-        reached = exc.code in ("SERVER_AUTHENTICATION_REQUIRED", "DISCOVERY_ENDPOINT_NOT_FOUND", "SERVER_UNAVAILABLE",
-                               "SERVER_RATE_LIMITED", "SERVER_TLS_FAILED", "INVALID_SERVER_RESPONSE",
-                               "REDIRECT_NOT_ALLOWED", "SERVER_RESPONSE_TOO_LARGE", "COMPRESSED_RESPONSE_NOT_SUPPORTED")
+        reached = exc.code in (
+            "SERVER_AUTHENTICATION_REQUIRED",
+            "DISCOVERY_ENDPOINT_NOT_FOUND",
+            "SERVER_UNAVAILABLE",
+            "SERVER_RATE_LIMITED",
+            "SERVER_TLS_FAILED",
+            "INVALID_SERVER_RESPONSE",
+            "REDIRECT_NOT_ALLOWED",
+            "SERVER_RESPONSE_TOO_LARGE",
+            "COMPRESSED_RESPONSE_NOT_SUPPORTED",
+        )
         return {"state": "attention", "reason": exc.code, "reachable": True if reached else None}
 
     def _probe_availability(self, record, key):
@@ -414,10 +506,19 @@ class LocalConnectors:
             if path == "/api/version":
                 _text(value.get("version") if type(value) is dict else None, key, required=True)
                 return {"state": "online", "reason": "API_RESPONDED", "reachable": True}
-            models = value.get("models" if path == "/api/tags" else "data") if type(value) is dict else None
+            models = (
+                value.get("models" if path == "/api/tags" else "data")
+                if type(value) is dict
+                else None
+            )
             if type(models) is not list or any(type(model) is not dict for model in models):
                 raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-            return {"state": "online", "reason": "API_RESPONDED", "reachable": True, "model_count": len(models)}
+            return {
+                "state": "online",
+                "reason": "API_RESPONDED",
+                "reachable": True,
+                "model_count": len(models),
+            }
         except ConnectorError as exc:
             return self._availability_error(exc)
 
@@ -439,13 +540,22 @@ class LocalConnectors:
             if body is not None:
                 self._fields(body, (), ("connector_ids", "force"))
                 ids = body.get("connector_ids")
-                if (ids is not None and (type(ids) is not list or len(ids) > 64 or
-                        any(type(value) is not str for value in ids) or len(set(ids)) != len(ids)) or
-                        type(body.get("force", False)) is not bool):
+                if (
+                    ids is not None
+                    and (
+                        type(ids) is not list
+                        or len(ids) > 64
+                        or any(type(value) is not str for value in ids)
+                        or len(set(ids)) != len(ids)
+                    )
+                    or type(body.get("force", False)) is not bool
+                ):
                     raise ConnectorError("INVALID_AVAILABILITY_CHECK")
             else:
                 ids = None
-            rows = self.store.database.execute(_queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS).fetchall()
+            rows = self.store.database.execute(
+                _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
+            ).fetchall()
             records = [record for row in rows if not (record := json.loads(row[0])).get("deleted")]
             if ids is not None:
                 found = {record["connector_id"] for record in records}
@@ -454,13 +564,22 @@ class LocalConnectors:
                 records = [record for record in records if record["connector_id"] in ids]
         items = []
         # Give never-checked and older entries room when the bounded queue is full.
-        records.sort(key=lambda record: self.monitor.get(record["connector_id"], self._configuration(record)).get("checked_at") or "")
+        records.sort(
+            key=lambda record: self.monitor.get(
+                record["connector_id"], self._configuration(record)
+            ).get("checked_at")
+            or ""
+        )
         for record in records:
             identifier, configuration = record["connector_id"], self._configuration(record)
             status = self.monitor.get(identifier, configuration)
             if body is not None:
-                status = self.monitor.request(identifier, configuration,
-                    lambda record=record: self._saved_check(actor, record), force=body.get("force", False))
+                status = self.monitor.request(
+                    identifier,
+                    configuration,
+                    lambda record=record: self._saved_check(actor, record),
+                    force=body.get("force", False),
+                )
             items.append({"connector_id": identifier, "availability": status})
         return {"items": items, "refresh_seconds": 15}
 
@@ -468,7 +587,12 @@ class LocalConnectors:
     def _endpoint(record):
         url = urlsplit(record["base_url"])
         host = "localhost" if url.hostname in ("localhost", "127.0.0.1", "::1") else url.hostname
-        return KINDS[record["kind"]]["api"], url.scheme, host, url.port or (443 if url.scheme == "https" else 80)
+        return (
+            KINDS[record["kind"]]["api"],
+            url.scheme,
+            host,
+            url.port or (443 if url.scheme == "https" else 80),
+        )
 
     def nearby(self, actor, body=None):
         """Check a fixed set of loopback APIs only after an administrator asks."""
@@ -478,15 +602,29 @@ class LocalConnectors:
                 self._fields(body, (), ("force",))
                 if type(body.get("force", False)) is not bool:
                     raise ConnectorError("INVALID_AVAILABILITY_CHECK")
-            rows = [json.loads(row[0]) for row in self.store.database.execute(_queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS)]
-            saved = {self._endpoint(record): record["connector_id"] for record in rows if not record.get("deleted")}
+            rows = [
+                json.loads(row[0])
+                for row in self.store.database.execute(
+                    _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
+                )
+            ]
+            saved = {
+                self._endpoint(record): record["connector_id"]
+                for record in rows
+                if not record.get("deleted")
+            }
         items = []
         for kind, port, name, hint in COMMON_SERVERS:
-            record = {"connector_id": "nearby." + str(port), "kind": kind,
-                      "base_url": "http://localhost:" + str(port), "credential_version": 0}
+            record = {
+                "connector_id": "nearby." + str(port),
+                "kind": kind,
+                "base_url": "http://localhost:" + str(port),
+                "credential_version": 0,
+            }
             identifier, configuration = record["connector_id"], self._configuration(record)
             status = self.monitor.get(identifier, configuration)
             if body is not None:
+
                 def check(record=record):
                     try:
                         with self.store.database.read():
@@ -494,17 +632,36 @@ class LocalConnectors:
                         return self._probe_availability(record, "")
                     except ConnectorError as exc:
                         return self._availability_error(exc)
-                status = self.monitor.request(identifier, configuration, check, force=body.get("force", False))
-            items.append({"candidate_id": identifier, "kind": kind, "base_url": record["base_url"],
-                          "display_name": name, "hint": hint, "availability": status,
-                          "saved_connector_id": saved.get(self._endpoint(record))})
+
+                status = self.monitor.request(
+                    identifier, configuration, check, force=body.get("force", False)
+                )
+            items.append(
+                {
+                    "candidate_id": identifier,
+                    "kind": kind,
+                    "base_url": record["base_url"],
+                    "display_name": name,
+                    "hint": hint,
+                    "availability": status,
+                    "saved_connector_id": saved.get(self._endpoint(record)),
+                }
+            )
         return {"items": items}
 
     def list(self, actor):
         with self.store.database.read():
             self._authorize(self.store.database, actor)
-            records = [json.loads(row[0]) for row in self.store.database.execute(_queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS)]
-            return {"items": [self._public(record) for record in records if not record.get("deleted")], "kinds": KINDS}
+            records = [
+                json.loads(row[0])
+                for row in self.store.database.execute(
+                    _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
+                )
+            ]
+            return {
+                "items": [self._public(record) for record in records if not record.get("deleted")],
+                "kinds": KINDS,
+            }
 
     def get(self, actor, connector_id):
         with self.store.database.read():
@@ -513,13 +670,22 @@ class LocalConnectors:
 
     @staticmethod
     def _fields(body, required, optional=()):
-        if type(body) is not dict or set(body) - set(required) - set(optional) or set(required) - set(body):
+        if (
+            type(body) is not dict
+            or set(body) - set(required) - set(optional)
+            or set(required) - set(body)
+        ):
             raise ConnectorError("INVALID_CONNECTOR_CHANGE")
 
     @staticmethod
     def _profile(body):
         name, kind = body["display_name"], body["kind"]
-        if type(name) is not str or not name.strip() or len(name) > 120 or any(ord(char) < 32 for char in name):
+        if (
+            type(name) is not str
+            or not name.strip()
+            or len(name) > 120
+            or any(ord(char) < 32 for char in name)
+        ):
             raise ConnectorError("INVALID_CONNECTOR_NAME")
         try:
             name.encode("utf-8")
@@ -531,22 +697,43 @@ class LocalConnectors:
 
     @staticmethod
     def _expected(record, body):
-        if type(body["expected_revision"]) is not int or body["expected_revision"] != record["revision"]:
+        if (
+            type(body["expected_revision"]) is not int
+            or body["expected_revision"] != record["revision"]
+        ):
             raise ConnectorError("CONNECTOR_CHANGED", 409)
 
     def _write(self, actor, action, connector_id, change):
         with self.registry.send_authority.gate:
+
             def transaction():
                 db = self.store.database
                 self._authorize(db, actor, write=True)
                 record, secret = change(db)
                 old = record["revision"]
                 record.update(revision=old + 1, updated_at=timestamp())
-                db.execute(_queries.TRANSACTION_INSERT_LOCAL_CONNECTORS, (connector_id, encode(record), secret))
-                revision = int(db.execute(_queries.TRANSACTION_SELECT_REGISTRY_META).fetchone()[0]) + 1
+                db.execute(
+                    _queries.TRANSACTION_INSERT_LOCAL_CONNECTORS,
+                    (connector_id, encode(record), secret),
+                )
+                revision = (
+                    int(db.execute(_queries.TRANSACTION_SELECT_REGISTRY_META).fetchone()[0]) + 1
+                )
                 db.execute(_queries.TRANSACTION_UPDATE_REGISTRY_META, (str(revision),))
-                db.execute(_queries.TRANSACTION_INSERT_REGISTRY_AUDIT, (actor, action, connector_id, old or None, record["revision"], revision, timestamp()))
+                db.execute(
+                    _queries.TRANSACTION_INSERT_REGISTRY_AUDIT,
+                    (
+                        actor,
+                        action,
+                        connector_id,
+                        old or None,
+                        record["revision"],
+                        revision,
+                        timestamp(),
+                    ),
+                )
                 return self._public(record), revision
+
             result, revision = self.store.database.transaction(transaction)
             self.registry.send_authority.epoch = revision
             return result
@@ -555,17 +742,29 @@ class LocalConnectors:
         self._fields(body, ("display_name", "kind", "base_url"), ("api_key",))
         name, kind, url = self._profile(body)
         connector_id = "connector.local." + uuid.uuid4().hex
+
         def change(db):
             sealed = self._seal(connector_id, body.get("api_key", ""))
-            return {"connector_id": connector_id, "display_name": name, "kind": kind, "base_url": url,
-                    "revision": 0, "created_at": timestamp(), "enabled": False, "selected_models": [],
-                    "credential_present": bool(sealed), "credential_version": 1 if sealed else 0,
-                    "discovery": {"state": "not_checked", "models": []}}, sealed
+            return {
+                "connector_id": connector_id,
+                "display_name": name,
+                "kind": kind,
+                "base_url": url,
+                "revision": 0,
+                "created_at": timestamp(),
+                "enabled": False,
+                "selected_models": [],
+                "credential_present": bool(sealed),
+                "credential_version": 1 if sealed else 0,
+                "discovery": {"state": "not_checked", "models": []},
+            }, sealed
+
         return self._write(actor, "create_local_connector", connector_id, change)
 
     def update(self, actor, connector_id, body):
         self._fields(body, ("display_name", "kind", "base_url", "expected_revision"), ("api_key",))
         name, kind, url = self._profile(body)
+
         def change(db):
             record, sealed = self._load(db, connector_id)
             self._expected(record, body)
@@ -577,10 +776,17 @@ class LocalConnectors:
                 # A key approved for one endpoint must not follow an address edit.
                 sealed = None
                 record["credential_version"] += 1
-            record.update(display_name=name, kind=kind, base_url=url, credential_present=bool(sealed))
+            record.update(
+                display_name=name, kind=kind, base_url=url, credential_present=bool(sealed)
+            )
             if changed:
-                record.update(enabled=False, selected_models=[], discovery={"state": "not_checked", "models": []})
+                record.update(
+                    enabled=False,
+                    selected_models=[],
+                    discovery={"state": "not_checked", "models": []},
+                )
             return record, sealed
+
         return self._write(actor, "update_local_connector", connector_id, change)
 
     def discover(self, actor, connector_id, body):
@@ -590,43 +796,65 @@ class LocalConnectors:
             record, sealed = self._load(self.store.database, connector_id)
             self._expected(record, body)
         try:
-            result = self.discover_fn(record["kind"], record["base_url"], self._resolve(connector_id, sealed))
+            result = self.discover_fn(
+                record["kind"], record["base_url"], self._resolve(connector_id, sealed)
+            )
         except ConnectorError as exc:
-            result = {"state": "failed", "reason": exc.code, "checked_at": timestamp(), "models": [], "complete": False}
+            result = {
+                "state": "failed",
+                "reason": exc.code,
+                "checked_at": timestamp(),
+                "models": [],
+                "complete": False,
+            }
         result["configuration"] = self._configuration(record)
+
         def change(db):
             current, current_secret = self._load(db, connector_id)
             self._expected(current, body)
             current["discovery"] = result
             return current, current_secret
+
         return self._write(actor, "discover_local_models", connector_id, change)
 
     def configure(self, actor, connector_id, body):
         self._fields(body, ("expected_revision", "selected_models", "enabled"))
         models = body["selected_models"]
-        if (type(models) is not list or len(models) > MAX_MODELS or
-                any(type(model) is not str for model in models) or len(set(models)) != len(models) or
-                type(body["enabled"]) is not bool):
+        if (
+            type(models) is not list
+            or len(models) > MAX_MODELS
+            or any(type(model) is not str for model in models)
+            or len(set(models)) != len(models)
+            or type(body["enabled"]) is not bool
+        ):
             raise ConnectorError("INVALID_MODEL_SELECTION")
+
         def change(db):
             record, sealed = self._load(db, connector_id)
             self._expected(record, body)
             available = {model["id"] for model in record["discovery"].get("models", [])}
-            if body["enabled"] and (not models or record["discovery"]["state"] != "observed" or
-                    not record["discovery"].get("complete") or not set(models) <= available or
-                    record["discovery"].get("configuration") != self._configuration(record)):
+            if body["enabled"] and (
+                not models
+                or record["discovery"]["state"] != "observed"
+                or not record["discovery"].get("complete")
+                or not set(models) <= available
+                or record["discovery"].get("configuration") != self._configuration(record)
+            ):
                 raise ConnectorError("DISCOVER_AND_SELECT_MODELS_FIRST", 409)
             if not set(models) <= available and models != record["selected_models"]:
                 raise ConnectorError("INVALID_MODEL_SELECTION")
             record.update(selected_models=models, enabled=body["enabled"])
             return record, sealed
+
         return self._write(actor, "configure_local_models", connector_id, change)
 
     def delete(self, actor, connector_id, body):
         self._fields(body, ("expected_revision",))
+
         def change(db):
             record, _ = self._load(db, connector_id)
             self._expected(record, body)
             record.update(deleted=True, enabled=False, credential_present=False)
             return record, None
+
         return self._write(actor, "delete_local_connector", connector_id, change)

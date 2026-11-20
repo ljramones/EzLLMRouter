@@ -1,4 +1,5 @@
 """DEV-04-only EzLLMRouter service with a private LiteLLM ASGI proxy bridge."""
+
 from pathlib import Path
 import json
 import os
@@ -10,7 +11,11 @@ from ezllmrouter_server.plans import PlanAuthority
 from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
 from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
-from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.gateway.proxy_recipe import (
+    GatewayProxyRecipe,
+    public_destination,
+    proxy_policy,
+)
 
 
 def main(*, adapter_factory=LiteLLMAsgiAdapter):
@@ -32,23 +37,28 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
     second_context = dict(trusted)
     second_context["context_id"] = trusted["context_id"] + ".alternate"
 
-
     class LiveIdentity(dict):
         """DEV-04 wait probe reads a local authority toggle at each real check."""
 
         def get(self, key, default=None):
             value = super().get(key, default)
             toggle = os.environ.get("EZLLMROUTER_DEV04_AUTHORITY_TOGGLE")
-            if value and key == token and toggle and Path(toggle).is_file() and Path(toggle).read_text() == "revoked":
+            if (
+                value
+                and key == token
+                and toggle
+                and Path(toggle).is_file()
+                and Path(toggle).read_text() == "revoked"
+            ):
                 return {**value, "context_id": value["context_id"] + ".revoked"}
             return value
-
 
     identity = LiveIdentity({token: trusted})
     if os.environ.get("EZLLMROUTER_DEV04_SECOND_CONTEXT") == "1":
         identity[token + ".alternate"] = second_context
     store = SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"])
     if os.environ.get("EZLLMROUTER_DEV04_FAIL_GUARD_COMMIT") == "1":
+
         class FailGuardCommit:
             def __init__(self, inner):
                 self.inner = inner
@@ -62,11 +72,20 @@ def main(*, adapter_factory=LiteLLMAsgiAdapter):
         store = FailGuardCommit(store)
 
     adapter = adapter_factory()
-    Path("/data/module-identities.json").write_text(json.dumps(adapter.module_identities, indent=2) + "\n")
+    Path("/data/module-identities.json").write_text(
+        json.dumps(adapter.module_identities, indent=2) + "\n"
+    )
     coordinator = Coordinator(
-        store, identity, config, fixture["prompt_blocks"], fixture["allowed_lineages"],
-        PlanAuthority(Ed25519PrivateKey.generate(), policy), adapter, fixture["retention"],
-        fixture["classification"], GatewayProxyRecipe(),
+        store,
+        identity,
+        config,
+        fixture["prompt_blocks"],
+        fixture["allowed_lineages"],
+        PlanAuthority(Ed25519PrivateKey.generate(), policy),
+        adapter,
+        fixture["retention"],
+        fixture["classification"],
+        GatewayProxyRecipe(),
         trusted_source_labels=fixture["trusted_source_labels"],
     )
     server = serve("127.0.0.1", int(os.environ.get("PORT", "8765")), coordinator)

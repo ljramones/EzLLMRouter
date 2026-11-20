@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """One-use owner Docker build discriminator; leaves the running profile untouched."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -33,7 +34,8 @@ def command(name, argv, run):
                 source = records / (stage + "." + extension)
                 if source.is_file() and source.stat().st_mtime >= started - 1:
                     (run / (stage + "." + extension + ".txt")).write_text(
-                        local_profile.redact(source.read_text()))
+                        local_profile.redact(source.read_text())
+                    )
     print("DEV-08 target: " + name + " exited " + str(result.returncode), flush=True)
     if result.returncode:
         tail = "\n".join(local_profile.redact(result.stderr).splitlines()[-15:])[:2000]
@@ -50,37 +52,57 @@ def main():
     RUNS.mkdir(mode=0o700, parents=True, exist_ok=True)
     run = RUNS / sys.argv[1]
     if run.exists():
-        raise SystemExit("run ID already exists: " + str(run) +
-            " (see its result.json or failure.json; select a new ID)")
+        raise SystemExit(
+            "run ID already exists: "
+            + str(run)
+            + " (see its result.json or failure.json; select a new ID)"
+        )
     run.mkdir(mode=0o700)
     current = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
-    meta = {"kind": "DEV-08 frozen worker Responses build discriminator",
-            "run_id": sys.argv[1], "source_commit": current, "dirty": bool(dirty),
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "running_profile_restarted": False, "real_provider_calls": 0, "stages": []}
+    meta = {
+        "kind": "DEV-08 frozen worker Responses build discriminator",
+        "run_id": sys.argv[1],
+        "source_commit": current,
+        "dirty": bool(dirty),
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "running_profile_restarted": False,
+        "real_provider_calls": 0,
+        "stages": [],
+    }
     try:
         if dirty:
-            raise RuntimeError("source checkout is dirty; commit reviewed changes before target build")
+            raise RuntimeError(
+                "source checkout is dirty; commit reviewed changes before target build"
+            )
         artifact = Path(os.environ["EZLLMROUTER_ARTIFACT_ROOT"])
         if not (artifact / "ARTIFACT-CUSTODY.json").is_file():
             raise RuntimeError("declared frozen artifact custody missing")
         for name, action in (("prepare", "prepare"), ("build-images", "build-images")):
-            code = command(name, [sys.executable, "-B", str(ROOT / "deploy/local/profile.py"), action], run)
+            code = command(
+                name, [sys.executable, "-B", str(ROOT / "deploy/local/profile.py"), action], run
+            )
             meta["stages"].append({"name": name, "exit": code})
             if code:
                 raise RuntimeError(name + " failed; see separately saved redacted command output")
         build = json.loads((ROOT / "deploy/local/.state/current-build.json").read_text())
         if build["commit"] != current or build["dirty"]:
             raise RuntimeError("prepared build does not match clean source commit")
-        meta.update(status="PASS", fingerprint=build["fingerprint"],
-                    build_dir=build["build_dir"], completed_at=datetime.now(timezone.utc).isoformat())
+        meta.update(
+            status="PASS",
+            fingerprint=build["fingerprint"],
+            build_dir=build["build_dir"],
+            completed_at=datetime.now(timezone.utc).isoformat(),
+        )
         (run / "result.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
         print(json.dumps(meta, sort_keys=True))
     except Exception as exc:
-        meta.update(status="FAIL", failure_type=type(exc).__name__, failure_stage=
-                    meta["stages"][-1]["name"] if meta["stages"] else "preflight",
-                    completed_at=datetime.now(timezone.utc).isoformat())
+        meta.update(
+            status="FAIL",
+            failure_type=type(exc).__name__,
+            failure_stage=meta["stages"][-1]["name"] if meta["stages"] else "preflight",
+            completed_at=datetime.now(timezone.utc).isoformat(),
+        )
         (run / "failure.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
         raise SystemExit("DEV-08 target failed: " + str(exc) + "; evidence: " + str(run))
 

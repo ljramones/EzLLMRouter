@@ -1,4 +1,5 @@
 """HTTP listeners with a finite connection budget and bounded socket waits."""
+
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -72,9 +73,13 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             super().handle_one_request()
         finally:
             self._finish_input()
-            log_http_request(getattr(self, "command", "OTHER"), getattr(self, "path", "/"),
-                             self._response_status, int((time.monotonic() - started) * 1000),
-                             self.diagnostic_id)
+            log_http_request(
+                getattr(self, "command", "OTHER"),
+                getattr(self, "path", "/"),
+                self._response_status,
+                int((time.monotonic() - started) * 1000),
+                self.diagnostic_id,
+            )
             REQUEST_CORRELATION.reset(context)
 
     def _expire_input(self):

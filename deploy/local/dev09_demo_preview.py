@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run the DEV-09 scripted UI against a disposable local registry."""
+
 from __future__ import annotations
 
 import argparse
@@ -42,20 +43,42 @@ def main():
         store = SQLiteStore(Path(temporary) / "preview.sqlite")
         server = None
         try:
-            registry = Registry(store, Authority(), legacy_destination={
-                "configuration_ref": "cfg.demo", "service": "litellm.dev04", "endpoint": "127.0.0.1",
-                "model": "model.demo", "model_version": "v1", "processing_region": "local"},
+            registry = Registry(
+                store,
+                Authority(),
+                legacy_destination={
+                    "configuration_ref": "cfg.demo",
+                    "service": "litellm.dev04",
+                    "endpoint": "127.0.0.1",
+                    "model": "model.demo",
+                    "model_version": "v1",
+                    "processing_region": "local",
+                },
                 legacy_token="disposable-preview-token-00000000000000000",
-                legacy_trusted={"principal_id": "svc.demo", "charging_owner_id": "demo.team.mach33"})
-            server = serve("127.0.0.1", args.port, projection=OperatorProjection(store, "svc.demo"),
-                runner=NoModelWork(), password=credential, fixture=fixture,
-                build={"commit": "source-preview", "dirty": True}, web_root=ROOT / "web",
+                legacy_trusted={
+                    "principal_id": "svc.demo",
+                    "charging_owner_id": "demo.team.mach33",
+                },
+            )
+            server = serve(
+                "127.0.0.1",
+                args.port,
+                projection=OperatorProjection(store, "svc.demo"),
+                runner=NoModelWork(),
+                password=credential,
+                fixture=fixture,
+                build={"commit": "source-preview", "dirty": True},
+                web_root=ROOT / "web",
                 worker_probe=lambda: {"state": "not configured"},
-                sender_status=lambda: {"state": "not configured"}, registry=registry)
+                sender_status=lambda: {"state": "not configured"},
+                registry=registry,
+            )
             print(f"Disposable scripted demo: http://127.0.0.1:{args.port}/#/usage", flush=True)
             print(f"Temporary operator credential: {credential}", flush=True)
-            print("Open Usage & Costs, then Open demo workspace. Ctrl-C removes the temporary database.",
-                  flush=True)
+            print(
+                "Open Usage & Costs, then Open demo workspace. Ctrl-C removes the temporary database.",
+                flush=True,
+            )
             server.serve_forever()
         except KeyboardInterrupt:
             pass

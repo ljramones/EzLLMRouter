@@ -1,4 +1,5 @@
 """Two fixed public identities retain distinct private proxy model choices."""
+
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -16,9 +17,14 @@ class ModelRouteTests(unittest.TestCase):
     def test_two_distinct_synthetic_models_and_no_arbitrary_route(self):
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
         request = json.loads((ROOT / "tests/development_slice/request.json").read_text())
-        base = {"destination": public_destination(fixture), "work": {
-            "messages": request["messages"], "requested_features": ["text"],
-            "generation_settings": {"max_output_tokens": 32}}}
+        base = {
+            "destination": public_destination(fixture),
+            "work": {
+                "messages": request["messages"],
+                "requested_features": ["text"],
+                "generation_settings": {"max_output_tokens": 32},
+            },
+        }
         outputs = []
         for model in ("model.demo", "model.demo.alt"):
             work = deepcopy(base)

@@ -1,4 +1,5 @@
 """Narrow DEV-04 plaintext HTTP/1.1 sender I/O using documented httpcore hooks."""
+
 from __future__ import annotations
 
 import asyncio
@@ -106,7 +107,9 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
 
         loop = asyncio.get_running_loop()
         deadline = None if timeout is None else loop.time() + timeout
-        plan_deadline = datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")).timestamp()
+        plan_deadline = datetime.fromisoformat(
+            invocation.deadline.replace("Z", "+00:00")
+        ).timestamp()
         data = memoryview(buffer)
         offset = 0
         while offset < len(data):
@@ -118,9 +121,10 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
                 # Only fixed local authority changes through this gate. No await,
                 # disk work or callback intervenes before the nonblocking send.
                 if not self.first_bytes_accepted and (
-                    invocation.abandoned or self.authority.revoked or
-                    invocation.authority_epoch != self.authority.epoch or
-                    time.time() >= plan_deadline
+                    invocation.abandoned
+                    or self.authority.revoked
+                    or invocation.authority_epoch != self.authority.epoch
+                    or time.time() >= plan_deadline
                 ):
                     raise GuardRejected("FDC_REJECTED")
                 try:
@@ -165,7 +169,9 @@ class OwnedSocketBackend(httpcore.AsyncNetworkBackend):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
         try:
-            await asyncio.wait_for(asyncio.get_running_loop().sock_connect(sock, (HOST, PORT)), timeout)
+            await asyncio.wait_for(
+                asyncio.get_running_loop().sock_connect(sock, (HOST, PORT)), timeout
+            )
             return OwnedSocketStream(sock, self.authority)
         except BaseException:
             sock.close()
@@ -195,14 +201,18 @@ class OwnedHTTPTransport(httpx.AsyncBaseTransport):
 
     def __init__(self, authority):
         self.pool = httpcore.AsyncConnectionPool(
-            max_connections=1, max_keepalive_connections=0,
-            http1=True, http2=False, retries=0,
+            max_connections=1,
+            max_keepalive_connections=0,
+            http1=True,
+            http2=False,
+            retries=0,
             network_backend=OwnedSocketBackend(authority),
         )
 
     async def handle_async_request(self, request):
         if (request.method, str(request.url)) != (
-            "POST", f"http://{HOST}:{PORT}/v1/chat/completions"
+            "POST",
+            f"http://{HOST}:{PORT}/v1/chat/completions",
         ):
             raise GuardRejected("FDC_REJECTED")
         core_request = httpcore.Request(
@@ -219,9 +229,11 @@ class OwnedHTTPTransport(httpx.AsyncBaseTransport):
         )
         response = await self.pool.handle_async_request(core_request)
         return httpx.Response(
-            response.status, headers=response.headers,
+            response.status,
+            headers=response.headers,
             stream=_ResponseStream(response.stream),
-            extensions=response.extensions, request=request,
+            extensions=response.extensions,
+            request=request,
         )
 
     async def aclose(self):

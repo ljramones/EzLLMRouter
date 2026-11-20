@@ -1,4 +1,5 @@
 """Rehearse target-driver command construction without a Docker daemon."""
+
 import importlib.util
 import json
 from pathlib import Path
@@ -18,8 +19,10 @@ spec.loader.exec_module(driver)
 
 class RunnerTests(unittest.TestCase):
     def test_profile_stage_logs_precede_the_single_summary(self):
-        output = "Local profile: backup-service-id…\nLocal profile: backup-service-id exited 0\n" \
-                 '{"submissions":7,"sha256":"a"}\n'
+        output = (
+            "Local profile: backup-service-id…\nLocal profile: backup-service-id exited 0\n"
+            '{"submissions":7,"sha256":"a"}\n'
+        )
         self.assertEqual(driver.profile_summary(output)["submissions"], 7)
 
     def test_private_actor_input_and_strict_single_result(self):

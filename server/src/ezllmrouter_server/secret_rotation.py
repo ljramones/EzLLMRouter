@@ -1,4 +1,5 @@
 """Offline encryption maintenance. Stop services using the database before running."""
+
 from __future__ import annotations
 
 from .repositories import secret_rotation as _queries
@@ -40,21 +41,33 @@ def main(argv=None):
     try:
         with closing(SQLiteStore.open_existing(args.db)) as store:
             if args.scope == "provider":
-                identifiers = [json.loads(row[0])["connection_id"] for row in store.database.execute(
-                    _queries.MAIN_SELECT_REGISTRY_CONNECTIONS)]
+                identifiers = [
+                    json.loads(row[0])["connection_id"]
+                    for row in store.database.execute(_queries.MAIN_SELECT_REGISTRY_CONNECTIONS)
+                ]
                 vault = ProviderVault(args.vault, require_existing=True)
                 box = vault.box
                 rewrite = lambda: vault.reencrypt_secrets(identifiers)
             elif args.scope == "integration":
-                known = {row[0] for row in store.database.execute(
-                    _queries.MAIN_SELECT_INTEGRATION_CREDENTIAL_VERSIONS)}
-                box = SecretBox(args.keyring, "integration-credentials", required_ids=known, required=True)
+                known = {
+                    row[0]
+                    for row in store.database.execute(
+                        _queries.MAIN_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
+                    )
+                }
+                box = SecretBox(
+                    args.keyring, "integration-credentials", required_ids=known, required=True
+                )
                 rewrite = lambda: reencrypt_credentials(store, box)
             else:
-                known = {json.loads(row[0])["key_id"] for row in store.database.execute(
-                    _queries.MAIN_SELECT_LOCAL_CONNECTORS)}
+                known = {
+                    json.loads(row[0])["key_id"]
+                    for row in store.database.execute(_queries.MAIN_SELECT_LOCAL_CONNECTORS)
+                }
                 path = args.keyring or connector_key_path(store.path)
-                box = SecretBox(path, "local-connector-credentials", required_ids=known, required=True)
+                box = SecretBox(
+                    path, "local-connector-credentials", required_ids=known, required=True
+                )
                 rewrite = lambda: reencrypt_connectors(store, box)
             if args.action == "rotate":
                 box.rotate()
@@ -63,8 +76,10 @@ def main(argv=None):
         return 0
     except Exception:
         log_failure("secret_rotation.failed")
-        print("Encryption maintenance failed; restore missing key material or fix the fault, then use resume.",
-              file=sys.stderr)
+        print(
+            "Encryption maintenance failed; restore missing key material or fix the fault, then use resume.",
+            file=sys.stderr,
+        )
         return 1
 
 

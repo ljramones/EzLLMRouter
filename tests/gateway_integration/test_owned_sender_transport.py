@@ -1,4 +1,5 @@
 """Local deterministic controls for the bounded owned-socket sender."""
+
 import asyncio
 from datetime import datetime, timedelta, timezone
 import json
@@ -10,21 +11,40 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-for source in (ROOT / "tests/gateway_integration", ROOT / "server/src",
-               ROOT / "tests/development_slice"):
+for source in (
+    ROOT / "tests/gateway_integration",
+    ROOT / "server/src",
+    ROOT / "tests/development_slice",
+):
     sys.path.insert(0, str(source))
 import httpcore  # noqa: E402
 import httpx  # noqa: E402
-from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation  # noqa: E402
-from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority, OwnedHTTPTransport, OwnedSocketStream  # noqa: E402
+from ezllmrouter_server.gateway.guard import (
+    ACTIVE,
+    GuardRejected,
+    GuardTransport,
+    Invocation,
+    PROVIDER_URL,
+    provider_expectation,
+)  # noqa: E402
+from ezllmrouter_server.gateway.owned_sender_transport import (
+    LocalSendAuthority,
+    OwnedHTTPTransport,
+    OwnedSocketStream,
+)  # noqa: E402
 from test_guard import invocation as guard_invocation  # noqa: E402
 
 
 def local_invocation(attempt="attempt.owned.local", authority_epoch=0):
     deadline = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
-    item = Invocation("submission.owned.local", attempt,
-                      {"deadline": deadline, "per_attempt_total_timeout_ms": 3000},
-                      {}, lambda: None, lambda _receipt: None)
+    item = Invocation(
+        "submission.owned.local",
+        attempt,
+        {"deadline": deadline, "per_attempt_total_timeout_ms": 3000},
+        {},
+        lambda: None,
+        lambda _receipt: None,
+    )
     item.committed = True
     item.released = True
     item.authority_epoch = authority_epoch
@@ -73,15 +93,21 @@ class OwnedSenderTests(unittest.TestCase):
             transport = OwnedHTTPTransport(authority)
             await transport.aclose()
             transport.pool = httpcore.AsyncConnectionPool(
-                max_connections=1, max_keepalive_connections=0, http1=True, http2=False,
-                retries=0, network_backend=PairBackend(authority,
-                                                        [first_sender, second_sender]))
+                max_connections=1,
+                max_keepalive_connections=0,
+                http1=True,
+                http2=False,
+                retries=0,
+                network_backend=PairBackend(authority, [first_sender, second_sender]),
+            )
             guard = GuardTransport(transport)
             receipts = []
             first = guard_invocation(aid="attempt.queue.first", commit=receipts.append)
             second = guard_invocation(aid="attempt.queue.second", commit=receipts.append)
             for item in (first, second):
-                item.plan["deadline"] = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
+                item.plan["deadline"] = (
+                    datetime.now(timezone.utc) + timedelta(minutes=1)
+                ).isoformat()
                 item.plan["per_attempt_total_timeout_ms"] = 3000
                 item.authority_epoch = authority.snapshot_epoch()
             key = "sk-" + "q" * 40
@@ -93,21 +119,28 @@ class OwnedSenderTests(unittest.TestCase):
                 raw = b""
                 while b'"model":"model.demo"' not in raw:
                     raw += await asyncio.wait_for(
-                        asyncio.get_running_loop().sock_recv(first_receiver, 65536), 2)
+                        asyncio.get_running_loop().sock_recv(first_receiver, 65536), 2
+                    )
                 entered.set()
                 await release.wait()
-                await asyncio.get_running_loop().sock_sendall(first_receiver,
-                    b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\nconnection: close\r\n\r\nOK")
+                await asyncio.get_running_loop().sock_sendall(
+                    first_receiver,
+                    b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\nconnection: close\r\n\r\nOK",
+                )
                 return raw
 
             async def request(item):
                 token = ACTIVE.set(item)
                 try:
-                    final = httpx.Request("POST", PROVIDER_URL,
+                    final = httpx.Request(
+                        "POST",
+                        PROVIDER_URL,
                         json=provider_expectation(item.projection),
                         headers={"authorization": "Bearer " + key},
-                        extensions={"timeout": {"connect": 2.0, "read": 2.0,
-                                                "write": 2.0, "pool": 2.0}})
+                        extensions={
+                            "timeout": {"connect": 2.0, "read": 2.0, "write": 2.0, "pool": 2.0}
+                        },
+                    )
                     response = await guard.handle_async_request(final)
                     return await response.aread()
                 finally:
@@ -119,8 +152,10 @@ class OwnedSenderTests(unittest.TestCase):
                 await asyncio.wait_for(entered.wait(), 2)
                 second_task = asyncio.create_task(request(second))
                 for _ in range(100):
-                    if (len(transport.pool._requests) == 2 and
-                        transport.pool._requests[-1].is_queued()):
+                    if (
+                        len(transport.pool._requests) == 2
+                        and transport.pool._requests[-1].is_queued()
+                    ):
                         break
                     await asyncio.sleep(0.002)
                 self.assertEqual(len(transport.pool._requests), 2)
@@ -137,7 +172,13 @@ class OwnedSenderTests(unittest.TestCase):
                 except BlockingIOError:
                     second_bytes = b""
                 self.assertEqual(second_bytes, b"")
-                return epoch, arrival, receipts, first.first_bytes_accepted, second.first_bytes_accepted
+                return (
+                    epoch,
+                    arrival,
+                    receipts,
+                    first.first_bytes_accepted,
+                    second.first_bytes_accepted,
+                )
             finally:
                 for task in (first_task, server):
                     if not task.done():
@@ -164,8 +205,13 @@ class OwnedSenderTests(unittest.TestCase):
             transport = OwnedHTTPTransport(authority)
             await transport.aclose()
             transport.pool = httpcore.AsyncConnectionPool(
-                max_connections=1, max_keepalive_connections=0, http1=True, http2=False,
-                retries=0, network_backend=PairBackend(authority, [sender]))
+                max_connections=1,
+                max_keepalive_connections=0,
+                http1=True,
+                http2=False,
+                retries=0,
+                network_backend=PairBackend(authority, [sender]),
+            )
             receipts = []
             item = guard_invocation(aid="attempt.owned.guard", commit=receipts.append)
             item.plan["deadline"] = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
@@ -178,23 +224,35 @@ class OwnedSenderTests(unittest.TestCase):
             async def synthetic_receiver():
                 body = b""
                 while b"\r\n\r\n" not in body or b'"model":"model.demo"' not in body:
-                    body += await asyncio.wait_for(asyncio.get_running_loop().sock_recv(receiver, 65536), 2)
-                response = {"choices": [{"message": {"content": "Hello."}, "finish_reason": "stop"}],
-                            "usage": {"prompt_tokens": 2, "completion_tokens": 1}}
+                    body += await asyncio.wait_for(
+                        asyncio.get_running_loop().sock_recv(receiver, 65536), 2
+                    )
+                response = {
+                    "choices": [{"message": {"content": "Hello."}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 2, "completion_tokens": 1},
+                }
                 raw = json.dumps(response).encode()
-                await asyncio.get_running_loop().sock_sendall(receiver,
+                await asyncio.get_running_loop().sock_sendall(
+                    receiver,
                     b"HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: "
-                    + str(len(raw)).encode() + b"\r\nconnection: close\r\n\r\n" + raw)
+                    + str(len(raw)).encode()
+                    + b"\r\nconnection: close\r\n\r\n"
+                    + raw,
+                )
                 return body
 
             task = asyncio.create_task(synthetic_receiver())
             token = ACTIVE.set(item)
             try:
-                request = httpx.Request("POST", PROVIDER_URL,
+                request = httpx.Request(
+                    "POST",
+                    PROVIDER_URL,
                     json=provider_expectation(item.projection),
                     headers={"authorization": "Bearer " + key},
-                    extensions={"timeout": {"connect": 2.0, "read": 2.0,
-                                            "write": 2.0, "pool": 2.0}})
+                    extensions={
+                        "timeout": {"connect": 2.0, "read": 2.0, "write": 2.0, "pool": 2.0}
+                    },
+                )
                 response = await GuardTransport(transport).handle_async_request(request)
                 data = await response.aread()
                 arrival = await task
@@ -337,8 +395,9 @@ class OwnedSenderTests(unittest.TestCase):
             authority.revoke()
             received = bytearray()
             while len(received) < len(data):
-                received.extend(await asyncio.wait_for(
-                    asyncio.get_running_loop().sock_recv(receiver, 65536), 3))
+                received.extend(
+                    await asyncio.wait_for(asyncio.get_running_loop().sock_recv(receiver, 65536), 3)
+                )
             await asyncio.wait_for(task, 3)
             self.assertEqual(stream.accepted_bytes, len(data))
             await stream.aclose()

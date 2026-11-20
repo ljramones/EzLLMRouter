@@ -1,4 +1,5 @@
 """Small, data-only DEV-04 wheel inventory and PyPI advisory receipt."""
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
@@ -38,11 +39,17 @@ def inventory(directory: Path) -> list[dict]:
             name, version = msg["Name"], msg["Version"]
             if not name or not version or not re.fullmatch(r"[A-Za-z0-9_.-]+", name + version):
                 raise ValueError(f"invalid wheel identity: {path.name}")
-            rows.append({"name": name, "version": version, "filename": path.name,
-                         "bytes": path.stat().st_size,
-                         "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                         "license_expression": msg.get("License-Expression"),
-                         "license": msg.get("License")})
+            rows.append(
+                {
+                    "name": name,
+                    "version": version,
+                    "filename": path.name,
+                    "bytes": path.stat().st_size,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "license_expression": msg.get("License-Expression"),
+                    "license": msg.get("License"),
+                }
+            )
     if len(rows) != 117:
         raise ValueError(f"expected 117 resolved wheels, found {len(rows)}")
     roots = [row for row in rows if row["filename"] == ROOT_WHEEL]
@@ -62,11 +69,21 @@ def advisory(row: dict) -> dict:
         findings = report.get("vulnerabilities")
         if not isinstance(findings, list):
             raise ValueError("PyPI did not provide vulnerabilities list")
-        return {"name": row["name"], "version": row["version"], "url": url,
-                "status": "queried", "vulnerabilities": findings}
+        return {
+            "name": row["name"],
+            "version": row["version"],
+            "url": url,
+            "status": "queried",
+            "vulnerabilities": findings,
+        }
     except Exception as exc:
-        return {"name": row["name"], "version": row["version"], "url": url,
-                "status": "unavailable", "error": type(exc).__name__}
+        return {
+            "name": row["name"],
+            "version": row["version"],
+            "url": url,
+            "status": "unavailable",
+            "error": type(exc).__name__,
+        }
 
 
 def main():
@@ -76,23 +93,40 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = inventory(wheel_dir)
     if mode == "inventory":
-        lock = "".join(f"{row['name']}=={row['version']} --hash=sha256:{row['sha256']}\n"
-                       for row in rows)
+        lock = "".join(
+            f"{row['name']}=={row['version']} --hash=sha256:{row['sha256']}\n" for row in rows
+        )
         (output_dir / "requirements.gateway.lock").write_text(lock)
         target = output_dir / "WHEEL-INVENTORY.json"
-        value = {"target": "CPython 3.12 Linux ARM64, manylinux_2_28/manylinux2014",
-                 "root_extra": "litellm[proxy]==1.105.1", "wheels": rows}
+        value = {
+            "target": "CPython 3.12 Linux ARM64, manylinux_2_28/manylinux2014",
+            "root_extra": "litellm[proxy]==1.105.1",
+            "wheels": rows,
+        }
     else:
         with ThreadPoolExecutor(max_workers=8) as pool:
             findings = list(pool.map(advisory, rows))
         target = output_dir / "PYPI-ADVISORIES.json"
-        value = {"checked_at_utc": datetime.now(timezone.utc).isoformat(),
-                 "scope": "Exact-version PyPI JSON vulnerability notices; not a complete security clearance",
-                 "packages": findings}
+        value = {
+            "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+            "scope": "Exact-version PyPI JSON vulnerability notices; not a complete security clearance",
+            "packages": findings,
+        }
     target.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({"path": str(target), "packages": len(rows),
-                      "unavailable": sum(x.get("status") == "unavailable" for x in value.get("packages", [])),
-                      "notices": sum(len(x.get("vulnerabilities", [])) for x in value.get("packages", []))}))
+    print(
+        json.dumps(
+            {
+                "path": str(target),
+                "packages": len(rows),
+                "unavailable": sum(
+                    x.get("status") == "unavailable" for x in value.get("packages", [])
+                ),
+                "notices": sum(
+                    len(x.get("vulnerabilities", [])) for x in value.get("packages", [])
+                ),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 """Exercise the exact boundary readiness probes against EzLLMRouter's HTTP handler."""
+
 from contextlib import redirect_stdout
 import io
 import os
@@ -26,8 +27,11 @@ REAL_URLOPEN = urllib.request.urlopen
 
 def exact_probe(case):
     text = (ROOT / "tests/gateway_integration/boundary_steps.sh").read_text()
-    pattern = (r"  logrun d04-" + str(case) +
-               r"-readiness compose exec -T [A-Za-z_]+ python -c \\\n    '[\s\S]*?'\n")
+    pattern = (
+        r"  logrun d04-"
+        + str(case)
+        + r"-readiness compose exec -T [A-Za-z_]+ python -c \\\n    '[\s\S]*?'\n"
+    )
     match = re.search(pattern, text)
     if match is None:
         raise AssertionError("readiness command missing")
@@ -78,12 +82,17 @@ class ReadinessTests(unittest.TestCase):
     def setUp(self):
         self.requests = []
 
-    def execute(self, code, *, token=TOKEN, strip_version=False, fail_first=0,
-                always_unavailable=False):
+    def execute(
+        self, code, *, token=TOKEN, strip_version=False, fail_first=0, always_unavailable=False
+    ):
         output = io.StringIO()
 
         def route(value, timeout=1):
-            request = value if isinstance(value, urllib.request.Request) else urllib.request.Request(value)
+            request = (
+                value
+                if isinstance(value, urllib.request.Request)
+                else urllib.request.Request(value)
+            )
             self.requests.append(request)
             if always_unavailable or len(self.requests) <= fail_first:
                 raise urllib.error.URLError(ConnectionRefusedError("controlled not listening"))
@@ -92,16 +101,24 @@ class ReadinessTests(unittest.TestCase):
             assert url.path == "/v1/capabilities"
             headers = dict(request.header_items())
             if strip_version:
-                headers = {key: value for key, value in headers.items()
-                           if key.lower() != "ezllmrouter-contract-version"}
+                headers = {
+                    key: value
+                    for key, value in headers.items()
+                    if key.lower() != "ezllmrouter-contract-version"
+                }
             mapped = urllib.request.Request(
-                f"http://127.0.0.1:{self.port}{url.path}", headers=headers,
-                method=request.get_method())
+                f"http://127.0.0.1:{self.port}{url.path}",
+                headers=headers,
+                method=request.get_method(),
+            )
             return REAL_URLOPEN(mapped, timeout=timeout)
 
-        with (patch.dict(os.environ, {"EZLLMROUTER_DEV_TOKEN": token}),
-              patch("urllib.request.urlopen", side_effect=route),
-              patch("time.sleep"), redirect_stdout(output)):
+        with (
+            patch.dict(os.environ, {"EZLLMROUTER_DEV_TOKEN": token}),
+            patch("urllib.request.urlopen", side_effect=route),
+            patch("time.sleep"),
+            redirect_stdout(output),
+        ):
             exec(compile(code, "<exact-boundary-readiness>", "exec"), {"__name__": "__main__"})
         self.assertNotIn(TOKEN, output.getvalue())
         return output.getvalue()
@@ -120,16 +137,19 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(error.exception.code, 426)
 
     def test_version_without_auth_is_401(self):
-        code = ('import urllib.request; urllib.request.urlopen(urllib.request.Request('
-                '"http://127.0.0.1:8771/v1/capabilities",'
-                'headers={"EzLLMRouter-Contract-Version":"0.2"}),timeout=1)')
+        code = (
+            "import urllib.request; urllib.request.urlopen(urllib.request.Request("
+            '"http://127.0.0.1:8771/v1/capabilities",'
+            'headers={"EzLLMRouter-Contract-Version":"0.2"}),timeout=1)'
+        )
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.execute(code)
         self.assertEqual(error.exception.code, 401)
 
     def test_wrong_version_rejected_immediately(self):
-        code = self.probes[5][1].replace('"EzLLMRouter-Contract-Version":"0.2"',
-                                        '"EzLLMRouter-Contract-Version":"9.9"')
+        code = self.probes[5][1].replace(
+            '"EzLLMRouter-Contract-Version":"0.2"', '"EzLLMRouter-Contract-Version":"9.9"'
+        )
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.execute(code)
         self.assertEqual((error.exception.code, len(self.requests)), (426, 1))

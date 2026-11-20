@@ -1,4 +1,5 @@
 """Require the Node 24 actor regression and strict stdout consumer before a send."""
+
 import io
 import json
 from pathlib import Path
@@ -24,8 +25,16 @@ def main() -> None:
         else:
             assert row["actor_exit"] == 1 and row["stdout"] == ""
     assert successful == 6, successful
-    print(json.dumps({"node": report["node"], "passed": 9,
-                      "strict_stdout_consumers": successful, "real_network_calls": 0}))
+    print(
+        json.dumps(
+            {
+                "node": report["node"],
+                "passed": 9,
+                "strict_stdout_consumers": successful,
+                "real_network_calls": 0,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

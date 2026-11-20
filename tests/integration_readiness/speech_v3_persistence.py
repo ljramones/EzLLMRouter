@@ -3,6 +3,7 @@
 Use the installed 0.2.4 consumer interpreter. Source evidence is never opened
 for writes; only one-use ignored clones are started as local HTTP services.
 """
+
 import csv
 import hashlib
 from http import client as http_client
@@ -53,11 +54,20 @@ class Authority:
 
 def inspect(database):
     store = SQLiteStore(database)
-    registry = Registry(store, Authority(), legacy_destination={
-        "configuration_ref": "cfg.synthetic.v3", "service": "litellm.dev04", "endpoint": "127.0.0.1",
-        "model": "model.synthetic", "model_version": "v1", "processing_region": "local"},
+    registry = Registry(
+        store,
+        Authority(),
+        legacy_destination={
+            "configuration_ref": "cfg.synthetic.v3",
+            "service": "litellm.dev04",
+            "endpoint": "127.0.0.1",
+            "model": "model.synthetic",
+            "model_version": "v1",
+            "processing_region": "local",
+        },
         legacy_token="synthetic-legacy-service-token-000000000000",
-        legacy_trusted={"principal_id": "svc.synthetic", "charging_owner_id": "team.synthetic"})
+        legacy_trusted={"principal_id": "svc.synthetic", "charging_owner_id": "team.synthetic"},
+    )
     admin_token = registry.issue_local_operator_token("owner.local")
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
@@ -70,13 +80,19 @@ def inspect(database):
         with IntegrationClient(base, admin_token, version="3") as admin:
             report = admin.report(DATASET)
             exported = admin.export_dataset(DATASET)
-        with IntegrationClient(base, (SOURCE / "ingest.token").read_text().strip(),
-                               version="3") as ingest:
+        with IntegrationClient(
+            base, (SOURCE / "ingest.token").read_text().strip(), version="3"
+        ) as ingest:
             receipt = ingest.recover_receipt(DATASET, "event.synthetic.python.usage2")
         connection = http_client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
-                           headers={"Authorization": "Bearer " + admin_token,
-                                    "EzLLMRouter-Integration-Version": "3"})
+        connection.request(
+            "GET",
+            "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
+            headers={
+                "Authorization": "Bearer " + admin_token,
+                "EzLLMRouter-Integration-Version": "3",
+            },
+        )
         response = connection.getresponse()
         raw_csv = response.read()
         connection.close()
@@ -85,7 +101,8 @@ def inspect(database):
         assert report == EXPECTED_REPORT
         assert exported == EXPECTED_EXPORT
         assert len(rows) == 11 and {r["attempt_id"] for r in rows} == {
-            r["attempt_id"] for r in report["attempts"]}
+            r["attempt_id"] for r in report["attempts"]
+        }
         assert report["attempt_count"] == report["unknown_cost_attempts"] == 11
         assert report["known_total_by_currency"] == {}
         assert len(exported["eligibility_reads"]) == 11
@@ -93,11 +110,15 @@ def inspect(database):
         assert receipt["event_id"] == "event.synthetic.python.usage2"
         raw_export_bytes = len(json.dumps(exported, separators=(",", ":")).encode("utf-8"))
         assert raw_export_bytes < 16 * 1024 * 1024
-        return {"attempts": 11, "events": len(exported["events"]),
-                "eligibility_reads": len(exported["eligibility_reads"]),
-                "eligibility_assessments": len(exported["eligibility_assessments"]),
-                "csv_rows": len(rows), "export_json_bytes": raw_export_bytes,
-                "receipt_event_id": receipt["event_id"]}
+        return {
+            "attempts": 11,
+            "events": len(exported["events"]),
+            "eligibility_reads": len(exported["eligibility_reads"]),
+            "eligibility_assessments": len(exported["eligibility_assessments"]),
+            "csv_rows": len(rows),
+            "export_json_bytes": raw_export_bytes,
+            "receipt_event_id": receipt["event_id"],
+        }
     finally:
         http.shutdown()
         http.server_close()
@@ -115,10 +136,18 @@ backup(clone, restored)
 third = inspect(restored)
 assert first == second == third
 assert digest(SOURCE / "service.sqlite") == source_hash
-result = {"status": "PASS", "run_id": sys.argv[1], "source_run": SOURCE.name,
-          "installed_server_version": SERVER_VERSION, "installed_client_version": CLIENT_VERSION,
-          "source_db_sha256_before_after": source_hash,
-          "first_read": first, "restart_read": second, "backup_restore_read": third,
-          "new_attempts": 0, "real_provider_calls": 0}
+result = {
+    "status": "PASS",
+    "run_id": sys.argv[1],
+    "source_run": SOURCE.name,
+    "installed_server_version": SERVER_VERSION,
+    "installed_client_version": CLIENT_VERSION,
+    "source_db_sha256_before_after": source_hash,
+    "first_read": first,
+    "restart_read": second,
+    "backup_restore_read": third,
+    "new_attempts": 0,
+    "real_provider_calls": 0,
+}
 (RUN / "result.json").write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
 print(json.dumps(result, sort_keys=True))

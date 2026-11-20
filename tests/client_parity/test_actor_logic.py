@@ -1,4 +1,5 @@
 """Installed-client actor controls for explicit attempt budget and drain time."""
+
 import ast
 import copy
 import json
@@ -16,17 +17,32 @@ tree = ast.parse(source.read_text())
 actor = types.ModuleType("actor_logic_under_test")
 actor.copy, actor.time = copy, time
 actor.BASE = json.loads((ROOT / "tests/development_slice/request.json").read_text())
-actor.CORPUS = {item["id"]: item for item in json.loads(source.with_name("scenarios.json").read_text())["cases"]}
+actor.CORPUS = {
+    item["id"]: item for item in json.loads(source.with_name("scenarios.json").read_text())["cases"]
+}
+
+
 def no_network():
     raise AssertionError("Actor helper tests must inject receiver observations")
+
+
 actor.arrivals = no_network
-helpers = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {"case_request", "no_send_drain"}]
+helpers = [
+    node
+    for node in tree.body
+    if isinstance(node, ast.FunctionDef) and node.name in {"case_request", "no_send_drain"}
+]
 exec(compile(ast.Module(body=helpers, type_ignores=[]), str(source), "exec"), actor.__dict__)
 
 
 class ActorLogic(unittest.TestCase):
     def test_pending_attempt_budget_is_in_submitted_request(self):
-        for case in ("retained_pending", "no_store_expiry", "retained_pending_js", "no_store_expiry_js"):
+        for case in (
+            "retained_pending",
+            "no_store_expiry",
+            "retained_pending_js",
+            "no_store_expiry_js",
+        ):
             with self.subTest(case=case):
                 item = actor.CORPUS[case]
                 request = actor.case_request(item)

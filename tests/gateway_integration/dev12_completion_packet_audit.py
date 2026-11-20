@@ -3,6 +3,7 @@
 This reads only ledger.json, receiver.jsonl and the public fixed tariff registry.
 It has no database, credential, socket or provider dependency.
 """
+
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -45,8 +46,7 @@ def tariff(price_ref, component, quantity):
         raw = max(Decimal("0.005"), Decimal("0.003") * quantity)
     elif price_ref == "tariff.synthetic.b@1":
         assert component == "document_units"
-        raw = Decimal(quantity) * Decimal(
-            "0.0003000005" if quantity <= 10 else "0.0004000005")
+        raw = Decimal(quantity) * Decimal("0.0003000005" if quantity <= 10 else "0.0004000005")
     elif price_ref in {"tariff.synthetic.embed-doc@1", "tariff.synthetic.embed-query@1"}:
         assert component == ("query_units" if "embed-query" in price_ref else "document_units")
         raw = Decimal("0.000200000") * quantity
@@ -97,27 +97,30 @@ def audit(packet: Path, registry_path: Path):
         assert reservation["price_ref"] in contracts
         attempt_row = next(r for r in attempts if r["attempt_id"] == row["attempt_id"])
         assert Decimal(attempt_row["reservation_decimal"]) == Decimal(
-            reservation["max_exposure_decimal"])
+            reservation["max_exposure_decimal"]
+        )
     for own in ownership:
         submission = by_attempt[own["attempt_id"]]
         receipt = json.loads(own["guard_receipt"])
         assert own["submission_id"] == submission["submission_id"]
         assert receipt["attempt_id"] == own["attempt_id"]
         assert receipt["plan_id"] == submission["signed_plan"]["plan_id"]
-    arrivals = [json.loads(line) for line in
-                (packet / "target" / "receiver.jsonl").read_text().splitlines()]
+    arrivals = [
+        json.loads(line) for line in (packet / "target" / "receiver.jsonl").read_text().splitlines()
+    ]
     by_arrival = {row["attempt_id"]: row for row in arrivals}
     assert len(by_arrival) == len(arrivals)
-    by_ownership = {row["attempt_id"]: json.loads(row["guard_receipt"])
-                    for row in ownership}
+    by_ownership = {row["attempt_id"]: json.loads(row["guard_receipt"]) for row in ownership}
     for attempt_id, arrival in by_arrival.items():
         assert attempt_id in by_ownership
         guard = by_ownership[attempt_id]
         assert arrival["request_valid"] is True
         assert arrival["body_sha256"] == guard["body_sha256"]
         assert arrival["body_bytes"] == guard["body_bytes"]
-    receiver_receipts = [json.loads(line) for line in
-                         (packet / "target" / "receiver-receipts.jsonl").read_text().splitlines()]
+    receiver_receipts = [
+        json.loads(line)
+        for line in (packet / "target" / "receiver-receipts.jsonl").read_text().splitlines()
+    ]
     assert len(receiver_receipts) == len(arrivals)
     assert {row["attempt_id"] for row in receiver_receipts} == set(by_arrival)
     for receipt in receiver_receipts:
@@ -163,20 +166,27 @@ def audit(packet: Path, registry_path: Path):
             assert "amount_decimal" not in latest
         else:
             raise AssertionError(f"unsupported cost state {status}")
-    assert all((row.get("effective_usage_revision") is None) == (row["attempt_id"] not in histories)
-               for row in submissions)
-    journal = [json.loads(line) for line in
-               (packet / "target" / "case-journal.jsonl").read_text().splitlines()]
+    assert all(
+        (row.get("effective_usage_revision") is None) == (row["attempt_id"] not in histories)
+        for row in submissions
+    )
+    journal = [
+        json.loads(line)
+        for line in (packet / "target" / "case-journal.jsonl").read_text().splitlines()
+    ]
     plans = {}
     for path in (packet / "target").glob("plan*.json"):
         value = json.loads(path.read_text())
         plans[sha256(path.read_bytes()).hexdigest()] = value
         if path.name == "plan.json":
-            compact = (json.dumps(value, sort_keys=True, separators=(",", ":"),
-                                  ensure_ascii=True) + "\n").encode()
+            compact = (
+                json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
+            ).encode()
             plans[sha256(compact).hexdigest()] = value
-    releases = [json.loads(line) for line in
-                (packet / "target" / "release-identity.jsonl").read_text().splitlines()]
+    releases = [
+        json.loads(line)
+        for line in (packet / "target" / "release-identity.jsonl").read_text().splitlines()
+    ]
     for release in releases:
         assert release["campaign_id"] == campaign_id
         assert release["real_provider_calls"] == 0
@@ -185,8 +195,10 @@ def audit(packet: Path, registry_path: Path):
         if "original_start_at" in release:
             assert release["original_start_at"] == campaign["start_at"]
             assert release["original_expires_at"] == campaign["expires_at"]
-    assert releases[-1]["plan_sha256"] == sha256(
-        (packet / "target" / "plan.supplement9.json").read_bytes()).hexdigest()
+    assert (
+        releases[-1]["plan_sha256"]
+        == sha256((packet / "target" / "plan.supplement9.json").read_bytes()).hexdigest()
+    )
     for entry in journal:
         if entry.get("kind") == "supplement_case_begin":
             assert entry["plan_sha256"] in plans
@@ -195,7 +207,11 @@ def audit(packet: Path, registry_path: Path):
     supplement_pass = set()
     failed = []
     for entry in journal:
-        if entry.get("kind") not in {"case_end", "supplement_case_end", "supplement_case_reconciled"}:
+        if entry.get("kind") not in {
+            "case_end",
+            "supplement_case_end",
+            "supplement_case_reconciled",
+        }:
             continue
         case_id = entry["case_id"]
         if entry["status"] != "PASS":
@@ -206,10 +222,12 @@ def audit(packet: Path, registry_path: Path):
             for relative in assertion["evidence_paths"]:
                 source = packet / "target" / relative
                 assert source.is_file(), relative
-                recorded = [ob for ob in entry["result"]["observations"]
-                            if ob["evidence_path"] == relative]
-                assert recorded and all(ob["sha256"] == sha256(source.read_bytes()).hexdigest()
-                                        for ob in recorded)
+                recorded = [
+                    ob for ob in entry["result"]["observations"] if ob["evidence_path"] == relative
+                ]
+                assert recorded and all(
+                    ob["sha256"] == sha256(source.read_bytes()).hexdigest() for ob in recorded
+                )
         if entry["kind"] == "case_end":
             original_pass.add(case_id)
         else:
@@ -217,13 +235,13 @@ def audit(packet: Path, registry_path: Path):
     assert len(original_pass) == 80
     assert QUALIFIED_SUPPLEMENT <= supplement_pass
     assert "case.ct02_workkey.wire03_first" in supplement_pass  # retained weak pass
-    campaign_audits = [json.loads(row["record"]) for row in
-                       rows(ledger, "dev12_campaign_audit")]
+    campaign_audits = [json.loads(row["record"]) for row in rows(ledger, "dev12_campaign_audit")]
     audit_decisions = Counter(row.get("decision", row.get("kind")) for row in campaign_audits)
     assert campaign["paused"] and campaign["pause_reasons"] == ["authority"]
     held = [row for row in submissions if row["exposure_state"] == "outstanding"]
-    held_amount = sum((Decimal(row["reservation"]["max_exposure_decimal"])
-                       for row in held), Decimal(0))
+    held_amount = sum(
+        (Decimal(row["reservation"]["max_exposure_decimal"]) for row in held), Decimal(0)
+    )
     historical = json.loads((packet / "historical-underbound-ledger.json").read_text())
     htables = historical["tables"]
     assert len(htables["dev12_submissions"]["rows"]) == 1
@@ -241,9 +259,12 @@ def audit(packet: Path, registry_path: Path):
     assert hcampaign["paused"] and hcampaign["attempt_count"] == 0
     assert hcampaign["possible_send_count"] == 0
     outcome = {
-        "status": "PASS", "campaign_id": campaign_id,
-        "admissions": len(submissions), "possible_sends": len(ownership),
-        "receiver_arrivals": len(arrivals), "usage_revision_rows": len(usage_rows),
+        "status": "PASS",
+        "campaign_id": campaign_id,
+        "admissions": len(submissions),
+        "possible_sends": len(ownership),
+        "receiver_arrivals": len(arrivals),
+        "usage_revision_rows": len(usage_rows),
         "effective_usage_attempts": len(histories),
         "effective_known_usd": format(known, ".9f"),
         "effective_cost_states": dict(cost_states),
@@ -267,8 +288,10 @@ def audit(packet: Path, registry_path: Path):
     }
     mixed = mixed_audit(packet)
     assert mixed["mixed_admissions"] == len(submissions) + mixed["legacy_admissions"]
-    assert mixed["mixed_possible_send_conservative_upper_count"] == \
-        len(ownership) + mixed["legacy_committed_intents"]
+    assert (
+        mixed["mixed_possible_send_conservative_upper_count"]
+        == len(ownership) + mixed["legacy_committed_intents"]
+    )
     assert mixed["successor_cumulative_reserved_usd"] == outcome["cumulative_reserved_usd"]
     assert mixed["held_successor_reservations"] == outcome["held_reservations"]
     assert mixed["campaign_paused"] and mixed["mixed_financial_upper_bound"] is None

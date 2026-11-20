@@ -1,4 +1,5 @@
 """Check the approved synthetic route and unchanged adapter guard offline."""
+
 from pathlib import Path
 import json
 import sys
@@ -30,9 +31,12 @@ class FixtureRoutes(unittest.TestCase):
                         NativeSyntheticAdapter(url, "receiver")
 
     def test_other_routes_rejected_before_adapter(self):
-        for url in ("http://receiver_other:8766/v1/chat/completions",
-                    "http://receiver:8767/v1/chat/completions",
-                    "http://receiver:8766/other", "https://receiver:8766/v1/chat/completions"):
+        for url in (
+            "http://receiver_other:8766/v1/chat/completions",
+            "http://receiver:8767/v1/chat/completions",
+            "http://receiver:8766/other",
+            "https://receiver:8766/v1/chat/completions",
+        ):
             with self.subTest(url=url):
                 with self.assertRaisesRegex(ValueError, "unapproved synthetic fixture destination"):
                     fixture_destination(BASE, url)

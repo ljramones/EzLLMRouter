@@ -2,6 +2,7 @@
 
 Synthetic observations only. No provider client or worker is created.
 """
+
 import csv
 from datetime import datetime, timezone, timedelta
 from http import client as http_client
@@ -25,7 +26,10 @@ RUN = ROOT / "deploy/local/.state/integration-v3-runs" / sys.argv[1]
 DATASET = "dataset.synthetic.speech.installed"
 ACCOUNT = "account.synthetic.speech.volume"
 TARGET = 512
-if (version("mach33-ezllmrouter-server"), version("cognitivedynamics-ezllmrouter-client")) != ("0.2.4", "0.2.4"):
+if (version("mach33-ezllmrouter-server"), version("cognitivedynamics-ezllmrouter-client")) != (
+    "0.2.4",
+    "0.2.4",
+):
     raise SystemExit("installed 0.2.4 service and client required")
 if RUN.exists() or not sys.argv[1].startswith("volume-v3-"):
     raise SystemExit("new one-use volume-v3 run ID required")
@@ -50,12 +54,20 @@ class Authority:
 
 def open_service(database):
     store = SQLiteStore(database)
-    registry = Registry(store, Authority(), legacy_destination={
-        "configuration_ref": "cfg.synthetic.v3", "service": "litellm.dev04",
-        "endpoint": "127.0.0.1", "model": "model.synthetic",
-        "model_version": "v1", "processing_region": "local"},
+    registry = Registry(
+        store,
+        Authority(),
+        legacy_destination={
+            "configuration_ref": "cfg.synthetic.v3",
+            "service": "litellm.dev04",
+            "endpoint": "127.0.0.1",
+            "model": "model.synthetic",
+            "model_version": "v1",
+            "processing_region": "local",
+        },
         legacy_token="synthetic-legacy-service-token-000000000000",
-        legacy_trusted={"principal_id": "svc.synthetic", "charging_owner_id": "team.synthetic"})
+        legacy_trusted={"principal_id": "svc.synthetic", "charging_owner_id": "team.synthetic"},
+    )
     token = registry.issue_local_operator_token("owner.local")
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
@@ -80,9 +92,11 @@ def read_all(service):
         report = admin.report(DATASET)
         exported = admin.export_dataset(DATASET)
     connection = http_client.HTTPConnection(base.split("://", 1)[1].rstrip("/"), timeout=30)
-    connection.request("GET", "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
-                       headers={"Authorization": "Bearer " + token,
-                                "EzLLMRouter-Integration-Version": "3"})
+    connection.request(
+        "GET",
+        "/integration/v3/reports/usage?dataset_id=" + DATASET + "&export=csv",
+        headers={"Authorization": "Bearer " + token, "EzLLMRouter-Integration-Version": "3"},
+    )
     response = connection.getresponse()
     raw_csv = response.read()
     connection.close()
@@ -107,15 +121,30 @@ backup(SOURCE / "service.sqlite", database)
 service = open_service(database)
 try:
     _, _, _, base, admin_token = service
-    with IntegrationClient(base, admin_token, version="3") as admin, \
-         IntegrationClient(base, (SOURCE / "ingest.token").read_text().strip(), version="3") as ingest:
+    with (
+        IntegrationClient(base, admin_token, version="3") as admin,
+        IntegrationClient(
+            base, (SOURCE / "ingest.token").read_text().strip(), version="3"
+        ) as ingest,
+    ):
         original = admin.report(DATASET)
         assert original["attempt_count"] == 11
-        admin.register_account({"account_id": ACCOUNT, "dataset_id": DATASET,
-            "provider_id": "provider.synthetic.xai", "credential_ref": "credential.synthetic.volume",
-            "allowed_models": [], "allowed_operations": ["speech_output"], "state": "usable"})
-        selector = {"operation_family": "speech_output", "capability": "synthesis",
-                    "selection_kind": "provider_selected"}
+        admin.register_account(
+            {
+                "account_id": ACCOUNT,
+                "dataset_id": DATASET,
+                "provider_id": "provider.synthetic.xai",
+                "credential_ref": "credential.synthetic.volume",
+                "allowed_models": [],
+                "allowed_operations": ["speech_output"],
+                "state": "usable",
+            }
+        )
+        selector = {
+            "operation_family": "speech_output",
+            "capability": "synthesis",
+            "selection_kind": "provider_selected",
+        }
         for ordinal in range(TARGET - original["attempt_count"]):
             suffix = f"{ordinal + 1:04d}"
             attempt = "attempt.synthetic.volume." + suffix
@@ -125,43 +154,100 @@ try:
             expiry = at(86400)
             eligible = ingest.operation_eligibility(DATASET, ACCOUNT, selector)
             assert eligible["usable"] and eligible["selection_kind"] == "provider_selected"
-            action = {"selected_account_id": ACCOUNT, **selector,
-                      "policy_version": "policy.synthetic.volume",
-                      "eligibility_evidence": {"status": "verified",
-                                               "eligibility_id": eligible["eligibility_id"]}}
-            snapshot = {"integration_version": "3", "dataset_id": DATASET,
-                        "attempt_id": attempt, "schema_version": "1",
-                        "producer_version": "test.installed.volume.v3", "provenance": "synthetic",
-                        "source_at": observed, "available_at": observed,
-                        "classification": "low", "retention_until": expiry}
-            ingest.submit_snapshot({**snapshot, "snapshot_id": feature,
-                                    "snapshot_kind": "feature", "status": "not_collected"})
-            ingest.submit_snapshot({**snapshot, "snapshot_id": decision_ref,
-                                    "snapshot_kind": "decision", "status": "captured",
-                                    "selected_action": action})
-            event = {"integration_version": "3", "dataset_id": DATASET,
-                     "attempt_id": attempt, "occurred_at": observed}
-            ingest.submit_observation({**event, "event_id": "event.synthetic.volume." + suffix + ".start",
-                "kind": "attempt_started", "started_at": observed,
-                "task_id": "task.synthetic.volume." + suffix,
-                "step_id": "step.synthetic.volume." + suffix,
-                "run_id": "run.synthetic.volume." + suffix,
-                "root_run_id": "run.synthetic.volume." + suffix,
-                "actor_kind": "service", "actor_id": "service.synthetic.volume",
-                "provider_account_id": ACCOUNT, "context_ref": feature,
-                "operation_family_version": "1", "operation_family": "speech_output",
-                "model_identity_state": "unknown",
-                "logical_operation_id": "operation.synthetic.volume." + suffix,
-                "attempt_role": "initial"})
-            ingest.submit_observation({**event, "event_id": "event.synthetic.volume." + suffix + ".decision",
-                "kind": "decision", "decision_ref": decision_ref, **action})
-            ingest.submit_observation({**event, "event_id": "event.synthetic.volume." + suffix + ".result",
-                "kind": "result", "result_state": "completed"})
-            usage = {**event, "event_id": "event.synthetic.volume." + suffix + ".usage.1",
-                     "kind": "usage", "usage_revision": 1, "usage_state": "known",
-                     "cost_state": "unknown", "native_units": [
-                         {"unit": "characters", "quantity_decimal": str(10 + ordinal % 17)}],
-                     "usage_provenance": "provider_reported"}
+            action = {
+                "selected_account_id": ACCOUNT,
+                **selector,
+                "policy_version": "policy.synthetic.volume",
+                "eligibility_evidence": {
+                    "status": "verified",
+                    "eligibility_id": eligible["eligibility_id"],
+                },
+            }
+            snapshot = {
+                "integration_version": "3",
+                "dataset_id": DATASET,
+                "attempt_id": attempt,
+                "schema_version": "1",
+                "producer_version": "test.installed.volume.v3",
+                "provenance": "synthetic",
+                "source_at": observed,
+                "available_at": observed,
+                "classification": "low",
+                "retention_until": expiry,
+            }
+            ingest.submit_snapshot(
+                {
+                    **snapshot,
+                    "snapshot_id": feature,
+                    "snapshot_kind": "feature",
+                    "status": "not_collected",
+                }
+            )
+            ingest.submit_snapshot(
+                {
+                    **snapshot,
+                    "snapshot_id": decision_ref,
+                    "snapshot_kind": "decision",
+                    "status": "captured",
+                    "selected_action": action,
+                }
+            )
+            event = {
+                "integration_version": "3",
+                "dataset_id": DATASET,
+                "attempt_id": attempt,
+                "occurred_at": observed,
+            }
+            ingest.submit_observation(
+                {
+                    **event,
+                    "event_id": "event.synthetic.volume." + suffix + ".start",
+                    "kind": "attempt_started",
+                    "started_at": observed,
+                    "task_id": "task.synthetic.volume." + suffix,
+                    "step_id": "step.synthetic.volume." + suffix,
+                    "run_id": "run.synthetic.volume." + suffix,
+                    "root_run_id": "run.synthetic.volume." + suffix,
+                    "actor_kind": "service",
+                    "actor_id": "service.synthetic.volume",
+                    "provider_account_id": ACCOUNT,
+                    "context_ref": feature,
+                    "operation_family_version": "1",
+                    "operation_family": "speech_output",
+                    "model_identity_state": "unknown",
+                    "logical_operation_id": "operation.synthetic.volume." + suffix,
+                    "attempt_role": "initial",
+                }
+            )
+            ingest.submit_observation(
+                {
+                    **event,
+                    "event_id": "event.synthetic.volume." + suffix + ".decision",
+                    "kind": "decision",
+                    "decision_ref": decision_ref,
+                    **action,
+                }
+            )
+            ingest.submit_observation(
+                {
+                    **event,
+                    "event_id": "event.synthetic.volume." + suffix + ".result",
+                    "kind": "result",
+                    "result_state": "completed",
+                }
+            )
+            usage = {
+                **event,
+                "event_id": "event.synthetic.volume." + suffix + ".usage.1",
+                "kind": "usage",
+                "usage_revision": 1,
+                "usage_state": "known",
+                "cost_state": "unknown",
+                "native_units": [
+                    {"unit": "characters", "quantity_decimal": str(10 + ordinal % 17)}
+                ],
+                "usage_provenance": "provider_reported",
+            }
             ingest.submit_observation(usage)
         receipt = ingest.recover_receipt(DATASET, usage["event_id"])
         assert receipt["event_id"] == usage["event_id"]
@@ -190,15 +276,23 @@ report, exported, csv_text, size = first
 (RUN / "report.json").write_text(json.dumps(report, sort_keys=True, indent=2) + "\n")
 (RUN / "export.json").write_text(json.dumps(exported, sort_keys=True, indent=2) + "\n")
 (RUN / "report.csv").write_text(csv_text)
-result = {"status": "PASS", "run_id": sys.argv[1], "source_run": SOURCE.name,
-          "installed_server_version": version("mach33-ezllmrouter-server"),
-          "installed_client_version": version("cognitivedynamics-ezllmrouter-client"),
-          "attempts": TARGET, "new_synthetic_observations": TARGET - 11,
-          "unknown_cost_attempts": TARGET, "known_total_by_currency": {},
-          "csv_rows": TARGET, "export_json_bytes": size,
-          "eligibility_reads": len(exported["eligibility_reads"]),
-          "eligibility_assessments": len(exported["eligibility_assessments"]),
-          "events": len(exported["events"]), "restart_and_restore_match": True,
-          "provider_calls": 0}
+result = {
+    "status": "PASS",
+    "run_id": sys.argv[1],
+    "source_run": SOURCE.name,
+    "installed_server_version": version("mach33-ezllmrouter-server"),
+    "installed_client_version": version("cognitivedynamics-ezllmrouter-client"),
+    "attempts": TARGET,
+    "new_synthetic_observations": TARGET - 11,
+    "unknown_cost_attempts": TARGET,
+    "known_total_by_currency": {},
+    "csv_rows": TARGET,
+    "export_json_bytes": size,
+    "eligibility_reads": len(exported["eligibility_reads"]),
+    "eligibility_assessments": len(exported["eligibility_assessments"]),
+    "events": len(exported["events"]),
+    "restart_and_restore_match": True,
+    "provider_calls": 0,
+}
 (RUN / "summary.json").write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
 print(json.dumps(result, sort_keys=True))

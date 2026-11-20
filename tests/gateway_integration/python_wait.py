@@ -1,4 +1,5 @@
 """Installed-client actors for the selected lower-pool and context experiment."""
+
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import json
@@ -17,7 +18,9 @@ BASE = json.loads(Path(__file__).with_name("request.json").read_text())
 
 def receiver_count():
     with httpx.Client(trust_env=False, timeout=2) as client:
-        return len(client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations").json()["arrivals"])
+        return len(
+            client.get(os.environ["EZLLMROUTER_RECEIVER_URL"] + "/observations").json()["arrivals"]
+        )
 
 
 def request(label, text):
@@ -29,15 +32,25 @@ def request(label, text):
 
 
 def client(token=None):
-    return EzLLMRouterClient(os.environ["EZLLMROUTER_SERVICE_URL"], token or os.environ["EZLLMROUTER_DEV_TOKEN"])
+    return EzLLMRouterClient(
+        os.environ["EZLLMROUTER_SERVICE_URL"], token or os.environ["EZLLMROUTER_DEV_TOKEN"]
+    )
 
 
 def submit_pending(label, text):
     with client() as installed:
         reply = installed.submit(request(label, text), {"wait_ms": 0})
     assert reply["state"] == "pending"
-    print(json.dumps({"actor": "installed-python", "case": label,
-                      "submission_id": reply["handle"]["submission_id"], "state": "pending"}))
+    print(
+        json.dumps(
+            {
+                "actor": "installed-python",
+                "case": label,
+                "submission_id": reply["handle"]["submission_id"],
+                "state": "pending",
+            }
+        )
+    )
 
 
 def status(sid):
@@ -50,13 +63,21 @@ def status(sid):
                 break
             time.sleep(0.05)
     assert latest is not None
-    print(json.dumps({"actor": "installed-python", "case": "status", "submission_id": sid,
-                      "submission_state": latest["submission_state"],
-                      "candidate_access": latest["candidate_access"],
-                      "attempt_id": latest["attempts"][0]["attempt_id"],
-                      "dispatch_state": latest["attempts"][0]["dispatch_state"],
-                      "terminal_error_code": (latest.get("terminal_failure") or {}).get("code"),
-                      "terminal_attempt_id": latest.get("terminal_attempt_id")}))
+    print(
+        json.dumps(
+            {
+                "actor": "installed-python",
+                "case": "status",
+                "submission_id": sid,
+                "submission_state": latest["submission_state"],
+                "candidate_access": latest["candidate_access"],
+                "attempt_id": latest["attempts"][0]["attempt_id"],
+                "dispatch_state": latest["attempts"][0]["dispatch_state"],
+                "terminal_error_code": (latest.get("terminal_failure") or {}).get("code"),
+                "terminal_attempt_id": latest.get("terminal_attempt_id"),
+            }
+        )
+    )
 
 
 def swapped():
@@ -85,17 +106,25 @@ def overlap():
             assert reply["state"] == "delivered"
             latest = installed.getStatus({"submission_id": reply["handle"]["submission_id"]})
             assert latest["candidate_access"] == "present"
-            return {"label": label, "submission_id": reply["handle"]["submission_id"],
-                    "attempt_id": reply["candidate"]["attempt_id"]}
+            return {
+                "label": label,
+                "submission_id": reply["handle"]["submission_id"],
+                "attempt_id": reply["candidate"]["attempt_id"],
+            }
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(one, "overlap_primary", os.environ["EZLLMROUTER_DEV_TOKEN"])
-        second = pool.submit(one, "overlap_alternate", os.environ["EZLLMROUTER_DEV_TOKEN"] + ".alternate")
+        second = pool.submit(
+            one, "overlap_alternate", os.environ["EZLLMROUTER_DEV_TOKEN"] + ".alternate"
+        )
         rows = [first.result(timeout=10), second.result(timeout=10)]
     assert len({row["attempt_id"] for row in rows}) == 2
     assert receiver_count() == before + 2
-    print(json.dumps({"actor": "installed-python", "case": "overlap",
-                      "receiver_delta": 2, "contexts": rows}))
+    print(
+        json.dumps(
+            {"actor": "installed-python", "case": "overlap", "receiver_delta": 2, "contexts": rows}
+        )
+    )
 
 
 def main():

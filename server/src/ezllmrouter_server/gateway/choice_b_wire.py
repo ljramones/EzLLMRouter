@@ -1,4 +1,5 @@
 """Small bounded JSON record used only by the DEV-04 Choice B Unix sockets."""
+
 import json
 import struct
 from datetime import datetime, timezone
@@ -44,8 +45,9 @@ def receive(stream):
 
 
 def send(stream, value):
-    raw = json.dumps(value, ensure_ascii=False, separators=(",", ":"),
-                     allow_nan=False).encode("utf-8")
+    raw = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     if not 0 < len(raw) <= LIMIT:
         raise ValueError("DEV-04 socket record size")
     stream.sendall(struct.pack("!I", len(raw)) + raw)

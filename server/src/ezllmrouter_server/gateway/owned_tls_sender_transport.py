@@ -4,6 +4,7 @@ The first encrypted TLS record containing HTTP request bytes is written under
 the same effective-revocation gate as the original plaintext socket. Handshake
 records are deliberately excluded from the model-request acceptance fact.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -34,11 +35,17 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
         self.outgoing = None
 
     async def start_tls(self, ssl_context, server_hostname=None, timeout=None):
-        if self.tls is not None or not server_hostname or ssl_context.verify_mode != ssl.CERT_REQUIRED or not ssl_context.check_hostname:
+        if (
+            self.tls is not None
+            or not server_hostname
+            or ssl_context.verify_mode != ssl.CERT_REQUIRED
+            or not ssl_context.check_hostname
+        ):
             raise GuardRejected("TLS_CONFIGURATION_REJECTED")
         self.incoming, self.outgoing = ssl.MemoryBIO(), ssl.MemoryBIO()
-        self.tls = ssl_context.wrap_bio(self.incoming, self.outgoing,
-                                        server_side=False, server_hostname=server_hostname)
+        self.tls = ssl_context.wrap_bio(
+            self.incoming, self.outgoing, server_side=False, server_hostname=server_hostname
+        )
         deadline = None if timeout is None else asyncio.get_running_loop().time() + timeout
         try:
             while True:
@@ -81,9 +88,18 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
                 with self.authority.gate:
                     if request and not self.request_bytes_accepted:
                         invocation.fresh_check()
-                    if request and not self.request_bytes_accepted and (
-                        invocation.abandoned or self.authority.revoked or invocation.authority_epoch != self.authority.epoch or
-                        time.time() >= datetime.fromisoformat(invocation.deadline.replace("Z", "+00:00")).timestamp()
+                    if (
+                        request
+                        and not self.request_bytes_accepted
+                        and (
+                            invocation.abandoned
+                            or self.authority.revoked
+                            or invocation.authority_epoch != self.authority.epoch
+                            or time.time()
+                            >= datetime.fromisoformat(
+                                invocation.deadline.replace("Z", "+00:00")
+                            ).timestamp()
+                        )
                     ):
                         raise GuardRejected("FDC_REJECTED")
                     try:
@@ -93,7 +109,9 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
                     if count and request and not self.request_bytes_accepted:
                         self.request_bytes_accepted = True
                         invocation.first_bytes_accepted = True
-                        invocation.observations.append("FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET")
+                        invocation.observations.append(
+                            "FIRST_TLS_REQUEST_BYTES_ACCEPTED_BY_LOCAL_SOCKET"
+                        )
                 if count:
                     offset += count
                     continue
@@ -119,8 +137,12 @@ class OwnedTLSStream(httpcore.AsyncNetworkStream):
         if self.tls is None or self.terminal:
             raise GuardRejected("TLS_STREAM_UNAVAILABLE")
         invocation = ACTIVE.get()
-        if invocation is None or not invocation.committed or not invocation.released or (
-                self.invocation is not None and self.invocation is not invocation):
+        if (
+            invocation is None
+            or not invocation.committed
+            or not invocation.released
+            or (self.invocation is not None and self.invocation is not invocation)
+        ):
             raise GuardRejected("NO_TRUSTED_CONTEXT")
         self.invocation = invocation
         deadline = None if timeout is None else asyncio.get_running_loop().time() + timeout
@@ -169,13 +191,18 @@ class OwnedTLSBackend(httpcore.AsyncNetworkBackend):
         if (host, port, local_address, socket_options) != (self.host, self.port, None, None):
             raise GuardRejected("DESTINATION_REJECTED")
         addresses = await asyncio.to_thread(socket.getaddrinfo, host, port, type=socket.SOCK_STREAM)
-        if not addresses or any(not _allowed_ip(item[4][0], self.provider, controlled=self.controlled) for item in addresses):
+        if not addresses or any(
+            not _allowed_ip(item[4][0], self.provider, controlled=self.controlled)
+            for item in addresses
+        ):
             raise GuardRejected("DESTINATION_REJECTED")
         selected = sorted(addresses, key=lambda item: item[0] != socket.AF_INET)[0]
         sock = socket.socket(selected[0], socket.SOCK_STREAM)
         sock.setblocking(False)
         try:
-            await asyncio.wait_for(asyncio.get_running_loop().sock_connect(sock, selected[4]), timeout)
+            await asyncio.wait_for(
+                asyncio.get_running_loop().sock_connect(sock, selected[4]), timeout
+            )
             return OwnedTLSStream(sock, self.authority, first_write_wait=self.first_write_wait)
         except BaseException:
             sock.close()
@@ -193,23 +220,47 @@ class OwnedTLSHTTPTransport(httpx.AsyncBaseTransport):
         if adapter_id != "openai.responses.v1":
             raise ValueError("selected HTTPS inference adapter unsupported")
         self.origin = settings["origin"].rstrip("/")
-        self.backend = OwnedTLSBackend(authority, adapter_id, settings,
-            controlled=controlled, first_write_wait=first_write_wait)
+        self.backend = OwnedTLSBackend(
+            authority,
+            adapter_id,
+            settings,
+            controlled=controlled,
+            first_write_wait=first_write_wait,
+        )
         context = ssl.create_default_context(cadata=settings.get("ca_pem"))
-        self.pool = httpcore.AsyncConnectionPool(ssl_context=context, max_connections=1,
-            max_keepalive_connections=0, http1=True, http2=False, retries=0,
-            network_backend=self.backend)
+        self.pool = httpcore.AsyncConnectionPool(
+            ssl_context=context,
+            max_connections=1,
+            max_keepalive_connections=0,
+            http1=True,
+            http2=False,
+            retries=0,
+            network_backend=self.backend,
+        )
 
     async def handle_async_request(self, request):
         if request.method != "POST" or str(request.url) != self.origin + "/v1/responses":
             raise GuardRejected("DESTINATION_REJECTED")
-        core_request = httpcore.Request(method=request.method,
-            url=httpcore.URL(scheme=request.url.raw_scheme, host=request.url.raw_host,
-                port=request.url.port, target=request.url.raw_path),
-            headers=request.headers.raw, content=request.stream, extensions=request.extensions)
+        core_request = httpcore.Request(
+            method=request.method,
+            url=httpcore.URL(
+                scheme=request.url.raw_scheme,
+                host=request.url.raw_host,
+                port=request.url.port,
+                target=request.url.raw_path,
+            ),
+            headers=request.headers.raw,
+            content=request.stream,
+            extensions=request.extensions,
+        )
         response = await self.pool.handle_async_request(core_request)
-        return httpx.Response(response.status, headers=response.headers,
-            stream=_ResponseStream(response.stream), extensions=response.extensions, request=request)
+        return httpx.Response(
+            response.status,
+            headers=response.headers,
+            stream=_ResponseStream(response.stream),
+            extensions=response.extensions,
+            request=request,
+        )
 
     async def aclose(self):
         await self.pool.aclose()

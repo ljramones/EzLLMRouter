@@ -1,4 +1,5 @@
 """Local source, sender-admission and Unix-record gates before target execution."""
+
 import base64
 import asyncio
 from concurrent.futures import Future
@@ -60,8 +61,9 @@ def validate_worker_source_context(context, *, fixtures=False):
             raise AssertionError("worker COPY source is not a staged file: " + name)
     if len(sources) != 3 or set(sources) != WORKER_SOURCE_FILES:
         raise AssertionError("worker COPY must name exactly the runtime, wire and safe logger")
-    observed = {path.relative_to(context).as_posix()
-                for path in context.rglob("*") if path.is_file()}
+    observed = {
+        path.relative_to(context).as_posix() for path in context.rglob("*") if path.is_file()
+    }
     expected = WORKER_SOURCE_FILES | {"Dockerfile"}
     if fixtures:
         expected.add("fixture/worker_fixture.py")
@@ -82,22 +84,25 @@ class ChoiceBComponentTests(unittest.TestCase):
     def test_verifier_parses_pretty_single_document_and_jsonl_rows(self):
         from verify_choice_b import one, rows
 
-        modules = '''{
+        modules = """{
   "boundary": "separate trusted Choice B sender",
   "litellm_imported": false,
   "provider_key_in_trusted_process": true,
   "worker_socket": "/link/worker.sock",
   "sender_socket": "/link/sender.sock"
 }
-'''
+"""
         with tempfile.TemporaryDirectory(prefix="dev04-verifier-json-") as tmp:
             run = Path(tmp)
             (run / "choice-b-modules.stdout").write_text(modules)
             (run / "choice-b-receiver.stdout").write_text(
-                '{"attempt_id":"attempt.first"}\n{"attempt_id":"attempt.second"}\n')
+                '{"attempt_id":"attempt.first"}\n{"attempt_id":"attempt.second"}\n'
+            )
             self.assertEqual(one(run, "choice-b-modules"), json.loads(modules))
-            self.assertEqual([item["attempt_id"] for item in rows(run, "choice-b-receiver")],
-                             ["attempt.first", "attempt.second"])
+            self.assertEqual(
+                [item["attempt_id"] for item in rows(run, "choice-b-receiver")],
+                ["attempt.first", "attempt.second"],
+            )
             with self.assertRaises(json.JSONDecodeError):
                 one(run, "choice-b-receiver")
 
@@ -139,8 +144,10 @@ class ChoiceBComponentTests(unittest.TestCase):
             context = stage_worker_source_context(ROOT, Path(tmp))
             path = context / "Dockerfile"
             current = path.read_text()
-            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
-                                      "COPY worker/ /app/worker/")
+            changed = current.replace(
+                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
+                "COPY worker/ /app/worker/",
+            )
             self.assertNotEqual(current, changed)
             path.write_text(changed)
             with self.assertRaisesRegex(AssertionError, "not a staged file: worker/"):
@@ -151,8 +158,10 @@ class ChoiceBComponentTests(unittest.TestCase):
             context = stage_worker_source_context(ROOT, Path(tmp))
             path = context / "Dockerfile"
             current = path.read_text()
-            changed = current.replace("COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
-                                      "COPY . /app/worker/")
+            changed = current.replace(
+                "COPY choice_b_worker.py choice_b_wire.py worker_logging.py /app/worker/",
+                "COPY . /app/worker/",
+            )
             self.assertNotEqual(current, changed)
             path.write_text(changed)
             with self.assertRaisesRegex(AssertionError, "not a staged file"):
@@ -198,13 +207,23 @@ class ChoiceBComponentTests(unittest.TestCase):
         adapter.claimed = set()
         adapter.lock = threading.Lock()
         attempt = "attempt.choice-b.local"
-        invocation = Invocation("submission.local", attempt,
-                                {"per_attempt_total_timeout_ms": 1000,
-                                 "work_key": {"principal_id": "principal.test",
-                                              "task_id": "task.test", "step_id": "step.test",
-                                              "step_revision": 1,
-                                              "execution_generation": "gen.1"}}, {},
-                                lambda: None, lambda _receipt: None)
+        invocation = Invocation(
+            "submission.local",
+            attempt,
+            {
+                "per_attempt_total_timeout_ms": 1000,
+                "work_key": {
+                    "principal_id": "principal.test",
+                    "task_id": "task.test",
+                    "step_id": "step.test",
+                    "step_revision": 1,
+                    "execution_generation": "gen.1",
+                },
+            },
+            {},
+            lambda: None,
+            lambda _receipt: None,
+        )
         adapter.registry[attempt] = invocation
         inspected = []
 
@@ -216,16 +235,19 @@ class ChoiceBComponentTests(unittest.TestCase):
             return future
 
         adapter._call = no_network
-        envelope = {"kind": "final_request", "attempt_id": attempt,
-                    "method": "POST", "url": "http://127.0.0.1:8766/v1/chat/completions",
-                    "headers": [["authorization", "Bearer " + WORKER_KEY]],
-                    "body_b64": base64.b64encode(b"{}").decode("ascii"),
-                    "timeout": {"connect": 1, "read": 1, "write": 1, "pool": 1}}
+        envelope = {
+            "kind": "final_request",
+            "attempt_id": attempt,
+            "method": "POST",
+            "url": "http://127.0.0.1:8766/v1/chat/completions",
+            "headers": [["authorization", "Bearer " + WORKER_KEY]],
+            "body_b64": base64.b64encode(b"{}").decode("ascii"),
+            "timeout": {"connect": 1, "read": 1, "write": 1, "pool": 1},
+        }
         with self.assertRaisesRegex(ValueError, "unregistered attempt"):
             adapter.process_relay({**envelope, "attempt_id": "attempt.forged"})
         self.assertEqual(adapter.process_relay(envelope)["status"], 200)
-        self.assertEqual(inspected[0].headers["authorization"],
-                         "Bearer " + adapter.provider_key)
+        self.assertEqual(inspected[0].headers["authorization"], "Bearer " + adapter.provider_key)
         with self.assertRaisesRegex(ValueError, "replayed attempt authority"):
             adapter.process_relay(envelope)
 
@@ -234,7 +256,12 @@ class ChoiceBComponentTests(unittest.TestCase):
             sys.path.insert(0, str(source))
         import httpx
         from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter, WORKER_KEY
-        from ezllmrouter_server.gateway.guard import GuardRejected, GuardTransport, PROVIDER_URL, provider_expectation
+        from ezllmrouter_server.gateway.guard import (
+            GuardRejected,
+            GuardTransport,
+            PROVIDER_URL,
+            provider_expectation,
+        )
         from test_guard import invocation
 
         arrivals, receipts = [], []
@@ -249,28 +276,36 @@ class ChoiceBComponentTests(unittest.TestCase):
         adapter.claimed = set()
         adapter.lock = threading.Lock()
         adapter.loop = asyncio.new_event_loop()
-        thread = threading.Thread(target=lambda: (asyncio.set_event_loop(adapter.loop),
-                                  adapter.loop.run_forever()), daemon=True)
+        thread = threading.Thread(
+            target=lambda: (asyncio.set_event_loop(adapter.loop), adapter.loop.run_forever()),
+            daemon=True,
+        )
         thread.start()
         adapter.guard = GuardTransport(httpx.MockTransport(lower))
         context = invocation(aid="attempt.choice-b.exact", commit=receipts.append)
         adapter.registry[context.attempt_id] = context
-        prepared = httpx.Request("POST", PROVIDER_URL,
+        prepared = httpx.Request(
+            "POST",
+            PROVIDER_URL,
             json=provider_expectation(context.projection),
-            headers={"Authorization": "Bearer " + WORKER_KEY})
-        envelope = {"kind": "final_request", "attempt_id": context.attempt_id,
-            "method": prepared.method, "url": str(prepared.url),
+            headers={"Authorization": "Bearer " + WORKER_KEY},
+        )
+        envelope = {
+            "kind": "final_request",
+            "attempt_id": context.attempt_id,
+            "method": prepared.method,
+            "url": str(prepared.url),
             "headers": [[key, value] for key, value in prepared.headers.items()],
             "body_b64": base64.b64encode(prepared.content).decode("ascii"),
-            "timeout": {"connect": 1.0, "read": 1.0, "write": 1.0, "pool": 1.0}}
+            "timeout": {"connect": 1.0, "read": 1.0, "write": 1.0, "pool": 1.0},
+        }
         original_provider_key = os.environ.get("EZLLMROUTER_DEV04_PROVIDER_KEY")
         os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"] = adapter.provider_key
         try:
             result = adapter.process_relay(envelope)
             self.assertEqual(result["status"], 200)
             self.assertEqual(len(arrivals), 1)
-            self.assertEqual(arrivals[0].headers["authorization"],
-                             "Bearer " + adapter.provider_key)
+            self.assertEqual(arrivals[0].headers["authorization"], "Bearer " + adapter.provider_key)
             self.assertEqual(len(receipts), 1)
             self.assertEqual(receipts[0]["attempt_id"], context.attempt_id)
             with self.assertRaisesRegex(ValueError, "replayed attempt authority"):
@@ -280,8 +315,11 @@ class ChoiceBComponentTests(unittest.TestCase):
             adapter.registry[changed.attempt_id] = changed
             altered_body = prepared.content.replace(b"model.demo", b"model.evil")
             self.assertNotEqual(altered_body, prepared.content)
-            altered = {**envelope, "attempt_id": changed.attempt_id,
-                       "body_b64": base64.b64encode(altered_body).decode("ascii")}
+            altered = {
+                **envelope,
+                "attempt_id": changed.attempt_id,
+                "body_b64": base64.b64encode(altered_body).decode("ascii"),
+            }
             with self.assertRaises(GuardRejected):
                 adapter.process_relay(altered)
             self.assertEqual(len(arrivals), 1)
@@ -301,18 +339,32 @@ class ChoiceBComponentTests(unittest.TestCase):
             mutation = invocation(aid="attempt.choice-b.mutation", commit=receipts.append)
             mutation.plan["work_key"]["step_id"] = "step.dev03.mutation"
             mutation.projection["work"].update(
-                requested_features=["tools"], tool_choice="auto",
-                tool_definitions=[{"name": "lookup", "description": "Synthetic lookup",
-                                   "input_schema": {"type": "object", "properties": {}}}])
+                requested_features=["tools"],
+                tool_choice="auto",
+                tool_definitions=[
+                    {
+                        "name": "lookup",
+                        "description": "Synthetic lookup",
+                        "input_schema": {"type": "object", "properties": {}},
+                    }
+                ],
+            )
             adapter.registry[mutation.attempt_id] = mutation
-            tool_request = httpx.Request("POST", PROVIDER_URL,
+            tool_request = httpx.Request(
+                "POST",
+                PROVIDER_URL,
                 json=provider_expectation(mutation.projection),
-                headers={"Authorization": "Bearer " + WORKER_KEY})
-            mutation_envelope = {**envelope, "attempt_id": mutation.attempt_id,
+                headers={"Authorization": "Bearer " + WORKER_KEY},
+            )
+            mutation_envelope = {
+                **envelope,
+                "attempt_id": mutation.attempt_id,
                 "headers": [[key, value] for key, value in tool_request.headers.items()],
-                "body_b64": base64.b64encode(tool_request.content).decode("ascii")}
+                "body_b64": base64.b64encode(tool_request.content).decode("ascii"),
+            }
             with tempfile.TemporaryDirectory() as tmp:
                 from tools.gateway.fixture_adapters import ToolMutationTransport
+
                 guard = adapter.guard
                 adapter.guard = ToolMutationTransport(guard, Path(tmp) / "mutation.jsonl")
                 try:

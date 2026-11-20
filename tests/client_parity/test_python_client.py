@@ -1,4 +1,5 @@
 """Contract-derived component cases; the installed consumer runs this unchanged."""
+
 import copy
 import json
 from pathlib import Path
@@ -11,7 +12,10 @@ from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
 HERE = Path(__file__).resolve().parent
 VECTOR_FILE = HERE / "vectors.json"
 if not VECTOR_FILE.exists():
-    VECTOR_FILE = HERE.parents[1] / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    VECTOR_FILE = (
+        HERE.parents[1]
+        / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    )
 EXAMPLES = json.loads(VECTOR_FILE.read_text())["examples"]
 
 
@@ -27,6 +31,7 @@ class Transport:
         self.response, self.callback, self.lost = response, callback, lost
         self.calls = []
         self.closed = False
+
     def request(self, method, url, **kwargs):
         self.calls.append((method, url, kwargs))
         if self.callback:
@@ -34,6 +39,7 @@ class Transport:
         if self.lost:
             raise OSError("synthetic lost reply")
         return self.response
+
     def close(self):
         self.closed = True
 
@@ -53,12 +59,16 @@ def error(call, code):
 class ClientTests(unittest.TestCase):
     def client(self, response, *, status=200, callback=None, lost=False, version="0.2"):
         transport = Transport(Response(response, status, version), callback, lost)
-        return EzLLMRouterClient("http://synthetic.invalid", "token.synthetic", transport=transport), transport
+        return EzLLMRouterClient(
+            "http://synthetic.invalid", "token.synthetic", transport=transport
+        ), transport
 
     def test_multiline_text_is_preserved_on_submit_and_status_recovery(self):
         text = "Sure:\n1. item\n\tUnicode α 🔐\r\n"
-        for name, action in (("reply_delivered", lambda c: c.submit(EXAMPLES["submit_text"])),
-                             ("status_present", lambda c: c.get_status(selected()))):
+        for name, action in (
+            ("reply_delivered", lambda c: c.submit(EXAMPLES["submit_text"])),
+            ("status_present", lambda c: c.get_status(selected())),
+        ):
             with self.subTest(action=name):
                 value = copy.deepcopy(EXAMPLES[name])
                 value["candidate"]["output_blocks"][0]["text"] = text
@@ -73,7 +83,8 @@ class ClientTests(unittest.TestCase):
             ("reply_delivered", lambda c: c.submit(EXAMPLES["submit_text"], {"wait_ms": 0}), 200),
             ("reply_pending", lambda c: c.submit(EXAMPLES["submit_text"], {}), 202),
             ("status_present", lambda c: c.getStatus({"submission_id": "submission.demo"}), 200),
-            ("capabilities", lambda c: c.getCapabilities(), 200)]:
+            ("capabilities", lambda c: c.getCapabilities(), 200),
+        ]:
             with self.subTest(name=name):
                 client, transport = self.client(EXAMPLES[name], status=status)
                 with client:
@@ -83,32 +94,58 @@ class ClientTests(unittest.TestCase):
                 self.assertTrue(transport.closed)
                 method, _, kwargs = transport.calls[0]
                 self.assertEqual(kwargs["headers"]["EzLLMRouter-Contract-Version"], "0.2")
-                if method == "GET": self.assertNotIn("content", kwargs)
-                elif name == "reply_delivered": self.assertEqual(kwargs["headers"]["EzLLMRouter-Wait-Ms"], "0")
-                else: self.assertNotIn("EzLLMRouter-Wait-Ms", kwargs["headers"])
+                if method == "GET":
+                    self.assertNotIn("content", kwargs)
+                elif name == "reply_delivered":
+                    self.assertEqual(kwargs["headers"]["EzLLMRouter-Wait-Ms"], "0")
+                else:
+                    self.assertNotIn("EzLLMRouter-Wait-Ms", kwargs["headers"])
         client, transport = self.client(EXAMPLES["capabilities"])
         self.assertEqual(client.get_capabilities()["profile"], "initial_1a@1")
         client.close()
 
     def test_invalid_options_and_selectors_are_prefetch(self):
         client, transport = self.client(EXAMPLES["reply_delivered"])
-        for options in ({"wait_ms": True}, {"wait_ms": 30001}, {"wait_ms": 1.5}, {"wait_ms": "0"}, {"extra": 1}):
+        for options in (
+            {"wait_ms": True},
+            {"wait_ms": 30001},
+            {"wait_ms": 1.5},
+            {"wait_ms": "0"},
+            {"extra": 1},
+        ):
             with self.subTest(options=options):
-                self.assertEqual(error(lambda: client.submit(EXAMPLES["submit_text"], options), "SCHEMA_INVALID").http_status, None)
-        for selector in ({"submission_id": ""}, {**selected(), "task_id": {}}, {"task_id": "task.demo"}):
+                self.assertEqual(
+                    error(
+                        lambda: client.submit(EXAMPLES["submit_text"], options), "SCHEMA_INVALID"
+                    ).http_status,
+                    None,
+                )
+        for selector in (
+            {"submission_id": ""},
+            {**selected(), "task_id": {}},
+            {"task_id": "task.demo"},
+        ):
             with self.subTest(selector=selector):
                 error(lambda: client.getStatus(selector), "SCHEMA_INVALID")
         self.assertEqual(transport.calls, [])
         client.close()
 
     def test_malformed_handle_and_work_correspondence(self):
-        for handle in ({}, {"submission_id": "submission.demo"},
-                       {"submission_id": "submission.demo", "work_key": None}, "invalid"):
+        for handle in (
+            {},
+            {"submission_id": "submission.demo"},
+            {"submission_id": "submission.demo", "work_key": None},
+            "invalid",
+        ):
             for name, method in (("reply_delivered", "submit"), ("status_present", "status")):
-                value = copy.deepcopy(EXAMPLES[name]); value["handle"] = handle
+                value = copy.deepcopy(EXAMPLES[name])
+                value["handle"] = handle
                 client, transport = self.client(value)
-                call = (lambda: client.submit(EXAMPLES["submit_text"])) if method == "submit" else \
-                    (lambda: client.getStatus(selected()))
+                call = (
+                    (lambda: client.submit(EXAMPLES["submit_text"]))
+                    if method == "submit"
+                    else (lambda: client.getStatus(selected()))
+                )
                 caught = error(call, "INTERNAL_UNAVAILABLE")
                 self.assertEqual(caught.selector, selected())
                 self.assertEqual(len(transport.calls), 1)
@@ -116,7 +153,10 @@ class ClientTests(unittest.TestCase):
         wrong = copy.deepcopy(EXAMPLES["reply_delivered"])
         wrong["handle"]["work_key"]["task_id"] = "task.other"
         client, _ = self.client(wrong)
-        self.assertEqual(error(lambda: client.submit(EXAMPLES["submit_text"]), "INTERNAL_UNAVAILABLE").selector, selected())
+        self.assertEqual(
+            error(lambda: client.submit(EXAMPLES["submit_text"]), "INTERNAL_UNAVAILABLE").selector,
+            selected(),
+        )
         client.close()
 
     def test_selector_snapshot_both_forms(self):
@@ -127,31 +167,53 @@ class ClientTests(unittest.TestCase):
                     expected = dict(selector)
                     value = copy.deepcopy(EXAMPLES["status_present"])
                     if not original_reply:
-                        if kind == "id": value["handle"]["submission_id"] = "submission.other"
-                        else: value["handle"]["work_key"]["task_id"] = "task.other"
+                        if kind == "id":
+                            value["handle"]["submission_id"] = "submission.other"
+                        else:
+                            value["handle"]["work_key"]["task_id"] = "task.other"
+
                     def mutate():
-                        if kind == "id": selector["submission_id"] = "submission.other"
-                        else: selector["task_id"] = "task.other"
+                        if kind == "id":
+                            selector["submission_id"] = "submission.other"
+                        else:
+                            selector["task_id"] = "task.other"
+
                     client, transport = self.client(value, callback=mutate)
                     if original_reply:
-                        self.assertEqual(client.getStatus(selector)["handle"]["submission_id"], "submission.demo")
+                        self.assertEqual(
+                            client.getStatus(selector)["handle"]["submission_id"], "submission.demo"
+                        )
                     else:
-                        self.assertEqual(error(lambda: client.getStatus(selector), "INTERNAL_UNAVAILABLE").selector, expected)
+                        self.assertEqual(
+                            error(
+                                lambda: client.getStatus(selector), "INTERNAL_UNAVAILABLE"
+                            ).selector,
+                            expected,
+                        )
                     self.assertEqual(len(transport.calls), 1)
                     client.close()
 
     def test_transport_version_failure_and_accounting(self):
         client, transport = self.client(EXAMPLES["reply_delivered"], lost=True)
         caught = error(lambda: client.submit(EXAMPLES["submit_text"]), "TRANSPORT_OUTCOME_UNKNOWN")
-        self.assertEqual((caught.retry_guidance, caught.selector, len(transport.calls)), ("query_first", selected(), 1))
+        self.assertEqual(
+            (caught.retry_guidance, caught.selector, len(transport.calls)),
+            ("query_first", selected(), 1),
+        )
         client.close()
         client, _ = self.client(EXAMPLES["reply_delivered"], version="9.9")
-        self.assertEqual(error(lambda: client.submit(EXAMPLES["submit_text"]), "UNSUPPORTED_VERSION").selector, selected())
+        self.assertEqual(
+            error(lambda: client.submit(EXAMPLES["submit_text"]), "UNSUPPORTED_VERSION").selector,
+            selected(),
+        )
         client.close()
         client, transport = self.client(EXAMPLES["reply_delivered"])
         transport.response.content = b'{"contract_version":'
         caught = error(lambda: client.submit(EXAMPLES["submit_text"]), "TRANSPORT_OUTCOME_UNKNOWN")
-        self.assertEqual((caught.retry_guidance, caught.selector, len(transport.calls)), ("query_first", selected(), 1))
+        self.assertEqual(
+            (caught.retry_guidance, caught.selector, len(transport.calls)),
+            ("query_first", selected(), 1),
+        )
         client.close()
         unknown = copy.deepcopy(EXAMPLES["reply_delivered"])
         revision = copy.deepcopy(EXAMPLES["usage_unknown_cost"])
@@ -165,11 +227,17 @@ class ClientTests(unittest.TestCase):
     def test_deep_json_reply_keeps_typed_recovery_and_never_replays(self):
         requests = []
         deep = b"[" * 20000 + b"0" + b"]" * 20000
+
         def respond(request):
             requests.append(request)
-            return httpx.Response(200, headers={"EzLLMRouter-Contract-Version": "0.2"}, content=deep)
+            return httpx.Response(
+                200, headers={"EzLLMRouter-Contract-Version": "0.2"}, content=deep
+            )
+
         transport = httpx.Client(transport=httpx.MockTransport(respond), trust_env=False)
-        client = EzLLMRouterClient("http://synthetic.invalid", "token.synthetic", transport=transport)
+        client = EzLLMRouterClient(
+            "http://synthetic.invalid", "token.synthetic", transport=transport
+        )
         original = selected()
         caught = error(lambda: client.submit(EXAMPLES["submit_text"]), "TRANSPORT_OUTCOME_UNKNOWN")
         self.assertEqual(caught.selector, original)
@@ -195,8 +263,12 @@ class ClientTests(unittest.TestCase):
             client.close()
 
     def test_status_404_is_not_nonexecution_proof(self):
-        client, transport = self.client({"contract_version": "0.2", "error": EXAMPLES["error_forbidden"]["error"]}, status=404)
-        caught = error(lambda: client.getStatus({"submission_id": "submission.demo"}), "NOT_FOUND_OR_FORBIDDEN")
+        client, transport = self.client(
+            {"contract_version": "0.2", "error": EXAMPLES["error_forbidden"]["error"]}, status=404
+        )
+        caught = error(
+            lambda: client.getStatus({"submission_id": "submission.demo"}), "NOT_FOUND_OR_FORBIDDEN"
+        )
         self.assertEqual(caught.http_status, 404)
         self.assertEqual(caught.selector, {"submission_id": "submission.demo"})
         self.assertIsNone(caught.handle)
@@ -204,9 +276,11 @@ class ClientTests(unittest.TestCase):
         client.close()
 
     def test_known_failure_is_distinct(self):
-        for name, code, status in (("reply_failed_fdc", "FDC_REJECTED", 409),
-                                   ("reply_failed_intent", "INTENT_PERSIST_FAILED", 503),
-                                   ("reply_failed_remote", "REMOTE_EXECUTION_FAILED", 502)):
+        for name, code, status in (
+            ("reply_failed_fdc", "FDC_REJECTED", 409),
+            ("reply_failed_intent", "INTENT_PERSIST_FAILED", 503),
+            ("reply_failed_remote", "REMOTE_EXECUTION_FAILED", 502),
+        ):
             with self.subTest(name=name):
                 client, _ = self.client(EXAMPLES[name], status=status)
                 caught = error(lambda: client.submit(EXAMPLES["submit_text"]), code)

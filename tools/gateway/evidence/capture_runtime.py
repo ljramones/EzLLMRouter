@@ -1,4 +1,5 @@
 """Redacted runtime export with an explicit credential-generation lifecycle."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -58,8 +59,11 @@ def capture(run, out, prefix):
         if not path.is_file() or path.is_symlink():
             continue
         relative = path.relative_to(run)
-        if ("build" in relative.parts or path.name.endswith((".keys.json", ".keys.json.lock", ".sealed")) or path.name in
-                {*SECRET_NAMES, "capture.stdout", "capture.stderr"}):
+        if (
+            "build" in relative.parts
+            or path.name.endswith((".keys.json", ".keys.json.lock", ".sealed"))
+            or path.name in {*SECRET_NAMES, "capture.stdout", "capture.stderr"}
+        ):
             continue
         raw = path.read_bytes()
         redacted = False
@@ -72,14 +76,22 @@ def capture(run, out, prefix):
     with zipfile.ZipFile(target, "x", zipfile.ZIP_DEFLATED) as archive:
         for name, raw, redacted in files:
             archive.writestr(name, raw)
-            rows.append({"path": name, "bytes": len(raw),
-                         "sha256": hashlib.sha256(raw).hexdigest(),
-                         "credential_redacted": redacted})
-        archive.writestr("EVIDENCE-MANIFEST.json",
-                         json.dumps({"files": rows, "self_excluded": True}, indent=2))
-    return {"runtime_packet": str(target),
-            "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
-            "payloads": len(rows)}
+            rows.append(
+                {
+                    "path": name,
+                    "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "credential_redacted": redacted,
+                }
+            )
+        archive.writestr(
+            "EVIDENCE-MANIFEST.json", json.dumps({"files": rows, "self_excluded": True}, indent=2)
+        )
+    return {
+        "runtime_packet": str(target),
+        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+        "payloads": len(rows),
+    }
 
 
 def main():

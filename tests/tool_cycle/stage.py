@@ -1,4 +1,5 @@
 """Hash checked, offline DEV-03 Docker contexts from local approved inputs."""
+
 from pathlib import Path
 import hashlib
 import json
@@ -39,41 +40,96 @@ def prepare(root, run):
             raise ValueError("Python wheel size mismatch")
         rows.append(copy(src, run / "build/python/wheels" / src.name, entry["sha256"]))
     (run / "build/python/wheelhouse.sha256").write_text(
-        "".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows))
+        "".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows)
+    )
     for entry in manifest:
         src = predecessor / "wheels" / entry["filename"]
         if src.stat().st_size != entry["bytes"]:
             raise ValueError("service wheel size mismatch")
         rows.append(copy(src, run / "build/service/wheels" / src.name, entry["sha256"]))
-    for name, target in (("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "python"),
-                         ("cognitivedynamics-ezllmrouter-client-0.3.0.tgz", "js")):
+    for name, target in (
+        ("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "python"),
+        ("cognitivedynamics-ezllmrouter-client-0.3.0.tgz", "js"),
+    ):
         rows.append(copy(root / "docs/development/dev-03" / name, run / "build" / target / name))
-    for name, target in (("python_actor.py", "python"), ("js_actor.cjs", "js"),
-                         ("test_python_client.py", "python"), ("test_js_client.cjs", "js")):
+    for name, target in (
+        ("python_actor.py", "python"),
+        ("js_actor.cjs", "js"),
+        ("test_python_client.py", "python"),
+        ("test_js_client.cjs", "js"),
+    ):
         rows.append(copy(root / "tests/tool_cycle" / name, run / "build" / target / "tests" / name))
     for target in ("python", "js"):
-        rows.append(copy(root / "tests/development_slice/request.json", run / "build" / target / "tests/request.json"))
-        rows.append(copy(root / "tests/tool_cycle/scenarios.json", run / "build" / target / "tests/scenarios.json"))
-        rows.append(copy(root / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
-                         run / "build" / target / "tests/vectors.json"))
+        rows.append(
+            copy(
+                root / "tests/development_slice/request.json",
+                run / "build" / target / "tests/request.json",
+            )
+        )
+        rows.append(
+            copy(
+                root / "tests/tool_cycle/scenarios.json",
+                run / "build" / target / "tests/scenarios.json",
+            )
+        )
+        rows.append(
+            copy(
+                root
+                / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+                run / "build" / target / "tests/vectors.json",
+            )
+        )
     for src in sorted((root / "server/src").rglob("*")):
         if src.is_dir() or "__pycache__" in src.parts or src.name == ".DS_Store":
             continue
         rows.append(copy(src, run / "build/service/server" / src.relative_to(root / "server/src")))
-    for name in ("service_main.py", "synthetic_routes.py", "native_adapter.py", "recipe.py", "fixture.json",
-                 "request.json", "test_crypto.py", "test_http.py", "test_native_adapter.py"):
-        rows.append(copy(root / "tests/development_slice" / name, run / "build/service/tests" / name))
-    rows.append(copy(root / "tests/tool_cycle/scenarios.json", run / "build/service/tests/scenarios.json"))
+    for name in (
+        "service_main.py",
+        "synthetic_routes.py",
+        "native_adapter.py",
+        "recipe.py",
+        "fixture.json",
+        "request.json",
+        "test_crypto.py",
+        "test_http.py",
+        "test_native_adapter.py",
+    ):
+        rows.append(
+            copy(root / "tests/development_slice" / name, run / "build/service/tests" / name)
+        )
+    rows.append(
+        copy(root / "tests/tool_cycle/scenarios.json", run / "build/service/tests/scenarios.json")
+    )
     for name in ("test_core.py", "scenarios.json"):
-        rows.append(copy(root / "tests/tool_cycle" / name,
-                         run / "build/service/tests/tool_cycle" / name))
+        rows.append(
+            copy(root / "tests/tool_cycle" / name, run / "build/service/tests/tool_cycle" / name)
+        )
     for name in ("fixture.json", "request.json", "recipe.py"):
-        rows.append(copy(root / "tests/development_slice" / name,
-                         run / "build/service/tests/development_slice" / name))
-    rows.append(copy(root / "tests/development_slice/requirements.lock", run / "build/service/requirements.lock"))
-    rows.append(copy(root / "tests/development_slice/receiver.py", run / "build/receiver/receiver.py"))
-    for name in ("compose.yaml", "Dockerfile.python-consumer", "Dockerfile.js-consumer", "run.sh",
-                 "stage.py", "README.md", "test_core.py", "test_receiver.py"):
+        rows.append(
+            copy(
+                root / "tests/development_slice" / name,
+                run / "build/service/tests/development_slice" / name,
+            )
+        )
+    rows.append(
+        copy(
+            root / "tests/development_slice/requirements.lock",
+            run / "build/service/requirements.lock",
+        )
+    )
+    rows.append(
+        copy(root / "tests/development_slice/receiver.py", run / "build/receiver/receiver.py")
+    )
+    for name in (
+        "compose.yaml",
+        "Dockerfile.python-consumer",
+        "Dockerfile.js-consumer",
+        "run.sh",
+        "stage.py",
+        "README.md",
+        "test_core.py",
+        "test_receiver.py",
+    ):
         src = root / "tests/tool_cycle" / name
         if not src.is_file() or src.is_symlink():
             raise ValueError(f"missing source: {src}")
@@ -95,7 +151,9 @@ def prepare(root, run):
 
 def verify_images(path):
     images = json.loads(Path(path).read_text())
-    if len(images) != 2 or any(x.get("Os") != "linux" or x.get("Architecture") != "arm64" for x in images):
+    if len(images) != 2 or any(
+        x.get("Os") != "linux" or x.get("Architecture") != "arm64" for x in images
+    ):
         raise ValueError("pinned Linux ARM64 bases unavailable")
     print(json.dumps({"base_image_ids": [x["Id"] for x in images], "os": "linux", "arch": "arm64"}))
 

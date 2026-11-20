@@ -1,4 +1,5 @@
 """Read-only synthetic operator preview from a disposable DB copy."""
+
 from pathlib import Path
 import os
 import signal
@@ -18,13 +19,19 @@ def main():
     if not db.is_file():
         raise RuntimeError("disposable synthetic DB copy absent")
     store = SQLiteStore(db)
-    server = serve("0.0.0.0", 18780,
+    server = serve(
+        "0.0.0.0",
+        18780,
         projection=OperatorProjection(store, "user.demo", str(db.parent / "unused-send.jsonl")),
-        runner=None, password="dev12.synthetic.operator." + "x" * 32,
+        runner=None,
+        password="dev12.synthetic.operator." + "x" * 32,
         fixture={"destination": {}, "policy": {}},
         build={"commit": "disposable.dev12", "dirty": True, "fingerprint": "controlled.synthetic"},
-        web_root=ROOT / "web", worker_probe=lambda: {"state": "not started"},
-        sender_status=lambda: {"state": "not started"}, successor_store=store)
+        web_root=ROOT / "web",
+        worker_probe=lambda: {"state": "not started"},
+        sender_status=lambda: {"state": "not started"},
+        successor_store=store,
+    )
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())

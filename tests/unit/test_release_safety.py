@@ -1,4 +1,5 @@
 """Accounting survives rejected plans, malformed replies and post-send failures."""
+
 import io
 import json
 from decimal import Decimal
@@ -19,8 +20,13 @@ class CoreFailureTests(unittest.TestCase):
     coordinator = core_fixtures.CoreTests.coordinator
 
     def test_plan_issuance_failures_are_durable_before_send_failures(self):
-        for index, failure in enumerate((RuntimeError("private diagnostic"), KeyError("missing"),
-                                         ContractError("PLAN_INVALID_OR_STALE", 409))):
+        for index, failure in enumerate(
+            (
+                RuntimeError("private diagnostic"),
+                KeyError("missing"),
+                ContractError("PLAN_INVALID_OR_STALE", 409),
+            )
+        ):
             with self.subTest(failure=type(failure).__name__):
                 coordinator = self.coordinator()
                 request = core_fixtures.copy.deepcopy(core_fixtures.REQUEST)
@@ -33,20 +39,31 @@ class CoreFailureTests(unittest.TestCase):
                 self.assertEqual(self.store.intent_count(sid), 0)
                 self.assertEqual(self.adapter.sent, [])
                 coordinator.submit(request, self.trusted, 1000)
-                self.assertEqual(coordinator.status(sid, self.trusted)["submission_state"], "failed_before_transmit")
+                self.assertEqual(
+                    coordinator.status(sid, self.trusted)["submission_state"],
+                    "failed_before_transmit",
+                )
                 self.assertEqual(self.adapter.sent, [])
 
     def test_scheduler_failure_is_terminal_without_a_send(self):
         coordinator = self.coordinator()
-        with patch.object(coordinator.pool, "submit", side_effect=RuntimeError("scheduler unavailable")):
+        with patch.object(
+            coordinator.pool, "submit", side_effect=RuntimeError("scheduler unavailable")
+        ):
             code, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         self.assertEqual(code, 503)
-        self.assertEqual(self.store.get(reply["handle"]["submission_id"])["submission_state"], "failed_before_transmit")
+        self.assertEqual(
+            self.store.get(reply["handle"]["submission_id"])["submission_state"],
+            "failed_before_transmit",
+        )
         self.assertEqual(self.adapter.sent, [])
 
     def test_unexpected_response_processing_failure_preserves_usage_and_prevents_resend(self):
         coordinator = self.coordinator()
-        with patch("ezllmrouter_server.core.public_served_destination", side_effect=RuntimeError("private reply")):
+        with patch(
+            "ezllmrouter_server.core.public_served_destination",
+            side_effect=RuntimeError("private reply"),
+        ):
             code, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         self.assertEqual(code, 202)
         sid = reply["handle"]["submission_id"]
@@ -55,7 +72,9 @@ class CoreFailureTests(unittest.TestCase):
         self.assertEqual(record["attempts"][0]["usage"]["state"], "available")
         coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         self.assertEqual(len(self.adapter.sent), 1)
-        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1)
+        self.assertEqual(
+            self.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1
+        )
 
     def test_invalid_candidate_keeps_reported_usage(self):
         self.adapter.body = {"text": None, "usage": {"input_tokens": 3, "output_tokens": 1}}
@@ -68,7 +87,9 @@ class CoreFailureTests(unittest.TestCase):
 
     def test_candidate_persistence_failure_preserves_usage_and_prevents_resend(self):
         coordinator = self.coordinator()
-        with patch.object(self.store, "complete_candidate", side_effect=OSError("storage unavailable")):
+        with patch.object(
+            self.store, "complete_candidate", side_effect=OSError("storage unavailable")
+        ):
             code, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         self.assertEqual((code, reply["state"]), (202, "pending"))
         status = coordinator.status(reply["handle"]["submission_id"], self.trusted)
@@ -77,31 +98,46 @@ class CoreFailureTests(unittest.TestCase):
         self.assertNotIn("candidate", status)
         self.assertNotIn("terminal_failure", status)
         repeated_code, repeated = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
-        self.assertEqual((repeated_code, repeated["state"], repeated["handle"]),
-                         (202, "pending", reply["handle"]))
+        self.assertEqual(
+            (repeated_code, repeated["state"], repeated["handle"]),
+            (202, "pending", reply["handle"]),
+        )
         self.assertEqual(len(self.adapter.sent), 1)
 
     def test_post_commit_failure_does_not_downgrade_completed_accounting(self):
         coordinator = self.coordinator()
         complete = self.store.complete_candidate
+
         def complete_then_raise(*args, **kwargs):
             complete(*args, **kwargs)
             raise RuntimeError("reply construction failed")
+
         with patch.object(self.store, "complete_candidate", side_effect=complete_then_raise):
             _, reply = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
         status = coordinator.status(reply["handle"]["submission_id"], self.trusted)
         self.assertEqual(status["submission_state"], "completed")
         self.assertEqual(status["attempts"][0]["usage"]["state"], "available")
-        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1)
+        self.assertEqual(
+            self.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1
+        )
 
     def test_background_response_failure_keeps_the_request_correlation(self):
         coordinator = self.coordinator()
         correlation = observability.REQUEST_CORRELATION.set("request.synthetic-correlation")
         captured = []
         try:
-            with patch("ezllmrouter_server.core.public_served_destination", side_effect=RuntimeError("private response")), \
-                    patch("ezllmrouter_server.core.log_failure", side_effect=lambda *_args: captured.append(
-                        observability.REQUEST_CORRELATION.get())):
+            with (
+                patch(
+                    "ezllmrouter_server.core.public_served_destination",
+                    side_effect=RuntimeError("private response"),
+                ),
+                patch(
+                    "ezllmrouter_server.core.log_failure",
+                    side_effect=lambda *_args: captured.append(
+                        observability.REQUEST_CORRELATION.get()
+                    ),
+                ),
+            ):
                 code, _ = coordinator.submit(core_fixtures.REQUEST, self.trusted, 1000)
             self.assertEqual(code, 202)
             self.assertEqual(captured, ["request.synthetic-correlation"])
@@ -110,9 +146,11 @@ class CoreFailureTests(unittest.TestCase):
 
     def test_sqlite_automatic_rollback_preserves_the_original_failure(self):
         failure = RuntimeError("original database failure")
+
         def action():
             self.store.db.execute("ROLLBACK")
             raise failure
+
         with self.assertRaises(RuntimeError) as raised:
             self.store._transaction(action)
         self.assertIs(raised.exception, failure)
@@ -130,15 +168,26 @@ class CampaignFailureTests(unittest.TestCase):
         attempt["status_revision"] = 1
         self.store.create(attempt, reserve=lambda db, item: self.campaign.reserve(db, item, 20, 16))
         coordinator = SimpleNamespace(store=self.store, registry=self.registry)
-        Coordinator._failed(coordinator, attempt["submission_id"], attempt["attempt_id"],
-                            "INTERNAL_UNAVAILABLE", "before_transmit")
-        state = self.store.db.execute("SELECT state FROM personal_campaign_attempts WHERE attempt_id=?",
-                                      (attempt["attempt_id"],)).fetchone()[0]
+        Coordinator._failed(
+            coordinator,
+            attempt["submission_id"],
+            attempt["attempt_id"],
+            "INTERNAL_UNAVAILABLE",
+            "before_transmit",
+        )
+        state = self.store.db.execute(
+            "SELECT state FROM personal_campaign_attempts WHERE attempt_id=?",
+            (attempt["attempt_id"],),
+        ).fetchone()[0]
         self.assertEqual(state, "released")
-        self.assertEqual(self.store.get(attempt["submission_id"])["submission_state"], "failed_before_transmit")
+        self.assertEqual(
+            self.store.get(attempt["submission_id"])["submission_state"], "failed_before_transmit"
+        )
         summary = self.campaign.summary()
         self.assertEqual(Decimal(summary["outstanding_decimal"]), 0)
-        self.assertEqual(Decimal(summary["available_decimal"]), Decimal(self.config["allowance_decimal"]))
+        self.assertEqual(
+            Decimal(summary["available_decimal"]), Decimal(self.config["allowance_decimal"])
+        )
 
 
 class ToolResponseTests(unittest.TestCase):
@@ -147,16 +196,22 @@ class ToolResponseTests(unittest.TestCase):
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
         original = fixture.adapter.send
+
         def send(*args):
             reply = original(*args)
             reply["body"]["text"] = None
             return reply
+
         with patch.object(fixture.adapter, "send", side_effect=send):
-            code, reply = fixture.coordinator.submit(fixture.request(), fixture.trusted, 3000, credential="token")
+            code, reply = fixture.coordinator.submit(
+                fixture.request(), fixture.trusted, 3000, credential="token"
+            )
         self.assertEqual(code, 200)
         self.assertEqual(reply["candidate"]["output_blocks"][0]["kind"], "tool_call")
         self.assertEqual(reply["candidate"]["usage"]["state"], "available")
-        self.assertEqual(fixture.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1)
+        self.assertEqual(
+            fixture.store.db.execute("SELECT COUNT(*) FROM usage_revisions").fetchone()[0], 1
+        )
 
 
 class LoggingTests(unittest.TestCase):

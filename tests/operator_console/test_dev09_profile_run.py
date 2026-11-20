@@ -1,4 +1,5 @@
 """One-use namespace and credential-safe actor evidence without Docker."""
+
 from pathlib import Path
 import importlib.util
 import hashlib
@@ -28,23 +29,45 @@ class ProfileRunnerTests(unittest.TestCase):
             client.parent.mkdir(parents=True)
             client.write_text("[project]\nname='client'\n")
             subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
-            subprocess.run(["git", "add", "clients/python/pyproject.toml"], cwd=root,
-                           check=True, capture_output=True)
-            subprocess.run(["git", "-c", "user.name=EzLLMRouter test",
-                            "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline"],
-                           cwd=root, check=True, capture_output=True)
-            commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
+            subprocess.run(
+                ["git", "add", "clients/python/pyproject.toml"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=EzLLMRouter test",
+                    "-c",
+                    "user.email=test@example.invalid",
+                    "commit",
+                    "-qm",
+                    "baseline",
+                ],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            commit = (
+                subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
+            )
             stage = root / "state/staging/source-prior"
             wheel = stage / "sdk" / prepare.DEV09_CLIENT
             wheel.parent.mkdir(parents=True)
             wheel.write_bytes(b"synthetic wheel bytes")
             digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
             manifest = stage / "LOCAL-BUILD-MANIFEST.json"
-            manifest.write_text(json.dumps({"commit": commit, "dirty": False,
-                                            "dev09_client_wheel_sha256": digest}))
+            manifest.write_text(
+                json.dumps({"commit": commit, "dirty": False, "dev09_client_wheel_sha256": digest})
+            )
             output = root / "sdk"
             output.mkdir()
-            with patch.object(prepare, "ROOT", root), patch.object(prepare, "STATE", root / "state"):
+            with (
+                patch.object(prepare, "ROOT", root),
+                patch.object(prepare, "STATE", root / "state"),
+            ):
                 self.assertEqual(prepare.reuse_client_wheel(output)["source_commit"], commit)
                 self.assertEqual((output / prepare.DEV09_CLIENT).read_bytes(), wheel.read_bytes())
                 (output / prepare.DEV09_CLIENT).unlink()
@@ -61,11 +84,24 @@ class ProfileRunnerTests(unittest.TestCase):
             staged.parent.mkdir(parents=True)
             staged.write_text("initial\n")
             subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
-            subprocess.run(["git", "add", "deploy/local/prepare.py"], cwd=root,
-                           check=True, capture_output=True)
-            subprocess.run(["git", "-c", "user.name=EzLLMRouter test",
-                            "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline"],
-                           cwd=root, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "add", "deploy/local/prepare.py"], cwd=root, check=True, capture_output=True
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=EzLLMRouter test",
+                    "-c",
+                    "user.email=test@example.invalid",
+                    "commit",
+                    "-qm",
+                    "baseline",
+                ],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
             other = root / "docs/architecture/new-notes.md"
             other.parent.mkdir(parents=True)
             other.write_text("unrelated\n")
@@ -93,18 +129,25 @@ class ProfileRunnerTests(unittest.TestCase):
             artifact = root / "artifacts"
             artifact.mkdir()
             (artifact / "ARTIFACT-CUSTODY.json").write_text(
-                json.dumps({"items": [{} for _ in range(177)]}))
+                json.dumps({"items": [{} for _ in range(177)]})
+            )
             old = state / "staging/source-historical"
             old.mkdir(parents=True)
             (old / "failure.txt").write_text("preserve")
-            with patch.object(prepare, "ROOT", root), patch.object(prepare, "STATE", state), \
-                 patch.object(prepare, "fingerprint", return_value="a" * 64), \
-                 patch.object(prepare, "prepare_work", side_effect=RuntimeError("offline build failed")), \
-                 patch.dict(prepare.os.environ, {"EZLLMROUTER_ARTIFACT_ROOT": str(artifact)}):
+            with (
+                patch.object(prepare, "ROOT", root),
+                patch.object(prepare, "STATE", state),
+                patch.object(prepare, "fingerprint", return_value="a" * 64),
+                patch.object(
+                    prepare, "prepare_work", side_effect=RuntimeError("offline build failed")
+                ),
+                patch.dict(prepare.os.environ, {"EZLLMROUTER_ARTIFACT_ROOT": str(artifact)}),
+            ):
                 with self.assertRaisesRegex(RuntimeError, "offline build failed"):
                     prepare.main()
-            self.assertEqual(sorted(path.name for path in (state / "staging").iterdir()),
-                             ["source-historical"])
+            self.assertEqual(
+                sorted(path.name for path in (state / "staging").iterdir()), ["source-historical"]
+            )
             self.assertEqual((old / "failure.txt").read_text(), "preserve")
 
     def test_claim_does_not_reuse_completed_or_partial_run(self):
@@ -118,11 +161,26 @@ class ProfileRunnerTests(unittest.TestCase):
 
     def test_actor_outcome_expectation_matches_grant_stage(self):
         with patch.object(runner, "command", return_value="{}") as command:
-            runner.actor(Path("unused"), "denied", ["actor"], {}, token="synthetic", rows=[],
-                         outcome={"event_id": "denied"}, denied=True)
+            runner.actor(
+                Path("unused"),
+                "denied",
+                ["actor"],
+                {},
+                token="synthetic",
+                rows=[],
+                outcome={"event_id": "denied"},
+                denied=True,
+            )
             self.assertIs(command.call_args.kwargs["payload"]["expect_outcome_authority"], False)
-            runner.actor(Path("unused"), "authorized", ["actor"], {}, token="synthetic", rows=[],
-                         outcome={"event_id": "authorized"})
+            runner.actor(
+                Path("unused"),
+                "authorized",
+                ["actor"],
+                {},
+                token="synthetic",
+                rows=[],
+                outcome={"event_id": "authorized"},
+            )
             self.assertIs(command.call_args.kwargs["payload"]["expect_outcome_authority"], True)
 
     def test_actor_output_redacts_even_early_failure(self):
@@ -130,8 +188,10 @@ class ProfileRunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             payload = {"token": secret, "rows": []}
             completed = subprocess.CompletedProcess(["actor"], 1, secret, "failed: " + secret)
-            with patch.object(runner.subprocess, "run", return_value=completed), \
-                 patch.object(runner.profile, "redact", side_effect=lambda value: value):
+            with (
+                patch.object(runner.subprocess, "run", return_value=completed),
+                patch.object(runner.profile, "redact", side_effect=lambda value: value),
+            ):
                 with self.assertRaises(RuntimeError) as failed:
                     runner.command(Path(temp), "early", ["actor"], {}, payload=payload)
             self.assertNotIn(secret, str(failed.exception))

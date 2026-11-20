@@ -1,4 +1,5 @@
 """DEV-08 profile upgrade must use the running identity after local staging."""
+
 import json
 from pathlib import Path
 import sys
@@ -19,13 +20,17 @@ class ProfileUpgradeTests(unittest.TestCase):
             staged.mkdir(parents=True)
             build = staged / "build"
             build.mkdir()
-            manifest = {"fingerprint": fingerprint, "commit": "old-running-commit",
-                        "build_dir": str(build)}
+            manifest = {
+                "fingerprint": fingerprint,
+                "commit": "old-running-commit",
+                "build_dir": str(build),
+            }
             (staged / "LOCAL-BUILD-MANIFEST.json").write_text(json.dumps(manifest))
-            observed = {"build": {"fingerprint": fingerprint,
-                                  "commit": "old-running-commit"}}
-            with patch.object(upgrade.profile, "STATE", state), patch.object(
-                    upgrade, "wait_health", return_value=(None, observed)):
+            observed = {"build": {"fingerprint": fingerprint, "commit": "old-running-commit"}}
+            with (
+                patch.object(upgrade.profile, "STATE", state),
+                patch.object(upgrade, "wait_health", return_value=(None, observed)),
+            ):
                 self.assertEqual(upgrade.running_build("private-password"), manifest)
                 observed["build"]["commit"] = "different-commit"
                 with self.assertRaisesRegex(RuntimeError, "identity mismatch"):

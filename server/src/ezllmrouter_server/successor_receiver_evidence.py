@@ -1,4 +1,5 @@
 """Read bounded, durable observations from the owned independent synthetic receiver."""
+
 from __future__ import annotations
 
 from hashlib import sha256
@@ -33,19 +34,36 @@ class DurableReceiverReceipts:
             row = json.loads(line.decode("utf-8", "strict"), object_pairs_hook=_unique_pairs)
             if type(row) is not dict or row.get("attempt_id") != attempt_id:
                 continue
-            if (set(row) != {"kind", "attempt_id", "path", "body_sha256", "body_bytes",
-                             "received_at_ns", "usage_component"} or
-                    row["kind"] != "native_usage_receipt" or row["path"] != route or
-                    row["body_sha256"] != body_sha256 or row["body_bytes"] != body_bytes or
-                    type(row["received_at_ns"]) is not int or row["received_at_ns"] <= 0):
+            if (
+                set(row)
+                != {
+                    "kind",
+                    "attempt_id",
+                    "path",
+                    "body_sha256",
+                    "body_bytes",
+                    "received_at_ns",
+                    "usage_component",
+                }
+                or row["kind"] != "native_usage_receipt"
+                or row["path"] != route
+                or row["body_sha256"] != body_sha256
+                or row["body_bytes"] != body_bytes
+                or type(row["received_at_ns"]) is not int
+                or row["received_at_ns"] <= 0
+            ):
                 raise ValueError("receiver receipt does not bind guarded attempt")
             component = row["usage_component"]
-            if (type(component) is not dict or
-                    set(component) != {"component", "presence", "evidence", "quantity", "source_ref"} or
-                    component["presence"] != "known" or component["evidence"] != "reported" or
-                    component["source_ref"] != "receiver.synthetic.dev12" or
-                    component["component"] not in {"search_units", "document_units", "query_units"} or
-                    type(component["quantity"]) is not int or not 0 <= component["quantity"] <= 256):
+            if (
+                type(component) is not dict
+                or set(component) != {"component", "presence", "evidence", "quantity", "source_ref"}
+                or component["presence"] != "known"
+                or component["evidence"] != "reported"
+                or component["source_ref"] != "receiver.synthetic.dev12"
+                or component["component"] not in {"search_units", "document_units", "query_units"}
+                or type(component["quantity"]) is not int
+                or not 0 <= component["quantity"] <= 256
+            ):
                 raise ValueError("receiver native evidence invalid")
             matching.append((row, "sha256:" + sha256(line).hexdigest()))
         if len(matching) != 1:

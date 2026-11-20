@@ -3,6 +3,7 @@
 Only committed Git bytes, the already vetted public logical export and named
 read-only observations enter this ZIP. The external raw databases/keys stay put.
 """
+
 from __future__ import annotations
 
 from hashlib import sha256
@@ -43,8 +44,11 @@ def verify_export(root):
 def add(z, name, data, manifest):
     if name in manifest or name == "MANIFEST.sha256":
         raise AssertionError("duplicate or reserved packet path")
-    if re.search(rb"-----BEGIN PRIVATE KEY-----\s+[A-Za-z0-9+/=\s]{40,}"
-                 rb"-----END PRIVATE KEY-----", data):
+    if re.search(
+        rb"-----BEGIN PRIVATE KEY-----\s+[A-Za-z0-9+/=\s]{40,}"
+        rb"-----END PRIVATE KEY-----",
+        data,
+    ):
         raise AssertionError("private key would enter packet: " + name)
     z.writestr(name, data, compress_type=ZIP_DEFLATED)
     manifest[name] = digest(data)
@@ -64,8 +68,10 @@ def build(commit, export_root, review_root, input_zip, output, repo):
                 nested.append(original.read(name))
         for raw in nested:
             with ZipFile(io.BytesIO(raw)) as inner:
-                if any(re.search(r"private|secret|credential|\.sqlite$|\.pem$|\.key$",
-                                 name, re.I) for name in inner.namelist()):
+                if any(
+                    re.search(r"private|secret|credential|\.sqlite$|\.pem$|\.key$", name, re.I)
+                    for name in inner.namelist()
+                ):
                     raise AssertionError("sensitive nested review-input path")
     branch = git("rev-parse", "--abbrev-ref", "HEAD").decode().strip()
     head = git("rev-parse", "HEAD").decode().strip()
@@ -73,27 +79,47 @@ def build(commit, export_root, review_root, input_zip, output, repo):
         raise AssertionError("package only the current approved committed branch")
     tree = git("rev-parse", commit + "^{tree}").decode().strip()
     source_tar = git("archive", "--format=tar", "--prefix=source/", commit)
-    focused = git("diff", "--binary", "17fc195d8eda462ce38624a81c47dd5406d97a42", commit,
-                  "--", "server", "clients", "web", "tests", "docs/development/dev-12")
-    result = audit(export_root, repo / "tests/fixtures/contracts/dev12-successor-01/registrations.json")
-    assert (result["status"] == "PASS" and result["original_pass_pairs"] == 80 and
-            result["qualified_supplement_pairs"] == 16 and
-            result["admissions"] == 123 and result["possible_sends"] == 108 and
-            result["receiver_arrivals"] == 93)
+    focused = git(
+        "diff",
+        "--binary",
+        "17fc195d8eda462ce38624a81c47dd5406d97a42",
+        commit,
+        "--",
+        "server",
+        "clients",
+        "web",
+        "tests",
+        "docs/development/dev-12",
+    )
+    result = audit(
+        export_root, repo / "tests/fixtures/contracts/dev12-successor-01/registrations.json"
+    )
+    assert (
+        result["status"] == "PASS"
+        and result["original_pass_pairs"] == 80
+        and result["qualified_supplement_pairs"] == 16
+        and result["admissions"] == 123
+        and result["possible_sends"] == 108
+        and result["receiver_arrivals"] == 93
+    )
     inputs = {
         "sdk/python-wheel-observations.json": review_root / "sdk-wheel-observations.json",
         "sdk/commonjs-tarball-observations.json": review_root / "sdk-tarball-observations.json",
-        "reports/final/HTTP-OBSERVATION.json": review_root / "final-report-20261027-01/HTTP-OBSERVATION.json",
+        "reports/final/HTTP-OBSERVATION.json": review_root
+        / "final-report-20261027-01/HTTP-OBSERVATION.json",
         "reports/final/REPORT.json": review_root / "final-report-20261027-01/REPORT.json",
         "reports/final/REPORT.csv": review_root / "final-report-20261027-01/REPORT.csv",
-        "reports/historical-overbound/HTTP-OBSERVATION.json": review_root / "overbound-http-01/HTTP-OBSERVATION.json",
+        "reports/historical-overbound/HTTP-OBSERVATION.json": review_root
+        / "overbound-http-01/HTTP-OBSERVATION.json",
     }
     for path in inputs.values():
         if not path.is_file() or path.is_symlink():
             raise AssertionError("missing review observation: " + str(path))
     identity = {
         "kind": "dev12_completion02_continuation02_portable_review_v1",
-        "branch": branch, "commit": commit, "tree": tree,
+        "branch": branch,
+        "commit": commit,
+        "tree": tree,
         "target_tested_commit": "e7645cab17c6830ebbb5d1d8e45b46bf9401fc13",
         "target_tested_tree": "4ef3ff6d24ba5ff52b6d18c00802aa5fa49ea57c",
         "source_tar_sha256": digest(source_tar),
@@ -123,15 +149,34 @@ def build(commit, export_root, review_root, input_zip, output, repo):
     manifest = {}
     with ZipFile(output, "x", compression=ZIP_DEFLATED, compresslevel=6) as z:
         add(z, "README.md", readme.encode(), manifest)
-        add(z, "IDENTITY.json", (json.dumps(identity, sort_keys=True, indent=2) + "\n").encode(), manifest)
-        add(z, "AUDIT-RESULT.json", (json.dumps(result, sort_keys=True, indent=2) + "\n").encode(), manifest)
+        add(
+            z,
+            "IDENTITY.json",
+            (json.dumps(identity, sort_keys=True, indent=2) + "\n").encode(),
+            manifest,
+        )
+        add(
+            z,
+            "AUDIT-RESULT.json",
+            (json.dumps(result, sort_keys=True, indent=2) + "\n").encode(),
+            manifest,
+        )
         add(z, "source.tar", source_tar, manifest)
         add(z, "focused-17fc195-to-successor.diff", focused, manifest)
-        add(z, "review-input/EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-02-PACKAGE.zip",
-            input_zip.read_bytes(), manifest)
+        add(
+            z,
+            "review-input/EZLLMROUTER-DEV12-COMPLETION-02-CONTINUE-02-PACKAGE.zip",
+            input_zip.read_bytes(),
+            manifest,
+        )
         for path in sorted(export_root.rglob("*")):
             if path.is_file():
-                add(z, "evidence/final/" + str(path.relative_to(export_root)), path.read_bytes(), manifest)
+                add(
+                    z,
+                    "evidence/final/" + str(path.relative_to(export_root)),
+                    path.read_bytes(),
+                    manifest,
+                )
         for name, path in sorted(inputs.items()):
             add(z, name, path.read_bytes(), manifest)
         lines = [f"{value}  {name}" for name, value in sorted(manifest.items())]
@@ -139,16 +184,35 @@ def build(commit, export_root, review_root, input_zip, output, repo):
     with ZipFile(output) as z:
         listed = z.read("MANIFEST.sha256").decode().splitlines()
         assert len(listed) + 1 == len(z.namelist())
-        assert set(z.namelist()) == {line.split("  ", 1)[1] for line in listed} | {"MANIFEST.sha256"}
+        assert set(z.namelist()) == {line.split("  ", 1)[1] for line in listed} | {
+            "MANIFEST.sha256"
+        }
         for line in listed:
             expected, name = line.split("  ", 1)
             assert digest(z.read(name)) == expected, name
-    return {"status": "PASS", "path": str(output), "bytes": output.stat().st_size,
-            "sha256": digest(output.read_bytes()), "commit": commit, "tree": tree,
-            "payloads": len(manifest)}
+    return {
+        "status": "PASS",
+        "path": str(output),
+        "bytes": output.stat().st_size,
+        "sha256": digest(output.read_bytes()),
+        "commit": commit,
+        "tree": tree,
+        "payloads": len(manifest),
+    }
 
 
 if __name__ == "__main__":
     commit, export_root, review_root, input_zip, output, repo = sys.argv[1:7]
-    print(json.dumps(build(commit, Path(export_root), Path(review_root),
-                           Path(input_zip), Path(output), Path(repo)), sort_keys=True))
+    print(
+        json.dumps(
+            build(
+                commit,
+                Path(export_root),
+                Path(review_root),
+                Path(input_zip),
+                Path(output),
+                Path(repo),
+            ),
+            sort_keys=True,
+        )
+    )

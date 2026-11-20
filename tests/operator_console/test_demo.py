@@ -1,4 +1,5 @@
 """Fixed installed-client caller behavior without network or package acquisition."""
+
 from copy import deepcopy
 import json
 import os
@@ -29,11 +30,22 @@ class FakeClient:
         self.requests.append(request)
         sid = "submission." + str(len(self.requests))
         if request.get("tool_definitions") and len(request["messages"]) == 2:
-            candidate = {"finish_reason": "tool_calls", "output_blocks": [{"kind": "tool_call",
-                "tool_name": "lookup", "arguments": {"key": "synthetic"}, "call_id": "call.lookup.1"}]}
+            candidate = {
+                "finish_reason": "tool_calls",
+                "output_blocks": [
+                    {
+                        "kind": "tool_call",
+                        "tool_name": "lookup",
+                        "arguments": {"key": "synthetic"},
+                        "call_id": "call.lookup.1",
+                    }
+                ],
+            }
         else:
-            candidate = {"finish_reason": "stop", "output_blocks": [{"kind": "content_text",
-                "text": "DO_NOT_EXPORT"}]}
+            candidate = {
+                "finish_reason": "stop",
+                "output_blocks": [{"kind": "content_text", "text": "DO_NOT_EXPORT"}],
+            }
         return {"state": "delivered", "handle": {"submission_id": sid}, "candidate": candidate}
 
 
@@ -42,25 +54,38 @@ class DemoTests(unittest.TestCase):
         FakeClient.requests = []
         base = json.loads((ROOT / "tests/development_slice/request.json").read_text())
         scenarios = json.loads((ROOT / "tests/tool_cycle/scenarios.json").read_text())
-        self.runner = DemoRunner(base, scenarios, "http://127.0.0.1:8773", "synthetic-token",
-                                 client_factory=FakeClient)
+        self.runner = DemoRunner(
+            base, scenarios, "http://127.0.0.1:8773", "synthetic-token", client_factory=FakeClient
+        )
 
     def test_explicit_text_tool_and_no_store_inventory(self):
         handles = []
         text = self.runner.run("text", handles.append)
         tool = self.runner.run("tool", handles.append)
         no_store = self.runner.run("no_store_text", handles.append)
-        self.assertEqual([len(text["submission_ids"]), len(tool["submission_ids"]),
-                          len(no_store["submission_ids"])], [1, 2, 1])
+        self.assertEqual(
+            [
+                len(text["submission_ids"]),
+                len(tool["submission_ids"]),
+                len(no_store["submission_ids"]),
+            ],
+            [1, 2, 1],
+        )
         self.assertEqual(tool["caller_lookups"], 1)
         self.assertEqual(len(FakeClient.requests), 4)
         self.assertEqual(len(handles), 4)
-        self.assertNotEqual(FakeClient.requests[1]["execution_generation"],
-                            FakeClient.requests[2]["execution_generation"])
-        self.assertEqual(FakeClient.requests[2]["messages"][-1]["blocks"][0]["result_value"],
-                         {"value": "synthetic"})
-        self.assertEqual(FakeClient.requests[3]["messages"][1]["blocks"][0]
-                         ["source_labels"]["restrictions"], ["no.content.store"])
+        self.assertNotEqual(
+            FakeClient.requests[1]["execution_generation"],
+            FakeClient.requests[2]["execution_generation"],
+        )
+        self.assertEqual(
+            FakeClient.requests[2]["messages"][-1]["blocks"][0]["result_value"],
+            {"value": "synthetic"},
+        )
+        self.assertEqual(
+            FakeClient.requests[3]["messages"][1]["blocks"][0]["source_labels"]["restrictions"],
+            ["no.content.store"],
+        )
         self.assertNotIn("DO_NOT_EXPORT", json.dumps((text, tool, no_store)))
 
     def test_only_fixed_scenarios(self):
@@ -83,16 +108,24 @@ class DemoTests(unittest.TestCase):
 
             def submit(self, request, options):
                 self.requests.append((deepcopy(request), options))
-                return {"state": "delivered", "handle": {"submission_id": "submission.provider.test"},
-                        "candidate": {"output_blocks": [{"kind": "content_text", "text": "hello"}]}}
+                return {
+                    "state": "delivered",
+                    "handle": {"submission_id": "submission.provider.test"},
+                    "candidate": {"output_blocks": [{"kind": "content_text", "text": "hello"}]},
+                }
 
         fixture = json.loads((ROOT / "tests/development_slice/request.json").read_text())
-        runner = ProviderValidationRunner(fixture, "http://127.0.0.1:8773", "test-token",
-                                          "svc.demo", client_factory=Client)
+        runner = ProviderValidationRunner(
+            fixture, "http://127.0.0.1:8773", "test-token", "svc.demo", client_factory=Client
+        )
         handles = []
-        self.assertEqual(runner.run("cfg.provider.test", "op.provider.test", 16, handles.append),
-                         {"state": "completed", "candidate": {"output_blocks": [
-                             {"kind": "content_text", "text": "hello"}]}})
+        self.assertEqual(
+            runner.run("cfg.provider.test", "op.provider.test", 16, handles.append),
+            {
+                "state": "completed",
+                "candidate": {"output_blocks": [{"kind": "content_text", "text": "hello"}]},
+            },
+        )
         self.assertEqual(handles, ["submission.provider.test"])
         self.assertEqual(len(Client.requests), 1)
         request, options = Client.requests[0]

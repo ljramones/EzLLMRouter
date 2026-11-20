@@ -1,4 +1,5 @@
 """Socket-free checks of the real browser fixture's data and HTTP application."""
+
 from email.message import Message
 from email.parser import BytesParser
 import io
@@ -41,8 +42,13 @@ class BrowserFixtureTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
-        environment = patch.dict(os.environ, {"EZLLMROUTER_ADMIN_USERNAME": "admin",
-                                              "EZLLMROUTER_ADMIN_PASSWORD": fixture.BOOTSTRAP})
+        environment = patch.dict(
+            os.environ,
+            {
+                "EZLLMROUTER_ADMIN_USERNAME": "admin",
+                "EZLLMROUTER_ADMIN_PASSWORD": fixture.BOOTSTRAP,
+            },
+        )
         environment.start()
         self.addCleanup(environment.stop)
         replacement = patch("ezllmrouter_server.operator_web.ThreadingHTTPServer", MemoryServer)
@@ -78,17 +84,31 @@ class BrowserFixtureTests(unittest.TestCase):
         return status, parsed, json.loads(data)
 
     def login(self, name="admin", password=fixture.ADMIN):
-        status, headers, data = self.request("/operator/v1/login", "POST", {"username": name, "password": password})
+        status, headers, data = self.request(
+            "/operator/v1/login", "POST", {"username": name, "password": password}
+        )
         self.assertEqual(status, 200, data)
         self.cookie, self.csrf = headers["Set-Cookie"].split(";", 1)[0], data["csrf"]
         return data
 
     def test_seeded_pages_use_real_http_handlers_and_readable_metadata(self):
         self.login()
-        for path in ("overview", "activity", "usage", "usage-costs", "models", "principals", "users", "connections",
-                     "config", "build", "local-connectors", "integration/datasets",
-                     "integration/connections?dataset_id=dataset.synthetic.v2",
-                     "integration/report?dataset_id=dataset.synthetic.v2"):
+        for path in (
+            "overview",
+            "activity",
+            "usage",
+            "usage-costs",
+            "models",
+            "principals",
+            "users",
+            "connections",
+            "config",
+            "build",
+            "local-connectors",
+            "integration/datasets",
+            "integration/connections?dataset_id=dataset.synthetic.v2",
+            "integration/report?dataset_id=dataset.synthetic.v2",
+        ):
             with self.subTest(path=path):
                 status, _, body = self.request("/operator/v1/" + path)
                 self.assertEqual(status, 200, body)
@@ -96,7 +116,9 @@ class BrowserFixtureTests(unittest.TestCase):
 
     def test_seeded_external_costs_are_replacements_and_unknown_remains_explicit(self):
         self.login()
-        status, _, report = self.request("/operator/v1/integration/report?dataset_id=dataset.synthetic.v2")
+        status, _, report = self.request(
+            "/operator/v1/integration/report?dataset_id=dataset.synthetic.v2"
+        )
         self.assertEqual(status, 200, report)
         self.assertEqual(report["attempt_count"], 2)
         self.assertEqual(report["known_total_by_currency"], {"USD": "0.020000000"})
@@ -108,12 +130,16 @@ class BrowserFixtureTests(unittest.TestCase):
         self.login("member", fixture.USER)
         status, _, activity = self.request("/operator/v1/activity")
         self.assertEqual(status, 200)
-        self.assertEqual([item["submission_id"] for item in activity["items"]], ["submission.browser.1"])
+        self.assertEqual(
+            [item["submission_id"] for item in activity["items"]], ["submission.browser.1"]
+        )
 
     def test_usage_control_appends_a_replacement_without_another_attempt(self):
         self.instance.correct_usage()
         self.login()
-        status, _, report = self.request("/operator/v1/integration/report?dataset_id=dataset.synthetic.v2")
+        status, _, report = self.request(
+            "/operator/v1/integration/report?dataset_id=dataset.synthetic.v2"
+        )
         self.assertEqual(status, 200, report)
         self.assertEqual(report["attempt_count"], 2)
         self.assertEqual(report["known_total_by_currency"], {"USD": "0.030000000"})
@@ -124,7 +150,9 @@ class BrowserFixtureTests(unittest.TestCase):
         self.instance.start()
         self.login()
         self.assertEqual(self.instance.state()["submissions"], 3)
-        self.assertEqual(self.instance.users.authenticate("member", fixture.USER)["principal_id"], ids["member"])
+        self.assertEqual(
+            self.instance.users.authenticate("member", fixture.USER)["principal_id"], ids["member"]
+        )
         self.assertEqual(len(self.instance.registry.list_models()), 13)
 
     def test_restart_closes_established_connections_and_invalidates_old_sessions(self):
@@ -143,16 +171,31 @@ class BrowserFixtureTests(unittest.TestCase):
 
     def test_accounting_connection_uses_encrypted_storage_and_fixture_discovery(self):
         self.login()
-        status, _, pending = self.request("/operator/v1/integration/connections", "POST", {
-            "dataset_id": "dataset.synthetic.v2", "provider": "openai", "friendly_name": "Browser fixture",
-            "api_key": "sk-browser-fixture-encrypted-key-000000000", "operation_id": "op.browser.connect"})
+        status, _, pending = self.request(
+            "/operator/v1/integration/connections",
+            "POST",
+            {
+                "dataset_id": "dataset.synthetic.v2",
+                "provider": "openai",
+                "friendly_name": "Browser fixture",
+                "api_key": "sk-browser-fixture-encrypted-key-000000000",
+                "operation_id": "op.browser.connect",
+            },
+        )
         self.assertEqual(status, 201, pending)
         self.assertEqual(pending["discovery"]["models"], ["browser.text.v1"])
         self.assertNotIn("api_key", pending)
         account_id = pending["account_id"]
-        status, _, saved = self.request("/operator/v1/integration/connections/" + account_id + "/save", "POST", {
-            "dataset_id": "dataset.synthetic.v2", "expected_revision": pending["revision"],
-            "selected_models": ["browser.text.v1"], "allowed_operations": []})
+        status, _, saved = self.request(
+            "/operator/v1/integration/connections/" + account_id + "/save",
+            "POST",
+            {
+                "dataset_id": "dataset.synthetic.v2",
+                "expected_revision": pending["revision"],
+                "selected_models": ["browser.text.v1"],
+                "allowed_operations": [],
+            },
+        )
         self.assertEqual(status, 200, saved)
         self.assertEqual(saved["state"], "connected")
         self.assertEqual(self.instance.metadata_probes, 1)
@@ -160,7 +203,9 @@ class BrowserFixtureTests(unittest.TestCase):
         self.instance.start()
         binding = self.instance.registry.integration_credentials._binding(account_id)
         self.assertEqual(binding["selected_models"], ["browser.text.v1"])
-        self.assertEqual(self.instance.registry.integration_credentials._discover(binding)["state"], "observed")
+        self.assertEqual(
+            self.instance.registry.integration_credentials._discover(binding)["state"], "observed"
+        )
         self.assertEqual(self.instance.metadata_probes, 2)
 
     def test_model_execution_is_a_hard_failure_in_the_fixture(self):

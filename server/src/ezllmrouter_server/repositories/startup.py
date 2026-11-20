@@ -1,4 +1,5 @@
 """Credential recovery requirements for the execution service startup."""
+
 from ..database import Query
 
 PROTECTED_PROVIDER_CREDENTIALS = Query(
@@ -7,6 +8,5 @@ PROTECTED_PROVIDER_CREDENTIALS = Query(
 )
 
 USED_PROVIDER_VAULT = Query(
-    "SELECT 1 FROM registry_connections "
-    "WHERE json_extract(record,'$.credential_version')>0 LIMIT 1"
+    "SELECT 1 FROM registry_connections WHERE json_extract(record,'$.credential_version')>0 LIMIT 1"
 )

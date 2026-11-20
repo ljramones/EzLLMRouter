@@ -1,4 +1,5 @@
 """Authenticated synthetic report and export stay separate from legacy totals."""
+
 from __future__ import annotations
 
 import json
@@ -24,24 +25,42 @@ class SyntheticOperatorHTTPTests(unittest.TestCase):
             with socket.socket() as probe:
                 probe.bind(("127.0.0.1", 0))
                 port = probe.getsockname()[1]
-            server = serve("127.0.0.1", port,
-                projection=OperatorProjection(store, "user.demo", str(Path(temporary) / "send.jsonl")),
-                runner=None, password="dev12.synthetic.operator." + "x" * 32,
-                fixture={}, build={}, web_root=ROOT / "web",
-                worker_probe=lambda: {}, sender_status=lambda: {}, successor_store=store)
+            server = serve(
+                "127.0.0.1",
+                port,
+                projection=OperatorProjection(
+                    store, "user.demo", str(Path(temporary) / "send.jsonl")
+                ),
+                runner=None,
+                password="dev12.synthetic.operator." + "x" * 32,
+                fixture={},
+                build={},
+                web_root=ROOT / "web",
+                worker_probe=lambda: {},
+                sender_status=lambda: {},
+                successor_store=store,
+            )
             threading.Thread(target=server.serve_forever, daemon=True).start()
             origin = f"http://127.0.0.1:{port}"
             try:
-                login = Request(origin + "/operator/v1/login", method="POST",
+                login = Request(
+                    origin + "/operator/v1/login",
+                    method="POST",
                     data=json.dumps({"password": "dev12.synthetic.operator." + "x" * 32}).encode(),
-                    headers={"Content-Type": "application/json", "Origin": origin})
+                    headers={"Content-Type": "application/json", "Origin": origin},
+                )
                 with urlopen(login, timeout=5) as response:
                     cookie = response.headers["Set-Cookie"].split(";", 1)[0]
                     self.assertEqual(json.load(response)["role"], "registry_admin")
                 headers = {"Cookie": cookie, "Origin": origin}
-                with urlopen(Request(origin + "/operator/v1/dev12-usage", headers=headers), timeout=5) as response:
+                with urlopen(
+                    Request(origin + "/operator/v1/dev12-usage", headers=headers), timeout=5
+                ) as response:
                     self.assertEqual(json.load(response)["total"]["attempts"], 0)
-                with urlopen(Request(origin + "/operator/v1/dev12-usage?export=csv", headers=headers), timeout=5) as response:
+                with urlopen(
+                    Request(origin + "/operator/v1/dev12-usage?export=csv", headers=headers),
+                    timeout=5,
+                ) as response:
                     self.assertTrue(response.read().startswith(b"attempt_id,submission_id"))
             finally:
                 server.shutdown()

@@ -1,4 +1,5 @@
 """Offline v3 shape/semantic cases; no HTTP, credentials or provider call."""
+
 import json
 from pathlib import Path
 import sys
@@ -9,9 +10,11 @@ from ezllmrouter_server.integration_accounting import _checked, IntegrationError
 
 here = Path(__file__).parent
 schema = (here / "schema.json").read_bytes()
-for path in (root / "server/src/ezllmrouter_server/integration_schema_v3.json",
-             root / "clients/python/src/ezllmrouter_client/integration_schema_v3.json",
-             root / "clients/js/integration_schema_v3.json"):
+for path in (
+    root / "server/src/ezllmrouter_server/integration_schema_v3.json",
+    root / "clients/python/src/ezllmrouter_client/integration_schema_v3.json",
+    root / "clients/js/integration_schema_v3.json",
+):
     assert path.read_bytes() == schema, path
 example = json.loads((here / "examples.json").read_text())
 for name, definition in (("account", "account"), ("start", "event"), ("decision", "event")):
@@ -33,8 +36,19 @@ rejects({**account, "allowed_operations": ["speech_input", "speech_input"]}, "ac
 rejects({**example["decision"], "capability": "synthesis"}, "event")
 rejects({**example["decision"], "selection_kind": "known_model"}, "event")
 rejects({**example["start"], "model_identity_state": "known"}, "event")
-assert _checked({**example["start"], "model_identity_state": "known",
-                 "model_id": "model.synthetic"}, "event", "3")
-assert _checked({"dataset_id": account["dataset_id"], "expected_revision": 1,
-                 "allowed_models": [], "allowed_operations": []}, "account_permissions", "3")
+assert _checked(
+    {**example["start"], "model_identity_state": "known", "model_id": "model.synthetic"},
+    "event",
+    "3",
+)
+assert _checked(
+    {
+        "dataset_id": account["dataset_id"],
+        "expected_revision": 1,
+        "allowed_models": [],
+        "allowed_operations": [],
+    },
+    "account_permissions",
+    "3",
+)
 print("v3 offline schema parity and focused shape/semantic cases PASS")

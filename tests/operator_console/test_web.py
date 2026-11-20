@@ -1,4 +1,5 @@
 """Actual stdlib HTTP handler, authentication and browser API boundary tests."""
+
 import http.client
 import json
 import os
@@ -16,6 +17,7 @@ sys.path.insert(0, os.environ.get("EZLLMROUTER_OPERATOR_SOURCE_ROOT", str(ROOT /
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.operator_web import serve
 from ezllmrouter_server.store import SQLiteStore
+
 sys.path.insert(0, str(ROOT / "deploy/local"))
 import check
 import console_ingress
@@ -42,12 +44,18 @@ class WebTests(unittest.TestCase):
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]
         self.origin = f"http://127.0.0.1:{self.port}"
-        self.server = serve("127.0.0.1", self.port, projection=self.projection,
-            runner=self.runner, password="p" * 40, fixture=fixture,
+        self.server = serve(
+            "127.0.0.1",
+            self.port,
+            projection=self.projection,
+            runner=self.runner,
+            password="p" * 40,
+            fixture=fixture,
             build={"commit": "test", "dirty": True, "fingerprint": "f" * 64},
             web_root=Path(os.environ.get("EZLLMROUTER_OPERATOR_WEB_ROOT", str(ROOT / "web"))),
             worker_probe=lambda: {"state": "live"},
-            sender_status=lambda: {"state": "live"})
+            sender_status=lambda: {"state": "live"},
+        )
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 
@@ -81,36 +89,81 @@ class WebTests(unittest.TestCase):
             conn.close()
 
     def login(self):
-        status, headers, raw = self.request("POST", "/operator/v1/login",
-            {"password": "p" * 40}, origin=self.origin)
+        status, headers, raw = self.request(
+            "POST", "/operator/v1/login", {"password": "p" * 40}, origin=self.origin
+        )
         self.assertEqual(status, 200)
         return headers["Set-Cookie"].split(";", 1)[0], json.loads(raw)["csrf"]
 
     def test_auth_origin_csrf_and_exact_mutation_schema(self):
         self.assertEqual(self.request("GET", "/operator/v1/overview")[0], 401)
         self.assertEqual(self.request("GET", "/operator/v1/overview", host="evil.example")[0], 403)
-        self.assertEqual(self.request("POST", "/operator/v1/login", {"password": "p" * 40},
-                                      origin="http://evil.example")[0], 403)
+        self.assertEqual(
+            self.request(
+                "POST", "/operator/v1/login", {"password": "p" * 40}, origin="http://evil.example"
+            )[0],
+            403,
+        )
         cookie, csrf = self.login()
         self.assertEqual(self.request("GET", "/operator/v1/overview", cookie=cookie)[0], 200)
-        self.assertEqual(self.request("POST", "/operator/v1/demos/text",
-            {"operation_id": "operation.demo"}, origin=self.origin, cookie=cookie)[0], 403)
-        self.assertEqual(self.request("POST", "/operator/v1/demos/text",
-            {"operation_id": "operation.demo", "provider_url": "http://evil"},
-            origin=self.origin, cookie=cookie, csrf=csrf)[0], 400)
-        self.assertEqual(self.request("POST", "/operator/v1/demos/text",
-            {"operation_id": "operation.demo"}, origin=self.origin, cookie=cookie, csrf=csrf)[0], 202)
-        self.assertEqual(self.request("POST", "/operator/v1/demos/text",
-            {"operation_id": "operation.demo"}, origin=self.origin, cookie=cookie, csrf=csrf)[0], 202)
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/operator/v1/demos/text",
+                {"operation_id": "operation.demo"},
+                origin=self.origin,
+                cookie=cookie,
+            )[0],
+            403,
+        )
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/operator/v1/demos/text",
+                {"operation_id": "operation.demo", "provider_url": "http://evil"},
+                origin=self.origin,
+                cookie=cookie,
+                csrf=csrf,
+            )[0],
+            400,
+        )
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/operator/v1/demos/text",
+                {"operation_id": "operation.demo"},
+                origin=self.origin,
+                cookie=cookie,
+                csrf=csrf,
+            )[0],
+            202,
+        )
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/operator/v1/demos/text",
+                {"operation_id": "operation.demo"},
+                origin=self.origin,
+                cookie=cookie,
+                csrf=csrf,
+            )[0],
+            202,
+        )
         for _ in range(50):
-            status, _, raw = self.request("GET", "/operator/v1/launch/operation.demo", cookie=cookie)
+            status, _, raw = self.request(
+                "GET", "/operator/v1/launch/operation.demo", cookie=cookie
+            )
             if json.loads(raw)["state"] == "completed":
                 break
-            time.sleep(.01)
+            time.sleep(0.01)
         self.assertEqual(status, 200)
         self.assertEqual(self.runner.calls, ["text"])
-        self.assertEqual(self.request("POST", "/operator/v1/logout", {}, origin=self.origin,
-                                      cookie=cookie, csrf=csrf)[0], 200)
+        self.assertEqual(
+            self.request(
+                "POST", "/operator/v1/logout", {}, origin=self.origin, cookie=cookie, csrf=csrf
+            )[0],
+            200,
+        )
         self.assertEqual(self.request("GET", "/operator/v1/overview", cookie=cookie)[0], 401)
 
     def test_static_console_and_rejected_selectors(self):
@@ -126,8 +179,12 @@ class WebTests(unittest.TestCase):
         self.assertEqual(headers["Cache-Control"], "no-store, max-age=0")
         cookie, _ = self.login()
         self.assertEqual(self.request("GET", "/operator/v1/activity?page=0", cookie=cookie)[0], 400)
-        self.assertEqual(self.request("GET", "/operator/v1/activity?state=evil", cookie=cookie)[0], 400)
-        self.assertEqual(self.request("GET", "/operator/v1/activity/../store.sqlite", cookie=cookie)[0], 400)
+        self.assertEqual(
+            self.request("GET", "/operator/v1/activity?state=evil", cookie=cookie)[0], 400
+        )
+        self.assertEqual(
+            self.request("GET", "/operator/v1/activity/../store.sqlite", cookie=cookie)[0], 400
+        )
 
     def test_actual_host_consumer_parses_login_health_and_launch(self):
         with patch.object(check, "PORT", self.port), patch.object(check, "ORIGIN", self.origin):
@@ -142,11 +199,19 @@ class WebTests(unittest.TestCase):
     def test_unix_console_through_fixed_loopback_relay(self):
         path = Path(self.tmp.name) / "operator.sock"
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
-        uds = serve("127.0.0.1", 8780, socket_path=str(path),
-            projection=self.projection, runner=self.runner, password="p" * 40,
-            fixture=fixture, build={"commit": "test", "dirty": True, "fingerprint": "f" * 64},
-            web_root=ROOT / "web", worker_probe=lambda: {"state": "live"},
-            sender_status=lambda: {"state": "live"})
+        uds = serve(
+            "127.0.0.1",
+            8780,
+            socket_path=str(path),
+            projection=self.projection,
+            runner=self.runner,
+            password="p" * 40,
+            fixture=fixture,
+            build={"commit": "test", "dirty": True, "fingerprint": "f" * 64},
+            web_root=ROOT / "web",
+            worker_probe=lambda: {"state": "live"},
+            sender_status=lambda: {"state": "live"},
+        )
         thread = threading.Thread(target=uds.serve_forever)
         thread.start()
         try:
@@ -155,17 +220,27 @@ class WebTests(unittest.TestCase):
                     relay = threading.Thread(target=ingress.serve_forever)
                     relay.start()
                     try:
-                        conn = http.client.HTTPConnection("127.0.0.1", ingress.server_address[1], timeout=2)
+                        conn = http.client.HTTPConnection(
+                            "127.0.0.1", ingress.server_address[1], timeout=2
+                        )
                         conn.request("GET", "/", headers={"Host": "127.0.0.1:8780"})
                         response = conn.getresponse()
                         self.assertEqual(response.status, 200)
                         self.assertIn(b"LOCAL DEVELOPMENT", response.read())
                         conn.close()
-                        conn = http.client.HTTPConnection("127.0.0.1", ingress.server_address[1], timeout=2)
-                        conn.request("POST", "/operator/v1/login",
-                            body=json.dumps({"password": "p" * 40}), headers={
-                                "Host": "127.0.0.1:8780", "Origin": "http://127.0.0.1:8780",
-                                "Content-Type": "application/json"})
+                        conn = http.client.HTTPConnection(
+                            "127.0.0.1", ingress.server_address[1], timeout=2
+                        )
+                        conn.request(
+                            "POST",
+                            "/operator/v1/login",
+                            body=json.dumps({"password": "p" * 40}),
+                            headers={
+                                "Host": "127.0.0.1:8780",
+                                "Origin": "http://127.0.0.1:8780",
+                                "Content-Type": "application/json",
+                            },
+                        )
                         response = conn.getresponse()
                         self.assertEqual(response.status, 200)
                         self.assertTrue(json.loads(response.read())["authenticated"])
@@ -181,23 +256,45 @@ class WebTests(unittest.TestCase):
 
     def test_duplicate_json_and_injected_identifier_are_rejected_or_redacted(self):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
-        raw = b'{"password":"' + b'p' * 40 + b'","password":"' + b'p' * 40 + b'"}'
+        raw = b'{"password":"' + b"p" * 40 + b'","password":"' + b"p" * 40 + b'"}'
         try:
-            conn.request("POST", "/operator/v1/login", raw, {"Host": f"127.0.0.1:{self.port}",
-                "Origin": self.origin, "Content-Type": "application/json"})
+            conn.request(
+                "POST",
+                "/operator/v1/login",
+                raw,
+                {
+                    "Host": f"127.0.0.1:{self.port}",
+                    "Origin": self.origin,
+                    "Content-Type": "application/json",
+                },
+            )
             response = conn.getresponse()
             response.read()
             self.assertEqual(response.status, 400)
         finally:
             conn.close()
         malicious = "<script>alert(1)</script>"
-        self.store.create({"submission_id": "submission.bad", "attempt_id": "attempt.bad",
-            "principal_id": "svc.demo", "task_id": "task.demo",
-            "work_key": {"principal_id": "svc.demo", "task_id": "task.demo",
-                         "step_id": malicious, "step_revision": 1, "execution_generation": "gen.1"},
-            "work_digest": "sha256:" + "1" * 64, "submission_state": "completed",
-            "dispatch_state": "response_observed", "candidate_access": "present",
-            "content_store_allowed": True, "updated_at": "2026-10-21T00:00:00Z"})
+        self.store.create(
+            {
+                "submission_id": "submission.bad",
+                "attempt_id": "attempt.bad",
+                "principal_id": "svc.demo",
+                "task_id": "task.demo",
+                "work_key": {
+                    "principal_id": "svc.demo",
+                    "task_id": "task.demo",
+                    "step_id": malicious,
+                    "step_revision": 1,
+                    "execution_generation": "gen.1",
+                },
+                "work_digest": "sha256:" + "1" * 64,
+                "submission_state": "completed",
+                "dispatch_state": "response_observed",
+                "candidate_access": "present",
+                "content_store_allowed": True,
+                "updated_at": "2026-10-21T00:00:00Z",
+            }
+        )
         cookie, _ = self.login()
         status, _, body = self.request("GET", "/operator/v1/activity", cookie=cookie)
         self.assertEqual(status, 200)

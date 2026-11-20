@@ -1,4 +1,5 @@
 """Container-only actual HTTPX request checks with mocked lower network I/O."""
+
 import json
 import unittest
 from unittest.mock import patch
@@ -10,14 +11,23 @@ from recipe import SyntheticTextRecipe
 
 class Response:
     status_code = 200
-    def json(self): return {"text": "Hello.", "usage": {"input_tokens": 3}}
+
+    def json(self):
+        return {"text": "Hello.", "usage": {"input_tokens": 3}}
 
 
 class Client:
     sent = []
-    def __init__(self, **_kwargs): pass
-    def __enter__(self): return self
-    def __exit__(self, *_args): return False
+
+    def __init__(self, **_kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
     def send(self, request):
         self.sent.append(request)
         return Response()
@@ -26,10 +36,18 @@ class Client:
 class AdapterTests(unittest.TestCase):
     def setUp(self):
         Client.sent = []
-        self.destination = {"endpoint": "receiver", "model": "model.demo", "processing_region": "local"}
-        self.projection = {"destination": self.destination, "work": {
-            "messages": [{"role": "user", "blocks": [{"text": "Hello"}]}],
-            "generation_settings": {"max_output_tokens": 8}}}
+        self.destination = {
+            "endpoint": "receiver",
+            "model": "model.demo",
+            "processing_region": "local",
+        }
+        self.projection = {
+            "destination": self.destination,
+            "work": {
+                "messages": [{"role": "user", "blocks": [{"text": "Hello"}]}],
+                "generation_settings": {"max_output_tokens": 8},
+            },
+        }
         self.expected, self.controls = SyntheticTextRecipe().expected(self.projection, 1000)
         self.adapter = NativeSyntheticAdapter(self.controls["url"], "receiver")
 
@@ -51,4 +69,5 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(Client.sent, [])
 
 
-if __name__ == "__main__": unittest.main()
+if __name__ == "__main__":
+    unittest.main()

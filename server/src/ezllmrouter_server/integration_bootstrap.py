@@ -1,4 +1,5 @@
 """Resumable local service identities with private tokens saved before binding."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,10 +23,20 @@ class ServiceIdentity:
 
 
 SERVICES = (
-    ServiceIdentity("svc.integration", "External integration sender", "ingest.token",
-                    "op.integration.bootstrap", "isolated local integration"),
-    ServiceIdentity("svc.vega.credential-consumer", "Vega credential consumer", "consumer.token",
-                    "op.integration.consumer", "local credential consumer"),
+    ServiceIdentity(
+        "svc.integration",
+        "External integration sender",
+        "ingest.token",
+        "op.integration.bootstrap",
+        "isolated local integration",
+    ),
+    ServiceIdentity(
+        "svc.vega.credential-consumer",
+        "Vega credential consumer",
+        "consumer.token",
+        "op.integration.consumer",
+        "local credential consumer",
+    ),
 )
 
 
@@ -36,9 +47,13 @@ def _read_token(path: Path) -> str:
             raise ValueError("invalid credential")
         return token
     except FileNotFoundError:
-        raise BootstrapError(f"{path.name} is missing; restore the original private token file") from None
+        raise BootstrapError(
+            f"{path.name} is missing; restore the original private token file"
+        ) from None
     except (OSError, ValueError, UnicodeError):
-        raise BootstrapError(f"{path.name} must be an owner-only regular file containing a valid token") from None
+        raise BootstrapError(
+            f"{path.name} must be an owner-only regular file containing a valid token"
+        ) from None
 
 
 def ensure_services(registry: Registry, directory: Path) -> None:
@@ -57,7 +72,8 @@ def ensure_services(registry: Registry, directory: Path) -> None:
                 _ensure_service(registry, directory, service)
             except RegistryConflict as exc:
                 raise BootstrapError(
-                    f"{service.principal_id} conflicts with the saved bootstrap operation; inspect its account state") from exc
+                    f"{service.principal_id} conflicts with the saved bootstrap operation; inspect its account state"
+                ) from exc
 
 
 def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentity) -> None:
@@ -68,7 +84,9 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
     if principal and principal["credential_state"] == "bound":
         token = _read_token(path)
         if not registry.credential_bound_to(service.principal_id, token):
-            raise BootstrapError(f"{path.name} does not match the database; restore its original token file")
+            raise BootstrapError(
+                f"{path.name} does not match the database; restore its original token file"
+            )
         if principal["status"] != "inactive" or principal["revision"] != 2:
             return  # A suspended/revoked account must stay disabled across restart.
     else:
@@ -76,17 +94,42 @@ def _ensure_service(registry: Registry, directory: Path, service: ServiceIdentit
             raise BootstrapError(f"{service.principal_id} has an unexpected bootstrap state")
         # Replaying the original command proves this is our unfinished account,
         # rather than an unrelated identity using a reserved bootstrap name.
-        registry.mutate("owner.local", {"operation_id": service.operation_prefix + ".principal",
-            "action": "create_principal", "subject": service.principal_id, "expected_revision": 0,
-            "data": {"display_name": service.display_name, "kind": "service",
-                     "owner": "owner.local", "role": "ordinary"}})
+        registry.mutate(
+            "owner.local",
+            {
+                "operation_id": service.operation_prefix + ".principal",
+                "action": "create_principal",
+                "subject": service.principal_id,
+                "expected_revision": 0,
+                "data": {
+                    "display_name": service.display_name,
+                    "kind": "service",
+                    "owner": "owner.local",
+                    "role": "ordinary",
+                },
+            },
+        )
     # For an already-bound inactive identity, this must replay the committed
     # operation; its old expected revision prevents accidental replacement.
-    registry.provision_credential("owner.local", service.principal_id, 1,
-        service.operation_prefix + ".credential", secret_factory=lambda: secret_text(path))
+    registry.provision_credential(
+        "owner.local",
+        service.principal_id,
+        1,
+        service.operation_prefix + ".credential",
+        secret_factory=lambda: secret_text(path),
+    )
     token = _read_token(path)
     if not registry.credential_bound_to(service.principal_id, token):
-        raise BootstrapError(f"{path.name} does not match the database; restore its original token file")
-    registry.mutate("owner.local", {"operation_id": service.operation_prefix + ".activate",
-        "action": "principal_state", "subject": service.principal_id, "expected_revision": 2,
-        "data": {"status": "active", "reason": service.reason}})
+        raise BootstrapError(
+            f"{path.name} does not match the database; restore its original token file"
+        )
+    registry.mutate(
+        "owner.local",
+        {
+            "operation_id": service.operation_prefix + ".activate",
+            "action": "principal_state",
+            "subject": service.principal_id,
+            "expected_revision": 2,
+            "data": {"status": "active", "reason": service.reason},
+        },
+    )

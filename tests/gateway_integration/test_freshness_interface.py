@@ -1,4 +1,5 @@
 """Frozen-interface counterexamples; these tests do not enable a sender mechanism."""
+
 import asyncio
 import glob
 import hashlib
@@ -15,8 +16,16 @@ EXPECTED = {
     "httpx": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
     "anyio": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
 }
-for package in ("httpcore", "httpx", "anyio", "h11", "certifi", "idna",
-                "sniffio", "typing_extensions"):
+for package in (
+    "httpcore",
+    "httpx",
+    "anyio",
+    "h11",
+    "certifi",
+    "idna",
+    "sniffio",
+    "typing_extensions",
+):
     matches = glob.glob(str(WHEELS / (package + "-*.whl")))
     if len(matches) != 1:
         raise RuntimeError("frozen wheel mismatch: " + package)
@@ -84,8 +93,10 @@ class FrozenFreshnessInterfaceTests(unittest.TestCase):
                 await checked.wait()
                 state["revoked"] = True
 
-            await asyncio.gather(asyncio.create_task(revoke()),
-                                 asyncio.create_task(stream.write(b"POST /v1/chat/completions HTTP/1.1\r\n\r\n", 1)))
+            await asyncio.gather(
+                asyncio.create_task(revoke()),
+                asyncio.create_task(stream.write(b"POST /v1/chat/completions HTTP/1.1\r\n\r\n", 1)),
+            )
             return state["writes"]
 
         writes = asyncio.run(scenario())
@@ -96,7 +107,9 @@ class FrozenFreshnessInterfaceTests(unittest.TestCase):
         async def scenario():
             state = {"revoked": False, "writes": [], "wrote": asyncio.Event()}
             lower = AnyIOStream(SocketStream(FakeTransport(state), FakeProtocol(False)))
-            task = asyncio.create_task(lower.write(b"POST /v1/chat/completions HTTP/1.1\r\n\r\n", 1))
+            task = asyncio.create_task(
+                lower.write(b"POST /v1/chat/completions HTTP/1.1\r\n\r\n", 1)
+            )
             await state["wrote"].wait()
             task.cancel()
             with self.assertRaises(asyncio.CancelledError):

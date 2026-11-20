@@ -1,4 +1,5 @@
 """No-network paired wire-0.3 status checks against an unpacked exact wheel."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -15,9 +16,15 @@ def main():
 
     fixture = json.loads(evidence.read_text())["payload"]["live_target"]["python_status"]
     handle = fixture["handle"]
-    selectors = ({"submission_id": handle["submission_id"]},
-                 {"work_selector": {key: handle["work_key"][key] for key in
-                  ("task_id", "step_id", "step_revision", "execution_generation")}})
+    selectors = (
+        {"submission_id": handle["submission_id"]},
+        {
+            "work_selector": {
+                key: handle["work_key"][key]
+                for key in ("task_id", "step_id", "step_revision", "execution_generation")
+            }
+        },
+    )
     outcomes = []
 
     class Response:
@@ -32,8 +39,13 @@ def main():
             self.calls = []
 
         def request(self, method, url, *, headers, **kwargs):
-            self.calls.append({"method": method, "url": url,
-                               "contract_version": headers["EzLLMRouter-Contract-Version"]})
+            self.calls.append(
+                {
+                    "method": method,
+                    "url": url,
+                    "contract_version": headers["EzLLMRouter-Contract-Version"],
+                }
+            )
             return self.response
 
     for selector in selectors:
@@ -45,27 +57,48 @@ def main():
                 header = "0.4"
             elif name == "unknown_field":
                 body["unregistered_field"] = "forbidden"
-            raw = json.dumps(body, sort_keys=True, separators=(",", ":"),
-                             ensure_ascii=True).encode()
+            raw = json.dumps(
+                body, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+            ).encode()
             transport = Transport(Response(raw, header))
-            client = EzLLMRouterClient("http://127.0.0.1:1", "synthetic-local-only",
-                                   transport=transport)
+            client = EzLLMRouterClient(
+                "http://127.0.0.1:1", "synthetic-local-only", transport=transport
+            )
             try:
                 observed = client.get_successor_status(selector)
                 result = "accepted" if observed == fixture else "wrong_result"
             except EzLLMRouterError as error:
                 result = error.code
-            expected = {"positive": "accepted", "unknown_version": "UNSUPPORTED_VERSION",
-                        "unknown_field": "INTERNAL_UNAVAILABLE"}[name]
-            outcomes.append({"case": name, "selector": "submission_id" if "submission_id" in selector
-                             else "work_selector", "http_status": 200, "response_header": header,
-                             "exact_body_utf8": raw.decode(), "body_sha256": sha256(raw).hexdigest(),
-                             "observed": result, "expected": expected,
-                             "request": transport.calls,
-                             "passed": result == expected and len(transport.calls) == 1})
-    print(json.dumps({"kind": "dev12_exact_wheel_sdk_probe_v1",
-        "wheel_root": str(installed), "fixture_sha256": sha256(evidence.read_bytes()).hexdigest(),
-        "outcomes": outcomes}, sort_keys=True))
+            expected = {
+                "positive": "accepted",
+                "unknown_version": "UNSUPPORTED_VERSION",
+                "unknown_field": "INTERNAL_UNAVAILABLE",
+            }[name]
+            outcomes.append(
+                {
+                    "case": name,
+                    "selector": "submission_id" if "submission_id" in selector else "work_selector",
+                    "http_status": 200,
+                    "response_header": header,
+                    "exact_body_utf8": raw.decode(),
+                    "body_sha256": sha256(raw).hexdigest(),
+                    "observed": result,
+                    "expected": expected,
+                    "request": transport.calls,
+                    "passed": result == expected and len(transport.calls) == 1,
+                }
+            )
+    print(
+        json.dumps(
+            {
+                "kind": "dev12_exact_wheel_sdk_probe_v1",
+                "wheel_root": str(installed),
+                "fixture_sha256": sha256(evidence.read_bytes()).hexdigest(),
+                "outcomes": outcomes,
+            },
+            sort_keys=True,
+        )
+    )
     if not all(row["passed"] for row in outcomes):
         raise SystemExit(1)
 

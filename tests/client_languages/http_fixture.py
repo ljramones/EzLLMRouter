@@ -1,4 +1,5 @@
 """Loopback-only native transport checks. No service instance or model is used."""
+
 from collections import Counter
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,7 +11,12 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-CAPABILITIES = json.loads((ROOT / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json").read_text())["examples"]["capabilities"]
+CAPABILITIES = json.loads(
+    (
+        ROOT
+        / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"
+    ).read_text()
+)["examples"]["capabilities"]
 BODY = json.dumps(CAPABILITIES).encode()
 COUNTS = Counter()
 LOCK = threading.Lock()
@@ -41,7 +47,9 @@ class Handler(BaseHTTPRequestHandler):
         if mode in ("chunked", "stream_oversize"):
             self.send_header("Transfer-Encoding", "chunked")
         else:
-            length = 20000000 if mode == "oversize" else len(BODY) + (10 if mode == "truncated" else 0)
+            length = (
+                20000000 if mode == "oversize" else len(BODY) + (10 if mode == "truncated" else 0)
+            )
             self.send_header("Content-Length", str(length))
         self.end_headers()
         self.wfile.flush()
@@ -56,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(b"0\r\n\r\n")
             elif mode == "chunked":
                 for offset in range(0, len(BODY), 17):
-                    chunk = BODY[offset:offset + 17]
+                    chunk = BODY[offset : offset + 17]
                     self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
                 self.wfile.write(b"0\r\n\r\n")
             else:
@@ -79,29 +87,94 @@ def main():
         env = {**os.environ, "EZLLMROUTER_TEST_ORIGIN": origin}
         try:
             if "go" in clients:
-                subprocess.run(["go", "test", "-run", "^TestHTTPTransport$", "-count=1", "."], cwd=ROOT / "clients/go", env=env, check=True, timeout=60)
+                subprocess.run(
+                    ["go", "test", "-run", "^TestHTTPTransport$", "-count=1", "."],
+                    cwd=ROOT / "clients/go",
+                    env=env,
+                    check=True,
+                    timeout=60,
+                )
             if "java" in clients:
                 build = ROOT / "clients/java/build"
-                subprocess.run(["java", "-ea", "-cp", str(build / "ezllmrouter-client-0.3.0.jar") + os.pathsep + str(build / "test-classes"),
-                    "com.cognitivedynamics.ezllmrouter.ClientTest", "--http", origin], env=env, check=True, timeout=60)
+                subprocess.run(
+                    [
+                        "java",
+                        "-ea",
+                        "-cp",
+                        str(build / "ezllmrouter-client-0.3.0.jar")
+                        + os.pathsep
+                        + str(build / "test-classes"),
+                        "com.cognitivedynamics.ezllmrouter.ClientTest",
+                        "--http",
+                        origin,
+                    ],
+                    env=env,
+                    check=True,
+                    timeout=60,
+                )
             if "dotnet" in clients:
-                subprocess.run(["dotnet", str(ROOT / "clients/dotnet/EzLLMRouter.Client.Tests/bin/Release/net10.0/EzLLMRouter.Client.Tests.dll"),
-                    "--http", origin], env=env, check=True, timeout=60)
+                subprocess.run(
+                    [
+                        "dotnet",
+                        str(
+                            ROOT
+                            / "clients/dotnet/EzLLMRouter.Client.Tests/bin/Release/net10.0/EzLLMRouter.Client.Tests.dll"
+                        ),
+                        "--http",
+                        origin,
+                    ],
+                    env=env,
+                    check=True,
+                    timeout=60,
+                )
             if "rust" in clients:
-                subprocess.run(["cargo", "test", "--manifest-path", str(ROOT / "clients/rust/Cargo.toml"), "--test", "contracts", "native_http", "--", "--exact"],
-                    env=env, check=True, timeout=120)
+                subprocess.run(
+                    [
+                        "cargo",
+                        "test",
+                        "--manifest-path",
+                        str(ROOT / "clients/rust/Cargo.toml"),
+                        "--test",
+                        "contracts",
+                        "native_http",
+                        "--",
+                        "--exact",
+                    ],
+                    env=env,
+                    check=True,
+                    timeout=120,
+                )
             if "js" in clients:
-                subprocess.run(["node", str(ROOT / "tests/client_languages/javascript_http.cjs")],
-                               env=env, check=True, timeout=60)
+                subprocess.run(
+                    ["node", str(ROOT / "tests/client_languages/javascript_http.cjs")],
+                    env=env,
+                    check=True,
+                    timeout=60,
+                )
         finally:
             server.shutdown()
             thread.join(timeout=5)
-    expected = Counter({mode: len(clients) for mode in ("success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow")})
+    expected = Counter(
+        {
+            mode: len(clients)
+            for mode in (
+                "success",
+                "redirect",
+                "compressed",
+                "oversize",
+                "chunked",
+                "truncated",
+                "slow",
+            )
+        }
+    )
     if "js" in clients:
         expected["stream_oversize"] = 1
     if COUNTS != expected:
         raise AssertionError(f"Unexpected request delivery or replay: {COUNTS}")
-    print("HTTP fixture: valid replies preserved, expected transport faults rejected, and no request replay.")
+    print(
+        "HTTP fixture: valid replies preserved, expected transport faults rejected, and no request replay."
+    )
 
 
 if __name__ == "__main__":

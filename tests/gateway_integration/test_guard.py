@@ -1,4 +1,5 @@
 """Component controls for final-request binding and the single-use commit."""
+
 import asyncio
 from datetime import datetime, timedelta, timezone
 import json
@@ -16,30 +17,59 @@ sys.path.insert(0, str(ROOT / "tests/gateway_integration"))
 sys.path.insert(0, str(ROOT / "server/src"))
 sys.path.insert(0, str(ROOT / "tests/development_slice"))
 
-from ezllmrouter_server.gateway.guard import ACTIVE, GuardRejected, GuardTransport, Invocation, PROVIDER_URL, provider_expectation
+from ezllmrouter_server.gateway.guard import (
+    ACTIVE,
+    GuardRejected,
+    GuardTransport,
+    Invocation,
+    PROVIDER_URL,
+    provider_expectation,
+)
 from ezllmrouter_server.gateway.adapter import LiteLLMAsgiAdapter
 from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, PROXY_MODEL
 from ezllmrouter_server.store import SQLiteStore
 
 
 def projection(text="Hi"):
-    return {"destination": {"service": "litellm.dev04", "model": "model.demo",
-                            "endpoint": "127.0.0.1", "processing_region": "local"},
-            "work": {"requested_features": ["text"],
-                     "generation_settings": {"max_output_tokens": 32},
-                     "messages": [{"role": "system", "blocks": [{"text": "Answer briefly."}]},
-                                  {"role": "user", "blocks": [{"text": text}]}]}}
+    return {
+        "destination": {
+            "service": "litellm.dev04",
+            "model": "model.demo",
+            "endpoint": "127.0.0.1",
+            "processing_region": "local",
+        },
+        "work": {
+            "requested_features": ["text"],
+            "generation_settings": {"max_output_tokens": 32},
+            "messages": [
+                {"role": "system", "blocks": [{"text": "Answer briefly."}]},
+                {"role": "user", "blocks": [{"text": text}]},
+            ],
+        },
+    }
 
 
 def invocation(aid="attempt.one", text="Hi", fresh=None, commit=None):
-    return Invocation("submission.one", aid,
-                      {"plan_id": "plan.one", "work_digest": "sha256:test",
-                       "deadline": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
-                       "per_attempt_total_timeout_ms": 1000,
-                       "work_key": {"principal_id": "principal.test", "task_id": "task.test",
-                                    "step_id": "step.test", "step_revision": 1,
-                                    "execution_generation": "gen.1"}},
-                      projection(text), fresh or (lambda: None), commit or (lambda _receipt: None))
+    return Invocation(
+        "submission.one",
+        aid,
+        {
+            "plan_id": "plan.one",
+            "work_digest": "sha256:test",
+            "deadline": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
+            "per_attempt_total_timeout_ms": 1000,
+            "work_key": {
+                "principal_id": "principal.test",
+                "task_id": "task.test",
+                "step_id": "step.test",
+                "step_revision": 1,
+                "execution_generation": "gen.1",
+            },
+        },
+        projection(text),
+        fresh or (lambda: None),
+        commit or (lambda _receipt: None),
+    )
 
 
 class GuardTests(unittest.IsolatedAsyncioTestCase):
@@ -53,8 +83,9 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
             self.arrivals.append((request.headers.get("x-ezllmrouter-attempt"), request.content))
             return httpx.Response(200, json={"ok": True})
 
-        self.client = httpx.AsyncClient(transport=GuardTransport(httpx.MockTransport(lower)),
-                                        timeout=1.0, trust_env=False)
+        self.client = httpx.AsyncClient(
+            transport=GuardTransport(httpx.MockTransport(lower)), timeout=1.0, trust_env=False
+        )
 
     async def asyncTearDown(self):
         await self.client.aclose()
@@ -62,16 +93,20 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
     async def send(self, context, body=None, url=PROVIDER_URL):
         token = ACTIVE.set(context)
         try:
-            return await self.client.post(url, json=body or provider_expectation(context.projection),
-                                          headers={"Authorization": "Bearer " +
-                                                   os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]})
+            return await self.client.post(
+                url,
+                json=body or provider_expectation(context.projection),
+                headers={"Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]},
+            )
         finally:
             ACTIVE.reset(token)
 
     async def test_valid_final_request_commits_before_one_lower_send(self):
         sequence = []
-        context = invocation(fresh=lambda: sequence.append("fresh"),
-                             commit=lambda receipt: sequence.append(("commit", receipt["attempt_id"])))
+        context = invocation(
+            fresh=lambda: sequence.append("fresh"),
+            commit=lambda receipt: sequence.append(("commit", receipt["attempt_id"])),
+        )
         response = await self.send(context)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(sequence, ["fresh", ("commit", "attempt.one")])
@@ -83,8 +118,10 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.arrivals), 1)
 
     async def test_mutated_content_and_destination_block_before_commit(self):
-        for changed, url in (({**provider_expectation(projection()), "model": "other"}, PROVIDER_URL),
-                             (provider_expectation(projection()), "http://127.0.0.1:8768/v1/chat/completions")):
+        for changed, url in (
+            ({**provider_expectation(projection()), "model": "other"}, PROVIDER_URL),
+            (provider_expectation(projection()), "http://127.0.0.1:8768/v1/chat/completions"),
+        ):
             commits = []
             context = invocation(commit=commits.append)
             with self.assertRaises(GuardRejected):
@@ -128,9 +165,11 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_no_context_cannot_send(self):
         with self.assertRaises(GuardRejected) as raised:
-            await self.client.post(PROVIDER_URL, json=provider_expectation(projection()),
-                                   headers={"Authorization": "Bearer " +
-                                            os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]})
+            await self.client.post(
+                PROVIDER_URL,
+                json=provider_expectation(projection()),
+                headers={"Authorization": "Bearer " + os.environ["EZLLMROUTER_DEV04_PROVIDER_KEY"]},
+            )
         self.assertEqual(raised.exception.code, "NO_TRUSTED_CONTEXT")
         self.assertEqual(self.arrivals, [])
 
@@ -151,21 +190,39 @@ class StoreGuardTests(unittest.TestCase):
     def test_durable_single_use_final_commit(self):
         with tempfile.TemporaryDirectory() as directory:
             store = SQLiteStore(Path(directory) / "store.sqlite")
-            record = {"submission_id": "submission.one", "attempt_id": "attempt.one",
-                      "principal_id": "svc.test", "task_id": "task.test",
-                      "work_key": {"principal_id": "svc.test", "task_id": "task.test",
-                                   "step_id": "step.test", "step_revision": 1,
-                                   "execution_generation": "gen.1"}, "work_digest": "sha256:test",
-                      "status_revision": 1}
+            record = {
+                "submission_id": "submission.one",
+                "attempt_id": "attempt.one",
+                "principal_id": "svc.test",
+                "task_id": "task.test",
+                "work_key": {
+                    "principal_id": "svc.test",
+                    "task_id": "task.test",
+                    "step_id": "step.test",
+                    "step_revision": 1,
+                    "execution_generation": "gen.1",
+                },
+                "work_digest": "sha256:test",
+                "status_revision": 1,
+            }
             store.create(record)
-            store.intent("submission.one", "attempt.one", {"attempt_id": "attempt.one",
-                                                           "plan_id": "plan.one", "work_digest": "sha256:test"})
-            receipt = {"attempt_id": "attempt.one", "plan_id": "plan.one",
-                       "work_digest": "sha256:test", "body_sha256": "abc"}
+            store.intent(
+                "submission.one",
+                "attempt.one",
+                {"attempt_id": "attempt.one", "plan_id": "plan.one", "work_digest": "sha256:test"},
+            )
+            receipt = {
+                "attempt_id": "attempt.one",
+                "plan_id": "plan.one",
+                "work_digest": "sha256:test",
+                "body_sha256": "abc",
+            }
             store.guard_commit("submission.one", "attempt.one", receipt)
             self.assertEqual(store.guard_record("attempt.one"), receipt)
             with self.assertRaises(Exception):
-                store.guard_commit("submission.one", "attempt.one", {**receipt, "body_sha256": "def"})
+                store.guard_commit(
+                    "submission.one", "attempt.one", {**receipt, "body_sha256": "def"}
+                )
             self.assertEqual(store.guard_record("attempt.one"), receipt)
             store.close()
 

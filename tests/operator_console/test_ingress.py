@@ -1,4 +1,5 @@
 """The loopback publisher relays only to the fixed internal console."""
+
 from pathlib import Path
 import socket
 import socketserver
@@ -26,7 +27,9 @@ class IngressTests(unittest.TestCase):
                 worker = threading.Thread(target=target.serve_forever, daemon=True)
                 worker.start()
                 with patch.object(console_ingress, "TARGET", path):
-                    with console_ingress.Server(("127.0.0.1", 0), console_ingress.Handler) as ingress:
+                    with console_ingress.Server(
+                        ("127.0.0.1", 0), console_ingress.Handler
+                    ) as ingress:
                         relay = threading.Thread(target=ingress.serve_forever, daemon=True)
                         relay.start()
                         with socket.create_connection(ingress.server_address, timeout=2) as client:

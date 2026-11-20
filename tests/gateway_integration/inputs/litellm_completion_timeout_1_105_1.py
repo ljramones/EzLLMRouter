@@ -62,7 +62,9 @@ class CompletionTimeout:
         if isinstance(resolved, httpx.Timeout) and not supports_httpx_timeout(custom_llm_provider):
             read_timeout: Final = resolved.read
             resolved = (
-                float(read_timeout) if read_timeout is not None else COMPLETION_HTTP_FALLBACK_SECONDS
+                float(read_timeout)
+                if read_timeout is not None
+                else COMPLETION_HTTP_FALLBACK_SECONDS
             )  # default 10 min timeout
         elif not isinstance(resolved, httpx.Timeout):
             resolved = float(resolved)

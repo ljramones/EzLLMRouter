@@ -3,6 +3,7 @@
 The normal transport remains the default. A selected T-24.b case installs
 this transport only for its one controlled request; no provider route exists.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -61,8 +62,12 @@ class CompletionTLSStream(OwnedTLSStream):
         # The complete one-use request reaches the independent receiver, which
         # retains a receipt. Drop the response so the sender must preserve
         # possible-send uncertainty until an authorized late collection.
-        if (self.fault and self.fault["mode"] == "partial_after_first_bytes" and
-                self.fault["fired"] and self.request_bytes_accepted):
+        if (
+            self.fault
+            and self.fault["mode"] == "partial_after_first_bytes"
+            and self.fault["fired"]
+            and self.request_bytes_accepted
+        ):
             await asyncio.sleep(0.1)
             self.fault["observations"].append("RESPONSE_DROPPED_AFTER_FRAGMENTED_REQUEST")
             self.terminal = True
@@ -76,19 +81,24 @@ class CompletionTLSBackend(SyntheticTLSBackend):
         super().__init__(authority, port, first_write_wait=first_write_wait)
         self.fault = fault
 
-    async def connect_tcp(self, host, port, timeout=None, local_address=None,
-                          socket_options=None):
+    async def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):
         actual_host = host.decode() if type(host) is bytes else host
         if (actual_host, port, local_address, socket_options) != (
-                "synthetic.invalid", self.port, None, None):
+            "synthetic.invalid",
+            self.port,
+            None,
+            None,
+        ):
             raise GuardRejected("DESTINATION_REJECTED")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
         try:
-            await asyncio.wait_for(asyncio.get_running_loop().sock_connect(
-                sock, ("127.0.0.1", self.port)), timeout)
-            return CompletionTLSStream(sock, self.authority,
-                first_write_wait=self.first_write_wait, fault=self.fault)
+            await asyncio.wait_for(
+                asyncio.get_running_loop().sock_connect(sock, ("127.0.0.1", self.port)), timeout
+            )
+            return CompletionTLSStream(
+                sock, self.authority, first_write_wait=self.first_write_wait, fault=self.fault
+            )
         except BaseException:
             sock.close()
             raise
@@ -101,7 +111,13 @@ class CompletionTLSHTTPTransport(OwnedSyntheticTLSHTTPTransport):
         self.origin = f"https://synthetic.invalid:{port}"
         context = ssl.create_default_context(cadata=ca_pem)
         self.pool = httpcore.AsyncConnectionPool(
-            ssl_context=context, max_connections=1, max_keepalive_connections=0,
-            http1=True, http2=False, retries=0,
-            network_backend=CompletionTLSBackend(authority, port,
-                first_write_wait=first_write_wait, fault=self.fault))
+            ssl_context=context,
+            max_connections=1,
+            max_keepalive_connections=0,
+            http1=True,
+            http2=False,
+            retries=0,
+            network_backend=CompletionTLSBackend(
+                authority, port, first_write_wait=first_write_wait, fault=self.fault
+            ),
+        )

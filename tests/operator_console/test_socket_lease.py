@@ -1,4 +1,5 @@
 """Normal restart reclaims only a dead profile socket, never a live endpoint."""
+
 from pathlib import Path
 import socket
 import sys

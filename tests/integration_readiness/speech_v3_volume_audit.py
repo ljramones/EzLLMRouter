@@ -1,4 +1,5 @@
 """Read-only independent reduction of a retained v3 volume export and CSV."""
+
 import csv
 from collections import defaultdict
 import json
@@ -64,7 +65,17 @@ assert report["attempt_count"] == report["unknown_cost_attempts"] == unknown
 assert report["known_total_by_currency"] == {}
 assert len(exported["eligibility_reads"]) == len(exported["eligibility_assessments"]) == 512
 assert len(exported["events"]) == 2049
-print(json.dumps({"status": "PASS", "run_id": sys.argv[1],
-                  "raw_unique_attempts": len(starts), "new_v3_attempts": new,
-                  "effective_unknown_costs": unknown, "csv_rows": len(rows),
-                  "raw_events": len(exported["events"])}, sort_keys=True))
+print(
+    json.dumps(
+        {
+            "status": "PASS",
+            "run_id": sys.argv[1],
+            "raw_unique_attempts": len(starts),
+            "new_v3_attempts": new,
+            "effective_unknown_costs": unknown,
+            "csv_rows": len(rows),
+            "raw_events": len(exported["events"]),
+        },
+        sort_keys=True,
+    )
+)

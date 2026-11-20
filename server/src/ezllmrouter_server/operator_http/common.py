@@ -1,4 +1,5 @@
 """Shared operator HTTP types and strict wire helpers."""
+
 from __future__ import annotations
 from ..observability import log_failure
 from concurrent.futures import ThreadPoolExecutor
@@ -29,16 +30,19 @@ from ..integration_accounting import IntegrationError, route_id
 from ..user_management import UserManager, UserError, LoginThrottle, ROLE_PERMISSIONS
 from ..local_connectors import LocalConnectors, ConnectorError
 
+
 def _pairs(items):
     value = {}
     for key, item in items:
         if key in value:
-            raise ValueError('duplicate operator key')
+            raise ValueError("duplicate operator key")
         value[key] = item
     return value
 
+
 def _reject_number(_text):
-    raise ValueError('unsupported operator number')
+    raise ValueError("unsupported operator number")
+
 
 SESSION_SECONDS = 1800
 NOT_HANDLED = object()

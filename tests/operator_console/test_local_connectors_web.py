@@ -1,4 +1,5 @@
 """Local connector HTTP authorization and discovery through actual operator handlers."""
+
 import copy
 from types import SimpleNamespace
 
@@ -14,6 +15,7 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         super().setUp()
         self.registry.provider_vault = SimpleNamespace(key=b"h" * 32)
         self.calls = []
+
         def read(url, path, key):
             self.calls.append(path)
             if path == "/api/tags":
@@ -23,12 +25,24 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
             if path == "/v1/models":
                 return {"data": []}
             return {"version": "0.12.0"}
-        self.registry.local_connectors.discover_fn = lambda kind, url, key: discover(kind, url, key, read=read)
-        self.registry.local_connectors.availability_read = lambda url, path, key, **_: read(url, path, key)
+
+        self.registry.local_connectors.discover_fn = lambda kind, url, key: discover(
+            kind, url, key, read=read
+        )
+        self.registry.local_connectors.availability_read = lambda url, path, key, **_: read(
+            url, path, key
+        )
 
     def add_connector(self):
-        status, _, item = self.request("POST", "/operator/v1/local-connectors", {
-            "display_name": "Local Ollama", "kind": "ollama", "base_url": "http://localhost:11434"})
+        status, _, item = self.request(
+            "POST",
+            "/operator/v1/local-connectors",
+            {
+                "display_name": "Local Ollama",
+                "kind": "ollama",
+                "base_url": "http://localhost:11434",
+            },
+        )
         self.assertEqual(status, 201, item)
         return item
 
@@ -40,15 +54,26 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         self.assertIn("ollama", self.request("GET", "/operator/v1/local-connectors")[2]["kinds"])
         self.assertEqual(self.request("GET", path)[0], 200)
         self.assertEqual(self.calls, [])
-        status, _, item = self.request("POST", path + "/discover", {"expected_revision": item["revision"]})
+        status, _, item = self.request(
+            "POST", path + "/discover", {"expected_revision": item["revision"]}
+        )
         self.assertEqual(status, 200, item)
         self.assertEqual(len(item["discovery"]["models"]), 2)
         self.assertEqual(self.calls, ["/api/tags", "/api/ps", "/api/version"])
-        status, _, item = self.request("POST", path + "/models", {
-            "expected_revision": item["revision"], "selected_models": ["llama3.2:latest"], "enabled": True})
+        status, _, item = self.request(
+            "POST",
+            path + "/models",
+            {
+                "expected_revision": item["revision"],
+                "selected_models": ["llama3.2:latest"],
+                "enabled": True,
+            },
+        )
         self.assertEqual(status, 200, item)
         self.assertTrue(item["usable"])
-        self.assertEqual(self.request("DELETE", path, {"expected_revision": item["revision"]})[0], 200)
+        self.assertEqual(
+            self.request("DELETE", path, {"expected_revision": item["revision"]})[0], 200
+        )
         self.assertEqual(self.request("GET", path)[0], 404)
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM submissions").fetchone()[0], 0)
 
@@ -59,11 +84,15 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         body = {"expected_revision": item["revision"]}
         self.assertEqual(self.request("POST", path + "/discover", body, csrf=False)[0], 403)
         self.assertEqual(self.request("DELETE", path, body, csrf=False)[0], 403)
-        self.assertEqual(self.request("POST", path + "/discover", body, origin="http://evil.example")[0], 403)
+        self.assertEqual(
+            self.request("POST", path + "/discover", body, origin="http://evil.example")[0], 403
+        )
         self.assertEqual(self.calls, [])
         viewer = self.create("viewer", "read_only_operator")
-        self.users.change_password(viewer["principal_id"], {"current_password": PASSWORD,
-            "new_password": "Viewer private replacement password"})
+        self.users.change_password(
+            viewer["principal_id"],
+            {"current_password": PASSWORD, "new_password": "Viewer private replacement password"},
+        )
         self.login("viewer", "Viewer private replacement password")
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors")[0], 200)
         self.assertEqual(self.request("POST", path + "/discover", body)[0], 403)
@@ -75,9 +104,13 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         self.ready_admin()
         item = self.add_connector()
         self.registry.local_connectors.discover_fn = lambda *_: (_ for _ in ()).throw(
-            ConnectorError("SERVER_AUTHENTICATION_REQUIRED", 502))
-        status, _, item = self.request("POST", "/operator/v1/local-connectors/" + item["connector_id"] + "/discover",
-            {"expected_revision": item["revision"]})
+            ConnectorError("SERVER_AUTHENTICATION_REQUIRED", 502)
+        )
+        status, _, item = self.request(
+            "POST",
+            "/operator/v1/local-connectors/" + item["connector_id"] + "/discover",
+            {"expected_revision": item["revision"]},
+        )
         self.assertEqual(status, 200)
         self.assertEqual(item["discovery"]["reason"], "SERVER_AUTHENTICATION_REQUIRED")
         self.assertEqual(self.request("GET", "/operator/v1/session")[0], 200)
@@ -87,8 +120,10 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors")[0], 403)
         self.ready_admin()
         user = self.create()
-        self.users.change_password(user["principal_id"], {"current_password": PASSWORD,
-            "new_password": "Ordinary user private password"})
+        self.users.change_password(
+            user["principal_id"],
+            {"current_password": PASSWORD, "new_password": "Ordinary user private password"},
+        )
         self.login("alice", "Ordinary user private password")
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors")[0], 403)
         self.assertEqual(self.request("POST", "/operator/v1/local-connectors", {})[0], 403)
@@ -107,8 +142,15 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         self.assertEqual(cached["items"][0]["availability"]["state"], "unknown")
         self.assertEqual(self.calls, [])
         body = {"connector_ids": [item["connector_id"]]}
-        self.assertEqual(self.request("POST", "/operator/v1/local-connectors/check", body, csrf=False)[0], 403)
-        self.assertEqual(self.request("POST", "/operator/v1/local-connectors/check", body, origin="http://evil.example")[0], 403)
+        self.assertEqual(
+            self.request("POST", "/operator/v1/local-connectors/check", body, csrf=False)[0], 403
+        )
+        self.assertEqual(
+            self.request(
+                "POST", "/operator/v1/local-connectors/check", body, origin="http://evil.example"
+            )[0],
+            403,
+        )
         self.assertEqual(self.calls, [])
         self.assertEqual(self.request("POST", "/operator/v1/local-connectors/check", body)[0], 200)
         drain(self.registry.local_connectors.monitor)
@@ -124,14 +166,18 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         self.add_connector()
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors/nearby")[0], 200)
         self.assertEqual(self.calls, [])
-        self.assertEqual(self.request("POST", "/operator/v1/local-connectors/find", {}, csrf=False)[0], 403)
+        self.assertEqual(
+            self.request("POST", "/operator/v1/local-connectors/find", {}, csrf=False)[0], 403
+        )
         self.assertEqual(self.request("POST", "/operator/v1/local-connectors/find", {})[0], 200)
         drain(self.registry.local_connectors.monitor)
         self.assertEqual(len(self.calls), 7)
         self.assertEqual(len(self.request("GET", "/operator/v1/local-connectors")[2]["items"]), 1)
         viewer = self.create("viewer", "read_only_operator")
-        self.users.change_password(viewer["principal_id"], {"current_password": PASSWORD,
-            "new_password": "Viewer private replacement password"})
+        self.users.change_password(
+            viewer["principal_id"],
+            {"current_password": PASSWORD, "new_password": "Viewer private replacement password"},
+        )
         self.login("viewer", "Viewer private replacement password")
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors/availability")[0], 200)
         self.assertEqual(self.request("POST", "/operator/v1/local-connectors/check", {})[0], 200)
@@ -143,11 +189,15 @@ class LocalConnectorHTTPTests(UserHTTPFixture):
         for path in ("availability", "nearby"):
             self.assertEqual(self.request("GET", "/operator/v1/local-connectors/" + path)[0], 403)
         for path in ("check", "find"):
-            self.assertEqual(self.request("POST", "/operator/v1/local-connectors/" + path, {})[0], 403)
+            self.assertEqual(
+                self.request("POST", "/operator/v1/local-connectors/" + path, {})[0], 403
+            )
         self.ready_admin()
         user = self.create()
-        self.users.change_password(user["principal_id"], {"current_password": PASSWORD,
-            "new_password": "Ordinary user private password"})
+        self.users.change_password(
+            user["principal_id"],
+            {"current_password": PASSWORD, "new_password": "Ordinary user private password"},
+        )
         self.login("alice", "Ordinary user private password")
         self.assertEqual(self.request("GET", "/operator/v1/local-connectors/availability")[0], 403)
         self.assertEqual(self.request("POST", "/operator/v1/local-connectors/check", {})[0], 403)

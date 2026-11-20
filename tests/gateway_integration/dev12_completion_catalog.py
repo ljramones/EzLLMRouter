@@ -6,6 +6,7 @@ runner may share setup between variants, but must produce separate observations
 and objective assertions for every listed pair.  The recovery chain is an
 additional required composed scenario; it does not add an assurance label.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -34,10 +35,10 @@ class ScenarioSpec:
 class CaseHandler:
     """Reviewed source registration for a real target handler.
 
-The source hash is checked against the bytes on disk and the preflight plan.
-The executable must return stage observations and assertions, rather than a
-single success Boolean.  Its objective checks are verified by the runner.
-"""
+    The source hash is checked against the bytes on disk and the preflight plan.
+    The executable must return stage observations and assertions, rather than a
+    single success Boolean.  Its objective checks are verified by the runner.
+    """
 
     name: str
     source_path: str
@@ -165,24 +166,39 @@ def _make_scenarios() -> dict[str, ScenarioSpec]:
         stages = _STAGES[handler]
         if label.startswith("T-48") and label != "T-48.f":
             stages = ("accounting",)
-        if label in {"T-60", "T-61", "T-62.a", "T-62.b", "T-62.c", "T-62.d", "T-62.e", "T-64", "T-65"}:
+        if label in {
+            "T-60",
+            "T-61",
+            "T-62.a",
+            "T-62.b",
+            "T-62.c",
+            "T-62.d",
+            "T-62.e",
+            "T-64",
+            "T-65",
+        }:
             stages = ("operator",)
         objectives = names.split()
         if label in split:
             variants = {
-                name: VariantSpec(handler, stages, (f"{scenario}.{name}",))
-                for name in objectives
+                name: VariantSpec(handler, stages, (f"{scenario}.{name}",)) for name in objectives
             }
         else:
             phase = "terminal" if label == "T-50.e" else "normal"
             minimum_sends = 3 if label == "T-60" else 1 if label in {"T-01", "T-42"} else 0
-            variants = {"composed": VariantSpec(handler, stages,
-                tuple(f"{scenario}.{name}" for name in objectives),
-                phase=phase,
-                reuse_permitted=(label.startswith("T-47") or
-                    (label.startswith("T-48") and label != "T-48.f")),
-                minimum_admissions=minimum_sends,
-                minimum_possible_sends=minimum_sends)}
+            variants = {
+                "composed": VariantSpec(
+                    handler,
+                    stages,
+                    tuple(f"{scenario}.{name}" for name in objectives),
+                    phase=phase,
+                    reuse_permitted=(
+                        label.startswith("T-47") or (label.startswith("T-48") and label != "T-48.f")
+                    ),
+                    minimum_admissions=minimum_sends,
+                    minimum_possible_sends=minimum_sends,
+                )
+            }
         result[scenario] = ScenarioSpec((label,), variants)
     # This chain is mandatory even if T-49.e and T-50.d were independently
     # observed.  Its identity is one financial scope and one original attempt.
@@ -193,19 +209,26 @@ def _make_scenarios() -> dict[str, ScenarioSpec]:
         "denied_resume": ("resume", ("authority", "settlement")),
         "eligible_resume": ("resume", ("authority", "settlement")),
     }
-    result["recovery_chain"] = ScenarioSpec((), {
-        name: VariantSpec("recovery_chain", stages, (f"recovery_chain.{name}",), phase,
-                          minimum_admissions=int(name == "unknown_pause"),
-                          minimum_possible_sends=int(name == "unknown_pause"))
-        for name, (phase, stages) in chain.items()
-    })
+    result["recovery_chain"] = ScenarioSpec(
+        (),
+        {
+            name: VariantSpec(
+                "recovery_chain",
+                stages,
+                (f"recovery_chain.{name}",),
+                phase,
+                minimum_admissions=int(name == "unknown_pause"),
+                minimum_possible_sends=int(name == "unknown_pause"),
+            )
+            for name, (phase, stages) in chain.items()
+        },
+    )
     return result
 
 
 SCENARIOS = _make_scenarios()
 REQUIRED_PAIRS = frozenset(
-    (scenario, variant) for scenario, spec in SCENARIOS.items()
-    for variant in spec.variants
+    (scenario, variant) for scenario, spec in SCENARIOS.items() for variant in spec.variants
 )
 SELECTED_IDS = frozenset(_VARIANTS)
 
@@ -225,7 +248,8 @@ SUPPLEMENT_SCENARIOS = {
     "ct02_authority_atomic": ("rollback_stall_unpublished_restart",),
 }
 SUPPLEMENT_REQUIRED_PAIRS = frozenset(
-    (scenario, variant) for scenario, variants in SUPPLEMENT_SCENARIOS.items()
+    (scenario, variant)
+    for scenario, variants in SUPPLEMENT_SCENARIOS.items()
     for variant in variants
 )
 
@@ -251,49 +275,65 @@ SUPPLEMENT_PREDICATES = {
     ("ct02_workkey", variant): (f"ct02_workkey.{variant}",)
     for variant in SUPPLEMENT_SCENARIOS["ct02_workkey"]
 }
-SUPPLEMENT_PREDICATES.update({
-    ("ct02_recovery", variant): tuple(f"ct02_recovery.{variant}.{name}"
-        for name in ("selectors", "duplicate", "denial", "no_repeat"))
-    for variant in SUPPLEMENT_SCENARIOS["ct02_recovery"]
-})
+SUPPLEMENT_PREDICATES.update(
+    {
+        ("ct02_recovery", variant): tuple(
+            f"ct02_recovery.{variant}.{name}"
+            for name in ("selectors", "duplicate", "denial", "no_repeat")
+        )
+        for variant in SUPPLEMENT_SCENARIOS["ct02_recovery"]
+    }
+)
 for _variant, _names in {
     "method_host_route": ("method", "host", "route"),
     "headers_body": ("authorization", "missing_content_type", "extra_header", "body"),
     "timeout_matrix": ("changed", "missing", "extra", "nonfinite", "wrong_type"),
 }.items():
     SUPPLEMENT_PREDICATES[("ct02_realized_guard", _variant)] = tuple(
-        f"ct02_realized_guard.{name}" for name in (*_names, "matched_control"))
-SUPPLEMENT_PREDICATES.update({
-    ("ct02_failed_unknown", "failed_then_corrected"): tuple(
-        "ct02_failed_unknown." + name for name in
-        ("failure_and_unknown", "denied_write", "late_finance", "audited_resume")),
-    ("ct02_revision33", "accepted_history"): tuple(
-        "ct02_revision33." + name for name in
-        ("accepted", "duplicate", "negatives", "latest_once")),
-    ("ct02_historical_auth", "read_write_resume"): tuple(
-        "ct02_historical_auth." + name for name in
-        ("read_denial", "wait_revocation", "post_expiry", "no_resend")),
-    ("ct02_reporting", "csv_overbound"): tuple(
-        "ct02_reporting." + name for name in
-        ("csv_finance", "historical_overbound_http", "read_only")),
-    ("ct02_transport", "would_block_revoke"): tuple(
-        "ct02_transport." + name for name in
-        ("product_drain", "would_block_positive", "would_block_revoked")),
-    ("ct02_transport", "partial_unknown"): tuple(
-        "ct02_transport." + name for name in
-        ("product_drain", "partial_unknown", "partial_no_replay")),
-    ("ct02_authority_atomic", "rollback_stall_unpublished_restart"): tuple(
-        "ct02_authority_atomic." + name for name in
-        ("definite_rollback", "stalled_commit", "unpublished", "restart")),
-    ("ct02_authority_wait", "activation_pause_expiry"): tuple(
-        "ct02_authority_wait." + name for name in
-        ("positive", "activation", "expiry", "pause")),
-})
+        f"ct02_realized_guard.{name}" for name in (*_names, "matched_control")
+    )
+SUPPLEMENT_PREDICATES.update(
+    {
+        ("ct02_failed_unknown", "failed_then_corrected"): tuple(
+            "ct02_failed_unknown." + name
+            for name in ("failure_and_unknown", "denied_write", "late_finance", "audited_resume")
+        ),
+        ("ct02_revision33", "accepted_history"): tuple(
+            "ct02_revision33." + name
+            for name in ("accepted", "duplicate", "negatives", "latest_once")
+        ),
+        ("ct02_historical_auth", "read_write_resume"): tuple(
+            "ct02_historical_auth." + name
+            for name in ("read_denial", "wait_revocation", "post_expiry", "no_resend")
+        ),
+        ("ct02_reporting", "csv_overbound"): tuple(
+            "ct02_reporting." + name
+            for name in ("csv_finance", "historical_overbound_http", "read_only")
+        ),
+        ("ct02_transport", "would_block_revoke"): tuple(
+            "ct02_transport." + name
+            for name in ("product_drain", "would_block_positive", "would_block_revoked")
+        ),
+        ("ct02_transport", "partial_unknown"): tuple(
+            "ct02_transport." + name
+            for name in ("product_drain", "partial_unknown", "partial_no_replay")
+        ),
+        ("ct02_authority_atomic", "rollback_stall_unpublished_restart"): tuple(
+            "ct02_authority_atomic." + name
+            for name in ("definite_rollback", "stalled_commit", "unpublished", "restart")
+        ),
+        ("ct02_authority_wait", "activation_pause_expiry"): tuple(
+            "ct02_authority_wait." + name for name in ("positive", "activation", "expiry", "pause")
+        ),
+    }
+)
 assert set(SUPPLEMENT_PREDICATES) == SUPPLEMENT_REQUIRED_PAIRS
 
 
 def source_path_for_handler(name: str | None = None) -> Path:
-    filename = ("dev12_completion_operator_handlers.py" if name in
-                {"operator_identity", "operator_reporting", "persistence_migration"}
-                else "dev12_completion_handlers.py")
+    filename = (
+        "dev12_completion_operator_handlers.py"
+        if name in {"operator_identity", "operator_reporting", "persistence_migration"}
+        else "dev12_completion_handlers.py"
+    )
     return Path(__file__).with_name(filename).resolve()

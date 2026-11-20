@@ -1,4 +1,5 @@
 """Service-volume provider credentials; never mounted in the isolated worker."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,12 +9,19 @@ import re
 import threading
 
 from .private_files import read_private, write_private
-from .secret_box import SecretBox, SecretBoxError, decode_envelope, private_directory, validate_secret
+from .secret_box import (
+    SecretBox,
+    SecretBoxError,
+    decode_envelope,
+    private_directory,
+    validate_secret,
+)
 
 
 def credential_context(connection_id, version):
-    return json.dumps({"connection_id": connection_id, "version": version},
-                      sort_keys=True, separators=(",", ":")).encode()
+    return json.dumps(
+        {"connection_id": connection_id, "version": version}, sort_keys=True, separators=(",", ":")
+    ).encode()
 
 
 class ProviderVault:
@@ -24,8 +32,12 @@ class ProviderVault:
         required_ids = set()
         for path in self.root.glob("*.sealed"):
             required_ids.add(self._read(path)["key_id"])
-        self.box = SecretBox(self.key_path, "provider-credentials", required_ids=required_ids,
-                             required=require_existing)
+        self.box = SecretBox(
+            self.key_path,
+            "provider-credentials",
+            required_ids=required_ids,
+            required=require_existing,
+        )
         self._gate = threading.RLock()
 
     def _path(self, connection_id, version):
@@ -73,8 +85,11 @@ class ProviderVault:
                 envelope = self._read(path)
                 value = self.box.open(envelope, context)
                 if envelope["key_id"] != self.box.active_id:
-                    write_private(path, json.dumps(self.box.seal(value, context), sort_keys=True).encode(),
-                                  replace=True)
+                    write_private(
+                        path,
+                        json.dumps(self.box.seal(value, context), sort_keys=True).encode(),
+                        replace=True,
+                    )
                     changed += 1
         return changed
 

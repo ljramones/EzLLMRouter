@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """One bounded authenticated import of public reference metadata into the live registry."""
+
 from __future__ import annotations
 
 import hashlib
@@ -20,7 +21,10 @@ class OperatorClient:
         self.cookie = None
         self.csrf = None
         response = self.request("POST", "/operator/v1/login", {"password": password})
-        if response["body"].get("principal_id") != "owner.local" or response["body"].get("role") != "registry_admin":
+        if (
+            response["body"].get("principal_id") != "owner.local"
+            or response["body"].get("role") != "registry_admin"
+        ):
             raise RuntimeError("existing owner administrator required")
         self.cookie = response["cookie"].split(";", 1)[0]
         self.csrf = response["body"]["csrf"]
@@ -39,21 +43,35 @@ class OperatorClient:
         try:
             conn.request(method, path, encoded, headers)
             result = conn.getresponse()
-            response = {"status": result.status, "cookie": result.getheader("Set-Cookie"),
-                        "body": json.loads(result.read())}
+            response = {
+                "status": result.status,
+                "cookie": result.getheader("Set-Cookie"),
+                "body": json.loads(result.read()),
+            }
         finally:
             conn.close()
         if response["status"] != 200:
-            raise RuntimeError(f"operator {path} rejected: HTTP {response['status']} "
-                               f"{response['body'].get('error', 'UNKNOWN')}")
+            raise RuntimeError(
+                f"operator {path} rejected: HTTP {response['status']} "
+                f"{response['body'].get('error', 'UNKNOWN')}"
+            )
         return response
 
     def get(self, path):
         return self.request("GET", path)["body"]
 
     def mutate(self, action, subject, expected, data, operation_id):
-        return self.request("POST", "/operator/v1/registry", {"operation_id": operation_id,
-            "action": action, "subject": subject, "expected_revision": expected, "data": data})["body"]
+        return self.request(
+            "POST",
+            "/operator/v1/registry",
+            {
+                "operation_id": operation_id,
+                "action": action,
+                "subject": subject,
+                "expected_revision": expected,
+                "data": data,
+            },
+        )["body"]
 
 
 def seed_data():
@@ -61,7 +79,10 @@ def seed_data():
     if hashlib.sha256(raw).hexdigest() != SEED_SHA256:
         raise RuntimeError("researched seed hash changed")
     seed = json.loads(raw)
-    if seed.get("schema") != "ezllmrouter.researched_catalogue_seed.v1" or len(seed.get("models", [])) != 12:
+    if (
+        seed.get("schema") != "ezllmrouter.researched_catalogue_seed.v1"
+        or len(seed.get("models", [])) != 12
+    ):
         raise RuntimeError("unexpected researched catalogue shape")
     return seed
 
@@ -71,33 +92,54 @@ def import_catalogue(client, seed):
     before_models = client.get("/operator/v1/models")["items"]
     before_principals = client.get("/operator/v1/principals")["items"]
     grants_before = {p["principal_id"]: p["grant_summary"] for p in before_principals}
-    fixture_prices_before = {m["configuration_ref"]: m["current_price"] for m in before_models
-                             if m.get("kind") != "real_catalogue"}
+    fixture_prices_before = {
+        m["configuration_ref"]: m["current_price"]
+        for m in before_models
+        if m.get("kind") != "real_catalogue"
+    }
     sources = {source["id"]: source for source in seed["sources"]}
     imported = []
     for entry in seed["models"]:
         subject = "catalogue." + entry["catalogue_key"]
         selected = [sources[ref] for ref in entry["source_refs"]]
-        digest = hashlib.sha256(json.dumps({"entry": entry, "sources": selected},
-                                          sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        client.mutate("import_catalogue", subject, 0, {"entry": entry, "sources": selected},
-                      "op.catalogue." + digest[:32])
+        digest = hashlib.sha256(
+            json.dumps(
+                {"entry": entry, "sources": selected}, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+        client.mutate(
+            "import_catalogue",
+            subject,
+            0,
+            {"entry": entry, "sources": selected},
+            "op.catalogue." + digest[:32],
+        )
         record = client.get("/operator/v1/models/" + subject)
-        if (record["model"]["kind"] != "real_catalogue" or
-                record["model"]["catalogue"] != entry or
-                record["readiness"] != "not_connected"):
+        if (
+            record["model"]["kind"] != "real_catalogue"
+            or record["model"]["catalogue"] != entry
+            or record["readiness"] != "not_connected"
+        ):
             raise RuntimeError("catalogue readback or execution boundary mismatch")
         imported.append(subject)
     owner = client.get("/operator/v1/principals/owner.local")["principal"]
     if owner["display_name"] == "Local owner":
-        client.mutate("edit_principal", "owner.local", owner["revision"],
-                      {"display_name": "Larry Mitchell"}, "op.catalogue.owner-name.20261021")
+        client.mutate(
+            "edit_principal",
+            "owner.local",
+            owner["revision"],
+            {"display_name": "Larry Mitchell"},
+            "op.catalogue.owner-name.20261021",
+        )
     elif owner["display_name"] != "Larry Mitchell":
         raise RuntimeError("owner display name conflicts with approved identity")
     after_owner = client.get("/operator/v1/principals/owner.local")["principal"]
-    if (after_owner["display_name"] != "Larry Mitchell" or after_owner["principal_id"] != "owner.local" or
-            after_owner["credential_state"] != owner["credential_state"] or
-            after_owner["role"] != owner["role"]):
+    if (
+        after_owner["display_name"] != "Larry Mitchell"
+        or after_owner["principal_id"] != "owner.local"
+        or after_owner["credential_state"] != owner["credential_state"]
+        or after_owner["role"] != owner["role"]
+    ):
         raise RuntimeError("owner identity binding changed")
     models = client.get("/operator/v1/models")["items"]
     principals = client.get("/operator/v1/principals")["items"]
@@ -106,18 +148,26 @@ def import_catalogue(client, seed):
     for model in models:
         if model["configuration_ref"] in imported and model["readiness"] != "not_connected":
             raise RuntimeError("catalogue became connected")
-    if ({p["principal_id"]: p["grant_summary"] for p in principals} != grants_before or
-            {m["configuration_ref"]: m["current_price"] for m in models
-             if m.get("kind") != "real_catalogue"} != fixture_prices_before):
+    if {p["principal_id"]: p["grant_summary"] for p in principals} != grants_before or {
+        m["configuration_ref"]: m["current_price"]
+        for m in models
+        if m.get("kind") != "real_catalogue"
+    } != fixture_prices_before:
         raise RuntimeError("existing grants or synthetic prices changed")
     after = client.get("/operator/v1/overview")["counts"]
     if after != before:
         raise RuntimeError("metadata import changed submission counts")
-    return {"kind": "DEV-07 researched catalogue import", "status": "PASS",
-            "catalogue_entries": len(imported), "owner_display_name": after_owner["display_name"],
-            "identity_count": len(principals), "submission_counts_unchanged": True,
-            "grants_and_fixture_prices_unchanged": True,
-            "catalogue_transport": "not_connected", "seed_sha256": SEED_SHA256}
+    return {
+        "kind": "DEV-07 researched catalogue import",
+        "status": "PASS",
+        "catalogue_entries": len(imported),
+        "owner_display_name": after_owner["display_name"],
+        "identity_count": len(principals),
+        "submission_counts_unchanged": True,
+        "grants_and_fixture_prices_unchanged": True,
+        "catalogue_transport": "not_connected",
+        "seed_sha256": SEED_SHA256,
+    }
 
 
 def main():

@@ -3,6 +3,7 @@
 Publish a new write key before rewriting any ciphertext. Retaining every old
 key makes an interrupted rotation readable and resumable across processes.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -26,8 +27,11 @@ class SecretBoxError(RuntimeError):
 
 
 def validate_secret(value):
-    if (type(value) is not str or not 16 <= len(value) <= 4096 or
-            any(not 33 <= ord(char) <= 126 for char in value)):
+    if (
+        type(value) is not str
+        or not 16 <= len(value) <= 4096
+        or any(not 33 <= ord(char) <= 126 for char in value)
+    ):
         raise ValueError("invalid credential")
 
 
@@ -49,10 +53,13 @@ def _unique(pairs):
 def decode_envelope(raw):
     try:
         envelope = json.loads(raw, object_pairs_hook=_unique)
-        if (type(envelope) is not dict or set(envelope) !=
-                {"version", "purpose", "key_id", "nonce", "ciphertext"} or
-                type(envelope["version"]) is not int or envelope["version"] != 1 or
-                type(envelope["key_id"]) is not str):
+        if (
+            type(envelope) is not dict
+            or set(envelope) != {"version", "purpose", "key_id", "nonce", "ciphertext"}
+            or type(envelope["version"]) is not int
+            or envelope["version"] != 1
+            or type(envelope["key_id"]) is not str
+        ):
             raise ValueError()
         return envelope
     except (ValueError, TypeError) as exc:
@@ -69,9 +76,15 @@ class SecretBox:
                     raise SecretBoxError("SECRET_KEYRING_MISSING")
                 key = secrets.token_bytes(32)
                 identifier = self._identifier(key)
-                self._write({"version": 1, "purpose": purpose, "active_key_id": identifier,
-                             "mac_key": base64.b64encode(secrets.token_bytes(32)).decode("ascii"),
-                             "keys": {identifier: base64.b64encode(key).decode("ascii")}})
+                self._write(
+                    {
+                        "version": 1,
+                        "purpose": purpose,
+                        "active_key_id": identifier,
+                        "mac_key": base64.b64encode(secrets.token_bytes(32)).decode("ascii"),
+                        "keys": {identifier: base64.b64encode(key).decode("ascii")},
+                    }
+                )
             state = self._read()
             if not set(required_ids) <= state["keys"].keys():
                 raise SecretBoxError("SECRET_KEY_UNAVAILABLE")
@@ -81,8 +94,11 @@ class SecretBox:
 
     @contextmanager
     def _locked(self):
-        descriptor = os.open(self.path.with_name(self.path.name + ".lock"),
-                             os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+        descriptor = os.open(
+            self.path.with_name(self.path.name + ".lock"),
+            os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+            0o600,
+        )
         try:
             metadata = os.fstat(descriptor)
             if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
@@ -94,12 +110,18 @@ class SecretBox:
 
     def _read(self):
         try:
-            state = json.loads(read_private(self.path, limit=1024 * 1024), object_pairs_hook=_unique)
-            if (type(state) is not dict or set(state) !=
-                    {"version", "purpose", "active_key_id", "mac_key", "keys"} or
-                    type(state["version"]) is not int or state["version"] != 1 or
-                    state["purpose"] != self.purpose or type(state["keys"]) is not dict or
-                    state["active_key_id"] not in state["keys"]):
+            state = json.loads(
+                read_private(self.path, limit=1024 * 1024), object_pairs_hook=_unique
+            )
+            if (
+                type(state) is not dict
+                or set(state) != {"version", "purpose", "active_key_id", "mac_key", "keys"}
+                or type(state["version"]) is not int
+                or state["version"] != 1
+                or state["purpose"] != self.purpose
+                or type(state["keys"]) is not dict
+                or state["active_key_id"] not in state["keys"]
+            ):
                 raise ValueError()
             if len(base64.b64decode(state["mac_key"], validate=True)) != 32:
                 raise ValueError()
@@ -145,9 +167,16 @@ class SecretBox:
             return identifier
 
     def _aad(self, context, identifier):
-        return json.dumps({"version": 1, "purpose": self.purpose, "key_id": identifier,
-                           "context": base64.b64encode(context).decode("ascii")},
-                          sort_keys=True, separators=(",", ":")).encode()
+        return json.dumps(
+            {
+                "version": 1,
+                "purpose": self.purpose,
+                "key_id": identifier,
+                "context": base64.b64encode(context).decode("ascii"),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
 
     def seal_parts(self, value, context):
         validate_secret(value)
@@ -156,12 +185,21 @@ class SecretBox:
             identifier = state["active_key_id"]
             key = base64.b64decode(state["keys"][identifier], validate=True)
         nonce = secrets.token_bytes(12)
-        return identifier, nonce, AESGCM(key).encrypt(nonce, value.encode(), self._aad(context, identifier))
+        return (
+            identifier,
+            nonce,
+            AESGCM(key).encrypt(nonce, value.encode(), self._aad(context, identifier)),
+        )
 
     def open_parts(self, identifier, nonce, ciphertext, context):
         try:
-            if (type(identifier) is not str or type(nonce) is not bytes or len(nonce) != 12 or
-                    type(ciphertext) is not bytes or not 32 <= len(ciphertext) <= 4112):
+            if (
+                type(identifier) is not str
+                or type(nonce) is not bytes
+                or len(nonce) != 12
+                or type(ciphertext) is not bytes
+                or not 32 <= len(ciphertext) <= 4112
+            ):
                 raise ValueError()
             with self._locked():
                 key = base64.b64decode(self._read()["keys"][identifier], validate=True)
@@ -173,18 +211,29 @@ class SecretBox:
 
     def seal(self, value, context):
         identifier, nonce, ciphertext = self.seal_parts(value, context)
-        return {"version": 1, "purpose": self.purpose, "key_id": identifier,
-                "nonce": base64.b64encode(nonce).decode("ascii"),
-                "ciphertext": base64.b64encode(ciphertext).decode("ascii")}
+        return {
+            "version": 1,
+            "purpose": self.purpose,
+            "key_id": identifier,
+            "nonce": base64.b64encode(nonce).decode("ascii"),
+            "ciphertext": base64.b64encode(ciphertext).decode("ascii"),
+        }
 
     def open(self, envelope, context):
         try:
-            if (type(envelope) is not dict or set(envelope) !=
-                    {"version", "purpose", "key_id", "nonce", "ciphertext"} or
-                    type(envelope["version"]) is not int or envelope["version"] != 1 or
-                    envelope["purpose"] != self.purpose):
+            if (
+                type(envelope) is not dict
+                or set(envelope) != {"version", "purpose", "key_id", "nonce", "ciphertext"}
+                or type(envelope["version"]) is not int
+                or envelope["version"] != 1
+                or envelope["purpose"] != self.purpose
+            ):
                 raise ValueError()
-            return self.open_parts(envelope["key_id"], base64.b64decode(envelope["nonce"], validate=True),
-                                   base64.b64decode(envelope["ciphertext"], validate=True), context)
+            return self.open_parts(
+                envelope["key_id"],
+                base64.b64decode(envelope["nonce"], validate=True),
+                base64.b64decode(envelope["ciphertext"], validate=True),
+                context,
+            )
         except Exception as exc:
             raise SecretBoxError("SECRET_DECRYPT_FAILED") from exc

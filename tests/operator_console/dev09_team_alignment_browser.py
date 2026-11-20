@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """One-use disposable Chrome proof of the DEV-09 shared-clock plot geometry."""
+
 from __future__ import annotations
 
 import hashlib
@@ -89,7 +90,12 @@ def check_plot(data, seconds, differences, *, participant=False, event=False):
         close(data["participant"]["cursor"], x, f"participant cursor at {seconds}", differences)
         if event:
             close(data["participantMarker"], x, f"participant marker at {seconds}", differences)
-            close(data["participantMarker"], data["summaryMarker"], "expanded versus collapsed event", differences)
+            close(
+                data["participantMarker"],
+                data["summaryMarker"],
+                "expanded versus collapsed event",
+                differences,
+            )
 
 
 def main():
@@ -101,19 +107,31 @@ def main():
     server = None
     try:
         store, registry = fixture_test.store, fixture_test.registry
+
         def counters():
-            return {name: store.db.execute("SELECT COUNT(*) FROM " + name).fetchone()[0]
-                    for name in ("submissions", "intents", "guard_dispatches")}
+            return {
+                name: store.db.execute("SELECT COUNT(*) FROM " + name).fetchone()[0]
+                for name in ("submissions", "intents", "guard_dispatches")
+            }
+
         before = counters()
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
         fixture = json.loads((ROOT / "tests/gateway_integration/dev05_fixture.json").read_text())
-        server = serve("127.0.0.1", port, projection=OperatorProjection(store, "svc.demo"),
-            runner=NeverRun(), password="p" * 40, fixture=fixture,
-            build={"commit": "dev09-alignment-disposable", "dirty": True}, web_root=ROOT / "web",
+        server = serve(
+            "127.0.0.1",
+            port,
+            projection=OperatorProjection(store, "svc.demo"),
+            runner=NeverRun(),
+            password="p" * 40,
+            fixture=fixture,
+            build={"commit": "dev09-alignment-disposable", "dirty": True},
+            web_root=ROOT / "web",
             worker_probe=lambda: {"state": "not configured"},
-            sender_status=lambda: {"state": "not configured"}, registry=registry)
+            sender_status=lambda: {"state": "not configured"},
+            registry=registry,
+        )
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         observations, differences = [], []
@@ -122,19 +140,27 @@ def main():
                 wait_initial_page(browser)
                 time.sleep(0.4)
                 browser.evaluate(HELPERS)
-                browser.evaluate("document.querySelector('#password').value='" + "p" * 40 +
-                                 "';document.querySelector('#login-form').requestSubmit();true")
+                browser.evaluate(
+                    "document.querySelector('#password').value='"
+                    + "p" * 40
+                    + "';document.querySelector('#login-form').requestSubmit();true"
+                )
                 wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
                 call(browser, "navigate", "usage")
-                wait(browser, "document.querySelector('#view-content').textContent.includes('Open demo workspace')",
-                     "operational usage")
+                wait(
+                    browser,
+                    "document.querySelector('#view-content').textContent.includes('Open demo workspace')",
+                    "operational usage",
+                )
                 call(browser, "click", "Open demo workspace")
                 wait(browser, "demoUi.data?.identity==='dev09-team-scripted-cost-demo-v2'", "demo")
                 call(browser, "click", "Team activity")
                 wait(browser, "demoUi.story==='team'&&demoUi.data?.end===115", "team")
                 for width in (1440, 900, 640):
-                    browser.call("Emulation.setDeviceMetricsOverride", {"width": width, "height": 913,
-                        "deviceScaleFactor": 1, "mobile": False})
+                    browser.call(
+                        "Emulation.setDeviceMetricsOverride",
+                        {"width": width, "height": 913, "deviceScaleFactor": 1, "mobile": False},
+                    )
                     browser.evaluate("demoSeek(0);true")
                     start = measure(browser)
                     assert start["total"] == "0.00" and start["at"] == 0, start
@@ -147,74 +173,163 @@ def main():
                     collapsed = measure(browser)
                     assert collapsed["at"] == 10 and collapsed["participant"] is None, collapsed
                     check_plot(collapsed, 10, differences, event=True)
-                    browser.evaluate("[...document.querySelectorAll('.demo-workflow-group')]"
+                    browser.evaluate(
+                        "[...document.querySelectorAll('.demo-workflow-group')]"
                         ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
-                        ".querySelector('button').click();true")
+                        ".querySelector('button').click();true"
+                    )
                     expanded = measure(browser)
                     check_plot(expanded, 10, differences, participant=True, event=True)
-                    close(expanded["summaryMarker"], collapsed["summaryMarker"],
-                          "expand preserves summary event", differences)
+                    close(
+                        expanded["summaryMarker"],
+                        collapsed["summaryMarker"],
+                        "expand preserves summary event",
+                        differences,
+                    )
                     if width == 1440:
-                        browser.call("Emulation.setDeviceMetricsOverride", {"width": 1440, "height": 1200,
-                            "deviceScaleFactor": 1, "mobile": False})
-                        capture_layout = browser.evaluate("(()=>{const chart=document.querySelector('.demo-viz svg')"
-                            ".getBoundingClientRect();return {chart_bottom:chart.bottom,viewport:innerHeight}})()")
-                        assert capture_layout["chart_bottom"] <= capture_layout["viewport"], capture_layout
+                        browser.call(
+                            "Emulation.setDeviceMetricsOverride",
+                            {
+                                "width": 1440,
+                                "height": 1200,
+                                "deviceScaleFactor": 1,
+                                "mobile": False,
+                            },
+                        )
+                        capture_layout = browser.evaluate(
+                            "(()=>{const chart=document.querySelector('.demo-viz svg')"
+                            ".getBoundingClientRect();return {chart_bottom:chart.bottom,viewport:innerHeight}})()"
+                        )
+                        assert capture_layout["chart_bottom"] <= capture_layout["viewport"], (
+                            capture_layout
+                        )
                         shot = screenshot(browser, Path(scratch), "selected-oren-request-aligned")
-                        browser.call("Emulation.setDeviceMetricsOverride", {"width": width, "height": 913,
-                            "deviceScaleFactor": 1, "mobile": False})
-                    browser.evaluate("[...document.querySelectorAll('.demo-workflow-group')]"
+                        browser.call(
+                            "Emulation.setDeviceMetricsOverride",
+                            {
+                                "width": width,
+                                "height": 913,
+                                "deviceScaleFactor": 1,
+                                "mobile": False,
+                            },
+                        )
+                    browser.evaluate(
+                        "[...document.querySelectorAll('.demo-workflow-group')]"
                         ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
-                        ".querySelector('button').click();true")
+                        ".querySelector('button').click();true"
+                    )
                     recollapsed = measure(browser)
                     check_plot(recollapsed, 10, differences, event=True)
-                    close(recollapsed["summaryMarker"], collapsed["summaryMarker"],
-                          "collapse preserves summary event", differences)
-                    browser.evaluate("demoSelect('demo.attempt.brant.boole.check.done');"
+                    close(
+                        recollapsed["summaryMarker"],
+                        collapsed["summaryMarker"],
+                        "collapse preserves summary event",
+                        differences,
+                    )
+                    browser.evaluate(
+                        "demoSelect('demo.attempt.brant.boole.check.done');"
                         "for(const name of ['Brant','Andrew · delivery','Andrew · direct'])"
                         "[...document.querySelectorAll('.demo-workflow-group')]"
                         ".find(g=>g.querySelector('strong')?.textContent.startsWith(name))"
-                        ".querySelector('button').click();true")
+                        ".querySelector('button').click();true"
+                    )
                     simultaneous = measure(browser)
-                    assert simultaneous["at"] == 65 and simultaneous["total"] == "0.84", simultaneous
+                    assert simultaneous["at"] == 65 and simultaneous["total"] == "0.84", (
+                        simultaneous
+                    )
                     check_plot(simultaneous, 65, differences)
                     x65 = simultaneous["axis"]["left"] + simultaneous["axis"]["width"] * 65 / 115
                     close(simultaneous["guide"], x65, "65-second selected guide", differences)
                     for name, surfaces in simultaneous["bars"].items():
-                        close(surfaces["summary"], x65, name + " summary usage endpoint", differences)
-                        close(surfaces["participant"], x65, name + " participant usage endpoint", differences)
-                    observations.append({"width": width, "start": start, "end": end,
-                        "collapsed_10": collapsed, "expanded_10": expanded,
-                        "recollapsed_10": recollapsed, "simultaneous_65": simultaneous})
+                        close(
+                            surfaces["summary"], x65, name + " summary usage endpoint", differences
+                        )
+                        close(
+                            surfaces["participant"],
+                            x65,
+                            name + " participant usage endpoint",
+                            differences,
+                        )
+                    observations.append(
+                        {
+                            "width": width,
+                            "start": start,
+                            "end": end,
+                            "collapsed_10": collapsed,
+                            "expanded_10": expanded,
+                            "recollapsed_10": recollapsed,
+                            "simultaneous_65": simultaneous,
+                        }
+                    )
                     browser.evaluate("demoUi.expanded.clear();demoDraw();true")
                 browser.evaluate("demoChange({collection:'expanded',story:'expanded_all'});true")
-                wait(browser, "demoUi.data?.collection==='expanded'&&demoUi.data?.end>115", "expanded")
+                wait(
+                    browser,
+                    "demoUi.data?.collection==='expanded'&&demoUi.data?.end>115",
+                    "expanded",
+                )
                 browser.evaluate("demoSeek(demoUi.data.end);true")
-                assert browser.evaluate("demoSnapshot().total.known_subtotals.USD==='1.39'&&"
-                    "demoSnapshot().total.attempts===33"), "expanded total changed"
-                legacy = browser.evaluate("fetch('/operator/v1/demo-workspace?collection=legacy&story=all')"
-                    ".then(r=>r.json())")
+                assert browser.evaluate(
+                    "demoSnapshot().total.known_subtotals.USD==='1.39'&&"
+                    "demoSnapshot().total.attempts===33"
+                ), "expanded total changed"
+                legacy = browser.evaluate(
+                    "fetch('/operator/v1/demo-workspace?collection=legacy&story=all')"
+                    ".then(r=>r.json())"
+                )
                 assert legacy["all_total"]["known_subtotals"]["USD"] == "0.46", legacy
             assert counters() == before, "disposable operational counters changed"
-            target = destination.parent / "screenshots/dev09-team-alignment-02-selected-oren-request.png"
+            target = (
+                destination.parent / "screenshots/dev09-team-alignment-02-selected-oren-request.png"
+            )
             if target.exists():
                 raise RuntimeError("alignment screenshot exists; preserve one-use evidence")
             shutil.copy2(Path(scratch) / shot["file"], target)
-            result = {"status": "PASS", "fixture": "dev09-team-scripted-cost-demo-v2",
+            result = {
+                "status": "PASS",
+                "fixture": "dev09-team-scripted-cost-demo-v2",
                 "checkpoint": "6a58030e4c8c1c03dfb08cce73e5365b8edd4dc7",
                 "scope": "disposable authenticated Chrome, temporary SQLite, no model worker",
                 "tolerance_px": TOLERANCE_PX,
                 "max_absolute_difference_px": max(abs(row["difference_px"]) for row in differences),
-                "differences": differences, "observations": observations,
-                "totals_usd": {"legacy": "0.46", "team": "1.25", "expanded": "1.39", "team_at_65": "0.84"},
+                "differences": differences,
+                "observations": observations,
+                "totals_usd": {
+                    "legacy": "0.46",
+                    "team": "1.25",
+                    "expanded": "1.39",
+                    "team_at_65": "0.84",
+                },
                 "traffic_before_after": {"before": before, "after": counters()},
-                "source_sha256": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-                    for name in ("web/app.css", "web/demo_workspace_team_view.js",
-                                 "web/dev09_demo_fixture.json", "web/dev09_team_demo_fixture.json")},
-                "screenshot": {"path": str(target.relative_to(ROOT)), "sha256": shot["sha256"]}}
+                "source_sha256": {
+                    name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+                    for name in (
+                        "web/app.css",
+                        "web/demo_workspace_team_view.js",
+                        "web/dev09_demo_fixture.json",
+                        "web/dev09_team_demo_fixture.json",
+                    )
+                },
+                "screenshot": {"path": str(target.relative_to(ROOT)), "sha256": shot["sha256"]},
+            }
             destination.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-            print(json.dumps({key: result[key] for key in ("status", "fixture", "tolerance_px",
-                "max_absolute_difference_px", "totals_usd", "traffic_before_after", "screenshot")}, sort_keys=True))
+            print(
+                json.dumps(
+                    {
+                        key: result[key]
+                        for key in (
+                            "status",
+                            "fixture",
+                            "tolerance_px",
+                            "max_absolute_difference_px",
+                            "totals_usd",
+                            "traffic_before_after",
+                            "screenshot",
+                        )
+                    },
+                    sort_keys=True,
+                )
+            )
     finally:
         if server:
             server.shutdown()

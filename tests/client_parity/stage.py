@@ -1,4 +1,5 @@
 """Offline, hash-checked DEV-02 build-context preparation and image identity check."""
+
 from __future__ import annotations
 
 import hashlib
@@ -38,19 +39,28 @@ def validate_corpus(root):
     if len(ids) != len(set(ids)) or len(keys) != len(set(keys)):
         raise ValueError("duplicate actor case identity")
     for item in cases:
-        if item.get("client") not in ("python", "js", "both") or type(item.get("wait_ms")) is not int or \
-                not 0 <= item["wait_ms"] <= 30000 or item.get("receiver_delta") not in (0, 1):
+        if (
+            item.get("client") not in ("python", "js", "both")
+            or type(item.get("wait_ms")) is not int
+            or not 0 <= item["wait_ms"] <= 30000
+            or item.get("receiver_delta") not in (0, 1)
+        ):
             raise ValueError(f"incomplete actor case: {item['id']}")
         if item.get("expected_state") == "delivered":
             if type(item.get("expected_text")) is not str or not item["expected_text"]:
                 raise ValueError(f"delivered case lacks expected text: {item['id']}")
         elif item.get("expected_state") == "pending":
-            if item.get("pending_result_policy") not in ("pollable_if_retained", "metadata_only_no_store") or \
-                    item.get("total_timeout_ms") != 3000 or item["wait_ms"] != 0:
+            if (
+                item.get("pending_result_policy")
+                not in ("pollable_if_retained", "metadata_only_no_store")
+                or item.get("total_timeout_ms") != 3000
+                or item["wait_ms"] != 0
+            ):
                 raise ValueError(f"pending case lacks explicit budget or policy: {item['id']}")
-            if item["pending_result_policy"] == "metadata_only_no_store" and \
-                    (item.get("candidate_access_after"), item.get("result_unavailable_reason")) != \
-                    ("not_retained", "wait_expired_no_store"):
+            if item["pending_result_policy"] == "metadata_only_no_store" and (
+                item.get("candidate_access_after"),
+                item.get("result_unavailable_reason"),
+            ) != ("not_retained", "wait_expired_no_store"):
                 raise ValueError(f"no-store case lacks metadata expectation: {item['id']}")
         elif item.get("expected_error"):
             if item.get("failure_stage") not in ("before_transmit", "after_transmit"):
@@ -89,9 +99,14 @@ def prepare(root, run):
         rows.append(copy_checked(src, run / "build/service/wheels" / src.name, item["sha256"]))
     sums = run / "build/python/wheelhouse.sha256"
     sums.write_text("".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows[:7]))
-    artifacts = json.loads((root / "docs/development/dev-02/ARTIFACTS-CONTINUATION.json").read_text())
+    artifacts = json.loads(
+        (root / "docs/development/dev-02/ARTIFACTS-CONTINUATION.json").read_text()
+    )
     versions = {x["filename"]: x for x in artifacts["artifacts"]}
-    for name in ("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "cognitivedynamics-ezllmrouter-client-0.3.0.tgz"):
+    for name in (
+        "cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl",
+        "cognitivedynamics-ezllmrouter-client-0.3.0.tgz",
+    ):
         item = versions[name]
         src = root / "docs/development/dev-02" / name
         regular(src)
@@ -102,16 +117,21 @@ def prepare(root, run):
     common = {
         "scenarios.json": root / "tests/client_parity/scenarios.json",
         "request.json": root / "tests/development_slice/request.json",
-        "vectors.json": root / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
+        "vectors.json": root
+        / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json",
     }
-    python = {**common,
+    python = {
+        **common,
         "integration_python.py": root / "tests/client_parity/integration_python.py",
         "test_python_client.py": root / "tests/client_parity/test_python_client.py",
-        "test_actor_logic.py": root / "tests/client_parity/test_actor_logic.py"}
-    js = {**common,
+        "test_actor_logic.py": root / "tests/client_parity/test_actor_logic.py",
+    }
+    js = {
+        **common,
         "integration_js.cjs": root / "tests/client_parity/integration_js.cjs",
         "test_actor_logic.cjs": root / "tests/client_parity/test_actor_logic.cjs",
-        "test_client.cjs": root / "tests/development_slice/test_client.cjs"}
+        "test_client.cjs": root / "tests/development_slice/test_client.cjs",
+    }
     for target, sources in (("python", python), ("js", js)):
         for name, src in sources.items():
             rows.append(copy_checked(src, run / "build" / target / "tests" / name))
@@ -122,13 +142,32 @@ def prepare(root, run):
             continue
         if src.is_symlink():
             raise ValueError(f"linked service source: {src}")
-        rows.append(copy_checked(src, run / "build/service/server" / src.relative_to(root / "server/src")))
-    service_tests = ("service_main.py", "synthetic_routes.py", "native_adapter.py", "recipe.py", "fixture.json", "request.json",
-                     "test_crypto.py", "test_http.py", "test_native_adapter.py")
+        rows.append(
+            copy_checked(src, run / "build/service/server" / src.relative_to(root / "server/src"))
+        )
+    service_tests = (
+        "service_main.py",
+        "synthetic_routes.py",
+        "native_adapter.py",
+        "recipe.py",
+        "fixture.json",
+        "request.json",
+        "test_crypto.py",
+        "test_http.py",
+        "test_native_adapter.py",
+    )
     for name in service_tests:
-        rows.append(copy_checked(root / "tests/development_slice" / name, run / "build/service/tests" / name))
-    rows.append(copy_checked(root / "tests/development_slice/requirements.lock",
-                             run / "build/service/requirements.lock"))
+        rows.append(
+            copy_checked(
+                root / "tests/development_slice" / name, run / "build/service/tests" / name
+            )
+        )
+    rows.append(
+        copy_checked(
+            root / "tests/development_slice/requirements.lock",
+            run / "build/service/requirements.lock",
+        )
+    )
     for name in ("Dockerfile.python-consumer", "Dockerfile.js-consumer", "compose.yaml", "run.sh"):
         src = root / "tests/client_parity" / name
         regular(src)
@@ -137,8 +176,16 @@ def prepare(root, run):
     regular(src)
     rows.append({"source": str(src), "bytes": src.stat().st_size, "sha256": sha(src)})
     (run / "source-build-manifest.json").write_text(json.dumps({"rows": rows}, indent=2))
-    print(json.dumps({"wheel_count": len(lock["wheels"]), "scenario_count": case_count, "staged_files": len(rows),
-                      "source_manifest_sha256": sha(run / "source-build-manifest.json")}))
+    print(
+        json.dumps(
+            {
+                "wheel_count": len(lock["wheels"]),
+                "scenario_count": case_count,
+                "staged_files": len(rows),
+                "source_manifest_sha256": sha(run / "source-build-manifest.json"),
+            }
+        )
+    )
 
 
 def verify_images(root, inspect_path):
@@ -150,7 +197,11 @@ def verify_images(root, inspect_path):
     for x in actual:
         tags = set(x.get("RepoTags") or [])
         matched = tags & expected.keys()
-        if matched and (x["Id"] != expected[next(iter(matched))] or x["Os"] != "linux" or x["Architecture"] != "arm64"):
+        if matched and (
+            x["Id"] != expected[next(iter(matched))]
+            or x["Os"] != "linux"
+            or x["Architecture"] != "arm64"
+        ):
             raise ValueError(f"reused image mismatch: {matched}")
     if not set(expected) <= {tag for x in actual for tag in (x.get("RepoTags") or [])}:
         raise ValueError("run-04 images missing")
@@ -161,6 +212,9 @@ def verify_images(root, inspect_path):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "prepare": prepare(sys.argv[2], sys.argv[3])
-    elif sys.argv[1] == "verify-images": verify_images(sys.argv[2], sys.argv[3])
-    else: raise SystemExit("usage: stage.py prepare root run | verify-images root inspect-json")
+    if sys.argv[1] == "prepare":
+        prepare(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == "verify-images":
+        verify_images(sys.argv[2], sys.argv[3])
+    else:
+        raise SystemExit("usage: stage.py prepare root run | verify-images root inspect-json")

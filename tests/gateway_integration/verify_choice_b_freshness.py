@@ -1,12 +1,16 @@
 """Independently check the bounded Choice B first-write discriminator."""
+
 import json
 from pathlib import Path
 import sys
 
 
 def rows(run, name):
-    return [json.loads(line) for line in (run / (name + ".stdout")).read_text().splitlines()
-            if line.strip()]
+    return [
+        json.loads(line)
+        for line in (run / (name + ".stdout")).read_text().splitlines()
+        if line.strip()
+    ]
 
 
 def one(run, name):
@@ -26,11 +30,17 @@ def main():
     assert hold["submission_id"] == hold_sid and queued["submission_id"] == queued_sid
     assert held_attempt != queued_attempt
     assert (hold["submission_state"], hold["candidate_access"]) == ("completed", "present"), (
-        "held positive did not complete", hold)
+        "held positive did not complete",
+        hold,
+    )
     assert (queued["submission_state"], queued["candidate_access"]) == (
-        "failed_before_transmit", "unavailable_due_failure")
+        "failed_before_transmit",
+        "unavailable_due_failure",
+    )
     assert one(run, "choice-b-freshness-real-pool-queued") == {
-        "attempt_id": queued_attempt, "pool_queued": True}
+        "attempt_id": queued_attempt,
+        "pool_queued": True,
+    }
 
     events = rows(run, "choice-b-freshness-guard-events")
     pool = rows(run, "choice-b-freshness-pool-observations")
@@ -39,16 +49,22 @@ def main():
     arrivals = rows(run, "choice-b-freshness-receiver-final")
     controls = rows(run, "choice-b-freshness-receiver-controls")
     control_events = [row["event"] for row in controls]
-    assert control_events == ["hold_entered_after_receiver_arrival",
-                              "hold_released", "hold_response_released"]
+    assert control_events == [
+        "hold_entered_after_receiver_arrival",
+        "hold_released",
+        "hold_response_released",
+    ]
     assert [row["at_ns"] for row in controls] == sorted(row["at_ns"] for row in controls)
     revoked = one(run, "choice-b-freshness-authority-revoked")
     restored = one(run, "choice-b-freshness-authority-restored")
     assert (revoked["authority_state"], revoked["epoch"]) == ("revoked", 1)
     assert (restored["authority_state"], restored["epoch"]) == ("active", 2)
     assert revoked["monotonic_ns"] < restored["monotonic_ns"]
-    queue = [row for row in pool if row["attempt_id"] == queued_attempt and
-             row["event"] == "queued_in_owned_httpcore_pool"]
+    queue = [
+        row
+        for row in pool
+        if row["attempt_id"] == queued_attempt and row["event"] == "queued_in_owned_httpcore_pool"
+    ]
     assert len(queue) == 1
     assert queue[0]["monotonic_ns"] < revoked["monotonic_ns"]
 
@@ -60,7 +76,8 @@ def main():
     assert len({row["attempt_id"] for row in arrivals}) == 4
     assert set(by_receipt) == set(by_send)
     assert queued_attempt in by_receipt and queued_attempt not in {
-        row["attempt_id"] for row in arrivals}
+        row["attempt_id"] for row in arrivals
+    }
     assert by_send[queued_attempt]["first_bytes_accepted_by_local_socket"] is False
     assert by_send[queued_attempt]["first_acceptance_events"] == 0
     # The Coordinator's fresh callback raises ContractError; the local gate
@@ -71,19 +88,32 @@ def main():
     assert queued["terminal_attempt_id"] == queued_attempt
     for attempt in (held_attempt, queued_attempt):
         assert by_receipt[attempt]["receipt"]["timeout_seconds"] == {
-            "connect": 30.0, "read": 30.0, "write": 30.0, "pool": 30.0}, (
-                "selected SDK timeout differs from its 30-second work budget", attempt)
+            "connect": 30.0,
+            "read": 30.0,
+            "write": 30.0,
+            "pool": 30.0,
+        }, ("selected SDK timeout differs from its 30-second work budget", attempt)
     for attempt in set(by_receipt) - {held_attempt, queued_attempt}:
         assert by_receipt[attempt]["receipt"]["timeout_seconds"] == {
-            "connect": 1.0, "read": 1.0, "write": 1.0, "pool": 1.0}, (
-                "ordinary SDK timeout was widened", attempt)
+            "connect": 1.0,
+            "read": 1.0,
+            "write": 1.0,
+            "pool": 1.0,
+        }, ("ordinary SDK timeout was widened", attempt)
     for row in arrivals:
         attempt = row["attempt_id"]
         receipt = by_receipt[attempt]["receipt"]
-        assert (receipt["method"], receipt["url"], receipt["body_sha256"],
-                receipt["body_bytes"]) == (
-            row["method"], "http://127.0.0.1:8766/v1/chat/completions",
-            row["body_sha256"], row["body_bytes"])
+        assert (
+            receipt["method"],
+            receipt["url"],
+            receipt["body_sha256"],
+            receipt["body_bytes"],
+        ) == (
+            row["method"],
+            "http://127.0.0.1:8766/v1/chat/completions",
+            row["body_sha256"],
+            row["body_bytes"],
+        )
         assert by_send[attempt]["first_bytes_accepted_by_local_socket"] is True
         assert by_send[attempt]["first_acceptance_events"] == 1
         assert by_send[attempt]["lower_error"] is None
@@ -102,21 +132,30 @@ def main():
     assert one(run, "choice-b-freshness-positive-after")["state"] == "delivered"
     assert one(run, "choice-b-freshness-positive-after")["receiver_delta"] == 1
     assert (run / "choice-b-freshness-receiver-before-horizon.stdout").read_bytes() == (
-        run / "choice-b-freshness-receiver-after-horizon.stdout").read_bytes()
+        run / "choice-b-freshness-receiver-after-horizon.stdout"
+    ).read_bytes()
     assert int((run / "choice-b-freshness-horizon.stdout").read_text()) >= 5000
     assert one(run, "choice-b-freshness-store") == {
-        "submissions": 5, "preparatory_intents": 5,
-        "guard_dispatches": 5, "usage_revisions": 4}
-    print(json.dumps({
-        "status": "CHOICE_B_LOCAL_FIRST_WRITE_QUEUE_REVOCATION_OBSERVED",
-        "queued_attempt_id": queued_attempt,
-        "queued_after_guard_commit": True,
-        "local_authority_revoked_before_resource_release": True,
-        "queued_first_bytes_accepted_by_local_socket": False,
-        "queued_receiver_arrivals": 0,
-        "matching_positive_arrivals_and_receipts": 4,
-        "scope": "fixed synthetic plaintext HTTP/1.1 local authority and socket.send acceptance only",
-    }, sort_keys=True))
+        "submissions": 5,
+        "preparatory_intents": 5,
+        "guard_dispatches": 5,
+        "usage_revisions": 4,
+    }
+    print(
+        json.dumps(
+            {
+                "status": "CHOICE_B_LOCAL_FIRST_WRITE_QUEUE_REVOCATION_OBSERVED",
+                "queued_attempt_id": queued_attempt,
+                "queued_after_guard_commit": True,
+                "local_authority_revoked_before_resource_release": True,
+                "queued_first_bytes_accepted_by_local_socket": False,
+                "queued_receiver_arrivals": 0,
+                "matching_positive_arrivals_and_receipts": 4,
+                "scope": "fixed synthetic plaintext HTTP/1.1 local authority and socket.send acceptance only",
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

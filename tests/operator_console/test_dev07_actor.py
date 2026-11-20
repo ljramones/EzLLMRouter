@@ -1,4 +1,5 @@
 """Exercise the exact staged actor's private-input and one-JSON consumer path."""
+
 import contextlib
 import io
 import json
@@ -20,9 +21,11 @@ class ActorOutputTests(unittest.TestCase):
     def test_pending_and_status_outputs_are_one_safe_json_document(self):
         with tempfile.TemporaryDirectory() as scratch:
             target = Path(scratch)
-            for source, name in (("tests/gateway_integration/dev07_actor.py", "dev07_actor.py"),
-                                 ("tests/development_slice/request.json", "request.json"),
-                                 ("tests/tool_cycle/scenarios.json", "scenarios.json")):
+            for source, name in (
+                ("tests/gateway_integration/dev07_actor.py", "dev07_actor.py"),
+                ("tests/development_slice/request.json", "request.json"),
+                ("tests/tool_cycle/scenarios.json", "scenarios.json"),
+            ):
                 shutil.copy2(ROOT / source, target / name)
             calls = []
 
@@ -42,23 +45,41 @@ class ActorOutputTests(unittest.TestCase):
 
                 def getStatus(self, selector):
                     self.status_selector = selector
-                    return {"submission_state": "failed_before_transmit",
-                            "candidate_access": "unavailable_due_failure",
-                            "attempts": [{"attempt_id": "attempt.dev07.1", "dispatch_state": "prepared"}],
-                            "terminal_failure": {"code": "FDC_REJECTED"}}
+                    return {
+                        "submission_state": "failed_before_transmit",
+                        "candidate_access": "unavailable_due_failure",
+                        "attempts": [
+                            {"attempt_id": "attempt.dev07.1", "dispatch_state": "prepared"}
+                        ],
+                        "terminal_failure": {"code": "FDC_REJECTED"},
+                    }
 
             fake = types.ModuleType("ezllmrouter_client")
             fake.EzLLMRouterClient = FakeClient
             fake.EzLLMRouterError = type("EzLLMRouterError", (Exception,), {})
-            for input_value, expected_kind in (({"token": TOKEN, "configuration_ref": "cfg.dev07.a",
-                                                  "step_id": "step.dev07.1", "generation": "gen.dev07.1",
-                                                  "mode": "pending_hold"}, "pending_hold"),
-                                                 ({"token": TOKEN, "mode": "status",
-                                                   "submission_id": "submission.dev07.1"}, "status")):
+            for input_value, expected_kind in (
+                (
+                    {
+                        "token": TOKEN,
+                        "configuration_ref": "cfg.dev07.a",
+                        "step_id": "step.dev07.1",
+                        "generation": "gen.dev07.1",
+                        "mode": "pending_hold",
+                    },
+                    "pending_hold",
+                ),
+                (
+                    {"token": TOKEN, "mode": "status", "submission_id": "submission.dev07.1"},
+                    "status",
+                ),
+            ):
                 stdout, stderr = io.StringIO(), io.StringIO()
-                with patch.dict(sys.modules, {"ezllmrouter_client": fake}), \
-                     patch.object(sys, "stdin", io.StringIO(json.dumps(input_value))), \
-                     contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                with (
+                    patch.dict(sys.modules, {"ezllmrouter_client": fake}),
+                    patch.object(sys, "stdin", io.StringIO(json.dumps(input_value))),
+                    contextlib.redirect_stdout(stdout),
+                    contextlib.redirect_stderr(stderr),
+                ):
                     runpy.run_path(str(target / "dev07_actor.py"), run_name="__main__")
                 self.assertEqual(stderr.getvalue(), "")
                 result = json.loads(stdout.getvalue())

@@ -1,4 +1,5 @@
 """The CRUD update must preserve one-use owner evidence namespaces."""
+
 from pathlib import Path
 import sys
 import tempfile
@@ -13,7 +14,10 @@ import crud_update
 
 class CrudUpdateNamespaceTests(unittest.TestCase):
     def test_existing_run_is_reported_without_overwrite(self):
-        with tempfile.TemporaryDirectory() as scratch, patch.object(crud_update, "RUNS", Path(scratch)):
+        with (
+            tempfile.TemporaryDirectory() as scratch,
+            patch.object(crud_update, "RUNS", Path(scratch)),
+        ):
             run = crud_update.claim_run_id("crud-20261021-01")
             result = run / "result.json"
             result.write_text('{"status":"PASS"}\n')

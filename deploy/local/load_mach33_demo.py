@@ -1,4 +1,5 @@
 """Install a validated portable Mach33 fixture into an isolated, immutable demo scope."""
+
 from __future__ import annotations
 
 import argparse
@@ -32,7 +33,9 @@ def install(package, scope):
         raise ValueError("package directory and absolute non-symlink scope required")
     manifest_bytes = (package / "manifest.json").read_bytes()
     manifest = json.loads(manifest_bytes)
-    if manifest.get("schema") != "ezllmrouter.demo_package_manifest.v1" or not manifest.get("synthetic"):
+    if manifest.get("schema") != "ezllmrouter.demo_package_manifest.v1" or not manifest.get(
+        "synthetic"
+    ):
         raise ValueError("unsupported demo package")
     for item in manifest["files"]:
         path = package / item["name"]
@@ -44,24 +47,46 @@ def install(package, scope):
     fixture_bytes = (package / "fixture.json").read_bytes()
     data = json.loads(fixture_bytes)
     metadata = data["metadata"]
-    if (metadata.get("dataset_id") != manifest["dataset_id"] or not metadata.get("synthetic") or
-            metadata.get("execution_policy") != {"external_requests": 0,
-                "provider_inference_enabled": False, "real_credentials_required": False,
-                "production_writes": False} or
-            any(not item["id"].startswith("demo.") for value in data.values() if isinstance(value, list)
-                for item in value) or
-            any(item["credential_reference"] is not None or item["endpoint"] is not None or
-                item["inference_enabled"] for item in data["provider_accounts"])):
+    if (
+        metadata.get("dataset_id") != manifest["dataset_id"]
+        or not metadata.get("synthetic")
+        or metadata.get("execution_policy")
+        != {
+            "external_requests": 0,
+            "provider_inference_enabled": False,
+            "real_credentials_required": False,
+            "production_writes": False,
+        }
+        or any(
+            not item["id"].startswith("demo.")
+            for value in data.values()
+            if isinstance(value, list)
+            for item in value
+        )
+        or any(
+            item["credential_reference"] is not None
+            or item["endpoint"] is not None
+            or item["inference_enabled"]
+            for item in data["provider_accounts"]
+        )
+    ):
         raise ValueError("unsafe demo fixture")
-    scope_record = {"schema": "ezllmrouter.mach33_demo_scope.v1", "dataset_id": metadata["dataset_id"],
-                    "fixture_sha256": digest(fixture_bytes), "manifest_sha256": digest(manifest_bytes)}
+    scope_record = {
+        "schema": "ezllmrouter.mach33_demo_scope.v1",
+        "dataset_id": metadata["dataset_id"],
+        "fixture_sha256": digest(fixture_bytes),
+        "manifest_sha256": digest(manifest_bytes),
+    }
     scope.mkdir(mode=0o700, parents=True, exist_ok=True)
     if scope.stat().st_mode & 0o077:
         raise ValueError("demo scope permissions must be private")
     existing = scope / "scope.json"
     if existing.exists():
         previous = json.loads(existing.read_text())
-        if previous != scope_record or digest((scope / "fixture.json").read_bytes()) != scope_record["fixture_sha256"]:
+        if (
+            previous != scope_record
+            or digest((scope / "fixture.json").read_bytes()) != scope_record["fixture_sha256"]
+        ):
             raise ValueError("demo scope conflict: existing dataset ID has different content")
         return {"result": "unchanged", **scope_record}
     if any(scope.iterdir()):

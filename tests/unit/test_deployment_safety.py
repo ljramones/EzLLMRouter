@@ -1,4 +1,5 @@
 """Offline profile secret custody and complete operator asset staging."""
+
 from html.parser import HTMLParser
 import importlib.util
 import json
@@ -43,15 +44,19 @@ class SecretCustodyTests(unittest.TestCase):
 
     def test_interrupted_initialization_resumes_without_losing_credentials(self):
         write = profile.write_private
+
         def fail_projection(path, content, **kwargs):
             if path.name == "credentials.json":
                 raise OSError("simulated publication failure")
             return write(path, content, **kwargs)
+
         with patch.object(profile, "write_private", side_effect=fail_projection):
             with self.assertRaises(OSError):
                 profile.secrets_on_disk()
         bundle = json.loads((self.state / "profile-secrets.json").read_bytes())
-        self.assertEqual(profile.secrets_on_disk(), (bundle["credentials"], bundle["operator_password"]))
+        self.assertEqual(
+            profile.secrets_on_disk(), (bundle["credentials"], bundle["operator_password"])
+        )
 
     def test_symlink_is_rejected_without_changing_its_target(self):
         self.state.mkdir()
@@ -68,15 +73,20 @@ class SecretCustodyTests(unittest.TestCase):
         credentials, password = profile.secrets_on_disk()
         payload = json.dumps({"credentials": credentials, "operator_password": password}).encode()
         destination = self.directory / "volume"
-        with patch.object(initialize_credentials.os, "chown") as directory_owner, \
-                patch.object(initialize_credentials.os, "fchown") as file_owner:
+        with (
+            patch.object(initialize_credentials.os, "chown") as directory_owner,
+            patch.object(initialize_credentials.os, "fchown") as file_owner,
+        ):
             initialize_credentials.initialize(payload, destination)
             initialize_credentials.initialize(payload, destination)
         directory_owner.assert_called_with(destination, 0, 0)
         self.assertEqual(file_owner.call_count, 4)
         for call in file_owner.call_args_list:
             self.assertEqual(call.args[1:], (10001, 10001))
-        self.assertEqual(sorted(path.name for path in destination.iterdir()), ["credentials.json", "operator-password"])
+        self.assertEqual(
+            sorted(path.name for path in destination.iterdir()),
+            ["credentials.json", "operator-password"],
+        )
         for path in destination.iterdir():
             self.assertEqual(path.stat().st_mode & 0o777, 0o400)
         self.assertEqual(json.loads((destination / "credentials.json").read_text()), credentials)
@@ -90,19 +100,25 @@ class SecretCustodyTests(unittest.TestCase):
         payload = json.dumps({"credentials": credentials, "operator_password": password}).encode()
         transferred = set()
         fchmod = os.fchmod
+
         def identity(descriptor):
             info = os.fstat(descriptor)
             return info.st_dev, info.st_ino
+
         def transfer(descriptor, uid, gid):
             self.assertEqual((uid, gid), (10001, 10001))
             transferred.add(identity(descriptor))
+
         def chmod(descriptor, mode):
             if identity(descriptor) in transferred:
                 raise PermissionError("CHOWN alone cannot chmod a file owned by the service UID")
             fchmod(descriptor, mode)
-        with patch.object(initialize_credentials.os, "chown"), \
-                patch.object(initialize_credentials.os, "fchown", side_effect=transfer), \
-                patch.object(initialize_credentials.os, "fchmod", side_effect=chmod):
+
+        with (
+            patch.object(initialize_credentials.os, "chown"),
+            patch.object(initialize_credentials.os, "fchown", side_effect=transfer),
+            patch.object(initialize_credentials.os, "fchmod", side_effect=chmod),
+        ):
             initialize_credentials.initialize(payload, self.directory / "volume")
         self.assertEqual(len(transferred), 2)
 
@@ -120,7 +136,11 @@ class ReferencedAssets(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         for name, value in attrs:
-            if name in {"src", "href"} and value and not value.startswith(("http", "#", "data:", "mailto:")):
+            if (
+                name in {"src", "href"}
+                and value
+                and not value.startswith(("http", "#", "data:", "mailto:"))
+            ):
                 self.references.add(value.split("?")[0].lstrip("/"))
 
 

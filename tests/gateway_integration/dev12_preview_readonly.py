@@ -1,4 +1,5 @@
 """Disposable report-only preview over a copy of the synthetic campaign."""
+
 from __future__ import annotations
 
 import os
@@ -20,14 +21,24 @@ def run():
         copy = Path(temporary) / "preview.sqlite"
         shutil.copy2(source, copy)
         store = SQLiteStore(copy)
-        server = serve("0.0.0.0", 18780,
+        server = serve(
+            "0.0.0.0",
+            18780,
             projection=OperatorProjection(store, "user.demo", str(Path(temporary) / "send.jsonl")),
-            runner=None, password="dev12.synthetic.operator." + "x" * 32,
-            fixture={}, build={"commit": os.environ["DEV12_SOURCE_COMMIT"], "dirty": False,
-                               "fingerprint": "report-only-synthetic-copy"},
-            web_root=ROOT / "web", worker_probe=lambda: {"state": "not_attached"},
-            sender_status=lambda: {"state": "not_attached"}, successor_store=store,
-            allowed_hosts={"127.0.0.1:18780", "localhost:18780"})
+            runner=None,
+            password="dev12.synthetic.operator." + "x" * 32,
+            fixture={},
+            build={
+                "commit": os.environ["DEV12_SOURCE_COMMIT"],
+                "dirty": False,
+                "fingerprint": "report-only-synthetic-copy",
+            },
+            web_root=ROOT / "web",
+            worker_probe=lambda: {"state": "not_attached"},
+            sender_status=lambda: {"state": "not_attached"},
+            successor_store=store,
+            allowed_hosts={"127.0.0.1:18780", "localhost:18780"},
+        )
         try:
             server.serve_forever()
         finally:

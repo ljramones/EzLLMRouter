@@ -1,4 +1,5 @@
 """Fixed, credential-free bridge from host loopback to the trusted console socket."""
+
 from __future__ import annotations
 
 from pathlib import Path

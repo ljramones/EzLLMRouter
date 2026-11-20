@@ -1,4 +1,5 @@
 """Verify exact historical mounted source from exported bytes without Git."""
+
 from __future__ import annotations
 
 from hashlib import sha256
@@ -18,10 +19,15 @@ def audit(lineage_root, export_root):
     for line in manifest:
         expected, relative = line.split("  ", 1)
         source = lineage_root / relative
-        assert source.is_file() and not source.is_symlink() and digest(source.read_bytes()) == expected
+        assert (
+            source.is_file() and not source.is_symlink() and digest(source.read_bytes()) == expected
+        )
         listed.add(relative)
-    assert listed == {str(path.relative_to(lineage_root)) for path in lineage_root.rglob("*")
-                      if path.is_file() and path.name != "MANIFEST.sha256"}
+    assert listed == {
+        str(path.relative_to(lineage_root))
+        for path in lineage_root.rglob("*")
+        if path.is_file() and path.name != "MANIFEST.sha256"
+    }
     lineage = json.loads((lineage_root / "SOURCE-LINEAGE.json").read_text())
     snapshots = {row["source_tree"]: row for row in lineage["snapshots"]}
     assert len(snapshots) == len(lineage["snapshots"]) == 22
@@ -55,8 +61,10 @@ def audit(lineage_root, export_root):
             assert row["declared_mounted_source"] == snapshots[row["source_tree"]]["mounted_source"]
         plans[row["path"]] = row
     assert len(plans) == len(lineage["plans"]) == 22
-    releases = [json.loads(line) for line in
-                (export_root / "target/release-identity.jsonl").read_text().splitlines()]
+    releases = [
+        json.loads(line)
+        for line in (export_root / "target/release-identity.jsonl").read_text().splitlines()
+    ]
     assert len(releases) == len(lineage["releases"]) == 17
     for index, (actual, row) in enumerate(zip(releases, lineage["releases"])):
         plan = plans[row["plan"]]
@@ -65,18 +73,27 @@ def audit(lineage_root, export_root):
         assert row["source_tree"] == actual["source_tree"] == plan["source_tree"]
         assert row["source_commit"] == plan["source_commit"]
         assert row["case_ids"] == plan["case_ids"]
-        assert row["declared_mounted_source"] == actual["mounted_source"] == \
-            snapshots[row["source_tree"]]["mounted_source"]
+        assert (
+            row["declared_mounted_source"]
+            == actual["mounted_source"]
+            == snapshots[row["source_tree"]]["mounted_source"]
+        )
     final = snapshots["4ef3ff6d24ba5ff52b6d18c00802aa5fa49ea57c"]
     assert final["source_commit"] == "e7645cab17c6830ebbb5d1d8e45b46bf9401fc13"
-    assert final["mounted_source"] == {"file_count": 221,
-        "sha256": "bd36cadb30d95a8868866691e578c3b25a50999421f142ba67cbb8f42e13276c"}
-    return {"status": "PASS", "plans": len(plans), "releases": len(releases),
-            "complete_source_snapshots": len(snapshots),
-            "mounted_files_rehashed": sum(len(row["files"]) for row in snapshots.values()),
-            "final_target_source_commit": final["source_commit"],
-            "final_target_mounted_source": final["mounted_source"],
-            "source_lineage_sha256": digest((lineage_root / "SOURCE-LINEAGE.json").read_bytes())}
+    assert final["mounted_source"] == {
+        "file_count": 221,
+        "sha256": "bd36cadb30d95a8868866691e578c3b25a50999421f142ba67cbb8f42e13276c",
+    }
+    return {
+        "status": "PASS",
+        "plans": len(plans),
+        "releases": len(releases),
+        "complete_source_snapshots": len(snapshots),
+        "mounted_files_rehashed": sum(len(row["files"]) for row in snapshots.values()),
+        "final_target_source_commit": final["source_commit"],
+        "final_target_mounted_source": final["mounted_source"],
+        "source_lineage_sha256": digest((lineage_root / "SOURCE-LINEAGE.json").read_bytes()),
+    }
 
 
 if __name__ == "__main__":

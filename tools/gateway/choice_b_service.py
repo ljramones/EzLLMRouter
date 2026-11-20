@@ -1,4 +1,5 @@
 """DEV-04 Choice B trusted service: public contract, authority and sender only."""
+
 from pathlib import Path
 import json
 import os
@@ -15,7 +16,11 @@ from ezllmrouter_server.store import SQLiteStore
 from ezllmrouter_server.web import serve
 from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
-from ezllmrouter_server.gateway.proxy_recipe import GatewayProxyRecipe, public_destination, proxy_policy
+from ezllmrouter_server.gateway.proxy_recipe import (
+    GatewayProxyRecipe,
+    public_destination,
+    proxy_policy,
+)
 
 
 def main(*, adapter_factory=ChoiceBSenderAdapter):
@@ -29,9 +34,7 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
     fixture = json.loads(Path("/app/dev_slice/fixture.json").read_text())
     trusted = dict(fixture["trusted_context"])
 
-
     authority = LocalSendAuthority()
-
 
     class LiveIdentity(dict):
         def get(self, key, default=None):
@@ -40,19 +43,15 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
                 return {**value, "context_id": value["context_id"] + ".revoked"}
             return value
 
-
     identity = LiveIdentity({token: trusted})
     adapter = adapter_factory(authority)
-
 
     class AuthorityControl(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
         daemon_threads = True
 
-
     control_path = Path("/data/authority.sock")
     if control_path.exists() or control_path.is_symlink():
         raise RuntimeError("Choice B authority control socket collision")
-
 
     class AuthorityHandler(socketserver.BaseRequestHandler):
         def handle(self):
@@ -64,27 +63,43 @@ def main(*, adapter_factory=ChoiceBSenderAdapter):
                 epoch, state = authority.revoke(), "revoked"
             else:
                 epoch, state = authority.restore(), "active"
-            self.request.sendall(json.dumps({"authority_state": state, "epoch": epoch,
-                                            "monotonic_ns": time.monotonic_ns()}).encode() + b"\n")
-
+            self.request.sendall(
+                json.dumps(
+                    {"authority_state": state, "epoch": epoch, "monotonic_ns": time.monotonic_ns()}
+                ).encode()
+                + b"\n"
+            )
 
     control = AuthorityControl(str(control_path), AuthorityHandler)
     os.chmod(control_path, 0o600)
-    control_thread = threading.Thread(target=control.serve_forever,
-                                      daemon=True, name="dev04-choice-b-authority")
+    control_thread = threading.Thread(
+        target=control.serve_forever, daemon=True, name="dev04-choice-b-authority"
+    )
     control_thread.start()
-    Path("/data/module-identities.json").write_text(json.dumps({
-        "boundary": "separate trusted Choice B sender",
-        "litellm_imported": "litellm" in sys.modules,
-        "provider_key_in_trusted_process": True,
-        "worker_socket": "/link/worker.sock",
-        "sender_socket": "/link/sender.sock",
-    }, indent=2) + "\n")
+    Path("/data/module-identities.json").write_text(
+        json.dumps(
+            {
+                "boundary": "separate trusted Choice B sender",
+                "litellm_imported": "litellm" in sys.modules,
+                "provider_key_in_trusted_process": True,
+                "worker_socket": "/link/worker.sock",
+                "sender_socket": "/link/sender.sock",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     coordinator = Coordinator(
-        SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"]), identity,
-        public_destination(fixture), fixture["prompt_blocks"], fixture["allowed_lineages"],
-        PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture)), adapter,
-        fixture["retention"], fixture["classification"], GatewayProxyRecipe(),
+        SQLiteStore(os.environ["EZLLMROUTER_DB_PATH"]),
+        identity,
+        public_destination(fixture),
+        fixture["prompt_blocks"],
+        fixture["allowed_lineages"],
+        PlanAuthority(Ed25519PrivateKey.generate(), proxy_policy(fixture)),
+        adapter,
+        fixture["retention"],
+        fixture["classification"],
+        GatewayProxyRecipe(),
         trusted_source_labels=fixture["trusted_source_labels"],
     )
     server = serve("127.0.0.1", int(os.environ.get("PORT", "8773")), coordinator)

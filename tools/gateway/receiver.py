@@ -1,4 +1,5 @@
 """Independent OpenAI-compatible synthetic receiver for DEV-04."""
+
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import hashlib
@@ -23,7 +24,11 @@ def control(event):
 
 
 def records():
-    return [json.loads(line) for line in ARRIVALS.read_text().splitlines()] if ARRIVALS.exists() else []
+    return (
+        [json.loads(line) for line in ARRIVALS.read_text().splitlines()]
+        if ARRIVALS.exists()
+        else []
+    )
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -68,16 +73,25 @@ class Handler(BaseHTTPRequestHandler):
         attempt = self.headers.get("X-EzLLMRouter-Attempt")
         with LOCK:
             sequence = len(records()) + 1
-            row = {"sequence": sequence, "method": "POST", "path": self.path,
-                   "attempt_id": attempt, "body_sha256": hashlib.sha256(raw).hexdigest(),
-                   "body_bytes": len(raw), "received_at_ns": time.time_ns()}
+            row = {
+                "sequence": sequence,
+                "method": "POST",
+                "path": self.path,
+                "attempt_id": attempt,
+                "body_sha256": hashlib.sha256(raw).hexdigest(),
+                "body_bytes": len(raw),
+                "received_at_ns": time.time_ns(),
+            }
             try:
                 body = json.loads(raw)
                 if isinstance(body, dict):
                     row["model"] = body.get("model")
                     row["message_roles"] = [x.get("role") for x in body.get("messages", [])]
-                    row["tool_call_ids"] = [c.get("id") for m in body.get("messages", [])
-                                            for c in m.get("tool_calls", [])]
+                    row["tool_call_ids"] = [
+                        c.get("id")
+                        for m in body.get("messages", [])
+                        for c in m.get("tool_calls", [])
+                    ]
             except (TypeError, ValueError, AttributeError):
                 body = None
             with ARRIVALS.open("a") as handle:
@@ -85,11 +99,22 @@ class Handler(BaseHTTPRequestHandler):
                 handle.flush()
                 os.fsync(handle.fileno())
         if not isinstance(body, dict) or body.get("model") not in ("model.demo", "model.demo.alt"):
-            self.reply(400, {"error": {"message": "invalid synthetic model", "type": "invalid_request_error"}})
+            self.reply(
+                400,
+                {"error": {"message": "invalid synthetic model", "type": "invalid_request_error"}},
+            )
             return
         messages = body.get("messages")
         if not isinstance(messages, list) or len(messages) < 2:
-            self.reply(400, {"error": {"message": "invalid synthetic messages", "type": "invalid_request_error"}})
+            self.reply(
+                400,
+                {
+                    "error": {
+                        "message": "invalid synthetic messages",
+                        "type": "invalid_request_error",
+                    }
+                },
+            )
             return
         user_text = messages[1].get("content")
         if user_text == "Simulate hold":
@@ -97,11 +122,15 @@ class Handler(BaseHTTPRequestHandler):
             control("hold_entered_after_receiver_arrival")
             if not HOLD.wait(timeout=20):
                 control("hold_timed_out")
-                self.reply(504, {"error": {"message": "synthetic hold timed out", "type": "server_error"}})
+                self.reply(
+                    504, {"error": {"message": "synthetic hold timed out", "type": "server_error"}}
+                )
                 return
             control("hold_response_released")
         if user_text == "Simulate 422":
-            self.reply(422, {"error": {"message": "synthetic rejection", "type": "invalid_request_error"}})
+            self.reply(
+                422, {"error": {"message": "synthetic rejection", "type": "invalid_request_error"}}
+            )
             return
         if user_text == "Simulate 503":
             self.reply(503, {"error": {"message": "synthetic retryable", "type": "server_error"}})
@@ -111,8 +140,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         calls = []
         if body.get("tools") and len(messages) == 2 and body.get("tool_choice") == "auto":
-            calls = [{"id": "call.lookup.1", "type": "function", "function": {
-                "name": "lookup", "arguments": '{"key":"synthetic"}'}}]
+            calls = [
+                {
+                    "id": "call.lookup.1",
+                    "type": "function",
+                    "function": {"name": "lookup", "arguments": '{"key":"synthetic"}'},
+                }
+            ]
             message = {"role": "assistant", "content": None, "tool_calls": calls}
             finish = "tool_calls"
         elif body.get("tools") and len(messages) >= 4:
@@ -126,10 +160,17 @@ class Handler(BaseHTTPRequestHandler):
         else:
             message = {"role": "assistant", "content": "Hello."}
             finish = "stop"
-        self.reply(200, {"id": f"chatcmpl.dev04.{sequence}", "object": "chat.completion",
-                         "created": int(time.time()), "model": body["model"],
-                         "choices": [{"index": 0, "message": message, "finish_reason": finish}],
-                         "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7}})
+        self.reply(
+            200,
+            {
+                "id": f"chatcmpl.dev04.{sequence}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": body["model"],
+                "choices": [{"index": 0, "message": message, "finish_reason": finish}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7},
+            },
+        )
 
 
 def main():

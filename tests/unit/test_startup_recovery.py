@@ -1,4 +1,5 @@
 """Startup interruption and cleanup controls, without sockets or external calls."""
+
 from contextlib import ExitStack, redirect_stderr, redirect_stdout
 import io
 from pathlib import Path
@@ -36,16 +37,23 @@ class StartupRecoveryTests(unittest.TestCase):
     def reopen(self):
         self.store = SQLiteStore(self.database)
         self.addCleanup(self.store.close)
-        self.registry = Registry(self.store, integration_local.NoSendAuthority(),
-            legacy_destination=integration_local.DEST, legacy_token=secrets.token_urlsafe(48),
-            legacy_trusted={"principal_id": "svc.bootstrap", "charging_owner_id": "team.bootstrap"})
+        self.registry = Registry(
+            self.store,
+            integration_local.NoSendAuthority(),
+            legacy_destination=integration_local.DEST,
+            legacy_token=secrets.token_urlsafe(48),
+            legacy_trusted={"principal_id": "svc.bootstrap", "charging_owner_id": "team.bootstrap"},
+        )
 
     def assert_bootstrapped(self):
         for service in SERVICES:
             path = self.directory / service.token_file
             token = read_private(path).decode().strip()
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-            self.assertEqual(self.registry.credential_principal(token, "service")["principal_id"], service.principal_id)
+            self.assertEqual(
+                self.registry.credential_principal(token, "service")["principal_id"],
+                service.principal_id,
+            )
             self.assertEqual(self.registry.principal(service.principal_id)["revision"], 3)
             self.assertNotIn(token, "\n".join(self.store.db.iterdump()))
 
@@ -61,7 +69,9 @@ class StartupRecoveryTests(unittest.TestCase):
         ensure_services(self.registry, self.directory)
         self.assert_bootstrapped()
         self.assertEqual(saved, {path.name: path.read_bytes() for path in self.directory.iterdir()})
-        self.assertEqual(before, self.store.db.execute("SELECT * FROM registry_audit ORDER BY seq").fetchall())
+        self.assertEqual(
+            before, self.store.db.execute("SELECT * FROM registry_audit ORDER BY seq").fetchall()
+        )
         self.assertEqual(version, self.registry.version())
 
     def test_interruption_after_each_account_commit_resumes_once(self):
@@ -70,11 +80,13 @@ class StartupRecoveryTests(unittest.TestCase):
                 with self.subTest(service=service.principal_id, phase=phase):
                     self.open_instance(service.token_file + "-" + phase)
                     mutate = self.registry.mutate
+
                     def interrupted(actor, request):
                         result = mutate(actor, request)
                         if request["operation_id"] == service.operation_prefix + "." + phase:
                             raise RuntimeError("interrupted after commit")
                         return result
+
                     with patch.object(self.registry, "mutate", side_effect=interrupted):
                         with self.assertRaisesRegex(RuntimeError, "interrupted"):
                             ensure_services(self.registry, self.directory)
@@ -86,22 +98,28 @@ class StartupRecoveryTests(unittest.TestCase):
                     for name, value in saved.items():
                         self.assertEqual((self.directory / name).read_bytes(), value)
                     for action in ("create_principal", "provision_credential", "principal_state"):
-                        count = self.store.db.execute("SELECT COUNT(*) FROM registry_audit WHERE subject=? AND action=?",
-                            (service.principal_id, action)).fetchone()[0]
+                        count = self.store.db.execute(
+                            "SELECT COUNT(*) FROM registry_audit WHERE subject=? AND action=?",
+                            (service.principal_id, action),
+                        ).fetchone()[0]
                         self.assertEqual(count, 1)
 
     def test_credential_database_failure_keeps_the_saved_token_for_retry(self):
         for service in SERVICES:
             with self.subTest(service=service.principal_id):
                 self.open_instance(service.token_file)
-                self.store.db.execute("CREATE TEMP TRIGGER interrupt_binding BEFORE INSERT ON registry_credentials "
+                self.store.db.execute(
+                    "CREATE TEMP TRIGGER interrupt_binding BEFORE INSERT ON registry_credentials "
                     "WHEN NEW.principal_id='" + service.principal_id + "' "
-                    "BEGIN SELECT RAISE(ABORT, 'simulated database failure'); END")
+                    "BEGIN SELECT RAISE(ABORT, 'simulated database failure'); END"
+                )
                 with self.assertRaises(sqlite3.IntegrityError):
                     ensure_services(self.registry, self.directory)
                 path = self.directory / service.token_file
                 saved = read_private(path)
-                self.assertEqual(self.registry.principal(service.principal_id)["credential_state"], "unbound")
+                self.assertEqual(
+                    self.registry.principal(service.principal_id)["credential_state"], "unbound"
+                )
                 self.store.close()
                 self.reopen()
                 ensure_services(self.registry, self.directory)
@@ -110,22 +128,31 @@ class StartupRecoveryTests(unittest.TestCase):
 
     def test_file_publication_failure_leaves_no_bound_credential_or_partial_file(self):
         self.open_instance()
-        with patch("ezllmrouter_server.private_files.os.link", side_effect=OSError("disk write interrupted")):
+        with patch(
+            "ezllmrouter_server.private_files.os.link",
+            side_effect=OSError("disk write interrupted"),
+        ):
             with self.assertRaisesRegex(OSError, "interrupted"):
                 ensure_services(self.registry, self.directory)
         self.assertEqual(list(self.directory.iterdir()), [])
         self.assertEqual(self.registry.principal("svc.integration")["credential_state"], "unbound")
-        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM registry_credentials "
-            "WHERE principal_id='svc.integration'").fetchone()[0], 0)
+        self.assertEqual(
+            self.store.db.execute(
+                "SELECT COUNT(*) FROM registry_credentials WHERE principal_id='svc.integration'"
+            ).fetchone()[0],
+            0,
+        )
         ensure_services(self.registry, self.directory)
         self.assert_bootstrapped()
 
     def test_interruption_after_binding_does_not_create_another_credential(self):
         self.open_instance()
         provision = self.registry.provision_credential
+
         def interrupted(*args, **kwargs):
             result = provision(*args, **kwargs)
             raise RuntimeError("interrupted after credential commit")
+
         with patch.object(self.registry, "provision_credential", side_effect=interrupted):
             with self.assertRaises(RuntimeError):
                 ensure_services(self.registry, self.directory)
@@ -135,8 +162,10 @@ class StartupRecoveryTests(unittest.TestCase):
         ensure_services(self.registry, self.directory)
         self.assert_bootstrapped()
         self.assertEqual(read_private(self.directory / "ingest.token"), token)
-        count = self.store.db.execute("SELECT COUNT(*) FROM registry_audit WHERE subject='svc.integration' "
-                                      "AND action='provision_credential'").fetchone()[0]
+        count = self.store.db.execute(
+            "SELECT COUNT(*) FROM registry_audit WHERE subject='svc.integration' "
+            "AND action='provision_credential'"
+        ).fetchone()[0]
         self.assertEqual(count, 1)
 
     def test_private_tokens_left_by_a_fresh_database_are_adopted(self):
@@ -155,7 +184,9 @@ class StartupRecoveryTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 self.open_instance(mode)
                 ensure_services(self.registry, self.directory)
-                original = self.store.db.execute("SELECT * FROM registry_credentials ORDER BY principal_id").fetchall()
+                original = self.store.db.execute(
+                    "SELECT * FROM registry_credentials ORDER BY principal_id"
+                ).fetchall()
                 path = self.directory / "ingest.token"
                 path.unlink()
                 if mode == "mismatch":
@@ -167,7 +198,12 @@ class StartupRecoveryTests(unittest.TestCase):
                     path.symlink_to(self.directory / "consumer.token")
                 with self.assertRaises(BootstrapError):
                     ensure_services(self.registry, self.directory)
-                self.assertEqual(original, self.store.db.execute("SELECT * FROM registry_credentials ORDER BY principal_id").fetchall())
+                self.assertEqual(
+                    original,
+                    self.store.db.execute(
+                        "SELECT * FROM registry_credentials ORDER BY principal_id"
+                    ).fetchall(),
+                )
                 if mode == "missing":
                     self.assertFalse(path.exists())
 
@@ -175,9 +211,16 @@ class StartupRecoveryTests(unittest.TestCase):
         self.open_instance()
         ensure_services(self.registry, self.directory)
         for service, status in zip(SERVICES, ("suspended", "revoked")):
-            self.registry.mutate("owner.local", {"operation_id": "op.disable." + service.principal_id,
-                "action": "principal_state", "subject": service.principal_id, "expected_revision": 3,
-                "data": {"status": status, "reason": "owner choice"}})
+            self.registry.mutate(
+                "owner.local",
+                {
+                    "operation_id": "op.disable." + service.principal_id,
+                    "action": "principal_state",
+                    "subject": service.principal_id,
+                    "expected_revision": 3,
+                    "data": {"status": status, "reason": "owner choice"},
+                },
+            )
         version = self.registry.version()
         ensure_services(self.registry, self.directory)
         self.assertEqual(self.registry.version(), version)
@@ -186,9 +229,20 @@ class StartupRecoveryTests(unittest.TestCase):
 
     def test_bootstrap_does_not_take_over_an_unrelated_reserved_identity(self):
         self.open_instance()
-        self.registry.mutate("owner.local", {"operation_id": "op.unrelated.create",
-            "action": "create_principal", "subject": "svc.integration", "expected_revision": 0,
-            "data": {"display_name": "Unrelated identity", "kind": "service", "owner": "owner.local"}})
+        self.registry.mutate(
+            "owner.local",
+            {
+                "operation_id": "op.unrelated.create",
+                "action": "create_principal",
+                "subject": "svc.integration",
+                "expected_revision": 0,
+                "data": {
+                    "display_name": "Unrelated identity",
+                    "kind": "service",
+                    "owner": "owner.local",
+                },
+            },
+        )
         with self.assertRaisesRegex(BootstrapError, "conflicts"):
             ensure_services(self.registry, self.directory)
         self.assertEqual(self.registry.principal("svc.integration")["credential_state"], "unbound")
@@ -197,15 +251,33 @@ class StartupRecoveryTests(unittest.TestCase):
     def test_secret_factory_runs_only_after_authorization_and_never_on_replay(self):
         self.open_instance()
         service = SERVICES[0]
-        self.registry.mutate("owner.local", {"operation_id": service.operation_prefix + ".principal",
-            "action": "create_principal", "subject": service.principal_id, "expected_revision": 0,
-            "data": {"display_name": service.display_name, "kind": "service", "owner": "owner.local", "role": "ordinary"}})
+        self.registry.mutate(
+            "owner.local",
+            {
+                "operation_id": service.operation_prefix + ".principal",
+                "action": "create_principal",
+                "subject": service.principal_id,
+                "expected_revision": 0,
+                "data": {
+                    "display_name": service.display_name,
+                    "kind": "service",
+                    "owner": "owner.local",
+                    "role": "ordinary",
+                },
+            },
+        )
         factory = Mock(return_value=secrets.token_urlsafe(48))
         with self.assertRaises(PermissionError):
-            self.registry.provision_credential("svc.bootstrap", service.principal_id, 1, "op.denied", secret_factory=factory)
+            self.registry.provision_credential(
+                "svc.bootstrap", service.principal_id, 1, "op.denied", secret_factory=factory
+            )
         factory.assert_not_called()
-        first = self.registry.provision_credential("owner.local", service.principal_id, 1, "op.once", secret_factory=factory)
-        second = self.registry.provision_credential("owner.local", service.principal_id, 1, "op.once", secret_factory=factory)
+        first = self.registry.provision_credential(
+            "owner.local", service.principal_id, 1, "op.once", secret_factory=factory
+        )
+        second = self.registry.provision_credential(
+            "owner.local", service.principal_id, 1, "op.once", secret_factory=factory
+        )
         self.assertEqual(factory.call_count, 1)
         self.assertEqual(first[1], factory.return_value)
         self.assertIsNone(second[1])
@@ -218,8 +290,14 @@ class EntryPointTests(unittest.TestCase):
         self.directory = Path(temporary.name)
         self.database = self.directory / "service.sqlite"
         self.secrets = self.directory / "secrets"
-        self.arguments = ["--db", str(self.database), "--secrets-dir", str(self.secrets),
-                          "--web-root", str(ROOT / "web")]
+        self.arguments = [
+            "--db",
+            str(self.database),
+            "--secrets-dir",
+            str(self.secrets),
+            "--web-root",
+            str(ROOT / "web"),
+        ]
         self.stores = []
         self.output, self.errors = io.StringIO(), io.StringIO()
 
@@ -238,16 +316,24 @@ class EntryPointTests(unittest.TestCase):
         operator.serve_forever.side_effect = lambda: stopped.wait(timeout=5)
         operator.shutdown.side_effect = stopped.set
         installed_signals = []
+
         def install(number, handler):
             installed_signals.append((number, handler))
             return signal.SIG_DFL
+
         with ExitStack() as cleanup:
             cleanup.enter_context(redirect_stdout(self.output))
             cleanup.enter_context(redirect_stderr(self.errors))
-            cleanup.enter_context(patch.object(integration_local, "SQLiteStore", side_effect=self.store_factory))
+            cleanup.enter_context(
+                patch.object(integration_local, "SQLiteStore", side_effect=self.store_factory)
+            )
             cleanup.enter_context(patch.object(integration_local, "api_serve", self.api_bind))
-            cleanup.enter_context(patch.object(integration_local, "operator_serve", self.operator_bind))
-            cleanup.enter_context(patch.object(integration_local.signal, "signal", side_effect=install))
+            cleanup.enter_context(
+                patch.object(integration_local, "operator_serve", self.operator_bind)
+            )
+            cleanup.enter_context(
+                patch.object(integration_local.signal, "signal", side_effect=install)
+            )
             integration_local.main(self.arguments)
         return api, operator, installed_signals
 
@@ -260,10 +346,20 @@ class EntryPointTests(unittest.TestCase):
         self.stores[0].close.assert_called_once()
         with self.assertRaises(sqlite3.ProgrammingError):
             self.stores[0].db.execute("SELECT 1")
-        self.assertEqual([number for number, _ in installed],
-                         [signal.SIGINT, signal.SIGTERM, signal.SIGTERM, signal.SIGINT])
-        self.assertEqual([handler for _, handler in installed[-2:]], [signal.SIG_DFL, signal.SIG_DFL])
-        for name in ("ingest.token", "consumer.token", "operator.password", "admin.password", "admin.token"):
+        self.assertEqual(
+            [number for number, _ in installed],
+            [signal.SIGINT, signal.SIGTERM, signal.SIGTERM, signal.SIGINT],
+        )
+        self.assertEqual(
+            [handler for _, handler in installed[-2:]], [signal.SIG_DFL, signal.SIG_DFL]
+        )
+        for name in (
+            "ingest.token",
+            "consumer.token",
+            "operator.password",
+            "admin.password",
+            "admin.token",
+        ):
             token = read_private(self.secrets / name).decode().strip()
             self.assertNotIn(token, self.output.getvalue())
 
@@ -272,13 +368,17 @@ class EntryPointTests(unittest.TestCase):
             self.invoke(operator_error=OSError("operator port occupied"))
         self.api.server_close.assert_called_once()
         self.stores[0].close.assert_called_once()
-        tokens = {name: read_private(self.secrets / name) for name in ("ingest.token", "consumer.token")}
+        tokens = {
+            name: read_private(self.secrets / name) for name in ("ingest.token", "consumer.token")
+        }
         self.invoke()
         for name, value in tokens.items():
             self.assertEqual(read_private(self.secrets / name), value)
 
     def test_registry_setup_failure_closes_the_database(self):
-        with patch.object(integration_local, "Registry", side_effect=RuntimeError("setup interrupted")):
+        with patch.object(
+            integration_local, "Registry", side_effect=RuntimeError("setup interrupted")
+        ):
             with self.assertRaisesRegex(RuntimeError, "setup interrupted"):
                 self.invoke()
         self.stores[0].close.assert_called_once()

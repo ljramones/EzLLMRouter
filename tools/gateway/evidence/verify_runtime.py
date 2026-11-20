@@ -1,4 +1,5 @@
 """Cross-check independent receiver arrivals with durable guard acknowledgments."""
+
 from pathlib import Path
 import json
 import sys
@@ -21,13 +22,21 @@ def main():
         raise ValueError("receiver/guard attempt set differs")
     for arrival in arrivals:
         receipt = by_attempt[arrival["attempt_id"]]
-        if (arrival["body_sha256"] != receipt["body_sha256"] or
-            arrival["body_bytes"] != receipt["body_bytes"] or
-            arrival["method"] != receipt["method"] or
-            receipt["url"] != "http://127.0.0.1:8766/v1/chat/completions"):
+        if (
+            arrival["body_sha256"] != receipt["body_sha256"]
+            or arrival["body_bytes"] != receipt["body_bytes"]
+            or arrival["method"] != receipt["method"]
+            or receipt["url"] != "http://127.0.0.1:8766/v1/chat/completions"
+        ):
             raise ValueError("final request and receiver bytes differ")
-    print(json.dumps({"status": "SEVEN_CORRELATED_GUARD_COMMIT_AND_RECEIVER_ARRIVALS",
-                      "attempt_ids": sorted(by_attempt)}))
+    print(
+        json.dumps(
+            {
+                "status": "SEVEN_CORRELATED_GUARD_COMMIT_AND_RECEIVER_ARRIVALS",
+                "attempt_ids": sorted(by_attempt),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 Usage: python -I -S -B package_correction_release.py CANDIDATE_DIR REPO_DIR
 The candidate directory must contain the tested packages/ and service-web/.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -52,7 +53,9 @@ def main() -> None:
         "# EzLLMRouter integration accounting 0.2.1\n\n"
         "See [local installation](docs/development/integration-readiness/RELEASE.md).\n"
     )
-    source = subprocess.check_output(("git", "rev-parse", TESTED_SOURCE), cwd=repo, text=True).strip()
+    source = subprocess.check_output(
+        ("git", "rev-parse", TESTED_SOURCE), cwd=repo, text=True
+    ).strip()
     identity = {
         "tested_source_commit": source,
         "contract_version": "2",
@@ -61,11 +64,13 @@ def main() -> None:
         "python_client_version": "0.2.1",
         "artifact_source": "candidate2 installed and verified synthetic local release",
     }
-    (release / "SOURCE-IDENTITY.json").write_text(json.dumps(identity, indent=2, sort_keys=True) + "\n")
+    (release / "SOURCE-IDENTITY.json").write_text(
+        json.dumps(identity, indent=2, sort_keys=True) + "\n"
+    )
     entries = sorted(p for p in release.rglob("*") if p.is_file() and p.name != "MANIFEST.sha256")
-    (release / "MANIFEST.sha256").write_text("".join(
-        f"{digest(path)}  {path.relative_to(release).as_posix()}\n" for path in entries
-    ))
+    (release / "MANIFEST.sha256").write_text(
+        "".join(f"{digest(path)}  {path.relative_to(release).as_posix()}\n" for path in entries)
+    )
     archive = candidate / "ezllmrouter-integration-service-0.2.1.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(p for p in release.rglob("*") if p.is_file()):
@@ -73,18 +78,31 @@ def main() -> None:
     with zipfile.ZipFile(archive) as zf:
         archived = set(zf.namelist())
         lines = zf.read("MANIFEST.sha256").decode().splitlines()
-        manifest_entries = {path: recorded for recorded, path in
-                            (line.split("  ", 1) for line in lines)}
-        if (len(archived) != len(zf.namelist()) or len(lines) != len(manifest_entries) or
-                set(manifest_entries) != archived - {"MANIFEST.sha256"}):
+        manifest_entries = {
+            path: recorded for recorded, path in (line.split("  ", 1) for line in lines)
+        }
+        if (
+            len(archived) != len(zf.namelist())
+            or len(lines) != len(manifest_entries)
+            or set(manifest_entries) != archived - {"MANIFEST.sha256"}
+        ):
             raise ValueError("release manifest does not cover the exact archive payload set")
         for path, recorded in manifest_entries.items():
             if hashlib.sha256(zf.read(path)).hexdigest() != recorded:
                 raise ValueError("release payload hash mismatch: " + path)
-    print(json.dumps({"archive": str(archive), "bytes": archive.stat().st_size,
-                      "sha256": digest(archive), "source": source,
-                      "payload_files": len(entries), "manifest_sha256": digest(release / "MANIFEST.sha256")},
-                     sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "archive": str(archive),
+                "bytes": archive.stat().st_size,
+                "sha256": digest(archive),
+                "source": source,
+                "payload_files": len(entries),
+                "manifest_sha256": digest(release / "MANIFEST.sha256"),
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

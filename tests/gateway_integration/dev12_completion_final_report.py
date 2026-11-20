@@ -4,6 +4,7 @@ The disposable server has no runner, worker, guard, sender or receiver.
 The copied SQLite file is private local test material and is excluded from
 the portable export. HTTP JSON/CSV observations are safe review evidence.
 """
+
 from __future__ import annotations
 
 import csv
@@ -29,11 +30,18 @@ from dev12_completion_operator_handlers import _csv_finance_reconcile
 
 def census(path):
     import sqlite3
+
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
-        return {table: db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-                for table in ("dev12_submissions", "dev12_send_ownership",
-                              "dev12_usage_revisions", "dev12_campaign_audit")}
+        return {
+            table: db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in (
+                "dev12_submissions",
+                "dev12_send_ownership",
+                "dev12_usage_revisions",
+                "dev12_campaign_audit",
+            )
+        }
     finally:
         db.close()
 
@@ -54,27 +62,37 @@ def main():
         port = probe.getsockname()[1]
     origin = f"http://127.0.0.1:{port}"
     password = "dev12.report.only.synthetic." + "x" * 32
-    server = serve("127.0.0.1", port,
+    server = serve(
+        "127.0.0.1",
+        port,
         projection=OperatorProjection(store, "user.demo", str(output / "no-send-events.jsonl")),
-        runner=None, password=password, fixture={"destination": {}, "policy": {}},
-        build={"commit": "final-synthetic-report-copy", "dirty": False,
-               "fingerprint": source_hash},
+        runner=None,
+        password=password,
+        fixture={"destination": {}, "policy": {}},
+        build={"commit": "final-synthetic-report-copy", "dirty": False, "fingerprint": source_hash},
         web_root=Path(__file__).resolve().parents[2] / "web",
         worker_probe=lambda: {"state": "absent"},
-        sender_status=lambda: {"state": "absent"}, successor_store=store)
+        sender_status=lambda: {"state": "absent"},
+        successor_store=store,
+    )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        with httpx.Client(base_url=origin, timeout=10, trust_env=False,
-                          headers={"Origin": origin}) as client:
+        with httpx.Client(
+            base_url=origin, timeout=10, trust_env=False, headers={"Origin": origin}
+        ) as client:
             denied = client.get("/operator/v1/dev12-usage")
             login = client.post("/operator/v1/login", json={"password": password})
             report_response = client.get("/operator/v1/dev12-usage?export=json")
             csv_response = client.get("/operator/v1/dev12-usage?export=csv")
             ui_response = client.get("/usage_costs_view.js")
-        assert (denied.status_code, login.status_code,
-                report_response.status_code, csv_response.status_code,
-                ui_response.status_code) == (401, 200, 200, 200, 200)
+        assert (
+            denied.status_code,
+            login.status_code,
+            report_response.status_code,
+            csv_response.status_code,
+            ui_response.status_code,
+        ) == (401, 200, 200, 200, 200)
         report = report_response.json()
         csv_rows = list(csv.DictReader(io.StringIO(csv_response.text)))
         good, finance = _csv_finance_reconcile(csv_rows, report["attempts"], report["total"])
@@ -89,23 +107,36 @@ def main():
         observation = {
             "kind": "dev12_final_synthetic_report_only_http_v1",
             "source_database_sha256": source_hash,
-            "http": {"unauthenticated": denied.status_code, "login": login.status_code,
-                     "json": report_response.status_code, "csv": csv_response.status_code,
-                     "ui_asset": ui_response.status_code},
+            "http": {
+                "unauthenticated": denied.status_code,
+                "login": login.status_code,
+                "json": report_response.status_code,
+                "csv": csv_response.status_code,
+                "ui_asset": ui_response.status_code,
+            },
             "census_before_after": before,
             "csv_finance_reconciliation": finance,
             "sender_worker_receiver": "absent",
             "local_read_get_count": 4,
             "report_total": report["total"],
         }
-        (output / "HTTP-OBSERVATION.json").write_text(json.dumps(
-            observation, sort_keys=True, indent=2) + "\n")
+        (output / "HTTP-OBSERVATION.json").write_text(
+            json.dumps(observation, sort_keys=True, indent=2) + "\n"
+        )
         (output / "REPORT.json").write_bytes(report_response.content)
         (output / "REPORT.csv").write_bytes(csv_response.content)
-        print(json.dumps({"status": "PASS", "attempts": len(csv_rows),
-                          "known_usd": report["total"]["known_usd"],
-                          "held_usd": report["total"]["current_held_bound_usd"],
-                          "source_sha256": source_hash}, sort_keys=True))
+        print(
+            json.dumps(
+                {
+                    "status": "PASS",
+                    "attempts": len(csv_rows),
+                    "known_usd": report["total"]["known_usd"],
+                    "held_usd": report["total"]["current_held_bound_usd"],
+                    "source_sha256": source_hash,
+                },
+                sort_keys=True,
+            )
+        )
     finally:
         server.shutdown()
         server.server_close()

@@ -3,6 +3,7 @@
 Usage: python -I -S -B package_correction_release.py CANDIDATE_DIR REPO_DIR
 The candidate directory must contain the tested packages/ and service-web/.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -58,19 +59,30 @@ def main() -> None:
         "python_client_version": "0.2.0",
         "artifact_source": "candidate3 installed and verified synthetic local release",
     }
-    (release / "SOURCE-IDENTITY.json").write_text(json.dumps(identity, indent=2, sort_keys=True) + "\n")
+    (release / "SOURCE-IDENTITY.json").write_text(
+        json.dumps(identity, indent=2, sort_keys=True) + "\n"
+    )
     entries = sorted(p for p in release.rglob("*") if p.is_file() and p.name != "MANIFEST.sha256")
-    (release / "MANIFEST.sha256").write_text("".join(
-        f"{digest(path)}  {path.relative_to(release).as_posix()}\n" for path in entries
-    ))
+    (release / "MANIFEST.sha256").write_text(
+        "".join(f"{digest(path)}  {path.relative_to(release).as_posix()}\n" for path in entries)
+    )
     archive = candidate / "ezllmrouter-integration-service-0.2.0.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(p for p in release.rglob("*") if p.is_file()):
             zf.write(path, path.relative_to(release).as_posix())
-    print(json.dumps({"archive": str(archive), "bytes": archive.stat().st_size,
-                      "sha256": digest(archive), "source": source,
-                      "payload_files": len(entries), "manifest_sha256": digest(release / "MANIFEST.sha256")},
-                     sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "archive": str(archive),
+                "bytes": archive.stat().st_size,
+                "sha256": digest(archive),
+                "source": source,
+                "payload_files": len(entries),
+                "manifest_sha256": digest(release / "MANIFEST.sha256"),
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

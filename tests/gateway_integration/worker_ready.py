@@ -1,7 +1,9 @@
 """Compatibility entry point; implementation lives in ezllmrouter_server.gateway.worker_ready."""
+
 import sys as _sys
 from importlib import import_module as _import_module
-_runtime = _import_module('ezllmrouter_server.gateway.worker_ready')
+
+_runtime = _import_module("ezllmrouter_server.gateway.worker_ready")
 if __name__ == "__main__":
     _runtime.main()
 else:

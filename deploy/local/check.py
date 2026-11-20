@@ -1,4 +1,5 @@
 """Host-side authenticated profile check; prints metadata, never credentials."""
+
 from __future__ import annotations
 
 import http.client
@@ -48,8 +49,11 @@ class OperatorClient:
 
     def health(self):
         overview = self.call("GET", "/operator/v1/overview")
-        if overview["service"]["state"] != "live" or overview["worker"]["state"] != "live" or \
-                overview["sender"]["state"] != "live":
+        if (
+            overview["service"]["state"] != "live"
+            or overview["worker"]["state"] != "live"
+            or overview["sender"]["state"] != "live"
+        ):
             raise RuntimeError("one or more trusted boundaries unavailable")
         return overview
 
@@ -89,8 +93,9 @@ def exercise(password):
     client, before = wait_health(password)
     initial = before["counts"]["submissions"]
     outcomes = [client.launch(kind) for kind in ("text", "tool", "no_store_text")]
-    if [len(x["submission_ids"]) for x in outcomes] != [1, 2, 1] or \
-            [x["caller_lookups"] for x in outcomes] != [0, 1, 0]:
+    if [len(x["submission_ids"]) for x in outcomes] != [1, 2, 1] or [
+        x["caller_lookups"] for x in outcomes
+    ] != [0, 1, 0]:
         raise RuntimeError("unexpected demo inventory")
     ids = [sid for item in outcomes for sid in item["submission_ids"]]
     details = [client.call("GET", "/operator/v1/activity/" + sid) for sid in ids]
@@ -105,11 +110,16 @@ def exercise(password):
     after = client.health()
     if after["counts"]["submissions"] - initial != 4 or usage["attempts"] < 4:
         raise RuntimeError("operator submission accounting mismatch")
-    return {"kind": "DEV-06 explicit synthetic operator exercise",
-            "submission_ids": ids, "operation_ids": [x["operation_id"] for x in outcomes],
-            "provider_requests_expected_delta": 4, "caller_lookups": 1,
-            "no_store_submission_id": ids[-1], "before_submissions": initial,
-            "after_submissions": after["counts"]["submissions"]}
+    return {
+        "kind": "DEV-06 explicit synthetic operator exercise",
+        "submission_ids": ids,
+        "operation_ids": [x["operation_id"] for x in outcomes],
+        "provider_requests_expected_delta": 4,
+        "caller_lookups": 1,
+        "no_store_submission_id": ids[-1],
+        "before_submissions": initial,
+        "after_submissions": after["counts"]["submissions"],
+    }
 
 
 def readback(password, receipt):
@@ -121,7 +131,9 @@ def readback(password, receipt):
     no_store = client.call("GET", "/operator/v1/activity/" + receipt["no_store_submission_id"])
     if no_store["candidate_access"] != "not_retained":
         raise RuntimeError("no-store restart metadata mismatch")
-    return {"service": overview["service"]["state"],
-            "worker": overview["worker"]["state"],
-            "retained_submission_ids": len(receipt["submission_ids"]),
-            "no_store_candidate_access": no_store["candidate_access"]}
+    return {
+        "service": overview["service"]["state"],
+        "worker": overview["worker"]["state"],
+        "retained_submission_ids": len(receipt["submission_ids"]),
+        "no_store_candidate_access": no_store["candidate_access"],
+    }

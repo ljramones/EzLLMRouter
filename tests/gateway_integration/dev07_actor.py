@@ -3,6 +3,7 @@
 The trusted driver sends the private token on stdin. Stdout contains one safe
 JSON result; no prompt, credential or raw HTTP response is exported.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -34,7 +35,7 @@ def candidate(client, request, wait_ms, no_store=False):
             return status["candidate"], sid
         if status["submission_state"] != "admitted":
             raise RuntimeError("candidate not delivered")
-        time.sleep(.1)
+        time.sleep(0.1)
     raise RuntimeError("candidate unresolved")
 
 
@@ -46,17 +47,28 @@ def main():
     if type(token) is not str or len(token) < 32:
         raise ValueError("missing private actor credential")
     if value["mode"] == "status":
-        if set(value) != {"token", "mode", "submission_id"} or type(value["submission_id"]) is not str or \
-                not IDENT.fullmatch(value["submission_id"]):
+        if (
+            set(value) != {"token", "mode", "submission_id"}
+            or type(value["submission_id"]) is not str
+            or not IDENT.fullmatch(value["submission_id"])
+        ):
             raise ValueError("status input shape")
         with EzLLMRouterClient("http://127.0.0.1:8773", token) as client:
             status = client.getStatus({"submission_id": value["submission_id"]})
         attempts = status.get("attempts") or []
-        print(json.dumps({"kind": "status", "submission_id": value["submission_id"],
-            "submission_state": status["submission_state"], "candidate_access": status["candidate_access"],
-            "attempt_id": attempts[0]["attempt_id"] if attempts else None,
-            "dispatch_state": attempts[0]["dispatch_state"] if attempts else None,
-            "terminal_error_code": (status.get("terminal_failure") or {}).get("code")}))
+        print(
+            json.dumps(
+                {
+                    "kind": "status",
+                    "submission_id": value["submission_id"],
+                    "submission_state": status["submission_state"],
+                    "candidate_access": status["candidate_access"],
+                    "attempt_id": attempts[0]["attempt_id"] if attempts else None,
+                    "dispatch_state": attempts[0]["dispatch_state"] if attempts else None,
+                    "terminal_error_code": (status.get("terminal_failure") or {}).get("code"),
+                }
+            )
+        )
         return
     if set(value) != {"token", "configuration_ref", "step_id", "generation", "mode"}:
         raise ValueError("actor input shape")
@@ -76,8 +88,10 @@ def main():
         req["messages"][1]["blocks"][0]["text"] = "Simulate hold"
     if mode == "no_store":
         req["messages"][1]["blocks"][0]["source_labels"] = {
-            "lineage_ids": ["src.user.no_store"], "sensitivity": "confidential",
-            "restrictions": ["no.content.store"]}
+            "lineage_ids": ["src.user.no_store"],
+            "sensitivity": "confidential",
+            "restrictions": ["no.content.store"],
+        }
     if mode == "tool":
         req["messages"][1]["blocks"][0]["text"] = "Use lookup for synthetic."
         req["requested_features"] = ["text", "tools"]
@@ -88,21 +102,37 @@ def main():
             reply = client.submit(req, {"wait_ms": 0})
             if reply["state"] != "pending":
                 raise AssertionError("pending actor did not return a handle")
-            print(json.dumps({"kind": mode, "submission_id": reply["handle"]["submission_id"],
-                              "state": "pending"}))
+            print(
+                json.dumps(
+                    {
+                        "kind": mode,
+                        "submission_id": reply["handle"]["submission_id"],
+                        "state": "pending",
+                    }
+                )
+            )
             return
         if mode == "deny":
             try:
                 client.submit(req, {"wait_ms": 3000})
             except EzLLMRouterError as exc:
-                print(json.dumps({"kind": "denied", "code": exc.code,
-                    "http_status": exc.http_status, "failure_stage": exc.failure_stage,
-                    "attempt_id": exc.attempt_id,
-                    "submission_id": (exc.handle or {}).get("submission_id")}))
+                print(
+                    json.dumps(
+                        {
+                            "kind": "denied",
+                            "code": exc.code,
+                            "http_status": exc.http_status,
+                            "failure_stage": exc.failure_stage,
+                            "attempt_id": exc.attempt_id,
+                            "submission_id": (exc.handle or {}).get("submission_id"),
+                        }
+                    )
+                )
                 return
             raise AssertionError("denied actor was accepted")
-        first, sid = candidate(client, req, 30000 if mode == "hold" else 3000,
-                               no_store=mode == "no_store")
+        first, sid = candidate(
+            client, req, 30000 if mode == "hold" else 3000, no_store=mode == "no_store"
+        )
         ids = [sid]
         lookups = 0
         if mode == "tool":
@@ -112,10 +142,20 @@ def main():
             second = deepcopy(req)
             second["execution_generation"] = value["generation"] + ".followup"
             second["messages"].append({"role": "assistant", "blocks": [calls[0]]})
-            second["messages"].append({"role": "tool", "blocks": [{
-                "block_id": "block.result.1", "kind": "tool_result", "call_id": calls[0]["call_id"],
-                "result_value": {"value": "synthetic"},
-                "source_labels": deepcopy(SCENARIOS["result_source_labels"])}]})
+            second["messages"].append(
+                {
+                    "role": "tool",
+                    "blocks": [
+                        {
+                            "block_id": "block.result.1",
+                            "kind": "tool_result",
+                            "call_id": calls[0]["call_id"],
+                            "result_value": {"value": "synthetic"},
+                            "source_labels": deepcopy(SCENARIOS["result_source_labels"]),
+                        }
+                    ],
+                }
+            )
             final, next_sid = candidate(client, second, 3000)
             if final["finish_reason"] != "stop":
                 raise AssertionError("tool followup incomplete")
@@ -124,11 +164,22 @@ def main():
         status = client.getStatus({"submission_id": sid})
         if mode == "no_store" and status["candidate_access"] != "not_retained":
             raise AssertionError("no-store status retained candidate")
-        print(json.dumps({"kind": mode, "submission_ids": ids,
-            "attempt_id": first["attempt_id"], "selected_model": first["served_destination"]["model"],
-            "candidate_access": status["candidate_access"], "caller_lookups": lookups,
-            "price_version": status["attempts"][0]["usage"].get("revision", {}).get("price_version"),
-            "cost": status["attempts"][0]["usage"].get("revision", {}).get("cost")}))
+        print(
+            json.dumps(
+                {
+                    "kind": mode,
+                    "submission_ids": ids,
+                    "attempt_id": first["attempt_id"],
+                    "selected_model": first["served_destination"]["model"],
+                    "candidate_access": status["candidate_access"],
+                    "caller_lookups": lookups,
+                    "price_version": status["attempts"][0]["usage"]
+                    .get("revision", {})
+                    .get("price_version"),
+                    "cost": status["attempts"][0]["usage"].get("revision", {}).get("cost"),
+                }
+            )
+        )
 
 
 if __name__ == "__main__":
