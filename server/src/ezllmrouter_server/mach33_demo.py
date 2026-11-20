@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections import Counter, defaultdict
 from datetime import datetime
 from decimal import Decimal
-import hashlib
-import json
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from .formatting import money
 
 ZERO = Decimal("0.000000000")
 NOTICE = "DEMO — scripted activity and simulated USD; no real provider calls"
@@ -25,7 +26,7 @@ FILTERS = {
 
 
 def _money(value):
-    return format(value, ".9f")
+    return money(value, places=9)
 
 
 def _date(value):

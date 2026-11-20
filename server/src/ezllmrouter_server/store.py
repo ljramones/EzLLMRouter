@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from .repositories import store as _queries
-from .database import Database
-
 import json
 import sqlite3
 import threading
@@ -12,6 +9,11 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
+
+from .database import Database
+from .formatting import money, utc_timestamp
+from .repositories import store as _queries
+from .states import DispatchState, SubmissionState
 
 
 def encode(value):
@@ -343,7 +345,7 @@ class SQLiteStore:
             else:
                 known += Decimal(usage["amount_decimal"])
         return {
-            "known_amount_decimal": format(known.quantize(Decimal("0.000000001")), "f"),
+            "known_amount_decimal": money(known.quantize(Decimal("0.000000001"))),
             "unknown_attempts": unknown,
             "distinct_attempts": len(rows),
         }
@@ -358,7 +360,7 @@ class SQLiteStore:
 
         # Broad indexed cutoff includes the boundary second; Python keeps the
         # exact timestamp comparison, including fractional seconds.
-        cutoff = (instant - timedelta(days=7) + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        cutoff = utc_timestamp(instant - timedelta(days=7) + timedelta(seconds=1))
 
         def candidates():
             found = []
@@ -453,8 +455,8 @@ class SQLiteStore:
             self._update_in_tx(
                 submission_id,
                 {
-                    "submission_state": "admitted",
-                    "dispatch_state": "intent_persisted",
+                    "submission_state": SubmissionState.ADMITTED.value,
+                    "dispatch_state": DispatchState.INTENT_PERSISTED.value,
                     "attempt_revision": 2,
                 },
             )
@@ -508,6 +510,22 @@ class SQLiteStore:
         )
         return record
 
+    def _append_usage_in_tx(self, submission_id, attempt_id, usage):
+        """Append to the attempt ledger inside the caller's publishing transaction."""
+        existing = self.database.execute(
+            _queries.ACTION_SELECT_USAGE_REVISIONS, (attempt_id,)
+        ).fetchone()[0]
+        revision = (existing or 0) + 1
+        revision_data = dict(usage)
+        revision_data["revision"] = revision
+        if existing:
+            revision_data["previous_revision"] = existing
+        self.database.execute(
+            _queries.ACTION_INSERT_USAGE_REVISIONS,
+            (attempt_id, revision, submission_id, encode(revision_data)),
+        )
+        return {"state": "available", "revision": revision_data}
+
     def update(self, submission_id, fields, usage=None):
         new_fields = dict(fields)
 
@@ -520,19 +538,7 @@ class SQLiteStore:
                 if not row:
                     raise KeyError(submission_id)
                 attempt_id = json.loads(row[0])["attempt_id"]
-                existing = self.database.execute(
-                    _queries.ACTION_SELECT_USAGE_REVISIONS, (attempt_id,)
-                ).fetchone()[0]
-                revision = (existing or 0) + 1
-                revision_data = dict(usage)
-                revision_data["revision"] = revision
-                if existing:
-                    revision_data["previous_revision"] = existing
-                self.database.execute(
-                    _queries.ACTION_INSERT_USAGE_REVISIONS,
-                    (attempt_id, revision, submission_id, encode(revision_data)),
-                )
-                latest_usage = {"state": "available", "revision": revision_data}
+                latest_usage = self._append_usage_in_tx(submission_id, attempt_id, usage)
             elif "candidate" in new_fields and new_fields["candidate"] is not None:
                 row = self.database.execute(
                     _queries.UPDATE_IN_TX_SELECT_SUBMISSIONS, (submission_id,)
@@ -605,18 +611,7 @@ class SQLiteStore:
             latest_usage = {"state": "not_recorded"}
             if usage is not None:
                 attempt_id = record["attempt_id"]
-                existing = self.database.execute(
-                    _queries.ACTION_SELECT_USAGE_REVISIONS, (attempt_id,)
-                ).fetchone()[0]
-                revision_data = dict(usage)
-                revision_data["revision"] = (existing or 0) + 1
-                if existing:
-                    revision_data["previous_revision"] = existing
-                self.database.execute(
-                    _queries.ACTION_INSERT_USAGE_REVISIONS,
-                    (attempt_id, revision_data["revision"], submission_id, encode(revision_data)),
-                )
-                latest_usage = {"state": "available", "revision": revision_data}
+                latest_usage = self._append_usage_in_tx(submission_id, attempt_id, usage)
             else:
                 prior = self.database.execute(
                     _queries.LATEST_USAGE, (record["attempt_id"],)
@@ -624,8 +619,8 @@ class SQLiteStore:
                 if prior:
                     latest_usage = {"state": "available", "revision": json.loads(prior[0])}
             fields = {
-                "submission_state": "completed",
-                "dispatch_state": "response_observed",
+                "submission_state": SubmissionState.COMPLETED.value,
+                "dispatch_state": DispatchState.RESPONSE_OBSERVED.value,
                 "attempt_revision": 4,
                 "updated_at": at,
                 "content_store_allowed": retain,
@@ -694,7 +689,7 @@ class SQLiteStore:
                 record["candidate"] = None
                 record["candidate_access"] = "expired"
                 record["status_revision"] += 1
-                record["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                record["updated_at"] = utc_timestamp(datetime.now(timezone.utc))
                 self.database.execute(
                     _queries.UPDATE_IN_TX_UPDATE_SUBMISSIONS, (encode(record), submission_id)
                 )

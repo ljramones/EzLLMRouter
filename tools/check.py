@@ -68,6 +68,8 @@ MODULES = (
     "tests.unit.test_certificate_constraints",
     "tests.unit.test_database",
     "tests.unit.test_operator_routes",
+    "tests.unit.test_http_structure",
+    "tests.unit.test_shared_server_logic",
     "tests.client_languages.test_contracts",
     "tests.playwright.test_server",
     "tests.unit.test_check_inventory",
@@ -121,6 +123,10 @@ FRONTEND_TESTS = (
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
     "server/src/ezllmrouter_server/identifiers.py",
+    "server/src/ezllmrouter_server/formatting.py",
+    "server/src/ezllmrouter_server/json_validation.py",
+    "server/src/ezllmrouter_server/errors.py",
+    "server/src/ezllmrouter_server/states.py",
     "server/src/ezllmrouter_server/private_files.py",
     "server/src/ezllmrouter_server/observability.py",
     "server/src/ezllmrouter_server/database.py",
@@ -131,6 +137,9 @@ TYPED_PATHS = (
     "clients/python/src/ezllmrouter_client/_json.py",
     "server/src/ezllmrouter_server/repositories",
     "server/src/ezllmrouter_server/provider_adapters.py",
+    "server/src/ezllmrouter_server/operator_http/application.py",
+    "server/src/ezllmrouter_server/operator_http/common.py",
+    "server/src/ezllmrouter_server/operator_http/routing.py",
 )
 
 

@@ -6,23 +6,20 @@ the stable credential binding, encrypted versions, and discovery metadata.
 
 from __future__ import annotations
 
-from .repositories import integration_credentials as _queries
-
-from .observability import log_failure
-
-from datetime import datetime, timezone, timedelta
 import hmac
 import json
-from pathlib import Path
 import secrets
 import threading
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-from .secret_box import SecretBox, validate_secret
-
+from .formatting import utc_timestamp
 from .integration_accounting import IntegrationError, _checked, _time
+from .observability import log_failure
 from .provider_adapters import probe
+from .repositories import integration_credentials as _queries
+from .secret_box import SecretBox, validate_secret
 from .store import encode
-
 
 PROVIDERS = {
     "openai": ("openai.responses.v1", "https://api.openai.com"),
@@ -188,7 +185,7 @@ class DatabaseCredentialStore:
         return item
 
     def _clean_pending(self):
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        cutoff = utc_timestamp(datetime.now(timezone.utc) - timedelta(days=1))
 
         def clean():
             db = self.store.database

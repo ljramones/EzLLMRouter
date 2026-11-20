@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from .repositories import attribution as _queries
-
-from copy import deepcopy
 import hashlib
 import json
+from copy import deepcopy
 
 from .canonical import ContractError
+from .errors import RegistryConflict
+from .formatting import utc_timestamp as timestamp
+from .identifiers import require_identifier as identifier
+from .identifiers import require_text as nonempty
+from .repositories import attribution as _queries
 from .store import encode
 
 
 def _id(value):
-    from .registry import identifier
-
     try:
         return identifier(value)
     except (TypeError, ValueError) as exc:
@@ -151,7 +152,6 @@ class AttributionLedger:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         user = self._authorize(trusted, body, parent)
         digest = hashlib.sha256(encode(body).encode()).hexdigest()
-        from .registry import timestamp
 
         record = {
             "run_id": body["run_id"],
@@ -242,8 +242,6 @@ class AttributionLedger:
         }
 
     def apply_admin(self, db, action, subject, expected, data):
-        from .registry import RegistryConflict, identifier, nonempty, timestamp
-
         if action == "register_agent":
             if (
                 expected
@@ -479,7 +477,6 @@ class AttributionLedger:
             ]
         )
         digest = hashlib.sha256(encode(body).encode()).hexdigest()
-        from .registry import timestamp
 
         def save():
             row = self.store.database.execute(

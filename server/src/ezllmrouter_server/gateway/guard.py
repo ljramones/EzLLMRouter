@@ -2,32 +2,34 @@
 
 from __future__ import annotations
 
-from contextvars import ContextVar
-import atexit
 import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+import atexit
 import hashlib
 import json
 import os
-import time
-import threading
 import queue
+import threading
+import time
+from contextvars import ContextVar
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 import httpx
-from ezllmrouter_server.observability import log_failure
-from ezllmrouter_server.canonical import ContractError
-from .proxy_recipe import PUBLIC_MODEL, require_public_destination
 
+from ezllmrouter_server.canonical import ContractError
+from ezllmrouter_server.errors import ServerError
+from ezllmrouter_server.observability import log_failure
+
+from .proxy_recipe import PUBLIC_MODEL, require_public_destination
 
 PROVIDER_URL = "http://127.0.0.1:8766/v1/chat/completions"
 PROVIDER_MODEL = PUBLIC_MODEL
 RECIPE_VERSION = "recipe.dev04.openai-sdk.v2"
 
 
-class GuardRejected(RuntimeError):
+class GuardRejected(ServerError, RuntimeError):
     def __init__(self, code="FDC_REJECTED"):
         super().__init__(code)
         self.code = code

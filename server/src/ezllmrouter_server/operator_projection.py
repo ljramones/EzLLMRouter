@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TypedDict
+
+from .formatting import money, utc_timestamp
+from .identifiers import valid_identifier
 from .repositories import operator_projection as _queries
 from .repositories.store import LATEST_USAGE
-from .identifiers import valid_identifier
+from .states import LaunchState
 
-from datetime import datetime, timezone
-import json
-from pathlib import Path
-import re
+
+class LaunchRecord(TypedDict):
+    operation_id: str
+    kind: str
+    state: str
+    created_at: str
+    updated_at: str
+    submission_ids: list[str]
+    caller_lookups: int
+    error_code: str | None
+    in_progress: bool
 
 
 STATES = frozenset(
@@ -344,7 +359,7 @@ class OperatorProjection:
             "usage_unknown": len(summaries) - sum(x["usage_available"] for x in groups.values()),
             "cost": {
                 "known_subtotals": {
-                    currency: format(amount, "f") for currency, amount in known_cost.items()
+                    currency: money(amount) for currency, amount in known_cost.items()
                 },
                 "unknown_attempts": cost_unknown,
                 "label": "synthetic calculated cost",
@@ -381,7 +396,7 @@ class OperatorProjection:
     def begin_launch(self, operation_id, kind):
         if not _identifier(operation_id) or kind not in ("text", "tool", "no_store_text"):
             raise ValueError("invalid launch")
-        at = datetime.now(timezone.utc).isoformat()
+        at = utc_timestamp(datetime.now(timezone.utc), precise=True)
 
         def action():
             existing = self.store.database.execute(
@@ -403,8 +418,18 @@ class OperatorProjection:
 
         return self.store.database.transaction(action)
 
-    def finish_launch(self, operation_id, state, submission_ids, lookups=0, error_code=None):
-        if state not in ("completed", "failed", "outcome_unknown") or type(lookups) is not int:
+    def finish_launch(
+        self,
+        operation_id: str,
+        state: str,
+        submission_ids: list[str],
+        lookups: int = 0,
+        error_code: str | None = None,
+    ) -> bool:
+        if (
+            state not in (LaunchState.COMPLETED, LaunchState.FAILED, LaunchState.OUTCOME_UNKNOWN)
+            or type(lookups) is not int
+        ):
             raise ValueError("invalid launch result")
         ids = [x for x in submission_ids if _identifier(x)]
 
@@ -413,7 +438,7 @@ class OperatorProjection:
                 _queries.FINISH_LAUNCH_UPDATE_OPERATOR_LAUNCHES,
                 (
                     state,
-                    datetime.now(timezone.utc).isoformat(),
+                    utc_timestamp(datetime.now(timezone.utc), precise=True),
                     json.dumps(ids),
                     lookups,
                     error_code
@@ -427,7 +452,7 @@ class OperatorProjection:
 
         return self.store.database.transaction(action)
 
-    def record_launch_submission(self, operation_id, submission_id):
+    def record_launch_submission(self, operation_id: str, submission_id: str) -> None:
         if not _identifier(operation_id) or not _identifier(submission_id):
             raise ValueError("invalid launcher submission")
 
@@ -442,12 +467,16 @@ class OperatorProjection:
                 values.append(submission_id)
                 self.store.database.execute(
                     _queries.ACTION_UPDATE_OPERATOR_LAUNCHES,
-                    (json.dumps(values), datetime.now(timezone.utc).isoformat(), operation_id),
+                    (
+                        json.dumps(values),
+                        utc_timestamp(datetime.now(timezone.utc), precise=True),
+                        operation_id,
+                    ),
                 )
 
         self.store.database.transaction(action)
 
-    def launch(self, operation_id):
+    def launch(self, operation_id: str) -> LaunchRecord | None:
         if not _identifier(operation_id):
             raise ValueError("invalid operation id")
         with self.store.database.read():
@@ -487,7 +516,7 @@ class OperatorProjection:
             or not 1 <= max_output_tokens <= 32
         ):
             raise ValueError("invalid provider validation")
-        at = datetime.now(timezone.utc).isoformat()
+        at = utc_timestamp(datetime.now(timezone.utc), precise=True)
 
         def action():
             existing = self.store.database.execute(
@@ -534,13 +563,21 @@ class OperatorProjection:
         def action():
             self.store.database.execute(
                 _queries.RECORD_PROVIDER_VALIDATION_SUBMISSION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
-                (submission_id, datetime.now(timezone.utc).isoformat(), operation_id),
+                (
+                    submission_id,
+                    utc_timestamp(datetime.now(timezone.utc), precise=True),
+                    operation_id,
+                ),
             )
 
         return self.store.database.transaction(action)
 
     def finish_provider_validation(self, operation_id, state, error_code=None):
-        if not _identifier(operation_id) or state not in ("completed", "failed", "outcome_unknown"):
+        if not _identifier(operation_id) or state not in (
+            LaunchState.COMPLETED,
+            LaunchState.FAILED,
+            LaunchState.OUTCOME_UNKNOWN,
+        ):
             raise ValueError("invalid provider validation result")
 
         def action():
@@ -548,7 +585,7 @@ class OperatorProjection:
                 _queries.FINISH_PROVIDER_VALIDATION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
                 (
                     state,
-                    datetime.now(timezone.utc).isoformat(),
+                    utc_timestamp(datetime.now(timezone.utc), precise=True),
                     error_code
                     if type(error_code) is str and re.fullmatch(r"[A-Z0-9_]{1,64}", error_code)
                     else None,

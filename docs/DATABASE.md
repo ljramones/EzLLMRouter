@@ -154,6 +154,61 @@ not an HTTP throughput or production capacity guarantee; payload sizes, disk lat
 large connected lineage components, full exports and other machines need their own
 measurements. Database plus WAL/SHM files reached about 545 MB at the largest size.
 
+## Shared server logic
+
+`formatting.py` owns decimal rendering and UTC formatting. Callers select the
+existing representation: exact decimal scale, compact report strings or nine
+fixed places; UTC seconds ending in `Z` or precise UTC ISO timestamps. Financial
+calculations retain their existing quantization and rounding rules. Rendering
+does not convert through floating point or change recorded history.
+
+`json_validation.py` shares decoding, duplicate-key checks, safe integers,
+restricted-value validation and canonical serialization. Its explicit policies
+retain the adopted protocol differences:
+
+| Policy | Work 0.2 | Work 0.3 |
+| --- | --- | --- |
+| Input limit | 65,536 bytes | 262,144 bytes |
+| Nesting limit | 16 | 32 |
+| Null values | Rejected | Supported |
+| Escaped control characters | Supported by decoding; field rules still apply | Rejected |
+| Negative zero | Rejected | Decodes to zero |
+| Object member limit | 1,024 | No separate member limit |
+| Canonical key order | UTF-16 | Adopted ASCII key order |
+
+Public contract functions retain their error codes, status codes and digest
+domains. Operator-body and connector parsers use the common duplicate-key hook
+with their own error translations. Contract schemas and signed resources are
+unchanged.
+
+`repositories/authority.py` owns shared active-principal role checks, authority
+revision advancement, audit insertion and the management-value allowlist. User,
+connector and registry mutations call it inside their existing publishing
+transaction under the sender gate. A failed audit rolls back the mutation and
+revision together. The in-memory authority epoch changes after commit, and
+replaying a registry operation returns its saved receipt without another audit.
+The store also shares one in-transaction usage append for updates and candidate
+completion, preserving revision linkage and caller input values.
+
+`errors.py` groups server domain errors under `ServerError`, retaining existing
+`ValueError`/`RuntimeError` catches, public codes and status defaults. Retry
+guidance remains attached to the error types that originally supplied it.
+`states.py` names submission, dispatch, delivery, settlement, candidate and launch
+states with `StrEnum`; persistence and wire records receive plain string values.
+
+The registry declares optional accounts, connectors, credentials and campaign
+dependencies. Coordinator accepts an owned successor and an optional guarded
+sender; the local service wires its guarded sender explicitly. Readiness can be
+injected into Registry. Attribution imports shared validation, time and conflict
+types directly without importing Registry inside its methods.
+
+Registry mutations dispatch to focused action handlers. Coordinator carries an
+explicit admission snapshot into preparation/dispatch. Usage reporting separates
+snapshot reads, visibility, attempt projection and aggregation; external reports
+carry one database snapshot into per-attempt and version-specific projections.
+Strict type checking covers 36 modules, including the shared policies and
+authority repository; the remaining service bodies are outside that gate.
+
 ## Operator HTTP server
 
 `operator_web.serve` composes an `OperatorApplication` and an `OperatorHandler`.
@@ -161,12 +216,34 @@ The application owns that server's sessions, dependencies, executor and schedule
 maintenance. Shutdown waits for background work before the caller closes its
 database. Separate servers have separate session dictionaries.
 
-`operator_http/handler.py` owns the HTTP entry points and ordered dispatch tables.
+`operator_http/routing.py` declares each HTTP method, exact path or resource
+family, handler, query policy, optional dependency and authorization stage.
+Requests resolve once: exact paths take precedence over families, then the
+longest family prefix wins. Duplicate registrations fail during construction;
+handlers no longer participate in route discovery by returning a sentinel.
+Family handlers retain resource ID, action and selector validation.
+
+`operator_http/handler.py` applies the stages in order: public assets, session
+recovery, required password changes, account/integration routes, integration-only
+restrictions, resource routes, then ordinary-user report scope. Authenticated
+mutations validate origin, session and CSRF before reading bodies. Unknown paths
+still pass through the applicable authentication and permission boundaries.
+
 Transport parsing, authentication, accounts/connectors, registry operations,
-integration routes, reports and static assets live in separate modules. Route
-ordering retains the permission boundaries: login and session recovery, required
-password changes, integration-only access and ordinary-user report scope.
-Authenticated mutations validate origin, session and CSRF before reading bodies.
+integration routes and reports live in separate modules and import dependencies
+directly. `assets.py` contains the single public asset allowlist; directory
+contents never register routes. CSV exports share one serializer and response
+helper, preserving column order, UTF-8, CRLF, exact decimal strings, report-specific
+JSON transformations and attachment filenames.
+
+Application dependencies, optional collaborators, session records and lifecycle
+fields have concrete types. Strict mypy covers the application state, route
+registry and shared serialization helpers alongside the existing typed modules.
+The remaining handler mixins are outside the strict type gate. Scheduler threads
+start only when a registry exists, and state supports cleanup before startup.
+Failure events identify the actual route or operation, including separate
+validation preparation/execution and scheduler listing/probing failures. They
+continue to omit exception messages, request bodies and query strings.
 
 Session dictionary access uses a short memory lock. Authentication releases it
 before account queries, reads principal/account state under one database gate,
@@ -178,5 +255,10 @@ lookup waits; its late result cannot recreate that session.
 
 Offline tests exercise actual handlers through in-memory HTTP streams, including
 route dispatch, isolation between servers, body rejection and background jobs.
+The HTTP structure regressions cover precedence, permission stages, static-file
+boundaries, all four CSV exports and secret-safe failure events. An additional
+old/new handler comparison checks 1,033 requests and identical bytes for the four
+CSV exports; its generated evidence is under ignored
+`.artifacts/code-review/http-batch/`.
 The explicit `--http-only` command exercises socket-level fixtures when the host
 allows loopback binds. Neither check invokes a model provider.

@@ -9,7 +9,7 @@ Current guides for operating and developing CognitiveDynamics EzLLMRouter:
 | [Users and permissions](USER-MANAGEMENT.md) | First sign-in, roles and account management. |
 | [Local connectors](LOCAL-CONNECTORS.md) | Model-server inventory, availability and model selection. |
 | [Runtime resources](RESOURCES.md) | Connection/queue limits, shutdown order and gateway cleanup. |
-| [Database](DATABASE.md) | Schema upgrades, probe retention, transactions and operator server structure. |
+| [Database](DATABASE.md) | Schema upgrades, retention, transactions, shared server logic and HTTP structure. |
 | [Encryption](ENCRYPTION.md) | Independent keyrings, rotation and consistent backups. |
 | [Security](SECURITY.md) | Credentials, transport boundaries and frozen runtime inputs. |
 | [Development](DEVELOPMENT.md) | Environment setup, checks and test inputs. |

@@ -1,36 +1,86 @@
 """Per-server operator state, execution and background-job lifecycle."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+import threading
+import time
+import uuid
+from _thread import LockType
+from collections.abc import Callable, Mapping, Set
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
-from .common import threading, time, uuid, log_failure
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Protocol, TypedDict
+
+from ..integration_accounting import ExternalAccounting
+from ..local_connectors import LocalConnectors
+from ..mach33_demo import Mach33Demo
+from ..observability import log_failure
+from ..operator_demo import ProviderValidationRunner
+from ..operator_projection import OperatorProjection
+from ..registry import Registry
+from ..store import SQLiteStore
+from ..user_management import LoginThrottle, UserManager
+
+type JSONValue = str | int | float | bool | None | list[JSONValue] | dict[str, JSONValue]
+
+
+class OperatorSession(TypedDict):
+    csrf: str
+    principal_id: str
+    role: str
+    named_login: bool
+    username: str | None
+    display_name: str | None
+    user_auth_version: int | None
+    must_change_password: bool
+    wire_token: str | None
+    expires: float
+
+
+class LaunchResult(TypedDict):
+    submission_ids: list[str]
+    caller_lookups: int
+
+
+class DemoRunner(Protocol):
+    def run(self, kind: str, on_handle: Callable[[str], None]) -> LaunchResult: ...
 
 
 @dataclass
 class OperatorApplication:
-    accounts: object
-    allowed_hosts: object
-    allowed_origins: object
-    build: object
-    fixture: object
-    integration_only: object
-    jobs: object
-    local_connectors: object
-    login_throttle: object
-    mach33_demo: object
-    password: object
-    projection: object
-    provider_validation: object
-    registry: object
-    root: object
-    runner: object
-    sender_status: object
-    session_lock: object
-    sessions: object
-    successor_store: object
-    worker_probe: object
+    accounts: UserManager | None
+    allowed_hosts: Set[str]
+    allowed_origins: Set[str]
+    build: Mapping[str, JSONValue]
+    fixture: Mapping[str, JSONValue]
+    integration_only: bool
+    jobs: ThreadPoolExecutor
+    local_connectors: LocalConnectors | None
+    login_throttle: LoginThrottle
+    mach33_demo: Mach33Demo | None
+    password: str
+    projection: OperatorProjection
+    provider_validation: ProviderValidationRunner | None
+    registry: Registry | None
+    root: Path
+    runner: DemoRunner | None
+    sender_status: Callable[[], Mapping[str, JSONValue]]
+    session_lock: LockType
+    sessions: dict[str, OperatorSession]
+    successor_store: SQLiteStore | None
+    worker_probe: Callable[[], Mapping[str, JSONValue]]
+    _closing: bool = field(default=False, init=False)
+    scheduler_stop: threading.Event = field(default_factory=threading.Event, init=False)
+    maintenance_stop: threading.Event = field(default_factory=threading.Event, init=False)
+    scheduler_thread: threading.Thread | None = field(default=None, init=False)
+    maintenance_thread: threading.Thread | None = field(default=None, init=False)
 
-    def execute(self, operation_id, kind):
+    def execute(self, operation_id: str, kind: str) -> None:
         try:
+            if self.runner is None:
+                raise RuntimeError("demo runner unavailable")
             result = self.runner.run(
                 kind, lambda sid: self.projection.record_launch_submission(operation_id, sid)
             )
@@ -38,7 +88,7 @@ class OperatorApplication:
                 operation_id, "completed", result["submission_ids"], result["caller_lookups"]
             )
         except Exception as exc:
-            log_failure("operator_web.serve.execute.failed")
+            log_failure("operator_http.demo.execute.failed")
             prior = self.projection.launch(operation_id)
             ids = prior["submission_ids"] if prior else []
             code = getattr(exc, "code", None)
@@ -53,13 +103,16 @@ class OperatorApplication:
                 error_code=code or "DEMO_FAILED",
             )
 
-    def scheduled_checks(self):
-        due = {}
+    def scheduled_checks(self) -> None:
+        registry = self.registry
+        if registry is None:
+            return
+        due: dict[str, tuple[tuple[int, str], float]] = {}
         while not self.scheduler_stop.wait(2):
             try:
-                connections = self.registry.list_connections() if self.registry else []
+                connections = registry.list_connections()
             except Exception:
-                log_failure("operator_web.serve.scheduled_checks.failed")
+                log_failure("operator_http.scheduler.list_connections.failed")
                 continue
             active = set()
             for connection in connections:
@@ -72,7 +125,10 @@ class OperatorApplication:
                 active.add(key)
                 now = time.monotonic()
                 interval = connection["check_interval_seconds"]
-                state = (connection["revision"], connection["scheduled_operation"])
+                operation = connection["scheduled_operation"]
+                if interval is None or operation is None:
+                    continue
+                state = (connection["revision"], operation)
                 if key not in due or due[key][0] != state:
                     due[key] = (state, now + interval)
                     continue
@@ -80,30 +136,29 @@ class OperatorApplication:
                     continue
                 due[key] = (state, now + interval)
                 try:
-                    self.registry.probe_connection(
+                    registry.probe_connection(
                         "owner.local",
                         key,
                         connection["revision"],
                         "probe.scheduled." + uuid.uuid4().hex,
-                        connection["scheduled_operation"],
+                        operation,
                     )
                 except Exception:
-                    log_failure("operator_web.serve.scheduled_checks.failed")
-                    pass
+                    log_failure("operator_http.scheduler.probe_connection.failed")
             for key in set(due) - active:
                 due.pop(key, None)
 
-    def start(self, maintenance):
+    def start(self, maintenance: Callable[[ExternalAccounting, threading.Event], None]) -> None:
         self._closing = False
         self.scheduler_stop = threading.Event()
         self.maintenance_stop = threading.Event()
         self.scheduler_thread = None
         self.maintenance_thread = None
-        self.scheduler_thread = threading.Thread(
-            target=self.scheduled_checks, daemon=True, name="ezllmrouter-provider-checks"
-        )
-        self.scheduler_thread.start()
         if self.registry is not None:
+            self.scheduler_thread = threading.Thread(
+                target=self.scheduled_checks, daemon=True, name="ezllmrouter-provider-checks"
+            )
+            self.scheduler_thread.start()
             self.maintenance_thread = threading.Thread(
                 target=maintenance,
                 args=(self.registry.integration, self.maintenance_stop),
@@ -112,7 +167,7 @@ class OperatorApplication:
             )
             self.maintenance_thread.start()
 
-    def close(self):
+    def close(self) -> None:
         with self.session_lock:
             self._closing = True
         with ExitStack() as cleanup:
@@ -121,22 +176,19 @@ class OperatorApplication:
             token_cleanup = ExitStack()
             cleanup.callback(token_cleanup.close)
             cleanup.callback(self.jobs.shutdown, wait=True, cancel_futures=False)
-            if hasattr(self, "scheduler_stop"):
-                self.scheduler_stop.set()
-                self.maintenance_stop.set()
-                if (
-                    self.maintenance_thread is not None
-                    and self.maintenance_thread.ident is not None
-                ):
-                    self.maintenance_thread.join()
-                if self.scheduler_thread is not None and self.scheduler_thread.ident is not None:
-                    self.scheduler_thread.join()
+            self.scheduler_stop.set()
+            self.maintenance_stop.set()
+            if self.maintenance_thread is not None and self.maintenance_thread.ident is not None:
+                self.maintenance_thread.join()
+            if self.scheduler_thread is not None and self.scheduler_thread.ident is not None:
+                self.scheduler_thread.join()
             with self.session_lock:
                 discarded = tuple(self.sessions.values())
                 self.sessions.clear()
             if self.registry:
                 for item in discarded:
-                    if item.get("wire_token"):
+                    wire_token = item["wire_token"]
+                    if wire_token:
                         token_cleanup.callback(
-                            self.registry.revoke_local_operator_token, item["wire_token"]
+                            self.registry.revoke_local_operator_token, wire_token
                         )

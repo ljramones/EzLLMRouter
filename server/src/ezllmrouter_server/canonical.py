@@ -2,108 +2,54 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-import hashlib
-import json
-import re
+
+from .errors import RequestError
+from .formatting import parse_utc_second, utc_timestamp
 from .gateway.choice_b_wire import MAX_ATTEMPT_TIMEOUT_MS
 from .identifiers import valid_identifier
+from .json_validation import (
+    MAX_SAFE_INTEGER,
+    WORK_V02,
+    JSONValidationError,
+    canonical_json,
+    decode_json,
+    validate_json,
+)
 
 PREFIX = b"ezllmrouter-work-v0.2\n"
-SAFE = 9007199254740991
+SAFE = MAX_SAFE_INTEGER
 MAX_OUTPUT_TOKENS = 32768
 _DECIMAL = re.compile(r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
 
 
-class ContractError(ValueError):
+class ContractError(RequestError):
     def __init__(self, code: str, status: int = 422):
         super().__init__(code)
         self.code, self.status = code, status
 
 
 def strict_loads(data: bytes):
-    if len(data) > 65536:
-        raise ContractError("LIMIT_EXCEEDED", 413)
     try:
-        text = data.decode("utf-8", "strict")
-
-        def pairs(items):
-            result = {}
-            for key, value in items:
-                if key in result:
-                    raise ValueError("duplicate key")
-                result[key] = value
-            return result
-
-        def integer(value):
-            if value == "-0" or abs(int(value)) > SAFE:
-                raise ValueError("unsafe integer")
-            return int(value)
-
-        def reject(_value):
-            raise ValueError("unsupported JSON number")
-
-        obj = json.loads(
-            text,
-            object_pairs_hook=pairs,
-            parse_int=integer,
-            parse_float=reject,
-            parse_constant=reject,
-        )
-        restricted(obj)
-        return obj
-    except (UnicodeError, ValueError, RecursionError) as exc:
-        if isinstance(exc, ContractError):
-            raise
-        raise ContractError("MALFORMED_JSON", 400) from exc
+        return decode_json(data, WORK_V02)
+    except JSONValidationError as exc:
+        raise ContractError(exc.code, exc.status) from exc
 
 
 def restricted(value, depth=0):
-    if depth > 16:
-        raise ContractError("LIMIT_EXCEEDED", 413)
-    if isinstance(value, str):
-        if any(0xD800 <= ord(c) <= 0xDFFF for c in value):
-            raise ContractError("MALFORMED_JSON", 400)
-    elif type(value) is int:
-        if abs(value) > SAFE:
-            raise ContractError("MALFORMED_JSON", 400)
-    elif type(value) is bool:
-        pass
-    elif isinstance(value, list):
-        for item in value:
-            restricted(item, depth + 1)
-    elif isinstance(value, dict):
-        if len(value) > 1024:
-            raise ContractError("LIMIT_EXCEEDED", 413)
-        for key, item in value.items():
-            if not isinstance(key, str):
-                raise ContractError("MALFORMED_JSON", 400)
-            restricted(key, depth + 1)
-            restricted(item, depth + 1)
-    else:
-        raise ContractError("MALFORMED_JSON", 400)
+    try:
+        validate_json(value, WORK_V02, depth)
+    except JSONValidationError as exc:
+        raise ContractError(exc.code, exc.status) from exc
 
 
 def jcs(value) -> bytes:
     """The contract's UTF-16-sorted, safe-integer, no-null JCS profile."""
     restricted(value)
-
-    def emit(obj):
-        if isinstance(obj, str):
-            return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
-        if type(obj) is bool:
-            return "true" if obj else "false"
-        if type(obj) is int:
-            return str(obj)
-        if isinstance(obj, list):
-            return "[" + ",".join(emit(v) for v in obj) + "]"
-        if isinstance(obj, dict):
-            keys = sorted(obj, key=lambda k: k.encode("utf-16-be"))
-            return "{" + ",".join(emit(k) + ":" + emit(obj[k]) for k in keys) + "}"
-        raise ContractError("MALFORMED_JSON", 400)
-
-    return emit(value).encode("utf-8")
+    return canonical_json(value, utf16_keys=True).encode("utf-8")
 
 
 def digest(data: bytes) -> str:
@@ -123,15 +69,8 @@ def decimal_lexical(value: str) -> str:
 
 
 def utc_second(value: str) -> str:
-    if not isinstance(value, str) or not re.fullmatch(
-        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})", value
-    ):
-        raise ContractError("SCHEMA_INVALID", 400)
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if parsed.utcoffset() is None:
-            raise ValueError("naive")
-        return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return utc_timestamp(parse_utc_second(value, allow_offset=True))
     except ValueError as exc:
         raise ContractError("SCHEMA_INVALID", 400) from exc
 

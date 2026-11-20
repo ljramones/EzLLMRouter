@@ -6,23 +6,24 @@ key makes an interrupted rotation readable and resumable across processes.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import base64
 import fcntl
 import hashlib
 import hmac
 import json
 import os
-from pathlib import Path
 import secrets
 import stat
+from contextlib import contextmanager
+from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from .errors import ServerError
 from .private_files import read_private, write_private
 
 
-class SecretBoxError(RuntimeError):
+class SecretBoxError(ServerError, RuntimeError):
     pass
 
 

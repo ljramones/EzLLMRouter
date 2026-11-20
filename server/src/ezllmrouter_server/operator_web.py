@@ -1,20 +1,18 @@
 """Operator server composition. Request handling lives in operator_http."""
 
+import os
+import socket
+import socketserver
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+from .http_server import BoundedHTTPServer as ThreadingHTTPServer
+from .local_connectors import LocalConnectors
 from .observability import log_failure
 from .operator_http.application import OperatorApplication
 from .operator_http.handler import OperatorHandler
-from .operator_http.common import (
-    ThreadingHTTPServer,
-    LocalConnectors,
-    UserManager,
-    LoginThrottle,
-    ThreadPoolExecutor,
-    Path,
-    threading,
-    socket,
-    socketserver,
-    os,
-)
+from .user_management import LoginThrottle, UserManager
 
 
 class UnixOperatorServer(ThreadingHTTPServer):
@@ -64,8 +62,7 @@ def serve(
     allowed_hosts = allowed_hosts or {f"127.0.0.1:{port}", f"localhost:{port}"}
     allowed_origins = {"http://" + value for value in allowed_hosts}
     accounts = (
-        getattr(registry, "users", None)
-        or UserManager(registry, bootstrap_password_file=bootstrap_password_file)
+        registry.users or UserManager(registry, bootstrap_password_file=bootstrap_password_file)
         if registry
         else None
     )

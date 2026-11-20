@@ -2,27 +2,26 @@
 
 from __future__ import annotations
 
-from .repositories import local_connectors as _queries
-
-from .observability import log_failure
-
 import hashlib
 import http.client
 import ipaddress
 import json
-from pathlib import Path
 import socket
 import ssl
 import time
 import uuid
+from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from .secret_box import SecretBox, validate_secret
-
-from .registry import timestamp
-from .store import encode
 from .connector_availability import AvailabilityMonitor
-
+from .errors import RequestError
+from .formatting import utc_timestamp as timestamp
+from .json_validation import unique_pairs
+from .observability import log_failure
+from .repositories import authority
+from .repositories import local_connectors as _queries
+from .secret_box import SecretBox, validate_secret
+from .store import encode
 
 KINDS = {
     "ollama": {"name": "Ollama", "default_url": "http://localhost:11434", "api": "ollama"},
@@ -61,10 +60,9 @@ COMMON_SERVERS = (
 )
 
 
-class ConnectorError(ValueError):
+class ConnectorError(RequestError):
     def __init__(self, code, status=400):
-        super().__init__(code)
-        self.code, self.status = code, status
+        super().__init__(code, status)
 
 
 def allowed_address(value):
@@ -122,12 +120,10 @@ def normalize_url(value, kind="openai_compatible"):
 
 
 def _pairs(items):
-    result = {}
-    for key, value in items:
-        if key in result:
-            raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-        result[key] = value
-    return result
+    try:
+        return unique_pairs(items)
+    except ValueError as exc:
+        raise ConnectorError("INVALID_SERVER_RESPONSE", 502) from exc
 
 
 def _reject_constant(_value):
@@ -386,10 +382,8 @@ class LocalConnectors:
         self.box = SecretBox(self.key_path, "local-connector-credentials", required_ids=known)
 
     def _authorize(self, db, actor, *, write=False):
-        row = db.execute(_queries.AUTHORIZE_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
-        principal = json.loads(row[0]) if row else None
         roles = ("registry_admin",) if write else ("registry_admin", "read_only_operator")
-        if not principal or principal["status"] != "active" or principal["role"] not in roles:
+        if not authority.authorized(db, actor, roles):
             raise ConnectorError("ADMIN_REQUIRED" if write else "OPERATOR_REQUIRED", 403)
 
     def _load(self, db, connector_id):
@@ -463,7 +457,7 @@ class LocalConnectors:
             "availability": self.monitor.get(record["connector_id"], self._configuration(record)),
         }
 
-    def close(self):
+    def close(self) -> None:
         self.monitor.close()
 
     @staticmethod
@@ -716,21 +710,14 @@ class LocalConnectors:
                     _queries.TRANSACTION_INSERT_LOCAL_CONNECTORS,
                     (connector_id, encode(record), secret),
                 )
-                revision = (
-                    int(db.execute(_queries.TRANSACTION_SELECT_REGISTRY_META).fetchone()[0]) + 1
-                )
-                db.execute(_queries.TRANSACTION_UPDATE_REGISTRY_META, (str(revision),))
-                db.execute(
-                    _queries.TRANSACTION_INSERT_REGISTRY_AUDIT,
-                    (
-                        actor,
-                        action,
-                        connector_id,
-                        old or None,
-                        record["revision"],
-                        revision,
-                        timestamp(),
-                    ),
+                revision = authority.record_change(
+                    db,
+                    actor=actor,
+                    action=action,
+                    subject=connector_id,
+                    old_revision=old or None,
+                    new_revision=record["revision"],
+                    at=timestamp(),
                 )
                 return self._public(record), revision
 

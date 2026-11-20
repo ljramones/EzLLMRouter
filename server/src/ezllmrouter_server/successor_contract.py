@@ -6,18 +6,25 @@ module intentionally does not import its offline JavaScript reference checker.
 
 from __future__ import annotations
 
-from .observability import log_failure
-
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_HALF_EVEN
-from hashlib import sha256
-from importlib.resources import files
 import json
 import re
+from decimal import ROUND_CEILING, ROUND_HALF_EVEN, Decimal, InvalidOperation
+from hashlib import sha256
+from importlib.resources import files
 
 from .canonical import ContractError
+from .formatting import is_utc_second, money
+from .json_validation import (
+    MAX_SAFE_INTEGER,
+    WORK_V03,
+    JSONValidationError,
+    canonical_json,
+    decode_json,
+    validate_json,
+)
+from .observability import log_failure
 
-SAFE = 9007199254740991
+SAFE = MAX_SAFE_INTEGER
 SCHEMAS = json.loads(files("ezllmrouter_server").joinpath("dev12/schemas.json").read_text())
 REGISTRATIONS = json.loads(
     files("ezllmrouter_server").joinpath("dev12/registrations.json").read_text()
@@ -27,65 +34,17 @@ QUANTUM = Decimal(TARIFFS["quantum"])
 
 
 def strict_decode(data: bytes):
-    if type(data) is not bytes:
-        raise ContractError("MALFORMED_JSON", 400)
-    if len(data) > 262144:
-        raise ContractError("LIMIT_EXCEEDED", 413)
     try:
-        text = data.decode("utf-8", "strict")
-
-        def pairs(items):
-            result = {}
-            for key, value in items:
-                if key in result:
-                    raise ValueError("duplicate decoded key")
-                result[key] = value
-            return result
-
-        def integer(raw):
-            value = int(raw)
-            if abs(value) > SAFE:
-                raise ValueError("unsafe integer")
-            return value
-
-        def reject(_raw):
-            raise ValueError("unsupported JSON number")
-
-        value = json.loads(
-            text,
-            object_pairs_hook=pairs,
-            parse_int=integer,
-            parse_float=reject,
-            parse_constant=reject,
-        )
-        _restricted(value)
-        return value
-    except (UnicodeError, ValueError, RecursionError) as exc:
-        if isinstance(exc, ContractError):
-            raise
-        raise ContractError("MALFORMED_JSON", 400) from exc
+        return decode_json(data, WORK_V03)
+    except JSONValidationError as exc:
+        raise ContractError(exc.code, exc.status) from exc
 
 
 def _restricted(value, depth=0):
-    if depth > 32:
-        raise ContractError("LIMIT_EXCEEDED", 413)
-    if type(value) is str:
-        if any(ord(c) < 32 or ord(c) == 127 or 0xD800 <= ord(c) <= 0xDFFF for c in value):
-            raise ContractError("MALFORMED_JSON", 400)
-    elif type(value) is int:
-        if abs(value) > SAFE:
-            raise ContractError("MALFORMED_JSON", 400)
-    elif type(value) is bool or value is None:
-        return
-    elif type(value) is list:
-        for item in value:
-            _restricted(item, depth + 1)
-    elif type(value) is dict:
-        for key, item in value.items():
-            _restricted(key, depth + 1)
-            _restricted(item, depth + 1)
-    else:
-        raise ContractError("MALFORMED_JSON", 400)
+    try:
+        validate_json(value, WORK_V03, depth)
+    except JSONValidationError as exc:
+        raise ContractError(exc.code, exc.status) from exc
 
 
 def schema_valid(value, schema, bundle=SCHEMAS):
@@ -147,25 +106,7 @@ def schema_valid(value, schema, bundle=SCHEMAS):
 
 def canonical(value):
     """A1's ASCII-key-order canonical JSON for its restricted value domain."""
-    if type(value) is dict:
-        return (
-            "{"
-            + ",".join(canonical(key) + ":" + canonical(value[key]) for key in sorted(value))
-            + "}"
-        )
-    if type(value) is list:
-        return "[" + ",".join(canonical(item) for item in value) + "]"
-    if type(value) is str:
-        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-    if type(value) is int:
-        if abs(value) > SAFE:
-            raise ValueError("unsafe canonical integer")
-        return str(value)
-    if type(value) is bool:
-        return "true" if value else "false"
-    if value is None:
-        return "null"
-    raise TypeError("unsupported canonical value")
+    return canonical_json(value, allow_null=True, exact_types=True)
 
 
 def digest(prefix: str, value) -> str:
@@ -198,20 +139,7 @@ def work_digest(work):
 
 
 def utc_second(value):
-    if (
-        type(value) is not str
-        or re.fullmatch(
-            r"[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z",
-            value,
-        )
-        is None
-    ):
-        return False
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") == value
-    except ValueError:
-        return False
+    return type(value) is str and is_utc_second(value)
 
 
 def public_text_digest(text):
@@ -504,8 +432,8 @@ def tariff(request, price):
         raise ValueError("tariff exceeds registered maximum")
     return {
         "quantity": quantity,
-        "settled": format(raw.quantize(QUANTUM, rounding=ROUND_HALF_EVEN), "f"),
-        "bound": format(raw.quantize(QUANTUM, rounding=ROUND_CEILING), "f"),
+        "settled": money(raw.quantize(QUANTUM, rounding=ROUND_HALF_EVEN)),
+        "bound": money(raw.quantize(QUANTUM, rounding=ROUND_CEILING)),
     }
 
 

@@ -15,3 +15,14 @@ def require_identifier(value: object) -> str:
     if not valid_identifier(value):
         raise ValueError("invalid identifier")
     return value
+
+
+def require_text(value: object, limit: int = 160) -> str:
+    if (
+        type(value) is not str
+        or not value.strip()
+        or len(value) > limit
+        or any(ord(c) < 32 for c in value)
+    ):
+        raise ValueError("invalid text")
+    return value.strip()

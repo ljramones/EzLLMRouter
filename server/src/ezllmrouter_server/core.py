@@ -2,13 +2,6 @@
 
 from __future__ import annotations
 
-from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
-
-from concurrent.futures import TimeoutError
-from copy import deepcopy
-from contextvars import copy_context
-from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_EVEN
 import hashlib
 import hmac
 import json
@@ -17,24 +10,35 @@ import sqlite3
 import threading
 import time
 import uuid
+from concurrent.futures import TimeoutError
+from contextvars import copy_context
+from copy import deepcopy
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from decimal import ROUND_HALF_EVEN, Decimal
 
+from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
+from .cache_accounting import cache_usage_revision, exposure_bound
 from .canonical import (
     ContractError,
     digest,
     ident,
     jcs,
     projection,
+    strict_loads,
     validate_text_request,
     work_digest,
-    strict_loads,
 )
-from .plans import PROVIDER_RECIPE_REF, PROVIDER_ADAPTER_VERSION
+from .formatting import money, utc_timestamp
+from .json_validation import MAX_SAFE_INTEGER, JSONValue
 from .observability import log_failure
-from .cache_accounting import SEMANTICS as CACHE_SEMANTICS, cache_usage_revision, exposure_bound
+from .plans import PROVIDER_ADAPTER_VERSION, PROVIDER_RECIPE_REF
+from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
+from .states import CandidateAccess, DeliveryState, DispatchState, SettlementState, SubmissionState
 
 
 def now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_timestamp(datetime.now(timezone.utc))
 
 
 def public_error(code, guidance="never"):
@@ -136,6 +140,28 @@ def public_usage(value):
     }
 
 
+def _text_cost(schedule, input_count, output_count, *, compact):
+    """Preserve unknown exposure when a positive charge rounds below the quantum."""
+    raw_amount = (
+        Decimal(input_count) * Decimal(schedule["rates"]["input_uncached"])
+        + Decimal(output_count) * Decimal(schedule["rates"]["output_text"])
+    ) / Decimal(schedule["unit_denominator"])
+    amount = raw_amount.quantize(Decimal("0.000000001"), rounding=ROUND_HALF_EVEN)
+    if amount == 0 and raw_amount != 0:
+        return None
+    cost = {
+        "status": "calculated",
+        "currency": schedule["currency"],
+        "amount_decimal": money(amount, compact=compact),
+        "source_ref": schedule["price_version"],
+    }
+    if amount == 0:
+        cost["zero_basis"] = (
+            "provider_reported_free" if input_count == output_count == 0 else "contract_free"
+        )
+    return cost
+
+
 def usage_revision(attempt_id, report, tool=False, decision=None, reported_model=None):
     """Unknown remains unknown; cost is independent and never inferred."""
     categories = {"input_uncached": "input_tokens", "output_text": "output_tokens"}
@@ -149,7 +175,7 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
     ):
         key = categories.get(name)
         value = report.get(key) if isinstance(report, dict) and key else None
-        if type(value) is int and 0 <= value <= 9007199254740991:
+        if type(value) is int and 0 <= value <= MAX_SAFE_INTEGER:
             normalized[name] = {"state": "known", "count": value}
         else:
             normalized[name] = {"state": "unknown"}
@@ -168,9 +194,9 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
         cached = details.get("cached_tokens") if type(details) is dict else None
         cache_write = details.get("cache_write_tokens", 0) if type(details) is dict else None
         reasoning = output_details.get("reasoning_tokens") if type(output_details) is dict else None
-        if type(cached) is int and 0 <= cached <= 9007199254740991:
+        if type(cached) is int and 0 <= cached <= MAX_SAFE_INTEGER:
             normalized["input_cache_read"] = {"state": "known", "count": cached}
-        if type(reasoning) is int and 0 <= reasoning <= 9007199254740991:
+        if type(reasoning) is int and 0 <= reasoning <= MAX_SAFE_INTEGER:
             normalized["output_reasoning"] = {"state": "known", "count": reasoning}
         if type(cache_write) is int and cache_write == 0:
             normalized["input_cache_write"] = {"state": "not_applicable"}
@@ -202,24 +228,7 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
             and 0 <= reasoning <= output_count
         ):
             normalized["other_billable"] = []
-            raw_amount = (
-                Decimal(input_count) * Decimal(schedule["rates"]["input_uncached"])
-                + Decimal(output_count) * Decimal(schedule["rates"]["output_text"])
-            ) / Decimal(schedule["unit_denominator"])
-            amount = raw_amount.quantize(Decimal("0.000000001"), rounding=ROUND_HALF_EVEN)
-            if amount != 0 or raw_amount == 0:
-                cost = {
-                    "status": "calculated",
-                    "currency": schedule["currency"],
-                    "amount_decimal": format(amount, "f"),
-                    "source_ref": schedule["price_version"],
-                }
-                if amount == 0:
-                    cost["zero_basis"] = (
-                        "provider_reported_free"
-                        if input_count == output_count == 0
-                        else "contract_free"
-                    )
+            cost = _text_cost(schedule, input_count, output_count, compact=False) or cost
     elif schedule:
         # Only this fixed synthetic route defines the remaining dimensions as
         # absent. Missing input/output quantities remain unknown, never zero.
@@ -229,24 +238,7 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
         input_count = normalized["input_uncached"].get("count")
         output_count = normalized["output_text"].get("count")
         if input_count is not None and output_count is not None:
-            raw_amount = (
-                Decimal(input_count) * Decimal(schedule["rates"]["input_uncached"])
-                + Decimal(output_count) * Decimal(schedule["rates"]["output_text"])
-            ) / Decimal(schedule["unit_denominator"])
-            amount = raw_amount.quantize(Decimal("0.000000001"), rounding=ROUND_HALF_EVEN)
-            if amount != 0 or raw_amount == 0:
-                cost = {
-                    "status": "calculated",
-                    "currency": schedule["currency"],
-                    "amount_decimal": format(amount, "f").rstrip("0").rstrip(".") or "0",
-                    "source_ref": schedule["price_version"],
-                }
-                if amount == 0:
-                    cost["zero_basis"] = (
-                        "provider_reported_free"
-                        if input_count == output_count == 0
-                        else "contract_free"
-                    )
+            cost = _text_cost(schedule, input_count, output_count, compact=True) or cost
     return {
         "attempt_id": attempt_id,
         "usage_observation": (
@@ -270,6 +262,26 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
     }
 
 
+@dataclass(frozen=True)
+class AdmittedWork:
+    """The admitted snapshot passed to preparation and dispatch, never current registry state."""
+
+    admitted_classification: dict[str, JSONValue]
+    admitted_config: dict[str, JSONValue]
+    admitted_projection: dict[str, JSONValue]
+    admitted_retention: dict[str, JSONValue]
+    admitted_scope: dict[str, JSONValue]
+    aid: str
+    attribution_digest: str | None
+    deadline: str
+    decision: dict[str, JSONValue] | None
+    handle: dict[str, JSONValue]
+    key: dict[str, JSONValue]
+    projected: dict[str, JSONValue]
+    sid: str
+    wd: str
+
+
 class Coordinator:
     def __init__(
         self,
@@ -287,6 +299,8 @@ class Coordinator:
         trusted_source_labels=None,
         registry=None,
         authentication_context=None,
+        successor=None,
+        context_sender=None,
     ):
         self.store, self.identity = store, identity
         self.config, self.prompt_blocks = config, prompt_blocks
@@ -295,6 +309,8 @@ class Coordinator:
         self.retention, self.classification = retention, classification
         self.trusted_source_labels = trusted_source_labels or {}
         self.registry = registry
+        self.successor = successor
+        self.context_sender = context_sender
         self.authentication_context = deepcopy(authentication_context)
         self.faults = faults or {}
         self.pool = BoundedExecutor(max_workers=4, thread_name_prefix="ezllmrouter-execution")
@@ -308,7 +324,7 @@ class Coordinator:
     def close(self):
         self._admission.close()
         try:
-            successor = getattr(self, "successor", None)
+            successor = self.successor
             if successor is not None:
                 successor.close()
         finally:
@@ -586,9 +602,9 @@ class Coordinator:
             "provenance": "synthetic_local"
             if admitted_config.get("service") == "litellm.dev04"
             else "live_personal_test"
-            if getattr(self.registry, "personal_campaign", None)
+            if (self.registry.personal_campaign if self.registry is not None else None)
             else "controlled_provider_test"
-            if getattr(self.registry, "controlled_provider_proof", False)
+            if (self.registry.controlled_provider_proof if self.registry is not None else False)
             else "selected_provider_attempt",
             "selected_destination": deepcopy(admitted_config),
             **(
@@ -600,25 +616,31 @@ class Coordinator:
             "context_id": admitted_trusted["context_id"],
             "classification_snapshot": admitted_classification,
             **({"registry_decision": decision} if decision else {}),
-            "submission_state": "admitted",
-            "dispatch_state": "prepared",
-            "delivery_state": "none",
+            "submission_state": SubmissionState.ADMITTED.value,
+            "dispatch_state": DispatchState.PREPARED.value,
+            "delivery_state": DeliveryState.NONE.value,
             "cancel_state": "none",
-            "settlement_state": "unsettled",
+            "settlement_state": SettlementState.UNSETTLED.value,
             "generation_state": "current",
             "status_revision": 1,
             "attempt_revision": 1,
             "updated_at": now(),
-            "candidate_access": "not_yet_available",
+            "candidate_access": CandidateAccess.NOT_YET_AVAILABLE.value,
             "content_store_allowed": admitted_retention["content_store_allowed"],
             "content_expires_at": admitted_retention.get("content_expires_at"),
             "wait_expired_no_store": False,
         }
-        campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+        campaign = (
+            (self.registry.personal_campaign if self.registry is not None else None)
+            if self.registry
+            else None
+        )
         provider_work = admitted_config.get("service") == "openai.responses.v1"
         if (
             provider_work
-            and not getattr(self.registry, "controlled_provider_proof", False)
+            and not (
+                self.registry.controlled_provider_proof if self.registry is not None else False
+            )
             and campaign is None
         ):
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
@@ -656,43 +678,67 @@ class Coordinator:
         except Exception as exc:
             log_failure("core.Coordinator.submit.failed")
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
+        admitted = AdmittedWork(
+            admitted_classification=admitted_classification,
+            admitted_config=admitted_config,
+            admitted_projection=admitted_projection,
+            admitted_retention=admitted_retention,
+            admitted_scope=admitted_scope,
+            aid=aid,
+            attribution_digest=attribution_digest,
+            deadline=deadline,
+            decision=decision,
+            handle=handle,
+            key=key,
+            projected=projected,
+            sid=sid,
+            wd=wd,
+        )
+        return self._start_attempt(admitted, req, trusted, wait_ms, credential)
+
+    def _start_attempt(self, admitted: AdmittedWork, req, trusted, wait_ms, credential):
         admission_clock = time.monotonic()
         deadline_seconds = (
-            datetime.fromisoformat(deadline.replace("Z", "+00:00")) - datetime.now(timezone.utc)
+            datetime.fromisoformat(admitted.deadline.replace("Z", "+00:00"))
+            - datetime.now(timezone.utc)
         ).total_seconds()
         response_deadline = admission_clock + max(0, min(wait_ms / 1000, deadline_seconds))
         # The signed plan is generated from trusted facts only, after durable admission.
         try:
             plan = self.authority.issue(
-                admitted_projection,
-                wd,
-                key,
-                admitted_classification,
-                admitted_retention,
+                admitted.admitted_projection,
+                admitted.wd,
+                admitted.key,
+                admitted.admitted_classification,
+                admitted.admitted_retention,
                 **(
                     {
                         "decision_record_ref": "decision."
-                        + sid
-                        + ("." + attribution_digest if attribution_digest else "")
+                        + admitted.sid
+                        + ("." + admitted.attribution_digest if admitted.attribution_digest else "")
                     }
                     if self.registry
                     else {}
                 ),
             )
-            if decision and plan["registry_version"] != "registry.local." + str(
-                decision["authority_revision"]
+            if admitted.decision and plan["registry_version"] != "registry.local." + str(
+                admitted.decision["authority_revision"]
             ):
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
-            self.authority.verify(plan, wd, self.authority.policy["policy_version"])
-            if not self._recipe_matches(plan, projected):
+            self.authority.verify(plan, admitted.wd, self.authority.policy["policy_version"])
+            if not self._recipe_matches(plan, admitted.projected):
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
         except ContractError:
-            self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
-            return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
+            return 409, self._failed_reply(
+                admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
+            )
         except Exception:
             log_failure("execution_plan_failed")
-            self._failed(sid, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
-            return 503, self._failed_reply(handle, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            return 503, self._failed_reply(
+                admitted.handle, admitted.aid, "INTERNAL_UNAVAILABLE", "before_transmit"
+            )
         if credential is None:
             matches = (
                 []
@@ -701,85 +747,101 @@ class Coordinator:
             )
             credential = matches[0] if len(matches) == 1 else None
         if credential is None:
-            self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
-            return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
+            return 409, self._failed_reply(
+                admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
+            )
         timeout_ms = plan["per_attempt_total_timeout_ms"]
         try:
-            expected, expected_request = self.recipe.expected(projected, timeout_ms)
+            expected, expected_request = self.recipe.expected(admitted.projected, timeout_ms)
             body = json.loads(expected)
             prepared = self.adapter.prepare(body)
         except Exception:
             log_failure("core.Coordinator.submit.failed")
-            self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
-            return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
+            return 409, self._failed_reply(
+                admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
+            )
         if self.faults.get("mutate_after_binding"):
             prepared = self.faults["mutate_after_binding"](prepared)
         try:
-            observed_request = self.adapter.describe(prepared, timeout_ms, admitted_config)
+            observed_request = self.adapter.describe(prepared, timeout_ms, admitted.admitted_config)
             preparation_match = prepared == expected and observed_request == expected_request
         except Exception:
             log_failure("core.Coordinator.submit.failed")
             preparation_match = False
         if not preparation_match:
-            self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
-            return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
+            return 409, self._failed_reply(
+                admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
+            )
         if self.faults.get("reject_before_intent"):
-            self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
-            return 409, self._failed_reply(handle, aid, "FDC_REJECTED", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "FDC_REJECTED", "before_transmit")
+            return 409, self._failed_reply(
+                admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
+            )
         intent = {
-            "attempt_id": aid,
+            "attempt_id": admitted.aid,
             "plan_id": plan["plan_id"],
-            "work_digest": wd,
+            "work_digest": admitted.wd,
             "prepared_request_digest": digest(jcs(expected_request)),
             "destination": deepcopy(plan["destination"]),
-            **({"attribution_digest": attribution_digest} if attribution_digest else {}),
-            **({"registry_decision": decision} if decision else {}),
+            **(
+                {"attribution_digest": admitted.attribution_digest}
+                if admitted.attribution_digest
+                else {}
+            ),
+            **({"registry_decision": admitted.decision} if admitted.decision else {}),
             "committed_at": now(),
         }
         try:
-            self.store.intent(sid, aid, intent)
+            self.store.intent(admitted.sid, admitted.aid, intent)
         except Exception as exc:
             log_failure("core.Coordinator.submit.failed")
             try:
-                self._failed(sid, aid, "INTENT_PERSIST_FAILED", "before_transmit")
+                self._failed(admitted.sid, admitted.aid, "INTENT_PERSIST_FAILED", "before_transmit")
             except Exception:
                 log_failure("core.Coordinator.submit.failed")
                 raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
-            return 503, self._failed_reply(handle, aid, "INTENT_PERSIST_FAILED", "before_transmit")
+            return 503, self._failed_reply(
+                admitted.handle, admitted.aid, "INTENT_PERSIST_FAILED", "before_transmit"
+            )
         try:
             future = self.pool.submit(
                 copy_context().run,
                 self._dispatch,
-                sid,
-                aid,
+                admitted.sid,
+                admitted.aid,
                 req["execution_generation"],
                 prepared,
                 plan,
                 expected_request,
                 credential,
-                admitted_scope,
-                admitted_projection,
-                decision,
+                admitted.admitted_scope,
+                admitted.admitted_projection,
+                admitted.decision,
             )
         except Exception:
             log_failure("execution_schedule_failed")
-            self._failed(sid, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
-            return 503, self._failed_reply(handle, aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            self._failed(admitted.sid, admitted.aid, "INTERNAL_UNAVAILABLE", "before_transmit")
+            return 503, self._failed_reply(
+                admitted.handle, admitted.aid, "INTERNAL_UNAVAILABLE", "before_transmit"
+            )
         with self._futures_lock:
-            self._futures[sid] = future
+            self._futures[admitted.sid] = future
 
         def release(done):
             with self._futures_lock:
-                if self._futures.get(sid) is done:
-                    self._futures.pop(sid, None)
+                if self._futures.get(admitted.sid) is done:
+                    self._futures.pop(admitted.sid, None)
 
         future.add_done_callback(release)
         try:
             outcome = future.result(timeout=max(0, response_deadline - time.monotonic()))
         except TimeoutError:
-            pending = self._pending(self.store.get(sid))
+            pending = self._pending(self.store.get(admitted.sid))
             if pending["pending_result_policy"] == "metadata_only_no_store":
-                self.store.mark_wait_expired_no_store(sid, now())
+                self.store.mark_wait_expired_no_store(admitted.sid, now())
             return 202, pending
         except Exception as exc:
             log_failure("core.Coordinator.submit.failed")
@@ -787,12 +849,15 @@ class Coordinator:
             # honestly produce a durable post-transmit terminal result.
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
         if outcome["kind"] == "candidate":
-            self.store.update(sid, {"delivery_state": "candidate_delivered", "updated_at": now()})
+            self.store.update(
+                admitted.sid,
+                {"delivery_state": DeliveryState.CANDIDATE_DELIVERED.value, "updated_at": now()},
+            )
             outcome["candidate"]["usage"] = public_usage(outcome["candidate"]["usage"])
             return 200, {
                 "contract_version": "0.2",
                 "state": "delivered",
-                "handle": handle,
+                "handle": admitted.handle,
                 "candidate": outcome["candidate"],
             }
         if outcome["kind"] == "failed":
@@ -804,8 +869,8 @@ class Coordinator:
                 if stage == "before_transmit"
                 else 502
             )
-            return status, self._failed_reply(handle, aid, outcome["code"], stage)
-        return 202, self._pending(self.store.get(sid))
+            return status, self._failed_reply(admitted.handle, admitted.aid, outcome["code"], stage)
+        return 202, self._pending(self.store.get(admitted.sid))
 
     def _failed(self, sid, aid, code, stage):
         result = self.store.update(
@@ -817,13 +882,17 @@ class Coordinator:
                 "dispatch_state": "failed_before_dispatch"
                 if stage == "before_transmit"
                 else "response_observed",
-                "candidate_access": "unavailable_due_failure",
+                "candidate_access": CandidateAccess.UNAVAILABLE_DUE_FAILURE.value,
                 "terminal_failure": public_error(code, "query_first"),
                 "updated_at": now(),
                 "attempt_revision": 3,
             },
         )
-        campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+        campaign = (
+            (self.registry.personal_campaign if self.registry is not None else None)
+            if self.registry
+            else None
+        )
         if campaign and result.get("campaign"):
             observed = self.store.get(sid)
             campaign.settle(
@@ -860,7 +929,7 @@ class Coordinator:
                 + ("." + bound["attribution_digest"] if bound.get("attribution_digest") else "")
             ):
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
-            campaign = getattr(self.registry, "personal_campaign", None)
+            campaign = self.registry.personal_campaign if self.registry is not None else None
             if bound.get("campaign"):
                 if not campaign:
                     raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
@@ -947,7 +1016,9 @@ class Coordinator:
             self._failed(sid, aid, "FDC_REJECTED", "before_transmit")
             return {"kind": "failed", "code": "FDC_REJECTED", "stage": "before_transmit"}
         try:
-            gateway_send = getattr(self.adapter, "send_with_context", None)
+            gateway_send = self.context_sender
+            if gateway_send is None:
+                gateway_send = getattr(self.adapter, "send_with_context", None)
             if gateway_send is None:
                 response = self.adapter.send(
                     prepared, plan["per_attempt_total_timeout_ms"], expected_request
@@ -977,14 +1048,18 @@ class Coordinator:
             self.store.update(
                 sid,
                 {
-                    "submission_state": "outcome_unknown",
-                    "dispatch_state": "outcome_unknown",
-                    "candidate_access": "not_yet_available",
+                    "submission_state": SubmissionState.OUTCOME_UNKNOWN.value,
+                    "dispatch_state": DispatchState.OUTCOME_UNKNOWN.value,
+                    "candidate_access": CandidateAccess.NOT_YET_AVAILABLE.value,
                     "updated_at": now(),
                     "attempt_revision": 3,
                 },
             )
-            campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+            campaign = (
+                (self.registry.personal_campaign if self.registry is not None else None)
+                if self.registry
+                else None
+            )
             if campaign:
                 campaign.settle(aid)
             return {"kind": "unknown"}
@@ -1023,16 +1098,20 @@ class Coordinator:
             self.store.update(
                 sid,
                 {
-                    "submission_state": "outcome_unknown",
-                    "dispatch_state": "outcome_unknown",
-                    "candidate_access": "not_yet_available",
+                    "submission_state": SubmissionState.OUTCOME_UNKNOWN.value,
+                    "dispatch_state": DispatchState.OUTCOME_UNKNOWN.value,
+                    "candidate_access": CandidateAccess.NOT_YET_AVAILABLE.value,
                     "updated_at": now(),
                     "attempt_revision": 3,
                 },
                 usage=usage if record.get("usage", {}).get("state") != "available" else None,
             )
             record = self.store.get(sid)
-        campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+        campaign = (
+            (self.registry.personal_campaign if self.registry is not None else None)
+            if self.registry
+            else None
+        )
         if campaign and record.get("campaign"):
             campaign.settle(aid, record.get("usage", {}).get("revision"))
         return {"kind": "unknown"}
@@ -1204,7 +1283,11 @@ class Coordinator:
             else [],
         )
         candidate["usage"] = final["usage"]
-        campaign = getattr(self.registry, "personal_campaign", None) if self.registry else None
+        campaign = (
+            (self.registry.personal_campaign if self.registry is not None else None)
+            if self.registry
+            else None
+        )
         if campaign and final.get("campaign"):
             campaign.settle(aid, final["usage"].get("revision"))
         if (

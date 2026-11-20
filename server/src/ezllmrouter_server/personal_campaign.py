@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from .repositories import personal_campaign as _queries
-
-from .observability import log_failure
-
+import json
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-import json
 
+from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
+from .cache_accounting import exposure_bound
 from .canonical import ContractError
+from .formatting import money, utc_timestamp
+from .observability import log_failure
+from .repositories import personal_campaign as _queries
 from .store import encode
-from .cache_accounting import SEMANTICS as CACHE_SEMANTICS, exposure_bound
 
 CENT_NANO = Decimal("0.000000001")
 
@@ -74,7 +74,7 @@ class PersonalCampaign:
                             campaign_id,
                             "recover_unknown",
                             "system",
-                            datetime.now(timezone.utc).isoformat(),
+                            utc_timestamp(datetime.now(timezone.utc), precise=True),
                         ),
                     )
 
@@ -89,7 +89,7 @@ class PersonalCampaign:
             campaign_id = self._record(db)["id"]
         db.execute(
             _queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT,
-            (campaign_id, action, actor, datetime.now(timezone.utc).isoformat()),
+            (campaign_id, action, actor, utc_timestamp(datetime.now(timezone.utc), precise=True)),
         )
 
     def configure(self, actor, data):
@@ -335,7 +335,7 @@ class PersonalCampaign:
                 record["attempt_id"],
                 record["submission_id"],
                 campaign["id"],
-                format(bound, "f"),
+                money(bound),
                 None,
                 "reserved",
                 None,
@@ -344,7 +344,7 @@ class PersonalCampaign:
         return {
             "campaign_id": campaign["id"],
             "campaign_revision": campaign["revision"],
-            "reserved_decimal": format(bound, "f"),
+            "reserved_decimal": money(bound),
             "currency": campaign["currency"],
             "input_token_bound": rate["contract"]["input_token_ceiling"],
             "output_token_bound": output_limit,
@@ -446,7 +446,7 @@ class PersonalCampaign:
                 next_state = "over_bound" if amount > Decimal(bound) else "settled"
                 self.store.database.execute(
                     _queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
-                    (next_state, format(amount, "f"), revision, attempt_id),
+                    (next_state, money(amount), revision, attempt_id),
                 )
                 changed += 1
                 changed_campaigns.add(campaign_id)
@@ -513,9 +513,9 @@ class PersonalCampaign:
             **campaign,
             "effective_state": effective_state,
             "previous_campaigns": max(0, prior_count - 1),
-            "incurred_decimal": format(incurred, "f"),
-            "outstanding_decimal": format(outstanding, "f"),
-            "available_decimal": format(available, "f"),
+            "incurred_decimal": money(incurred),
+            "outstanding_decimal": money(outstanding),
+            "available_decimal": money(available),
             "request_count": len(rows),
             "attempts": [
                 dict(

@@ -7,31 +7,40 @@ complete. A failed commit leaves the old epoch and records untouched.
 
 from __future__ import annotations
 
-from .repositories import registry as _queries
-from .identifiers import require_identifier
-
-from .observability import log_failure
-
-from copy import deepcopy
-from datetime import datetime, timezone
-from datetime import timedelta
-from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import re
 import secrets
 import threading
 import time
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
+from typing import TYPE_CHECKING, TypedDict
 
+from .errors import RegistryConflict
+from .formatting import money, utc_timestamp
+from .identifiers import require_identifier
+from .identifiers import require_text as nonempty
+from .observability import log_failure
+from .repositories import authority
+from .repositories import registry as _queries
+
+if TYPE_CHECKING:
+    from .integration_credentials import DatabaseCredentialStore
+    from .local_connectors import LocalConnectors
+    from .personal_campaign import PersonalCampaign
+    from .user_management import UserManager
+
+from .attribution import AttributionLedger
+from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
+from .cache_accounting import validate_contract
 from .canonical import ContractError
 from .catalogue import operator_reference_price, validate_catalogue
-from .store import encode
+from .integration_accounting import ExternalAccounting
 from .provider_adapters import ADAPTERS, PROVIDERS, validate_settings
 from .provider_adapters import probe as provider_probe
-from .attribution import AttributionLedger
-from .cache_accounting import SEMANTICS as CACHE_SEMANTICS, validate_contract
-from .integration_accounting import ExternalAccounting
-
+from .store import encode
 
 MODELS = {"model.demo", "model.demo.alt"}
 DESTINATION = (
@@ -53,22 +62,11 @@ RATE_CATEGORIES = (
 
 
 def timestamp():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_timestamp(datetime.now(timezone.utc))
 
 
 def identifier(value):
     return require_identifier(value)
-
-
-def nonempty(value, limit=160):
-    if (
-        type(value) is not str
-        or not value.strip()
-        or len(value) > limit
-        or any(ord(c) < 32 for c in value)
-    ):
-        raise ValueError("invalid text")
-    return value.strip()
 
 
 def exact_rate(value):
@@ -80,29 +78,18 @@ def exact_rate(value):
         raise ValueError("invalid decimal rate") from exc
     if not amount.is_finite() or amount < 0 or amount > Decimal("1000000"):
         raise ValueError("invalid decimal rate")
-    return format(amount, "f")
+    return money(amount)
 
 
-def safe_audit_values(record):
-    """Allowlist public management facts; never snapshot secrets or free-text payloads."""
-    if not record:
-        return None
-    return {
-        key: record[key]
-        for key in (
-            "display_name",
-            "status",
-            "role",
-            "price_version",
-            "credential_state",
-            "credential_version",
-        )
-        if key in record
-    }
+class ConnectionSchedule(TypedDict):
+    """Scheduling fields present in each persisted connection record."""
 
-
-class RegistryConflict(ValueError):
-    pass
+    connection_id: str
+    checks_scheduled: bool
+    status: str
+    revision: int
+    scheduled_operation: str | None
+    check_interval_seconds: int | None
 
 
 class Registry:
@@ -121,10 +108,19 @@ class Registry:
         controlled_provider_proof=False,
         integration_feature_policy=None,
         integration_accounting_retention_days=None,
+        runtime_ready=None,
     ):
         self.store = store
         self.send_authority = send_authority
-        self.runtime_ready = lambda: not getattr(self.send_authority, "revoked", False)
+        self.runtime_ready = (
+            runtime_ready
+            if runtime_ready is not None
+            else lambda: not getattr(self.send_authority, "revoked", False)
+        )
+        self.users: UserManager | None = None
+        self.local_connectors: LocalConnectors | None = None
+        self.integration_credentials: DatabaseCredentialStore | None = None
+        self.personal_campaign: PersonalCampaign | None = None
         self.provider_vault = provider_vault
         self.provider_execution_ready = provider_execution_ready
         self.controlled_provider_proof = controlled_provider_proof
@@ -327,7 +323,7 @@ class Registry:
         identifier(connection_id)
         return self._record("registry_connections", "id=?", (connection_id,))
 
-    def list_connections(self):
+    def list_connections(self) -> list[ConnectionSchedule]:
         with self.store.database.read():
             rows = self.store.database.execute(
                 _queries.LIST_CONNECTIONS_SELECT_REGISTRY_CONNECTIONS
@@ -521,13 +517,7 @@ class Registry:
         return [json.loads(row[0]) for row in rows]
 
     def _require_admin(self, db, actor):
-        row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
-        principal = json.loads(row[0]) if row else None
-        if (
-            not principal
-            or principal["status"] != "active"
-            or principal["role"] != "registry_admin"
-        ):
+        if not authority.authorized(db, actor):
             raise PermissionError("ADMIN_REQUIRED")
 
     def set_provider_credential(
@@ -609,29 +599,17 @@ class Registry:
                     db.execute(
                         _queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(current), connection_id)
                     )
-                    revision = (
-                        int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0]) + 1
-                    )
-                    db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
-                    audit = db.execute(
-                        _queries.ACTION_INSERT_REGISTRY_AUDIT,
-                        (
-                            actor,
-                            "provider_credential_" + mode,
-                            connection_id,
-                            expected_revision,
-                            current["revision"],
-                            revision,
-                            timestamp(),
-                        ),
-                    )
-                    db.execute(
-                        _queries.ACTION_INSERT_REGISTRY_AUDIT_VALUES,
-                        (
-                            audit.lastrowid,
-                            encode(safe_audit_values(record)),
-                            encode(safe_audit_values(current)),
-                        ),
+                    revision = authority.record_change(
+                        db,
+                        actor=actor,
+                        action="provider_credential_" + mode,
+                        subject=connection_id,
+                        old_revision=expected_revision,
+                        new_revision=current["revision"],
+                        at=timestamp(),
+                        include_values=True,
+                        before=record,
+                        after=current,
                     )
                     reply = {"record": current, "authority_revision": revision}
                     db.execute(
@@ -649,7 +627,14 @@ class Registry:
             self.provider_vault.remove(connection_id, old_version)
             return reply
 
-    def probe_connection(self, actor, connection_id, expected_revision, operation_id, operation):
+    def probe_connection(
+        self,
+        actor: str,
+        connection_id: str,
+        expected_revision: int,
+        operation_id: str,
+        operation: str,
+    ) -> dict[str, object]:
         identifier(connection_id)
         identifier(operation_id)
         if (
@@ -720,8 +705,8 @@ class Registry:
                     "readiness": "service_reachability",
                 }[operation],
                 "observer": "trusted_local_service",
-                "observed_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "expires_at": (now + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "observed_at": utc_timestamp(now),
+                "expires_at": utc_timestamp(now + timedelta(minutes=5)),
                 **result,
             }
             current = self.connection(connection_id)
@@ -824,7 +809,7 @@ class Registry:
             )
         return token
 
-    def revoke_local_operator_token(self, token):
+    def revoke_local_operator_token(self, token: str) -> None:
         with self._token_lock:
             self._operator_tokens.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
@@ -917,16 +902,7 @@ class Registry:
 
             def action():
                 db = self.store.database
-                actor_row = db.execute(
-                    _queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)
-                ).fetchone()
-                actor_record = json.loads(actor_row[0]) if actor_row else None
-                if (
-                    not actor_record
-                    or actor_record["status"] != "active"
-                    or actor_record["role"] != "registry_admin"
-                ):
-                    raise PermissionError("ADMIN_REQUIRED")
+                self._require_admin(db, actor)
                 prior = db.execute(
                     _queries.SET_PROVIDER_CREDENTIAL_SELECT_REGISTRY_OPERATIONS, (op,)
                 ).fetchone()
@@ -981,26 +957,19 @@ class Registry:
                     if table
                     else None
                 )
-                before = safe_audit_values(json.loads(prior_row[0])) if prior_row else None
+                before = json.loads(prior_row[0]) if prior_row else None
                 result = self._apply(db, actor, action_name, subject, expected, data)
-                current = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
-                revision = current + 1
-                db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
-                audit = db.execute(
-                    _queries.ACTION_INSERT_REGISTRY_AUDIT,
-                    (
-                        actor,
-                        action_name,
-                        subject,
-                        expected or None,
-                        result["revision"],
-                        revision,
-                        timestamp(),
-                    ),
-                )
-                db.execute(
-                    _queries.ACTION_INSERT_REGISTRY_AUDIT_VALUES,
-                    (audit.lastrowid, encode(before), encode(safe_audit_values(result))),
+                revision = authority.record_change(
+                    db,
+                    actor=actor,
+                    action=action_name,
+                    subject=subject,
+                    old_revision=expected or None,
+                    new_revision=result["revision"],
+                    at=timestamp(),
+                    include_values=True,
+                    before=before,
+                    after=result,
                 )
                 reply = {"record": result, "authority_revision": revision}
                 db.execute(
@@ -1015,790 +984,800 @@ class Registry:
             return reply
 
     def _apply(self, db, actor, action, subject, expected, data):
-        if action in (
-            "register_agent",
-            "agent_state",
-            "agent_instrumentation",
-            "set_agent_permission",
-            "set_outcome_authority",
+        handlers = {
+            "register_agent": self._apply_attribution,
+            "agent_state": self._apply_attribution,
+            "agent_instrumentation": self._apply_attribution,
+            "set_agent_permission": self._apply_attribution,
+            "set_outcome_authority": self._apply_attribution,
+            "set_source_permissions": self._apply_source_permissions,
+            "create_provider_configuration": self._apply_provider_configuration,
+            "create_connection": self._apply_create_connection,
+            "edit_connection": self._apply_connection_change,
+            "connection_state": self._apply_connection_change,
+            "associate_deployment": self._apply_connection_change,
+            "probe_schedule": self._apply_connection_change,
+            "import_catalogue": self._apply_import_catalogue,
+            "register_catalogue": self._apply_register_catalogue,
+            "create_model": self._apply_create_model,
+            "edit_model": self._apply_model_change,
+            "edit_catalogue_model": self._apply_model_change,
+            "model_state": self._apply_model_change,
+            "archive_model": self._apply_model_change,
+            "publish_reference_price": self._apply_model_change,
+            "correct_reference_price": self._apply_model_change,
+            "create_principal": self._apply_create_principal,
+            "edit_principal": self._apply_principal_change,
+            "principal_state": self._apply_principal_change,
+            "set_role": self._apply_principal_change,
+            "set_grant": self._apply_grant,
+            "publish_price": self._apply_price,
+        }
+        if not isinstance(action, str) or action not in handlers:
+            raise ValueError("unsupported management action")
+        return handlers[action](db, actor, action, subject, expected, data)
+
+    def _apply_attribution(self, db, actor, action, subject, expected, data):
+        return self.attribution.apply_admin(db, action, subject, expected, data)
+
+    def _apply_source_permissions(self, db, actor, action, subject, expected, data):
+        if (
+            expected != 0
+            or set(data) != {"allowed", "items"}
+            or type(data["allowed"]) is not bool
+            or type(data["items"]) is not list
+            or not 1 <= len(data["items"]) <= 100
         ):
-            return self.attribution.apply_admin(db, action, subject, expected, data)
-        if action == "set_source_permissions":
-            if (
-                expected != 0
-                or set(data) != {"allowed", "items"}
-                or type(data["allowed"]) is not bool
-                or type(data["items"]) is not list
-                or not 1 <= len(data["items"]) <= 100
-            ):
-                raise ValueError("invalid source-model selection")
-            row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (subject,)).fetchone()
-            connection = json.loads(row[0]) if row else None
-            if not connection or connection["status"] == "archived":
-                raise ValueError("source connection unavailable")
-            discoveries = [
-                json.loads(item[0])
-                for item in db.execute(
-                    _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (subject,)
-                ).fetchall()
-            ]
-            saved = next(
-                (item for item in discoveries if item["state"] in ("observed", "partial")), None
+            raise ValueError("invalid source-model selection")
+        row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (subject,)).fetchone()
+        connection = json.loads(row[0]) if row else None
+        if not connection or connection["status"] == "archived":
+            raise ValueError("source connection unavailable")
+        discoveries = [
+            json.loads(item[0])
+            for item in db.execute(
+                _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (subject,)
+            ).fetchall()
+        ]
+        saved = next(
+            (item for item in discoveries if item["state"] in ("observed", "partial")), None
+        )
+        observed = set(saved["models"]) if saved else set()
+        if saved and saved["state"] == "partial":
+            prior = next(
+                (
+                    item
+                    for item in discoveries[discoveries.index(saved) + 1 :]
+                    if item["state"] == "observed"
+                ),
+                None,
             )
-            observed = set(saved["models"]) if saved else set()
-            if saved and saved["state"] == "partial":
-                prior = next(
-                    (
-                        item
-                        for item in discoveries[discoveries.index(saved) + 1 :]
-                        if item["state"] == "observed"
-                    ),
-                    None,
-                )
-                if prior:
-                    observed.update(prior["models"])
-            associated = {
-                json.loads(item[0])["serving_id"]
-                for item in db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_2, (subject,)
-                ).fetchall()
-            }
-            changed = []
-            seen = set()
-            for item in data["items"]:
-                if type(item) is not dict or set(item) != {"serving_id", "expected_revision"}:
-                    raise ValueError("invalid source-model row")
-                serving_id, revision = item["serving_id"], item["expected_revision"]
-                if (
-                    type(serving_id) is not str
-                    or not 1 <= len(serving_id) <= 256
-                    or any(ord(c) < 33 for c in serving_id)
-                    or serving_id in seen
-                    or serving_id not in observed | associated
-                    or type(revision) is not int
-                    or revision < 0
-                ):
-                    raise ValueError("unknown or duplicate source-model row")
-                seen.add(serving_id)
-                key = self._source_key(subject, serving_id)
-                prior = db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (key,)
-                ).fetchone()
-                old = json.loads(prior[0]) if prior else None
-                if revision != (old["revision"] if old else 0):
-                    raise RegistryConflict("stale source-model permission")
-                record = {
-                    "connection_id": subject,
-                    "serving_id": serving_id,
-                    "allowed": data["allowed"],
-                    "revision": revision + 1,
-                    "actor": actor,
-                    "at": timestamp(),
-                }
-                db.execute(_queries.APPLY_INSERT_REGISTRY_SOURCE_PERMISSIONS, (key, encode(record)))
-                changed.append(record)
-            return {
-                "revision": 1,
+            if prior:
+                observed.update(prior["models"])
+        associated = {
+            json.loads(item[0])["serving_id"]
+            for item in db.execute(
+                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_2, (subject,)
+            ).fetchall()
+        }
+        changed = []
+        seen = set()
+        for item in data["items"]:
+            if type(item) is not dict or set(item) != {"serving_id", "expected_revision"}:
+                raise ValueError("invalid source-model row")
+            serving_id, revision = item["serving_id"], item["expected_revision"]
+            if (
+                type(serving_id) is not str
+                or not 1 <= len(serving_id) <= 256
+                or any(ord(c) < 33 for c in serving_id)
+                or serving_id in seen
+                or serving_id not in observed | associated
+                or type(revision) is not int
+                or revision < 0
+            ):
+                raise ValueError("unknown or duplicate source-model row")
+            seen.add(serving_id)
+            key = self._source_key(subject, serving_id)
+            prior = db.execute(_queries.APPLY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (key,)).fetchone()
+            old = json.loads(prior[0]) if prior else None
+            if revision != (old["revision"] if old else 0):
+                raise RegistryConflict("stale source-model permission")
+            record = {
                 "connection_id": subject,
+                "serving_id": serving_id,
                 "allowed": data["allowed"],
-                "items": changed,
-            }
-        if action == "create_provider_configuration":
-            if (
-                expected
-                or not subject.startswith("cfg.provider.")
-                or set(data)
-                != {"display_name", "deployment_id", "owner", "purposes", "task_classes"}
-            ):
-                raise ValueError("invalid provider configuration")
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
-                raise RegistryConflict("configuration exists")
-            deployment_id = identifier(data["deployment_id"])
-            row = db.execute(
-                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS, (deployment_id,)
-            ).fetchone()
-            deployment = json.loads(row[0]) if row else None
-            if (
-                not deployment
-                or deployment["status"] != "catalogued"
-                or deployment.get("configuration_ref")
-            ):
-                raise ValueError("deployment unavailable")
-            row = db.execute(
-                _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (deployment["connection_id"],)
-            ).fetchone()
-            connection = json.loads(row[0]) if row else None
-            if (
-                not connection
-                or connection["status"] != "active"
-                or connection["adapter_id"] != "openai.responses.v1"
-                or connection["credential_state"] != "present"
-                or connection["settings"].get("project")
-            ):
-                raise ValueError("selected connection unavailable")
-            model = json.loads(
-                db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_MODELS_2, (deployment["model_ref"],)
-                ).fetchone()[0]
-            )
-            if (
-                model["status"] != "catalogued"
-                or "text" not in model["catalogue"]["provider_published_capabilities"]
-            ):
-                raise ValueError("catalogue model does not support selected text profile")
-            for field in ("purposes", "task_classes"):
-                if type(data[field]) is not list or not data[field]:
-                    raise ValueError("provider configuration scope required")
-            destination = {
-                "configuration_ref": subject,
-                "service": "openai.responses.v1",
-                "endpoint": connection["settings"]["origin"],
-                "model": deployment["serving_id"],
-                "model_version": model["catalogue"]["observed_serving_version"],
-                "processing_region": deployment["site"],
-                "connection_id": connection["connection_id"],
-                "connection_revision": connection["revision"],
-                "credential_version": connection["credential_version"],
-                "adapter_id": connection["adapter_id"],
-                "deployment_id": deployment_id,
-            }
-            record = {
-                "configuration_ref": subject,
-                "kind": "provider_deployment",
-                "display_name": nonempty(data["display_name"]),
-                "status": "draft",
-                "revision": 1,
-                "destination": destination,
-                "owner": identifier(data["owner"]),
-                "capabilities": ["text"],
-                "purposes": sorted({identifier(x) for x in data["purposes"]}),
-                "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
-                "handling": ["no.content.store"],
-                "approved_by": None,
-                "approved_at": None,
-                "legacy_unpriced": False,
-                "catalogue_ref": deployment["model_ref"],
-            }
-            deployment["configuration_ref"] = subject
-            deployment["revision"] += 1
-            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
-            db.execute(
-                _queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS, (encode(deployment), deployment_id)
-            )
-            return record
-        if action == "create_connection":
-            if (
-                expected
-                or set(data)
-                not in (
-                    {"display_name", "adapter_id", "settings", "owner"},
-                    {"display_name", "adapter_id", "settings", "owner", "funding_kind"},
-                )
-                or not subject.startswith("conn.")
-            ):
-                raise ValueError("invalid connection creation")
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_2, (subject,)).fetchone():
-                raise RegistryConflict("connection exists")
-            adapter_id = identifier(data["adapter_id"])
-            settings = data["settings"]
-            provider = validate_settings(
-                adapter_id, settings, controlled=self.controlled_provider_proof
-            )
-            funding_kind = data.get("funding_kind", "unspecified_legacy")
-            if funding_kind not in (
-                "unspecified_legacy",
-                "personal_testing",
-                "organization",
-                "controlled",
-            ):
-                raise ValueError("invalid funding provenance")
-            if funding_kind == "personal_testing" and data["owner"] != "owner.local":
-                raise ValueError("personal testing must use the existing owner identity")
-            record = {
-                "connection_id": subject,
-                "display_name": nonempty(data["display_name"]),
-                "provider_id": provider,
-                "provider_name": PROVIDERS[provider],
-                "adapter_id": adapter_id,
-                "adapter_version": adapter_id.rsplit(".", 1)[-1],
-                "settings": settings,
-                "owner": identifier(data["owner"]),
-                "funding_kind": funding_kind,
-                "status": "draft",
-                "revision": 1,
-                "credential_ref": None,
-                "credential_version": 0,
-                "credential_state": "absent",
-                "created_at": timestamp(),
-                "network_policy": "commercial_public_only"
-                if provider != "vllm"
-                else "approved_private_lab",
-                "checks_scheduled": False,
-                "scheduled_operation": None,
-                "check_interval_seconds": None,
-            }
-            db.execute(_queries.APPLY_INSERT_REGISTRY_CONNECTIONS, (subject, encode(record)))
-            return record
-        if action in (
-            "edit_connection",
-            "connection_state",
-            "associate_deployment",
-            "probe_schedule",
-        ):
-            record = self._load_for_update(db, "registry_connections", "id", subject, expected)
-            if record["status"] == "archived":
-                raise RegistryConflict("archived connection is immutable")
-            if action == "edit_connection":
-                if set(data) != {"display_name"}:
-                    raise ValueError(
-                        "connection endpoint and protocol are immutable; create a new connection"
-                    )
-                record["display_name"] = nonempty(data["display_name"])
-            elif action == "connection_state":
-                if set(data) != {"status", "reason"} or data["status"] not in (
-                    "draft",
-                    "active",
-                    "disabled",
-                    "archived",
-                ):
-                    raise ValueError("invalid connection state")
-                if data["status"] == "active" and record["credential_state"] != "present":
-                    raise ValueError("credential required before connection activation")
-                record["status"] = data["status"]
-                record["state_reason"] = nonempty(data["reason"], 300)
-            elif action == "probe_schedule":
-                if (
-                    set(data) != {"enabled", "operation", "interval_seconds"}
-                    or type(data["enabled"]) is not bool
-                ):
-                    raise ValueError("invalid probe schedule")
-                if data["enabled"]:
-                    if (
-                        data["operation"] not in ("access", "inventory", "readiness")
-                        or ADAPTERS[record["adapter_id"]].get(data["operation"]) is None
-                        or type(data["interval_seconds"]) is not int
-                        or not 300 <= data["interval_seconds"] <= 86400
-                    ):
-                        raise ValueError("unsupported scheduled probe")
-                    if (
-                        not record["checks_scheduled"]
-                        and db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_3).fetchone()[0]
-                        >= 16
-                    ):
-                        raise ValueError("scheduled connection limit")
-                elif data["operation"] is not None or data["interval_seconds"] is not None:
-                    raise ValueError("disabled schedule must be empty")
-                record.update(
-                    checks_scheduled=data["enabled"],
-                    scheduled_operation=data["operation"],
-                    check_interval_seconds=data["interval_seconds"],
-                )
-            else:
-                if (
-                    set(data) != {"deployment_id", "model_ref", "serving_id", "site", "status"}
-                    or data["status"] != "catalogued"
-                ):
-                    raise ValueError("invalid model association")
-                deployment_id = identifier(data["deployment_id"])
-                model_ref = identifier(data["model_ref"])
-                model_row = db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_MODELS_2, (model_ref,)
-                ).fetchone()
-                if not model_row or json.loads(model_row[0]).get("kind") != "real_catalogue":
-                    raise ValueError("association requires existing real catalogue model")
-                if db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_3, (deployment_id,)
-                ).fetchone():
-                    raise RegistryConflict("deployment identity exists")
-                deployment = {
-                    "deployment_id": deployment_id,
-                    "connection_id": subject,
-                    "model_ref": model_ref,
-                    "serving_id": identifier(data["serving_id"]),
-                    "site": nonempty(data["site"]),
-                    "status": "catalogued",
-                    "revision": 1,
-                    "execution_approved": False,
-                    "created_at": timestamp(),
-                }
-                db.execute(
-                    _queries.APPLY_INSERT_REGISTRY_DEPLOYMENTS, (deployment_id, encode(deployment))
-                )
-            record["revision"] += 1
-            db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(record), subject))
-            return record
-        if action == "import_catalogue":
-            if expected != 0:
-                raise RegistryConflict("catalogue creation requires revision zero")
-            record = validate_catalogue(subject, data)
-            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
-            return record
-        if action == "register_catalogue":
-            required = {
-                "display_name",
-                "vendor",
-                "family",
-                "api_model_id",
-                "model_version",
-                "owner",
-                "capabilities",
-                "context_window",
-                "max_output",
-                "notes",
-                "price",
-            }
-            if expected or set(data) != required or not subject.startswith("catalogue.operator."):
-                raise ValueError("invalid manual catalogue registration")
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
-                raise RegistryConflict("model exists")
-            capabilities = data["capabilities"]
-            if type(capabilities) is not list or any(
-                item not in ("text", "tools", "vision", "audio", "reasoning")
-                for item in capabilities
-            ):
-                raise ValueError("invalid descriptive capabilities")
-            for field in ("context_window", "max_output"):
-                value = data[field]
-                if value is not None and (type(value) is not int or not 1 <= value <= 100000000):
-                    raise ValueError("invalid advertised limit")
-            at = timestamp()
-            price, source = operator_reference_price(data["price"], at)
-            name = nonempty(data["display_name"])
-            catalogue = {
-                "catalogue_key": subject[len("catalogue.") :],
-                "display_name": name,
-                "short_name": name,
-                "vendor": nonempty(data["vendor"]),
-                "family": nonempty(data["family"]),
-                "published_api_model_id": identifier(data["api_model_id"]),
-                "observed_serving_version": identifier(data["model_version"]),
-                "provider_route_basis": "operator-entered metadata; no connection",
-                "identifier_pin_status": "operator-entered; unverified",
-                "provider_published_limits": {
-                    "context_window_advertised": data["context_window"],
-                    "max_output_advertised": data["max_output"],
-                },
-                "provider_published_capabilities": sorted(set(capabilities)),
-                "ezllmrouter_registration": {
-                    "catalogued": True,
-                    "execution_approved": False,
-                    "runtime_ready": False,
-                    "runtime_binding": None,
-                    "credential_reference": None,
-                    "automatic_grants": [],
-                },
-                "price_reference": price,
-                "source_refs": [source["id"]],
-                "notes": [nonempty(data["notes"], 500)],
-            }
-            record = {
-                "configuration_ref": subject,
-                "kind": "real_catalogue",
-                "display_name": name,
-                "status": "catalogued",
-                "revision": 1,
-                "destination": None,
-                "owner": identifier(data["owner"]),
-                "capabilities": [],
-                "purposes": [],
-                "task_classes": [],
-                "handling": [],
-                "approved_by": None,
-                "approved_at": None,
-                "legacy_unpriced": False,
-                "catalogue": catalogue,
-                "source_links": [source],
-                "reference_price_history": [],
-                "price_version": price["snapshot_id"],
-                "record_origin": "operator_entered",
-            }
-            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
-            return record
-        if action == "create_model":
-            if expected or set(data) != {
-                "display_name",
-                "model",
-                "model_version",
-                "owner",
-                "capabilities",
-                "purposes",
-                "task_classes",
-            }:
-                raise ValueError("invalid model creation")
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
-                raise RegistryConflict("model exists")
-            model_name = data["model"]
-            # A non-synthetic name may be catalogued only as unsupported draft.
-            identifier(model_name)
-            for field in ("capabilities", "purposes", "task_classes"):
-                if (
-                    type(data[field]) is not list
-                    or not data[field]
-                    or any(type(x) is not str for x in data[field])
-                ):
-                    raise ValueError("invalid model constraints")
-            if set(data["capabilities"]) - {"text", "tools"}:
-                raise ValueError("unsupported model capability")
-            record = {
-                "configuration_ref": subject,
-                "display_name": nonempty(data["display_name"]),
-                "status": "draft",
-                "revision": 1,
-                "destination": {
-                    "configuration_ref": subject,
-                    "service": "litellm.dev04",
-                    "endpoint": "127.0.0.1",
-                    "model": model_name,
-                    "model_version": identifier(data["model_version"]),
-                    "processing_region": "local",
-                },
-                "owner": identifier(data["owner"]),
-                "capabilities": sorted(set(data["capabilities"])),
-                "purposes": sorted({identifier(x) for x in data["purposes"]}),
-                "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
-                "handling": ["no.content.store"],
-                "approved_by": None,
-                "approved_at": None,
-                "legacy_unpriced": False,
-            }
-            db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
-            return record
-        if action in (
-            "edit_model",
-            "edit_catalogue_model",
-            "model_state",
-            "archive_model",
-            "publish_reference_price",
-            "correct_reference_price",
-        ):
-            record = self._load_for_update(db, "registry_models", "ref", subject, expected)
-            if record["status"] in ("revoked", "archived"):
-                raise RegistryConflict("retired model cannot be changed")
-            if action == "edit_model":
-                if set(data) != {"display_name"}:
-                    raise ValueError("immutable deployment identity")
-                record["display_name"] = nonempty(data["display_name"])
-                if record.get("kind") == "real_catalogue":
-                    record.setdefault("original_research", deepcopy(record["catalogue"]))
-                    record["catalogue"]["display_name"] = record["display_name"]
-            elif action == "edit_catalogue_model":
-                if record.get("kind") != "real_catalogue" or set(data) != {"display_name", "notes"}:
-                    raise ValueError("only local catalogue settings may be edited")
-                record.setdefault("original_research", deepcopy(record["catalogue"]))
-                record["display_name"] = nonempty(data["display_name"])
-                record["catalogue"].update(
-                    display_name=record["display_name"], notes=[nonempty(data["notes"], 500)]
-                )
-                record["catalogue"]["operator_edited_at"] = timestamp()
-            elif action in ("publish_reference_price", "correct_reference_price"):
-                if record.get("kind") != "real_catalogue" or record["status"] != "catalogued":
-                    raise ValueError("reference price requires catalogued model")
-                at = timestamp()
-                if action == "correct_reference_price":
-                    if set(data) != {"source_title", "source_url", "bands"}:
-                        raise ValueError("invalid price correction")
-                    data = {**data, "snapshot_id": "operator.corrected." + secrets.token_hex(16)}
-                price, source = operator_reference_price(data, at)
-                versions = {record["catalogue"]["price_reference"]["snapshot_id"]} | {
-                    item["price"]["snapshot_id"]
-                    for item in record.get("reference_price_history", [])
-                }
-                if price["snapshot_id"] in versions:
-                    raise RegistryConflict("reference price snapshot exists")
-                record.setdefault("original_research", deepcopy(record["catalogue"]))
-                record.setdefault("reference_price_history", []).append(
-                    {
-                        "price": deepcopy(record["catalogue"]["price_reference"]),
-                        "sources": deepcopy(record["source_links"]),
-                    }
-                )
-                record["catalogue"]["price_reference"] = price
-                record["catalogue"]["source_refs"] = [source["id"]]
-                record["source_links"] = [source]
-                record["price_version"] = price["snapshot_id"]
-            elif action == "archive_model":
-                if set(data) != {"reason"}:
-                    raise ValueError("invalid model archive")
-                record["state_reason"] = nonempty(data["reason"])
-                record["status"] = (
-                    "archived" if record.get("kind") == "real_catalogue" else "revoked"
-                )
-            else:
-                if set(data) != {"status", "reason"} or data["status"] not in (
-                    "enabled",
-                    "disabled",
-                    "revoked",
-                ):
-                    raise ValueError("invalid model state")
-                nonempty(data["reason"])
-                if data["status"] == "enabled":
-                    if record.get("kind") == "real_catalogue":
-                        raise ValueError("catalogued reference has no runtime binding")
-                    if record.get("kind") == "provider_deployment":
-                        if not self.source_model_allowed(
-                            record["destination"]["connection_id"], record["destination"]["model"]
-                        ):
-                            raise ValueError("source model not allowed")
-                        if not self.provider_execution_ready:
-                            raise ValueError("selected provider execution path not validated")
-                        destination = record["destination"]
-                        row = db.execute(
-                            _queries.APPLY_SELECT_REGISTRY_CONNECTIONS,
-                            (destination["connection_id"],),
-                        ).fetchone()
-                        connection = json.loads(row[0]) if row else None
-                        if (
-                            not connection
-                            or connection["status"] != "active"
-                            or connection["revision"] != destination["connection_revision"]
-                            or connection["credential_version"] != destination["credential_version"]
-                        ):
-                            raise ValueError("provider binding stale")
-                        deployment = json.loads(
-                            db.execute(
-                                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS,
-                                (destination["deployment_id"],),
-                            ).fetchone()[0]
-                        )
-                        deployment["execution_approved"] = True
-                        deployment["approved_by"] = actor
-                        deployment["approved_at"] = timestamp()
-                        deployment["revision"] += 1
-                        db.execute(
-                            _queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS,
-                            (encode(deployment), destination["deployment_id"]),
-                        )
-                    elif record["destination"]["model"] not in MODELS:
-                        raise ValueError("unsupported synthetic transport")
-                    if (
-                        not record["legacy_unpriced"]
-                        and not db.execute(
-                            _queries.APPLY_SELECT_REGISTRY_PRICES_2, (subject,)
-                        ).fetchone()
-                    ):
-                        raise ValueError("price required before enable")
-                    record["approved_by"], record["approved_at"] = actor, timestamp()
-                if record.get("kind") == "real_catalogue" and data["status"] != "revoked":
-                    raise ValueError("reference catalogue state is not executable")
-                record["status"] = data["status"]
-                record["state_reason"] = data["reason"]
-            record["revision"] += 1
-            db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(record), subject))
-            return record
-        if action == "create_principal":
-            if (
-                expected
-                or set(data)
-                not in (
-                    {"display_name", "kind", "owner"},
-                    {"display_name", "kind", "owner", "role"},
-                )
-                or data["kind"] not in ("human", "service")
-            ):
-                raise ValueError("invalid principal creation")
-            role = data.get("role", "ordinary")
-            if role not in ("ordinary", "read_only_operator", "registry_admin") or (
-                data["kind"] == "service" and role != "ordinary"
-            ):
-                raise ValueError("invalid principal role")
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS, (subject,)).fetchone():
-                raise RegistryConflict("principal exists")
-            record = {
-                "principal_id": subject,
-                "display_name": nonempty(data["display_name"]),
-                "kind": data["kind"],
-                "owner": identifier(data["owner"]),
-                "status": "inactive",
-                "role": role,
-                "revision": 1,
-                "credential_state": "unbound",
-                "record_origin": "operator_entered",
-            }
-            db.execute(_queries.APPLY_INSERT_REGISTRY_PRINCIPALS, (subject, encode(record)))
-            return record
-        if action in ("edit_principal", "principal_state", "set_role"):
-            record = self._load_for_update(db, "registry_principals", "id", subject, expected)
-            if record["status"] == "revoked":
-                raise RegistryConflict("revoked principal cannot be changed")
-            if action == "edit_principal":
-                if set(data) not in ({"display_name"}, {"display_name", "owner"}):
-                    raise ValueError("immutable principal identity and role")
-                record["display_name"] = nonempty(data["display_name"])
-                if "owner" in data:
-                    record["owner"] = identifier(data["owner"])
-            elif action == "set_role":
-                if set(data) != {"role"} or data["role"] not in (
-                    "ordinary",
-                    "read_only_operator",
-                    "registry_admin",
-                ):
-                    raise ValueError("invalid role")
-                if record["kind"] != "human" and data["role"] != "ordinary":
-                    raise ValueError("service identity cannot receive console authority")
-                if getattr(self, "users", None):
-                    self.users.validate_principal_change(db, record, data["role"], record["status"])
-                if (
-                    record["role"] == "registry_admin"
-                    and record["status"] == "active"
-                    and data["role"] != "registry_admin"
-                ):
-                    active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
-                    if active <= 1:
-                        raise ValueError("last active administrator")
-                record["role"] = data["role"]
-            else:
-                if set(data) != {"status", "reason"} or data["status"] not in (
-                    "active",
-                    "suspended",
-                    "revoked",
-                ):
-                    raise ValueError("invalid principal state")
-                nonempty(data["reason"])
-                if data["status"] == "active" and record["credential_state"] == "unbound":
-                    raise ValueError("principal credential not provisioned")
-                if getattr(self, "users", None):
-                    self.users.validate_principal_change(db, record, record["role"], data["status"])
-                if (
-                    record["role"] == "registry_admin"
-                    and record["status"] == "active"
-                    and data["status"] != "active"
-                ):
-                    active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
-                    if active <= 1:
-                        raise ValueError("last active administrator")
-                record["status"], record["state_reason"] = data["status"], data["reason"]
-            if action in ("set_role", "principal_state") and getattr(self, "users", None):
-                db.execute(_queries.APPLY_UPDATE_CONSOLE_USERS, (timestamp(), subject))
-            record["revision"] += 1
-            db.execute(_queries.APPLY_UPDATE_REGISTRY_PRINCIPALS, (encode(record), subject))
-            return record
-        if action == "set_grant":
-            if set(data) != {"configuration_ref", "status", "purposes", "task_classes"} or data[
-                "status"
-            ] not in ("active", "removed"):
-                raise ValueError("invalid grant")
-            ref = identifier(data["configuration_ref"])
-            principal_row = db.execute(
-                _queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (subject,)
-            ).fetchone()
-            model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (ref,)).fetchone()
-            if not principal_row or not model_row:
-                raise ValueError("unregistered grant target")
-            principal, model = json.loads(principal_row[0]), json.loads(model_row[0])
-            if principal["status"] == "revoked":
-                raise ValueError("revoked principal cannot receive grants")
-            if data["status"] == "active" and (
-                model.get("kind") == "real_catalogue" or model["status"] != "enabled"
-            ):
-                raise ValueError("model has no executable grant route")
-            if (
-                data["status"] == "active"
-                and model.get("kind") == "provider_deployment"
-                and not self.source_model_allowed(
-                    model["destination"]["connection_id"], model["destination"]["model"]
-                )
-            ):
-                raise ValueError("source model disallowed")
-            if data["status"] == "active" and model.get("kind") == "provider_deployment":
-                destination = model["destination"]
-                connection_row = db.execute(
-                    _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (destination["connection_id"],)
-                ).fetchone()
-                connection = json.loads(connection_row[0]) if connection_row else None
-                if (
-                    not connection
-                    or connection["status"] != "active"
-                    or connection["revision"] != destination["connection_revision"]
-                    or connection["credential_version"] != destination["credential_version"]
-                ):
-                    raise ValueError("provider connection unavailable for new grant")
-            row = db.execute(_queries.APPLY_SELECT_REGISTRY_GRANTS, (subject, ref)).fetchone()
-            old = json.loads(row[0]) if row else None
-            if expected != (old["revision"] if old else 0):
-                raise RegistryConflict("stale grant")
-            for field in ("purposes", "task_classes"):
-                if type(data[field]) is not list or not data[field]:
-                    raise ValueError("invalid grant scope")
-            record = {
-                "principal_id": subject,
-                "configuration_ref": ref,
-                "status": data["status"],
-                "revision": expected + 1,
-                "purposes": sorted({identifier(x) for x in data["purposes"]}),
-                "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
+                "revision": revision + 1,
                 "actor": actor,
                 "at": timestamp(),
             }
-            db.execute(_queries.APPLY_INSERT_REGISTRY_GRANTS, (subject, ref, encode(record)))
-            return record
-        if action == "publish_price":
-            model = self._load_for_update(db, "registry_models", "ref", subject, expected)
-            if model.get("kind") == "real_catalogue":
-                raise ValueError("public reference is not an executable price schedule")
-            if model["status"] == "revoked":
-                raise RegistryConflict("retired model cannot be repriced")
-            base_fields = {
-                "price_version",
-                "currency",
-                "rates",
-                "source",
-                "usage_semantics_version",
-            }
-            if set(data) not in (base_fields, base_fields | {"contract"}):
-                raise ValueError("invalid price")
-            version = identifier(data["price_version"])
-            if db.execute(_queries.APPLY_SELECT_REGISTRY_PRICES, (subject, version)).fetchone():
-                raise RegistryConflict("price version exists")
-            provider_schedule = model.get("kind") == "provider_deployment"
-            allowed_source = (
-                "operator-approved provider schedule" if provider_schedule else "synthetic fixture"
+            db.execute(_queries.APPLY_INSERT_REGISTRY_SOURCE_PERMISSIONS, (key, encode(record)))
+            changed.append(record)
+        return {
+            "revision": 1,
+            "connection_id": subject,
+            "allowed": data["allowed"],
+            "items": changed,
+        }
+
+    def _apply_provider_configuration(self, db, actor, action, subject, expected, data):
+        if (
+            expected
+            or not subject.startswith("cfg.provider.")
+            or set(data) != {"display_name", "deployment_id", "owner", "purposes", "task_classes"}
+        ):
+            raise ValueError("invalid provider configuration")
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
+            raise RegistryConflict("configuration exists")
+        deployment_id = identifier(data["deployment_id"])
+        row = db.execute(_queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS, (deployment_id,)).fetchone()
+        deployment = json.loads(row[0]) if row else None
+        if (
+            not deployment
+            or deployment["status"] != "catalogued"
+            or deployment.get("configuration_ref")
+        ):
+            raise ValueError("deployment unavailable")
+        row = db.execute(
+            _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (deployment["connection_id"],)
+        ).fetchone()
+        connection = json.loads(row[0]) if row else None
+        if (
+            not connection
+            or connection["status"] != "active"
+            or connection["adapter_id"] != "openai.responses.v1"
+            or connection["credential_state"] != "present"
+            or connection["settings"].get("project")
+        ):
+            raise ValueError("selected connection unavailable")
+        model = json.loads(
+            db.execute(
+                _queries.APPLY_SELECT_REGISTRY_MODELS_2, (deployment["model_ref"],)
+            ).fetchone()[0]
+        )
+        if (
+            model["status"] != "catalogued"
+            or "text" not in model["catalogue"]["provider_published_capabilities"]
+        ):
+            raise ValueError("catalogue model does not support selected text profile")
+        for field in ("purposes", "task_classes"):
+            if type(data[field]) is not list or not data[field]:
+                raise ValueError("provider configuration scope required")
+        destination = {
+            "configuration_ref": subject,
+            "service": "openai.responses.v1",
+            "endpoint": connection["settings"]["origin"],
+            "model": deployment["serving_id"],
+            "model_version": model["catalogue"]["observed_serving_version"],
+            "processing_region": deployment["site"],
+            "connection_id": connection["connection_id"],
+            "connection_revision": connection["revision"],
+            "credential_version": connection["credential_version"],
+            "adapter_id": connection["adapter_id"],
+            "deployment_id": deployment_id,
+        }
+        record = {
+            "configuration_ref": subject,
+            "kind": "provider_deployment",
+            "display_name": nonempty(data["display_name"]),
+            "status": "draft",
+            "revision": 1,
+            "destination": destination,
+            "owner": identifier(data["owner"]),
+            "capabilities": ["text"],
+            "purposes": sorted({identifier(x) for x in data["purposes"]}),
+            "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
+            "handling": ["no.content.store"],
+            "approved_by": None,
+            "approved_at": None,
+            "legacy_unpriced": False,
+            "catalogue_ref": deployment["model_ref"],
+        }
+        deployment["configuration_ref"] = subject
+        deployment["revision"] += 1
+        db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
+        db.execute(_queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS, (encode(deployment), deployment_id))
+        return record
+
+    def _apply_create_connection(self, db, actor, action, subject, expected, data):
+        if (
+            expected
+            or set(data)
+            not in (
+                {"display_name", "adapter_id", "settings", "owner"},
+                {"display_name", "adapter_id", "settings", "owner", "funding_kind"},
             )
-            allowed_semantics = (
-                ("openai.responses.text.v1", CACHE_SEMANTICS)
-                if provider_schedule
-                else ("synthetic.text.v1", "synthetic.tool.v1")
-            )
-            if (
-                data["currency"] != "USD"
-                or data["source"] != allowed_source
-                or data["usage_semantics_version"] not in allowed_semantics
-            ):
-                raise ValueError("unsupported price semantics")
-            rates = data["rates"]
-            if data["usage_semantics_version"] == CACHE_SEMANTICS:
-                contract = validate_contract(
-                    data.get("contract"), model["destination"]["model"], rates
+            or not subject.startswith("conn.")
+        ):
+            raise ValueError("invalid connection creation")
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_2, (subject,)).fetchone():
+            raise RegistryConflict("connection exists")
+        adapter_id = identifier(data["adapter_id"])
+        settings = data["settings"]
+        provider = validate_settings(
+            adapter_id, settings, controlled=self.controlled_provider_proof
+        )
+        funding_kind = data.get("funding_kind", "unspecified_legacy")
+        if funding_kind not in (
+            "unspecified_legacy",
+            "personal_testing",
+            "organization",
+            "controlled",
+        ):
+            raise ValueError("invalid funding provenance")
+        if funding_kind == "personal_testing" and data["owner"] != "owner.local":
+            raise ValueError("personal testing must use the existing owner identity")
+        record = {
+            "connection_id": subject,
+            "display_name": nonempty(data["display_name"]),
+            "provider_id": provider,
+            "provider_name": PROVIDERS[provider],
+            "adapter_id": adapter_id,
+            "adapter_version": adapter_id.rsplit(".", 1)[-1],
+            "settings": settings,
+            "owner": identifier(data["owner"]),
+            "funding_kind": funding_kind,
+            "status": "draft",
+            "revision": 1,
+            "credential_ref": None,
+            "credential_version": 0,
+            "credential_state": "absent",
+            "created_at": timestamp(),
+            "network_policy": "commercial_public_only"
+            if provider != "vllm"
+            else "approved_private_lab",
+            "checks_scheduled": False,
+            "scheduled_operation": None,
+            "check_interval_seconds": None,
+        }
+        db.execute(_queries.APPLY_INSERT_REGISTRY_CONNECTIONS, (subject, encode(record)))
+        return record
+
+    def _apply_connection_change(self, db, actor, action, subject, expected, data):
+        record = self._load_for_update(db, "registry_connections", "id", subject, expected)
+        if record["status"] == "archived":
+            raise RegistryConflict("archived connection is immutable")
+        if action == "edit_connection":
+            if set(data) != {"display_name"}:
+                raise ValueError(
+                    "connection endpoint and protocol are immutable; create a new connection"
                 )
-            else:
+            record["display_name"] = nonempty(data["display_name"])
+        elif action == "connection_state":
+            if set(data) != {"status", "reason"} or data["status"] not in (
+                "draft",
+                "active",
+                "disabled",
+                "archived",
+            ):
+                raise ValueError("invalid connection state")
+            if data["status"] == "active" and record["credential_state"] != "present":
+                raise ValueError("credential required before connection activation")
+            record["status"] = data["status"]
+            record["state_reason"] = nonempty(data["reason"], 300)
+        elif action == "probe_schedule":
+            if (
+                set(data) != {"enabled", "operation", "interval_seconds"}
+                or type(data["enabled"]) is not bool
+            ):
+                raise ValueError("invalid probe schedule")
+            if data["enabled"]:
                 if (
-                    "contract" in data
-                    or type(rates) is not dict
-                    or set(rates) != {"input_uncached", "output_text"}
+                    data["operation"] not in ("access", "inventory", "readiness")
+                    or ADAPTERS[record["adapter_id"]].get(data["operation"]) is None
+                    or type(data["interval_seconds"]) is not int
+                    or not 300 <= data["interval_seconds"] <= 86400
                 ):
-                    raise ValueError("unsupported rate categories")
-                contract = None
-            record = {
-                "configuration_ref": subject,
-                "price_version": version,
-                "currency": "USD",
-                "rates": {key: exact_rate(rates[key]) for key in rates},
-                "unit_denominator": 1000000,
-                "usage_semantics_version": data["usage_semantics_version"],
-                "source": allowed_source,
-                "recorded_at": timestamp(),
-                "effective_at": timestamp(),
-                "approved_by": actor,
-                "revision": model["revision"] + 1,
-                "unsupported_categories": [x for x in RATE_CATEGORIES if x not in rates],
+                    raise ValueError("unsupported scheduled probe")
+                if (
+                    not record["checks_scheduled"]
+                    and db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS_3).fetchone()[0] >= 16
+                ):
+                    raise ValueError("scheduled connection limit")
+            elif data["operation"] is not None or data["interval_seconds"] is not None:
+                raise ValueError("disabled schedule must be empty")
+            record.update(
+                checks_scheduled=data["enabled"],
+                scheduled_operation=data["operation"],
+                check_interval_seconds=data["interval_seconds"],
+            )
+        else:
+            if (
+                set(data) != {"deployment_id", "model_ref", "serving_id", "site", "status"}
+                or data["status"] != "catalogued"
+            ):
+                raise ValueError("invalid model association")
+            deployment_id = identifier(data["deployment_id"])
+            model_ref = identifier(data["model_ref"])
+            model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (model_ref,)).fetchone()
+            if not model_row or json.loads(model_row[0]).get("kind") != "real_catalogue":
+                raise ValueError("association requires existing real catalogue model")
+            if db.execute(
+                _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS_3, (deployment_id,)
+            ).fetchone():
+                raise RegistryConflict("deployment identity exists")
+            deployment = {
+                "deployment_id": deployment_id,
+                "connection_id": subject,
+                "model_ref": model_ref,
+                "serving_id": identifier(data["serving_id"]),
+                "site": nonempty(data["site"]),
+                "status": "catalogued",
+                "revision": 1,
+                "execution_approved": False,
+                "created_at": timestamp(),
             }
-            if contract is not None:
-                record["contract"] = contract
-            db.execute(_queries.APPLY_INSERT_REGISTRY_PRICES, (subject, version, encode(record)))
-            model["revision"] += 1
-            model["price_version"] = version
-            db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(model), subject))
-            return {**record, "revision": model["revision"]}
-        raise ValueError("unsupported management action")
+            db.execute(
+                _queries.APPLY_INSERT_REGISTRY_DEPLOYMENTS, (deployment_id, encode(deployment))
+            )
+        record["revision"] += 1
+        db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(record), subject))
+        return record
+
+    def _apply_import_catalogue(self, db, actor, action, subject, expected, data):
+        if expected != 0:
+            raise RegistryConflict("catalogue creation requires revision zero")
+        record = validate_catalogue(subject, data)
+        db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
+        return record
+
+    def _apply_register_catalogue(self, db, actor, action, subject, expected, data):
+        required = {
+            "display_name",
+            "vendor",
+            "family",
+            "api_model_id",
+            "model_version",
+            "owner",
+            "capabilities",
+            "context_window",
+            "max_output",
+            "notes",
+            "price",
+        }
+        if expected or set(data) != required or not subject.startswith("catalogue.operator."):
+            raise ValueError("invalid manual catalogue registration")
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
+            raise RegistryConflict("model exists")
+        capabilities = data["capabilities"]
+        if type(capabilities) is not list or any(
+            item not in ("text", "tools", "vision", "audio", "reasoning") for item in capabilities
+        ):
+            raise ValueError("invalid descriptive capabilities")
+        for field in ("context_window", "max_output"):
+            value = data[field]
+            if value is not None and (type(value) is not int or not 1 <= value <= 100000000):
+                raise ValueError("invalid advertised limit")
+        at = timestamp()
+        price, source = operator_reference_price(data["price"], at)
+        name = nonempty(data["display_name"])
+        catalogue = {
+            "catalogue_key": subject[len("catalogue.") :],
+            "display_name": name,
+            "short_name": name,
+            "vendor": nonempty(data["vendor"]),
+            "family": nonempty(data["family"]),
+            "published_api_model_id": identifier(data["api_model_id"]),
+            "observed_serving_version": identifier(data["model_version"]),
+            "provider_route_basis": "operator-entered metadata; no connection",
+            "identifier_pin_status": "operator-entered; unverified",
+            "provider_published_limits": {
+                "context_window_advertised": data["context_window"],
+                "max_output_advertised": data["max_output"],
+            },
+            "provider_published_capabilities": sorted(set(capabilities)),
+            "ezllmrouter_registration": {
+                "catalogued": True,
+                "execution_approved": False,
+                "runtime_ready": False,
+                "runtime_binding": None,
+                "credential_reference": None,
+                "automatic_grants": [],
+            },
+            "price_reference": price,
+            "source_refs": [source["id"]],
+            "notes": [nonempty(data["notes"], 500)],
+        }
+        record = {
+            "configuration_ref": subject,
+            "kind": "real_catalogue",
+            "display_name": name,
+            "status": "catalogued",
+            "revision": 1,
+            "destination": None,
+            "owner": identifier(data["owner"]),
+            "capabilities": [],
+            "purposes": [],
+            "task_classes": [],
+            "handling": [],
+            "approved_by": None,
+            "approved_at": None,
+            "legacy_unpriced": False,
+            "catalogue": catalogue,
+            "source_links": [source],
+            "reference_price_history": [],
+            "price_version": price["snapshot_id"],
+            "record_origin": "operator_entered",
+        }
+        db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
+        return record
+
+    def _apply_create_model(self, db, actor, action, subject, expected, data):
+        if expected or set(data) != {
+            "display_name",
+            "model",
+            "model_version",
+            "owner",
+            "capabilities",
+            "purposes",
+            "task_classes",
+        }:
+            raise ValueError("invalid model creation")
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
+            raise RegistryConflict("model exists")
+        model_name = data["model"]
+        # A non-synthetic name may be catalogued only as unsupported draft.
+        identifier(model_name)
+        for field in ("capabilities", "purposes", "task_classes"):
+            if (
+                type(data[field]) is not list
+                or not data[field]
+                or any(type(x) is not str for x in data[field])
+            ):
+                raise ValueError("invalid model constraints")
+        if set(data["capabilities"]) - {"text", "tools"}:
+            raise ValueError("unsupported model capability")
+        record = {
+            "configuration_ref": subject,
+            "display_name": nonempty(data["display_name"]),
+            "status": "draft",
+            "revision": 1,
+            "destination": {
+                "configuration_ref": subject,
+                "service": "litellm.dev04",
+                "endpoint": "127.0.0.1",
+                "model": model_name,
+                "model_version": identifier(data["model_version"]),
+                "processing_region": "local",
+            },
+            "owner": identifier(data["owner"]),
+            "capabilities": sorted(set(data["capabilities"])),
+            "purposes": sorted({identifier(x) for x in data["purposes"]}),
+            "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
+            "handling": ["no.content.store"],
+            "approved_by": None,
+            "approved_at": None,
+            "legacy_unpriced": False,
+        }
+        db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
+        return record
+
+    def _apply_model_change(self, db, actor, action, subject, expected, data):
+        record = self._load_for_update(db, "registry_models", "ref", subject, expected)
+        if record["status"] in ("revoked", "archived"):
+            raise RegistryConflict("retired model cannot be changed")
+        if action == "edit_model":
+            if set(data) != {"display_name"}:
+                raise ValueError("immutable deployment identity")
+            record["display_name"] = nonempty(data["display_name"])
+            if record.get("kind") == "real_catalogue":
+                record.setdefault("original_research", deepcopy(record["catalogue"]))
+                record["catalogue"]["display_name"] = record["display_name"]
+        elif action == "edit_catalogue_model":
+            if record.get("kind") != "real_catalogue" or set(data) != {"display_name", "notes"}:
+                raise ValueError("only local catalogue settings may be edited")
+            record.setdefault("original_research", deepcopy(record["catalogue"]))
+            record["display_name"] = nonempty(data["display_name"])
+            record["catalogue"].update(
+                display_name=record["display_name"], notes=[nonempty(data["notes"], 500)]
+            )
+            record["catalogue"]["operator_edited_at"] = timestamp()
+        elif action in ("publish_reference_price", "correct_reference_price"):
+            if record.get("kind") != "real_catalogue" or record["status"] != "catalogued":
+                raise ValueError("reference price requires catalogued model")
+            at = timestamp()
+            if action == "correct_reference_price":
+                if set(data) != {"source_title", "source_url", "bands"}:
+                    raise ValueError("invalid price correction")
+                data = {**data, "snapshot_id": "operator.corrected." + secrets.token_hex(16)}
+            price, source = operator_reference_price(data, at)
+            versions = {record["catalogue"]["price_reference"]["snapshot_id"]} | {
+                item["price"]["snapshot_id"] for item in record.get("reference_price_history", [])
+            }
+            if price["snapshot_id"] in versions:
+                raise RegistryConflict("reference price snapshot exists")
+            record.setdefault("original_research", deepcopy(record["catalogue"]))
+            record.setdefault("reference_price_history", []).append(
+                {
+                    "price": deepcopy(record["catalogue"]["price_reference"]),
+                    "sources": deepcopy(record["source_links"]),
+                }
+            )
+            record["catalogue"]["price_reference"] = price
+            record["catalogue"]["source_refs"] = [source["id"]]
+            record["source_links"] = [source]
+            record["price_version"] = price["snapshot_id"]
+        elif action == "archive_model":
+            if set(data) != {"reason"}:
+                raise ValueError("invalid model archive")
+            record["state_reason"] = nonempty(data["reason"])
+            record["status"] = "archived" if record.get("kind") == "real_catalogue" else "revoked"
+        else:
+            if set(data) != {"status", "reason"} or data["status"] not in (
+                "enabled",
+                "disabled",
+                "revoked",
+            ):
+                raise ValueError("invalid model state")
+            nonempty(data["reason"])
+            if data["status"] == "enabled":
+                if record.get("kind") == "real_catalogue":
+                    raise ValueError("catalogued reference has no runtime binding")
+                if record.get("kind") == "provider_deployment":
+                    if not self.source_model_allowed(
+                        record["destination"]["connection_id"], record["destination"]["model"]
+                    ):
+                        raise ValueError("source model not allowed")
+                    if not self.provider_execution_ready:
+                        raise ValueError("selected provider execution path not validated")
+                    destination = record["destination"]
+                    row = db.execute(
+                        _queries.APPLY_SELECT_REGISTRY_CONNECTIONS,
+                        (destination["connection_id"],),
+                    ).fetchone()
+                    connection = json.loads(row[0]) if row else None
+                    if (
+                        not connection
+                        or connection["status"] != "active"
+                        or connection["revision"] != destination["connection_revision"]
+                        or connection["credential_version"] != destination["credential_version"]
+                    ):
+                        raise ValueError("provider binding stale")
+                    deployment = json.loads(
+                        db.execute(
+                            _queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS,
+                            (destination["deployment_id"],),
+                        ).fetchone()[0]
+                    )
+                    deployment["execution_approved"] = True
+                    deployment["approved_by"] = actor
+                    deployment["approved_at"] = timestamp()
+                    deployment["revision"] += 1
+                    db.execute(
+                        _queries.APPLY_UPDATE_REGISTRY_DEPLOYMENTS,
+                        (encode(deployment), destination["deployment_id"]),
+                    )
+                elif record["destination"]["model"] not in MODELS:
+                    raise ValueError("unsupported synthetic transport")
+                if (
+                    not record["legacy_unpriced"]
+                    and not db.execute(
+                        _queries.APPLY_SELECT_REGISTRY_PRICES_2, (subject,)
+                    ).fetchone()
+                ):
+                    raise ValueError("price required before enable")
+                record["approved_by"], record["approved_at"] = actor, timestamp()
+            if record.get("kind") == "real_catalogue" and data["status"] != "revoked":
+                raise ValueError("reference catalogue state is not executable")
+            record["status"] = data["status"]
+            record["state_reason"] = data["reason"]
+        record["revision"] += 1
+        db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(record), subject))
+        return record
+
+    def _apply_create_principal(self, db, actor, action, subject, expected, data):
+        if (
+            expected
+            or set(data)
+            not in (
+                {"display_name", "kind", "owner"},
+                {"display_name", "kind", "owner", "role"},
+            )
+            or data["kind"] not in ("human", "service")
+        ):
+            raise ValueError("invalid principal creation")
+        role = data.get("role", "ordinary")
+        if role not in ("ordinary", "read_only_operator", "registry_admin") or (
+            data["kind"] == "service" and role != "ordinary"
+        ):
+            raise ValueError("invalid principal role")
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS, (subject,)).fetchone():
+            raise RegistryConflict("principal exists")
+        record = {
+            "principal_id": subject,
+            "display_name": nonempty(data["display_name"]),
+            "kind": data["kind"],
+            "owner": identifier(data["owner"]),
+            "status": "inactive",
+            "role": role,
+            "revision": 1,
+            "credential_state": "unbound",
+            "record_origin": "operator_entered",
+        }
+        db.execute(_queries.APPLY_INSERT_REGISTRY_PRINCIPALS, (subject, encode(record)))
+        return record
+
+    def _apply_principal_change(self, db, actor, action, subject, expected, data):
+        record = self._load_for_update(db, "registry_principals", "id", subject, expected)
+        if record["status"] == "revoked":
+            raise RegistryConflict("revoked principal cannot be changed")
+        if action == "edit_principal":
+            if set(data) not in ({"display_name"}, {"display_name", "owner"}):
+                raise ValueError("immutable principal identity and role")
+            record["display_name"] = nonempty(data["display_name"])
+            if "owner" in data:
+                record["owner"] = identifier(data["owner"])
+        elif action == "set_role":
+            if set(data) != {"role"} or data["role"] not in (
+                "ordinary",
+                "read_only_operator",
+                "registry_admin",
+            ):
+                raise ValueError("invalid role")
+            if record["kind"] != "human" and data["role"] != "ordinary":
+                raise ValueError("service identity cannot receive console authority")
+            if self.users:
+                self.users.validate_principal_change(db, record, data["role"], record["status"])
+            if (
+                record["role"] == "registry_admin"
+                and record["status"] == "active"
+                and data["role"] != "registry_admin"
+            ):
+                active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
+                if active <= 1:
+                    raise ValueError("last active administrator")
+            record["role"] = data["role"]
+        else:
+            if set(data) != {"status", "reason"} or data["status"] not in (
+                "active",
+                "suspended",
+                "revoked",
+            ):
+                raise ValueError("invalid principal state")
+            nonempty(data["reason"])
+            if data["status"] == "active" and record["credential_state"] == "unbound":
+                raise ValueError("principal credential not provisioned")
+            if self.users:
+                self.users.validate_principal_change(db, record, record["role"], data["status"])
+            if (
+                record["role"] == "registry_admin"
+                and record["status"] == "active"
+                and data["status"] != "active"
+            ):
+                active = db.execute(_queries.APPLY_SELECT_REGISTRY_PRINCIPALS_2).fetchone()[0]
+                if active <= 1:
+                    raise ValueError("last active administrator")
+            record["status"], record["state_reason"] = data["status"], data["reason"]
+        if action in ("set_role", "principal_state") and self.users:
+            db.execute(_queries.APPLY_UPDATE_CONSOLE_USERS, (timestamp(), subject))
+        record["revision"] += 1
+        db.execute(_queries.APPLY_UPDATE_REGISTRY_PRINCIPALS, (encode(record), subject))
+        return record
+
+    def _apply_grant(self, db, actor, action, subject, expected, data):
+        if set(data) != {"configuration_ref", "status", "purposes", "task_classes"} or data[
+            "status"
+        ] not in ("active", "removed"):
+            raise ValueError("invalid grant")
+        ref = identifier(data["configuration_ref"])
+        principal_row = db.execute(
+            _queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (subject,)
+        ).fetchone()
+        model_row = db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS_2, (ref,)).fetchone()
+        if not principal_row or not model_row:
+            raise ValueError("unregistered grant target")
+        principal, model = json.loads(principal_row[0]), json.loads(model_row[0])
+        if principal["status"] == "revoked":
+            raise ValueError("revoked principal cannot receive grants")
+        if data["status"] == "active" and (
+            model.get("kind") == "real_catalogue" or model["status"] != "enabled"
+        ):
+            raise ValueError("model has no executable grant route")
+        if (
+            data["status"] == "active"
+            and model.get("kind") == "provider_deployment"
+            and not self.source_model_allowed(
+                model["destination"]["connection_id"], model["destination"]["model"]
+            )
+        ):
+            raise ValueError("source model disallowed")
+        if data["status"] == "active" and model.get("kind") == "provider_deployment":
+            destination = model["destination"]
+            connection_row = db.execute(
+                _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (destination["connection_id"],)
+            ).fetchone()
+            connection = json.loads(connection_row[0]) if connection_row else None
+            if (
+                not connection
+                or connection["status"] != "active"
+                or connection["revision"] != destination["connection_revision"]
+                or connection["credential_version"] != destination["credential_version"]
+            ):
+                raise ValueError("provider connection unavailable for new grant")
+        row = db.execute(_queries.APPLY_SELECT_REGISTRY_GRANTS, (subject, ref)).fetchone()
+        old = json.loads(row[0]) if row else None
+        if expected != (old["revision"] if old else 0):
+            raise RegistryConflict("stale grant")
+        for field in ("purposes", "task_classes"):
+            if type(data[field]) is not list or not data[field]:
+                raise ValueError("invalid grant scope")
+        record = {
+            "principal_id": subject,
+            "configuration_ref": ref,
+            "status": data["status"],
+            "revision": expected + 1,
+            "purposes": sorted({identifier(x) for x in data["purposes"]}),
+            "task_classes": sorted({identifier(x) for x in data["task_classes"]}),
+            "actor": actor,
+            "at": timestamp(),
+        }
+        db.execute(_queries.APPLY_INSERT_REGISTRY_GRANTS, (subject, ref, encode(record)))
+        return record
+
+    def _apply_price(self, db, actor, action, subject, expected, data):
+        model = self._load_for_update(db, "registry_models", "ref", subject, expected)
+        if model.get("kind") == "real_catalogue":
+            raise ValueError("public reference is not an executable price schedule")
+        if model["status"] == "revoked":
+            raise RegistryConflict("retired model cannot be repriced")
+        base_fields = {
+            "price_version",
+            "currency",
+            "rates",
+            "source",
+            "usage_semantics_version",
+        }
+        if set(data) not in (base_fields, base_fields | {"contract"}):
+            raise ValueError("invalid price")
+        version = identifier(data["price_version"])
+        if db.execute(_queries.APPLY_SELECT_REGISTRY_PRICES, (subject, version)).fetchone():
+            raise RegistryConflict("price version exists")
+        provider_schedule = model.get("kind") == "provider_deployment"
+        allowed_source = (
+            "operator-approved provider schedule" if provider_schedule else "synthetic fixture"
+        )
+        allowed_semantics = (
+            ("openai.responses.text.v1", CACHE_SEMANTICS)
+            if provider_schedule
+            else ("synthetic.text.v1", "synthetic.tool.v1")
+        )
+        if (
+            data["currency"] != "USD"
+            or data["source"] != allowed_source
+            or data["usage_semantics_version"] not in allowed_semantics
+        ):
+            raise ValueError("unsupported price semantics")
+        rates = data["rates"]
+        if data["usage_semantics_version"] == CACHE_SEMANTICS:
+            contract = validate_contract(data.get("contract"), model["destination"]["model"], rates)
+        else:
+            if (
+                "contract" in data
+                or type(rates) is not dict
+                or set(rates) != {"input_uncached", "output_text"}
+            ):
+                raise ValueError("unsupported rate categories")
+            contract = None
+        record = {
+            "configuration_ref": subject,
+            "price_version": version,
+            "currency": "USD",
+            "rates": {key: exact_rate(rates[key]) for key in rates},
+            "unit_denominator": 1000000,
+            "usage_semantics_version": data["usage_semantics_version"],
+            "source": allowed_source,
+            "recorded_at": timestamp(),
+            "effective_at": timestamp(),
+            "approved_by": actor,
+            "revision": model["revision"] + 1,
+            "unsupported_categories": [x for x in RATE_CATEGORIES if x not in rates],
+        }
+        if contract is not None:
+            record["contract"] = contract
+        db.execute(_queries.APPLY_INSERT_REGISTRY_PRICES, (subject, version, encode(record)))
+        model["revision"] += 1
+        model["price_version"] = version
+        db.execute(_queries.APPLY_UPDATE_REGISTRY_MODELS, (encode(model), subject))
+        return {**record, "revision": model["revision"]}
 
     @staticmethod
     def _load_for_update(db, table, column, subject, expected):
@@ -1890,19 +1869,14 @@ class Registry:
                 db.execute(
                     _queries.APPLY_UPDATE_REGISTRY_PRINCIPALS, (encode(record), principal_id)
                 )
-                revision = int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0]) + 1
-                db.execute(_queries.ACTION_UPDATE_REGISTRY_META, (str(revision),))
-                db.execute(
-                    _queries.ACTION_INSERT_REGISTRY_AUDIT,
-                    (
-                        actor,
-                        "provision_credential",
-                        principal_id,
-                        expected_revision,
-                        record["revision"],
-                        revision,
-                        timestamp(),
-                    ),
+                revision = authority.record_change(
+                    db,
+                    actor=actor,
+                    action="provision_credential",
+                    subject=principal_id,
+                    old_revision=expected_revision,
+                    new_revision=record["revision"],
+                    at=timestamp(),
                 )
                 db.execute(
                     _queries.ACTION_INSERT_REGISTRY_OPERATIONS,

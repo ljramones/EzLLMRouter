@@ -15,8 +15,10 @@ import ssl
 from typing import Any, TypedDict, cast
 from urllib.parse import quote, urlsplit
 
+from .errors import ServerError
 
-class ProbeError(ValueError):
+
+class ProbeError(ServerError, ValueError):
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason

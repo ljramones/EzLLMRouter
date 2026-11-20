@@ -2,36 +2,35 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from contextlib import ExitStack
 import json
 import os
 import signal
 import sys
 import threading
+from contextlib import ExitStack
+from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
-from ezllmrouter_server.observability import configure_logging
 from ezllmrouter_server.core import Coordinator
-from ezllmrouter_server.operator_demo import DemoRunner, ProviderValidationRunner
-from ezllmrouter_server.operator_projection import OperatorProjection
-from ezllmrouter_server.operator_web import serve as serve_operator
-from ezllmrouter_server.plans import PlanAuthority
-from ezllmrouter_server.registry import Registry
-from ezllmrouter_server.provider_vault import ProviderVault
-from ezllmrouter_server.repositories import startup as startup_queries
-from ezllmrouter_server.personal_campaign import PersonalCampaign
-from ezllmrouter_server.store import SQLiteStore
-from ezllmrouter_server.web import serve as serve_wire
 from ezllmrouter_server.gateway.choice_b_sender import ChoiceBSenderAdapter
 from ezllmrouter_server.gateway.owned_sender_transport import LocalSendAuthority
 from ezllmrouter_server.gateway.proxy_recipe import (
     GatewayProxyRecipe,
-    public_destination,
     proxy_policy,
+    public_destination,
 )
 from ezllmrouter_server.gateway.worker_ready import probe
+from ezllmrouter_server.observability import configure_logging
+from ezllmrouter_server.operator_demo import DemoRunner, ProviderValidationRunner
+from ezllmrouter_server.operator_projection import OperatorProjection
+from ezllmrouter_server.operator_web import serve as serve_operator
+from ezllmrouter_server.personal_campaign import PersonalCampaign
+from ezllmrouter_server.plans import PlanAuthority
+from ezllmrouter_server.provider_vault import ProviderVault
+from ezllmrouter_server.registry import Registry
+from ezllmrouter_server.repositories import startup as startup_queries
+from ezllmrouter_server.store import SQLiteStore
+from ezllmrouter_server.web import serve as serve_wire
 from socket_lease import remove_stale_socket
 
 
@@ -105,6 +104,7 @@ def main():
             trusted_source_labels=fixture["trusted_source_labels"],
             registry=registry,
             authentication_context=trusted,
+            context_sender=lambda *args: adapter.send_with_context(*args),
         )
         cleanup.callback(coordinator.close)
         projection = OperatorProjection(store, trusted["principal_id"], "/data/send-events.jsonl")

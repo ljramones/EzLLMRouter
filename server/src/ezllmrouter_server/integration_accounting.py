@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-from .repositories import integration_accounting as _queries
-
-from collections import defaultdict
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
 import hashlib
 import json
-from pathlib import Path
 import re
-from urllib.parse import unquote_to_bytes
 import uuid
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from pathlib import Path
+from urllib.parse import unquote_to_bytes
 
-from .store import encode
+from .errors import RequestError
+from .formatting import money as format_money
+from .formatting import utc_timestamp
+from .json_validation import JSONValue
 from .observability import log_failure
+from .repositories import integration_accounting as _queries
+from .store import encode
 
 VERSION = "1"
 SCHEMA = json.loads((Path(__file__).parent / "integration_schema.json").read_text())
@@ -34,10 +38,10 @@ _CAPABILITIES = {
 }
 
 
-class IntegrationError(ValueError):
+class IntegrationError(RequestError):
     def __init__(self, code, status=400, retry_guidance="never"):
-        super().__init__(code)
-        self.code, self.status, self.retry_guidance = code, status, retry_guidance
+        super().__init__(code, status)
+        self.retry_guidance = retry_guidance
 
 
 def _cohort_expiry(dataset, days, activated_at):
@@ -125,7 +129,7 @@ def _utc(value):
 
 
 def _time():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_timestamp(datetime.now(timezone.utc))
 
 
 def _eligibility_assessment(event, observed, history):
@@ -367,6 +371,19 @@ def route_id(raw):
     if not _shape(value, SCHEMA["$defs"]["id"]):
         raise IntegrationError("SCHEMA_INVALID")
     return value
+
+
+@dataclass(frozen=True)
+class AccountingReportData:
+    """One database snapshot used by all projections and aggregates in a report."""
+
+    attempts: list[dict[str, JSONValue]]
+    all_starts: dict[str, dict[str, JSONValue]]
+    events: list[dict[str, JSONValue]]
+    runs: dict[str, str | None]
+    snapshots: dict[str, tuple[dict[str, JSONValue], str | None, str | None]]
+    eligibility_reads: dict[str, dict[str, JSONValue]]
+    account_history: dict[str, list[dict[str, JSONValue]]]
 
 
 class ExternalAccounting:
@@ -1494,6 +1511,289 @@ class ExternalAccounting:
             or (filters.get("from") and filters.get("to") and filters["from"] > filters["to"])
         ):
             raise IntegrationError("SCHEMA_INVALID")
+        data = self._read_report_snapshot(dataset_id, version, at)
+        by_attempt = defaultdict(list)
+        lineage_links = {
+            event["attempt_id"]: event for event in data.events if event["kind"] == "lineage"
+        }
+        outcomes = defaultdict(list)
+        for event in data.events:
+            if "attempt_id" in event:
+                by_attempt[event["attempt_id"]].append(event)
+            if event["kind"] == "activity" and event["activity_kind"] == "outcome":
+                outcomes[event["task_id"]].append(event)
+        rows = []
+        totals = defaultdict(Decimal)
+        by_actor = defaultdict(lambda: defaultdict(Decimal))
+        by_account = defaultdict(lambda: defaultdict(Decimal))
+        by_root = defaultdict(lambda: defaultdict(Decimal))
+        by_inclusive_run = defaultdict(lambda: defaultdict(Decimal))
+        unknown = 0
+        for start in data.attempts:
+            row = self._report_attempt_row(
+                data.account_history,
+                data.all_starts,
+                by_attempt,
+                dataset,
+                dataset_id,
+                data.eligibility_reads,
+                filters,
+                lineage_links,
+                outcomes,
+                data.snapshots,
+                start,
+                version,
+            )
+            if row is None:
+                continue
+            status = row["cost_status"]
+            rows.append(row)
+            if status != "known":
+                unknown += 1
+                continue
+            currency = row["currency"]
+            amount = Decimal(row["amount_decimal"])
+            totals[currency] += amount
+            by_actor[start["actor_id"]][currency] += amount
+            by_account[start["provider_account_id"]][currency] += amount
+            by_root[start["root_run_id"]][currency] += amount
+            run, seen = start["run_id"], set()
+            while run and run not in seen:
+                seen.add(run)
+                by_inclusive_run[run][currency] += amount
+                run = data.runs.get(run)
+        money = lambda group: {
+            key: {
+                currency: format_money(amount, places=9)
+                for currency, amount in sorted(values.items())
+            }
+            for key, values in sorted(group.items())
+        }
+        return {
+            "integration_version": version,
+            "dataset_id": dataset_id,
+            "attempt_count": len(rows),
+            "unknown_cost_attempts": unknown,
+            "known_total_by_currency": {
+                currency: format_money(value, places=9)
+                for currency, value in sorted(totals.items())
+            },
+            "by_actor": money(by_actor),
+            "by_account": money(by_account),
+            "by_root_workflow": money(by_root),
+            "by_run_including_descendants": money(by_inclusive_run),
+            "attempts": rows,
+        }
+
+    def _enrich_report_row(
+        self,
+        row,
+        account_history,
+        all_starts,
+        effective,
+        eligibility_reads,
+        lineage_links,
+        related,
+        snapshots,
+        start,
+    ):
+        v2 = start.get("integration_version") in ("2", "3")
+        decision = next((item for item in related if item["kind"] == "decision"), None)
+        resolution = next((item for item in related if item["kind"] == "account_resolution"), None)
+        role, predecessor, lineage_status = _lineage_projection(
+            start, lineage_links.get(start["attempt_id"]), all_starts, lineage_links
+        )
+        history = account_history.get(start["provider_account_id"], ())
+        registration = history[0]["registered_at"] if history else None
+        if resolution:
+            account_status = "resolved"
+        elif not registration:
+            account_status = "unresolved"
+        elif registration > start["started_at"]:
+            account_status = "registered_after_start_unconfirmed"
+        else:
+            account_status = "registered_at_start"
+
+        def snapshot_state(sid, expected_kind, *, start=start):
+            if not sid or sid not in snapshots:
+                return "missing", None
+            meta, content, digest = snapshots[sid]
+            if meta["attempt_id"] != start["attempt_id"] or meta["snapshot_kind"] != expected_kind:
+                return "binding_conflict", None
+            return (
+                "expired" if meta["status"] == "captured" and content is None else meta["status"],
+                digest,
+            )
+
+        feature_status, feature_digest = snapshot_state(
+            start.get("context_ref") if v2 else None, "feature"
+        )
+        decision_status, decision_digest = snapshot_state(
+            decision.get("decision_ref") if decision else None, "decision"
+        )
+        evidence = decision.get("eligibility_evidence", {}) if decision else {}
+        assessment = (
+            _eligibility_assessment(
+                decision,
+                eligibility_reads.get(evidence.get("eligibility_id")),
+                account_history.get(decision["selected_account_id"], ()),
+            )
+            if decision and decision.get("integration_version") in ("2", "3")
+            else "legacy_absent"
+            if decision
+            else "missing"
+        )
+        selected_action = (
+            {
+                key: decision.get(key)
+                for key in (
+                    "selected_account_id",
+                    "selected_model_id",
+                    "operation_family",
+                    "capability",
+                    "selection_kind",
+                    "policy_version",
+                    "eligibility_evidence",
+                )
+            }
+            if decision
+            else None
+        )
+        row.update(
+            operation_family_version=start.get("operation_family_version"),
+            operation_family=start.get("operation_family"),
+            model_identity_state=start.get("model_identity_state", "legacy_absent"),
+            logical_operation_id=start.get("logical_operation_id"),
+            attempt_role=role,
+            predecessor_attempt_id=predecessor,
+            lineage_status=lineage_status,
+            account_resolution_status=account_status,
+            resolved_account_id=resolution.get("resolved_account_id") if resolution else None,
+            decision_ref=decision.get("decision_ref") if decision else None,
+            selected_action=selected_action,
+            eligibility_evidence_status=evidence.get("status", "missing"),
+            eligibility_assessment=assessment,
+            eligibility_record=eligibility_reads.get(evidence.get("eligibility_id")),
+            feature_snapshot_status=feature_status,
+            feature_snapshot_digest=feature_digest,
+            feature_available_before_start=(
+                snapshots[start["context_ref"]][0]["available_at"] <= start["started_at"]
+                if feature_status == "captured"
+                else None
+            ),
+            decision_snapshot_status=decision_status,
+            decision_snapshot_digest=decision_digest,
+            usage_provenance=effective.get("usage_provenance") if effective else None,
+            usage_state=(effective["usage_state"] if effective else "not_observed")
+            if v2
+            else "legacy_absent",
+        )
+
+    def _report_attempt_row(
+        self,
+        account_history,
+        all_starts,
+        by_attempt,
+        dataset,
+        dataset_id,
+        eligibility_reads,
+        filters,
+        lineage_links,
+        outcomes,
+        snapshots,
+        start,
+        version,
+    ):
+        if any(
+            (key in filters and start.get(key) != filters[key])
+            for key in (
+                "actor_id",
+                "provider_account_id",
+                "task_id",
+                "model_id",
+                "initiating_user_id",
+                "root_run_id",
+                "run_id",
+            )
+        ):
+            return None
+        if filters.get("from") and start["started_at"] < filters["from"]:
+            return None
+        if filters.get("to") and start["started_at"] >= filters["to"]:
+            return None
+        related = by_attempt[start["attempt_id"]]
+        usage = {item["usage_revision"]: item for item in related if item["kind"] == "usage"}
+        ordinal = 0
+        while ordinal + 1 in usage:
+            ordinal += 1
+        effective = usage.get(ordinal)
+        results = [item for item in related if item["kind"] == "result"]
+        latest_result = (
+            max(results, key=lambda x: (x["occurred_at"], x["event_id"])) if results else None
+        )
+        task_outcome = (
+            max(outcomes[start["task_id"]], key=lambda x: (x["occurred_at"], x["event_id"]))
+            if (outcomes[start["task_id"]])
+            else None
+        )
+        status = (
+            effective.get("cost_state", effective["usage_state"]) if effective else "not_observed"
+        )
+        row = {
+            "dataset_id": dataset_id,
+            "platform_id": dataset["platform_id"],
+            "environment_id": dataset["environment_id"],
+            "owner_id": dataset["owner_id"],
+            **{
+                key: start.get(key)
+                for key in (
+                    "attempt_id",
+                    "started_at",
+                    "task_id",
+                    "step_id",
+                    "run_id",
+                    "root_run_id",
+                    "parent_run_id",
+                    "actor_kind",
+                    "actor_id",
+                    "initiating_user_id",
+                    "provider_account_id",
+                    "model_id",
+                    "context_ref",
+                )
+            },
+            "result_state": latest_result["result_state"] if latest_result else "not_observed",
+            "result_observed_at": latest_result["occurred_at"] if latest_result else None,
+            "task_outcome": task_outcome.get("outcome", "not_observed")
+            if task_outcome
+            else "not_observed",
+            "task_outcome_observed_at": task_outcome.get("occurred_at") if task_outcome else None,
+            "usage_revision": ordinal or None,
+            "cost_status": status,
+            "usage_observed_at": effective.get("occurred_at") if effective else None,
+            "currency": effective.get("currency") if effective else None,
+            "amount_decimal": effective.get("amount_decimal") if effective else None,
+            "native_units": effective.get("native_units") if effective else None,
+            "cost_basis": effective.get("cost_basis") if effective else None,
+            "price_ref": effective.get("price_ref") if effective else None,
+            "price_version": effective.get("price_version") if effective else None,
+        }
+        if version in ("2", "3"):
+            self._enrich_report_row(
+                row,
+                account_history,
+                all_starts,
+                effective,
+                eligibility_reads,
+                lineage_links,
+                related,
+                snapshots,
+                start,
+            )
+        return row
+
+    def _read_report_snapshot(self, dataset_id, version, at) -> AccountingReportData:
+        snapshots, eligibility_reads, account_history = {}, {}, {}
         with self.store.database.read():
             attempts = [
                 json.loads(row[0])
@@ -1539,233 +1839,6 @@ class ExternalAccounting:
                     item = json.loads(raw)
                     if item["dataset_id"] == dataset_id:
                         account_history[item["account_id"]].append(item)
-        by_attempt = defaultdict(list)
-        lineage_links = {
-            event["attempt_id"]: event for event in events if event["kind"] == "lineage"
-        }
-        outcomes = defaultdict(list)
-        for event in events:
-            if "attempt_id" in event:
-                by_attempt[event["attempt_id"]].append(event)
-            if event["kind"] == "activity" and event["activity_kind"] == "outcome":
-                outcomes[event["task_id"]].append(event)
-        rows = []
-        totals = defaultdict(Decimal)
-        by_actor = defaultdict(lambda: defaultdict(Decimal))
-        by_account = defaultdict(lambda: defaultdict(Decimal))
-        by_root = defaultdict(lambda: defaultdict(Decimal))
-        by_inclusive_run = defaultdict(lambda: defaultdict(Decimal))
-        unknown = 0
-        for start in attempts:
-            if any(
-                (key in filters and start.get(key) != filters[key])
-                for key in (
-                    "actor_id",
-                    "provider_account_id",
-                    "task_id",
-                    "model_id",
-                    "initiating_user_id",
-                    "root_run_id",
-                    "run_id",
-                )
-            ):
-                continue
-            if filters.get("from") and start["started_at"] < filters["from"]:
-                continue
-            if filters.get("to") and start["started_at"] >= filters["to"]:
-                continue
-            related = by_attempt[start["attempt_id"]]
-            usage = {item["usage_revision"]: item for item in related if item["kind"] == "usage"}
-            ordinal = 0
-            while ordinal + 1 in usage:
-                ordinal += 1
-            effective = usage.get(ordinal)
-            results = [item for item in related if item["kind"] == "result"]
-            latest_result = (
-                max(results, key=lambda x: (x["occurred_at"], x["event_id"])) if results else None
-            )
-            task_outcome = (
-                max(outcomes[start["task_id"]], key=lambda x: (x["occurred_at"], x["event_id"]))
-                if (outcomes[start["task_id"]])
-                else None
-            )
-            status = (
-                effective.get("cost_state", effective["usage_state"])
-                if effective
-                else "not_observed"
-            )
-            row = {
-                "dataset_id": dataset_id,
-                "platform_id": dataset["platform_id"],
-                "environment_id": dataset["environment_id"],
-                "owner_id": dataset["owner_id"],
-                **{
-                    key: start.get(key)
-                    for key in (
-                        "attempt_id",
-                        "started_at",
-                        "task_id",
-                        "step_id",
-                        "run_id",
-                        "root_run_id",
-                        "parent_run_id",
-                        "actor_kind",
-                        "actor_id",
-                        "initiating_user_id",
-                        "provider_account_id",
-                        "model_id",
-                        "context_ref",
-                    )
-                },
-                "result_state": latest_result["result_state"] if latest_result else "not_observed",
-                "result_observed_at": latest_result["occurred_at"] if latest_result else None,
-                "task_outcome": task_outcome.get("outcome", "not_observed")
-                if task_outcome
-                else "not_observed",
-                "task_outcome_observed_at": task_outcome.get("occurred_at")
-                if task_outcome
-                else None,
-                "usage_revision": ordinal or None,
-                "cost_status": status,
-                "usage_observed_at": effective.get("occurred_at") if effective else None,
-                "currency": effective.get("currency") if effective else None,
-                "amount_decimal": effective.get("amount_decimal") if effective else None,
-                "native_units": effective.get("native_units") if effective else None,
-                "cost_basis": effective.get("cost_basis") if effective else None,
-                "price_ref": effective.get("price_ref") if effective else None,
-                "price_version": effective.get("price_version") if effective else None,
-            }
-            if version in ("2", "3"):
-                v2 = start.get("integration_version") in ("2", "3")
-                decision = next((item for item in related if item["kind"] == "decision"), None)
-                resolution = next(
-                    (item for item in related if item["kind"] == "account_resolution"), None
-                )
-                role, predecessor, lineage_status = _lineage_projection(
-                    start, lineage_links.get(start["attempt_id"]), all_starts, lineage_links
-                )
-                history = account_history.get(start["provider_account_id"], ())
-                registration = history[0]["registered_at"] if history else None
-                if resolution:
-                    account_status = "resolved"
-                elif not registration:
-                    account_status = "unresolved"
-                elif registration > start["started_at"]:
-                    account_status = "registered_after_start_unconfirmed"
-                else:
-                    account_status = "registered_at_start"
-
-                def snapshot_state(sid, expected_kind, *, start=start):
-                    if not sid or sid not in snapshots:
-                        return "missing", None
-                    meta, content, digest = snapshots[sid]
-                    if (
-                        meta["attempt_id"] != start["attempt_id"]
-                        or meta["snapshot_kind"] != expected_kind
-                    ):
-                        return "binding_conflict", None
-                    return (
-                        "expired"
-                        if meta["status"] == "captured" and content is None
-                        else meta["status"],
-                        digest,
-                    )
-
-                feature_status, feature_digest = snapshot_state(
-                    start.get("context_ref") if v2 else None, "feature"
-                )
-                decision_status, decision_digest = snapshot_state(
-                    decision.get("decision_ref") if decision else None, "decision"
-                )
-                evidence = decision.get("eligibility_evidence", {}) if decision else {}
-                assessment = (
-                    _eligibility_assessment(
-                        decision,
-                        eligibility_reads.get(evidence.get("eligibility_id")),
-                        account_history.get(decision["selected_account_id"], ()),
-                    )
-                    if decision and decision.get("integration_version") in ("2", "3")
-                    else "legacy_absent"
-                    if decision
-                    else "missing"
-                )
-                selected_action = (
-                    {
-                        key: decision.get(key)
-                        for key in (
-                            "selected_account_id",
-                            "selected_model_id",
-                            "operation_family",
-                            "capability",
-                            "selection_kind",
-                            "policy_version",
-                            "eligibility_evidence",
-                        )
-                    }
-                    if decision
-                    else None
-                )
-                row.update(
-                    operation_family_version=start.get("operation_family_version"),
-                    operation_family=start.get("operation_family"),
-                    model_identity_state=start.get("model_identity_state", "legacy_absent"),
-                    logical_operation_id=start.get("logical_operation_id"),
-                    attempt_role=role,
-                    predecessor_attempt_id=predecessor,
-                    lineage_status=lineage_status,
-                    account_resolution_status=account_status,
-                    resolved_account_id=resolution.get("resolved_account_id")
-                    if resolution
-                    else None,
-                    decision_ref=decision.get("decision_ref") if decision else None,
-                    selected_action=selected_action,
-                    eligibility_evidence_status=evidence.get("status", "missing"),
-                    eligibility_assessment=assessment,
-                    eligibility_record=eligibility_reads.get(evidence.get("eligibility_id")),
-                    feature_snapshot_status=feature_status,
-                    feature_snapshot_digest=feature_digest,
-                    feature_available_before_start=(
-                        snapshots[start["context_ref"]][0]["available_at"] <= start["started_at"]
-                        if feature_status == "captured"
-                        else None
-                    ),
-                    decision_snapshot_status=decision_status,
-                    decision_snapshot_digest=decision_digest,
-                    usage_provenance=effective.get("usage_provenance") if effective else None,
-                    usage_state=(effective["usage_state"] if effective else "not_observed")
-                    if v2
-                    else "legacy_absent",
-                )
-            rows.append(row)
-            if status != "known":
-                unknown += 1
-                continue
-            currency = row["currency"]
-            amount = Decimal(row["amount_decimal"])
-            totals[currency] += amount
-            by_actor[start["actor_id"]][currency] += amount
-            by_account[start["provider_account_id"]][currency] += amount
-            by_root[start["root_run_id"]][currency] += amount
-            run, seen = start["run_id"], set()
-            while run and run not in seen:
-                seen.add(run)
-                by_inclusive_run[run][currency] += amount
-                run = runs.get(run)
-        money = lambda group: {
-            key: {currency: format(amount, ".9f") for currency, amount in sorted(values.items())}
-            for key, values in sorted(group.items())
-        }
-        return {
-            "integration_version": version,
-            "dataset_id": dataset_id,
-            "attempt_count": len(rows),
-            "unknown_cost_attempts": unknown,
-            "known_total_by_currency": {
-                currency: format(value, ".9f") for currency, value in sorted(totals.items())
-            },
-            "by_actor": money(by_actor),
-            "by_account": money(by_account),
-            "by_root_workflow": money(by_root),
-            "by_run_including_descendants": money(by_inclusive_run),
-            "attempts": rows,
-        }
+        return AccountingReportData(
+            attempts, all_starts, events, runs, snapshots, eligibility_reads, account_history
+        )

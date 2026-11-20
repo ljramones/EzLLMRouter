@@ -29,8 +29,10 @@ the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 | 5.1: Session lock held across database work | Authentication snapshots sessions under a short dictionary lock, reads account state under the database gate, then verifies session identity and expiry before publishing. Login rechecks account/auth version after password verification. Database operations, wire-token creation/revocation and response writes run outside the session lock. Thread regressions cover logout, expiry, password change/reset, permission changes and replacement races. Expired/invalid sessions and rejected logins discard their associated wire credentials. |
 | 4.3.5: Python client has no total response deadline | Both clients default to a configurable 60-second HTTP budget. The owned HTTPX transport clamps pool/connect/TLS/write/read operations to the remaining monotonic budget through public HTTPcore interfaces, including incomplete headers and slow bodies. Uncoalesced response chunks also bound cooperative injected streams. Socket-pair tests exercise real blocked reads without listeners; deterministic tests cover all four protocol paths, connection reuse, independent concurrent budgets and query-first errors without replay. OS DNS can overrun, but late connections are closed before sending; custom transports own their blocking I/O deadlines. |
 | 4.3.5: Provisioning deletes an issued credential after interruption | Reserve credential custody and sync an operation receipt before issuance. Preserve both after possible issuance, including Ctrl-C, broken output, failed fsync, malformed/lost replies and connection-close failure. Existing files block another invocation. Only failures before issuance remove unused files created by that invocation. An uncertain reply can still leave an empty/partial credential, requiring revision inspection and explicit rotation. |
-| 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP routing, shared exports and duplication still need structural cleanup. |
-| 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. Strict mypy now covers 28 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
+| 4.3.1: Formatting not enforced across runtime sources | A separate formatting commit, `1b297e0`, reformats 363 tracked Python files. AST comparison verifies executable syntax and data literals, normalizing only source locations, docstring indentation and Unicode-prefix spelling. Formatting is now enforced across all six maintained Python trees, including tests. HTTP structural cleanup is recorded separately below. |
+| 4.3.1 / 4.3.2: HTTP structure | Resolve routes from explicit method/path metadata before dispatch, retaining authorization stages and selector validation. Consolidate the public asset allowlist and four CSV writers, replace dependency re-exports with direct imports, type application/session/lifecycle state and clarify operation-specific failure events. Twelve offline regressions exercise real handlers, route precedence, permission and body-read boundaries, export values and safe logging. An old/new handler comparison preserves status/error/header behavior across 1,033 requests and identical bytes for all four CSV exports. Strict typing expands to 31 modules. |
+| 5.4 / 5.5 / 5.9: Shared server logic | Share exact money/UTC rendering and a JSON engine with explicit policies while retaining wire-version limits, null/control/negative-zero behavior, canonical ordering and digest domains. Centralize active administrator checks, transactional authority/audit bookkeeping and usage revision appends. Introduce a domain-error root and named state types while preserving catch types, retry attributes and plain wire strings. Declare optional collaborators, inject guarded sending/readiness/successor ownership and remove attribution's Registry import cycle. Split the registry action dispatcher (785 to 33 lines), usage report (484 to 93), external report (302 to 100) and Coordinator admission/dispatch with typed snapshots. Add 24 offline regressions; strict typing covers 36 modules. |
+| 4.3.2: Narrow lint/type gates | Enable `E9`, all `F` and all `B` rules across server, clients, deployment, worker, tools and tests, with no new blanket rule ignores. Remove unused imports, declare shared exports, bind loop captures, pair equal-length sequences strictly, chain translated exceptions and replace 14 blind exception assertions with expected error types. The quality batch expanded strict mypy to 28 modules, including every SQL repository and provider probes, with imported types retained through `follow_imports="silent"`. Four runner regressions exercise real tools against bad disposable projects and verify runtime-state exclusion. Further type coverage remains incremental. |
 | 4.2.7 / 5.11 / 3.10: Resource ownership and lifecycle | Coordinator and successor expose draining, idempotent close methods; execution queues and completed-future retention are bounded. Sender/worker IPC and ingress have connection limits and whole-frame/write deadlines. Worker socket exchange is async and cancellable; rejected executor submissions cannot execute later. Gateway startup failures close partial clients, listeners and loop threads. HTTP input enforces its deadline without per-request timer threads. Registry wire tokens expire/prune under a short memory lock; operator shutdown revokes session tokens and blocks late publication. Local-service startup/shutdown unwinds resources in dependency order. |
 | 3.10: Authentication context selection | Empty/malformed expiry contexts return 401. Exact credentials retain their own scope, registry defaults use an explicit or unambiguous common context, and implicit execution credential selection rejects ambiguous aliases. Tests reverse insertion order and verify explicit context/credential behavior. |
 | 3.10: Provider vault cleanup after commit | Idempotent credential replacement/removal retries derive the retired version from the committed operation receipt and resume unlinking after a filesystem failure, including after registry/vault reopen and later rotations. Selected credentials, operation receipts and audit history remain intact. |
@@ -138,6 +140,33 @@ Loopback TLS tests now assert specific guard and certificate errors, but still
 require their separate target run. Browser and frozen-worker qualification have
 not been rerun for the formatting/lint changes.
 
+The HTTP structure batch passes 728 offline unittest cases, seven console
+component scripts, Ruff checks and strict mypy across 31 modules. Twelve of
+those cases are new HTTP structure regressions. An isolated built-wheel check
+passes 96 tests and verifies that all 96 packaged server files match the source.
+The old/new handler comparison uses commit `26b8686` as its baseline; 1,033
+requests preserve status/error/header behavior and all four CSV exports preserve
+their bytes. Generated logs, comparison results and wheel evidence are under
+ignored `.artifacts/code-review/http-batch/`. These are in-memory and offline
+checks; browser and socket-listener suites still require their separate target
+run for this batch.
+
+The shared-server batch passes 752 offline unittest cases, seven console
+component scripts, Ruff checks and strict mypy across 36 modules. Its 24 new
+regressions cover protocol policy differences, exact rendering, domain errors,
+state serialization, constructor injection, audit rollback/replay, usage revision
+linkage and report versions 1–3. The built wheel passes 199 tests, including the
+staged runtime import checks; all 101 packaged files match the source, and every
+imported server module is verified to come from the extracted wheel. The verifier
+uses the declared virtual environment for native dependencies and prepends the
+wheel under Python isolated mode.
+
+An additional old/new comparison against the pre-batch source snapshot finds no
+differences across 1,352 JSON decode cases, 804 canonicalization cases, 32 usage
+revisions, 36 usage reports and 15 external accounting reports. Evidence and the
+source snapshot are under ignored `.artifacts/code-review/shared-server-batch/`.
+Browser, listener and frozen-worker target qualification remain separate checks.
+
 The local deployment evidence driver now observes the durable guard receipt
 and held receiver request before revocation. It no longer reads private pool
 queues; any new deployment run must validate this before-first-write evidence
@@ -163,10 +192,9 @@ target checks pass.
 
 The review is not fully resolved. Continue in this order:
 
-1. Refactor routes, repeated CSV/money/timestamp logic, repository ownership and
-   large functions with focused behavior tests. Continue strict typing into the
-   remaining service/client modules; the expanded 28-module scope is not full
-   coverage (4.3.2).
+1. Continue strict typing into the remaining service/client modules; the expanded
+   36-module scope is not full coverage (4.3.2). Other lower-severity structural
+   findings remain open unless covered by an implemented-fix entry above.
 2. Continue the platform, process recovery, generated-input and performance work
    in the testing roadmap and complete the outstanding target checks.
 

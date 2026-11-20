@@ -8,13 +8,6 @@ SAVE_INSERT_REGISTRY_PRINCIPALS = Query(
     "record=excluded.record"
 )
 
-SAVE_UPDATE_REGISTRY_META = Query("UPDATE registry_meta SET value=? WHERE key='authority_revision'")
-
-SAVE_INSERT_REGISTRY_AUDIT = Query(
-    "INSERT INTO registry_audit "
-    "(actor,action,subject,old_revision,new_revision,authority_revision,at) VALUES "
-    "(?,?,?,?,?,?,?)"
-)
 
 ACTION_INSERT_CONSOLE_USERS = Query("INSERT INTO console_users VALUES (?,?,?,?,?,?,?)")
 
@@ -74,5 +67,3 @@ VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS = Query(
 VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS_2 = Query(
     "SELECT 1 FROM console_users WHERE principal_id=?"
 )
-
-SAVE_SELECT_REGISTRY_META = Query("SELECT value FROM registry_meta WHERE key='authority_revision'")

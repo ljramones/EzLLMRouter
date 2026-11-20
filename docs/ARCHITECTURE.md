@@ -64,6 +64,8 @@ All tables use the [versioned database schema](DATABASE.md). Repository
 modules own SQL queries; shared transactions keep accounting, credentials,
 permissions and audit entries consistent. The operator server separates transport,
 authentication, route dispatch and per-server application state.
+Shared [formatting, JSON policies, authority bookkeeping and state types](DATABASE.md#shared-server-logic)
+preserve the adopted wire contracts and keep transaction ownership explicit.
 
 See [resource ownership and shutdown](RESOURCES.md), the [API guide](API.md),
 [security policy](SECURITY.md), and

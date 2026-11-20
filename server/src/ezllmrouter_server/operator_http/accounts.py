@@ -1,9 +1,17 @@
 """Operator accounts handlers."""
 
-from .common import ConnectorError, NOT_HANDLED, UserError, log_failure
+from ..local_connectors import ConnectorError
+from ..observability import log_failure
+from ..user_management import UserError
 
 
 class AccountsRoutes:
+    def delete_user(self, path, session, body, scope):
+        return self._user_write(body, session, delete=True)
+
+    def delete_local_connector(self, path, session, body, scope):
+        return self._local_connector_write(body, session, delete=True)
+
     def _user_write(self, body, session, *, delete=False):
         if not self.application.accounts:
             return self._fail(404, "NOT_FOUND")
@@ -45,7 +53,7 @@ class AccountsRoutes:
         except (ValueError, TypeError, KeyError):
             return self._fail(400, "INVALID_USER_CHANGE")
         except Exception:
-            log_failure("operator_web.serve.Handler._user_write.failed")
+            log_failure("operator_http.accounts.user_write.failed")
             return self._fail(503, "USER_MANAGEMENT_UNAVAILABLE")
 
     def _local_connector_write(self, body, session, *, delete=False):
@@ -82,86 +90,41 @@ class AccountsRoutes:
         except (ValueError, TypeError, KeyError):
             return self._fail(400, "INVALID_CONNECTOR_CHANGE")
         except Exception:
-            log_failure("operator_web.serve.Handler._local_connector_write.failed")
+            log_failure("operator_http.accounts.local_connector_write.failed")
             return self._fail(503, "CONNECTOR_UNAVAILABLE")
 
     def get_operator_v1_local_connectors(self, path, session, body, scope):
-        if (
-            path.path == "/operator/v1/local-connectors"
-            and (not path.query)
-            and self.application.local_connectors
-        ):
-            return self._send(
-                200, self.application.local_connectors.list(session[1]["principal_id"])
-            )
-        return NOT_HANDLED
+        return self._send(200, self.application.local_connectors.list(session[1]["principal_id"]))
 
     def get_operator_v1_local_connectors_availability(self, path, session, body, scope):
-        if (
-            path.path == "/operator/v1/local-connectors/availability"
-            and (not path.query)
-            and self.application.local_connectors
-        ):
-            return self._send(
-                200, self.application.local_connectors.availability(session[1]["principal_id"])
-            )
-        return NOT_HANDLED
+        return self._send(
+            200, self.application.local_connectors.availability(session[1]["principal_id"])
+        )
 
     def get_operator_v1_local_connectors_nearby(self, path, session, body, scope):
-        if (
-            path.path == "/operator/v1/local-connectors/nearby"
-            and (not path.query)
-            and self.application.local_connectors
-        ):
-            return self._send(
-                200, self.application.local_connectors.nearby(session[1]["principal_id"])
-            )
-        return NOT_HANDLED
+        return self._send(200, self.application.local_connectors.nearby(session[1]["principal_id"]))
 
     def get_local_connector(self, path, session, body, scope):
-        if (
-            path.path.startswith("/operator/v1/local-connectors/")
-            and (not path.query)
-            and self.application.local_connectors
-        ):
-            connector_id = path.path[len("/operator/v1/local-connectors/") :]
-            if "/" in connector_id or not connector_id:
-                return self._fail(404, "NOT_FOUND")
-            return self._send(
-                200, self.application.local_connectors.get(session[1]["principal_id"], connector_id)
-            )
-        return NOT_HANDLED
+        connector_id = path.path[len("/operator/v1/local-connectors/") :]
+        if "/" in connector_id or not connector_id:
+            return self._fail(404, "NOT_FOUND")
+        return self._send(
+            200, self.application.local_connectors.get(session[1]["principal_id"], connector_id)
+        )
 
     def get_operator_v1_users(self, path, session, body, scope):
-        if path.path == "/operator/v1/users" and (not path.query) and self.application.accounts:
-            return self._send(200, self.application.accounts.list(session[1]["principal_id"]))
-        return NOT_HANDLED
+        return self._send(200, self.application.accounts.list(session[1]["principal_id"]))
 
     def get_user(self, path, session, body, scope):
-        if (
-            path.path.startswith("/operator/v1/users/")
-            and (not path.query)
-            and self.application.accounts
-        ):
-            principal_id = path.path[len("/operator/v1/users/") :]
-            if "/" in principal_id or not principal_id:
-                return self._fail(404, "NOT_FOUND")
-            return self._send(
-                200, self.application.accounts.get(session[1]["principal_id"], principal_id)
-            )
-        return NOT_HANDLED
+        principal_id = path.path[len("/operator/v1/users/") :]
+        if "/" in principal_id or not principal_id:
+            return self._fail(404, "NOT_FOUND")
+        return self._send(
+            200, self.application.accounts.get(session[1]["principal_id"], principal_id)
+        )
 
     def post_operator_v1_users(self, path, session, body, scope):
-        if self.path in (
-            "/operator/v1/users",
-            "/operator/v1/account/password",
-        ) or self.path.startswith("/operator/v1/users/"):
-            return self._user_write(body, session)
-        return NOT_HANDLED
+        return self._user_write(body, session)
 
     def post_operator_v1_local_connectors(self, path, session, body, scope):
-        if self.path == "/operator/v1/local-connectors" or self.path.startswith(
-            "/operator/v1/local-connectors/"
-        ):
-            return self._local_connector_write(body, session)
-        return NOT_HANDLED
+        return self._local_connector_write(body, session)

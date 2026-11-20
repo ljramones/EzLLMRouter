@@ -8,15 +8,17 @@ the operator must review that exact model limit and its price conditions.
 
 from __future__ import annotations
 
-from datetime import date
-from decimal import Decimal, ROUND_HALF_EVEN, ROUND_UP
 import re
+from datetime import date
+from decimal import ROUND_HALF_EVEN, ROUND_UP, Decimal
 
+from .formatting import money, utc_timestamp
+from .json_validation import MAX_SAFE_INTEGER
 
 SEMANTICS = "openai.responses.text.cache.v2"
 CONTRACT = "openai.responses.implicit-cache.v1"
 NANO = Decimal("0.000000001")
-MAX_COUNT = 9007199254740991
+MAX_COUNT = MAX_SAFE_INTEGER
 RATE_KEYS = {"input_uncached", "input_cache_read", "input_cache_write_30m", "output_text"}
 
 
@@ -189,7 +191,7 @@ def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_
                     cost = {
                         "status": "calculated",
                         "currency": schedule["currency"],
-                        "amount_decimal": format(amount, "f"),
+                        "amount_decimal": money(amount),
                         "source_ref": schedule["price_version"],
                     }
                     if amount == 0:
@@ -211,5 +213,5 @@ def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_
         "contract_version": schedule["contract"]["version"],
         "price_version": schedule["price_version"],
         "cost": cost,
-        "recorded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "recorded_at": utc_timestamp(datetime.now(timezone.utc)),
     }

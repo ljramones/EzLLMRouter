@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from .repositories import successor_reporting as _queries
-
+import json
 from datetime import datetime, timezone
 from decimal import Decimal
-import json
 
+from .formatting import money, utc_timestamp
+from .repositories import successor_reporting as _queries
 from .successor_contract import utc_second
 
 SYNTHETIC_ENVIRONMENT = "standalone-synthetic"
 
 
 def _money(amount):
-    return format(amount.quantize(Decimal("0.000000001")), "f")
+    return money(amount.quantize(Decimal("0.000000001")))
 
 
 def _aggregate(rows):
@@ -79,7 +79,7 @@ def usage_report(store, scope, filters=None):
         or type(scope.get("principal_id")) is not str
     ):
         raise PermissionError("authenticated reporting scope required")
-    operational_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    operational_as_of = utc_timestamp(datetime.now(timezone.utc))
     with store.database.read():
         records = [
             json.loads(row[0])

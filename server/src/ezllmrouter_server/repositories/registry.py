@@ -55,7 +55,6 @@ ACTION_INSERT_REGISTRY_AUDIT = Query(
     "(?,?,?,?,?,?,?)"
 )
 
-ACTION_INSERT_REGISTRY_AUDIT_VALUES = Query("INSERT INTO registry_audit_values VALUES (?,?,?)")
 
 ACTION_INSERT_REGISTRY_OPERATIONS = Query("INSERT INTO registry_operations VALUES (?,?,?,?)")
 

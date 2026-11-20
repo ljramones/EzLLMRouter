@@ -2,21 +2,20 @@
 
 from __future__ import annotations
 
-from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
-
-from .repositories import successor_service as _queries
-
-from .observability import log_failure
-
+import json
+import sqlite3
+import threading
+import uuid
 from concurrent.futures import TimeoutError
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
-import json
-import threading
-import sqlite3
-import uuid
 
 from .canonical import ContractError
+from .formatting import utc_timestamp
+from .observability import log_failure
+from .repositories import successor_service as _queries
+from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
+from .states import CandidateAccess, DeliveryState, DispatchState, SettlementState, SubmissionState
 from .successor_contract import (
     SCHEMAS,
     classify_request,
@@ -31,7 +30,7 @@ from .successor_plan import execution_eligible, mint_plan
 
 
 def utc_now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return utc_timestamp(datetime.now(timezone.utc))
 
 
 def error_response(code, guidance=None):
@@ -113,17 +112,17 @@ class SuccessorService:
 
                 if committed:
                     fields = {
-                        "submission_state": "unknown",
-                        "dispatch_state": "possible_send",
-                        "delivery_state": "unknown",
-                        "candidate_access": "unknown_outcome",
+                        "submission_state": SubmissionState.UNKNOWN.value,
+                        "dispatch_state": DispatchState.POSSIBLE_SEND.value,
+                        "delivery_state": DeliveryState.UNKNOWN.value,
+                        "candidate_access": CandidateAccess.UNKNOWN_OUTCOME.value,
                     }
                 else:
                     fields = {
-                        "submission_state": "failed",
-                        "dispatch_state": "blocked",
-                        "delivery_state": "pending",
-                        "candidate_access": "unavailable_due_failure",
+                        "submission_state": SubmissionState.FAILED.value,
+                        "dispatch_state": DispatchState.BLOCKED.value,
+                        "delivery_state": DeliveryState.PENDING.value,
+                        "candidate_access": CandidateAccess.UNAVAILABLE_DUE_FAILURE.value,
                         "failure_stage": "before_send",
                         "failure": error_response("FDC_REJECTED"),
                     }
@@ -142,10 +141,10 @@ class SuccessorService:
         return self._update(
             sid,
             {
-                "submission_state": "unknown",
-                "dispatch_state": "possible_send",
-                "delivery_state": "unknown",
-                "candidate_access": "unknown_outcome",
+                "submission_state": SubmissionState.UNKNOWN.value,
+                "dispatch_state": DispatchState.POSSIBLE_SEND.value,
+                "delivery_state": DeliveryState.UNKNOWN.value,
+                "candidate_access": CandidateAccess.UNKNOWN_OUTCOME.value,
             },
             self.clock(),
             on_update=lambda db: self.allowance.pause_in_transaction(db, "unknown_outcome"),
@@ -458,11 +457,11 @@ class SuccessorService:
             "trusted_context": context,
             "created_at": assessed_at,
             "updated_at": assessed_at,
-            "submission_state": "pending",
-            "dispatch_state": "reserved",
-            "delivery_state": "pending",
-            "settlement_state": "pending",
-            "candidate_access": "not_yet_available",
+            "submission_state": SubmissionState.PENDING.value,
+            "dispatch_state": DispatchState.RESERVED.value,
+            "delivery_state": DeliveryState.PENDING.value,
+            "settlement_state": SettlementState.PENDING.value,
+            "candidate_access": CandidateAccess.NOT_YET_AVAILABLE.value,
             "exposure_state": "outstanding",
             "status_revision": 1,
         }
@@ -492,10 +491,10 @@ class SuccessorService:
                 self._update(
                     sid,
                     {
-                        "submission_state": "failed",
-                        "dispatch_state": "blocked",
-                        "delivery_state": "pending",
-                        "candidate_access": "unavailable_due_failure",
+                        "submission_state": SubmissionState.FAILED.value,
+                        "dispatch_state": DispatchState.BLOCKED.value,
+                        "delivery_state": DeliveryState.PENDING.value,
+                        "candidate_access": CandidateAccess.UNAVAILABLE_DUE_FAILURE.value,
                         "failure_stage": "before_send",
                         "failure": error_response("INTERNAL_UNAVAILABLE"),
                     },
@@ -623,10 +622,10 @@ class SuccessorService:
             self._update(
                 sid,
                 {
-                    "submission_state": "completed",
-                    "dispatch_state": "sent",
-                    "delivery_state": "valid",
-                    "candidate_access": "present",
+                    "submission_state": SubmissionState.COMPLETED.value,
+                    "dispatch_state": DispatchState.SENT.value,
+                    "delivery_state": DeliveryState.VALID.value,
+                    "candidate_access": CandidateAccess.PRESENT.value,
                     "result": outcome["result"],
                     "result_available_at": self.clock(),
                 },
@@ -635,8 +634,8 @@ class SuccessorService:
         except ContractError as exc:
             no_send = {
                 **record,
-                "submission_state": "failed",
-                "dispatch_state": "blocked",
+                "submission_state": SubmissionState.FAILED.value,
+                "dispatch_state": DispatchState.BLOCKED.value,
                 "failure_stage": "before_send",
                 "failure": error_response(exc.code),
             }
@@ -652,10 +651,10 @@ class SuccessorService:
             self._update(
                 sid,
                 {
-                    "submission_state": "failed",
+                    "submission_state": SubmissionState.FAILED.value,
                     "dispatch_state": "blocked" if stage == "before_send" else "sent",
                     "delivery_state": "invalid" if stage == "result_validation" else "pending",
-                    "candidate_access": "unavailable_due_failure",
+                    "candidate_access": CandidateAccess.UNAVAILABLE_DUE_FAILURE.value,
                     "failure_stage": stage,
                     "failure": error_response(exc.code),
                 },
@@ -670,10 +669,10 @@ class SuccessorService:
                 self._update(
                     sid,
                     {
-                        "submission_state": "failed",
-                        "dispatch_state": "blocked",
-                        "delivery_state": "pending",
-                        "candidate_access": "unavailable_due_failure",
+                        "submission_state": SubmissionState.FAILED.value,
+                        "dispatch_state": DispatchState.BLOCKED.value,
+                        "delivery_state": DeliveryState.PENDING.value,
+                        "candidate_access": CandidateAccess.UNAVAILABLE_DUE_FAILURE.value,
                         "failure_stage": "before_send",
                         "failure": error_response("FDC_REJECTED"),
                     },

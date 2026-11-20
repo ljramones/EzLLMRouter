@@ -1,6 +1,8 @@
 """Operator transport handlers."""
 
-from .common import _pairs, _reject_number, json
+import json
+
+from .common import _pairs, _reject_number, csv_bytes
 
 
 class TransportRoutes:
@@ -31,6 +33,14 @@ class TransportRoutes:
 
     def _fail(self, status, code):
         self._send(status, {"error": code})
+
+    def _send_csv(self, filename, columns, rows):
+        return self._send(
+            200,
+            csv_bytes(columns, rows),
+            content_type="text/csv; charset=utf-8",
+            extra=(("Content-Disposition", "attachment; filename=" + filename),),
+        )
 
     def _origin_ok(self, mutation=False):
         hosts = self.headers.get_all("Host")

@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
-from .repositories import user_management as _queries
-
-from collections import defaultdict, deque
 import base64
 import hashlib
 import hmac
 import json
 import os
-from pathlib import Path
 import re
 import secrets
 import sqlite3
 import threading
 import time
 import uuid
+from collections import defaultdict, deque
+from pathlib import Path
 
-from .registry import timestamp
-from .store import encode
+from .errors import RequestError
+from .formatting import utc_timestamp as timestamp
 from .private_files import secret_text
-
+from .repositories import authority
+from .repositories import user_management as _queries
+from .store import encode
 
 DEFAULT_ADMIN_USERNAME = "admin"
 PASSWORD_HASH_SLOTS = threading.BoundedSemaphore(2)
@@ -46,10 +46,9 @@ ROLE_PERMISSIONS = {
 USERNAME = re.compile(r"[a-z0-9][a-z0-9_.-]{2,63}\Z")
 
 
-class UserError(ValueError):
+class UserError(RequestError):
     def __init__(self, code, status=400):
-        super().__init__(code)
-        self.code, self.status = code, status
+        super().__init__(code, status)
 
 
 def username(value):
@@ -230,13 +229,7 @@ class UserManager:
         return context
 
     def _admin(self, db, actor):
-        row = db.execute(_queries.ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
-        principal = json.loads(row[0]) if row else None
-        if (
-            not principal
-            or principal["status"] != "active"
-            or principal["role"] != "registry_admin"
-        ):
+        if not authority.authorized(db, actor):
             raise UserError("ADMIN_REQUIRED", 403)
 
     def get(self, actor, principal_id):
@@ -280,19 +273,14 @@ class UserManager:
         db.execute(
             _queries.SAVE_INSERT_REGISTRY_PRINCIPALS, (principal["principal_id"], encode(principal))
         )
-        revision = int(db.execute(_queries.SAVE_SELECT_REGISTRY_META).fetchone()[0]) + 1
-        db.execute(_queries.SAVE_UPDATE_REGISTRY_META, (str(revision),))
-        db.execute(
-            _queries.SAVE_INSERT_REGISTRY_AUDIT,
-            (
-                actor,
-                action,
-                principal["principal_id"],
-                old_revision or None,
-                principal["revision"],
-                revision,
-                timestamp(),
-            ),
+        revision = authority.record_change(
+            db,
+            actor=actor,
+            action=action,
+            subject=principal["principal_id"],
+            old_revision=old_revision or None,
+            new_revision=principal["revision"],
+            at=timestamp(),
         )
         return revision
 

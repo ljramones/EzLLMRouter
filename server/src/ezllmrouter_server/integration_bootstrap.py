@@ -5,11 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import ServerError
 from .private_files import read_private, secret_text
 from .registry import Registry, RegistryConflict
 
 
-class BootstrapError(ValueError):
+class BootstrapError(ServerError, ValueError):
     """Startup cannot safely reconcile an identity with its saved credential."""
 
 
