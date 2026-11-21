@@ -101,6 +101,8 @@ submission also verifies that its unscheduled coroutine closes and later work
 still runs. The HTTP tier also runs the forced connection-cap, already-closed
 stream and bounded-handler-join cases. Their reviewed coverage sets must match
 across local and CI runs, independent of incidental handler completion.
+Socket-budget fixtures live in a separate test module so loading the loopback
+inventory preserves `sys.path` and does not load the isolated-worker fixture.
 
 Run the full offline checks with `uv run --locked python -m tools.check`.
 Socket-listener and frozen-worker target qualification remain separate checks;

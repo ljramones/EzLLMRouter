@@ -112,6 +112,7 @@ MODULES = (
     "tests.unit.test_measurement",
     "tests.unit.test_gateway_lifecycle",
     "tests.unit.test_resource_lifecycle",
+    "tests.unit.test_socket_budget",
     "tests.unit.test_correctness_cases",
     "tests.unit.test_gateway_runtime_safety",
     "tests.unit.test_observation_retention",
@@ -130,7 +131,7 @@ MODULES = (
 )
 LOOPBACK_MODULES = (
     "tests.unit.test_operator_scheduler",
-    "tests.unit.test_resource_lifecycle.SocketBudgetTests",
+    "tests.unit.test_socket_budget.SocketBudgetTests",
     "tests.operator_console.test_authorization_matrix_http.LoopbackAuthorizationMatrixTests",
     "tests.development_slice.test_http",
     "tests.operator_console.test_web",

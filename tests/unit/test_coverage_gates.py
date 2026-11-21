@@ -73,10 +73,8 @@ class HTTPCoverageGateTests(unittest.TestCase):
     def test_http_tier_forces_connection_cleanup_outcomes(self):
         from tools import check
 
-        self.assertIn("tests.unit.test_resource_lifecycle", check.MODULES)
-        self.assertIn(
-            "tests.unit.test_resource_lifecycle.SocketBudgetTests", check.LOOPBACK_MODULES
-        )
+        self.assertIn("tests.unit.test_socket_budget", check.MODULES)
+        self.assertIn("tests.unit.test_socket_budget.SocketBudgetTests", check.LOOPBACK_MODULES)
 
     def test_measurements_reject_reusing_nonempty_output_directories(self):
         from tools.coverage_run import prepare
