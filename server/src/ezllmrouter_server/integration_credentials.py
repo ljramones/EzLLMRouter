@@ -10,16 +10,16 @@ import hmac
 import json
 import secrets
 import threading
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from datetime import datetime as datetime, timedelta as timedelta, timezone as timezone
+from .formatting import utc_timestamp as utc_timestamp
 
-from .formatting import utc_timestamp
 from .integration_accounting import IntegrationError, _checked, _time
 from .observability import log_failure
 from .provider_adapters import probe
 from .repositories import authority
 from .repositories import integration_credentials as _queries
-from .secret_box import SecretBox, validate_secret
+from .secret_box import SecretBox, validate_secret as validate_secret
 from .store import encode
 
 
@@ -61,6 +61,9 @@ def reencrypt_credentials(store, box, *, verify_only=False):
         return changed
 
     return store.database.transaction(rewrite)
+
+
+from . import integration_credential_records as _credential_records
 
 
 class DatabaseCredentialStore:
@@ -108,38 +111,11 @@ class DatabaseCredentialStore:
             raise IntegrationError("POLICY_DENIED", 403)
         return dataset
 
-    def _binding(self, account_id):
-        with self.store.database.read():
-            row = self.store.database.execute(
-                _queries.BINDING_SELECT_INTEGRATION_CREDENTIAL_BINDINGS, (account_id,)
-            ).fetchone()
-        if not row:
-            raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-        return json.loads(row[0])
+    _binding = _credential_records._binding
 
-    def _seal(self, account_id, version, provider, secret):
-        try:
-            validate_secret(secret)
-        except ValueError as exc:
-            raise IntegrationError("INVALID_CREDENTIAL") from exc
-        return self.box.seal_parts(secret, credential_context(account_id, version, provider))
+    _seal = _credential_records._seal
 
-    def _resolve(self, binding, version=None):
-        selected = version or binding["selected_version"]
-        with self.store.database.read():
-            row = self.store.database.execute(
-                _queries.RESOLVE_SELECT_INTEGRATION_CREDENTIAL_VERSIONS,
-                (binding["account_id"], selected),
-            ).fetchone()
-        if not row:
-            raise IntegrationError("CREDENTIAL_KEY_UNAVAILABLE", 503)
-        try:
-            return self.box.open_parts(
-                *row, credential_context(binding["account_id"], selected, binding["provider"])
-            )
-        except Exception as exc:
-            log_failure("integration_credentials.DatabaseCredentialStore._resolve.failed")
-            raise IntegrationError("CREDENTIAL_DECRYPT_FAILED", 503) from exc
+    _resolve = _credential_records._resolve
 
     def reencrypt_secrets(self):
         with self._gate:
@@ -150,69 +126,15 @@ class DatabaseCredentialStore:
             identifier = self.box.rotate()
             return {"key_id": identifier, "rewritten": self.reencrypt_secrets()}
 
-    def _settings(self, provider):
-        return {
-            "origin": PROVIDERS[provider][1],
-            "location": "commercial",
-            "site": self.registry.identity.owner_id,
-        }
+    _settings = _credential_records._settings
 
-    def _discover(self, binding, version=None, *, secret=None):
-        result = self.discover(
-            PROVIDERS[binding["provider"]][0],
-            self._settings(binding["provider"]),
-            self._resolve(binding, version) if secret is None else secret,
-            "inventory",
-            controlled=self.controlled,
-        )
-        if result["state"] == "observed" and not result.get("models"):
-            result = {"state": "empty", "reason": "empty_catalogue", "models": []}
-        return {
-            "state": result["state"],
-            "reason": result["reason"],
-            "models": result.get("models", []),
-            "details": result.get("details", []),
-            "has_more": bool(result.get("has_more")),
-            "checked_at": _time(),
-            "credential_version": version or binding["selected_version"],
-            "record_revision": binding["revision"],
-        }
+    _discover = _credential_records._discover
 
-    def _public(self, binding):
-        return {key: value for key, value in binding.items() if key not in ("request_hash",)}
+    _public = _credential_records._public
 
-    def _current(self, principal, dataset_id, account_id, expected_revision):
-        """Call within the write transaction when publishing a changed binding."""
-        self._owner(principal, dataset_id)
-        item = self._binding(account_id)
-        if (
-            type(expected_revision) is not int
-            or item["dataset_id"] != dataset_id
-            or item["revision"] != expected_revision
-        ):
-            raise IntegrationError("STALE_REVISION", 409)
-        return item
+    _current = _credential_records._current
 
-    def _clean_pending(self):
-        cutoff = utc_timestamp(datetime.now(timezone.utc) - timedelta(days=1))
-
-        def clean():
-            db = self.store.database
-            rows = db.execute(_queries.CLEAN_SELECT_INTEGRATION_CREDENTIAL_BINDINGS).fetchall()
-            for account_id, raw in rows:
-                item = json.loads(raw)
-                if (
-                    item["state"] == "pending"
-                    and item["discovery"]["state"] == "not_checked"
-                    and item["created_at"] < cutoff
-                ):
-                    db.execute(_queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_VERSIONS, (account_id,))
-                    db.execute(
-                        _queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_OPERATIONS, (account_id,)
-                    )
-                    db.execute(_queries.CLEAN_DELETE_INTEGRATION_CREDENTIAL_BINDINGS, (account_id,))
-
-        self.store.database.transaction(clean)
+    _clean_pending = _credential_records._clean_pending
 
     def connect(self, principal, body):
         if type(body) is not dict or set(body) != {

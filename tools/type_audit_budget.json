@@ -20,7 +20,8 @@
     "server/src/ezllmrouter_server/gateway/worker_ready.py": 6,
     "server/src/ezllmrouter_server/http_server.py": 27,
     "server/src/ezllmrouter_server/integration_bootstrap.py": 1,
-    "server/src/ezllmrouter_server/integration_credentials.py": 96,
+    "server/src/ezllmrouter_server/integration_credential_records.py": 38,
+    "server/src/ezllmrouter_server/integration_credentials.py": 45,
     "server/src/ezllmrouter_server/integration_local.py": 19,
     "server/src/ezllmrouter_server/local_connectors.py": 199,
     "server/src/ezllmrouter_server/operator_demo.py": 7,
@@ -96,6 +97,12 @@
       },
       "note": "Unchanged method extraction; exact try/except and gate/transaction bodies retained.",
       "cleanup": "Coordinator facade, all new steps and cache accounting enter strict typing with checked concrete capability interfaces."
+    },
+    {
+      "source": "server/src/ezllmrouter_server/integration_credentials.py",
+      "destination": "server/src/ezllmrouter_server/integration_credential_records.py",
+      "baseline_commit": "323de6d",
+      "note": "Eight unchanged record methods move with explicit self typing and dynamic facade references; aggregate debt does not grow."
     }
   ]
 }

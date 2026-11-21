@@ -970,3 +970,18 @@ script/console checks and both ratchets. Library typing debt falls to 1,689 and
 67 size allowances remain. All server functions are now below 150 lines. The
 credential-store class and retained evidence/test decomposition remain before
 item 11 can be marked complete.
+
+### Item 11 follow-up: credential-store record move
+
+Eight binding, encryption-context, discovery and pending-cleanup methods move
+unchanged to `integration_credential_records.py`; DatabaseCredentialStore keeps
+its constructor, locks, mutation flows and original method bindings. AST checks
+preserve executable bodies and read/transaction ownership. Clock, validation and
+logging references still resolve through the public facade. The credential-store
+class falls below 600 lines, eliminating the final oversized server class.
+
+Six credential tests and the 31-domain cold-import regression pass. Full
+`tools.check` passes 915 Python cases, strict typing on the existing 106 files,
+lint/format, script/console checks and both budgets. Existing typing debt transfers
+without growth (1,676 diagnostics); size allowances fall to 66. Typing the new
+record boundary and the remaining small save-method extraction follow separately.
