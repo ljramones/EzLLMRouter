@@ -57,6 +57,23 @@ class DatabaseTests(unittest.TestCase):
             ("1",),
         )
 
+    def test_stream_closes_its_cursor_after_early_exit_and_failure(self):
+        store = self.store()
+        for fail in (False, True):
+            with store.database.snapshot() as snapshot:
+                try:
+                    with snapshot.stream(Query("SELECT 1 UNION ALL SELECT 2")) as rows:
+                        self.assertEqual(next(rows), (1,))
+                        if fail:
+                            raise ValueError("consumer failed")
+                except ValueError:
+                    self.assertTrue(fail)
+                with self.assertRaises(sqlite3.ProgrammingError):
+                    next(rows)
+                self.assertEqual(snapshot.execute(Query("SELECT 3")).fetchone(), (3,))
+        with self.assertRaises(TypeError), store.database.stream("SELECT 1"):
+            self.fail("unnamed query accepted")
+
     def test_sqlite_automatic_rollback_preserves_nested_original_exception(self):
         store = self.store()
         original = sqlite3.OperationalError("private original error")

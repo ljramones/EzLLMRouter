@@ -367,8 +367,8 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence at `f6746d4`: 919 unittest cases, seven console scripts and 472 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
-| 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence after R1–R3: 928 unittest cases, strict typing on 161 files and 518 packaged-wheel tests over 168 package files; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
+| 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). R3 now streams projected accounting facts into exact counters instead of retaining full visible attempt records (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
@@ -377,7 +377,7 @@ also passes. A pending or unavailable check is never a passing result.
 | 8 | Client fixes | Implemented — Rust/.NET target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/53 safety checks, Go race/vet, Java checks and packed TypeScript 5.9.3 consumer compilation pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
 | 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage is recorded for the final structural pass below (4.4.4). |
-| 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. All work-order size targets pass, with 12 shrinking allowances. Strict scope is 107 files; 1,631 existing library typing errors remain budgeted debt. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
+| 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. R1/R2 remove all size allowances and all library typing diagnostics; strict coverage now includes both complete implementation roots. R3 report evidence is recorded below. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
 
 ### Implementation pass: items 2–5
 
@@ -1395,9 +1395,9 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | Implemented — local checks pass | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Zero diagnostics remain. The strict gate covers both complete library roots (152 source files), plus seven maintained tooling/support files. |
+| R1 — complete library typing | Implemented — local checks pass | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Zero diagnostics remain. The strict gate covers both complete library roots (154 source files), plus seven maintained tooling/support files. |
 | R2 — remove size allowances | Implemented — local checks pass | All 12 initial allowances are removed; the empty budget rejects every new oversized symbol. Public facade imports and every historical runner remain. |
-| R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
+| R3 — scale report aggregation | Implemented — local checks pass | One projected attempt at a time feeds exact group/run/agent/cohort counters. Complete output parity passes 340 cases and both scale sizes; cursor cleanup, writer concurrency, memory, zero-token and latency regressions pass. |
 
 The first R1 batch types coroutine/future ownership and bounded connection
 lifecycle, plus diagnostic journal records/cache fingerprints. Framework
@@ -1519,3 +1519,54 @@ is corrected. Full `tools.check` passes 922 Python cases, strict typing on all
 159 files, lint/formatting, both empty debt budgets and maintained script/console
 checks. Report aggregation R3 remains active; deployment qualification and
 frozen/provider/daemon state are unchanged.
+
+
+#### R3: stream accounting facts into complete report aggregates
+
+The controlled usage-cost reader selects visibility/cutoff/latest revision and
+projects only report fields in SQL. It streams one projected attempt at a time
+into exact decimal/currency counters, preserving original row/page order and
+all full-cohort costs through the cutoff. The accumulator retains run/agent/group
+counters and the requested page, without full attempt arrays or descendant-ID
+sets. Run graph and distinct output cardinalities can still grow. Connection and
+registered-agent reads retain their separate registry boundaries. Public report
+and helper import paths remain available; cohort presentation/arithmetic is
+shared between the retained helpers and the streaming path.
+
+Database owns a scoped named-query cursor; the report explicitly closes its
+projection generator before releasing the existing bounded read-only snapshot,
+including consumer errors. No writer gate is added. Real concurrent-writer tests
+show a metadata write commits during projection while the report keeps its
+original snapshot. A follow-up report observes the write. Maintained tests also
+check single-attempt projections exclude large unrelated/private payloads,
+input memory stays bounded as same-group attempts grow, zero counts retain
+complete token coverage, booleans remain excluded, and 20 latency samples retain
+the existing median/p95 rule. Cursor tests cover early exit and failure.
+
+An ignored differential harness compares complete report objects against the
+pre-streaming implementation for 340 scope/filter/cutoff/page cases, before and
+after 140 deterministic added attempts. It includes replacement revisions,
+unknown/estimated/mixed-currency costs, absent/empty intents, fallback destinations,
+legacy attribution, boolean token counts and a cyclic legacy run graph. Both scale outputs match too.
+With tracing and modules already imported, 1,010 attempts used 10,079,004 bytes
+(reference) versus 147,546 bytes (streamed); at 10,010 attempts, 98,782,248 versus
+144,369 bytes. Three-attempt pages and fixed groups/runs isolate input memory.
+The 10,010-attempt traced timings were 1.312 s and 1.501 s; memory improves while
+this particular run is about 15% slower. This is not a throughput claim.
+
+Final `tools.check` passes 928 Python cases in 117 modules, strict typing on
+161 files (154 complete-library files and seven tooling/support files), lint/
+formatting, both empty debt budgets, JavaScript/console and fixture conformance
+checks. All five maintained report-stream regressions and all 11 database cases
+pass. Fresh offline-built wheels pass 518 selected installed-package tests; all
+168 packaged files match the source manifest and bytes. Wheel SHA-256 values:
+
+- Server 0.3.3: `da98e25105703fbb42db4023b0e71d3a2e84f2fc91d68cebc35024e19ba045e5`.
+- Python client 0.3.0: `3d15030ab7f89808e9826603cdfd1c86c9fdabb55bbdcfe48e734b69085cc160`.
+
+Ignored evidence is under `.artifacts/code-review/final-debt/`, including final
+full-suite/installed-wheel logs, AST proofs, exact report parity and scale
+summaries. R1, R2 and R3 are implemented and locally verified. Original-list
+item 1 (deployment/real listener/browser/frozen qualification), Rust/.NET target
+checks in item 8, and deferred dependency/CI hardening in item 9 remain open.
+No schema, contract fixture, frozen input, provider or daemon/profile state changes.

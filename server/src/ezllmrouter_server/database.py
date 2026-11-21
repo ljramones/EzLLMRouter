@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import re
 import sqlite3
 import threading
-from typing import Protocol, TypeVar
+from typing import Protocol, TypeVar, cast
 
 T = TypeVar("T")
 Row = tuple[object, ...]
@@ -112,6 +112,18 @@ class Database:
             if self._read_depth:
                 raise RuntimeError("cannot start a write transaction inside a read scope")
             return self._transaction(action)
+
+    @contextmanager
+    def stream(self, query: Query, parameters: Parameters = ()) -> Iterator[Iterator[Row]]:
+        """Borrow a named-query cursor until scope exit; never materialize its rows."""
+        if not isinstance(query, Query):
+            raise TypeError("database operations require a repository query")
+        with self._gate:
+            cursor = self._connection.execute(query.sql, parameters)
+            try:
+                yield cast(Iterator[Row], iter(cursor))
+            finally:
+                cursor.close()
 
     def execute(self, query: Query, parameters: Parameters = ()) -> Result:
         if not isinstance(query, Query):

@@ -116,17 +116,34 @@ External integration dataset reports and exports still read their requested
 dataset in full. The controlled usage-cost report instead uses a store-owned,
 read-only WAL snapshot, with at most four concurrent report readers and a ten-second
 SQL execution budget. It selects visibility, cutoff and latest usage revisions in
-SQL, then releases the snapshot before JSON decoding and aggregation. Writers do
-not wait for those report readers. In-memory test stores use their existing read
-scope. Shutdown interrupts and drains readers before releasing the service lease.
+SQL and projects only report fields, excluding unrelated submission content and
+provider payloads. A cursor yields one projection at a time into exact-decimal
+group/run/agent/cohort counters and the requested attempt page. Decoding and
+aggregation run on the independent read connection, with no writer gate held.
+Cursor and generator scopes close on completion or consumer failure, before the
+snapshot is released. In-memory test stores use their existing read scope.
+Shutdown interrupts and drains readers before releasing the service lease.
 
 Usage-cost attempts and exports use `attempt_page` (1–10,000) and `attempt_limit`
 (1–100, default 100). `attempt_pagination` includes the total count. Agent inventory
 retains its independent `page`/`limit` fields. Totals and cohorts cover all matching
 attempts, regardless of the displayed page. Cohort costs retain full descendant
 costs through the cutoff, including attempts outside the task-start interval;
-those aggregates still require all visible attempt metadata. Exports contain the
-selected attempt page, and the console labels this explicitly.
+the reader streams all visible accounting facts but does not retain full attempt
+records or per-attempt descendant-ID sets. Input memory depends on the visible
+run graph, distinct output groups and requested page; metadata/output cardinality
+is not capped by this change. Exports contain the selected attempt page, and the
+console labels this explicitly. Connection and registered-agent metadata retain
+their separate registry read boundaries. Exact monetary aggregation remains in
+Python; no floating-point SQLite sums are introduced.
+
+In a local synthetic comparison with 10,010 attempts, 2 KiB of unrelated content
+on both submissions and usage rows, and a three-attempt page, traced Python peak
+memory fell from 98,782,248 to 144,369 bytes. Timings under tracing were 1.312 s
+and 1.501 s respectively: this demonstrates a memory improvement, not a throughput
+claim. At 1,010 attempts the streamed peak was 147,546 bytes. Complete report
+objects matched the previous implementation at both sizes. These are offline
+fixture measurements, not provider or deployment qualification.
 
 Snapshot and successor-result expiry use indexed cutoffs and preserve identity,
 digest and accounting evidence. Maintenance checks for due work before taking a

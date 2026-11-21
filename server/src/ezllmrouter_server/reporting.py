@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 import json
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_EVEN, Decimal
-from statistics import median
+from statistics import median as median
 
 from .formatting import money, utc_timestamp
 from .identifiers import valid_identifier
@@ -163,81 +163,17 @@ def usage_costs(
     attempt_limit: int = 100,
 ) -> Record:
     """Apply visibility before any count, aggregate, table, or export."""
-    filters = filters or {}
-    _report_window(filters, attempt_limit, attempt_page)
-    start, end, cutoff, cutoff_text = _report_window(filters, limit, page)
-    raw, latest, runs, outcomes, connections = _read_usage_snapshot(cutoff_text, registry, scope)
-    all_items = _visible_attempts(connections, cutoff, latest, raw, scope)
-    items = [
-        item
-        for item in all_items
-        if not (
-            (start or end)
-            and (
-                item["attempt_at"] is None
-                or (start and cast(datetime, _utc(item["attempt_at"])) < start)
-                or (end and cast(datetime, _utc(item["attempt_at"])) >= end)
-            )
-        )
-        and not any(
-            not _matches(item, key, value)
-            for key, value in filters.items()
-            if key not in ("from", "to", "cutoff", "currency", "agent_search")
-        )
-        and (not filters.get("currency") or item["currency"] == filters["currency"])
-    ]
-    grand = Totals()
-    for item in items:
-        grand.add(item)
-    by_attempt = {item["attempt_id"]: item for item in items}
-    descendants = descendant_attempts(items, runs)
-    cohort_by_attempt = {item["attempt_id"]: item for item in all_items}
-    cohort_descendants = descendant_attempts(all_items, runs)
-    agent_rows = _agent_summary(
-        by_attempt, descendants, filters, items, outcomes, registry, runs, scope
+    from .reporting_stream import build_report
+
+    return build_report(
+        registry,
+        scope,
+        filters,
+        page=page,
+        limit=limit,
+        attempt_page=attempt_page,
+        attempt_limit=attempt_limit,
     )
-    workflows = _workflow_summary(by_attempt, descendants, items, outcomes, runs, scope)
-    cohorts, cohort_root_ids = _cohort_members(
-        all_items, cohort_descendants, cutoff, end, filters, outcomes, runs, scope, start
-    )
-    cohort_rows, workflows = _cohort_summary(
-        cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs, workflows
-    )
-    groupings, trend_items = _attempt_groupings(items)
-    agent_rows.sort(key=lambda row: (row["display_name"].casefold(), row["agent_id"]))
-    all_agents = len(agent_rows)
-    attribution_coverage = {
-        "registered_agent_attempts": sum(
-            item["agent_id"] not in ("__unattributed__", "__direct_human__") for item in items
-        ),
-        "direct_human_attempts": sum(item["agent_id"] == "__direct_human__" for item in items),
-        "unknown_agent_attempts": sum(item["agent_id"] == "__unattributed__" for item in items),
-    }
-    return {
-        "scope": "Recorded through EzLLMRouter",
-        "cutoff": cutoff_text,
-        "period": {"from": filters.get("from"), "to": filters.get("to"), "timezone": "UTC"},
-        "filters": filters,
-        "total": grand.public(),
-        "groupings": groupings,
-        "trend": group_attempts(trend_items, "day"),
-        "agents": {
-            "page": page,
-            "limit": limit,
-            "total": all_agents,
-            "items": agent_rows[(page - 1) * limit : page * limit],
-        },
-        "cohorts": cohort_rows,
-        "cohort_filter_basis": "task_start; full descendant attempt cost through cutoff",
-        "workflows": workflows,
-        "attempts": items[(attempt_page - 1) * attempt_limit : attempt_page * attempt_limit],
-        "attempt_pagination": {"page": attempt_page, "limit": attempt_limit, "total": len(items)},
-        "attribution_coverage": attribution_coverage,
-        "outcome_coverage": {
-            "reported_root_runs": sum(run_id in outcomes for run_id in cohort_root_ids),
-            "visible_root_runs": len(cohort_root_ids),
-        },
-    }
 
 
 def _totals_for_ids(ids: Iterable[str], by_attempt: dict[str, Record]) -> Record:
@@ -260,7 +196,6 @@ def _cohort_summary(
     workflows = [run for run in workflows if run["root_run_id"] in cohort_root_ids]
     for key, member in sorted(cohorts.items()):
         totals = _totals_for_ids(member["ids"], cohort_by_attempt)
-        amounts = totals["known_subtotals"]
         accepted_durations = []
         for run_id in member["runs"]:
             run = runs[run_id]
@@ -281,41 +216,10 @@ def _cohort_summary(
         performance = _cohort_performance(
             accepted_durations, member, member_attempts, token_complete
         )
-        if member["accepted"] == 0:
-            efficiency = {"state": "no_accepted_tasks", "cost_per_accepted_task": None}
-        elif (
-            member["unreported"]
-            or totals["unknown_cost_attempts"]
-            or totals["estimated_attempts"]
-            or len(amounts) != 1
-        ):
-            efficiency = {"state": "incomplete", "cost_per_accepted_task": None}
-        else:
-            currency, amount = next(iter(amounts.items()))
-            efficiency = {
-                "state": "complete",
-                "currency": currency,
-                "cost_per_accepted_task": _ratio(amount, member["accepted"]),
-            }
-        cohort_rows.append(
-            {
-                "task_class": key[0],
-                "evaluation_ref": key[1],
-                "agent_id": key[2],
-                "agent_version": key[3],
-                "total_tasks": len(member["runs"]),
-                "accepted": member["accepted"],
-                "rejected": member["rejected"],
-                "abandoned": member["abandoned"],
-                "unreported": member["unreported"],
-                "attempt_cost": totals,
-                "efficiency": efficiency,
-                "performance": performance,
-                "sample_note": "Low sample · descriptive only"
-                if len(member["runs"]) < 10
-                else "Descriptive comparison",
-            }
-        )
+        from . import reporting_metrics as metrics
+
+        efficiency = metrics.efficiency(member, totals)
+        cohort_rows.append(metrics.cohort_row(key, member, totals, performance, efficiency))
     return cohort_rows, workflows
 
 
@@ -739,36 +643,28 @@ def _cohort_performance(
     member_attempts: list[Record],
     token_complete: bool,
 ) -> Record:
-    performance = {
-        "acceptance_rate_percent": _ratio(member["accepted"] * 100, len(member["runs"]), "0.01"),
-        "calls_per_accepted_task": (
-            _ratio(len(member["ids"]), member["accepted"]) if member["accepted"] else None
-        ),
-        "tokens_per_accepted_task": (
-            {
-                "input": _ratio(
-                    sum(row["input_tokens"] for row in member_attempts), member["accepted"]
-                ),
-                "output": _ratio(
-                    sum(row["output_tokens"] for row in member_attempts), member["accepted"]
-                ),
-            }
-            if member["accepted"] and token_complete
-            else None
-        ),
-        "token_coverage_attempts": sum(
-            type(row["input_tokens"]) is int and type(row["output_tokens"]) is int
-            for row in member_attempts
-        ),
-        "latency_accepted_samples": len(accepted_durations),
-        "median_seconds_to_accepted": median(accepted_durations) if accepted_durations else None,
-        "p95_seconds_to_accepted": (
-            sorted(accepted_durations)[int((len(accepted_durations) - 1) * 0.95)]
-            if len(accepted_durations) >= 20
-            else None
-        ),
-        "retry_rate": "not_measured",
-        "escalation_rate": "not_measured",
-        "human_intervention_rate": "not_measured",
-    }
-    return performance
+    from . import reporting_metrics as metrics
+
+    known_tokens = sum(
+        type(row["input_tokens"]) is int and type(row["output_tokens"]) is int
+        for row in member_attempts
+    )
+    input_tokens = (
+        sum(row["input_tokens"] for row in member_attempts)
+        if member["accepted"] and token_complete
+        else 0
+    )
+    output_tokens = (
+        sum(row["output_tokens"] for row in member_attempts)
+        if member["accepted"] and token_complete
+        else 0
+    )
+    return metrics.performance(
+        accepted_durations,
+        member,
+        len(member["ids"]),
+        token_complete,
+        known_tokens,
+        input_tokens,
+        output_tokens,
+    )

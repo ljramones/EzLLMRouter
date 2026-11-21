@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OPERATOR_TESTS = (
     "attribution cache_accounting catalogue catalogue_runner connector_availability "
     "crud_update demo attribution_actor attribution_runner profile_upgrade build_target demo_workspace "
-    "profile_report_runner reporting team_demo "
+    "profile_report_runner reporting reporting_stream team_demo "
     "lifecycle live_audit local_connectors local_connectors_web "
     "model_route personal_campaign prepare projection registry registry_core "
     "usage_update user_management user_management_web"
