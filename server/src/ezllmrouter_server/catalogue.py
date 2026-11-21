@@ -6,13 +6,14 @@ import re
 from urllib.parse import urlsplit
 
 
+from .records import Record
 from .identity import DEFAULT_IDENTITY
 from .identifiers import require_identifier
 
 RATE = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,12})?\Z")
 
 
-def _text(value, limit=500):
+def _text(value: object, limit: int = 500) -> str:
     if (
         type(value) is not str
         or not value.strip()
@@ -23,11 +24,11 @@ def _text(value, limit=500):
     return value
 
 
-def _key(value):
+def _key(value: object) -> str:
     return require_identifier(value)
 
 
-def operator_source(url, title, recorded_at, snapshot):
+def operator_source(url: str, title: str, recorded_at: str, snapshot: str) -> Record:
     _text(url)
     _text(title, 160)
     parsed = urlsplit(url)
@@ -49,7 +50,7 @@ def operator_source(url, title, recorded_at, snapshot):
     }
 
 
-def operator_reference_price(data, recorded_at):
+def operator_reference_price(data: Record, recorded_at: str) -> tuple[Record, Record]:
     """Validate explicit reference rates without claiming publisher verification."""
     if type(data) is not dict or set(data) != {
         "snapshot_id",
@@ -63,80 +64,7 @@ def operator_reference_price(data, recorded_at):
     bands = data["bands"]
     if type(bands) is not list or not 1 <= len(bands) <= 4:
         raise ValueError("invalid reference bands")
-    allowed = {
-        "prompt_tokens_lte",
-        "prompt_tokens_gt",
-        "input_tokens_lte",
-        "input_tokens_gt",
-        "rate_period",
-        "weekday_intervals",
-        "exclude",
-        "definition",
-        "publisher_date_through",
-        "cutover_timezone",
-        "calendar_and_exact_interval_boundary_resolution",
-        "days",
-        "timezone",
-    }
-    normalized = []
-    for band in bands:
-        required = {"label", "conditions", "rates_usd_per_1000000_tokens"}
-        if (
-            type(band) is not dict
-            or not required <= set(band)
-            or set(band) - required - {"additional_rates", "calculation_basis"}
-        ):
-            raise ValueError("invalid reference band")
-        conditions = band["conditions"]
-        if type(conditions) is not dict or set(conditions) - allowed or len(str(conditions)) > 2000:
-            raise ValueError("invalid reference conditions")
-        for value in conditions.values():
-            if type(value) not in (str, int, bool, list) or (
-                type(value) is list
-                and (len(value) > 20 or any(type(item) is not str for item in value))
-            ):
-                raise ValueError("invalid reference conditions")
-        rates = band["rates_usd_per_1000000_tokens"]
-        primary = {"input_uncached", "output", "input_cached"}
-        extra = {"cache_write_5m", "cache_write_1h", "cache_write_30m", "cache_write_12h"}
-        if type(rates) is not dict or not primary <= set(rates) or set(rates) - primary - extra:
-            raise ValueError("invalid reference rates")
-        clean = {}
-        for key, value in rates.items():
-            if value is None:
-                clean[key] = None
-            elif (
-                type(value) is str
-                and RATE.fullmatch(value)
-                and Decimal(value) <= Decimal("1000000")
-            ):
-                clean[key] = value
-            else:
-                raise ValueError("invalid reference rate")
-        if all(clean[key] is None for key in primary):
-            raise ValueError("at least one primary reference rate is required")
-        item = {
-            "label": _text(band["label"], 160),
-            "conditions": conditions,
-            "rates_usd_per_1000000_tokens": clean,
-        }
-        if "additional_rates" in band:
-            additional = band["additional_rates"]
-            if type(additional) is not dict or set(additional) != {
-                "context_storage_usd_per_1000000_token_hours"
-            }:
-                raise ValueError("invalid additional reference rate")
-            value = additional["context_storage_usd_per_1000000_token_hours"]
-            if value is not None and (
-                type(value) is not str
-                or not RATE.fullmatch(value)
-                or Decimal(value) > Decimal("1000000")
-            ):
-                raise ValueError("invalid additional reference rate")
-            item["additional_rates"] = additional
-        if "calculation_basis" in band:
-            item["calculation_basis"] = _text(band["calculation_basis"], 500)
-        normalized.append(item)
+    normalized = _operator_bands(bands)
     return (
         {
             "snapshot_id": snapshot,
@@ -152,7 +80,9 @@ def operator_reference_price(data, recorded_at):
     )
 
 
-def validate_catalogue(subject, data, *, owner_id=DEFAULT_IDENTITY.owner_id):
+def validate_catalogue(
+    subject: str, data: Record, *, owner_id: str = DEFAULT_IDENTITY.owner_id
+) -> Record:
     """Return a reference-only registry record from one researched seed entry."""
     if type(data) is not dict or set(data) != {"entry", "sources"}:
         raise ValueError("invalid catalogue import")
@@ -200,25 +130,7 @@ def validate_catalogue(subject, data, *, owner_id=DEFAULT_IDENTITY.owner_id):
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("invalid checked date") from exc
     bands = price.get("bands")
-    if type(bands) is not list or not bands or len(bands) > 4:
-        raise ValueError("invalid price bands")
-    for band in bands:
-        if type(band) is not dict or type(band.get("conditions")) is not dict:
-            raise ValueError("invalid price condition")
-        _text(band.get("label"))
-        rates = band.get("rates_usd_per_1000000_tokens")
-        if type(rates) is not dict or not {"input_uncached", "output", "input_cached"} <= set(
-            rates
-        ):
-            raise ValueError("missing reference rates")
-        for value in rates.values():
-            if type(value) is not str or not RATE.fullmatch(value):
-                raise ValueError("invalid reference rate")
-            try:
-                if Decimal(value) > Decimal("1000000"):
-                    raise ValueError("invalid reference rate")
-            except InvalidOperation as exc:
-                raise ValueError("invalid reference rate") from exc
+    _validate_reference_bands(bands)
     refs = entry.get("source_refs")
     if type(refs) is not list or not refs or len(refs) != len(sources):
         raise ValueError("invalid source references")
@@ -254,3 +166,103 @@ def validate_catalogue(subject, data, *, owner_id=DEFAULT_IDENTITY.owner_id):
         "source_links": sources,
         "price_version": price["snapshot_id"],
     }
+
+
+def _operator_bands(bands: list[Record]) -> list[Record]:
+    allowed = {
+        "prompt_tokens_lte",
+        "prompt_tokens_gt",
+        "input_tokens_lte",
+        "input_tokens_gt",
+        "rate_period",
+        "weekday_intervals",
+        "exclude",
+        "definition",
+        "publisher_date_through",
+        "cutover_timezone",
+        "calendar_and_exact_interval_boundary_resolution",
+        "days",
+        "timezone",
+    }
+    normalized = []
+    for band in bands:
+        required = {"label", "conditions", "rates_usd_per_1000000_tokens"}
+        if (
+            type(band) is not dict
+            or not required <= set(band)
+            or set(band) - required - {"additional_rates", "calculation_basis"}
+        ):
+            raise ValueError("invalid reference band")
+        conditions = band["conditions"]
+        if type(conditions) is not dict or set(conditions) - allowed or len(str(conditions)) > 2000:
+            raise ValueError("invalid reference conditions")
+        for value in conditions.values():
+            if type(value) not in (str, int, bool, list) or (
+                type(value) is list
+                and (len(value) > 20 or any(type(item) is not str for item in value))
+            ):
+                raise ValueError("invalid reference conditions")
+        rates = band["rates_usd_per_1000000_tokens"]
+        primary = {"input_uncached", "output", "input_cached"}
+        extra = {"cache_write_5m", "cache_write_1h", "cache_write_30m", "cache_write_12h"}
+        if type(rates) is not dict or not primary <= set(rates) or set(rates) - primary - extra:
+            raise ValueError("invalid reference rates")
+        clean: dict[str, str | None] = {}
+        for key, value in rates.items():
+            if value is None:
+                clean[key] = None
+            elif (
+                type(value) is str
+                and RATE.fullmatch(value)
+                and Decimal(value) <= Decimal("1000000")
+            ):
+                clean[key] = value
+            else:
+                raise ValueError("invalid reference rate")
+        if all(clean[key] is None for key in primary):
+            raise ValueError("at least one primary reference rate is required")
+        item = {
+            "label": _text(band["label"], 160),
+            "conditions": conditions,
+            "rates_usd_per_1000000_tokens": clean,
+        }
+        if "additional_rates" in band:
+            additional = band["additional_rates"]
+            if type(additional) is not dict or set(additional) != {
+                "context_storage_usd_per_1000000_token_hours"
+            }:
+                raise ValueError("invalid additional reference rate")
+            value = additional["context_storage_usd_per_1000000_token_hours"]
+            if value is not None and (
+                type(value) is not str
+                or not RATE.fullmatch(value)
+                or Decimal(value) > Decimal("1000000")
+            ):
+                raise ValueError("invalid additional reference rate")
+            item["additional_rates"] = additional
+        if "calculation_basis" in band:
+            item["calculation_basis"] = _text(band["calculation_basis"], 500)
+        normalized.append(item)
+    return normalized
+
+
+def _validate_reference_bands(bands: object) -> None:
+    if type(bands) is not list or not bands or len(bands) > 4:
+        raise ValueError("invalid price bands")
+    for band in bands:
+        if type(band) is not dict or type(band.get("conditions")) is not dict:
+            raise ValueError("invalid price condition")
+        _text(band.get("label"))
+        rates = band.get("rates_usd_per_1000000_tokens")
+        if type(rates) is not dict or not {"input_uncached", "output", "input_cached"} <= set(
+            rates
+        ):
+            raise ValueError("missing reference rates")
+        for value in rates.values():
+            if type(value) is not str or not RATE.fullmatch(value):
+                raise ValueError("invalid reference rate")
+            try:
+                if Decimal(value) > Decimal("1000000"):
+                    raise ValueError("invalid reference rate")
+            except InvalidOperation as exc:
+                raise ValueError("invalid reference rate") from exc

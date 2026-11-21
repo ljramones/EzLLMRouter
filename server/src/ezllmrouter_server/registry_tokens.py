@@ -2,20 +2,25 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from .records import Record
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hashlib
 import secrets
 import time
 from copy import deepcopy
 
 
-def _prune_operator_tokens(self, at):
-    # Caller owns the memory lock; never wait for the database while holding it.
+def _prune_operator_tokens(self: Registry, at: float) -> None:
     for verifier, (_, expiry) in tuple(self._operator_tokens.items()):
         if expiry <= at:
             self._operator_tokens.pop(verifier, None)
 
 
-def issue_local_operator_token(self, principal_id):
+def issue_local_operator_token(self: Registry, principal_id: str) -> str:
     """Server-only wire credential for one authenticated loopback session."""
     principal = self.principal(principal_id)
     if not principal or principal["status"] != "active" or principal["role"] != "registry_admin":
@@ -32,12 +37,12 @@ def issue_local_operator_token(self, principal_id):
     return token
 
 
-def revoke_local_operator_token(self, token: str) -> None:
+def revoke_local_operator_token(self: Registry, token: str) -> None:
     with self._token_lock:
         self._operator_tokens.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
 
-def authenticate(self, token, template):
+def authenticate(self: Registry, token: str, template: Record) -> Record:
     principal = self.credential_principal(token)
     trusted = deepcopy(template)
     trusted["principal_id"] = principal["principal_id"]

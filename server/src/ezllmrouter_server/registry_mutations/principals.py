@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+from typing import cast
+from ..database import Row
+
+from typing import TYPE_CHECKING
+from ..database import Database
+from ..records import Record
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+
 from ..errors import RegistryConflict
 from ..identifiers import require_text as nonempty
 from ..repositories import registry as _queries
@@ -9,7 +19,9 @@ from ..store import encode
 from ..registry_values import timestamp, identifier
 
 
-def _apply_create_principal(self, db, actor, action, subject, expected, data):
+def _apply_create_principal(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if (
         expected
         or set(data)
@@ -42,7 +54,9 @@ def _apply_create_principal(self, db, actor, action, subject, expected, data):
     return record
 
 
-def _apply_principal_change(self, db, actor, action, subject, expected, data):
+def _apply_principal_change(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     record = self._load_for_update(db, "registry_principals", "id", subject, expected)
     if record["status"] == "revoked":
         raise RegistryConflict("revoked principal cannot be changed")
@@ -68,7 +82,7 @@ def _apply_principal_change(self, db, actor, action, subject, expected, data):
             and record["status"] == "active"
             and data["role"] != "registry_admin"
         ):
-            active = db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone()[0]
+            active = cast(int, cast(Row, db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone())[0])
             if active <= 1:
                 raise ValueError("last active administrator")
         record["role"] = data["role"]
@@ -89,7 +103,7 @@ def _apply_principal_change(self, db, actor, action, subject, expected, data):
             and record["status"] == "active"
             and data["status"] != "active"
         ):
-            active = db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone()[0]
+            active = cast(int, cast(Row, db.execute(_queries.ACTIVE_ADMIN_COUNT).fetchone())[0])
             if active <= 1:
                 raise ValueError("last active administrator")
         record["status"], record["state_reason"] = data["status"], data["reason"]

@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING
+from ..database import Database
+from ..records import Record
+from ..store import decode_record
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+
 from ..errors import RegistryConflict
 from ..repositories import registry as _queries
 from ..store import encode
 from ..registry_values import timestamp, identifier
 
 
-def _apply_grant(self, db, actor, action, subject, expected, data):
+def _apply_grant(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if set(data) != {"configuration_ref", "status", "purposes", "task_classes"} or data[
         "status"
     ] not in ("active", "removed"):
@@ -21,7 +30,7 @@ def _apply_grant(self, db, actor, action, subject, expected, data):
     model_row = db.execute(_queries.MODEL_FOR_UPDATE, (ref,)).fetchone()
     if not principal_row or not model_row:
         raise ValueError("unregistered grant target")
-    principal, model = json.loads(principal_row[0]), json.loads(model_row[0])
+    principal, model = decode_record(principal_row[0]), decode_record(model_row[0])
     if principal["status"] == "revoked":
         raise ValueError("revoked principal cannot receive grants")
     if data["status"] == "active" and (
@@ -41,7 +50,7 @@ def _apply_grant(self, db, actor, action, subject, expected, data):
         connection_row = db.execute(
             _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (destination["connection_id"],)
         ).fetchone()
-        connection = json.loads(connection_row[0]) if connection_row else None
+        connection = decode_record(connection_row[0]) if connection_row else None
         if (
             not connection
             or connection["status"] != "active"
@@ -50,7 +59,7 @@ def _apply_grant(self, db, actor, action, subject, expected, data):
         ):
             raise ValueError("provider connection unavailable for new grant")
     row = db.execute(_queries.APPLY_SELECT_REGISTRY_GRANTS, (subject, ref)).fetchone()
-    old = json.loads(row[0]) if row else None
+    old = decode_record(row[0]) if row else None
     if expected != (old["revision"] if old else 0):
         raise RegistryConflict("stale grant")
     for field in ("purposes", "task_classes"):

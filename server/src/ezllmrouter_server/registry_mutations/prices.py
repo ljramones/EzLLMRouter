@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from ..database import Database
+from ..records import Record
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+
 from ..errors import RegistryConflict
 from ..repositories import registry as _queries
 from ..cache_accounting import SEMANTICS as CACHE_SEMANTICS
@@ -10,7 +17,9 @@ from ..store import encode
 from ..registry_values import RATE_CATEGORIES, timestamp, identifier, exact_rate
 
 
-def _apply_price(self, db, actor, action, subject, expected, data):
+def _apply_price(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     model = self._load_for_update(db, "registry_models", "ref", subject, expected)
     if model.get("kind") == "real_catalogue":
         raise ValueError("public reference is not an executable price schedule")

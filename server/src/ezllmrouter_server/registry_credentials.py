@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
+from typing import cast
+from .database import Row
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+from .database import Database
+from .records import Record
+from .store import decode_record
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hashlib
-import json
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -16,34 +27,22 @@ from .canonical import ContractError
 from .provider_adapters import ADAPTERS
 from .store import encode
 from .registry_values import timestamp, identifier
+from .registry_context import CredentialVault
 from . import registry as _registry
 
 
 def set_provider_credential(
-    self, actor, connection_id, expected_revision, operation_id, mode, secret=None
-):
+    self: Registry,
+    actor: str,
+    connection_id: str,
+    expected_revision: int,
+    operation_id: str,
+    mode: str,
+    secret: str | None = None,
+) -> Record:
     """Rotate/remove under the same first-write gate as registry authority mutations."""
-    identifier(connection_id)
-    identifier(operation_id)
-    if (
-        not self.provider_vault
-        or type(expected_revision) is not int
-        or mode not in ("replace", "remove")
-    ):
-        raise ValueError("invalid credential operation")
-    if mode == "remove" and secret is not None:
-        raise ValueError("remove has no credential body")
-    if mode == "replace" and type(secret) is not str:
-        raise ValueError("credential required")
-    digest = self.provider_vault.request_digest(
-        encode(
-            {
-                "connection_id": connection_id,
-                "expected_revision": expected_revision,
-                "mode": mode,
-                "secret": secret,
-            }
-        ).encode()
+    digest = _credential_request_digest(
+        self, connection_id, expected_revision, operation_id, mode, secret
     )
     with self.send_authority.gate:
         db = self.store.database
@@ -55,12 +54,12 @@ def set_provider_credential(
             if prior:
                 if prior[0] != actor or prior[1] != digest:
                     raise RegistryConflict("operation reuse conflict")
-                reply = json.loads(prior[2])
+                reply = decode_record(prior[2])
             else:
                 row = db.execute(
                     _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)
                 ).fetchone()
-                record = json.loads(row[0]) if row else None
+                record = decode_record(row[0]) if row else None
                 if (
                     not record
                     or record["revision"] != expected_revision
@@ -71,53 +70,29 @@ def set_provider_credential(
                 next_version = old_version + 1
         if prior:
             self.send_authority.epoch = self.version()
-            self.provider_vault.remove(connection_id, reply["record"]["credential_version"] - 1)
+            cast(CredentialVault, self.provider_vault).remove(
+                connection_id, reply["record"]["credential_version"] - 1
+            )
             return reply
         if mode == "replace":
-            self.provider_vault.seal(
-                connection_id, next_version, secret, committed_version=old_version
+            cast(CredentialVault, self.provider_vault).seal(
+                connection_id, next_version, cast(str, secret), committed_version=old_version
             )
         try:
 
-            def action():
-                current = json.loads(
-                    db.execute(
-                        _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)
-                    ).fetchone()[0]
-                )
-                if current["revision"] != expected_revision:
-                    raise RegistryConflict("connection revision changed")
-                current.update(
-                    credential_version=next_version,
-                    credential_ref=(
-                        hashlib.sha256(connection_id.encode()).hexdigest() + f".{next_version}"
-                    )
-                    if mode == "replace"
-                    else None,
-                    credential_state="present" if mode == "replace" else "absent",
-                )
-                current["revision"] += 1
-                db.execute(
-                    _queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(current), connection_id)
-                )
-                revision = authority.record_change(
+            def action() -> tuple[Record, int]:
+                return _publish_provider_credential(
+                    self,
                     db,
-                    actor=actor,
-                    action="provider_credential_" + mode,
-                    subject=connection_id,
-                    old_revision=expected_revision,
-                    new_revision=current["revision"],
-                    at=timestamp(),
-                    include_values=True,
-                    before=record,
-                    after=current,
+                    actor,
+                    connection_id,
+                    expected_revision,
+                    operation_id,
+                    mode,
+                    next_version,
+                    digest,
+                    cast(Record, record),
                 )
-                reply = {"record": current, "authority_revision": revision}
-                db.execute(
-                    _queries.ACTION_INSERT_REGISTRY_OPERATIONS,
-                    (operation_id, actor, digest, encode(reply)),
-                )
-                return reply, revision
 
             reply, revision = self.store.database.transaction(action)
         except BaseException:
@@ -126,18 +101,18 @@ def set_provider_credential(
             # it only while it is strictly ahead of the committed version.
             raise
         self.send_authority.epoch = revision
-        self.provider_vault.remove(connection_id, old_version)
+        cast(CredentialVault, self.provider_vault).remove(connection_id, old_version)
         return reply
 
 
 def probe_connection(
-    self,
+    self: Registry,
     actor: str,
     connection_id: str,
     expected_revision: int,
     operation_id: str,
     operation: str,
-) -> dict[str, object]:
+) -> Record:
     identifier(connection_id)
     identifier(operation_id)
     if operation not in ("access", "inventory", "readiness") or type(expected_revision) is not int:
@@ -151,7 +126,7 @@ def probe_connection(
                 _queries.PROBE_CONNECTION_SELECT_REGISTRY_OBSERVATIONS, (operation_id,)
             ).fetchone()
             if old:
-                saved = json.loads(old[0])
+                saved = decode_record(old[0])
                 if saved["connection_id"] != connection_id or saved["operation"] != operation:
                     raise RegistryConflict("probe operation reuse conflict")
                 return saved
@@ -177,7 +152,9 @@ def probe_connection(
         else:
             try:
                 credential = (
-                    self.provider_vault.resolve(connection_id, connection["credential_version"])
+                    cast(CredentialVault, self.provider_vault).resolve(
+                        connection_id, connection["credential_version"]
+                    )
                     if operation in ("access", "inventory")
                     else None
                 )
@@ -191,29 +168,12 @@ def probe_connection(
                     operation,
                     controlled=self.controlled_provider_proof,
                 )
-        now = datetime.now(timezone.utc)
-        observation = {
-            "operation_id": operation_id,
-            "connection_id": connection_id,
-            "connection_revision": connection["revision"],
-            "credential_version": connection["credential_version"],
-            "adapter_id": connection["adapter_id"],
-            "operation": operation,
-            "scope": {
-                "access": "credential_model_listing",
-                "inventory": "model_inventory",
-                "readiness": "service_reachability",
-            }[operation],
-            "observer": "trusted_local_service",
-            "observed_at": utc_timestamp(now),
-            "expires_at": utc_timestamp(now + timedelta(minutes=5)),
-            **result,
-        }
-        current = self.connection(connection_id)
+        observation = _probe_observation(operation_id, connection_id, connection, operation, result)
+        current = cast(Record, self.connection(connection_id))
         if current["revision"] != connection["revision"]:
             observation.update(state="stale", reason="connection_changed_during_probe", models=[])
 
-        def save():
+        def save() -> None:
             self.store.database.execute(
                 _queries.SAVE_INSERT_REGISTRY_OBSERVATIONS,
                 (operation_id, connection_id, encode(observation)),
@@ -224,7 +184,7 @@ def probe_connection(
         return observation
 
 
-def credential_principal(self, token, kind=None):
+def credential_principal(self: Registry, token: str, kind: str | None = None) -> Record:
     if type(token) is not str or len(token) < 32:
         raise ContractError("AUTHENTICATION_FAILED", 401)
     verifier = hashlib.sha256(token.encode()).hexdigest()
@@ -247,13 +207,15 @@ def credential_principal(self, token, kind=None):
         row = self.store.database.execute(
             _queries.CREDENTIAL_PRINCIPAL_SELECT_REGISTRY_CREDENTIALS, (verifier,)
         ).fetchone()
-    principal = self.principal(row[0]) if row else None
+    principal = self.principal(cast(str, row[0])) if row else None
     if not principal or principal["status"] != "active" or (kind and principal["kind"] != kind):
         raise ContractError("AUTHENTICATION_FAILED", 401)
     return principal
 
 
-def _apply_provider_configuration(self, db, actor, action, subject, expected, data):
+def _apply_provider_configuration(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if (
         expected
         or not subject.startswith("cfg.provider.")
@@ -264,7 +226,7 @@ def _apply_provider_configuration(self, db, actor, action, subject, expected, da
         raise RegistryConflict("configuration exists")
     deployment_id = identifier(data["deployment_id"])
     row = db.execute(_queries.APPLY_SELECT_REGISTRY_DEPLOYMENTS, (deployment_id,)).fetchone()
-    deployment = json.loads(row[0]) if row else None
+    deployment = decode_record(row[0]) if row else None
     if (
         not deployment
         or deployment["status"] != "catalogued"
@@ -274,7 +236,7 @@ def _apply_provider_configuration(self, db, actor, action, subject, expected, da
     row = db.execute(
         _queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (deployment["connection_id"],)
     ).fetchone()
-    connection = json.loads(row[0]) if row else None
+    connection = decode_record(row[0]) if row else None
     if (
         not connection
         or connection["status"] != "active"
@@ -283,8 +245,8 @@ def _apply_provider_configuration(self, db, actor, action, subject, expected, da
         or connection["settings"].get("project")
     ):
         raise ValueError("selected connection unavailable")
-    model = json.loads(
-        db.execute(_queries.MODEL_FOR_UPDATE, (deployment["model_ref"],)).fetchone()[0]
+    model = decode_record(
+        cast(Row, db.execute(_queries.MODEL_FOR_UPDATE, (deployment["model_ref"],)).fetchone())[0]
     )
     if (
         model["status"] != "catalogued"
@@ -331,7 +293,7 @@ def _apply_provider_configuration(self, db, actor, action, subject, expected, da
     return record
 
 
-def credential_bound_to(self, principal_id, token):
+def credential_bound_to(self: Registry, principal_id: str, token: str) -> bool:
     """Compare a saved credential without authenticating an inactive identity."""
     if type(token) is not str or not 32 <= len(token) <= 4096:
         return False
@@ -347,8 +309,14 @@ def credential_bound_to(self, principal_id, token):
 
 
 def provision_credential(
-    self, actor, principal_id, expected_revision, operation_id, *, secret_factory=None
-):
+    self: Registry,
+    actor: str,
+    principal_id: str,
+    expected_revision: int,
+    operation_id: str,
+    *,
+    secret_factory: Callable[[], str] | None = None,
+) -> tuple[Record, str | None]:
     """Return a new secret once; an optional factory can persist it before binding.
 
     The factory runs after authorization and idempotency checks, inside the
@@ -361,30 +329,16 @@ def provision_credential(
         raise ValueError("invalid expected revision")
     with self.send_authority.gate:
 
-        def action():
+        def action() -> tuple[Record, int | None, str | None]:
             db = self.store.database
-            actor_row = db.execute(
-                _queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)
-            ).fetchone()
-            admin = json.loads(actor_row[0]) if actor_row else None
-            if not admin or admin["status"] != "active" or admin["role"] != "registry_admin":
-                raise PermissionError("ADMIN_REQUIRED")
-            request_hash = hashlib.sha256(
-                encode(
-                    {
-                        "principal_id": principal_id,
-                        "expected_revision": expected_revision,
-                        "action": "provision_credential",
-                    }
-                ).encode()
-            ).hexdigest()
+            request_hash = _authorize_provision(db, actor, principal_id, expected_revision)
             prior = db.execute(
                 _queries.SET_PROVIDER_CREDENTIAL_SELECT_REGISTRY_OPERATIONS, (operation_id,)
             ).fetchone()
             if prior:
                 if prior[0] != actor or prior[1] != request_hash:
                     raise RegistryConflict("operation reuse conflict")
-                return json.loads(prior[2])["record"], None, None
+                return decode_record(prior[2])["record"], None, None
             record = self._load_for_update(
                 db, "registry_principals", "id", principal_id, expected_revision
             )
@@ -430,3 +384,127 @@ def provision_credential(
         if revision is not None:
             self.send_authority.epoch = revision
     return record, secret
+
+
+def _publish_provider_credential(
+    self: Registry,
+    db: Database,
+    actor: str,
+    connection_id: str,
+    expected_revision: int,
+    operation_id: str,
+    mode: str,
+    next_version: int,
+    digest: str,
+    record: Record,
+) -> tuple[Record, int]:
+    current = decode_record(
+        cast(
+            Row, db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (connection_id,)).fetchone()
+        )[0]
+    )
+    if current["revision"] != expected_revision:
+        raise RegistryConflict("connection revision changed")
+    current.update(
+        credential_version=next_version,
+        credential_ref=(hashlib.sha256(connection_id.encode()).hexdigest() + f".{next_version}")
+        if mode == "replace"
+        else None,
+        credential_state="present" if mode == "replace" else "absent",
+    )
+    current["revision"] += 1
+    db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(current), connection_id))
+    revision = authority.record_change(
+        db,
+        actor=actor,
+        action="provider_credential_" + mode,
+        subject=connection_id,
+        old_revision=expected_revision,
+        new_revision=current["revision"],
+        at=timestamp(),
+        include_values=True,
+        before=record,
+        after=current,
+    )
+    reply = {"record": current, "authority_revision": revision}
+    db.execute(
+        _queries.ACTION_INSERT_REGISTRY_OPERATIONS,
+        (operation_id, actor, digest, encode(reply)),
+    )
+    return reply, revision
+
+
+def _probe_observation(
+    operation_id: str, connection_id: str, connection: Record, operation: str, result: Record
+) -> Record:
+    now = datetime.now(timezone.utc)
+    observation = {
+        "operation_id": operation_id,
+        "connection_id": connection_id,
+        "connection_revision": connection["revision"],
+        "credential_version": connection["credential_version"],
+        "adapter_id": connection["adapter_id"],
+        "operation": operation,
+        "scope": {
+            "access": "credential_model_listing",
+            "inventory": "model_inventory",
+            "readiness": "service_reachability",
+        }[operation],
+        "observer": "trusted_local_service",
+        "observed_at": utc_timestamp(now),
+        "expires_at": utc_timestamp(now + timedelta(minutes=5)),
+        **result,
+    }
+    return observation
+
+
+def _authorize_provision(
+    db: Database, actor: str, principal_id: str, expected_revision: int
+) -> str:
+    actor_row = db.execute(_queries.REQUIRE_ADMIN_SELECT_REGISTRY_PRINCIPALS, (actor,)).fetchone()
+    admin = decode_record(actor_row[0]) if actor_row else None
+    if not admin or admin["status"] != "active" or admin["role"] != "registry_admin":
+        raise PermissionError("ADMIN_REQUIRED")
+    request_hash = hashlib.sha256(
+        encode(
+            {
+                "principal_id": principal_id,
+                "expected_revision": expected_revision,
+                "action": "provision_credential",
+            }
+        ).encode()
+    ).hexdigest()
+    return request_hash
+
+
+def _credential_request_digest(
+    self: Registry,
+    connection_id: str,
+    expected_revision: int,
+    operation_id: str,
+    mode: str,
+    secret: str | None,
+) -> str:
+    identifier(connection_id)
+    identifier(operation_id)
+    if (
+        not self.provider_vault
+        or type(expected_revision) is not int
+        or mode not in ("replace", "remove")
+    ):
+        raise ValueError("invalid credential operation")
+    if mode == "remove" and secret is not None:
+        raise ValueError("remove has no credential body")
+    if mode == "replace" and type(secret) is not str:
+        raise ValueError("credential required")
+    digest = self.provider_vault.request_digest(
+        encode(
+            {
+                "connection_id": connection_id,
+                "expected_revision": expected_revision,
+                "mode": mode,
+                "secret": secret,
+            }
+        ).encode()
+    )
+    return digest

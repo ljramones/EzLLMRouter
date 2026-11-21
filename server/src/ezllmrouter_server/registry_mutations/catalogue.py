@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from ..database import Database
+from ..records import Record
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+
 from ..errors import RegistryConflict
 from ..identifiers import require_text as nonempty
 from ..repositories import registry as _queries
@@ -10,7 +17,9 @@ from ..store import encode
 from ..registry_values import timestamp, identifier
 
 
-def _apply_import_catalogue(self, db, actor, action, subject, expected, data):
+def _apply_import_catalogue(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if expected != 0:
         raise RegistryConflict("catalogue creation requires revision zero")
     record = validate_catalogue(subject, data, owner_id=self.identity.owner_id)
@@ -18,22 +27,10 @@ def _apply_import_catalogue(self, db, actor, action, subject, expected, data):
     return record
 
 
-def _apply_register_catalogue(self, db, actor, action, subject, expected, data):
-    required = {
-        "display_name",
-        "vendor",
-        "family",
-        "api_model_id",
-        "model_version",
-        "owner",
-        "capabilities",
-        "context_window",
-        "max_output",
-        "notes",
-        "price",
-    }
-    if expected or set(data) != required or not subject.startswith("catalogue.operator."):
-        raise ValueError("invalid manual catalogue registration")
+def _apply_register_catalogue(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
+    _catalogue_fields(data, expected, subject)
     if db.execute(_queries.APPLY_SELECT_REGISTRY_MODELS, (subject,)).fetchone():
         raise RegistryConflict("model exists")
     capabilities = data["capabilities"]
@@ -98,3 +95,21 @@ def _apply_register_catalogue(self, db, actor, action, subject, expected, data):
     }
     db.execute(_queries.APPLY_INSERT_REGISTRY_MODELS, (subject, encode(record)))
     return record
+
+
+def _catalogue_fields(data: Record, expected: int, subject: str) -> None:
+    required = {
+        "display_name",
+        "vendor",
+        "family",
+        "api_model_id",
+        "model_version",
+        "owner",
+        "capabilities",
+        "context_window",
+        "max_output",
+        "notes",
+        "price",
+    }
+    if expected or set(data) != required or not subject.startswith("catalogue.operator."):
+        raise ValueError("invalid manual catalogue registration")

@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-import json
+from typing import cast
+from ..database import Row
+
+from typing import TYPE_CHECKING
+from ..database import Database
+from ..records import Record
+from ..store import decode_record
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+
 from ..errors import RegistryConflict
 from ..identifiers import require_text as nonempty
 from ..repositories import registry as _queries
@@ -11,7 +21,9 @@ from ..store import encode
 from ..registry_values import timestamp, identifier
 
 
-def _apply_create_connection(self, db, actor, action, subject, expected, data):
+def _apply_create_connection(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if (
         expected
         or set(data)
@@ -64,7 +76,9 @@ def _apply_create_connection(self, db, actor, action, subject, expected, data):
     return record
 
 
-def _apply_connection_change(self, db, actor, action, subject, expected, data):
+def _apply_connection_change(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     record = self._load_for_update(db, "registry_connections", "id", subject, expected)
     if record["status"] == "archived":
         raise RegistryConflict("archived connection is immutable")
@@ -87,31 +101,7 @@ def _apply_connection_change(self, db, actor, action, subject, expected, data):
         record["status"] = data["status"]
         record["state_reason"] = nonempty(data["reason"], 300)
     elif action == "probe_schedule":
-        if (
-            set(data) != {"enabled", "operation", "interval_seconds"}
-            or type(data["enabled"]) is not bool
-        ):
-            raise ValueError("invalid probe schedule")
-        if data["enabled"]:
-            if (
-                data["operation"] not in ("access", "inventory", "readiness")
-                or ADAPTERS[record["adapter_id"]].get(data["operation"]) is None
-                or type(data["interval_seconds"]) is not int
-                or not 300 <= data["interval_seconds"] <= 86400
-            ):
-                raise ValueError("unsupported scheduled probe")
-            if (
-                not record["checks_scheduled"]
-                and db.execute(_queries.SCHEDULED_CONNECTION_COUNT).fetchone()[0] >= 16
-            ):
-                raise ValueError("scheduled connection limit")
-        elif data["operation"] is not None or data["interval_seconds"] is not None:
-            raise ValueError("disabled schedule must be empty")
-        record.update(
-            checks_scheduled=data["enabled"],
-            scheduled_operation=data["operation"],
-            check_interval_seconds=data["interval_seconds"],
-        )
+        _set_probe_schedule(db, record, data)
     else:
         if (
             set(data) != {"deployment_id", "model_ref", "serving_id", "site", "status"}
@@ -121,7 +111,7 @@ def _apply_connection_change(self, db, actor, action, subject, expected, data):
         deployment_id = identifier(data["deployment_id"])
         model_ref = identifier(data["model_ref"])
         model_row = db.execute(_queries.MODEL_FOR_UPDATE, (model_ref,)).fetchone()
-        if not model_row or json.loads(model_row[0]).get("kind") != "real_catalogue":
+        if not model_row or decode_record(model_row[0]).get("kind") != "real_catalogue":
             raise ValueError("association requires existing real catalogue model")
         if db.execute(_queries.DEPLOYMENT_EXISTS, (deployment_id,)).fetchone():
             raise RegistryConflict("deployment identity exists")
@@ -140,3 +130,32 @@ def _apply_connection_change(self, db, actor, action, subject, expected, data):
     record["revision"] += 1
     db.execute(_queries.APPLY_UPDATE_REGISTRY_CONNECTIONS, (encode(record), subject))
     return record
+
+
+def _set_probe_schedule(db: Database, record: Record, data: Record) -> None:
+    if (
+        set(data) != {"enabled", "operation", "interval_seconds"}
+        or type(data["enabled"]) is not bool
+    ):
+        raise ValueError("invalid probe schedule")
+    if data["enabled"]:
+        if (
+            data["operation"] not in ("access", "inventory", "readiness")
+            or ADAPTERS[record["adapter_id"]].get(data["operation"]) is None
+            or type(data["interval_seconds"]) is not int
+            or not 300 <= data["interval_seconds"] <= 86400
+        ):
+            raise ValueError("unsupported scheduled probe")
+        if (
+            not record["checks_scheduled"]
+            and cast(int, cast(Row, db.execute(_queries.SCHEDULED_CONNECTION_COUNT).fetchone())[0])
+            >= 16
+        ):
+            raise ValueError("scheduled connection limit")
+    elif data["operation"] is not None or data["interval_seconds"] is not None:
+        raise ValueError("disabled schedule must be empty")
+    record.update(
+        checks_scheduled=data["enabled"],
+        scheduled_operation=data["operation"],
+        check_interval_seconds=data["interval_seconds"],
+    )

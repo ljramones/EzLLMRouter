@@ -6,8 +6,7 @@
   "errors": {
     "server/src/ezllmrouter_server/__main__.py": 1,
     "server/src/ezllmrouter_server/attribution.py": 45,
-    "server/src/ezllmrouter_server/cache_accounting.py": 13,
-    "server/src/ezllmrouter_server/catalogue.py": 22,
+    "server/src/ezllmrouter_server/cache_accounting.py": 12,
     "server/src/ezllmrouter_server/connection_resources.py": 6,
     "server/src/ezllmrouter_server/connector_availability.py": 14,
     "server/src/ezllmrouter_server/core.py": 185,
@@ -26,7 +25,7 @@
     "server/src/ezllmrouter_server/gateway/worker_ready.py": 6,
     "server/src/ezllmrouter_server/http_server.py": 27,
     "server/src/ezllmrouter_server/integration_accounting.py": 160,
-    "server/src/ezllmrouter_server/integration_bootstrap.py": 7,
+    "server/src/ezllmrouter_server/integration_bootstrap.py": 1,
     "server/src/ezllmrouter_server/integration_credentials.py": 110,
     "server/src/ezllmrouter_server/integration_local.py": 19,
     "server/src/ezllmrouter_server/local_connectors.py": 199,
@@ -44,18 +43,7 @@
     "server/src/ezllmrouter_server/personal_campaign.py": 65,
     "server/src/ezllmrouter_server/plans.py": 8,
     "server/src/ezllmrouter_server/provider_vault.py": 32,
-    "server/src/ezllmrouter_server/registry.py": 44,
-    "server/src/ezllmrouter_server/registry_credentials.py": 22,
-    "server/src/ezllmrouter_server/registry_mutations/catalogue.py": 8,
-    "server/src/ezllmrouter_server/registry_mutations/connections.py": 9,
-    "server/src/ezllmrouter_server/registry_mutations/grants.py": 5,
-    "server/src/ezllmrouter_server/registry_mutations/models.py": 12,
-    "server/src/ezllmrouter_server/registry_mutations/prices.py": 6,
-    "server/src/ezllmrouter_server/registry_mutations/principals.py": 5,
-    "server/src/ezllmrouter_server/registry_reads.py": 22,
-    "server/src/ezllmrouter_server/registry_sources.py": 9,
-    "server/src/ezllmrouter_server/registry_tokens.py": 4,
-    "server/src/ezllmrouter_server/registry_values.py": 3,
+    "server/src/ezllmrouter_server/registry.py": 6,
     "server/src/ezllmrouter_server/reporting.py": 71,
     "server/src/ezllmrouter_server/retrieval_descriptor.py": 3,
     "server/src/ezllmrouter_server/runtime_resources.py": 9,
@@ -65,7 +53,7 @@
     "server/src/ezllmrouter_server/successor_contract.py": 48,
     "server/src/ezllmrouter_server/successor_plan.py": 28,
     "server/src/ezllmrouter_server/successor_reporting.py": 14,
-    "server/src/ezllmrouter_server/user_management.py": 112,
+    "server/src/ezllmrouter_server/user_management.py": 109,
     "server/src/ezllmrouter_server/web.py": 3
   },
   "relocations": [
@@ -86,7 +74,8 @@
         "server/src/ezllmrouter_server/registry_credentials.py": 22,
         "server/src/ezllmrouter_server/registry.py": 44
       },
-      "note": "Unchanged body/signature extraction; no aggregate increase. Cleanup enters strict typing separately."
+      "note": "Unchanged body/signature extraction; no aggregate increase. Cleanup enters strict typing separately.",
+      "cleanup": "New Registry domain modules and catalogue are strict; remaining facade lifecycle/attribution calls remain existing debt."
     }
   ]
 }

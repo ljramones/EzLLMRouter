@@ -12,6 +12,7 @@ import re
 from datetime import date
 from decimal import ROUND_HALF_EVEN, ROUND_UP, Decimal
 
+from .records import Record
 from .formatting import money, utc_timestamp
 from .json_validation import MAX_SAFE_INTEGER
 
@@ -22,7 +23,7 @@ MAX_COUNT = MAX_SAFE_INTEGER
 RATE_KEYS = {"input_uncached", "input_cache_read", "input_cache_write_30m", "output_text"}
 
 
-def validate_contract(value, model_id, rates):
+def validate_contract(value: object, model_id: str, rates: object) -> Record:
     """Validate an operator-reviewed, exact-model financial contract at publish time."""
     fields = {
         "version",

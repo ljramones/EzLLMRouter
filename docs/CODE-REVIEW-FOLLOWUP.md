@@ -653,7 +653,7 @@ No additional runtime refactoring is included in this reconciliation.
 | Work item | Current status | Remaining finish line |
 | --- | --- | --- |
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
-| W2 — Registry domains | In progress — move completed, cleanup follows | The initial extraction reduces `registry.py` from 1,911 to 540 lines. Existing method bodies and signatures are preserved in domain modules. Split reads, sources, credentials, tokens and mutation families, retaining the public facade. Target: facade at most 600 lines and methods at most 80. |
+| W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
 | W3 — ExternalAccounting domains/tests | Open | `integration_accounting.py` is 1,826 lines; `ExternalAccounting` spans 1,438. Split datasets, events, snapshots and reports, plus the 2,257-line accounting test module. Target: accounting modules at most 600 lines and functions at most 80. |
 | W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
@@ -723,3 +723,27 @@ W2 move verification: the full gate passes 909 Python cases and strict mypy
 on the existing 67-file scope. The unchanged resource-lifecycle tests also pass
 after retaining their original clock injection point. No routes, contracts,
 locks, migrations, frozen inputs or deployment state changed.
+
+
+### Item 11 follow-up: W2 Registry cleanup
+
+The cleanup separates inventory reads, per-model projection and discovery status;
+credential validation/publication, probe observations and provisioning checks;
+model-change families; bootstrap construction; and management request parsing.
+Existing gate/read/transaction owners call these steps at their original points.
+Public method descriptors retain their argument/default signatures. Record typing
+is applied at the persisted JSON boundary, with typed Store, authority and vault
+capabilities; casts do not add runtime validation or change errors.
+
+All 15 newly checked domain/catalogue modules pass strict mypy. The existing
+Registry facade retains six typing errors at older lifecycle/attribution
+collaborators; these are explicitly budgeted, not claimed as fully typed.
+Whole-library diagnostics fall to 2,179 and no per-file budget increases. Six
+resolved source-size allowances are removed, leaving 90. Typed catalogue
+interfaces use named band validators so typing does not inflate long functions.
+
+W2 cleanup verification: full `tools.check` passes 909 Python cases, lint and
+formatting, strict mypy on 82 files, the typing-debt budget, the size ratchet and
+the maintained script/console checks. All Registry/domain files are at most 600
+lines and every function is at most 80. A real loopback bind is denied with
+`PermissionError` (errno 1), so provider/HTTP target checks remain pending.

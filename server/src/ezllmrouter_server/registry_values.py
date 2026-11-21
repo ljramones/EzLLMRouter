@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
+
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import re
@@ -33,15 +38,15 @@ RATE_CATEGORIES = (
 )
 
 
-def timestamp():
+def timestamp() -> str:
     return utc_timestamp(datetime.now(timezone.utc))
 
 
-def identifier(value):
+def identifier(value: object) -> str:
     return require_identifier(value)
 
 
-def exact_rate(value):
+def exact_rate(value: object) -> str:
     if type(value) is not str or not re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,12})?", value):
         raise ValueError("invalid decimal rate")
     try:

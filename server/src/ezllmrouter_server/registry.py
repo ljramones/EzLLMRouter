@@ -7,12 +7,21 @@ complete. A failed commit leaves the old epoch and records untouched.
 
 from __future__ import annotations
 
-import hashlib
-import json
+from typing import cast
+from .database import Row
+
+from collections.abc import Callable, Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING
+from .database import Database
+from .records import Record
+from .store import Store, decode_record
+from .registry_context import RegistryAuthority, CredentialVault
+
+import json as json
 import threading
 import time as time
 from copy import deepcopy
-from typing import TYPE_CHECKING
 
 from .errors import RegistryConflict
 from .observability import log_failure
@@ -35,6 +44,8 @@ from .provider_adapters import probe as _provider_probe
 from .store import encode
 
 
+from .registry_mutations import mutation_request
+from .registry_bootstrap import _seed_bootstrap
 from .registry_values import (
     ConnectionSchedule as ConnectionSchedule,
     DESTINATION as DESTINATION,
@@ -63,24 +74,24 @@ class Registry:
     """Single-process authority with additive DEV-06 SQLite migration."""
 
     def __init__(
-        self,
-        store,
-        send_authority,
+        self: Registry,
+        store: Store,
+        send_authority: RegistryAuthority,
         *,
-        legacy_destination=None,
-        legacy_token=None,
-        legacy_trusted=None,
-        provider_vault=None,
-        provider_execution_ready=False,
-        controlled_provider_proof=False,
-        integration_feature_policy=None,
-        integration_accounting_retention_days=None,
-        runtime_ready=None,
+        legacy_destination: Record | None = None,
+        legacy_token: str | None = None,
+        legacy_trusted: Record | None = None,
+        provider_vault: CredentialVault | None = None,
+        provider_execution_ready: bool = False,
+        controlled_provider_proof: bool = False,
+        integration_feature_policy: Record | None = None,
+        integration_accounting_retention_days: int | None = None,
+        runtime_ready: Callable[[], bool] | None = None,
         identity: InstanceIdentity | None = None,
-    ):
+    ) -> None:
         self.identity = resolve_identity(store.database, identity)
-        self.store = store
-        self.send_authority = send_authority
+        self.store: Store = store
+        self.send_authority: RegistryAuthority = send_authority
         self.runtime_ready = (
             runtime_ready
             if runtime_ready is not None
@@ -90,11 +101,11 @@ class Registry:
         self.local_connectors: LocalConnectors | None = None
         self.integration_credentials: DatabaseCredentialStore | None = None
         self.personal_campaign: PersonalCampaign | None = None
-        self.provider_vault = provider_vault
+        self.provider_vault: CredentialVault | None = provider_vault
         self.provider_execution_ready = provider_execution_ready
         self.controlled_provider_proof = controlled_provider_proof
         self._probe_lock = threading.Lock()
-        self._operator_tokens = {}
+        self._operator_tokens: dict[str, tuple[str, float]] = {}
         self._token_lock = threading.Lock()
         self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
         if self.principal(self.identity.owner_id) is None:
@@ -108,7 +119,9 @@ class Registry:
         )
         self.integration.expire_datasets()
 
-    def configure_integration_credentials(self, key_path):
+    def configure_integration_credentials(
+        self: Registry, key_path: str | Path
+    ) -> DatabaseCredentialStore:
         from .integration_credentials import DatabaseCredentialStore
 
         if self.integration_credentials is not None:
@@ -116,7 +129,7 @@ class Registry:
         self.integration_credentials = DatabaseCredentialStore(self, key_path)
         return self.integration_credentials
 
-    def readiness(self, model):
+    def readiness(self: Registry, model: Record) -> str:
         if model.get("kind") == "real_catalogue":
             return "not_connected"
         if model.get("kind") == "provider_deployment":
@@ -144,105 +157,34 @@ class Registry:
             log_failure("registry.Registry.readiness.failed")
             return "transport_unavailable"
 
-    def _bootstrap(self, destination, token, trusted):
+    def _bootstrap(
+        self: Registry, destination: Record | None, token: str | None, trusted: Record | None
+    ) -> None:
         with self.send_authority.gate:
 
-            def action():
+            def action() -> int:
                 db = self.store.database
                 row = db.execute(_queries.ACTION_SELECT_REGISTRY_META).fetchone()
                 if row and row[0] != "1":
                     raise RuntimeError("invalid registry bootstrap version")
                 if not row:
-                    if destination is None or token is None or trusted is None:
-                        raise RuntimeError("private bootstrap inputs required")
-                    at = timestamp()
-                    model = {
-                        "configuration_ref": destination["configuration_ref"],
-                        "display_name": "Legacy synthetic demo",
-                        "status": "enabled",
-                        "revision": 1,
-                        "destination": {k: destination[k] for k in DESTINATION},
-                        "owner": self.identity.owner_id,
-                        "capabilities": ["text", "tools"],
-                        "purposes": ["execution"],
-                        "task_classes": [self.identity.task_class],
-                        "handling": ["no.content.store"],
-                        "approved_by": self.identity.owner_id,
-                        "approved_at": at,
-                        "legacy_unpriced": True,
-                    }
-                    owner = {
-                        "principal_id": self.identity.owner_id,
-                        "display_name": "Local owner",
-                        "kind": "human",
-                        "owner": self.identity.owner_id,
-                        "status": "active",
-                        "role": "registry_admin",
-                        "revision": 1,
-                        "credential_state": "local_operator",
-                    }
-                    demo = {
-                        "principal_id": trusted["principal_id"],
-                        "display_name": "Local demo service",
-                        "kind": "service",
-                        "owner": trusted["charging_owner_id"],
-                        "status": "active",
-                        "role": "ordinary",
-                        "revision": 1,
-                        "credential_state": "bound",
-                    }
-                    grant = {
-                        "principal_id": demo["principal_id"],
-                        "configuration_ref": model["configuration_ref"],
-                        "status": "active",
-                        "revision": 1,
-                        "purposes": ["execution"],
-                        "task_classes": [self.identity.task_class],
-                        "actor": self.identity.owner_id,
-                        "at": at,
-                    }
-                    db.execute(
-                        _queries.APPLY_INSERT_REGISTRY_MODELS,
-                        (model["configuration_ref"], encode(model)),
+                    _seed_bootstrap(self, db, destination, token, trusted)
+                return int(
+                    cast(
+                        str,
+                        cast(Row, db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone())[0],
                     )
-                    for principal in (owner, demo):
-                        db.execute(
-                            _queries.APPLY_INSERT_REGISTRY_PRINCIPALS,
-                            (principal["principal_id"], encode(principal)),
-                        )
-                    db.execute(
-                        _queries.ACTION_INSERT_REGISTRY_GRANTS,
-                        (demo["principal_id"], model["configuration_ref"], encode(grant)),
-                    )
-                    db.execute(
-                        _queries.ACTION_INSERT_REGISTRY_CREDENTIALS,
-                        (
-                            hashlib.sha256(token.encode()).hexdigest(),
-                            demo["principal_id"],
-                            "legacy.demo",
-                        ),
-                    )
-                    for key, value in (
-                        ("bootstrap_version", "1"),
-                        ("authority_revision", "1"),
-                        ("bootstrap_source", "private-dev06-local"),
-                    ):
-                        db.execute(_queries.ACTION_INSERT_REGISTRY_META, (key, value))
-                    db.execute(
-                        _queries.ACTION_INSERT_REGISTRY_AUDIT,
-                        (self.identity.owner_id, "bootstrap", "local.synthetic", None, 1, 1, at),
-                    )
-                return int(db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0])
+                )
 
             revision = self.store.database.transaction(action)
             self.send_authority.epoch = revision
 
-    def version(self):
+    def version(self: Registry) -> int:
         with self.store.database.read():
             row = self.store.database.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()
             if not row:
                 raise RuntimeError("authority unavailable")
-            return int(row[0])
+            return int(cast(str, row[0]))
 
     _record = registry_reads._record
 
@@ -276,7 +218,7 @@ class Registry:
 
     observations = registry_reads.observations
 
-    def _require_admin(self, db, actor):
+    def _require_admin(self: Registry, db: Database, actor: str) -> None:
         if not authority.authorized(db, actor):
             raise PermissionError("ADMIN_REQUIRED")
 
@@ -296,7 +238,14 @@ class Registry:
 
     authenticate = registry_tokens.authenticate
 
-    def explain(self, principal_id, ref, purpose, task_class, features=("text",)):
+    def explain(
+        self: Registry,
+        principal_id: str,
+        ref: str,
+        purpose: str,
+        task_class: str,
+        features: Sequence[str] = ("text",),
+    ) -> Record:
         with self.store.database.read():
             principal = self.principal(principal_id)
             model = self.model(ref)
@@ -331,12 +280,19 @@ class Registry:
                 "authority_revision": self.version(),
             }
 
-    def admit(self, principal_id, ref, purpose, task_class, features=("text",)):
+    def admit(
+        self: Registry,
+        principal_id: str,
+        ref: str,
+        purpose: str,
+        task_class: str,
+        features: Sequence[str] = ("text",),
+    ) -> tuple[Record, Record]:
         with self.store.database.read():
             decision = self.explain(principal_id, ref, purpose, task_class, features)
             if not decision["allowed"]:
                 raise ContractError("POLICY_DENIED", 403)
-            model = self.model(ref)
+            model = cast(Record, self.model(ref))
             prices = self.prices(ref)
             active = prices[-1] if prices else None
             if not model["legacy_unpriced"] and active is None:
@@ -351,7 +307,9 @@ class Registry:
                 "price_schedule": active,
             }
 
-    def check_current(self, principal_id, ref, purpose, task_class, decision):
+    def check_current(
+        self: Registry, principal_id: str, ref: str, purpose: str, task_class: str, decision: Record
+    ) -> Record:
         with self.store.database.read():
             current = self.explain(principal_id, ref, purpose, task_class, decision["features"])
             if (
@@ -359,29 +317,14 @@ class Registry:
                 or current["authority_revision"] != decision["authority_revision"]
             ):
                 raise ContractError("PLAN_INVALID_OR_STALE", 409)
-            return self.model(ref)["destination"]
+            return cast(Record, cast(Record, self.model(ref))["destination"])
 
-    def mutate(self, actor, request):
+    def mutate(self: Registry, actor: str, request: Record) -> Record:
         """Strict idempotent management command; returns committed safe record."""
-        if type(request) is not dict or set(request) != {
-            "operation_id",
-            "action",
-            "subject",
-            "expected_revision",
-            "data",
-        }:
-            raise ValueError("invalid management request")
-        op = identifier(request["operation_id"])
-        action_name = request["action"]
-        subject = identifier(request["subject"])
-        expected = request["expected_revision"]
-        data = request["data"]
-        if type(expected) is not int or expected < 0 or type(data) is not dict:
-            raise ValueError("invalid management revision or data")
-        request_hash = hashlib.sha256(encode(request).encode()).hexdigest()
+        op, action_name, subject, expected, data, request_hash = mutation_request(request)
         with self.send_authority.gate:
 
-            def action():
+            def action() -> tuple[Record, int | None]:
                 db = self.store.database
                 self._require_admin(db, actor)
                 prior = db.execute(
@@ -390,55 +333,39 @@ class Registry:
                 if prior:
                     if prior[0] != actor or prior[1] != request_hash:
                         raise RegistryConflict("operation reuse conflict")
-                    return json.loads(prior[2]), None
+                    return decode_record(prior[2]), None
                 if action_name == "import_catalogue":
                     if expected != 0:
                         raise RegistryConflict("catalogue creation requires revision zero")
                     candidate = validate_catalogue(subject, data, owner_id=self.identity.owner_id)
                     row = db.execute(_queries.MODEL_FOR_UPDATE, (subject,)).fetchone()
                     if row:
-                        existing = json.loads(row[0])
+                        existing = decode_record(row[0])
                         if (
                             existing.get("kind") == "real_catalogue"
                             and existing.get("catalogue") == candidate["catalogue"]
                             and existing.get("source_links") == candidate["source_links"]
                         ):
                             current = int(
-                                db.execute(_queries.VERSION_SELECT_REGISTRY_META).fetchone()[0]
+                                cast(
+                                    str,
+                                    cast(
+                                        Row,
+                                        db.execute(
+                                            _queries.VERSION_SELECT_REGISTRY_META
+                                        ).fetchone(),
+                                    )[0],
+                                )
                             )
                             return {"record": existing, "authority_revision": current}, None
                         raise RegistryConflict("catalogue import conflicts with existing record")
-                table = (
-                    "registry_models"
-                    if action_name
-                    in (
-                        "edit_model",
-                        "edit_catalogue_model",
-                        "model_state",
-                        "archive_model",
-                        "publish_reference_price",
-                        "correct_reference_price",
-                    )
-                    else "registry_connections"
-                    if action_name
-                    in (
-                        "edit_connection",
-                        "connection_state",
-                        "probe_schedule",
-                        "associate_deployment",
-                    )
-                    else "registry_principals"
-                    if action_name in ("edit_principal", "principal_state", "set_role")
-                    else "registry_agents"
-                    if action_name in ("register_agent", "agent_state", "agent_instrumentation")
-                    else None
-                )
+                table = _mutation_subject_table(action_name)
                 prior_row = (
                     db.execute(_queries.ACTION_SELECT_RECORD(table=table), (subject,)).fetchone()
                     if table
                     else None
                 )
-                before = json.loads(prior_row[0]) if prior_row else None
+                before = decode_record(prior_row[0]) if prior_row else None
                 result = self._apply(db, actor, action_name, subject, expected, data)
                 revision = authority.record_change(
                     db,
@@ -464,7 +391,15 @@ class Registry:
                 self.send_authority.epoch = revision
             return reply
 
-    def _apply(self, db, actor, action, subject, expected, data):
+    def _apply(
+        self: Registry,
+        db: Database,
+        actor: str,
+        action: str,
+        subject: str,
+        expected: int,
+        data: Record,
+    ) -> Record:
         handlers = {
             "register_agent": self._apply_attribution,
             "agent_state": self._apply_attribution,
@@ -498,7 +433,15 @@ class Registry:
             raise ValueError("unsupported management action")
         return handlers[action](db, actor, action, subject, expected, data)
 
-    def _apply_attribution(self, db, actor, action, subject, expected, data):
+    def _apply_attribution(
+        self: Registry,
+        db: Database,
+        actor: str,
+        action: str,
+        subject: str,
+        expected: int,
+        data: Record,
+    ) -> Record:
         return self.attribution.apply_admin(db, action, subject, expected, data)
 
     _apply_source_permissions = registry_sources._apply_source_permissions
@@ -526,13 +469,15 @@ class Registry:
     _apply_price = registry_mutations_prices._apply_price
 
     @staticmethod
-    def _load_for_update(db, table, column, subject, expected):
+    def _load_for_update(
+        db: Database, table: str, column: str, subject: str, expected: int
+    ) -> Record:
         row = db.execute(
             _queries.LOAD_FOR_UPDATE_SELECT_RECORD(column=column, table=table), (subject,)
         ).fetchone()
         if not row:
             raise ValueError("unknown subject")
-        record = json.loads(row[0])
+        record = decode_record(row[0])
         if record["revision"] != expected:
             raise RegistryConflict("stale revision")
         return record
@@ -540,3 +485,26 @@ class Registry:
     credential_bound_to = registry_credentials.credential_bound_to
 
     provision_credential = registry_credentials.provision_credential
+
+
+def _mutation_subject_table(action_name: str) -> str | None:
+    return (
+        "registry_models"
+        if action_name
+        in (
+            "edit_model",
+            "edit_catalogue_model",
+            "model_state",
+            "archive_model",
+            "publish_reference_price",
+            "correct_reference_price",
+        )
+        else "registry_connections"
+        if action_name
+        in ("edit_connection", "connection_state", "probe_schedule", "associate_deployment")
+        else "registry_principals"
+        if action_name in ("edit_principal", "principal_state", "set_role")
+        else "registry_agents"
+        if action_name in ("register_agent", "agent_state", "agent_instrumentation")
+        else None
+    )

@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from .database import Database
+from .records import Record
+from .store import decode_record
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hashlib
-import json
 from .errors import RegistryConflict
 from .repositories import registry as _queries
 from .store import encode
 from .registry_values import timestamp, identifier
 
 
-def _source_key(connection_id, serving_id):
+def _source_key(connection_id: str, serving_id: str) -> str:
     return hashlib.sha256(encode([connection_id, serving_id]).encode()).hexdigest()
 
 
-def source_permission(self, connection_id, serving_id):
+def source_permission(self: Registry, connection_id: str, serving_id: str) -> Record | None:
     identifier(connection_id)
     if type(serving_id) is not str or not 1 <= len(serving_id) <= 256:
         raise ValueError("invalid serving model ID")
@@ -23,7 +30,7 @@ def source_permission(self, connection_id, serving_id):
     )
 
 
-def source_model_allowed(self, connection_id, serving_id):
+def source_model_allowed(self: Registry, connection_id: str, serving_id: str) -> bool:
     permission = self.source_permission(connection_id, serving_id)
     if permission is not None:
         return permission["allowed"] is True
@@ -34,38 +41,15 @@ def source_model_allowed(self, connection_id, serving_id):
     )
 
 
-def source_inventory(self, connection_id):
+def source_inventory(self: Registry, connection_id: str) -> Record:
     """Connection-scoped stored inventory; reads never probe or change authority."""
     connection = self.connection(connection_id)
     if not connection:
         raise ValueError("unknown connection")
     with self.store.database.read():
-        observations = [
-            json.loads(row[0])
-            for row in self.store.database.execute(
-                _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (connection_id,)
-            ).fetchall()
-        ]
-        permissions = {
-            json.loads(row[0])["serving_id"]: json.loads(row[0])
-            for row in self.store.database.execute(
-                _queries.SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (connection_id,)
-            ).fetchall()
-        }
-        deployments = self.deployments(connection_id)
-        models = {
-            item["configuration_ref"]: item
-            for (raw,) in self.store.database.execute(_queries.INVENTORY_MODELS, (connection_id,))
-            for item in (json.loads(raw),)
-        }
-        prices_by_ref = {}
-        for (raw,) in self.store.database.execute(_queries.INVENTORY_PRICES, (connection_id,)):
-            item = json.loads(raw)
-            prices_by_ref.setdefault(item["configuration_ref"], []).append(item)
-        grants_by_ref = {}
-        for (raw,) in self.store.database.execute(_queries.INVENTORY_GRANTS, (connection_id,)):
-            item = json.loads(raw)
-            grants_by_ref.setdefault(item["configuration_ref"], []).append(item)
+        observations, permissions, deployments, models, prices_by_ref, grants_by_ref = (
+            _read_inventory(self, connection_id)
+        )
     latest = observations[0] if observations else None
     saved = next((item for item in observations if item["state"] in ("observed", "partial")), None)
     prior_complete = (
@@ -85,89 +69,31 @@ def source_inventory(self, connection_id):
         snapshot_names.update(prior_complete["models"])
     by_id = {item["serving_id"]: item for item in deployments}
     names = snapshot_names | set(by_id)
-    rows = []
-    for serving_id in sorted(names):
-        deployment = by_id.get(serving_id)
-        model = (
-            models.get(deployment["model_ref"])
-            if deployment and deployment.get("model_ref")
-            else None
+    rows = [
+        _inventory_item(
+            self,
+            serving_id,
+            by_id,
+            models,
+            permissions,
+            prices_by_ref,
+            grants_by_ref,
+            saved,
+            snapshot_names,
         )
-        configuration = (
-            models.get(deployment["configuration_ref"])
-            if deployment and deployment.get("configuration_ref")
-            else None
-        )
-        permission = permissions.get(serving_id)
-        allowed = (
-            permission["allowed"]
-            if permission is not None
-            else bool(deployment and deployment["execution_approved"])
-        )
-        prices = prices_by_ref.get(configuration["configuration_ref"], []) if configuration else []
-        price = prices[-1] if prices else None
-        grants = grants_by_ref.get(configuration["configuration_ref"], []) if configuration else []
-        rows.append(
-            {
-                "serving_id": serving_id,
-                "display_name": model["display_name"] if model else serving_id,
-                "model_ref": deployment.get("model_ref") if deployment else None,
-                "deployment_id": deployment.get("deployment_id") if deployment else None,
-                "configuration_ref": configuration["configuration_ref"] if configuration else None,
-                "model_version": (model or {}).get("catalogue", {}).get("observed_serving_version"),
-                "capabilities": (model or {})
-                .get("catalogue", {})
-                .get("provider_published_capabilities"),
-                "reference_price": (model or {}).get("catalogue", {}).get("price_reference"),
-                "inventory_provenance": (
-                    "observed"
-                    if saved and serving_id in saved["models"]
-                    else "retained_previous_snapshot"
-                    if serving_id in snapshot_names
-                    else "manual_association"
-                ),
-                "allowed": allowed,
-                "permission_revision": permission["revision"] if permission else 0,
-                "readiness": self.readiness(configuration) if configuration else "unknown",
-                "loaded_running": "unknown",
-                "price": price,
-                "active_grants": sum(g["status"] == "active" for g in grants),
-                "grant_count": len(grants),
-            }
-        )
-    completeness = (
-        "never_run"
-        if latest is None
-        else "partial"
-        if latest["state"] == "partial" or latest.get("has_more")
-        else "complete"
-        if latest["state"] == "observed"
-        else latest["state"]
-        if latest["state"] in ("failed", "unsupported")
-        else "failed"
-    )
+        for serving_id in sorted(names)
+    ]
     return {
         "connection": connection,
-        "discovery": {
-            "state": completeness,
-            "observed_at": latest.get("observed_at") if latest else None,
-            "reason": latest.get("reason") if latest else "never_run",
-            "retained_snapshot_at": saved.get("observed_at") if saved else None,
-            "snapshot_current": bool(
-                saved
-                and saved["connection_revision"] == connection["revision"]
-                and saved["credential_version"] == connection["credential_version"]
-            ),
-            "snapshot_completeness": (
-                "partial" if saved and saved.get("has_more") else "complete" if saved else "none"
-            ),
-        },
+        "discovery": _inventory_discovery(connection, latest, saved),
         "items": rows,
         "count": len(rows),
     }
 
 
-def _apply_source_permissions(self, db, actor, action, subject, expected, data):
+def _apply_source_permissions(
+    self: Registry, db: Database, actor: str, action: str, subject: str, expected: int, data: Record
+) -> Record:
     if (
         expected != 0
         or set(data) != {"allowed", "items"}
@@ -177,11 +103,11 @@ def _apply_source_permissions(self, db, actor, action, subject, expected, data):
     ):
         raise ValueError("invalid source-model selection")
     row = db.execute(_queries.APPLY_SELECT_REGISTRY_CONNECTIONS, (subject,)).fetchone()
-    connection = json.loads(row[0]) if row else None
+    connection = decode_record(row[0]) if row else None
     if not connection or connection["status"] == "archived":
         raise ValueError("source connection unavailable")
     discoveries = [
-        json.loads(item[0])
+        decode_record(item[0])
         for item in db.execute(
             _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (subject,)
         ).fetchall()
@@ -200,7 +126,7 @@ def _apply_source_permissions(self, db, actor, action, subject, expected, data):
         if prior:
             observed.update(prior["models"])
     associated = {
-        json.loads(item[0])["serving_id"]
+        decode_record(item[0])["serving_id"]
         for item in db.execute(_queries.DEPLOYMENTS_FOR_CONNECTION, (subject,)).fetchall()
     }
     changed = []
@@ -221,8 +147,10 @@ def _apply_source_permissions(self, db, actor, action, subject, expected, data):
             raise ValueError("unknown or duplicate source-model row")
         seen.add(serving_id)
         key = self._source_key(subject, serving_id)
-        prior = db.execute(_queries.APPLY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (key,)).fetchone()
-        old = json.loads(prior[0]) if prior else None
+        permission_row = db.execute(
+            _queries.APPLY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (key,)
+        ).fetchone()
+        old = decode_record(permission_row[0]) if permission_row else None
         if revision != (old["revision"] if old else 0):
             raise RegistryConflict("stale source-model permission")
         record = {
@@ -240,4 +168,126 @@ def _apply_source_permissions(self, db, actor, action, subject, expected, data):
         "connection_id": subject,
         "allowed": data["allowed"],
         "items": changed,
+    }
+
+
+def _read_inventory(
+    self: Registry, connection_id: str
+) -> tuple[
+    list[Record],
+    dict[str, Record],
+    list[Record],
+    dict[str, Record],
+    dict[str, list[Record]],
+    dict[str, list[Record]],
+]:
+    observations = [
+        decode_record(row[0])
+        for row in self.store.database.execute(
+            _queries.SOURCE_INVENTORY_SELECT_REGISTRY_OBSERVATIONS, (connection_id,)
+        ).fetchall()
+    ]
+    permissions = {
+        decode_record(row[0])["serving_id"]: decode_record(row[0])
+        for row in self.store.database.execute(
+            _queries.SOURCE_INVENTORY_SELECT_REGISTRY_SOURCE_PERMISSIONS, (connection_id,)
+        ).fetchall()
+    }
+    deployments = self.deployments(connection_id)
+    models = {
+        item["configuration_ref"]: item
+        for (raw,) in self.store.database.execute(_queries.INVENTORY_MODELS, (connection_id,))
+        for item in (decode_record(raw),)
+    }
+    prices_by_ref: dict[str, list[Record]] = {}
+    for (raw,) in self.store.database.execute(_queries.INVENTORY_PRICES, (connection_id,)):
+        item = decode_record(raw)
+        prices_by_ref.setdefault(item["configuration_ref"], []).append(item)
+    grants_by_ref: dict[str, list[Record]] = {}
+    for (raw,) in self.store.database.execute(_queries.INVENTORY_GRANTS, (connection_id,)):
+        item = decode_record(raw)
+        grants_by_ref.setdefault(item["configuration_ref"], []).append(item)
+    return observations, permissions, deployments, models, prices_by_ref, grants_by_ref
+
+
+def _inventory_item(
+    self: Registry,
+    serving_id: str,
+    by_id: dict[str, Record],
+    models: dict[str, Record],
+    permissions: dict[str, Record],
+    prices_by_ref: dict[str, list[Record]],
+    grants_by_ref: dict[str, list[Record]],
+    saved: Record | None,
+    snapshot_names: set[str],
+) -> Record:
+    deployment = by_id.get(serving_id)
+    model = (
+        models.get(deployment["model_ref"]) if deployment and deployment.get("model_ref") else None
+    )
+    configuration = (
+        models.get(deployment["configuration_ref"])
+        if deployment and deployment.get("configuration_ref")
+        else None
+    )
+    permission = permissions.get(serving_id)
+    allowed = (
+        permission["allowed"]
+        if permission is not None
+        else bool(deployment and deployment["execution_approved"])
+    )
+    prices = prices_by_ref.get(configuration["configuration_ref"], []) if configuration else []
+    price = prices[-1] if prices else None
+    grants = grants_by_ref.get(configuration["configuration_ref"], []) if configuration else []
+    return {
+        "serving_id": serving_id,
+        "display_name": model["display_name"] if model else serving_id,
+        "model_ref": deployment.get("model_ref") if deployment else None,
+        "deployment_id": deployment.get("deployment_id") if deployment else None,
+        "configuration_ref": configuration["configuration_ref"] if configuration else None,
+        "model_version": (model or {}).get("catalogue", {}).get("observed_serving_version"),
+        "capabilities": (model or {}).get("catalogue", {}).get("provider_published_capabilities"),
+        "reference_price": (model or {}).get("catalogue", {}).get("price_reference"),
+        "inventory_provenance": "observed"
+        if saved and serving_id in saved["models"]
+        else "retained_previous_snapshot"
+        if serving_id in snapshot_names
+        else "manual_association",
+        "allowed": allowed,
+        "permission_revision": permission["revision"] if permission else 0,
+        "readiness": self.readiness(configuration) if configuration else "unknown",
+        "loaded_running": "unknown",
+        "price": price,
+        "active_grants": sum((g["status"] == "active" for g in grants)),
+        "grant_count": len(grants),
+    }
+
+
+def _inventory_discovery(connection: Record, latest: Record | None, saved: Record | None) -> Record:
+    completeness = (
+        "never_run"
+        if latest is None
+        else "partial"
+        if latest["state"] == "partial" or latest.get("has_more")
+        else "complete"
+        if latest["state"] == "observed"
+        else latest["state"]
+        if latest["state"] in ("failed", "unsupported")
+        else "failed"
+    )
+    return {
+        "state": completeness,
+        "observed_at": latest.get("observed_at") if latest else None,
+        "reason": latest.get("reason") if latest else "never_run",
+        "retained_snapshot_at": saved.get("observed_at") if saved else None,
+        "snapshot_current": bool(
+            saved
+            and saved["connection_revision"] == connection["revision"]
+            and (saved["credential_version"] == connection["credential_version"])
+        ),
+        "snapshot_completeness": "partial"
+        if saved and saved.get("has_more")
+        else "complete"
+        if saved
+        else "none",
     }

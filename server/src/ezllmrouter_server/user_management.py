@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import cast
+from .database import Database
+from .records import Record
+
 import base64
 import hashlib
 import hmac
@@ -315,7 +319,9 @@ class UserManager:
                 "roles": {key: list(value) for key, value in ROLE_PERMISSIONS.items()},
             }
 
-    def validate_principal_change(self, db, principal, role, status):
+    def validate_principal_change(
+        self, db: Database, principal: Record, role: str, status: str
+    ) -> None:
         if (
             principal["role"] != "registry_admin"
             or principal["status"] != "active"
@@ -326,7 +332,13 @@ class UserManager:
             ).fetchone()
         ):
             return
-        count = db.execute(_queries.VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS).fetchone()[0]
+        count = cast(
+            int,
+            cast(
+                tuple[object, ...],
+                db.execute(_queries.VALIDATE_PRINCIPAL_CHANGE_SELECT_CONSOLE_USERS).fetchone(),
+            )[0],
+        )
         if count <= 1:
             raise UserError("LAST_ACTIVE_ADMIN", 409)
 
