@@ -44,7 +44,6 @@ class DomainImportTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_completion_domains_import_first_and_keep_registered_source_identity(self):
-        directory = ROOT / "tools/gateway/evidence"
         domains = (
             "accounting",
             "checkpoint",
@@ -59,6 +58,7 @@ class DomainImportTests(unittest.TestCase):
             "setup",
             "usage_verification",
             "write_verification",
+            "supplement_state",
         )
         script = """
 import importlib, inspect, sys
@@ -75,10 +75,11 @@ for registration in DEV12_CASE_HANDLERS.values():
     assert path == source_path_for_handler(registration.name)
     assert sha256(path.read_bytes()).hexdigest() == registration.source_sha256
 """
-        for domain in domains:
-            name = "dev12_completion_" + domain
-            with self.subTest(domain=domain):
-                self.assertTrue((directory / (name + ".py")).is_file())
+        modules = ["tools.gateway.evidence.dev12_completion_" + name for name in domains]
+        modules.append("tools.gateway.docker.staging")
+        for name in modules:
+            with self.subTest(module=name):
+                self.assertTrue((ROOT / name.replace(".", "/")).with_suffix(".py").is_file())
                 result = subprocess.run(
                     [
                         sys.executable,
@@ -87,7 +88,7 @@ for registration in DEV12_CASE_HANDLERS.values():
                         script,
                         str(ROOT),
                         str(PACKAGE.parent),
-                        "tools.gateway.evidence." + name,
+                        name,
                     ],
                     cwd=ROOT,
                     text=True,

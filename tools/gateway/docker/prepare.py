@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 """Bounded DKR-01 data preparation. Never builds, installs, or starts services."""
 
-import argparse
-import ast
-import base64
-import csv
+import argparse as argparse
+import ast as ast
+import base64 as base64
+import csv as csv
 import datetime as dt
 import email.parser
-import hashlib
-import io
-import json
-import os
-from pathlib import Path
-import re
-import shutil
-import signal
-import stat
-import subprocess
-import sys
-import tarfile
-import time
-import unicodedata
+import hashlib as hashlib
+import io as io
+import json as json
+import os as os
+from pathlib import Path as Path
+import re as re
+import shutil as shutil
+import signal as signal
+import stat as stat
+import subprocess as subprocess
+import sys as sys
+import tarfile as tarfile
+import time as time
+import unicodedata as unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
-import uuid
-import zipfile
+import uuid as uuid
+import zipfile as zipfile
 
 ROOT = Path(__file__).resolve().parents[3]
 KIT = Path(__file__).resolve().parent
@@ -135,6 +135,16 @@ KIT_FILES = {
     "requirements-build.lock",
     "requirements-runtime.lock",
 }
+
+
+# Preserve direct script execution and one facade identity for extracted staging.
+if not __package__:
+    sys.path.insert(0, str(ROOT))
+if __name__ == "__main__":
+    sys.modules.setdefault("tools.gateway.docker.prepare", sys.modules[__name__])
+
+
+from tools.gateway.docker import staging as _staging
 
 
 def utc():
@@ -1178,251 +1188,7 @@ def stage_source(entry, dest, run, phase):
     return source
 
 
-def stage_phase(run, phase, data=None, copier=shutil.copyfileobj):
-    if phase not in PHASES:
-        raise ValueError("invalid phase")
-    data = data or load_inputs()
-    if data.get("ready_for_build") is not True:
-        raise ValueError("real incomplete-input gate: staging refused")
-    proof = data.get("closure_evidence", {})
-    needed = ("python_runtime", "python_build", "oci", "cargo", "native")
-    for category in needed:
-        claim = proof.get(category)
-        if (
-            not isinstance(claim, dict)
-            or claim.get("status") != "STATIC_DEPENDENCY_CHECKED"
-            or not isinstance(claim.get("receipt_sha256"), str)
-            or not SHA_RE.fullmatch(claim["receipt_sha256"])
-        ):
-            raise ValueError("closed graph/category receipt absent: " + category)
-        source = run / "closure" / (category + ".json")
-        safe_component_path(source, run, require_file=True)
-        if sha(source) != claim["receipt_sha256"]:
-            raise ValueError("closure receipt hash mismatch: " + category)
-        content = read_json(source)
-        if (
-            content.get("category") != category
-            or content.get("status") != "STATIC_DEPENDENCY_CHECKED"
-            or not content.get("evidence")
-        ):
-            raise ValueError("closure receipt contents incomplete: " + category)
-    images = data.get("oci_images", [])
-    if len(images) != 3 or {x.get("role") for x in images} != {
-        "python_builder",
-        "python_runtime_and_tools",
-        "rust_toolchain",
-    }:
-        raise ValueError("exact three OCI image roles absent")
-    for image in images:
-        role = image["role"]
-        if image.get("platform") != "linux/arm64/v8" or image.get("layers_acquired") is not True:
-            raise ValueError("Linux ARM64 image/layer custody incomplete: " + role)
-        for label, field in (
-            ("index", "index_digest"),
-            ("manifest", "selected_manifest_digest"),
-            ("config", "config_digest"),
-        ):
-            digest = image.get(field)
-            if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-                raise ValueError("OCI digest absent: " + role + "/" + label)
-            path = run / "oci" / (role + "-" + label + ".json")
-            safe_component_path(path, run, require_file=True)
-            if "sha256:" + sha(path) != digest:
-                raise ValueError("OCI metadata bytes mismatch: " + role + "/" + label)
-        index = read_json(run / "oci" / (role + "-index.json"))
-        choices = [
-            x
-            for x in index.get("manifests", [])
-            if x.get("digest") == image["selected_manifest_digest"]
-            and x.get("platform", {}).get("os") == "linux"
-            and x.get("platform", {}).get("architecture") == "arm64"
-            and x.get("platform", {}).get("variant", "v8") == "v8"
-        ]
-        config = read_json(run / "oci" / (role + "-config.json"))
-        manifest = read_json(run / "oci" / (role + "-manifest.json"))
-        if (
-            len(choices) != 1
-            or manifest.get("config", {}).get("digest") != image["config_digest"]
-            or (config.get("os"), config.get("architecture")) != ("linux", "arm64")
-        ):
-            raise ValueError("OCI index/child/config relationship mismatch: " + role)
-    entries = data.get("staging_files", {}).get(phase)
-    if not isinstance(entries, list) or not entries:
-        raise ValueError("phase staging manifest absent")
-    required = {
-        "wheel": {
-            "Dockerfile.gateway",
-            ".dockerignore",
-            "requirements-build.lock",
-            "artifacts/litellm-1.105.1.tar.gz",
-            "artifacts/cargo-config.toml",
-        },
-        "runtime": {
-            "Dockerfile.gateway",
-            ".dockerignore",
-            "requirements-runtime.lock",
-            "harness/app_wrapper.py",
-            "harness/transport_guard.py",
-            "harness/intent_file.py",
-            "harness/fixtures.json",
-            "harness/route-config.yaml",
-        },
-        "tools": {
-            "Dockerfile.tools",
-            ".dockerignore",
-            "harness/driver.py",
-            "harness/receiver.py",
-            "harness/fixtures.json",
-        },
-    }[phase]
-    destinations = set()
-    normalized = set()
-    checked = []
-    for entry in entries:
-        if not isinstance(entry, dict) or set(entry) != {
-            "source",
-            "destination",
-            "sha256",
-            "bytes",
-            "kind",
-        }:
-            raise ValueError("malformed/extra staging entry")
-        dest = entry["destination"]
-        if (
-            not isinstance(dest, str)
-            or not dest
-            or dest.startswith("/")
-            or "\\" in dest
-            or any(x in ("", ".", "..") for x in dest.split("/"))
-        ):
-            raise ValueError("unsafe staging destination")
-        norm = unicodedata.normalize("NFC", dest).casefold()
-        if dest in destinations or norm in normalized:
-            raise ValueError("duplicate/casefold/Unicode staging destination")
-        destinations.add(dest)
-        normalized.add(norm)
-        if (
-            not isinstance(entry["sha256"], str)
-            or not SHA_RE.fullmatch(entry["sha256"])
-            or type(entry["bytes"]) is not int
-            or entry["bytes"] < 0
-        ):
-            raise ValueError("invalid staged receipt")
-        source = stage_source(entry, dest, run, phase)
-        actual = sha(source)
-        if actual != entry["sha256"] or source.stat().st_size != entry["bytes"]:
-            raise ValueError("precopy staged file hash/size mismatch")
-        checked.append((source, dest, actual, entry["bytes"], entry["kind"]))
-    for dest in destinations:
-        parts = Path(dest).parts
-        for i in range(1, len(parts)):
-            if "/".join(parts[:i]) in destinations:
-                raise ValueError("file/directory staging conflict")
-    if not required.issubset(destinations):
-        raise ValueError("phase required files missing")
-    if phase == "wheel":
-        if not any(x.startswith("artifacts/build-wheels/") for x in destinations) or not any(
-            x.startswith("artifacts/cargo-vendor/") for x in destinations
-        ):
-            raise ValueError("build wheelhouse or Cargo vendor input absent")
-    if phase == "runtime":
-        if (
-            not any(x.startswith("artifacts/runtime-wheels/") for x in destinations)
-            or len([x for x in destinations if x.startswith("artifacts/local-wheel/")]) != 1
-        ):
-            raise ValueError("runtime wheelhouse or exactly one local wheel absent")
-    lock_name = (
-        "requirements-build.lock"
-        if phase == "wheel"
-        else "requirements-runtime.lock"
-        if phase == "runtime"
-        else None
-    )
-    if lock_name:
-        source = next(item[0] for item in checked if item[1] == lock_name)
-        lock = lock_entries(source.read_bytes(), "build" if phase == "wheel" else "runtime")
-        prefix = "artifacts/build-wheels/" if phase == "wheel" else "artifacts/runtime-wheels/"
-        wheels = [(s, d, h) for s, d, h, _, _ in checked if d.startswith(prefix)]
-        matched = set()
-        for _source, dest, digest in wheels:
-            identity = wheel_identity(Path(dest).name)
-            if identity not in lock or digest not in lock[identity]:
-                raise ValueError("wheel not selected by actual lock")
-            matched.add(identity)
-        if matched != set(lock):
-            raise ValueError("lock entry lacks matching wheel")
-        if phase == "runtime":
-            local = [x for x in checked if x[1].startswith("artifacts/local-wheel/")][0]
-            if wheel_identity(Path(local[1]).name) != ("litellm", "1.105.1"):
-                raise ValueError("wrong local LiteLLM wheel identity")
-    target = run / ("context-" + phase)
-    if target.exists() or target.is_symlink():
-        raise ValueError("context collision")
-    target.mkdir(mode=0o700)
-    copied = []
-    try:
-        for source, dest, expected_hash, expected_bytes, kind in checked:
-            output = target / dest
-            output.parent.mkdir(parents=True, exist_ok=True)
-            safe_component_path(output.parent, target)
-            anchor = run if source.is_relative_to(run) else ROOT
-            safe_component_path(source, anchor, require_file=True)
-            input_fd = os.open(str(source), os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-            output_fd = os.open(
-                str(output),
-                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
-                0o600,
-            )
-            with os.fdopen(input_fd, "rb") as inp, os.fdopen(output_fd, "wb") as out:
-                if not stat.S_ISREG(os.fstat(inp.fileno()).st_mode):
-                    raise ValueError("source changed to non-regular file")
-                copier(inp, out)
-            actual_hash = sha(output)
-            if actual_hash != expected_hash or output.stat().st_size != expected_bytes:
-                raise ValueError("postcopy byte drift: " + dest)
-            copied.append(
-                {"path": dest, "sha256": actual_hash, "bytes": expected_bytes, "kind": kind}
-            )
-        actual = {str(p.relative_to(target)) for p in target.rglob("*") if p.is_file()}
-        if actual != destinations:
-            raise ValueError("undeclared or missing context entry")
-        context_manifest = {
-            "phase": phase,
-            "status": "STAGED_DATA_ONLY_BUILD_NOT_AUTHORIZED",
-            "owner_build_approval": False,
-            "files": sorted(copied, key=lambda x: x["path"]),
-            "manifest_self_excluded": True,
-        }
-        write_new(target / "CONTEXT-MANIFEST.json", json_bytes(context_manifest))
-        verify = read_json(target / "CONTEXT-MANIFEST.json")
-        if verify != context_manifest or {x["path"] for x in verify["files"]} != destinations:
-            raise ValueError("context manifest verification failed")
-        for item in verify["files"]:
-            p = target / item["path"]
-            if sha(p) != item["sha256"] or p.stat().st_size != item["bytes"]:
-                raise ValueError("context census mismatch")
-        result = {
-            "status": "STAGED_DATA_ONLY_BUILD_NOT_AUTHORIZED",
-            "phase": phase,
-            "context": str(target),
-            "manifest_sha256": sha(target / "CONTEXT-MANIFEST.json"),
-            "files": len(copied),
-        }
-    except Exception as exc:
-        receipt(
-            run,
-            "stage",
-            {
-                "status": "FAILED",
-                "phase": phase,
-                "context": str(target),
-                "error_type": type(exc).__name__,
-                "error": str(exc),
-            },
-        )
-        raise
-    receipt(run, "stage", result)
-    return result
+stage_phase = _staging.stage_phase
 
 
 def packet(run, handoff_parent=None):

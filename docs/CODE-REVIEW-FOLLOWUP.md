@@ -1105,3 +1105,25 @@ A deterministic check injects the closed-peer condition and still requires one
 complete rejection response with `Connection: close`. All 23 HTTP-structure cases
 pass, and the full maintained gate passes 917 Python cases with strict typing on
 107 files, lint/formatting and script/console checks.
+
+### Item 11 follow-up: retained supplement and staging moves
+
+Supplement recovery and atomic-publication operations move unchanged to
+`dev12_completion_supplement_state.py`; the supplement entry point and original
+private bindings remain available. Its facade shrinks from 1,744 to 1,226 lines.
+Historical Docker staging moves unchanged to `tools/gateway/docker/staging.py`,
+with the original prepare import/CLI retained. The prepare facade shrinks from
+2,536 to 2,302 lines and its file allowance is tightened accordingly.
+
+AST comparisons preserve all three bodies, defaults, copy/receipt behavior and
+ownership/exception scopes. A guarded 23-case replay against `2f5db41` matches
+entry rejections and dependency traces. The isolated direct-script `--help` path
+also passes. No actual staging, metadata acquisition, package installation,
+build, target execution or profile restart ran.
+
+Cold-import checks now cover 31 runtime and 15 tooling domains, including all
+nine real handler source registrations. Full `tools.check` passes 917 Python
+cases, strict typing on 107 files, lint/formatting and script/console checks.
+Library typing debt remains 1,631; 49 size allowances remain after explicit
+unchanged-body transfers and removal/reduction of resolved file ceilings. Phase
+cleanup of the moved functions follows separately.

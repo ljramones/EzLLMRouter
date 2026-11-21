@@ -26,8 +26,8 @@
     "tools/accounting/evidence/correction02_release.py:function:main": 259,
     "tools/accounting/evidence/correction03_release.py:function:main": 249,
     "tools/accounting/evidence/correction_release.py:function:main": 283,
-    "tools/gateway/docker/prepare.py:file": 2536,
-    "tools/gateway/docker/prepare.py:function:stage_phase": 245,
+    "tools/gateway/docker/prepare.py:file": 2302,
+    "tools/gateway/docker/staging.py:function:stage_phase": 252,
     "tools/gateway/evidence/dev08_integrated.py:function:run": 223,
     "tools/gateway/evidence/dev11_cache_target.py:function:main": 282,
     "tools/gateway/evidence/dev12_completion_auth_http.py:function:main": 348,
@@ -36,9 +36,8 @@
     "tools/gateway/evidence/dev12_completion_packet_audit.py:function:audit": 238,
     "tools/gateway/evidence/dev12_completion_preflight.py:function:_continuation_context": 404,
     "tools/gateway/evidence/dev12_completion_preflight.py:function:validate": 435,
-    "tools/gateway/evidence/dev12_completion_supplement_handlers.py:file": 1744,
-    "tools/gateway/evidence/dev12_completion_supplement_handlers.py:function:_authority_atomic": 218,
-    "tools/gateway/evidence/dev12_completion_supplement_handlers.py:function:_recovery": 307,
+    "tools/gateway/evidence/dev12_completion_supplement_state.py:function:_authority_atomic": 223,
+    "tools/gateway/evidence/dev12_completion_supplement_state.py:function:_recovery": 313,
     "tools/gateway/evidence/dev12_completion_zero_send_checks.py:function:main": 308,
     "tools/gateway/evidence/dev12_controls.py:function:run": 287,
     "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237,
@@ -68,6 +67,11 @@
       "source": "dev12_completion_handlers.py, dev12_completion_runner.py and completion preflight tests",
       "baseline_commit": "0a03338",
       "note": "37 tooling functions and 51 test/fixture methods preserve executable AST and ownership scopes. Function ceilings transfer with at most 10 physical lines of facade-import/qualification overhead; resolved file/class entries are removed. Cleanup follows separately."
+    },
+    {
+      "source": "Retained supplement state operations and Docker staging",
+      "baseline_commit": "2f5db41",
+      "note": "Three unchanged helper bodies move to focused modules; function ceilings transfer with facade-import formatting overhead. Resolved file ceilings are removed or reduced; phase cleanup follows separately."
     }
   ]
 }
