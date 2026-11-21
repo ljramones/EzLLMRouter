@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -32,7 +33,7 @@ const context = vm.createContext({
   definition:rows=>({tag:"dl",rows}),message:()=>{},registryChange:()=>{},listValue:()=>[],
   navigator:{clipboard:{writeText:async()=>{}}},URLSearchParams,crypto:{randomUUID:()=>"uuid"},
 });
-vm.runInContext(fs.readFileSync(path.join(root,"web/catalogue_view.js"),"utf8"),context);
+runScript(fs.readFileSync(path.join(root,"web/catalogue_view.js"),"utf8"),context,{filename:path.join(root,"web/catalogue_view.js")});
 function findTable(box){for(const item of box.children||[]){if(item.tag==="table")return item;const inner=findTable(item);if(inner)return inner;}return null;}
 (async()=>{
   await context.models();

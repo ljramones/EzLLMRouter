@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 class Element{
   constructor(tag){this.tag=tag;this.children=[];this.value="";this.textContent="";this.hidden=false;
@@ -55,7 +56,7 @@ const context=vm.createContext({console,Node:Element,URLSearchParams,URL,Set,Dat
   }});
 const root=path.resolve(__dirname,"../..");
 for(const file of ["app.js","crud_view.js","users_view.js"])
-  vm.runInContext(fs.readFileSync(path.join(root,"web",file),"utf8"),context,{filename:file});
+  runScript(fs.readFileSync(path.join(root,"web",file),"utf8"),context,{filename:file});
 const run=code=>vm.runInContext(code,context);
 const buttons=label=>[...elements["view-content"].walk()].filter(item=>item.tag==="button"&&item.textContent===label);
 const form=()=>elements["view-content"].querySelector("form");

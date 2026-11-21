@@ -186,6 +186,26 @@ class CampaignTests(unittest.TestCase):
         self.store.create(record, reserve=lambda db, item: self.campaign.reserve(db, item, 20, 16))
         return record
 
+    def test_settlement_is_idempotent_and_unknown_cost_never_releases_exposure(self):
+        self.campaign.configure("owner.local", self.config)
+        self.campaign.transition("owner.local", "active")
+        self.campaign.settle("attempt.absent", before_transmit=True)
+        first = self._reserve("unknown-cost")
+        self.campaign.settle(first["attempt_id"], {"cost": {"status": "unknown"}})
+        before = self.campaign.summary()
+        self.campaign.settle(first["attempt_id"], before_transmit=True)
+        self.assertEqual(self.campaign.summary(), before)
+        self.campaign.settle(
+            first["attempt_id"],
+            {"revision": 1, "cost": {"status": "calculated", "amount_decimal": "0.001"}},
+        )
+        settled = self.campaign.summary()
+        self.campaign.settle(
+            first["attempt_id"],
+            {"revision": 2, "cost": {"status": "calculated", "amount_decimal": "0.005"}},
+        )
+        self.assertEqual(self.campaign.summary(), settled)
+
     def test_campaign_mutation_invalidates_authority_and_persists_epoch(self):
         from ezllmrouter_server.repositories.authority import REVISION
 

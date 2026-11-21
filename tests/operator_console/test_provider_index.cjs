@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.resolve(__dirname,"../.."),calls=[],view={children:[],append(...items){this.children.push(...items);}},
   title={textContent:""};
@@ -17,7 +18,7 @@ const context=vm.createContext({state:{role:"registry_admin",view:"source_provid
     if(route==="/operator/v1/connections/conn.controlled")return {observations:[{state:"observed"}]};
     if(route==="/operator/v1/models")return {items:[{kind:"real_catalogue",catalogue:{vendor:"Anthropic"}}]};
     throw Error(route);}});
-vm.runInContext(fs.readFileSync(path.join(root,"web/source_pages.js"),"utf8"),context);
+runScript(fs.readFileSync(path.join(root,"web/source_pages.js"),"utf8"),context,{filename:path.join(root,"web/source_pages.js")});
 (async()=>{
   await context.sourceIndex();
   assert.equal(title.textContent,"External Providers");

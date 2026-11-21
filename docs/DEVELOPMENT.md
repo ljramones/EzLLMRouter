@@ -23,25 +23,13 @@ across those same trees. Local runtime state under
 Ruff. Existing dependency/build exclusions also apply. Dead lint suppressions are rejected; the unused `E402` suppressions were removed.
 No new blanket rule ignores hide adopted findings.
 
-Strict mypy checks the modules selected by `TYPED_PATHS` in `tools/check.py`,
-including the full Python client, all runtime SQL repositories, provider probes,
-shared validation/identity/filesystem helpers and selected operator boundaries.
-The client and repository directories are checked as a whole, including new modules.
-Imports use `follow_imports="silent"` so dependency types remain available while
-errors in modules outside the selected scope remain outside the blocking check.
-This is an incremental check, not whole-project type coverage. The blocking scope
-also includes the Store implementation/protocol, canonical request validator,
-wire HTTP package, shared execution policy and bounded executor.
-
-The same command then runs `tools.type_audit` over every server/Python-client
-module. `tools/type_audit_budget.json` records the remaining error budget per file.
-New code has a zero-error budget; increases fail, and reductions pass. A pure
-code move may explicitly transfer existing per-file debt to its new owner, with
-no aggregate increase, before a separately reviewed typing cleanup. Keep
-budgets decreasing as modules enter strict coverage. Budget changes are visible
-code-review changes. Fresh reports under `.artifacts/type-audit/` retain the full
-diagnostics and counts. The baseline for this structural pass falls from 2,934 to
-2,383 library errors; that remaining debt is not a passing whole-library mypy run.
+Strict mypy checks every server and Python-client module, plus the selected
+verification/deployment tools in `TYPED_PATHS` in `tools/check.py`. The library
+directories are checked as a whole, including new modules. The blocking
+`tools.type_audit` also inventories both libraries with zero remaining error
+budgets in `tools/type_audit_budget.json`; new or increased debt fails. Reports
+under `.artifacts/type-audit/` retain diagnostics and counts. Test and deployment
+modules outside the selected strict scope still receive Ruff and formatting.
 
 Apply the maintained formatter before committing Python changes:
 
@@ -86,19 +74,48 @@ In loopback mode, HTTP server naming uses the literal local address or
 `localhost`, avoiding the standard library's reverse-DNS lookup during binding.
 External names, direct reverse-DNS calls and all offline naming remain blocked.
 
-Optional Python line coverage needs no additional dependency:
+Coverage and test health use the pinned Python 3.12 and Node runtimes. Console
+coverage also needs the already-locked TypeScript parser:
 
 ```sh
-uv run --locked python -m tools.check --coverage
+npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
+uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30
 ```
 
-Each run creates a fresh directory under `.artifacts/coverage/`, collecting
-service/Python-client source execution in module interpreters, worker threads
-and guarded Python children. `summary.json` lists source hashes, executable and
-executed line counts, missing lines and an aggregate percentage. The bytecode
-line-table measurement includes unexecuted source files; it does not measure
-branches, native code or JavaScript, and imposes no coverage threshold. Add
-`--loopback` in a target environment to measure its HTTP fixtures too.
+Each run creates a fresh directory under `.artifacts/coverage/`. `summary.json`
+records Python source hashes, executable/missing lines, and both exits of each
+conditional bytecode instruction, including loops and worker threads. Exception
+dispatch edges and native code are outside this metric. `subsystems.json` and
+`index.html` show subsystem totals and the explicit critical-exit gap list.
+`tools/coverage_budget.json` caps missing lines/exits per source file; new files
+have zero allowance. Critical selectors in `coverage_policy.json` must exist and
+have no uncovered conditional exits. Baseline increases require explicit review;
+`tools.coverage_reports --write-baseline` is a maintenance operation, never a CI
+step. Add `--loopback` for a separate HTTP-inclusive measurement.
+
+Installed SDK coverage uses native V8 counters. Console VM coverage uses statement
+and function counters inserted by the locked TypeScript 5.9.3 parser: Node
+24.22.1 precise coverage mis-resolves an early `typeof` after a later lexical
+binding. Instrumentation regressions preserve that binding, strict directives,
+arrow `this`, loops and exceptions. The JS summary labels the two methods and
+unmeasured files explicitly; it does not claim an exhaustive JS branch percentage.
+`tools/javascript_coverage_budget.json` ratchets missing console statements/functions
+and installed-SDK functions. V8 block ranges remain diagnostic because their
+denominator changes when outer functions execute. Installed source aliases are
+recorded before temporary packages are removed and must match canonical hashes.
+
+Every normal check also writes sanitized per-test outcomes and durations under
+`.artifacts/test-health/`, including failed subtests and skips. `--health-dir`
+selects a collection directory, `--health-budget 30` caps Python module durations,
+and `--repeat 5` repeats module suites while retaining all failures. The nightly
+workflow repeats offline and loopback modules five times and reports inconsistent
+outcomes. A passing retry never erases the original failure. Telemetry contains
+test identifiers and timings, without exception messages, locals or subtest values.
+
+`python -m tools.container_tests` checks every Docker unittest/discovery/script
+selector against the sources staged by preparation, including instruction-local
+bind mounts. It cannot establish that images build or run; those checks still
+require the approved frozen input bundle and a disposable Docker target.
 
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable

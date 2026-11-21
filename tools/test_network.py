@@ -58,7 +58,12 @@ def child_environment(
     if require not in options:
         options.insert(0, require)
     result["NODE_OPTIONS"] = shlex.join(options)
-    for key in ("EZLLMROUTER_TEST_COVERAGE",):
+    for key in (
+        "EZLLMROUTER_TEST_COVERAGE",
+        "EZLLMROUTER_TEST_HEALTH",
+        "NODE_V8_COVERAGE",
+        "EZLLMROUTER_JS_COVERAGE",
+    ):
         if key in os.environ:
             result[key] = os.environ[key]
     return result

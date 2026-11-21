@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.resolve(__dirname,"../.."),view={children:[],append(...parts){this.children.push(...parts);}};
 function element(tag,value,cls){return {tag,value,cls,children:[],append(...parts){this.children.push(...parts);},get childNodes(){return this.children;}};}
@@ -22,7 +23,7 @@ const context=vm.createContext({activityRows:null,activity:null,usage:null,
   },card:(label,value)=>element("card",{label,value}),panel:label=>element("panel",label),
   table:(headers,rows)=>element("table",{headers,rows}),badge:value=>element("badge",value),
   detail:()=>{},URLSearchParams});
-vm.runInContext(fs.readFileSync(path.join(root,"web/activity_usage_view.js"),"utf8"),context);
+runScript(fs.readFileSync(path.join(root,"web/activity_usage_view.js"),"utf8"),context,{filename:path.join(root,"web/activity_usage_view.js")});
 const row=context.activityRows([{step_id:"step.dev07-20261021-01.model-queued",
   submission_id:"submission."+"a".repeat(32),principal_id:"fixture.alpha",configuration_ref:"cfg.demo",
   submission_state:"failed_before_transmit",updated_at:"2026-10-21T00:00:00Z"}],

@@ -59,7 +59,7 @@ SERVICE_VALIDATION_FILES = (
 WORKER_VALIDATION_FILES = ("test_alt_handler.py", "test_cache_frozen_usage.py")
 
 
-def stage_worker_validation(build):
+def stage_worker_validation(build: Path) -> None:
     destination = build / "worker/validation"
     destination.mkdir(parents=True)
     shutil.copytree(
@@ -329,23 +329,7 @@ def prepare_work(work, run, source_hash, artifact):
         f"{client_digest}  /opt/ezllmrouter/client/{DEV09_CLIENT}\n"
         + f"{hashlib.sha256(client_metadata.read_bytes()).hexdigest()}  /opt/ezllmrouter/client/metadata.json\n"
     )
-    target_tests = build / "service/tests/operator_console"
-    target_tests.mkdir(parents=True)
-    (build / "service/tests/__init__.py").write_text("")
-    (target_tests / "__init__.py").write_text("")
-    for name in SERVICE_VALIDATION_FILES:
-        shutil.copy2(ROOT / "tests/operator_console" / name, target_tests / name)
-    gateway_tests = build / "service/tests/gateway_integration"
-    gateway_tests.mkdir()
-    (gateway_tests / "__init__.py").write_text("")
-    shutil.copy2(ROOT / "tests/gateway_integration/test_freshness_interface.py", gateway_tests)
-    for relative in (
-        "development_slice/request.json",
-        "development_slice/fixture.json",
-    ):
-        target = build / "service/tests" / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / "tests" / relative, target)
+    stage_service_validation(build)
     shutil.copy2(
         ROOT / "deploy/local/dev09_migration_check.py",
         build / "service/gateway/dev09_migration_check.py",
@@ -441,6 +425,26 @@ def prepare_work(work, run, source_hash, artifact):
     work.rename(run)
     (STATE / "current-build.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(json.dumps(manifest, sort_keys=True))
+
+
+def stage_service_validation(build: Path) -> None:
+    target_tests = build / "service/tests/operator_console"
+    target_tests.mkdir(parents=True)
+    (build / "service/tests/__init__.py").write_text("")
+    (target_tests / "__init__.py").write_text("")
+    for name in SERVICE_VALIDATION_FILES:
+        shutil.copy2(ROOT / "tests/operator_console" / name, target_tests / name)
+    gateway_tests = build / "service/tests/gateway_integration"
+    gateway_tests.mkdir()
+    (gateway_tests / "__init__.py").write_text("")
+    shutil.copy2(ROOT / "tests/gateway_integration/test_freshness_interface.py", gateway_tests)
+    for relative in (
+        "development_slice/request.json",
+        "development_slice/fixture.json",
+    ):
+        target = build / "service/tests" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / "tests" / relative, target)
 
 
 if __name__ == "__main__":

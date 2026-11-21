@@ -100,7 +100,9 @@ def verify_lock_inventory(lock, wheels):
         raise ValueError("frozen gateway lock/inventory mismatch: " + ", ".join(names))
 
 
-def source_mapping(root, dev05=False, *, fixtures=False):
+def source_mapping(
+    root: Path, dev05: bool = False, *, fixtures: bool = False
+) -> list[tuple[str, str]]:
     source_files = [
         ("server/pyproject.toml", "service/server/pyproject.toml"),
         ("tools/gateway/evidence/run.sh", "harness/run.sh"),

@@ -1,6 +1,7 @@
 """Run JavaScript runtime regressions against a fresh, locally packed consumer."""
 
 import argparse
+import hashlib
 from contextlib import ExitStack
 import importlib.util
 import json
@@ -78,6 +79,22 @@ def run_checks(args):
             DEV12_JS_CLIENT_DIR=str(installed),
             EZLLMROUTER_JS_CONSUMER=directory,
         )
+        if env.get("EZLLMROUTER_JS_COVERAGE"):
+            env["NODE_V8_COVERAGE"] = env["EZLLMROUTER_JS_COVERAGE"]
+            coverage = Path(env["EZLLMROUTER_JS_COVERAGE"])
+            coverage.mkdir(parents=True, exist_ok=True)
+            aliases = {}
+            for source in (ROOT / "clients/js").iterdir():
+                if source.suffix not in {".cjs", ".mjs"}:
+                    continue
+                target = installed / source.name
+                if target.read_bytes() != source.read_bytes():
+                    raise AssertionError("installed SDK bytes differ: " + source.name)
+                aliases[target.as_uri()] = {
+                    "canonical": source.relative_to(ROOT).as_posix(),
+                    "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                }
+            (coverage / ("sources-" + consumer.name + ".json")).write_text(json.dumps(aliases))
         vectors = (
             ROOT
             / "tests/fixtures/contracts/wp-a-03-c01/EZLLMROUTER-WP-A-VECTORS-v0.3-CORRECTION-01.json"

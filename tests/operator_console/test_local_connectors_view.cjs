@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 class Element{
   constructor(tag){this.tag=tag;this.children=[];this.textContent="";this.value="";this.dataset={};this.listeners={};
@@ -74,7 +75,7 @@ const context=vm.createContext({console,Node:Element,URLSearchParams,URL,Set,Map
   }});
 const root=path.resolve(__dirname,"../..");
 for(const file of ["app.js","crud_view.js","source_pages.js","integration_console.js","local_connectors_view.js"])
-  vm.runInContext(fs.readFileSync(path.join(root,"web",file),"utf8"),context,{filename:file});
+  runScript(fs.readFileSync(path.join(root,"web",file),"utf8"),context,{filename:file});
 const run=code=>vm.runInContext(code,context);
 const findButtons=label=>[...elements["view-content"].walk()].filter(item=>item.tag==="button"&&item.textContent===label);
 const text=()=>[...elements["view-content"].walk()].map(item=>item.textContent).join(" ");

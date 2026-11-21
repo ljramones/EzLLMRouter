@@ -1,4 +1,8 @@
 {
+  "tests/unit/test_javascript_measurement.cjs": {
+    "runner": "offline",
+    "argv": ["node", "--test", "tests/unit/test_javascript_measurement.cjs"]
+  },
   "tests/client_languages/javascript_contracts.cjs": {
     "runner": "client",
     "argv": [

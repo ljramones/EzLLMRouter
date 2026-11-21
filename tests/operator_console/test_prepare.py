@@ -30,6 +30,56 @@ class PrepareTests(unittest.TestCase):
                 self.assertGreater(loader.loadTestsFromName(name).countTestCases(), 0)
         self.assertEqual(loader.errors, [])
 
+    def test_every_docker_test_command_resolves_against_actual_staging_helpers(self):
+        from tools.container_tests import resolve, staged_sources
+
+        sources = staged_sources()
+        for context in ("service", "worker"):
+            dockerfile = (ROOT / f"deploy/local/Dockerfile.{context}").read_text()
+            self.assertEqual(resolve(dockerfile, context, sources), [])
+        source = (ROOT / "deploy/local/Dockerfile.service").read_text()
+        stale = source.replace(
+            "tests.operator_console.test_reporting", "tests.operator_console.test_retired_reporting"
+        )
+        self.assertIn(
+            "unstaged Docker test module: tests.operator_console.test_retired_reporting",
+            resolve(stale, "service", sources),
+        )
+        missing = {
+            key: value
+            for key, value in sources.items()
+            if key != "service/tests/operator_console/test_reporting.py"
+        }
+        self.assertIn(
+            "unstaged Docker test module: tests.operator_console.test_reporting",
+            resolve(source, "service", missing),
+        )
+
+    def test_docker_bind_mounts_are_instruction_scoped_and_discovery_is_not_empty(self):
+        from tools.container_tests import resolve, test_commands
+
+        with tempfile.TemporaryDirectory() as temporary:
+            script = Path(temporary) / "test_fixture.py"
+            script.write_text("import unittest\n")
+            staged = {"worker/validation/test_fixture.py": script}
+            mounted = "RUN --network=none --mount=type=bind,source=validation,target=/tmp/validation,readonly python -B /tmp/validation/test_fixture.py"
+            self.assertEqual(resolve(mounted, "worker", staged), [])
+            self.assertIn(
+                "unstaged Docker test script: /tmp/validation/test_fixture.py",
+                resolve(
+                    mounted + "\nRUN python -B /tmp/validation/test_fixture.py", "worker", staged
+                ),
+            )
+            self.assertTrue(
+                resolve(
+                    "RUN python -m unittest discover -s /app/gateway -p test_missing.py",
+                    "worker",
+                    staged,
+                )
+            )
+            with self.assertRaises(ValueError):
+                test_commands("RUN python -m unittest")
+
     def test_fingerprint_uses_nonignored_git_source_only(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

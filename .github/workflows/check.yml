@@ -18,8 +18,19 @@ jobs:
         run: python3 -m pip install uv==0.13.9
       - name: Install locked development environment
         run: uv sync --locked --all-groups --python 3.12.15
+      - name: Install locked parser for console coverage
+        run: npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
       - name: Offline regression and quality checks
-        run: uv run --locked python -m tools.check
+        run: uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30
+      - name: Retain coverage and test health
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: offline-measurements
+          path: |
+            .artifacts/coverage/
+            .artifacts/test-health/
+          retention-days: 14
       - name: Local HTTP regression fixtures
         run: uv run --locked python -m tools.check --http-only
   credential-init:
@@ -50,6 +61,8 @@ jobs:
   javascript-client:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      EZLLMROUTER_JS_COVERAGE: ${{ github.workspace }}/.artifacts/javascript-coverage
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
@@ -59,6 +72,16 @@ jobs:
         run: python3 -I -S tests/client_languages/check_javascript.py
       - name: Installed JavaScript HTTP fixture
         run: python3 -I -S tests/client_languages/check_javascript.py --http
+      - name: Summarize installed SDK coverage
+        if: always()
+        run: python3 -I -S tools/javascript_coverage.py .artifacts/javascript-coverage --scope sdk
+      - name: Retain installed SDK coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: javascript-measurements
+          path: .artifacts/javascript-coverage/
+          retention-days: 14
   typescript-client:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -126,7 +149,7 @@ jobs:
         run: npm test -- --project=${{ matrix.browser }}
       - name: Retain failure report, screenshots and traces
         if: failure()
-        uses: actions/upload-artifact@v5 # Node 24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-failures-${{ matrix.browser }}
           path: .artifacts/playwright/

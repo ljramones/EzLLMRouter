@@ -1,0 +1,121 @@
+{
+  "console": {
+    "web/activity_usage_view.js": {
+      "sha256": "9c6ce22b526cc42b2fb19fe17ecc1cb7e533c1818cc298f5fc85b243ebbb1d3e",
+      "measured": true,
+      "missing_functions": 4,
+      "missing_statements_or_observed_blocks": 12
+    },
+    "web/app.js": {
+      "sha256": "7b29bd0d3221f25b4a6a007b10ad829de2b0dd49ddf4b56680309d028a634ed6",
+      "measured": true,
+      "missing_functions": 68,
+      "missing_statements_or_observed_blocks": 379
+    },
+    "web/catalogue_view.js": {
+      "sha256": "bfdcd218e9a5ad8fd858a39ed7e000169a71c6cdb6f931bb19eaa9d1d4b8368e",
+      "measured": true,
+      "missing_functions": 24,
+      "missing_statements_or_observed_blocks": 92
+    },
+    "web/crud_view.js": {
+      "sha256": "58dbd09d070c7bf04535df3dc2a2d06492111ea4cb6c363d74a59ad7647e522f",
+      "measured": true,
+      "missing_functions": 57,
+      "missing_statements_or_observed_blocks": 137
+    },
+    "web/demo_workspace_team_view.js": {
+      "sha256": "fb582e4dc9865d029f08f185c82c2219069c4e48e89866372eaebe2390803caf",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/demo_workspace_view.js": {
+      "sha256": "06bf7349fb23de7425de83ad74cb283d98b1c7dc1ff0c4059cdb007f4b392aca",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/integration_accounting.js": {
+      "sha256": "d01a50ee741ad7326b8bdba9fa7f70a588f1c70e8a46a0ff0597dab7af7e9888",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/integration_console.js": {
+      "sha256": "e3b00ae0f0d9eee45241d7d440a50bdf0d2cb92b18c542bde61e0a39cb6b6746",
+      "measured": true,
+      "missing_functions": 43,
+      "missing_statements_or_observed_blocks": 306
+    },
+    "web/integration_view.js": {
+      "sha256": "1a118dbc69c52e5304816885d91f58b8351e3963e1d827c6ae816ca7549acb42",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/local_connectors_view.js": {
+      "sha256": "24acb3901d91d1daf72defd020656320054f2cd89a70f8c2ecdf85219aa5082f",
+      "measured": true,
+      "missing_functions": 3,
+      "missing_statements_or_observed_blocks": 44
+    },
+    "web/providers_view.js": {
+      "sha256": "f3d14cda43cf3f0d6627769261214da5919e05f348afa5794ad4e42dd3444526",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/scripted_demo_view.js": {
+      "sha256": "7828e4d26b54d50efc17382cc0d0828402276f471c4b3be8c640bf8eda51145d",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/source_pages.js": {
+      "sha256": "b1d1f5a4467d958e2f05e79c38cc604cd29c59ce0e9c60ea2b2812360c0231ed",
+      "measured": true,
+      "missing_functions": 104,
+      "missing_statements_or_observed_blocks": 295
+    },
+    "web/usage_costs_view.js": {
+      "sha256": "d9e843aff15fa934cb3a2379bfc3dbd79247750f42c0c212ac9e1937fb926b60",
+      "measured": false,
+      "missing_functions": 0,
+      "missing_statements_or_observed_blocks": 0
+    },
+    "web/users_view.js": {
+      "sha256": "d8ceda4753c601fbbf449017363e9006bda74ecb0b9e854179ac3cce623f66f6",
+      "measured": true,
+      "missing_functions": 6,
+      "missing_statements_or_observed_blocks": 28
+    }
+  },
+  "sdk": {
+    "clients/js/http.cjs": {
+      "sha256": "b987722f7e26eecc0409e01ea6fa3b1f92ab6b532b38144738b713627858d609",
+      "measured": true,
+      "missing_functions": 0
+    },
+    "clients/js/index.cjs": {
+      "sha256": "433536a8d025adae19f7c47aa239a216adf163682966ea880afcbe302b3e68a7",
+      "measured": true,
+      "missing_functions": 2
+    },
+    "clients/js/index.mjs": {
+      "sha256": "6ed0ee4040cc13d4d731237bfbef8d7cc7514ad7f96658ad4801846cc46f0a5e",
+      "measured": false,
+      "missing_functions": 0
+    },
+    "clients/js/integration.cjs": {
+      "sha256": "383b3bca2355e384a1fc9ecccb90edd8ce79be7bb6f3f6b0222d8c77b1124992",
+      "measured": true,
+      "missing_functions": 0
+    },
+    "clients/js/successor.cjs": {
+      "sha256": "6e93e6e2a5462b19cb4251330eb493c5c065cc17b93451d5fff308b0362b4d31",
+      "measured": true,
+      "missing_functions": 0
+    }
+  }
+}

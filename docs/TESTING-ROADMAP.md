@@ -59,3 +59,49 @@ Continue review work by affected behavior and severity, with a regression test
 for each confirmed defect. The explicit inventory and JavaScript CI jobs address
 the discovery portion of priority 1; they do not establish coverage percentages
 or complete the later test layers.
+
+## Testing-review implementation ledger
+
+This ledger tracks the 20 recommendations in the owner's
+`EzLLMRouter-testing-review-2026-11-20.md`, reviewed at `1c4a715`.
+The report's counts are estimates: the recorded source gate at that commit ran
+928 Python cases, with 161 strictly checked files and 518 selected fresh-wheel
+cases. Re-measure each tier rather than equating method counts with executed
+cases. Some recommendations already have partial implementations; the table
+keeps those distinct from new work and from target verification.
+
+| ID | Recommendation | Status and evidence |
+| --- | --- | --- |
+| T01 | Python/Node coverage and critical-branch ratchets | Partial: Python line/conditional-exit and JS console/installed-SDK reports and per-file budgets now run in PR CI. Six initial critical selectors have zero gaps; first-byte/coordinator follow-up selectors remain explicitly listed and ratcheted. Nightly repeats retain all outcomes. See DEVELOPMENT.md for commands and metric scope. |
+| T02 | Generated authorization matrix | Open. Route table/role tests and cross-user HTTP journeys exist; an independently reviewed, complete route expectation table is required. |
+| T03 | Docker image builds and deployment checks | Partial: tools.container_tests resolves every Docker unittest/discovery/script command against actual preparation staging, with mount scope and negative regressions. Image build/structure/compose qualification still awaits the approved frozen bundle and a disposable target. |
+| T04 | Supply-chain, secret and static security scans | Open. `inspect_wheel` already rejects startup hooks and traversal before installation, with malicious-archive regressions. Secret/SAST/advisory/image scans need maintained runners and reviewed tool inputs. |
+| T05 | HTTP/JSON/IPC fuzzing | Open. Socket-pair framing and compressed-response regressions exist; add fixed-seed generated streams and retain failures. |
+| T06 | Accounting/canonical/registry properties | Open. Add independently stated generated invariants, including correction orders, campaign exposure, exact decimal conservation and canonical identities. |
+| T07 | Forced concurrency and lock-scope detection | Open. Deterministic report/writer and sender/authority cases exist; add common instrumentation and the complete interleaving list. |
+| T08 | Process crashes, storage faults and coherent restore | Open. Existing restart/rollback tests need subprocess crash points and complete keyring/database restore coverage. |
+| T09 | Per-schema upgrade fixtures | Open. Existing v1–v3 and failed-migration tests need realistic synthetic manifests for every schema predecessor. Generated databases stay in temporary/ignored storage. |
+| T10 | Provider/client resilience matrix | Open. Compression, TLS, byte-limit, first-write and deadline examples exist; combine the declared transport behaviours in a shared matrix. |
+| T11 | Abuse rates and resource limits | Open. Existing throttle/session/connection/diagnostic regressions need a documented limit/limit-plus-one inventory. |
+| T12 | Logs and canary-secret contracts | Open. Exception redaction and named-route checks exist; add a complete route/level/schema/canary matrix. |
+| T13 | Front-end payload contracts | Open. Component fixtures need real server payload/schema checks. |
+| T14 | Released-client version skew | Awaiting inputs. Identify hash-pinned previous released packages and previous-server vectors; never substitute current packages and call that N-1 testing. |
+| T15 | Supported platform matrix | Open. Add macOS service and macOS/Windows packaged-client workflows with accurate supported-platform boundaries. |
+| T16 | Performance and soak | Partial. `test_reporting_stream` already asserts bounded Python input memory as ledger size grows; exact 1k/10k comparisons are recorded in the review follow-up. Add reproducible scheduled latency/resource/soak runners. |
+| T17 | Accessibility | Open. Keyboard/focus/viewport browser checks exist; add screen-complete automated accessibility, zoom and reduced-motion journeys. |
+| T18 | Mutation testing | Open. Add bounded, isolated mutations of critical decisions and report killed/survived/invalid/timeout outcomes separately. |
+| T19 | Time/locale/timezone boundaries | Open. Existing injected clocks and timestamp comparisons need a complete expiry/locale/DST matrix. |
+| T20 | Executable documentation | Open. Run extracted documented Python/JS examples against controlled service boundaries. |
+
+All-skipped/empty-suite rejection and maintained-test inventories already block
+`tools.check`. Existing startup-hook checks use archive inspection without
+importing wheel code. These are verified foundations, not new missing tests.
+Test-duration/outcome artifacts and repeat-run instability reporting now run to make future slow/flaky-test decisions evidence based. Retrying a failed
+test never turns its original failure into a pass.
+
+The implementation uses existing pinned runtimes where possible. This executor
+currently cannot resolve package-download hosts. New third-party scanner or
+browser dependency pins require their actual reviewed archives/checksums and
+lock entries; an unavailable tool or frozen bundle is recorded as unverified,
+not as a passing check. No testing change authorizes real-provider traffic,
+spending, a persistent-profile restart or reacquisition of frozen gateway inputs.

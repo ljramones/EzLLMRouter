@@ -1,4 +1,5 @@
 "use strict";
+const {runScript}=require("../../tools/javascript_vm_coverage.cjs");
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.resolve(__dirname,"../..");
 class Element{
@@ -60,8 +61,8 @@ const context=vm.createContext({Node:Element,window:{confirm:()=>true,addEventLi
   models:null,users:null,render:async()=>{elements["view-content"].replaceChildren();await context[context.state.view]();},
   crypto:{randomUUID:()=>"operation.test."+operations.length},navigator:{clipboard:{writeText:async()=>{}}},URLSearchParams,
   listValue:value=>value.split(",").map(x=>x.trim()).filter(Boolean)});
-vm.runInContext(fs.readFileSync(path.join(root,"web/catalogue_view.js"),"utf8"),context);
-vm.runInContext(fs.readFileSync(path.join(root,"web/crud_view.js"),"utf8"),context);
+runScript(fs.readFileSync(path.join(root,"web/catalogue_view.js"),"utf8"),context,{filename:path.join(root,"web/catalogue_view.js")});
+runScript(fs.readFileSync(path.join(root,"web/crud_view.js"),"utf8"),context,{filename:path.join(root,"web/crud_view.js")});
 const rootView=elements["view-content"];
 const find=(text)=>[...rootView.walk()].find(x=>x.tag==="button"&&x.text===text);
 const form=()=>[...rootView.walk()].find(x=>x.tag==="form");

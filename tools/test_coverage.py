@@ -6,16 +6,27 @@ from collections import defaultdict
 from typing import Any
 import dis
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
 import sys
-import threading
 import types
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = (ROOT / "server/src/ezllmrouter_server", ROOT / "clients/python/src/ezllmrouter_client")
+
+
+def branch_api():
+    # Isolated child interpreters intentionally cannot import the checkout.
+    name = "_ezllmrouter_branch_coverage"
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, ROOT / "tools/branch_coverage.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[name] = module
+    return sys.modules[name]
 
 
 class LineCoverage:
@@ -30,27 +41,16 @@ class LineCoverage:
         self.lines: dict[str, set[int]] = defaultdict(set)
         self.active = False
 
-    def _local(self, frame, event, _argument):
-        if self.active and event == "line":
-            self.lines[frame.f_code.co_filename].add(frame.f_lineno)
-        return self._local
-
-    def _global(self, frame, event, _argument):
-        if self.active and event == "call" and frame.f_code.co_filename.startswith(self.prefixes):
-            return self._local
-        return None
-
     def __enter__(self) -> LineCoverage:
+        self.branches = branch_api().BranchCoverage(self.output, self.prefixes)
+        self.branches.__enter__()
         self.active = True
-        self.previous = sys.gettrace(), threading.gettrace()
-        threading.settrace(self._global)
-        sys.settrace(self._global)
+        self.lines = self.branches.lines
         return self
 
     def __exit__(self, *_error: object) -> None:
         self.active = False
-        sys.settrace(self.previous[0])
-        threading.settrace(self.previous[1])
+        self.branches.__exit__(*_error)
         self.output.mkdir(parents=True, exist_ok=True)
         # Copy before serialization: a finishing worker can still report a line.
         rows = {name: sorted(values.copy()) for name, values in list(self.lines.items())}
@@ -58,7 +58,7 @@ class LineCoverage:
 
 
 def executable_lines(path: Path) -> set[int]:
-    pending = [compile(path.read_bytes(), str(path), "exec")]
+    pending = [compile(path.read_bytes(), str(path), "exec", dont_inherit=True)]
     lines = set()
     while pending:
         code = pending.pop()
@@ -76,21 +76,40 @@ def report(
     for path in directory.glob("lines-*.json"):
         for name, lines in json.loads(path.read_text()).items():
             observed[str(Path(name).resolve())].update(lines)
+    branch_hits = defaultdict(set)
+    for path in directory.glob("branches-*.json"):
+        for name, values in json.loads(path.read_text()).items():
+            branch_hits[str(Path(name).resolve())].update(values)
     files = {}
     for root in roots:
         for path in sorted(Path(root).resolve().rglob("*.py")):
             possible = executable_lines(path)
             hit = possible & observed[str(path)]
+            possible_branches = branch_api().branches(
+                compile(path.read_bytes(), str(path), "exec", dont_inherit=True)
+            )
+            hit_branches = possible_branches.keys() & branch_hits[str(path)]
             files[path.relative_to(base).as_posix()] = {
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "executed": len(hit),
                 "executable": len(possible),
                 "missing_lines": sorted(possible - hit),
+                "branches": len(possible_branches),
+                "branches_executed": len(hit_branches),
+                "branch_functions": sorted({row["function"] for row in possible_branches.values()}),
+                "missing_branches": [
+                    {"id": key, **row}
+                    for key, row in sorted(possible_branches.items())
+                    if key not in hit_branches
+                ],
             }
     total = sum(row["executable"] for row in files.values())
     hit = sum(row["executed"] for row in files.values())
     result = {
-        "scope": "Python executable-line coverage; no branch/native/JavaScript claim",
+        "scope": "Python lines and conditional-bytecode branch exits; exception edges/native/JavaScript excluded",
+        "python": sys.version.split()[0],
+        "branches": sum(row["branches"] for row in files.values()),
+        "branches_executed": sum(row["branches_executed"] for row in files.values()),
         "executed": hit,
         "executable": total,
         "percent": round(100 * hit / total, 2) if total else 0,

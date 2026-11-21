@@ -1,0 +1,776 @@
+{
+  "measurement": "Python lines and conditional-bytecode branch exits; exception edges/native/JavaScript excluded",
+  "python": "3.12.15",
+  "files": {
+    "clients/python/src/ezllmrouter_client/__init__.py": {
+      "source_sha256": "ee61cd5810661f6d911640e20b7b4b0075aabaee3d158bdb553358f2c62df37b",
+      "missing_lines": 42,
+      "missing_branches": 93
+    },
+    "clients/python/src/ezllmrouter_client/_deadline.py": {
+      "source_sha256": "cd47fe19d1f487558f3ffecdb68d00fe776e9fb3bb41af003c604604707f86fc",
+      "missing_lines": 7,
+      "missing_branches": 2
+    },
+    "clients/python/src/ezllmrouter_client/_errors.py": {
+      "source_sha256": "ff414e7e57142f7cad3cf3b93595b00f08eca36b0c336ac9e54db61ff8b486f4",
+      "missing_lines": 1,
+      "missing_branches": 1
+    },
+    "clients/python/src/ezllmrouter_client/_http.py": {
+      "source_sha256": "274c47d771b51589bdb954fbce624f0fc6e3dbc5e94792218f2420e912bb22c3",
+      "missing_lines": 0,
+      "missing_branches": 4
+    },
+    "clients/python/src/ezllmrouter_client/_json.py": {
+      "source_sha256": "5875838d713cb6f23c98342e9941bee96575f6390bbd83f2d407dee5ab791a95",
+      "missing_lines": 3,
+      "missing_branches": 4
+    },
+    "clients/python/src/ezllmrouter_client/_metadata.py": {
+      "source_sha256": "c2db5d7ad09d226752d69fa01016837d46a07960c2089ba6ecba284bff9f7d85",
+      "missing_lines": 8,
+      "missing_branches": 6
+    },
+    "clients/python/src/ezllmrouter_client/_schema_validation.py": {
+      "source_sha256": "dcc48857e3ef84f956d50428e858f9ccbdfb42d983484b88e5b34862bd4daf28",
+      "missing_lines": 2,
+      "missing_branches": 10
+    },
+    "clients/python/src/ezllmrouter_client/_session.py": {
+      "source_sha256": "96cb5eb86f6a574cf870d295f57251fe31b4eeea320b0e3834665cc2c77d5af9",
+      "missing_lines": 3,
+      "missing_branches": 12
+    },
+    "clients/python/src/ezllmrouter_client/_successor_validation.py": {
+      "source_sha256": "24a827b4287c7e6e27ffd7e75838fb15d90a8d11d6308a574615f1fc122e172d",
+      "missing_lines": 11,
+      "missing_branches": 47
+    },
+    "clients/python/src/ezllmrouter_client/_validation.py": {
+      "source_sha256": "9b5abb8da5135c73c4bea9ca93e4f92d1528fb46b407ae907b4a78aa8cdf3b0f",
+      "missing_lines": 22,
+      "missing_branches": 138
+    },
+    "clients/python/src/ezllmrouter_client/integration.py": {
+      "source_sha256": "627fc7e496beb405a6ce7722494efc975ceaf685a0807769b6c35a9b07a99e77",
+      "missing_lines": 57,
+      "missing_branches": 117
+    },
+    "server/src/ezllmrouter_server/__init__.py": {
+      "source_sha256": "def99af69a4215eea726e1b61570a74dbb19579a0b27b1ab84f5fdec2e8d04b3",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/__main__.py": {
+      "source_sha256": "e2715cdcf92f97fd0f3dfc9e33ce24cdf683588169b702c4e207414c3fcedb60",
+      "missing_lines": 4,
+      "missing_branches": 2
+    },
+    "server/src/ezllmrouter_server/_metadata.py": {
+      "source_sha256": "c2db5d7ad09d226752d69fa01016837d46a07960c2089ba6ecba284bff9f7d85",
+      "missing_lines": 1,
+      "missing_branches": 2
+    },
+    "server/src/ezllmrouter_server/accounting_datasets.py": {
+      "source_sha256": "256f87b6713fd713230ded3d73e2a23c0f3d5b9342de98e99c5a85515ddf92c5",
+      "missing_lines": 49,
+      "missing_branches": 52
+    },
+    "server/src/ezllmrouter_server/accounting_events.py": {
+      "source_sha256": "e720a65762ad47497e78c16145155dfb7f4759c4ce8552fd79006883b4dd07dc",
+      "missing_lines": 108,
+      "missing_branches": 108
+    },
+    "server/src/ezllmrouter_server/accounting_exports.py": {
+      "source_sha256": "d484cce34fb0d03f0decfee99ea3a859619c2019273b901914773a721853629e",
+      "missing_lines": 45,
+      "missing_branches": 49
+    },
+    "server/src/ezllmrouter_server/accounting_lineage.py": {
+      "source_sha256": "49b93119f72aa55a2bfd2c77beade5a77f02614daf5e76fd91f9ee607007689b",
+      "missing_lines": 21,
+      "missing_branches": 40
+    },
+    "server/src/ezllmrouter_server/accounting_reports.py": {
+      "source_sha256": "2e50b94921fa0d780cab325f417066f8c5934faf02f64d00b23308f3715dac04",
+      "missing_lines": 23,
+      "missing_branches": 57
+    },
+    "server/src/ezllmrouter_server/accounting_snapshots.py": {
+      "source_sha256": "da172b8c1088fd97ac8870f38ac644f4a1c6821c5fce554afac169734989c7f2",
+      "missing_lines": 36,
+      "missing_branches": 60
+    },
+    "server/src/ezllmrouter_server/accounting_types.py": {
+      "source_sha256": "ba90351ddfb795af8f56386118cafcadca0915db44e5d7618cee74af89ea9f48",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/attribution.py": {
+      "source_sha256": "5676aa949f1c902be97a324c434651b38b54748c9a4523949afdb35507d4748f",
+      "missing_lines": 54,
+      "missing_branches": 126
+    },
+    "server/src/ezllmrouter_server/cache_accounting.py": {
+      "source_sha256": "cf4febd098a6769247753fa1135ee3481c786c82b7f7cdcb26322f5226a9944f",
+      "missing_lines": 13,
+      "missing_branches": 39
+    },
+    "server/src/ezllmrouter_server/campaign_reporting.py": {
+      "source_sha256": "b9309f79d097b99e3c3e1eb431e9f05e78664b8ff8a2ca45e394b474bc0d255c",
+      "missing_lines": 15,
+      "missing_branches": 13
+    },
+    "server/src/ezllmrouter_server/canonical.py": {
+      "source_sha256": "fe04f2c0c41797c94a5ed14c98a8cc64fce4dd51c3a7324ca016705f88ec8b61",
+      "missing_lines": 17,
+      "missing_branches": 40
+    },
+    "server/src/ezllmrouter_server/catalogue.py": {
+      "source_sha256": "768afc07317ab0706932e2f8d037547a88bf02ee9eef36d480d6ff7de4f83f03",
+      "missing_lines": 40,
+      "missing_branches": 82
+    },
+    "server/src/ezllmrouter_server/connection_resources.py": {
+      "source_sha256": "5e31a2d75f6a5cbb2c19fbbae16ae2d3d385ee8c162b60b9e4e7b387f57af78f",
+      "missing_lines": 2,
+      "missing_branches": 11
+    },
+    "server/src/ezllmrouter_server/connector_availability.py": {
+      "source_sha256": "db1b500a3c9020451b25130e8c6b69e893c8ca4e42136b06ee90691b6bb061c4",
+      "missing_lines": 8,
+      "missing_branches": 13
+    },
+    "server/src/ezllmrouter_server/core.py": {
+      "source_sha256": "95f005c6254d44827ba6821095bde6ee80e8e54c4f3be2d707375b41cbfd9054",
+      "missing_lines": 6,
+      "missing_branches": 41
+    },
+    "server/src/ezllmrouter_server/core_admission.py": {
+      "source_sha256": "420491d24f25c7d3e6dc3754d73b584b4e6c44fa821666c46256f883bbdc16e3",
+      "missing_lines": 23,
+      "missing_branches": 24
+    },
+    "server/src/ezllmrouter_server/core_attempt.py": {
+      "source_sha256": "a93ed6871676166d7a00b95107f557630337764c62cb65744b2c3492f9602794",
+      "missing_lines": 26,
+      "missing_branches": 22
+    },
+    "server/src/ezllmrouter_server/core_outcomes.py": {
+      "source_sha256": "ef8cf9eb6daef3158719cad0568116b6e18ec69ae2e2034eb3c9b2a443f08d43",
+      "missing_lines": 29,
+      "missing_branches": 53
+    },
+    "server/src/ezllmrouter_server/core_policy.py": {
+      "source_sha256": "68793dfb06f5483aef0f3dd46cf73190245b1d054bf5bd031b287e897944bbf5",
+      "missing_lines": 10,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/core_status.py": {
+      "source_sha256": "9817eb6acf1b1544a4147bc02aa5f91050555607c029ab651e4607df356580e8",
+      "missing_lines": 8,
+      "missing_branches": 12
+    },
+    "server/src/ezllmrouter_server/core_types.py": {
+      "source_sha256": "3015dab30916d45818e8bb43a48656ef6d79a94036a0fdce065121e2215c0c37",
+      "missing_lines": 11,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/csv_export.py": {
+      "source_sha256": "6f9e5090b2935f05dc8e1d7a4fd18b392ddd7f5d61ac84fb409c14e77517c9df",
+      "missing_lines": 0,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/database.py": {
+      "source_sha256": "5a9b2a364102e80a26bcf6e945fe32565ffbbe604d6d0d762a41cb6d55672ee0",
+      "missing_lines": 2,
+      "missing_branches": 9
+    },
+    "server/src/ezllmrouter_server/database_audit.py": {
+      "source_sha256": "2ac720ee04b790a0b0157950e4276e7daef90cd0738ace6414a8e1c56cd2477d",
+      "missing_lines": 10,
+      "missing_branches": 12
+    },
+    "server/src/ezllmrouter_server/demo_common.py": {
+      "source_sha256": "e5567ee153db04a50ce8e43e930a2ae93a5672f8ce1fd55c542b68f881e085d3",
+      "missing_lines": 0,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/demo_workspace.py": {
+      "source_sha256": "3fa678c1418a1aeb63deee814d75478ec949678e9c4c83463f5fdf68d3b14dfa",
+      "missing_lines": 6,
+      "missing_branches": 31
+    },
+    "server/src/ezllmrouter_server/demo_workspace_team.py": {
+      "source_sha256": "4fbb804086e1e6fff45b23028543cb5351aeeb9db755e27a1cc43ea734615a82",
+      "missing_lines": 11,
+      "missing_branches": 32
+    },
+    "server/src/ezllmrouter_server/diagnostic_journal.py": {
+      "source_sha256": "e95f579da896e3079ba0a3d8efd3d46a1ebf520e05b7148ee273e58a33398c20",
+      "missing_lines": 7,
+      "missing_branches": 7
+    },
+    "server/src/ezllmrouter_server/errors.py": {
+      "source_sha256": "7d26a5baeb1b9d18606a37c2803c089671dc417dfd73ccddebfc25f32333fd90",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/execution_policy.py": {
+      "source_sha256": "b84803521230ad61db06db55c0d3095c825dce4b8e8b17885713d2abad60a4cf",
+      "missing_lines": 6,
+      "missing_branches": 14
+    },
+    "server/src/ezllmrouter_server/execution_resources.py": {
+      "source_sha256": "1b3bb083fd4d42154f1daa2b18bbf00ad07675137134ef2fb2464a467371fb0c",
+      "missing_lines": 4,
+      "missing_branches": 7
+    },
+    "server/src/ezllmrouter_server/external_identity.py": {
+      "source_sha256": "2eccc18cfe1532c21a4ea04ec6a283233e15da13e9975a955a37492c29b307f8",
+      "missing_lines": 5,
+      "missing_branches": 13
+    },
+    "server/src/ezllmrouter_server/formatting.py": {
+      "source_sha256": "428b451371beb92d5253979d4f4c5d8276288bcf9efccaa3b79b12c27816cdc6",
+      "missing_lines": 1,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/gateway/__init__.py": {
+      "source_sha256": "fa204e401c36f10780d6cad28829d9840318416487726ea57ac22c943407ade7",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/gateway/capabilities.py": {
+      "source_sha256": "29c6f1706948f06e95fced12369f4c9456bf06d2ff6258eb57a36306c57e1548",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/gateway/choice_b_sender.py": {
+      "source_sha256": "c7e655e16c88c018de6c2d2c4b2598c013be85a70f3a113a6c0a219a8cec99c4",
+      "missing_lines": 59,
+      "missing_branches": 70
+    },
+    "server/src/ezllmrouter_server/gateway/choice_b_wire.py": {
+      "source_sha256": "a413609725fa3f0d884d70925f35bad83104b943d62775b21bfec71e880b39ed",
+      "missing_lines": 20,
+      "missing_branches": 21
+    },
+    "server/src/ezllmrouter_server/gateway/guard.py": {
+      "source_sha256": "8cb45057e5f1e1d467af7ee5d37321597d97f16f852c20160ee6263dfb441e98",
+      "missing_lines": 51,
+      "missing_branches": 51
+    },
+    "server/src/ezllmrouter_server/gateway/owned_sender_transport.py": {
+      "source_sha256": "68845549398765d04ecd7e2adafe6d9fb67f7a8b2731ce7258442147d306bee0",
+      "missing_lines": 23,
+      "missing_branches": 18
+    },
+    "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py": {
+      "source_sha256": "b722674c3b756d89073f0bf1a263abc05ea88de64e729d4ced82ffe36a03e88a",
+      "missing_lines": 145,
+      "missing_branches": 85
+    },
+    "server/src/ezllmrouter_server/gateway/provider_reply.py": {
+      "source_sha256": "3d5a0536b778a0958f0154edda2223f753564f90cac43b5040e926ad74a6d778",
+      "missing_lines": 8,
+      "missing_branches": 20
+    },
+    "server/src/ezllmrouter_server/gateway/proxy_recipe.py": {
+      "source_sha256": "3acb5f207ddc84008294f60e74137b7fcf7a444e254928d9a617898d7f4696c8",
+      "missing_lines": 4,
+      "missing_branches": 9
+    },
+    "server/src/ezllmrouter_server/gateway/retrieval_guard.py": {
+      "source_sha256": "b75d95b0062c332ea7aedd6ace11a970dfcd5ee5a4d852b94e4280f90864ce67",
+      "missing_lines": 17,
+      "missing_branches": 22
+    },
+    "server/src/ezllmrouter_server/gateway/synthetic_recipe.py": {
+      "source_sha256": "69859bed8cebaf31a5a0d91a9200cfcd28d7cf3b6ce31e00237a6e077f1a8483",
+      "missing_lines": 3,
+      "missing_branches": 6
+    },
+    "server/src/ezllmrouter_server/gateway/worker_ready.py": {
+      "source_sha256": "7ce2d8963dc324c7bd0a8a17d6fe954c0480d5f45afc32efc4ca7a4a2f211690",
+      "missing_lines": 20,
+      "missing_branches": 30
+    },
+    "server/src/ezllmrouter_server/http_server.py": {
+      "source_sha256": "717488bcb1f5befd6ef20f4da5af21b13d838a0bfbd9874462faa6665d87daeb",
+      "missing_lines": 7,
+      "missing_branches": 12
+    },
+    "server/src/ezllmrouter_server/identifiers.py": {
+      "source_sha256": "08dbdc0fdf79579b7ff678df85d95723b6a61a1dfc7a7c5481d4bab4234ea9bf",
+      "missing_lines": 1,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/identity.py": {
+      "source_sha256": "5ac81d7baeb81f253e24c3187779e0e877b0c9f43f9cf6c80ea7a46cf2690425",
+      "missing_lines": 3,
+      "missing_branches": 5
+    },
+    "server/src/ezllmrouter_server/instance_lock.py": {
+      "source_sha256": "ee6402600c428c477b84c62cedfbfabf56a671b2df3031f5650a5417a76ad213",
+      "missing_lines": 4,
+      "missing_branches": 7
+    },
+    "server/src/ezllmrouter_server/integration_accounting.py": {
+      "source_sha256": "dc8b4404998a7ef51c36cd41b192d43937073beef1b7cb3ec006d8362bb33557",
+      "missing_lines": 130,
+      "missing_branches": 181
+    },
+    "server/src/ezllmrouter_server/integration_bootstrap.py": {
+      "source_sha256": "c99de8deec3743874ef04970d0b02e720df58c435cfb2c5850c307d750d65c41",
+      "missing_lines": 5,
+      "missing_branches": 11
+    },
+    "server/src/ezllmrouter_server/integration_credential_records.py": {
+      "source_sha256": "31d85e46e7c76474bf932eab3334463b9cd0d27190afe0d701f577fae3fea432",
+      "missing_lines": 19,
+      "missing_branches": 11
+    },
+    "server/src/ezllmrouter_server/integration_credentials.py": {
+      "source_sha256": "f94835503cfc314b405d9472fe926de41600614bb3a459074d8b9660acca1a81",
+      "missing_lines": 38,
+      "missing_branches": 69
+    },
+    "server/src/ezllmrouter_server/integration_local.py": {
+      "source_sha256": "85d78ce3232c13e9d44493ebe302f0b97c99b2590f21ddfe18fbece7dacba473",
+      "missing_lines": 24,
+      "missing_branches": 56
+    },
+    "server/src/ezllmrouter_server/json_validation.py": {
+      "source_sha256": "70b4579c8935df91ee7a6288fbb7ab24ac389845f840aa2dcb562677c84eb928",
+      "missing_lines": 3,
+      "missing_branches": 11
+    },
+    "server/src/ezllmrouter_server/local_connector_http.py": {
+      "source_sha256": "f959b09aba44ff12e7451aec9e4d8795106cdfa177516a2902af023163730257",
+      "missing_lines": 18,
+      "missing_branches": 26
+    },
+    "server/src/ezllmrouter_server/local_connector_inventory.py": {
+      "source_sha256": "3f8d1069dec0b246c9828b615d2054007ff74037fe23c850c6d609dd746e8ba3",
+      "missing_lines": 6,
+      "missing_branches": 20
+    },
+    "server/src/ezllmrouter_server/local_connectors.py": {
+      "source_sha256": "bcb8895dfe5ffa87ae7a9b95ff903509dd11fd06e4f49472b92965aa677f213c",
+      "missing_lines": 20,
+      "missing_branches": 49
+    },
+    "server/src/ezllmrouter_server/observability.py": {
+      "source_sha256": "71ea2374c4dd8a4b1cd718bae9adbb3c63fe3679d65eeba5f3616470be5926ad",
+      "missing_lines": 4,
+      "missing_branches": 3
+    },
+    "server/src/ezllmrouter_server/operator_demo.py": {
+      "source_sha256": "8e1a529da3ddd748dd1b5984715922cd7badb136c57eafdd7688f99dece62918",
+      "missing_lines": 21,
+      "missing_branches": 27
+    },
+    "server/src/ezllmrouter_server/operator_http/__init__.py": {
+      "source_sha256": "ffddebd3ff715e5baf0d81ae6f4424a1f6adcec508247e3000d8e95e0fa9f0a5",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/operator_http/accounts.py": {
+      "source_sha256": "57e297ec9ddc8fb32bf83794c46b0e8302585e5b736f868b91e9830babe3342b",
+      "missing_lines": 16,
+      "missing_branches": 23
+    },
+    "server/src/ezllmrouter_server/operator_http/application.py": {
+      "source_sha256": "258bac371397cdf5d3ef11dda586667916af5201f2b7fe0f874985aec4ccd45f",
+      "missing_lines": 50,
+      "missing_branches": 35
+    },
+    "server/src/ezllmrouter_server/operator_http/assets.py": {
+      "source_sha256": "72c3b8d73c51266b8c0e81a3f1b7cb3cf06c6cc99ec18348c251ca5d6f8eed2b",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/operator_http/authentication.py": {
+      "source_sha256": "a3ed56f46f371bd93c1f0e4c0db78f46b0a63f2406359dfda3e57c8d7046f961",
+      "missing_lines": 16,
+      "missing_branches": 23
+    },
+    "server/src/ezllmrouter_server/operator_http/common.py": {
+      "source_sha256": "bfaeb61d73c441e255da10eab043a6b072fb316953ad127ea3d08496c5cf759a",
+      "missing_lines": 1,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/operator_http/context.py": {
+      "source_sha256": "c85a27d475631f51c0a6be0d4dc5e769fbb0156ca3a1c5905cf2945201124af6",
+      "missing_lines": 8,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/operator_http/handler.py": {
+      "source_sha256": "97d775f6be017effa2eee5270f3359b3751fd0a46f710bc3b867b69143ceef53",
+      "missing_lines": 19,
+      "missing_branches": 11
+    },
+    "server/src/ezllmrouter_server/operator_http/integration.py": {
+      "source_sha256": "85bec5a30b5436e9f62172cdebb8e71fe1d3737fc14a75d3afb2056b5b840168",
+      "missing_lines": 52,
+      "missing_branches": 48
+    },
+    "server/src/ezllmrouter_server/operator_http/policy.py": {
+      "source_sha256": "969a20469740f224c0ca0572ada73af91412d469b1fb2e70b116920e54cda49d",
+      "missing_lines": 2,
+      "missing_branches": 13
+    },
+    "server/src/ezllmrouter_server/operator_http/registry_routes.py": {
+      "source_sha256": "d3fbc2d686d98a5e1fea960b088f5afc1da7d478f8ca80ff4a27fa2e06da06a8",
+      "missing_lines": 264,
+      "missing_branches": 161
+    },
+    "server/src/ezllmrouter_server/operator_http/reports.py": {
+      "source_sha256": "7d17aa26e96d409dc5bed22106e2e0bcb7ab0c189081315bee0bc41a89239520",
+      "missing_lines": 66,
+      "missing_branches": 68
+    },
+    "server/src/ezllmrouter_server/operator_http/routing.py": {
+      "source_sha256": "de0755c328822543358c14388a5d54b6790fbf9994821efdc19f3d0686ac5c07",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/operator_http/transport.py": {
+      "source_sha256": "c0928d51549f1f9cbe86c8347bd3441de019a6019e9d0eabc168b9e26e35ce06",
+      "missing_lines": 1,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/operator_projection.py": {
+      "source_sha256": "9632f5949c779f8362d8d0ce5de0478512296fa7538cb33d9afab0381c1505c1",
+      "missing_lines": 34,
+      "missing_branches": 57
+    },
+    "server/src/ezllmrouter_server/operator_web.py": {
+      "source_sha256": "956e0b7591c2ec0afa1b6b43a8cf65b94afa6b55e004e2ef9702699e1d9e2752",
+      "missing_lines": 2,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/personal_campaign.py": {
+      "source_sha256": "96babbfb9cf75995fd3737ed01ead565213166960462c1c7d5448d296574627a",
+      "missing_lines": 32,
+      "missing_branches": 93
+    },
+    "server/src/ezllmrouter_server/plans.py": {
+      "source_sha256": "bd1e7055a4a0c2d47de772946142b5e0403e076887fc183db2aa7854cb8ad660",
+      "missing_lines": 2,
+      "missing_branches": 10
+    },
+    "server/src/ezllmrouter_server/private_files.py": {
+      "source_sha256": "0d1b2514257737b2e24c6e9ea1c009cf3d582d1828e2c91cdd7424d6c9e711b5",
+      "missing_lines": 4,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/provider_adapters.py": {
+      "source_sha256": "3e7a4ac3a8bf053f40f35f19f4232892b263cee41047dc36c15687bdde8c0c38",
+      "missing_lines": 106,
+      "missing_branches": 144
+    },
+    "server/src/ezllmrouter_server/provider_vault.py": {
+      "source_sha256": "176951fc3d014514e90ade041d412e5433367d2b4d38a19cc4558a910a21c138",
+      "missing_lines": 0,
+      "missing_branches": 5
+    },
+    "server/src/ezllmrouter_server/records.py": {
+      "source_sha256": "0e57fc5c9103f16035c7be476354087f625d3007395a4358a5e9ec52a143b3a1",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/registry.py": {
+      "source_sha256": "45e90a70a750bac780ca7a674916a84247ca69650501d7e9b0c9e870353ef681",
+      "missing_lines": 24,
+      "missing_branches": 35
+    },
+    "server/src/ezllmrouter_server/registry_bootstrap.py": {
+      "source_sha256": "54ec62b99b7eef545a46b5e5b220ac4fa09c1d58c873e49b1a2ce20ce0314b61",
+      "missing_lines": 2,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/registry_context.py": {
+      "source_sha256": "63055435027a6fd344e750fde840df815852a0694c29962e700d9242e61a6b0c",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/registry_credentials.py": {
+      "source_sha256": "fc90c9879eedf1eed6c222114b947f292e398990a87b247bcf0947f87dca28c5",
+      "missing_lines": 29,
+      "missing_branches": 67
+    },
+    "server/src/ezllmrouter_server/registry_mutations/__init__.py": {
+      "source_sha256": "0a3db02deeb30ad83e7b005582df8eba8e8a73e93d63db21aa229b88c0d490d5",
+      "missing_lines": 2,
+      "missing_branches": 5
+    },
+    "server/src/ezllmrouter_server/registry_mutations/catalogue.py": {
+      "source_sha256": "275138bd946b35159124b3c9a9a83ca0f03958821ae00a0788bbe420b47775f7",
+      "missing_lines": 5,
+      "missing_branches": 10
+    },
+    "server/src/ezllmrouter_server/registry_mutations/connections.py": {
+      "source_sha256": "60de1138f9091adb0566f811f094cf531ef2402805e658924b86145b4acf4dbe",
+      "missing_lines": 36,
+      "missing_branches": 45
+    },
+    "server/src/ezllmrouter_server/registry_mutations/grants.py": {
+      "source_sha256": "3a34cd950dac5128399078841f8714d88ae03312ad3a3d11469d7ed6e9f51846",
+      "missing_lines": 7,
+      "missing_branches": 15
+    },
+    "server/src/ezllmrouter_server/registry_mutations/models.py": {
+      "source_sha256": "5b81a5692eb6edc7a122f0b2a4097d566bfeecc5b3c11566b14e47ef0074e250",
+      "missing_lines": 21,
+      "missing_branches": 30
+    },
+    "server/src/ezllmrouter_server/registry_mutations/prices.py": {
+      "source_sha256": "7dba9aafbcdd6629bbab8353fd7c49d52ae894c655213d20586915ab47d39acd",
+      "missing_lines": 4,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/registry_mutations/principals.py": {
+      "source_sha256": "ac49c8362f6ba1d7ebb82e3e81aadf2d41d184876c2a8416fc14c54495dd83a1",
+      "missing_lines": 13,
+      "missing_branches": 24
+    },
+    "server/src/ezllmrouter_server/registry_reads.py": {
+      "source_sha256": "ab0bab609df66791c2dca3275ffd5ddc59425c0c02c5d3b271e37c0202c55be5",
+      "missing_lines": 1,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/registry_sources.py": {
+      "source_sha256": "22581e423192628051b2f8676b4bc9fd3a4ba4722093e8ea05dd3d7d5071913b",
+      "missing_lines": 14,
+      "missing_branches": 47
+    },
+    "server/src/ezllmrouter_server/registry_tokens.py": {
+      "source_sha256": "487062c52783e54bf943304ecbdfa57facf2008c24ed4f361086a6260fab8372",
+      "missing_lines": 2,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/registry_values.py": {
+      "source_sha256": "e19895929b2bde57fc6750364e57dc2fe5f8b34d5eecd743eff9eaaa03c9073c",
+      "missing_lines": 4,
+      "missing_branches": 5
+    },
+    "server/src/ezllmrouter_server/reporting.py": {
+      "source_sha256": "2b1b214ef0ab411ddc9586292e09c7e9bbaac126db134748503357c29ec32189",
+      "missing_lines": 116,
+      "missing_branches": 125
+    },
+    "server/src/ezllmrouter_server/reporting_metrics.py": {
+      "source_sha256": "9f0218f1e9df64ae46a1901c92e86a8593d147c2bbf085f1a9dede0891baa03f",
+      "missing_lines": 0,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/reporting_stream.py": {
+      "source_sha256": "f3aef2a41497e19a7754777e3aab892d02bd6a720901cc5c7b07b736ce8d33ed",
+      "missing_lines": 1,
+      "missing_branches": 15
+    },
+    "server/src/ezllmrouter_server/repositories/__init__.py": {
+      "source_sha256": "d43febb8c319da3a841e5a0c1dbcfde5396c9ed426a463dd3d4c74af4efbcc31",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/attribution.py": {
+      "source_sha256": "d6936546b4591706c62daaf5a12a9bf5b1ab3a0ffcd6f8bea796861a5f55bfad",
+      "missing_lines": 0,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/repositories/authority.py": {
+      "source_sha256": "cc2aa7bd157f1f39d4a2ab345374bfb6c90cdaf174521589b213407c20ef8189",
+      "missing_lines": 2,
+      "missing_branches": 2
+    },
+    "server/src/ezllmrouter_server/repositories/database_audit.py": {
+      "source_sha256": "8e7dcb14739e1ac95a0856cc141bc63c8bc1dcec07ba9ecf078044263ea78453",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/integration_accounting.py": {
+      "source_sha256": "b6c880ab7b6946e4f3b337975852dc25c540f141bd184bedddbf8dd4a169e798",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/integration_credentials.py": {
+      "source_sha256": "da82921025ed721f9fbe1c97ae35225b212e8bc3a1d521f743c7bfe91da605d3",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/local_connectors.py": {
+      "source_sha256": "cf3adb34a522bd1011f86f1d32aee2835d220bc02a2fdbf911fcba284c8c5801",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/operator_projection.py": {
+      "source_sha256": "f8184a92d891312fafad300b82aab2352c94c6692e13090d4a4a927776a52128",
+      "missing_lines": 2,
+      "missing_branches": 2
+    },
+    "server/src/ezllmrouter_server/repositories/personal_campaign.py": {
+      "source_sha256": "95ea8647c4b6ab6a9ab8b5fb0707f6e12be668c05ed5bc1dd884d7d75004501f",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/registry.py": {
+      "source_sha256": "74bd37300c1026fc93d96546014f5987614b5876648db73095f2e35335d1944a",
+      "missing_lines": 1,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/repositories/reporting.py": {
+      "source_sha256": "74c7566bf5fc79051177b619406fd402e596702f7ae19e26055e1c2b9ff72bbe",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/secret_rotation.py": {
+      "source_sha256": "11b7ee53f3fa264cc682128f2aa07ce5b52d6052abd09eaa9de9aa4bfb61dc67",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/shared.py": {
+      "source_sha256": "d46ed2a7b3c139b7058b713840d503b261dc7a8301b6e94a69588087c55f0f79",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/startup.py": {
+      "source_sha256": "0735ec5e4e8be74dfca902e48c268692907e7f71ffcbebc3ed93b7ed15a9a042",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/store.py": {
+      "source_sha256": "9841843f1136440c46f4b30515032b49efdc4899f739be68da11353298c1bc98",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/successor_reporting.py": {
+      "source_sha256": "866eb0d7c3eb8d6636c0f7abd05cbfdb324a063b9f4a0a55d76e47261ceba482",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/repositories/user_management.py": {
+      "source_sha256": "f04db6cd0b2a8321235d18775d45a57d43e2371dfc969e10d655dcb2ccd14c88",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/request_validation.py": {
+      "source_sha256": "ca0f9b9534ce161b410e534f1983cb4078add2a92ea228f62dce3f0dcd2872c1",
+      "missing_lines": 32,
+      "missing_branches": 67
+    },
+    "server/src/ezllmrouter_server/retrieval_descriptor.py": {
+      "source_sha256": "26b12c76fb1f9ba80236e5de9b2d0cf79dba6cd30f37261b63244b22afaa098f",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/runtime_resources.py": {
+      "source_sha256": "94a946d595164be15d5f692ffe87fe44069f8a5bf81c44197d33fffec76ed827",
+      "missing_lines": 4,
+      "missing_branches": 6
+    },
+    "server/src/ezllmrouter_server/schema.py": {
+      "source_sha256": "1af8b750d6558908a9fe42ed5b792858492bef4d3af9dc80d7a1b279cc4fde0c",
+      "missing_lines": 2,
+      "missing_branches": 4
+    },
+    "server/src/ezllmrouter_server/scripted_demo.py": {
+      "source_sha256": "a6f5b694f77a07cdfaba1319a94fc2828bc9f84eb5c74352c5e21630b69f10af",
+      "missing_lines": 22,
+      "missing_branches": 57
+    },
+    "server/src/ezllmrouter_server/secret_box.py": {
+      "source_sha256": "134c35a79ac85e568f91ab8c9b1a528f2016695f6d46b05f959a72234c5b6884",
+      "missing_lines": 11,
+      "missing_branches": 37
+    },
+    "server/src/ezllmrouter_server/secret_rotation.py": {
+      "source_sha256": "d25bbd0d83bb514c47ec10f3e23a58ab421e848a93b6b7daaed127745bfd9b42",
+      "missing_lines": 7,
+      "missing_branches": 16
+    },
+    "server/src/ezllmrouter_server/states.py": {
+      "source_sha256": "9449c479ff9f90fd1212e66b05aaaa413197728b83500cddc55056f566e04667",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/store.py": {
+      "source_sha256": "e91c955612ae441212c69a678ee01dc43417a8ac37a3c35eb889c4ce9591c135",
+      "missing_lines": 26,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/store_results.py": {
+      "source_sha256": "57a6ff7de36a4d6e7527475b385d1a10e516b72bd185ee8806a19cdf35e9e0e5",
+      "missing_lines": 19,
+      "missing_branches": 15
+    },
+    "server/src/ezllmrouter_server/store_successor.py": {
+      "source_sha256": "e027e85e3317a68fa812aeb369424b552ada0f3938e9ad9d4c12a8212eed6620",
+      "missing_lines": 11,
+      "missing_branches": 18
+    },
+    "server/src/ezllmrouter_server/store_work.py": {
+      "source_sha256": "d877a37ca38a407cb138f96548ec8bb80af61f0d22d0d782ef94cbe585281631",
+      "missing_lines": 5,
+      "missing_branches": 12
+    },
+    "server/src/ezllmrouter_server/successor_contract.py": {
+      "source_sha256": "35b5ed7fb184d7fbbec8337f09df45e0a32295882eeee6f9b07fbff42d06a53a",
+      "missing_lines": 31,
+      "missing_branches": 87
+    },
+    "server/src/ezllmrouter_server/successor_plan.py": {
+      "source_sha256": "df4069c11c8624cf9088fb05f5c06739fb621b14efd7a4e5d1de3ecacf220d01",
+      "missing_lines": 16,
+      "missing_branches": 47
+    },
+    "server/src/ezllmrouter_server/successor_reporting.py": {
+      "source_sha256": "c3ea7e463261dbea93c5bd5d54b9800e1bfd9517ab4fbd7bb2e61871c8966109",
+      "missing_lines": 10,
+      "missing_branches": 34
+    },
+    "server/src/ezllmrouter_server/user_management.py": {
+      "source_sha256": "55754621ad0b619550010b19deee53a9f8c086536720d9a449bb0030b0830289",
+      "missing_lines": 21,
+      "missing_branches": 37
+    },
+    "server/src/ezllmrouter_server/web.py": {
+      "source_sha256": "0941179b4e5a5088b1de6d1302e22abe2c9d0c1b0790b7cf31a88e1b81773f5e",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/wire_http/__init__.py": {
+      "source_sha256": "198efd2b01ed3c69b20943ffea765aa5bd8aae05303380bf1df5b56c6945e1f1",
+      "missing_lines": 0,
+      "missing_branches": 0
+    },
+    "server/src/ezllmrouter_server/wire_http/contracts.py": {
+      "source_sha256": "23a5e353f526f6159c10870f4d22c0fee14fec4888e5be3cbe7e278470f00dae",
+      "missing_lines": 1,
+      "missing_branches": 1
+    },
+    "server/src/ezllmrouter_server/wire_http/exports.py": {
+      "source_sha256": "9a90112cbe7a848a2b24ba42d6d27101652c29c14e1f7a47672f59b594f1ed90",
+      "missing_lines": 15,
+      "missing_branches": 8
+    },
+    "server/src/ezllmrouter_server/wire_http/handler.py": {
+      "source_sha256": "4d3a4c35a220db08e6e31b5cc47790502f61084b04fb0d405eb12c1124b35d29",
+      "missing_lines": 74,
+      "missing_branches": 70
+    },
+    "server/src/ezllmrouter_server/wire_http/integration.py": {
+      "source_sha256": "17b8c2e6269919041bbf3bc50628a1c2afb785d549a4c8fdec83933ea7638ca9",
+      "missing_lines": 118,
+      "missing_branches": 65
+    },
+    "server/src/ezllmrouter_server/wire_http/transport.py": {
+      "source_sha256": "e61b35670e99336c452b5ee564cefec9fdb4786d47433d1da281556196f181e0",
+      "missing_lines": 30,
+      "missing_branches": 44
+    }
+  }
+}

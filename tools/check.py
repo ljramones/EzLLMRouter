@@ -11,13 +11,14 @@ import ast
 import json
 import os
 import tempfile
+import time
 from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
 from pathlib import Path
 import runpy
 import subprocess
 import sys
-from typing import Any
+from typing import Any, cast
 import unittest
 
 from .test_network import block_network as block_network
@@ -49,6 +50,7 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.operator_console.test_authority_boundaries",
     *("tests.operator_console.test_" + name for name in OPERATOR_TESTS),
     *("tests.development_slice.test_" + name for name in DEVELOPMENT_TESTS),
     *("tests.gateway_integration.test_" + name for name in GATEWAY_TESTS),
@@ -86,6 +88,7 @@ MODULES = (
     "tests.client_languages.test_contracts",
     "tests.playwright.test_server",
     "tests.unit.test_check_inventory",
+    "tests.unit.test_measurement",
     "tests.unit.test_gateway_lifecycle",
     "tests.unit.test_resource_lifecycle",
     "tests.unit.test_correctness_cases",
@@ -154,6 +157,11 @@ TYPED_PATHS = (
     "clients/python/src/ezllmrouter_client",
     "tools/check.py",
     "tools/type_audit.py",
+    "tools/test_health.py",
+    "tools/branch_coverage.py",
+    "tools/coverage_reports.py",
+    "tools/container_tests.py",
+    "tools/javascript_coverage.py",
     "tools/source_size.py",
     "tools/gateway/paths.py",
     "tests/support.py",
@@ -320,6 +328,7 @@ def run_script(name: str) -> int:
 
 def run_module(name: str, *, loopback: bool) -> bool:
     # Per-module interpreters isolate environment changes and loaded fixture state.
+    health_directory = os.environ.get("EZLLMROUTER_TEST_HEALTH")
     with ExitStack() as stack:
         if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
             from .test_coverage import LineCoverage
@@ -327,7 +336,17 @@ def run_module(name: str, *, loopback: bool) -> bool:
             stack.enter_context(LineCoverage(os.environ["EZLLMROUTER_TEST_COVERAGE"]))
         block_network(stack, loopback=loopback)
         suite = unittest.defaultTestLoader.loadTestsFromName(name)
-        result = unittest.TextTestRunner(verbosity=1).run(suite)
+        from .test_health import TimedResult, write_result
+
+        started = time.perf_counter()
+        result = unittest.TextTestRunner(verbosity=1, resultclass=TimedResult).run(suite)
+        write_result(
+            name,
+            cast(TimedResult, result),
+            time.perf_counter() - started,
+            health_directory,
+            loopback=loopback,
+        )
         return result.wasSuccessful() and result.testsRun > len(result.skipped)
 
 
@@ -335,7 +354,17 @@ def run(argv: list[str]) -> None:
     print("+ " + " ".join(argv), flush=True)
     from .test_network import child_environment
 
-    subprocess.run(argv, cwd=ROOT, env=child_environment(), check=True, timeout=180)
+    from .test_health import write_command
+
+    started = time.perf_counter()
+    outcome = "failed"
+    try:
+        subprocess.run(argv, cwd=ROOT, env=child_environment(), check=True, timeout=180)
+        outcome = "passed"
+    finally:
+        write_command(
+            argv, time.perf_counter() - started, outcome, os.environ.get("EZLLMROUTER_TEST_HEALTH")
+        )
 
 
 def main() -> int:
@@ -343,7 +372,22 @@ def main() -> int:
     parser.add_argument(
         "--coverage",
         action="store_true",
-        help="write Python line coverage under .artifacts/coverage",
+        help="write Python line/conditional-branch and JS SDK/console coverage artifacts",
+    )
+    parser.add_argument(
+        "--coverage-gate",
+        action="store_true",
+        help="enforce reviewed coverage and critical-exit budgets (requires --coverage)",
+    )
+    parser.add_argument("--health-dir", type=Path, help="test outcome/duration artifact directory")
+    parser.add_argument(
+        "--health-budget", type=float, help="maximum seconds per Python test module"
+    )
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="repeat Python module suites; retain every outcome (no retry pass)",
     )
     parser.add_argument("--tests-only", action="store_true", help="omit Ruff and mypy")
     parser.add_argument("--loopback", action="store_true", help="also run local HTTP fixtures")
@@ -355,12 +399,26 @@ def main() -> int:
         return run_script(args.test_script)
     if args.test_module:
         return 0 if run_module(args.test_module, loopback=args.loopback) else 1
+    if not 1 <= args.repeat <= 200:
+        parser.error("repeat must be between 1 and 200")
+    if args.coverage_gate and not args.coverage:
+        parser.error("coverage-gate requires coverage")
+    if args.health_budget is not None and not 0 < args.health_budget <= 180:
+        parser.error("health-budget must be positive and at most 180 seconds")
+    health_parent = ROOT / ".artifacts/test-health"
+    health_parent.mkdir(parents=True, exist_ok=True)
+    health_directory = args.health_dir or Path(tempfile.mkdtemp(prefix="run-", dir=health_parent))
+    health_directory.mkdir(parents=True, exist_ok=True)
+    os.environ["EZLLMROUTER_TEST_HEALTH"] = str(health_directory.resolve())
     coverage_directory = None
     if args.coverage:
         parent = ROOT / ".artifacts/coverage"
         parent.mkdir(parents=True, exist_ok=True)
         coverage_directory = tempfile.mkdtemp(prefix="python-", dir=parent)
         os.environ["EZLLMROUTER_TEST_COVERAGE"] = coverage_directory
+        javascript_directory = Path(coverage_directory) / "javascript"
+        javascript_directory.mkdir()
+        os.environ["EZLLMROUTER_JS_COVERAGE"] = str(javascript_directory)
     inventory_errors = test_inventory_errors() + javascript_inventory_errors()
     if inventory_errors:
         print("\n".join(inventory_errors), file=sys.stderr)
@@ -394,7 +452,7 @@ def main() -> int:
             else MODULES + (LOOPBACK_MODULES if args.loopback else ())
         )
         failures = []
-        for name in modules:
+        for name in modules * args.repeat:
             command = [sys.executable, "-B", "-m", "tools.check", "--test-module", name]
             if (args.loopback or args.http_only) and name in LOOPBACK_MODULES:
                 command.append("--loopback")
@@ -422,10 +480,44 @@ def main() -> int:
             from .test_coverage import report
 
             summary = report(coverage_directory)
+            from .coverage_reports import gaps, regressions, render
+            from .javascript_coverage import report as javascript_report
+
+            policy = json.loads((ROOT / "tools/coverage_policy.json").read_text())
+            render(summary, Path(coverage_directory), policy)
+            javascript_report(Path(coverage_directory) / "javascript")
+            if args.coverage_gate:
+                baseline = json.loads((ROOT / "tools/coverage_budget.json").read_text())
+                errors = regressions(summary, baseline)
+                from .javascript_coverage import budgets, budget_errors as js_budget_errors
+
+                js_summary = json.loads(
+                    (Path(coverage_directory) / "javascript/summary.json").read_text()
+                )
+                js_baseline = json.loads(
+                    (ROOT / "tools/javascript_coverage_budget.json").read_text()
+                )
+                errors.extend(
+                    js_budget_errors(budgets(js_summary, "console"), js_baseline["console"])
+                )
+                if gaps(summary, policy):
+                    errors.append("critical conditional exits remain uncovered")
+                if errors:
+                    print("\n".join(errors), file=sys.stderr)
+                    failures.append("coverage budgets")
             print(
                 f"Python line coverage: {summary['percent']}% ({summary['executed']}/{summary['executable']}); {coverage_directory}/summary.json",
                 flush=True,
             )
+        from .test_health import budget_errors, summarize
+
+        summarize(health_directory)
+        if args.health_budget is not None:
+            errors = budget_errors(health_directory, args.health_budget)
+            if errors:
+                print("\n".join(errors), file=sys.stderr)
+                failures.append("module duration budget")
+        print("Test health: " + str(health_directory / "summary.json"), flush=True)
         if failures:
             print("Failed checks: " + ", ".join(failures), file=sys.stderr)
             return 1
