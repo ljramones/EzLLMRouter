@@ -1,6 +1,7 @@
 """Import and ephemeral-port boundaries after the evidence tooling move."""
 
 from pathlib import Path
+import ast
 import json
 import subprocess
 import sys
@@ -17,7 +18,60 @@ from tools.gateway.paths import source_root
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def _script_entry(node):
+    return (
+        isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, ast.Name)
+        and node.test.left.id == "__name__"
+        and any(
+            isinstance(value, ast.Constant) and value.value == "__main__"
+            for value in node.test.comparators
+        )
+        and any(
+            isinstance(child, ast.Call)
+            and (
+                (isinstance(child.func, ast.Name) and child.func.id in ("main", "run"))
+                or (isinstance(child.func, ast.Attribute) and child.func.attr == "main")
+            )
+            for child in ast.walk(node)
+        )
+    )
+
+
 class ToolingBoundaryTests(unittest.TestCase):
+    def test_script_entry_points_follow_runtime_definitions(self):
+        for path in sorted((ROOT / "tools").rglob("*.py")):
+            nodes = ast.parse(path.read_text()).body
+            for index, node in enumerate(nodes):
+                if not _script_entry(node):
+                    continue
+                late = [
+                    item.name
+                    for item in nodes[index + 1 :]
+                    if isinstance(item, (ast.FunctionDef, ast.ClassDef))
+                ]
+                with self.subTest(path=path.relative_to(ROOT)):
+                    self.assertEqual(late, [], "definitions unavailable when the CLI starts")
+
+    def test_completion_cli_help_is_available_without_starting_a_target(self):
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                str(ROOT / "tools/gateway/evidence/dev12_completion_runner.py"),
+                "--help",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--build-plan", result.stdout)
+        self.assertIn("--continue-existing", result.stdout)
+
     def test_loopback_suites_load_without_fixture_paths(self):
         code = """
 import sys

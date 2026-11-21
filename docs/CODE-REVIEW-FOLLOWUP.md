@@ -1191,3 +1191,27 @@ lint/formatting and maintained script/console checks. Typing debt remains 1,631;
 the two transferred function allowances are removed, leaving 43. Remaining W6
 work is other retained runners/audits, long individual tests and deployment
 exercises. No provider, listener, dependency, build or daemon action ran.
+
+### Item 11 follow-up: integrated runner lifecycle phases
+
+DEV-08, DEV-11 cache, DEV-12 integrated and retained controls runners now separate
+prepared execution, campaign setup, installed-client exercises and verification.
+Complete initialization/error/cleanup scopes move together: already-created
+servers, adapters, coordinators, stores and receiver processes retain their
+original failure cleanup order. Borrowed resources remain in their existing
+caller scopes. Nine phase extractions expand to the original four function ASTs;
+an additional liveness audit rejects moving assignments observed by an enclosing
+error/finally scope. All functions in these four modules are below 200 lines.
+
+This check also found an extraction-order bug: helper definitions appended below
+a script entry block were unavailable during direct CLI execution. Definitions
+now precede entry blocks, including the previously extracted completion argument
+parser. Two maintained regressions scan tool entry ordering and execute the
+completion runner's isolated, parse-only `--help` path. All seven tooling-boundary
+cases pass. The DEV-08 explicit no-send preflight passes with zero network/model
+requests; no execution path or target profile was launched.
+
+Full `tools.check` passes 919 Python cases, strict typing on 107 files,
+lint/formatting and script/console checks. Typing debt remains 1,631. Four resolved
+runner allowances are removed, leaving 39. Other retained tools, long individual
+tests and deployment exercises remain under W6.

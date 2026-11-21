@@ -649,10 +649,6 @@ def main(argv=None):
         runtime.close()
 
 
-if __name__ == "__main__":
-    main()
-
-
 def _completion_arguments(argv):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("plan", type=Path)
@@ -693,3 +689,7 @@ def _completion_arguments(argv):
     )
     args = parser.parse_args(argv)
     return args
+
+
+if __name__ == "__main__":
+    main()

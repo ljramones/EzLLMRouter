@@ -309,356 +309,428 @@ def run():
             stdout=subprocess.DEVNULL,
             stderr=(root / "receiver.stderr").open("w"),
         )
-        wire = None
-        operator = None
-        store = None
-        coordinator = None
-        try:
-            for _ in range(100):
-                if receiver.poll() is not None:
-                    raise RuntimeError("controlled receiver failed startup")
-                try:
-                    with socket.create_connection(("127.0.0.1", receiver_port), timeout=0.1):
+        return _run_installed_successor_target(
+            EzLLMRouterClient,
+            budget_account,
+            campaign_id,
+            cases,
+            cert,
+            financial_owner,
+            inventory,
+            operator_port,
+            receiver,
+            receiver_log,
+            receiver_port,
+            root,
+            service_port,
+            worker,
+        )
+
+
+def _run_installed_successor_target(
+    EzLLMRouterClient,
+    budget_account,
+    campaign_id,
+    cases,
+    cert,
+    financial_owner,
+    inventory,
+    operator_port,
+    receiver,
+    receiver_log,
+    receiver_port,
+    root,
+    service_port,
+    worker,
+):
+    wire = None
+    operator = None
+    store = None
+    coordinator = None
+    try:
+        for _ in range(100):
+            if receiver.poll() is not None:
+                raise RuntimeError("controlled receiver failed startup")
+            try:
+                with socket.create_connection(("127.0.0.1", receiver_port), timeout=0.1):
+                    break
+            except OSError:
+                time.sleep(0.05)
+        else:
+            raise RuntimeError("controlled receiver readiness deadline")
+        for _, _request, context in cases:
+            context["identity"]["charging_owner_id"] = financial_owner
+        requests = [(request, context) for _, request, context in cases]
+        js_enabled = Path("/dev12-node").is_file()
+        tokens = [f"dev12.synthetic.token.{index}." + "x" * 32 for index in range(len(requests))]
+        legacy = {
+            token: {
+                **context["identity"],
+                "task_id": request["work_selector"]["task_id"],
+                "expires_at": context["expires_at"],
+            }
+            for token, (request, context) in zip(tokens, requests, strict=True)
+        }
+        contexts = {token: context for token, (_, context) in zip(tokens, requests, strict=True)}
+        store = SQLiteStore(root / "campaign.sqlite")
+        authority, allowance = _start_integrated_campaign(
+            budget_account,
+            campaign_id,
+            contexts,
+            financial_owner,
+            inventory,
+            js_enabled,
+            root,
+            store,
+        )
+        executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
+        os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(root / "guard.jsonl")
+        executed = executor.execute
+
+        def diagnosed_execute(*args, **kwargs):
+            try:
+                return executed(*args, **kwargs)
+            except Exception as exc:
+                print(
+                    json.dumps(
+                        {
+                            "stage": "executor",
+                            "error_type": type(exc).__name__,
+                            "error": str(exc)[:160],
+                            "guard_events": observations(root / "guard.jsonl"),
+                            "arrivals": observations(receiver_log),
+                        }
+                    ),
+                    file=sys.stderr,
+                    flush=True,
+                )
+                raise
+
+        executor.execute = diagnosed_execute
+        permitted = lambda trusted, record: (
+            trusted["principal_id"] == record["work_key"]["principal_id"]
+            and trusted["source_authority_id"] == record["trusted_identity"]["source_authority_id"]
+            and trusted["identity_binding_id"] == record["trusted_identity"]["identity_binding_id"]
+        )
+        coordinator = Coordinator(
+            store,
+            identity=legacy,
+            config={},
+            prompt_blocks={},
+            allowed_lineages={},
+            authority=None,
+            adapter=None,
+            retention={},
+            classification={},
+            recipe=None,
+        )
+        from tools.synthetic.successor_assembly import attach_standalone_synthetic
+
+        successor = attach_standalone_synthetic(
+            coordinator,
+            store=store,
+            contexts_by_credential=contexts,
+            authority=authority,
+            executor=executor,
+            allowance=allowance,
+            read_allowed=permitted,
+            usage_write_allowed=permitted,
+        )
+        successor.recover_incomplete()
+        submitted = successor.submit
+
+        def diagnosed_submit(*args, **kwargs):
+            try:
+                return submitted(*args, **kwargs)
+            except Exception as exc:
+                print(
+                    json.dumps(
+                        {
+                            "stage": "service_submit",
+                            "error_type": type(exc).__name__,
+                            "error": str(exc)[:160],
+                        }
+                    ),
+                    file=sys.stderr,
+                    flush=True,
+                )
+                raise
+
+        successor.submit = diagnosed_submit
+        wire = serve("127.0.0.1", service_port, coordinator)
+        threading.Thread(target=wire.serve_forever, daemon=True).start()
+        operator = serve_operator(
+            "127.0.0.1",
+            operator_port,
+            projection=OperatorProjection(store, "user.demo", str(root / "send-events.jsonl")),
+            runner=None,
+            password="dev12.synthetic.operator." + "x" * 32,
+            fixture={"destination": {}, "policy": {}},
+            build={
+                "commit": "disposable.dev12",
+                "dirty": True,
+                "fingerprint": "controlled.synthetic",
+            },
+            web_root=ROOT / "web",
+            worker_probe=lambda: {"state": "networkless"},
+            sender_status=lambda: {"state": "controlled"},
+            successor_store=store,
+        )
+        threading.Thread(target=operator.serve_forever, daemon=True).start()
+        results = _execute_installed_successor_cases(
+            EzLLMRouterClient, cases, js_enabled, requests, root, service_port, tokens
+        )
+        _verify_integrated_target_evidence(
+            allowance,
+            campaign_id,
+            contexts,
+            inventory,
+            js_enabled,
+            operator_port,
+            receiver_log,
+            requests,
+            results,
+            root,
+            store,
+        )
+    finally:
+        if operator is not None:
+            operator.shutdown()
+            operator.server_close()
+            operator.operator_jobs.shutdown(wait=True)
+        if wire is not None:
+            wire.shutdown()
+            wire.server_close()
+        if coordinator is not None:
+            coordinator.pool.shutdown(wait=True)
+            coordinator.successor.pool.shutdown(wait=True)
+        receiver.terminate()
+        receiver.wait(timeout=5)
+        if store is not None:
+            store.close()
+
+
+def _start_integrated_campaign(
+    budget_account, campaign_id, contexts, financial_owner, inventory, js_enabled, root, store
+):
+    signing_key = ed25519.Ed25519PrivateKey.generate()
+    signing_path = root / "signing-key.pem"
+    signing_path.write_bytes(
+        signing_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    signing_path.chmod(0o600)
+    authority = SyntheticSuccessorAuthority(store, signing_key, "key.synthetic.dev12", "v1")
+    for identity in {
+        tuple(sorted(context["identity"].items())): context["identity"]
+        for context in contexts.values()
+    }.values():
+        authority.set_historical_access(
+            identity,
+            read=True,
+            write=True,
+            resume=True,
+            observed_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
+    allowance = FiniteSuccessorCampaign(
+        store, campaign_id, budget_account, financial_owner_id=financial_owner
+    )
+    if not js_enabled:
+        raise RuntimeError("installed CommonJS runtime absent")
+    started = allowance.start(
+        {"receiver": inventory["receiver"], "service": inventory["service"]},
+        ["campaign.sqlite", "receiver.jsonl", "/link/dev12-worker.sock"],
+        max_attempts=256,
+        max_concurrent=2,
+        ceiling_decimal="3.000000000",
+    )
+    inventory["start_at"], inventory["expires_at"] = (
+        started["start_at"],
+        started["expires_at"],
+    )
+    (root / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
+    return authority, allowance
+
+
+def _execute_installed_successor_cases(
+    EzLLMRouterClient, cases, js_enabled, requests, root, service_port, tokens
+):
+    results = []
+    for index, ((request, _context), token) in enumerate(zip(requests, tokens, strict=True)):
+        with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", token) as client:
+            reply = (
+                client.submit_embedding(request, {"wait_ms": 5000})
+                if request["operation"]["type"] == "embedding.create"
+                else client.submit_rerank(request, {"wait_ms": 5000})
+            )
+            if reply["state"] == "pending":
+                for _ in range(50):
+                    status = client.get_successor_status(
+                        {"submission_id": reply["handle"]["submission_id"]}
+                    )
+                    if status["submission_state"] != "pending":
                         break
-                except OSError:
                     time.sleep(0.05)
             else:
-                raise RuntimeError("controlled receiver readiness deadline")
-            for _, _request, context in cases:
-                context["identity"]["charging_owner_id"] = financial_owner
-            requests = [(request, context) for _, request, context in cases]
-            js_enabled = Path("/dev12-node").is_file()
-            tokens = [
-                f"dev12.synthetic.token.{index}." + "x" * 32 for index in range(len(requests))
-            ]
-            legacy = {
-                token: {
-                    **context["identity"],
-                    "task_id": request["work_selector"]["task_id"],
-                    "expires_at": context["expires_at"],
-                }
-                for token, (request, context) in zip(tokens, requests, strict=True)
-            }
-            contexts = {
-                token: context for token, (_, context) in zip(tokens, requests, strict=True)
-            }
-            store = SQLiteStore(root / "campaign.sqlite")
-            signing_key = ed25519.Ed25519PrivateKey.generate()
-            signing_path = root / "signing-key.pem"
-            signing_path.write_bytes(
-                signing_key.private_bytes(
-                    serialization.Encoding.PEM,
-                    serialization.PrivateFormat.PKCS8,
-                    serialization.NoEncryption(),
+                status = client.get_successor_status(
+                    {"submission_id": reply["handle"]["submission_id"]}
                 )
-            )
-            signing_path.chmod(0o600)
-            authority = SyntheticSuccessorAuthority(store, signing_key, "key.synthetic.dev12", "v1")
-            for identity in {
-                tuple(sorted(context["identity"].items())): context["identity"]
-                for context in contexts.values()
-            }.values():
-                authority.set_historical_access(
-                    identity,
-                    read=True,
-                    write=True,
-                    resume=True,
-                    observed_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                )
-            allowance = FiniteSuccessorCampaign(
-                store, campaign_id, budget_account, financial_owner_id=financial_owner
-            )
-            if not js_enabled:
-                raise RuntimeError("installed CommonJS runtime absent")
-            started = allowance.start(
-                {"receiver": inventory["receiver"], "service": inventory["service"]},
-                ["campaign.sqlite", "receiver.jsonl", "/link/dev12-worker.sock"],
-                max_attempts=256,
-                max_concurrent=2,
-                ceiling_decimal="3.000000000",
-            )
-            inventory["start_at"], inventory["expires_at"] = (
-                started["start_at"],
-                started["expires_at"],
-            )
-            (root / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
-            executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
-            os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(root / "guard.jsonl")
-            executed = executor.execute
-
-            def diagnosed_execute(*args, **kwargs):
-                try:
-                    return executed(*args, **kwargs)
-                except Exception as exc:
-                    print(
-                        json.dumps(
-                            {
-                                "stage": "executor",
-                                "error_type": type(exc).__name__,
-                                "error": str(exc)[:160],
-                                "guard_events": observations(root / "guard.jsonl"),
-                                "arrivals": observations(receiver_log),
-                            }
-                        ),
-                        file=sys.stderr,
-                        flush=True,
+            if status["submission_state"] == "completed":
+                actual = status["attempts"][0]["usage_revision"]["amount_decimal"]
+                expected = independent_amount(cases[index][0], request)
+                if actual != expected:
+                    raise AssertionError(
+                        f"independent native tariff mismatch: {cases[index][0]} {actual} {expected}"
                     )
-                    raise
-
-            executor.execute = diagnosed_execute
-            permitted = lambda trusted, record: (
-                trusted["principal_id"] == record["work_key"]["principal_id"]
-                and trusted["source_authority_id"]
-                == record["trusted_identity"]["source_authority_id"]
-                and trusted["identity_binding_id"]
-                == record["trusted_identity"]["identity_binding_id"]
+            results.append({"case": cases[index][0], "reply": reply, "status": status})
+    if js_enabled:
+        rerank_index = next(
+            i for i, (request, _) in enumerate(requests) if request["operation"]["type"] == "rerank"
+        )
+        for index, name in (
+            (0, "installed_js.embedding"),
+            (rerank_index, "installed_js.rerank"),
+        ):
+            request = deepcopy(requests[index][0])
+            request["work_selector"]["step_id"] = "step.js." + (
+                "embedding" if index == 0 else "rerank"
             )
-            coordinator = Coordinator(
-                store,
-                identity=legacy,
-                config={},
-                prompt_blocks={},
-                allowed_lineages={},
-                authority=None,
-                adapter=None,
-                retention={},
-                classification={},
-                recipe=None,
-            )
-            from tools.synthetic.successor_assembly import attach_standalone_synthetic
-
-            successor = attach_standalone_synthetic(
-                coordinator,
-                store=store,
-                contexts_by_credential=contexts,
-                authority=authority,
-                executor=executor,
-                allowance=allowance,
-                read_allowed=permitted,
-                usage_write_allowed=permitted,
-            )
-            successor.recover_incomplete()
-            submitted = successor.submit
-
-            def diagnosed_submit(*args, **kwargs):
-                try:
-                    return submitted(*args, **kwargs)
-                except Exception as exc:
-                    print(
-                        json.dumps(
-                            {
-                                "stage": "service_submit",
-                                "error_type": type(exc).__name__,
-                                "error": str(exc)[:160],
-                            }
-                        ),
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    raise
-
-            successor.submit = diagnosed_submit
-            wire = serve("127.0.0.1", service_port, coordinator)
-            threading.Thread(target=wire.serve_forever, daemon=True).start()
-            operator = serve_operator(
-                "127.0.0.1",
-                operator_port,
-                projection=OperatorProjection(store, "user.demo", str(root / "send-events.jsonl")),
-                runner=None,
-                password="dev12.synthetic.operator." + "x" * 32,
-                fixture={"destination": {}, "policy": {}},
-                build={
-                    "commit": "disposable.dev12",
-                    "dirty": True,
-                    "fingerprint": "controlled.synthetic",
-                },
-                web_root=ROOT / "web",
-                worker_probe=lambda: {"state": "networkless"},
-                sender_status=lambda: {"state": "controlled"},
-                successor_store=store,
-            )
-            threading.Thread(target=operator.serve_forever, daemon=True).start()
-            results = []
-            for index, ((request, _context), token) in enumerate(
-                zip(requests, tokens, strict=True)
-            ):
-                with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", token) as client:
-                    reply = (
-                        client.submit_embedding(request, {"wait_ms": 5000})
-                        if request["operation"]["type"] == "embedding.create"
-                        else client.submit_rerank(request, {"wait_ms": 5000})
-                    )
-                    if reply["state"] == "pending":
-                        for _ in range(50):
-                            status = client.get_successor_status(
-                                {"submission_id": reply["handle"]["submission_id"]}
-                            )
-                            if status["submission_state"] != "pending":
-                                break
-                            time.sleep(0.05)
-                    else:
-                        status = client.get_successor_status(
-                            {"submission_id": reply["handle"]["submission_id"]}
-                        )
-                    if status["submission_state"] == "completed":
-                        actual = status["attempts"][0]["usage_revision"]["amount_decimal"]
-                        expected = independent_amount(cases[index][0], request)
-                        if actual != expected:
-                            raise AssertionError(
-                                f"independent native tariff mismatch: {cases[index][0]} {actual} {expected}"
-                            )
-                    results.append({"case": cases[index][0], "reply": reply, "status": status})
-            if js_enabled:
-                rerank_index = next(
-                    i
-                    for i, (request, _) in enumerate(requests)
-                    if request["operation"]["type"] == "rerank"
-                )
-                for index, name in (
-                    (0, "installed_js.embedding"),
-                    (rerank_index, "installed_js.rerank"),
-                ):
-                    request = deepcopy(requests[index][0])
-                    request["work_selector"]["step_id"] = "step.js." + (
-                        "embedding" if index == 0 else "rerank"
-                    )
-                    input_file = root / ("js-input-" + str(index) + ".json")
-                    input_file.write_text(
-                        json.dumps(
-                            {
-                                "base_url": f"http://127.0.0.1:{service_port}",
-                                "token": tokens[index],
-                                "request": request,
-                            }
-                        )
-                    )
-                    process = subprocess.run(
-                        [
-                            "/dev12-node",
-                            str(Path(__file__).with_name("dev12_js_actor.cjs")),
-                            str(input_file),
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    data = json.loads(process.stdout)
-                    if data["status"]["attempts"][0]["usage_revision"][
-                        "amount_decimal"
-                    ] != independent_amount(cases[index][0], request):
-                        raise AssertionError("installed JS tariff mismatch")
-                    results.append({"case": name, **data})
-            with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", tokens[0]) as client:
-                first = requests[0][0]
-                duplicate = (
-                    client.submit_embedding(first, {"wait_ms": 0})
-                    if first["operation"]["type"] == "embedding.create"
-                    else client.submit_rerank(first, {"wait_ms": 0})
-                )
-                if (
-                    duplicate["handle"]["submission_id"]
-                    != results[0]["reply"]["handle"]["submission_id"]
-                ):
-                    raise AssertionError("duplicate full WorkKey created a new submission")
-                client.get_successor_status({"work_selector": first["work_selector"]})
-            arrivals = observations(receiver_log)
-            census = allowance.inspect()
-            operator_origin = f"http://127.0.0.1:{operator_port}"
-            with httpx.Client(
-                base_url=operator_origin, trust_env=False, headers={"Origin": operator_origin}
-            ) as browser:
-                login = browser.post(
-                    "/operator/v1/login", json={"password": "dev12.synthetic.operator." + "x" * 32}
-                )
-                login.raise_for_status()
-                report_response = browser.get("/operator/v1/retrieval-usage")
-                report_response.raise_for_status()
-                report = report_response.json()
-                csv_response = browser.get("/operator/v1/retrieval-usage?export=csv")
-                csv_response.raise_for_status()
-                exported = list(csv.DictReader(io.StringIO(csv_response.text)))
-                if (
-                    report["total"]["attempts"] != len(results)
-                    or len(exported) != len(results)
-                    or {row["attempt_id"] for row in exported}
-                    != {row["attempt_id"] for row in report["attempts"]}
-                ):
-                    raise AssertionError("authenticated operator CSV/JSON unique-attempt mismatch")
-            if len(observations(receiver_log)) != len(arrivals):
-                raise AssertionError("read-only operator reporting caused a synthetic send")
-            with store._lock:
-                guard_receipts = [
-                    json.loads(row[0])
-                    for row in store.db.execute(
-                        "SELECT guard_receipt FROM dev12_send_ownership ORDER BY rowid"
-                    )
-                ]
-                events = [
-                    {"submission_id": sid, "kind": kind, "at": at, "evidence": json.loads(raw)}
-                    for sid, kind, at, raw in store.db.execute(
-                        "SELECT submission_id,event_kind,observed_at,evidence FROM dev12_evidence_events ORDER BY event_id"
-                    )
-                ]
-            evidence = {
-                "inventory": inventory,
-                "allowance": census,
-                "arrivals": arrivals,
-                "results": results,
-                "guard_receipts": guard_receipts,
-                "guard_events": observations(root / "guard.jsonl"),
-                "store_events": events,
-                "operator_report": report,
-                "operator_csv_attempts": len(exported),
-                "totals": {
-                    item["identity"]["principal_id"]: store.successor_totals(
-                        item["identity"]["principal_id"]
-                    )
-                    for item in contexts.values()
-                },
-            }
-            if len(guard_receipts) != len(arrivals) or {
-                row["attempt_id"]: row["body_sha256"] for row in guard_receipts
-            } != {row["attempt_id"]: row["body_sha256"] for row in arrivals}:
-                raise AssertionError("receiver and durable final-body correlation differs")
-            (root / "target-result.json").write_text(
-                json.dumps(evidence, sort_keys=True, indent=2) + "\n"
-            )
-            expected_count = len(requests) + (2 if js_enabled else 0)
-            print(
+            input_file = root / ("js-input-" + str(index) + ".json")
+            input_file.write_text(
                 json.dumps(
                     {
-                        "status": "PASS"
-                        if len(arrivals) == expected_count
-                        and all(r["status"]["submission_state"] == "completed" for r in results)
-                        else "FAIL",
-                        "campaign_id": campaign_id,
-                        "arrivals": len(arrivals),
-                        "states": [r["status"]["submission_state"] for r in results],
-                        "attempt_count": census["attempt_count"],
-                        "possible_send_count": census["possible_send_count"],
-                    },
-                    sort_keys=True,
+                        "base_url": f"http://127.0.0.1:{service_port}",
+                        "token": tokens[index],
+                        "request": request,
+                    }
                 )
             )
-            if len(arrivals) != expected_count or any(
-                r["status"]["submission_state"] != "completed" for r in results
-            ):
-                raise AssertionError("controlled target did not complete all selected cases")
-        finally:
-            if operator is not None:
-                operator.shutdown()
-                operator.server_close()
-                operator.operator_jobs.shutdown(wait=True)
-            if wire is not None:
-                wire.shutdown()
-                wire.server_close()
-            if coordinator is not None:
-                coordinator.pool.shutdown(wait=True)
-                coordinator.successor.pool.shutdown(wait=True)
-            receiver.terminate()
-            receiver.wait(timeout=5)
-            if store is not None:
-                store.close()
+            process = subprocess.run(
+                [
+                    "/dev12-node",
+                    str(Path(__file__).with_name("dev12_js_actor.cjs")),
+                    str(input_file),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            data = json.loads(process.stdout)
+            if data["status"]["attempts"][0]["usage_revision"][
+                "amount_decimal"
+            ] != independent_amount(cases[index][0], request):
+                raise AssertionError("installed JS tariff mismatch")
+            results.append({"case": name, **data})
+    with EzLLMRouterClient(f"http://127.0.0.1:{service_port}", tokens[0]) as client:
+        first = requests[0][0]
+        duplicate = (
+            client.submit_embedding(first, {"wait_ms": 0})
+            if first["operation"]["type"] == "embedding.create"
+            else client.submit_rerank(first, {"wait_ms": 0})
+        )
+        if duplicate["handle"]["submission_id"] != results[0]["reply"]["handle"]["submission_id"]:
+            raise AssertionError("duplicate full WorkKey created a new submission")
+        client.get_successor_status({"work_selector": first["work_selector"]})
+    return results
+
+
+def _verify_integrated_target_evidence(
+    allowance,
+    campaign_id,
+    contexts,
+    inventory,
+    js_enabled,
+    operator_port,
+    receiver_log,
+    requests,
+    results,
+    root,
+    store,
+):
+    arrivals = observations(receiver_log)
+    census = allowance.inspect()
+    operator_origin = f"http://127.0.0.1:{operator_port}"
+    with httpx.Client(
+        base_url=operator_origin, trust_env=False, headers={"Origin": operator_origin}
+    ) as browser:
+        login = browser.post(
+            "/operator/v1/login", json={"password": "dev12.synthetic.operator." + "x" * 32}
+        )
+        login.raise_for_status()
+        report_response = browser.get("/operator/v1/retrieval-usage")
+        report_response.raise_for_status()
+        report = report_response.json()
+        csv_response = browser.get("/operator/v1/retrieval-usage?export=csv")
+        csv_response.raise_for_status()
+        exported = list(csv.DictReader(io.StringIO(csv_response.text)))
+        if (
+            report["total"]["attempts"] != len(results)
+            or len(exported) != len(results)
+            or {row["attempt_id"] for row in exported}
+            != {row["attempt_id"] for row in report["attempts"]}
+        ):
+            raise AssertionError("authenticated operator CSV/JSON unique-attempt mismatch")
+    if len(observations(receiver_log)) != len(arrivals):
+        raise AssertionError("read-only operator reporting caused a synthetic send")
+    with store._lock:
+        guard_receipts = [
+            json.loads(row[0])
+            for row in store.db.execute(
+                "SELECT guard_receipt FROM dev12_send_ownership ORDER BY rowid"
+            )
+        ]
+        events = [
+            {"submission_id": sid, "kind": kind, "at": at, "evidence": json.loads(raw)}
+            for sid, kind, at, raw in store.db.execute(
+                "SELECT submission_id,event_kind,observed_at,evidence FROM dev12_evidence_events ORDER BY event_id"
+            )
+        ]
+    evidence = {
+        "inventory": inventory,
+        "allowance": census,
+        "arrivals": arrivals,
+        "results": results,
+        "guard_receipts": guard_receipts,
+        "guard_events": observations(root / "guard.jsonl"),
+        "store_events": events,
+        "operator_report": report,
+        "operator_csv_attempts": len(exported),
+        "totals": {
+            item["identity"]["principal_id"]: store.successor_totals(
+                item["identity"]["principal_id"]
+            )
+            for item in contexts.values()
+        },
+    }
+    if len(guard_receipts) != len(arrivals) or {
+        row["attempt_id"]: row["body_sha256"] for row in guard_receipts
+    } != {row["attempt_id"]: row["body_sha256"] for row in arrivals}:
+        raise AssertionError("receiver and durable final-body correlation differs")
+    (root / "target-result.json").write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n")
+    expected_count = len(requests) + (2 if js_enabled else 0)
+    print(
+        json.dumps(
+            {
+                "status": "PASS"
+                if len(arrivals) == expected_count
+                and all(r["status"]["submission_state"] == "completed" for r in results)
+                else "FAIL",
+                "campaign_id": campaign_id,
+                "arrivals": len(arrivals),
+                "states": [r["status"]["submission_state"] for r in results],
+                "attempt_count": census["attempt_count"],
+                "possible_send_count": census["possible_send_count"],
+            },
+            sort_keys=True,
+        )
+    )
+    if len(arrivals) != expected_count or any(
+        r["status"]["submission_state"] != "completed" for r in results
+    ):
+        raise AssertionError("controlled target did not complete all selected cases")
 
 
 if __name__ == "__main__":

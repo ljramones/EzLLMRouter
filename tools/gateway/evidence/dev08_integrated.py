@@ -315,165 +315,191 @@ def run(preflight=False):
                     stdout=subprocess.DEVNULL,
                     stderr=err,
                 )
-            adapter = None
-            wire = None
-            coordinator = None
-            stage = "receiver_ready"
-            try:
-                for _ in range(50):
-                    if receiver.poll() is not None:
-                        raise RuntimeError("controlled receiver exited before readiness")
-                    try:
-                        with socket.create_connection(("127.0.0.1", 8766), timeout=0.1):
-                            break
-                    except OSError:
-                        time.sleep(0.1)
-                else:
-                    raise RuntimeError("controlled receiver readiness deadline")
-                stage = "sender_and_coordinator"
-                adapter = ChoiceBSenderAdapter(
-                    authority,
-                    registry=registry,
-                    controlled_provider_proof=True,
-                    provider_key="sk-" + "s" * 40,
-                )
-                coordinator = Coordinator(
-                    store,
-                    identity={TEST_TOKEN: fixture["trusted_context"]},
-                    config=public_destination(fixture),
-                    prompt_blocks=fixture["prompt_blocks"],
-                    allowed_lineages=fixture["allowed_lineages"],
-                    authority=PlanAuthority(
-                        ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
-                    ),
-                    adapter=adapter,
-                    retention=fixture["retention"],
-                    classification=fixture["classification"],
-                    recipe=GatewayProxyRecipe(controlled_provider_proof=True),
-                    trusted_source_labels=fixture["trusted_source_labels"],
-                    registry=registry,
-                )
-                wire = serve("127.0.0.1", 8773, coordinator)
-                thread = threading.Thread(target=wire.serve_forever, daemon=True)
-                thread.start()
-                stage = "installed_client_submit"
-                with EzLLMRouterClient("http://127.0.0.1:8773", TEST_TOKEN) as client:
-                    reply = client.submit(request, {"wait_ms": 10000})
-                    if reply["state"] != "delivered":
-                        raise AssertionError(
-                            "controlled installed-client result not delivered: " + reply["state"]
-                        )
-                    candidate = reply["candidate"]
-                    submission_id = reply["handle"]["submission_id"]
-                    stage = "installed_client_status"
-                    status = client.getStatus({"submission_id": submission_id})
-                stage = "correlation"
-                if (
-                    candidate["output_blocks"][0]["text"] != "Hello."
-                    or status["submission_state"] != "completed"
-                ):
-                    raise AssertionError("controlled Responses candidate mismatch")
-                if candidate["output_blocks"][0]["source_labels"]["lineage_ids"] != [
-                    "src.candidate.provider"
-                ]:
-                    raise AssertionError("provider candidate provenance mismatch")
-                arrivals, sends, guards = (
-                    rows(receiver_log),
-                    rows(root / "send.jsonl"),
-                    rows(root / "guard.jsonl"),
-                )
-                attempt = candidate["attempt_id"]
-                if (
-                    len(arrivals) != 1
-                    or arrivals[0]["attempt_id"] != attempt
-                    or not arrivals[0]["request_valid"]
-                    or len(sends) != 1
-                    or sends[0]["attempt_id"] != attempt
-                    or sends[0]["first_bytes_accepted_by_local_socket"] is not True
-                    or sends[0]["first_acceptance_events"] != 1
-                    or len(
-                        [
-                            g
-                            for g in guards
-                            if g["stage"] == "commit_acknowledged" and g["attempt_id"] == attempt
-                        ]
-                    )
-                    != 1
-                ):
-                    raise AssertionError("controlled receiver/guard/first-write correlation failed")
-                record = store.get(submission_id)
-                if (
-                    record["attempt_id"] != attempt
-                    or store.intent_count(submission_id) != 1
-                    or store.guard_record(attempt)["attempt_id"] != attempt
-                ):
-                    raise AssertionError("attempt-linked durable accounting mismatch")
-                registry.mutate(
-                    "owner.local",
-                    {
-                        "operation_id": "op.dev08.integrated.disable",
-                        "action": "connection_state",
-                        "subject": "conn.dev08-controlled",
-                        "expected_revision": 4,
-                        "data": {"status": "disabled", "reason": "Controlled negative"},
-                    },
-                )
-                if (
-                    registry.explain(
-                        "svc.demo", config["configuration_ref"], "execution", "class.demo"
-                    )["reason"]
-                    != "TRANSPORT_UNAVAILABLE"
-                ):
-                    raise AssertionError("disabled connection still eligible")
-                if len(rows(receiver_log)) != 1:
-                    raise AssertionError("read-only eligibility check added request")
-                print(
-                    json.dumps(
-                        {
-                            "kind": "DEV-08 installed-client controlled HTTPS proof",
-                            "status": "PASS",
-                            "submissions": 1,
-                            "receiver_arrivals": 1,
-                            "attempt_correlated": True,
-                            "first_socket_acceptance_events": 1,
-                            "post_disable_eligibility": "TRANSPORT_UNAVAILABLE",
-                            "real_provider_calls": 0,
-                            "controlled_receiver_only": True,
-                        },
-                        sort_keys=True,
-                    )
-                )
-            except Exception as exc:
-                diagnostic = {
-                    "kind": "DEV-08 controlled integration failure checkpoint",
-                    "stage": stage,
-                    "exception_type": type(exc).__name__,
-                    "receiver_arrivals": len(rows(receiver_log)),
-                    "send_events": len(rows(root / "send.jsonl")),
-                    "guard_stages": [row.get("stage") for row in rows(root / "guard.jsonl")][:20],
-                }
-                if type(exc).__name__ == "EzLLMRouterError":
-                    diagnostic["sdk_code"] = exc.code
-                    diagnostic["http_status"] = exc.http_status
-                    diagnostic["failure_stage"] = exc.failure_stage
-                print(json.dumps(diagnostic, sort_keys=True), file=sys.stderr)
-                raise
-            finally:
-                if wire is not None:
-                    wire.shutdown()
-                    wire.server_close()
-                if coordinator is not None:
-                    coordinator.pool.shutdown(wait=True)
-                if adapter is not None:
-                    adapter.close()
-                receiver.terminate()
-                try:
-                    receiver.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    receiver.kill()
-                    receiver.wait(timeout=5)
+            return _run_prepared_dev08_target(
+                EzLLMRouterClient,
+                authority,
+                config,
+                fixture,
+                receiver,
+                receiver_log,
+                registry,
+                request,
+                root,
+                store,
+            )
         finally:
             store.close()
+
+
+def _run_prepared_dev08_target(
+    EzLLMRouterClient,
+    authority,
+    config,
+    fixture,
+    receiver,
+    receiver_log,
+    registry,
+    request,
+    root,
+    store,
+):
+    adapter = None
+    wire = None
+    coordinator = None
+    stage = "receiver_ready"
+    try:
+        for _ in range(50):
+            if receiver.poll() is not None:
+                raise RuntimeError("controlled receiver exited before readiness")
+            try:
+                with socket.create_connection(("127.0.0.1", 8766), timeout=0.1):
+                    break
+            except OSError:
+                time.sleep(0.1)
+        else:
+            raise RuntimeError("controlled receiver readiness deadline")
+        stage = "sender_and_coordinator"
+        adapter = ChoiceBSenderAdapter(
+            authority,
+            registry=registry,
+            controlled_provider_proof=True,
+            provider_key="sk-" + "s" * 40,
+        )
+        coordinator = Coordinator(
+            store,
+            identity={TEST_TOKEN: fixture["trusted_context"]},
+            config=public_destination(fixture),
+            prompt_blocks=fixture["prompt_blocks"],
+            allowed_lineages=fixture["allowed_lineages"],
+            authority=PlanAuthority(
+                ed25519.Ed25519PrivateKey.generate(), proxy_policy(fixture), registry
+            ),
+            adapter=adapter,
+            retention=fixture["retention"],
+            classification=fixture["classification"],
+            recipe=GatewayProxyRecipe(controlled_provider_proof=True),
+            trusted_source_labels=fixture["trusted_source_labels"],
+            registry=registry,
+        )
+        wire = serve("127.0.0.1", 8773, coordinator)
+        thread = threading.Thread(target=wire.serve_forever, daemon=True)
+        thread.start()
+        stage = "installed_client_submit"
+        with EzLLMRouterClient("http://127.0.0.1:8773", TEST_TOKEN) as client:
+            reply = client.submit(request, {"wait_ms": 10000})
+            if reply["state"] != "delivered":
+                raise AssertionError(
+                    "controlled installed-client result not delivered: " + reply["state"]
+                )
+            candidate = reply["candidate"]
+            submission_id = reply["handle"]["submission_id"]
+            stage = "installed_client_status"
+            status = client.getStatus({"submission_id": submission_id})
+        stage = "correlation"
+        if (
+            candidate["output_blocks"][0]["text"] != "Hello."
+            or status["submission_state"] != "completed"
+        ):
+            raise AssertionError("controlled Responses candidate mismatch")
+        if candidate["output_blocks"][0]["source_labels"]["lineage_ids"] != [
+            "src.candidate.provider"
+        ]:
+            raise AssertionError("provider candidate provenance mismatch")
+        arrivals, sends, guards = (
+            rows(receiver_log),
+            rows(root / "send.jsonl"),
+            rows(root / "guard.jsonl"),
+        )
+        attempt = candidate["attempt_id"]
+        if (
+            len(arrivals) != 1
+            or arrivals[0]["attempt_id"] != attempt
+            or not arrivals[0]["request_valid"]
+            or len(sends) != 1
+            or sends[0]["attempt_id"] != attempt
+            or sends[0]["first_bytes_accepted_by_local_socket"] is not True
+            or sends[0]["first_acceptance_events"] != 1
+            or len(
+                [
+                    g
+                    for g in guards
+                    if g["stage"] == "commit_acknowledged" and g["attempt_id"] == attempt
+                ]
+            )
+            != 1
+        ):
+            raise AssertionError("controlled receiver/guard/first-write correlation failed")
+        record = store.get(submission_id)
+        if (
+            record["attempt_id"] != attempt
+            or store.intent_count(submission_id) != 1
+            or store.guard_record(attempt)["attempt_id"] != attempt
+        ):
+            raise AssertionError("attempt-linked durable accounting mismatch")
+        registry.mutate(
+            "owner.local",
+            {
+                "operation_id": "op.dev08.integrated.disable",
+                "action": "connection_state",
+                "subject": "conn.dev08-controlled",
+                "expected_revision": 4,
+                "data": {"status": "disabled", "reason": "Controlled negative"},
+            },
+        )
+        if (
+            registry.explain("svc.demo", config["configuration_ref"], "execution", "class.demo")[
+                "reason"
+            ]
+            != "TRANSPORT_UNAVAILABLE"
+        ):
+            raise AssertionError("disabled connection still eligible")
+        if len(rows(receiver_log)) != 1:
+            raise AssertionError("read-only eligibility check added request")
+        print(
+            json.dumps(
+                {
+                    "kind": "DEV-08 installed-client controlled HTTPS proof",
+                    "status": "PASS",
+                    "submissions": 1,
+                    "receiver_arrivals": 1,
+                    "attempt_correlated": True,
+                    "first_socket_acceptance_events": 1,
+                    "post_disable_eligibility": "TRANSPORT_UNAVAILABLE",
+                    "real_provider_calls": 0,
+                    "controlled_receiver_only": True,
+                },
+                sort_keys=True,
+            )
+        )
+    except Exception as exc:
+        diagnostic = {
+            "kind": "DEV-08 controlled integration failure checkpoint",
+            "stage": stage,
+            "exception_type": type(exc).__name__,
+            "receiver_arrivals": len(rows(receiver_log)),
+            "send_events": len(rows(root / "send.jsonl")),
+            "guard_stages": [row.get("stage") for row in rows(root / "guard.jsonl")][:20],
+        }
+        if type(exc).__name__ == "EzLLMRouterError":
+            diagnostic["sdk_code"] = exc.code
+            diagnostic["http_status"] = exc.http_status
+            diagnostic["failure_stage"] = exc.failure_stage
+        print(json.dumps(diagnostic, sort_keys=True), file=sys.stderr)
+        raise
+    finally:
+        if wire is not None:
+            wire.shutdown()
+            wire.server_close()
+        if coordinator is not None:
+            coordinator.pool.shutdown(wait=True)
+        if adapter is not None:
+            adapter.close()
+        receiver.terminate()
+        try:
+            receiver.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            receiver.kill()
+            receiver.wait(timeout=5)
 
 
 if __name__ == "__main__":
