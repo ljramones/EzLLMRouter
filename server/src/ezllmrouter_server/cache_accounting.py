@@ -8,6 +8,8 @@ the operator must review that exact model limit and its price conditions.
 
 from __future__ import annotations
 
+from typing import cast
+
 import re
 from datetime import date
 from decimal import ROUND_HALF_EVEN, ROUND_UP, Decimal
@@ -77,7 +79,7 @@ def validate_contract(value: object, model_id: str, rates: object) -> Record:
     return dict(value)
 
 
-def exposure_bound(schedule, output_limit):
+def exposure_bound(schedule: Record, output_limit: int) -> Decimal:
     """Upper bound for disjoint input buckets and total output, rounded up."""
     contract = schedule["contract"]
     if (
@@ -96,7 +98,7 @@ def exposure_bound(schedule, output_limit):
     return raw.quantize(NANO, rounding=ROUND_UP)
 
 
-def _quantity(container, field):
+def _quantity(container: object, field: str) -> Record:
     if type(container) is not dict or field not in container:
         return {"state": "absent"}
     value = container[field]
@@ -107,26 +109,18 @@ def _quantity(container, field):
     return {"state": "invalid"}
 
 
-def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_model):
+def cache_usage_revision(
+    attempt_id: str,
+    report: object,
+    schedule: Record,
+    expected_model: object,
+    reported_model: object,
+) -> Record:
     """Price only complete, consistent billed buckets; preserve absence facts."""
     from datetime import datetime, timezone
 
-    input_details = report.get("input_tokens_details") if type(report) is dict else None
-    output_details = report.get("output_tokens_details") if type(report) is dict else None
-    write_details = (
-        input_details.get("cache_write_tokens_details") if type(input_details) is dict else None
-    )
-    observed = {
-        "input_total": _quantity(report, "input_tokens"),
-        "output_total": _quantity(report, "output_tokens"),
-        "reported_total": _quantity(report, "total_tokens"),
-        "input_cache_read": _quantity(input_details, "cached_tokens"),
-        "input_cache_write": _quantity(input_details, "cache_write_tokens"),
-        "input_cache_write_30m": _quantity(write_details, "ttl_30m_tokens"),
-        "input_cache_write_12h": _quantity(write_details, "ttl_12h_tokens"),
-        "output_reasoning": _quantity(output_details, "reasoning_tokens"),
-    }
-    normalized = dict(observed)
+    input_details, output_details, write_details, observed = _observed_usage(report)
+    normalized: Record = dict(observed)
     normalized["input_uncached"] = {"state": "unknown"}
     normalized["output_text"] = {"state": "unknown"}
     normalized["other_billable"] = [
@@ -150,7 +144,7 @@ def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_
         thirty, twelve = observed["input_cache_write_30m"], observed["input_cache_write_12h"]
         valid = (
             reported_total["count"] == input_count + output_count
-            and set(input_details)
+            and set(cast(Record, input_details))
             <= {"cached_tokens", "cache_write_tokens", "cache_write_tokens_details"}
             and type(write_details) is dict
             and set(write_details) == {"ttl_30m_tokens", "ttl_12h_tokens"}
@@ -165,42 +159,17 @@ def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_
             and expected_model == schedule["contract"]["requested_model"]
         )
         if valid:
-            ordinary = input_count - read_count - write_count
-            normalized["input_uncached"] = {"state": "known", "count": ordinary}
-            reason = observed["output_reasoning"]
-            if reason["state"] == "known":
-                if reason["count"] > output_count:
-                    valid = False
-                else:
-                    normalized["output_text"] = {
-                        "state": "known",
-                        "count": output_count - reason["count"],
-                    }
-            elif reason["state"] == "invalid":
-                valid = False
-            if valid:
-                rates = schedule["rates"]
-                raw = (
-                    Decimal(ordinary) * Decimal(rates["input_uncached"])
-                    + Decimal(read_count) * Decimal(rates["input_cache_read"])
-                    + Decimal(write_count) * Decimal(rates["input_cache_write_30m"])
-                    + Decimal(output_count) * Decimal(rates["output_text"])
-                ) / Decimal(schedule["unit_denominator"])
-                amount = raw.quantize(NANO, rounding=ROUND_HALF_EVEN)
-                if amount != 0 or raw == 0:
-                    normalized["other_billable"] = []
-                    cost = {
-                        "status": "calculated",
-                        "currency": schedule["currency"],
-                        "amount_decimal": money(amount),
-                        "source_ref": schedule["price_version"],
-                    }
-                    if amount == 0:
-                        cost["zero_basis"] = (
-                            "provider_reported_free"
-                            if input_count == output_count == 0
-                            else "contract_free"
-                        )
+            cost = _price_valid_cache_buckets(
+                observed,
+                normalized,
+                schedule,
+                input_count,
+                output_count,
+                read_count,
+                write_count,
+                cost,
+                valid,
+            )
     return {
         "attempt_id": attempt_id,
         "usage_observation": "reported"
@@ -216,3 +185,72 @@ def cache_usage_revision(attempt_id, report, schedule, expected_model, reported_
         "cost": cost,
         "recorded_at": utc_timestamp(datetime.now(timezone.utc)),
     }
+
+
+def _observed_usage(report: object) -> tuple[object, object, object, Record]:
+    input_details = report.get("input_tokens_details") if type(report) is dict else None
+    output_details = report.get("output_tokens_details") if type(report) is dict else None
+    write_details = (
+        input_details.get("cache_write_tokens_details") if type(input_details) is dict else None
+    )
+    observed = {
+        "input_total": _quantity(report, "input_tokens"),
+        "output_total": _quantity(report, "output_tokens"),
+        "reported_total": _quantity(report, "total_tokens"),
+        "input_cache_read": _quantity(input_details, "cached_tokens"),
+        "input_cache_write": _quantity(input_details, "cache_write_tokens"),
+        "input_cache_write_30m": _quantity(write_details, "ttl_30m_tokens"),
+        "input_cache_write_12h": _quantity(write_details, "ttl_12h_tokens"),
+        "output_reasoning": _quantity(output_details, "reasoning_tokens"),
+    }
+    return input_details, output_details, write_details, observed
+
+
+def _price_valid_cache_buckets(
+    observed: Record,
+    normalized: Record,
+    schedule: Record,
+    input_count: int,
+    output_count: int,
+    read_count: int,
+    write_count: int,
+    cost: Record,
+    valid: bool,
+) -> Record:
+    ordinary = input_count - read_count - write_count
+    normalized["input_uncached"] = {"state": "known", "count": ordinary}
+    reason = observed["output_reasoning"]
+    if reason["state"] == "known":
+        if reason["count"] > output_count:
+            valid = False
+        else:
+            normalized["output_text"] = {
+                "state": "known",
+                "count": output_count - reason["count"],
+            }
+    elif reason["state"] == "invalid":
+        valid = False
+    if valid:
+        rates = schedule["rates"]
+        raw = (
+            Decimal(ordinary) * Decimal(rates["input_uncached"])
+            + Decimal(read_count) * Decimal(rates["input_cache_read"])
+            + Decimal(write_count) * Decimal(rates["input_cache_write_30m"])
+            + Decimal(output_count) * Decimal(rates["output_text"])
+        ) / Decimal(schedule["unit_denominator"])
+        amount = raw.quantize(NANO, rounding=ROUND_HALF_EVEN)
+        if amount != 0 or raw == 0:
+            normalized["other_billable"] = []
+            cost = {
+                "status": "calculated",
+                "currency": schedule["currency"],
+                "amount_decimal": money(amount),
+                "source_ref": schedule["price_version"],
+            }
+            if amount == 0:
+                cost["zero_basis"] = (
+                    "provider_reported_free"
+                    if input_count == output_count == 0
+                    else "contract_free"
+                )
+    return cost

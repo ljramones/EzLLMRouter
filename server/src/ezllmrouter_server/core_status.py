@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+from typing import cast
+
+from typing import TYPE_CHECKING
+from .records import Record
+
+if TYPE_CHECKING:
+    from .core import Coordinator
+
 from datetime import datetime, timezone
 from .canonical import (
     ContractError,
@@ -9,7 +17,7 @@ from .canonical import (
 from . import core as _api
 
 
-def _pending(self, record):
+def _pending(self: Coordinator, record: Record) -> Record:
     try:
         current_retention = self._effective_retention(
             self._current_classification(record["classification_snapshot"])
@@ -28,8 +36,8 @@ def _pending(self, record):
     }
 
 
-def status(self, sid, trusted):
-    record = self.store.get(sid)
+def status(self: Coordinator, sid: str, trusted: Record) -> Record:
+    record = cast(Record, self.store.get(sid))
     if (
         not record
         or record["principal_id"] != trusted["principal_id"]
@@ -61,7 +69,7 @@ def status(self, sid, trusted):
                     "updated_at": _api.now(),
                 },
             )
-            record = self.store.get(sid)
+            record = cast(Record, self.store.get(sid))
     attempt = {
         "attempt_id": record["attempt_id"],
         "execution_generation": record["work_key"]["execution_generation"],
@@ -92,7 +100,7 @@ def status(self, sid, trusted):
     return result
 
 
-def status_by_work(self, key, trusted):
+def status_by_work(self: Coordinator, key: Record, trusted: Record) -> Record:
     if key["principal_id"] != trusted["principal_id"]:
         raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
     record = self.store.by_work(key)

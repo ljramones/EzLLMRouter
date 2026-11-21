@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from .records import Record
+from .core_types import Reply
+
+if TYPE_CHECKING:
+    from .core import Coordinator
+
 import sqlite3
 from copy import deepcopy
 from decimal import Decimal
@@ -16,7 +23,9 @@ from .states import CandidateAccess, DeliveryState, DispatchState, SettlementSta
 from . import core as _api
 
 
-def _validate_admission(self, req, trusted, wait_ms):
+def _validate_admission(
+    self: Coordinator, req: Record, trusted: Record, wait_ms: int
+) -> tuple[Record, Record | None, list[Record], Record, str, str]:
     if type(wait_ms) is not int or not 0 <= wait_ms <= 30000:
         raise ContractError("SCHEMA_INVALID", 400)
     decision = None
@@ -54,7 +63,9 @@ def _validate_admission(self, req, trusted, wait_ms):
     return admitted_config, decision, messages, settings, deadline, prompt_digest
 
 
-def _check_admission_exposure(self, decision, settings, projected):
+def _check_admission_exposure(
+    self: Coordinator, decision: Record | None, settings: Record, projected: Record
+) -> None:
     if decision and decision["price_schedule"]:
         schedule = decision["price_schedule"]
         policy = self.authority.policy
@@ -79,7 +90,13 @@ def _check_admission_exposure(self, decision, settings, projected):
                 raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
 
 
-def _admission_record(self, admitted, req, trusted, attribution):
+def _admission_record(
+    self: Coordinator,
+    admitted: _api.AdmittedWork,
+    req: Record,
+    trusted: Record,
+    attribution: Record | None,
+) -> Record:
     principal = self.registry.principal(trusted["principal_id"]) if self.registry else None
     record = {
         "submission_id": admitted.sid,
@@ -127,7 +144,9 @@ def _admission_record(self, admitted, req, trusted, attribution):
     return record
 
 
-def _persist_admission(self, admitted, record, req, settings):
+def _persist_admission(
+    self: Coordinator, admitted: _api.AdmittedWork, record: Record, req: Record, settings: Record
+) -> Reply | None:
     campaign = (
         (self.registry.personal_campaign if self.registry is not None else None)
         if self.registry

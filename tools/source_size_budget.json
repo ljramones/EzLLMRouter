@@ -5,7 +5,6 @@
     "clients/python/src/ezllmrouter_client/__init__.py:function:EzLLMRouterClient._attribution_operation": 106,
     "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.append_outcome": 128,
     "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.apply_admin": 157,
-    "server/src/ezllmrouter_server/cache_accounting.py:function:cache_usage_revision": 109,
     "server/src/ezllmrouter_server/canonical.py:function:validate_text_request": 277,
     "server/src/ezllmrouter_server/demo_workspace.py:function:project_demo": 193,
     "server/src/ezllmrouter_server/demo_workspace_team.py:function:project_team_demo": 252,

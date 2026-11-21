@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+from typing import cast
+
+from typing import TYPE_CHECKING
+from .records import Record
+
+if TYPE_CHECKING:
+    from .core import Coordinator
+
 import json
 import uuid
 from .canonical import (
@@ -14,7 +22,7 @@ from .states import CandidateAccess, DispatchState, SubmissionState
 from . import core as _api
 
 
-def _failed(self, sid, aid, code, stage):
+def _failed(self: Coordinator, sid: str, aid: str, code: str, stage: str) -> Record:
     result = self.store.update(
         sid,
         {
@@ -32,7 +40,7 @@ def _failed(self, sid, aid, code, stage):
     )
     campaign = self.personal_campaign
     if campaign and result.get("campaign"):
-        observed = self.store.get(sid)
+        observed = cast(Record, self.store.get(sid))
         campaign.settle(
             aid,
             observed.get("usage", {}).get("revision"),
@@ -41,7 +49,7 @@ def _failed(self, sid, aid, code, stage):
     return result
 
 
-def _failed_reply(self, handle, aid, code, stage):
+def _failed_reply(self: Coordinator, handle: Record, aid: str, code: str, stage: str) -> Record:
     record = self.store.get(handle["submission_id"])
     return {
         "contract_version": "0.2",
@@ -53,17 +61,24 @@ def _failed_reply(self, handle, aid, code, stage):
     }
 
 
-def _outcome_unknown(self, sid, aid, plan=None, decision=None, response=None):
-    record = self.store.get(sid)
+def _outcome_unknown(
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    plan: Record | None = None,
+    decision: Record | None = None,
+    response: Record | None = None,
+) -> Record:
+    record = cast(Record, self.store.get(sid))
     usage = record.get("usage", {}).get("revision")
     if usage is None and type(response) is dict and type(response.get("body")) is dict:
         body = response["body"]
         raw_usage = body.get("usage")
         if type(raw_usage) is dict:
             try:
-                provider = plan["destination"].get("service") == "openai.responses.v1"
+                provider = cast(Record, plan)["destination"].get("service") == "openai.responses.v1"
                 pricing = (
-                    {**decision, "provider_model": plan["destination"]["model"]}
+                    {**decision, "provider_model": cast(Record, plan)["destination"]["model"]}
                     if provider and decision
                     else decision
                 )
@@ -88,14 +103,23 @@ def _outcome_unknown(self, sid, aid, plan=None, decision=None, response=None):
             },
             usage=usage if record.get("usage", {}).get("state") != "available" else None,
         )
-        record = self.store.get(sid)
+        record = cast(Record, self.store.get(sid))
     campaign = self.personal_campaign
     if campaign and record.get("campaign"):
         campaign.settle(aid, record.get("usage", {}).get("revision"))
     return {"kind": "unknown"}
 
 
-def _observe_response(self, sid, aid, generation, plan, admitted_projection, decision, response):
+def _observe_response(
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    generation: int,
+    plan: Record,
+    admitted_projection: Record,
+    decision: Record | None,
+    response: Record,
+) -> Record:
     if response["status"] != 200:
         self._failed(sid, aid, "REMOTE_EXECUTION_FAILED", "after_transmit")
         return {"kind": "failed", "code": "REMOTE_EXECUTION_FAILED"}
@@ -128,13 +152,21 @@ def _observe_response(self, sid, aid, generation, plan, admitted_projection, dec
         generation,
         plan,
         body=body,
-        blocks=blocks,
+        blocks=cast(list[Record], blocks),
         raw_usage_bytes=raw_usage_bytes,
         provider_model=provider_model,
     )
 
 
-def _observe_usage(self, sid, aid, body, tool_request, pricing, provider_model):
+def _observe_usage(
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    body: object,
+    tool_request: bool,
+    pricing: Record | None,
+    provider_model: object,
+) -> tuple[bytes | None, Record | None]:
     try:
         raw_usage = body.get("usage") if isinstance(body, dict) else None
         if isinstance(body, dict) and "usage" in body and (not isinstance(raw_usage, dict)):
@@ -158,7 +190,10 @@ def _observe_usage(self, sid, aid, body, tool_request, pricing, provider_model):
             )
             self.store.update(
                 sid,
-                {"raw_usage_digest": digest(raw_usage_bytes), "updated_at": _api.now()},
+                {
+                    "raw_usage_digest": digest(cast(bytes, raw_usage_bytes)),
+                    "updated_at": _api.now(),
+                },
                 usage=observed_usage,
             )
     except (TypeError, ValueError, UnicodeError, ContractError):
@@ -167,12 +202,20 @@ def _observe_usage(self, sid, aid, body, tool_request, pricing, provider_model):
     return raw_usage_bytes, None
 
 
-def _output_blocks(self, sid, aid, body, tool_request, plan, admitted_projection):
+def _output_blocks(
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    body: Record,
+    tool_request: bool,
+    plan: Record,
+    admitted_projection: Record,
+) -> tuple[list[Record] | None, Record | None]:
     try:
         blocks = []
         output_classification = self._current_classification(plan["classification_snapshot"])
 
-        def output_labels(lineage):
+        def output_labels(lineage: str) -> Record:
             return {
                 "lineage_ids": [lineage],
                 "sensitivity": output_classification["sensitivity"],
@@ -180,27 +223,7 @@ def _output_blocks(self, sid, aid, body, tool_request, plan, admitted_projection
             }
 
         if isinstance(body.get("text"), str):
-            output = body["text"]
-            output_bytes = output.encode("utf-8", "strict")
-            if (
-                not output_bytes
-                or len(output_bytes) > 65536
-                or any((55296 <= ord(c) <= 57343 for c in output))
-            ):
-                raise ValueError("unusable output text")
-            lineage = (
-                "src.candidate.provider"
-                if plan["destination"].get("service") == "openai.responses.v1"
-                else "src.candidate.synthetic"
-            )
-            blocks.append(
-                {
-                    "block_id": "block.output.1",
-                    "kind": "assistant_text",
-                    "text": output,
-                    "source_labels": output_labels(lineage),
-                }
-            )
+            blocks.append(_text_output_block(body, plan, output_classification))
         if "tool_calls" in body:
             if (
                 not tool_request
@@ -249,8 +272,17 @@ def _output_blocks(self, sid, aid, body, tool_request, plan, admitted_projection
 
 
 def _complete_observed_candidate(
-    self, sid, aid, generation, plan, *, body, blocks, raw_usage_bytes, provider_model
-):
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    generation: int,
+    plan: Record,
+    *,
+    body: Record,
+    blocks: list[Record],
+    raw_usage_bytes: bytes | None,
+    provider_model: object,
+) -> Record:
     candidate = {
         "candidate_id": "candidate." + uuid.uuid4().hex,
         "attempt_id": aid,
@@ -301,3 +333,33 @@ def _complete_observed_candidate(
     ):
         return {"kind": "completed_no_store"}
     return {"kind": "candidate", "candidate": candidate}
+
+
+def _text_output_block(body: Record, plan: Record, output_classification: Record) -> Record:
+    output = body["text"]
+    output_bytes = output.encode("utf-8", "strict")
+    if (
+        not output_bytes
+        or len(output_bytes) > 65536
+        or any((55296 <= ord(c) <= 57343 for c in output))
+    ):
+        raise ValueError("unusable output text")
+    lineage = (
+        "src.candidate.provider"
+        if plan["destination"].get("service") == "openai.responses.v1"
+        else "src.candidate.synthetic"
+    )
+    return {
+        "block_id": "block.output.1",
+        "kind": "assistant_text",
+        "text": output,
+        "source_labels": _labels(output_classification, lineage),
+    }
+
+
+def _labels(output_classification: Record, lineage: str) -> Record:
+    return {
+        "lineage_ids": [lineage],
+        "sensitivity": output_classification["sensitivity"],
+        "restrictions": list(output_classification["combined_restrictions"]),
+    }

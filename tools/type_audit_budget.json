@@ -6,15 +6,8 @@
   "errors": {
     "server/src/ezllmrouter_server/__main__.py": 1,
     "server/src/ezllmrouter_server/attribution.py": 45,
-    "server/src/ezllmrouter_server/cache_accounting.py": 12,
     "server/src/ezllmrouter_server/connection_resources.py": 6,
     "server/src/ezllmrouter_server/connector_availability.py": 14,
-    "server/src/ezllmrouter_server/core.py": 49,
-    "server/src/ezllmrouter_server/core_admission.py": 7,
-    "server/src/ezllmrouter_server/core_attempt.py": 13,
-    "server/src/ezllmrouter_server/core_outcomes.py": 20,
-    "server/src/ezllmrouter_server/core_policy.py": 11,
-    "server/src/ezllmrouter_server/core_status.py": 6,
     "server/src/ezllmrouter_server/database_audit.py": 4,
     "server/src/ezllmrouter_server/demo_common.py": 6,
     "server/src/ezllmrouter_server/demo_workspace.py": 17,
@@ -44,7 +37,7 @@
     "server/src/ezllmrouter_server/operator_http/transport.py": 40,
     "server/src/ezllmrouter_server/operator_projection.py": 57,
     "server/src/ezllmrouter_server/operator_web.py": 20,
-    "server/src/ezllmrouter_server/personal_campaign.py": 65,
+    "server/src/ezllmrouter_server/personal_campaign.py": 64,
     "server/src/ezllmrouter_server/plans.py": 8,
     "server/src/ezllmrouter_server/provider_vault.py": 32,
     "server/src/ezllmrouter_server/registry.py": 4,
@@ -105,7 +98,8 @@
         "server/src/ezllmrouter_server/core_admission.py": 7,
         "server/src/ezllmrouter_server/core.py": 49
       },
-      "note": "Unchanged method extraction; exact try/except and gate/transaction bodies retained."
+      "note": "Unchanged method extraction; exact try/except and gate/transaction bodies retained.",
+      "cleanup": "Coordinator facade, all new steps and cache accounting enter strict typing with checked concrete capability interfaces."
     }
   ]
 }

@@ -2,6 +2,23 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
+from concurrent.futures import Future
+from typing import cast
+from .records import Record
+from .store import Store
+from .core_types import (
+    Reply,
+    CampaignActions,
+    RuntimeRegistry,
+    PlanIssuer,
+    PreparationRecipe,
+    SenderAdapter,
+    ContextSender,
+    OwnedSuccessor,
+    Faults,
+)
+
 import hashlib
 import json
 import secrets
@@ -23,13 +40,12 @@ from .canonical import (
     work_digest,
 )
 from .formatting import money, utc_timestamp
-from .json_validation import MAX_SAFE_INTEGER, JSONValue
+from .json_validation import MAX_SAFE_INTEGER
 from .observability import log_failure as log_failure
 from .runtime_resources import AdmissionGate, BoundedExecutor, ServiceClosing
-from .store import Store
 
 
-def now():
+def now() -> str:
     return utc_timestamp(datetime.now(timezone.utc))
 
 
@@ -37,15 +53,15 @@ def public_error(code: str, guidance: str = "never") -> dict[str, str]:
     return {"code": code, "correlation_id": "corr." + uuid.uuid4().hex, "retry_guidance": guidance}
 
 
-def selector(req):
+def selector(req: Record) -> Record:
     return {k: req[k] for k in ("task_id", "step_id", "step_revision", "execution_generation")}
 
 
-def work_key(req, trusted):
+def work_key(req: Record, trusted: Record) -> Record:
     return {"principal_id": trusted["principal_id"], **selector(req)}
 
 
-def public_served_destination(destination):
+def public_served_destination(destination: Record) -> Record:
     """Project the signed private route to the strict wire-0.2 Destination."""
     if destination.get("service") != "openai.responses.v1":
         return deepcopy(destination)
@@ -76,12 +92,12 @@ SCOPE_FIELDS = (
 )
 
 
-def semantic_scope(trusted):
+def semantic_scope(trusted: Record) -> Record:
     """Authorization identity excluding renewable credential expiry."""
     return {name: trusted[name] for name in SCOPE_FIELDS}
 
 
-def public_usage(value):
+def public_usage(value: Record) -> Record:
     """Keep wire 0.2 stable while the ledger retains additive DEV-11 evidence."""
     if value.get("state") != "available":
         return value
@@ -107,9 +123,7 @@ def public_usage(value):
         "other_billable",
     )
 
-    def wire_knowledge(item):
-        # v0.2 clients know only known/unknown/not_applicable. The persisted
-        # operator record retains the more precise absent/null/invalid state.
+    def wire_knowledge(item: Record) -> Record:
         return (
             item
             if item.get("state") in ("known", "unknown", "not_applicable")
@@ -132,7 +146,9 @@ def public_usage(value):
     }
 
 
-def _text_cost(schedule, input_count, output_count, *, compact):
+def _text_cost(
+    schedule: Record, input_count: int, output_count: int, *, compact: bool
+) -> Record | None:
     """Preserve unknown exposure when a positive charge rounds below the quantum."""
     raw_amount = (
         Decimal(input_count) * Decimal(schedule["rates"]["input_uncached"])
@@ -154,10 +170,16 @@ def _text_cost(schedule, input_count, output_count, *, compact):
     return cost
 
 
-def usage_revision(attempt_id, report, tool=False, decision=None, reported_model=None):
+def usage_revision(
+    attempt_id: str,
+    report: Record,
+    tool: bool = False,
+    decision: Record | None = None,
+    reported_model: object = None,
+) -> Record:
     """Unknown remains unknown; cost is independent and never inferred."""
     categories = {"input_uncached": "input_tokens", "output_text": "output_tokens"}
-    normalized = {}
+    normalized: Record = {}
     for name in (
         "input_uncached",
         "input_cache_read",
@@ -178,49 +200,14 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
     cost = {"status": "unknown", "currency": "USD"}
     if schedule and schedule["usage_semantics_version"] == CACHE_SEMANTICS:
         return cache_usage_revision(
-            attempt_id, report, schedule, decision.get("provider_model"), reported_model
+            attempt_id,
+            report,
+            schedule,
+            cast(Record, decision).get("provider_model"),
+            reported_model,
         )
     if schedule and schedule["usage_semantics_version"] == "openai.responses.text.v1":
-        details = report.get("input_tokens_details")
-        output_details = report.get("output_tokens_details")
-        cached = details.get("cached_tokens") if type(details) is dict else None
-        cache_write = details.get("cache_write_tokens", 0) if type(details) is dict else None
-        reasoning = output_details.get("reasoning_tokens") if type(output_details) is dict else None
-        if type(cached) is int and 0 <= cached <= MAX_SAFE_INTEGER:
-            normalized["input_cache_read"] = {"state": "known", "count": cached}
-        if type(reasoning) is int and 0 <= reasoning <= MAX_SAFE_INTEGER:
-            normalized["output_reasoning"] = {"state": "known", "count": reasoning}
-        if type(cache_write) is int and cache_write == 0:
-            normalized["input_cache_write"] = {"state": "not_applicable"}
-        input_count = normalized["input_uncached"].get("count")
-        output_count = normalized["output_text"].get("count")
-        # Responses totals include their detail counts. The adopted usage
-        # categories are disjoint, so subtract the details before reporting.
-        normalized["input_uncached"] = (
-            {"state": "known", "count": input_count - cached}
-            if input_count is not None and type(cached) is int and 0 <= cached <= input_count
-            else {"state": "unknown"}
-        )
-        normalized["output_text"] = (
-            {"state": "known", "count": output_count - reasoning}
-            if output_count is not None
-            and type(reasoning) is int
-            and 0 <= reasoning <= output_count
-            else {"state": "unknown"}
-        )
-        expected_model = decision.get("provider_model") if decision else None
-        model_matches = type(reported_model) is str and reported_model == expected_model
-        if (
-            input_count is not None
-            and output_count is not None
-            and cached == 0
-            and model_matches
-            and cache_write == 0
-            and type(reasoning) is int
-            and 0 <= reasoning <= output_count
-        ):
-            normalized["other_billable"] = []
-            cost = _text_cost(schedule, input_count, output_count, compact=False) or cost
+        cost = _provider_text_usage(report, normalized, schedule, decision, reported_model, cost)
     elif schedule:
         # Only this fixed synthetic route defines the remaining dimensions as
         # absent. Missing input/output quantities remain unknown, never zero.
@@ -242,7 +229,7 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
         ),
         "normalized_usage": normalized,
         "usage_semantics_version": (
-            decision["usage_semantics_version"]
+            cast(Record, decision)["usage_semantics_version"]
             if schedule
             else "synthetic.tool.v1"
             if tool
@@ -258,18 +245,18 @@ def usage_revision(attempt_id, report, tool=False, decision=None, reported_model
 class AdmittedWork:
     """The admitted snapshot passed to preparation and dispatch, never current registry state."""
 
-    admitted_classification: dict[str, JSONValue]
-    admitted_config: dict[str, JSONValue]
-    admitted_projection: dict[str, JSONValue]
-    admitted_retention: dict[str, JSONValue]
-    admitted_scope: dict[str, JSONValue]
+    admitted_classification: Record
+    admitted_config: Record
+    admitted_projection: Record
+    admitted_retention: Record
+    admitted_scope: Record
     aid: str
     attribution_digest: str | None
     deadline: str
-    decision: dict[str, JSONValue] | None
-    handle: dict[str, JSONValue]
-    key: dict[str, JSONValue]
-    projected: dict[str, JSONValue]
+    decision: Record | None
+    handle: Record
+    key: Record
+    projected: Record
     sid: str
     wd: str
 
@@ -283,25 +270,25 @@ from . import core_status
 
 class Coordinator:
     def __init__(
-        self,
+        self: Coordinator,
         store: Store,
         *,
-        identity,
-        config,
-        prompt_blocks,
-        allowed_lineages,
-        authority,
-        adapter,
-        retention,
-        classification,
-        recipe,
-        faults=None,
-        trusted_source_labels=None,
-        registry=None,
-        authentication_context=None,
-        successor=None,
-        context_sender=None,
-    ):
+        identity: dict[str, Record],
+        config: Record,
+        prompt_blocks: list[Record],
+        allowed_lineages: Collection[str],
+        authority: PlanIssuer,
+        adapter: SenderAdapter,
+        retention: Record,
+        classification: Record,
+        recipe: PreparationRecipe,
+        faults: Faults | None = None,
+        trusted_source_labels: dict[str, Record] | None = None,
+        registry: RuntimeRegistry | None = None,
+        authentication_context: Record | None = None,
+        successor: OwnedSuccessor | None = None,
+        context_sender: ContextSender | None = None,
+    ) -> None:
         self.store, self.identity = store, identity
         self.config, self.prompt_blocks = config, prompt_blocks
         self.allowed_lineages = allowed_lineages
@@ -310,7 +297,7 @@ class Coordinator:
         self.trusted_source_labels = trusted_source_labels or {}
         self.registry = registry
         self.successor = successor
-        self.context_sender = (
+        self.context_sender: ContextSender | None = (
             context_sender
             if context_sender is not None
             else getattr(adapter, "send_with_context", None)
@@ -319,17 +306,17 @@ class Coordinator:
         self.faults = faults or {}
         self.pool = BoundedExecutor(max_workers=4, thread_name_prefix="ezllmrouter-execution")
         self._admission = AdmissionGate()
-        self._futures = {}
+        self._futures: dict[str, Future[Record]] = {}
         self._futures_lock = threading.Lock()
         # A process-local key authenticates complete live no-store blocks without
         # persisting their content or accepting a caller-supplied receipt.
         self._live_source_key = secrets.token_bytes(32)
 
     @property
-    def personal_campaign(self):
+    def personal_campaign(self: Coordinator) -> CampaignActions | None:
         return self.registry.personal_campaign if self.registry is not None else None
 
-    def close(self):
+    def close(self: Coordinator) -> None:
         self._admission.close()
         try:
             successor = self.successor
@@ -356,20 +343,36 @@ class Coordinator:
 
     _verify_sources = core_policy._verify_sources
 
-    def submit(self, req, trusted, wait_ms=1000, credential=None, run_id=None):
+    def submit(
+        self: Coordinator,
+        req: Record,
+        trusted: Record,
+        wait_ms: int = 1000,
+        credential: str | None = None,
+        run_id: str | None = None,
+    ) -> Reply:
         try:
             with self._admission.enter():
                 return self._submit(req, trusted, wait_ms, credential=credential, run_id=run_id)
         except ServiceClosing as exc:
             raise ContractError("INTERNAL_UNAVAILABLE", 503) from exc
 
-    def _submit(self, req, trusted, wait_ms=1000, credential=None, run_id=None):
+    def _submit(
+        self: Coordinator,
+        req: Record,
+        trusted: Record,
+        wait_ms: int = 1000,
+        credential: str | None = None,
+        run_id: str | None = None,
+    ) -> Reply:
         admitted_config, decision, messages, settings, deadline, prompt_digest = (
             self._validate_admission(req, trusted, wait_ms)
         )
         admitted_trusted = deepcopy(trusted)
         attribution = (
-            self.registry.attribution.bind(admitted_trusted, req, run_id) if run_id else None
+            cast(RuntimeRegistry, self.registry).attribution.bind(admitted_trusted, req, run_id)
+            if run_id
+            else None
         )
         attribution_digest = (
             hashlib.sha256(
@@ -423,7 +426,14 @@ class Coordinator:
             return replay
         return self._start_attempt(admitted, req, trusted, wait_ms, credential)
 
-    def _start_attempt(self, admitted: AdmittedWork, req, trusted, wait_ms, credential):
+    def _start_attempt(
+        self: Coordinator,
+        admitted: AdmittedWork,
+        req: Record,
+        trusted: Record,
+        wait_ms: int,
+        credential: str | None,
+    ) -> Reply:
         admission_clock = time.monotonic()
         deadline_seconds = (
             datetime.fromisoformat(admitted.deadline.replace("Z", "+00:00"))
@@ -446,10 +456,12 @@ class Coordinator:
             return 409, self._failed_reply(
                 admitted.handle, admitted.aid, "FDC_REJECTED", "before_transmit"
             )
-        prepared, expected_request, failure = self._prepare_attempt(admitted, plan)
+        prepared, expected_request, failure = self._prepare_attempt(admitted, cast(Record, plan))
         if failure is not None:
             return failure
-        failure = self._record_attempt_intent(admitted, plan, expected_request)
+        failure = self._record_attempt_intent(
+            admitted, cast(Record, plan), cast(Record, expected_request)
+        )
         if failure is not None:
             return failure
         try:
@@ -459,9 +471,9 @@ class Coordinator:
                 admitted.sid,
                 admitted.aid,
                 req["execution_generation"],
-                prepared,
-                plan,
-                expected_request,
+                cast(bytes, prepared),
+                cast(Record, plan),
+                cast(Record, expected_request),
                 credential,
                 admitted.admitted_scope,
                 admitted.admitted_projection,
@@ -514,3 +526,52 @@ class Coordinator:
     _output_blocks = core_outcomes._output_blocks
 
     _complete_observed_candidate = core_outcomes._complete_observed_candidate
+
+
+def _provider_text_usage(
+    report: Record,
+    normalized: Record,
+    schedule: Record,
+    decision: Record | None,
+    reported_model: object,
+    cost: Record,
+) -> Record:
+    details = report.get("input_tokens_details")
+    output_details = report.get("output_tokens_details")
+    cached = details.get("cached_tokens") if type(details) is dict else None
+    cache_write = details.get("cache_write_tokens", 0) if type(details) is dict else None
+    reasoning = output_details.get("reasoning_tokens") if type(output_details) is dict else None
+    if type(cached) is int and 0 <= cached <= MAX_SAFE_INTEGER:
+        normalized["input_cache_read"] = {"state": "known", "count": cached}
+    if type(reasoning) is int and 0 <= reasoning <= MAX_SAFE_INTEGER:
+        normalized["output_reasoning"] = {"state": "known", "count": reasoning}
+    if type(cache_write) is int and cache_write == 0:
+        normalized["input_cache_write"] = {"state": "not_applicable"}
+    input_count = normalized["input_uncached"].get("count")
+    output_count = normalized["output_text"].get("count")
+    # Responses totals include their detail counts. The adopted usage
+    # categories are disjoint, so subtract the details before reporting.
+    normalized["input_uncached"] = (
+        {"state": "known", "count": input_count - cached}
+        if input_count is not None and type(cached) is int and 0 <= cached <= input_count
+        else {"state": "unknown"}
+    )
+    normalized["output_text"] = (
+        {"state": "known", "count": output_count - reasoning}
+        if output_count is not None and type(reasoning) is int and 0 <= reasoning <= output_count
+        else {"state": "unknown"}
+    )
+    expected_model = decision.get("provider_model") if decision else None
+    model_matches = type(reported_model) is str and reported_model == expected_model
+    if (
+        input_count is not None
+        and output_count is not None
+        and cached == 0
+        and model_matches
+        and cache_write == 0
+        and type(reasoning) is int
+        and 0 <= reasoning <= output_count
+    ):
+        normalized["other_billable"] = []
+        cost = _text_cost(schedule, input_count, output_count, compact=False) or cost
+    return cost

@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from typing import cast
+from collections.abc import Callable
+
+from typing import TYPE_CHECKING
+from .records import Record
+
+if TYPE_CHECKING:
+    from .core import Coordinator
+
 import hashlib
 import hmac
 from copy import deepcopy
@@ -14,11 +23,11 @@ from .canonical import (
 from .plans import PROVIDER_ADAPTER_VERSION, PROVIDER_RECIPE_REF
 
 
-def _live_source_tag(self, block):
+def _live_source_tag(self: Coordinator, block: Record) -> str:
     return hmac.new(self._live_source_key, jcs(block), hashlib.sha256).hexdigest()
 
 
-def authenticate(self, token):
+def authenticate(self: Coordinator, token: str) -> Record:
     if type(token) is not str:
         raise ContractError("AUTHENTICATION_FAILED", 401)
     trusted = self.identity.get(token)
@@ -50,10 +59,10 @@ def authenticate(self, token):
             raise ValueError("expired authentication context")
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
         raise ContractError("AUTHENTICATION_FAILED", 401) from exc
-    return trusted
+    return cast(Record, trusted)
 
 
-def capabilities(self, trusted):
+def capabilities(self: Coordinator, trusted: Record) -> Record:
     return {
         "contract_version": "0.2",
         "profile": "initial_1a@1",
@@ -71,13 +80,13 @@ def capabilities(self, trusted):
     }
 
 
-def _prepared(self, projected):
+def _prepared(self: Coordinator, projected: Record) -> bytes:
     return self.recipe.expected(
         projected, projected["work"]["generation_settings"]["total_timeout_ms"]
     )[0]
 
 
-def _recipe_matches(self, plan, projected):
+def _recipe_matches(self: Coordinator, plan: Record, projected: Record) -> bool:
     policy = self.authority.policy
     if "tool_adapter_recipe_ref" not in policy:
         return True  # Older isolated test authorities do not model recipe selection.
@@ -92,13 +101,13 @@ def _recipe_matches(self, plan, projected):
     return (plan["adapter_recipe_ref"], plan["adapter_version"]) == (ref, version)
 
 
-def _classification_for(self, messages):
+def _classification_for(self: Coordinator, messages: list[Record]) -> Record:
     labels = [b["source_labels"] for m in messages for b in m["blocks"]]
     rank = {"public": 0, "internal": 1, "confidential": 2, "restricted": 3}
     return {
         "sensitivity": max(
             [self.classification["sensitivity"]] + [x["sensitivity"] for x in labels],
-            key=rank.get,
+            key=cast(Callable[[str], int], rank.get),
         ),
         "combined_restrictions": sorted(
             set(self.classification["combined_restrictions"])
@@ -109,13 +118,14 @@ def _classification_for(self, messages):
     }
 
 
-def _current_classification(self, snapshot):
+def _current_classification(self: Coordinator, snapshot: Record) -> Record:
     """Apply a stricter current classifier to admitted source handling."""
     rank = {"public": 0, "internal": 1, "confidential": 2, "restricted": 3}
     return {
         **snapshot,
         "sensitivity": max(
-            (snapshot["sensitivity"], self.classification["sensitivity"]), key=rank.get
+            (snapshot["sensitivity"], self.classification["sensitivity"]),
+            key=cast(Callable[[str], int], rank.get),
         ),
         "combined_restrictions": sorted(
             set(snapshot["combined_restrictions"])
@@ -125,7 +135,9 @@ def _current_classification(self, snapshot):
     }
 
 
-def _effective_retention(self, classification, config=None):
+def _effective_retention(
+    self: Coordinator, classification: Record, config: Record | None = None
+) -> Record:
     """The local synthetic destination supports only these handling rules."""
     restrictions = set(classification["combined_restrictions"])
     if (
@@ -143,7 +155,7 @@ def _effective_retention(self, classification, config=None):
     return retention
 
 
-def _verify_sources(self, messages, trusted):
+def _verify_sources(self: Coordinator, messages: list[Record], trusted: Record) -> None:
     roles = {
         "src.prompt.1": ("system", "system_text"),
         "src.user.1": ("user", "content_text"),

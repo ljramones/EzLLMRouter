@@ -2,6 +2,17 @@
 
 from __future__ import annotations
 
+from typing import cast
+from .core_types import RuntimeRegistry, DirectSenderAdapter
+
+from concurrent.futures import Future
+from typing import TYPE_CHECKING
+from .records import Record
+from .core_types import Reply
+
+if TYPE_CHECKING:
+    from .core import Coordinator
+
 import json
 import time
 from concurrent.futures import TimeoutError
@@ -18,43 +29,29 @@ from . import core as _api
 
 
 def _assert_current_dispatch(
-    self, plan, credential, admitted_scope, admitted_projection, decision=None
-):
+    self: Coordinator,
+    plan: Record,
+    credential: str | None,
+    admitted_scope: Record,
+    admitted_projection: Record,
+    decision: Record | None = None,
+) -> None:
     """Check the same current authority at dispatch and at a DEV-04 lower guard."""
     self.authority.verify(plan, plan["work_digest"], self.authority.policy["policy_version"])
     if self.registry:
-        bound = self.store.by_work(plan["work_key"])
-        if (
-            not bound
-            or bound.get("registry_decision") != decision
-            or plan["decision_record_ref"]
-            != "decision."
-            + bound["submission_id"]
-            + ("." + bound["attribution_digest"] if bound.get("attribution_digest") else "")
-        ):
-            raise ContractError("PLAN_INVALID_OR_STALE", 409)
-        campaign = self.registry.personal_campaign if self.registry is not None else None
-        if bound.get("campaign"):
-            if not campaign:
-                raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
-            campaign.check(bound["attempt_id"], bound["campaign"]["campaign_revision"])
-        elif (
-            plan["destination"].get("service") == "openai.responses.v1"
-            and not self.registry.controlled_provider_proof
-        ):
-            raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
+        bound = _registry_dispatch_record(self, plan, decision)
     current_config = (
         self.registry.check_current(
             admitted_scope["principal_id"],
             plan["configuration_ref"],
             plan["purpose"],
             plan["task_class"],
-            decision,
+            cast(Record, decision),
         )
         if self.registry
         else self.config
     )
-    current = self.authenticate(credential)
+    current = self.authenticate(cast(str, credential))
     if self.registry and bound.get("attribution"):
         work = admitted_projection["work"]
         selected = {
@@ -100,18 +97,18 @@ def _assert_current_dispatch(
 
 
 def _dispatch(
-    self,
-    sid,
-    aid,
-    generation,
-    prepared,
-    plan,
-    expected_request,
-    credential,
-    admitted_scope,
-    admitted_projection,
-    decision=None,
-):
+    self: Coordinator,
+    sid: str,
+    aid: str,
+    generation: int,
+    prepared: bytes,
+    plan: Record,
+    expected_request: Record,
+    credential: str | None,
+    admitted_scope: Record,
+    admitted_projection: Record,
+    decision: Record | None = None,
+) -> Record:
     try:
         self._assert_current_dispatch(
             plan, credential, admitted_scope, admitted_projection, decision
@@ -123,7 +120,7 @@ def _dispatch(
     try:
         gateway_send = self.context_sender
         if gateway_send is None:
-            response = self.adapter.send(
+            response = cast(DirectSenderAdapter, self.adapter).send(
                 prepared, plan["per_attempt_total_timeout_ms"], expected_request
             )
         else:
@@ -169,7 +166,9 @@ def _dispatch(
         return self._outcome_unknown(sid, aid, plan, decision, response)
 
 
-def _attempt_plan(self, admitted):
+def _attempt_plan(
+    self: Coordinator, admitted: _api.AdmittedWork
+) -> tuple[Record | None, Reply | None]:
     try:
         plan = self.authority.issue(
             admitted.admitted_projection,
@@ -218,7 +217,9 @@ def _attempt_plan(self, admitted):
     return plan, None
 
 
-def _prepare_attempt(self, admitted, plan):
+def _prepare_attempt(
+    self: Coordinator, admitted: _api.AdmittedWork, plan: Record
+) -> tuple[bytes | None, Record | None, Reply | None]:
     timeout_ms = plan["per_attempt_total_timeout_ms"]
     try:
         expected, expected_request = self.recipe.expected(admitted.projected, timeout_ms)
@@ -272,7 +273,9 @@ def _prepare_attempt(self, admitted, plan):
     return prepared, expected_request, None
 
 
-def _record_attempt_intent(self, admitted, plan, expected_request):
+def _record_attempt_intent(
+    self: Coordinator, admitted: _api.AdmittedWork, plan: Record, expected_request: Record
+) -> Reply | None:
     intent = {
         "attempt_id": admitted.aid,
         "plan_id": plan["plan_id"],
@@ -302,11 +305,13 @@ def _record_attempt_intent(self, admitted, plan, expected_request):
     return None
 
 
-def _wait_for_attempt(self, admitted, future, response_deadline):
+def _wait_for_attempt(
+    self: Coordinator, admitted: _api.AdmittedWork, future: Future[Record], response_deadline: float
+) -> Reply:
     with self._futures_lock:
         self._futures[admitted.sid] = future
 
-    def release(done):
+    def release(done: Future[Record]) -> None:
         with self._futures_lock:
             if self._futures.get(admitted.sid) is done:
                 self._futures.pop(admitted.sid, None)
@@ -315,7 +320,7 @@ def _wait_for_attempt(self, admitted, future, response_deadline):
     try:
         outcome = future.result(timeout=max(0, response_deadline - time.monotonic()))
     except TimeoutError:
-        pending = self._pending(self.store.get(admitted.sid))
+        pending = self._pending(cast(Record, self.store.get(admitted.sid)))
         if pending["pending_result_policy"] == "metadata_only_no_store":
             self.store.mark_wait_expired_no_store(admitted.sid, _api.now())
         return 202, pending
@@ -346,4 +351,28 @@ def _wait_for_attempt(self, admitted, future, response_deadline):
             else 502
         )
         return status, self._failed_reply(admitted.handle, admitted.aid, outcome["code"], stage)
-    return 202, self._pending(self.store.get(admitted.sid))
+    return 202, self._pending(cast(Record, self.store.get(admitted.sid)))
+
+
+def _registry_dispatch_record(self: Coordinator, plan: Record, decision: Record | None) -> Record:
+    bound = self.store.by_work(plan["work_key"])
+    if (
+        not bound
+        or bound.get("registry_decision") != decision
+        or plan["decision_record_ref"]
+        != "decision."
+        + bound["submission_id"]
+        + ("." + bound["attribution_digest"] if bound.get("attribution_digest") else "")
+    ):
+        raise ContractError("PLAN_INVALID_OR_STALE", 409)
+    campaign = self.registry.personal_campaign if self.registry is not None else None
+    if bound.get("campaign"):
+        if not campaign:
+            raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
+        campaign.check(bound["attempt_id"], bound["campaign"]["campaign_revision"])
+    elif (
+        plan["destination"].get("service") == "openai.responses.v1"
+        and not cast(RuntimeRegistry, self.registry).controlled_provider_proof
+    ):
+        raise ContractError("FINANCIAL_AUTH_REQUIRED", 403)
+    return bound
