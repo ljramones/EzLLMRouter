@@ -7,7 +7,6 @@
     "server/src/ezllmrouter_server/gateway/choice_b_sender.py:function:ChoiceBSenderAdapter.process_relay": 127,
     "server/src/ezllmrouter_server/gateway/guard.py:function:check_request": 112,
     "server/src/ezllmrouter_server/gateway/retrieval_guard.py:function:check_synthetic_request": 107,
-    "server/src/ezllmrouter_server/integration_credentials.py:function:DatabaseCredentialStore.save": 104,
     "server/src/ezllmrouter_server/local_connectors.py:file": 847,
     "server/src/ezllmrouter_server/local_connectors.py:function:_read_json": 101,
     "server/src/ezllmrouter_server/operator_http/integration.py:function:IntegrationRoutes.get_operator_v1_integration": 137,

@@ -7,20 +7,22 @@ the stable credential binding, encrypted versions, and discovery metadata.
 from __future__ import annotations
 
 import hmac
-import json
+import json as json
 import secrets
 import threading
 from pathlib import Path
 from datetime import datetime as datetime, timedelta as timedelta, timezone as timezone
 from .formatting import utc_timestamp as utc_timestamp
 
-from .integration_accounting import IntegrationError, _checked, _time
-from .observability import log_failure
+from .integration_accounting import IntegrationError as IntegrationError, _checked, _time as _time
+from .observability import log_failure as log_failure
 from .provider_adapters import probe
 from .repositories import authority
-from .repositories import integration_credentials as _queries
+from .repositories import integration_credentials as _credential_queries
+
+_queries = _credential_queries
 from .secret_box import SecretBox, validate_secret as validate_secret
-from .store import encode
+from .store import Record, encode
 
 
 def _body_dataset(body):
@@ -37,7 +39,7 @@ PROVIDERS = {
 OPERATIONS = {"speech_input", "speech_output"}
 
 
-def credential_context(account_id, version, provider):
+def credential_context(account_id: str, version: int, provider: str) -> bytes:
     return encode({"account_id": account_id, "version": version, "provider": provider}).encode()
 
 
@@ -273,13 +275,7 @@ class DatabaseCredentialStore:
         }
 
     def save(self, principal, account_id, body):
-        if type(body) is not dict or set(body) != {
-            "dataset_id",
-            "expected_revision",
-            "selected_models",
-            "allowed_operations",
-        }:
-            raise IntegrationError("SCHEMA_INVALID")
+        _validate_selection_body(body)
         self._owner(principal, body["dataset_id"])
         with self._gate:
             item = self._binding(account_id)
@@ -619,3 +615,13 @@ class DatabaseCredentialStore:
         # Permission checks, selected version and the audit commit precede release.
         with self._gate:
             return self.store.database.transaction(release)
+
+
+def _validate_selection_body(body: Record) -> None:
+    if type(body) is not dict or set(body) != {
+        "dataset_id",
+        "expected_revision",
+        "selected_models",
+        "allowed_operations",
+    }:
+        raise IntegrationError("SCHEMA_INVALID")

@@ -206,6 +206,7 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/demo_workspace.py",
     "server/src/ezllmrouter_server/demo_workspace_team.py",
     "server/src/ezllmrouter_server/demo_common.py",
+    "server/src/ezllmrouter_server/integration_credential_records.py",
     "tools/gateway/paths.py",
     "tests/support.py",
     "deploy/local/command_support.py",

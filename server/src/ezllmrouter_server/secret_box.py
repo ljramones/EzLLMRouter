@@ -29,7 +29,7 @@ class SecretBoxError(ServerError, RuntimeError):
     pass
 
 
-def validate_secret(value):
+def validate_secret(value: object) -> None:
     if (
         type(value) is not str
         or not 16 <= len(value) <= 4096

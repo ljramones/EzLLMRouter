@@ -656,7 +656,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
 | W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
 | W4 — Coordinator pipeline | Implemented — local checks pass | The facade is 577 lines, below the 900-line target; every Coordinator/domain function is at most 80 lines. Public imports and constructor arguments remain available. The facade, step modules and cache accounting pass strict typing, with concrete checks for authority, registry and sender capabilities. Failure/unknown-outcome boundaries remain around the same operations. |
-| W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical fields, Store records, successor reporting, provider probes, attribution actions and demo projections are decomposed. The credential-store class still exceeds the 600-line class target. |
+| W5 — medium runtime modules | Implemented — local checks pass | Canonical fields, Store records, successor reporting, provider probes, attribution actions, demo projections and credential records have named boundaries. Direct operator routes and CLI composition are implemented. No server function exceeds 150 lines; nine exceed 100 under capped allowances. The largest class is 599 lines. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
 | W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
@@ -985,3 +985,29 @@ Six credential tests and the 31-domain cold-import regression pass. Full
 lint/format, script/console checks and both budgets. Existing typing debt transfers
 without growth (1,676 diagnostics); size allowances fall to 66. Typing the new
 record boundary and the remaining small save-method extraction follow separately.
+
+### Item 11 follow-up: W5 completion
+
+The credential record module now has checked Store, registry, secret-box and
+discovery capabilities, including a static compatibility check against the real
+DatabaseCredentialStore. JSON/SQL boundaries use static casts; encryption,
+validation, exception handling and transaction behavior stay unchanged. The save
+method delegates its unchanged initial schema check to a named helper.
+
+Full `tools.check` passes 915 Python cases, strict typing on 107 files,
+lint/format, script/console checks and both ratchets. The six focused credential
+cases pass too. Library typing debt is 1,631; 65 size allowances remain. W5 is
+implemented locally. Actual HTTP, installed-image and frozen-target qualification
+remain tracked separately; none is implied by these source checks.
+
+| Server measure | Report baseline `c2712db` | W5 completion | Target |
+| --- | ---: | ---: | ---: |
+| Files over 1,000 lines | 3 | 0 | 0 |
+| Files over 800 lines | 5 | 1 (`local_connectors.py`, 847; capped) | 0 or shrinking allowances |
+| Functions over 150 lines | 16 | 0 | 0 |
+| Functions over 100 lines | 38 | 9, all capped | At most 10 |
+| Largest class span | 1,805 | 599 (`PersonalCampaign`) | At most 600 |
+
+W6 remains: retain and decompose the completion evidence domains/runtime,
+separate the large preflight/tool-cycle suites, shorten retained runners and
+extract deployment exercise steps. No evidence runner is deleted or archived.

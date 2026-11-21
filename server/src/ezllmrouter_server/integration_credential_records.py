@@ -2,13 +2,60 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, cast
+from .store import Store, Record
 
 if TYPE_CHECKING:
     from .integration_credentials import DatabaseCredentialStore
+    from .registry import Registry
 
 
-def _binding(self: DatabaseCredentialStore, account_id):
+SealedRecord = tuple[str, bytes, bytes]
+
+
+class CredentialBox(Protocol):
+    def seal_parts(self, value: str, context: bytes) -> SealedRecord: ...
+    def open_parts(
+        self, identifier: str, nonce: bytes, ciphertext: bytes, context: bytes
+    ) -> str: ...
+
+
+class Discovery(Protocol):
+    def __call__(
+        self,
+        adapter_id: str,
+        settings: Record,
+        credential: str | None,
+        operation: str,
+        *,
+        controlled: bool,
+    ) -> Record: ...
+
+
+class CredentialRecordsContext(Protocol):
+    @property
+    def store(self) -> Store: ...
+    @property
+    def registry(self) -> Registry: ...
+    @property
+    def box(self) -> CredentialBox: ...
+    @property
+    def controlled(self) -> bool: ...
+    @property
+    def discover(self) -> Discovery: ...
+    def _owner(self, principal: Record, dataset_id: str) -> Record: ...
+    def _binding(self, account_id: str) -> Record: ...
+    def _settings(self, provider: str) -> Record: ...
+    def _resolve(self, binding: Record, version: int | None = None) -> str: ...
+
+
+if TYPE_CHECKING:
+
+    def _check_record_context(store: DatabaseCredentialStore) -> CredentialRecordsContext:
+        return store
+
+
+def _binding(self: CredentialRecordsContext, account_id: str) -> Record:
     from . import integration_credentials as _api
 
     with self.store.database.read():
@@ -17,10 +64,12 @@ def _binding(self: DatabaseCredentialStore, account_id):
         ).fetchone()
     if not row:
         raise _api.IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-    return _api.json.loads(row[0])
+    return cast(Record, _api.json.loads(cast(str, row[0])))
 
 
-def _seal(self: DatabaseCredentialStore, account_id, version, provider, secret):
+def _seal(
+    self: CredentialRecordsContext, account_id: str, version: int, provider: str, secret: str
+) -> SealedRecord:
     from . import integration_credentials as _api
 
     try:
@@ -30,7 +79,7 @@ def _seal(self: DatabaseCredentialStore, account_id, version, provider, secret):
     return self.box.seal_parts(secret, _api.credential_context(account_id, version, provider))
 
 
-def _resolve(self: DatabaseCredentialStore, binding, version=None):
+def _resolve(self: CredentialRecordsContext, binding: Record, version: int | None = None) -> str:
     from . import integration_credentials as _api
 
     selected = version or binding["selected_version"]
@@ -43,14 +92,15 @@ def _resolve(self: DatabaseCredentialStore, binding, version=None):
         raise _api.IntegrationError("CREDENTIAL_KEY_UNAVAILABLE", 503)
     try:
         return self.box.open_parts(
-            *row, _api.credential_context(binding["account_id"], selected, binding["provider"])
+            *cast(SealedRecord, row),
+            _api.credential_context(binding["account_id"], selected, binding["provider"]),
         )
     except Exception as exc:
         _api.log_failure("integration_credentials.DatabaseCredentialStore._resolve.failed")
         raise _api.IntegrationError("CREDENTIAL_DECRYPT_FAILED", 503) from exc
 
 
-def _settings(self: DatabaseCredentialStore, provider):
+def _settings(self: CredentialRecordsContext, provider: str) -> Record:
     from . import integration_credentials as _api
 
     return {
@@ -60,7 +110,13 @@ def _settings(self: DatabaseCredentialStore, provider):
     }
 
 
-def _discover(self: DatabaseCredentialStore, binding, version=None, *, secret=None):
+def _discover(
+    self: CredentialRecordsContext,
+    binding: Record,
+    version: int | None = None,
+    *,
+    secret: str | None = None,
+) -> Record:
     from . import integration_credentials as _api
 
     result = self.discover(
@@ -84,11 +140,17 @@ def _discover(self: DatabaseCredentialStore, binding, version=None, *, secret=No
     }
 
 
-def _public(self: DatabaseCredentialStore, binding):
+def _public(self: CredentialRecordsContext, binding: Record) -> Record:
     return {key: value for key, value in binding.items() if key not in ("request_hash",)}
 
 
-def _current(self: DatabaseCredentialStore, principal, dataset_id, account_id, expected_revision):
+def _current(
+    self: CredentialRecordsContext,
+    principal: Record,
+    dataset_id: str,
+    account_id: str,
+    expected_revision: int,
+) -> Record:
     """Call within the write transaction when publishing a changed binding."""
     from . import integration_credentials as _api
 
@@ -103,16 +165,16 @@ def _current(self: DatabaseCredentialStore, principal, dataset_id, account_id, e
     return item
 
 
-def _clean_pending(self: DatabaseCredentialStore):
+def _clean_pending(self: CredentialRecordsContext) -> None:
     from . import integration_credentials as _api
 
     cutoff = _api.utc_timestamp(_api.datetime.now(_api.timezone.utc) - _api.timedelta(days=1))
 
-    def clean():
+    def clean() -> None:
         db = self.store.database
         rows = db.execute(_api._queries.CLEAN_SELECT_INTEGRATION_CREDENTIAL_BINDINGS).fetchall()
         for account_id, raw in rows:
-            item = _api.json.loads(raw)
+            item = _api.json.loads(cast(str, raw))
             if (
                 item["state"] == "pending"
                 and item["discovery"]["state"] == "not_checked"
