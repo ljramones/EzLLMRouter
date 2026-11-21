@@ -22,7 +22,7 @@ jobs:
       - name: Scan tracked source and full Git history for secrets
         run: python3 -I -S tools/security_secrets.py
       - name: Install pinned environment manager
-        run: python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock
+        run: 'python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock'
       - name: Install locked development environment
         run: uv sync --locked --all-groups --python 3.12.15
       - name: Install locked parser for console coverage
@@ -148,7 +148,7 @@ jobs:
       - name: Validate locked inputs before installing dependencies
         run: python3 -I -S tools/security_dependencies.py
       - name: Install pinned environment manager
-        run: python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock
+        run: 'python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock'
       - name: Install locked service dependencies
         run: uv sync --locked --all-groups --python 3.12.15
       - name: Install locked browser test dependencies
