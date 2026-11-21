@@ -13,6 +13,8 @@ from ezllmrouter_server.canonical import ContractError
 from ezllmrouter_server.gateway.choice_b_wire import LIMIT, receive
 from ezllmrouter_server.successor_contract import strict_decode
 from ezllmrouter_server.web import serve
+from ezllmrouter_server.operator_http.transport import TransportRoutes
+from ezllmrouter_server.wire_http.transport import WireTransport
 from tests.generated_inputs import json_cases, settings
 from tests.operator_console.test_user_management_web import MemoryServer, UserHTTPFixture
 from tests.unit.test_http_structure import HTTPFramingTests
@@ -38,6 +40,14 @@ class GeneratedParserTests(UserHTTPFixture):
 
     def test_rejected_http_bodies_are_never_reinterpreted_as_pipelined_requests(self):
         seed, count = settings()
+        operator_parser = self.enterContext(
+            patch.object(TransportRoutes, "_body", autospec=True, side_effect=TransportRoutes._body)
+        )
+        wire_parser = self.enterContext(
+            patch.object(
+                WireTransport, "_json_bytes", autospec=True, side_effect=WireTransport._json_bytes
+            )
+        )
         rng = random.Random(seed)
         capability = Mock(return_value={"contract_version": "0.2"})
         coordinator = SimpleNamespace(
@@ -72,6 +82,10 @@ class GeneratedParserTests(UserHTTPFixture):
                 self.assertIn(b"Connection: close\r\n", reply)
                 self.assertIn(int(reply.split(b" ", 2)[1]), (400, 401, 403, 404, 413))
                 capability.assert_not_called()
+        # These are deliberately early-rejection cases. Authenticated body-parser
+        # generation lives in test_generated_http_framing, with positive controls.
+        self.assertEqual(operator_parser.call_count, 0)
+        self.assertEqual(wire_parser.call_count, 0)
 
     def test_json_clients_agree_and_server_request_policy_rejects_control_text(self):
         seed, count = settings(512)

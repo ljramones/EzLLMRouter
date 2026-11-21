@@ -134,6 +134,17 @@ example budgets; scheduled tests record the run number as their seed and use
 EZLLMROUTER_TEST_SEED=0xdeadbeef EZLLMROUTER_TEST_EXAMPLES=512 uv run --locked python -m tools.check --test-module tests.unit.test_generated_parsers.GeneratedParserTests
 ```
 
+`tests.unit.test_generated_http_framing.AuthenticatedFramingTests` separately
+targets authenticated operator and wire routes over real socket pairs. Every
+generated framing case must enter the body parser, reject without dispatch,
+close the connection and leave a following request unexecuted. Positive controls
+must dispatch once with the exact declared JSON body. The hazard alphabet includes
+duplicate/conflicting/signed lengths, whitespace, folded/malformed field names,
+NUL/bare CR, non-ASCII digits, empty/mixed-case transfer encodings and size limits.
+A separate EOF case rejects valid JSON shorter than its declared body. Application
+write/send entry points are controlled probes; no users or provider attempts are
+created. Early 401/404 cases remain distinct and assert that parsers are bypassed.
+
 Failures print the seed and index, with synthetic JSON bytes encoded as base64.
 The JSON comparison distinguishes free response text from the server's stricter
 request-text policy. Accounting expectations use integer nanodollars rather

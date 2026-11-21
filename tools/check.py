@@ -50,6 +50,7 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_generated_http_framing.AuthenticatedFramingTests",
     "tests.unit.test_lock_audit_failures",
     "tests.unit.test_schema_upgrade_fixtures",
     "tests.unit.test_security_scanning",

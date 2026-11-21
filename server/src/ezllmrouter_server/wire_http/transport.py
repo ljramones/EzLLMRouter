@@ -200,9 +200,13 @@ class WireTransport(SafeHTTPRequestHandler):
         if (
             self.headers.get_all("Content-Type") != ["application/json"]
             or len(lengths or []) != 1
+            or (not lengths[0].isascii())
             or (not lengths[0].isdigit())
             or (int(lengths[0]) > maximum)
-            or self.headers.get("Transfer-Encoding")
+            or self.headers.get_all("Transfer-Encoding")
         ):
             raise error("LIMIT_EXCEEDED", 413)
-        return self.read_body(int(lengths[0]))
+        body = self.read_body(int(lengths[0]))
+        if len(body) != int(lengths[0]):
+            raise error("SCHEMA_INVALID", 400)
+        return body

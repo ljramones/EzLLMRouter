@@ -112,13 +112,17 @@ class TransportRoutes:
         if (
             self.headers.get_all("Content-Type") != ["application/json"]
             or len(lengths or []) != 1
+            or not cast(list[str], lengths)[0].isascii()
             or not cast(list[str], lengths)[0].isdigit()
             or not 0 < int(cast(list[str], lengths)[0]) <= self._body_limit()
             or self.headers.get_all("Transfer-Encoding")
         ):
             raise ValueError("body shape")
+        body = self.read_body(int(cast(list[str], lengths)[0]))
+        if len(body) != int(cast(list[str], lengths)[0]):
+            raise ValueError("truncated body")
         value = json.loads(
-            self.read_body(int(cast(list[str], lengths)[0])),
+            body,
             object_pairs_hook=_pairs,
             parse_float=_reject_number,
             parse_constant=_reject_number,
