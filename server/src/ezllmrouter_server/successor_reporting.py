@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import cast
+from .records import Record
+from .store import Store, decode_record
+
+WorkflowKey = tuple[str, str, str, str]
+
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -13,11 +18,11 @@ from .successor_contract import valid_utc_second
 SYNTHETIC_ENVIRONMENT = "standalone-synthetic"
 
 
-def _money(amount):
+def _money(amount: Decimal) -> str:
     return money(amount.quantize(Decimal("0.000000001")))
 
 
-def _aggregate(rows):
+def _aggregate(rows: list[Record]) -> Record:
     known = Decimal(0)
     held = Decimal(0)
     held_count = 0
@@ -46,13 +51,45 @@ def _aggregate(rows):
     }
 
 
-def usage_report(store, scope, filters=None):
+def usage_report(store: Store, scope: Record, filters: dict[str, str] | None = None) -> Record:
     """Scope first, then select the latest accepted revision at a UTC cutoff.
 
     Inclusive workflow and alternate groupings are views of the same rows; their
     subtotals must never be added together. There is no provider invoice claim.
     """
     filters = filters or {}
+    _validate_report_scope(scope, filters)
+    operational_as_of = utc_timestamp(datetime.now(timezone.utc))
+    with store.database.read():
+        records, usage_events = _read_report_records(store)
+    by_submission = _latest_report_revisions(usage_events, filters)
+    rows = []
+    run_parents: dict[WorkflowKey, str] = {}
+    for record in records:
+        item = _report_record_row(
+            record, scope, filters, by_submission, run_parents, operational_as_of
+        )
+        if item is not None:
+            rows.append(item)
+    groupings = _report_groupings(rows)
+    workflows = _report_workflows(rows, run_parents)
+    return {
+        "profile": "retrieval-synthetic@1",
+        "contract_version": "0.3",
+        "scope": scope,
+        "filters": filters,
+        "total": _aggregate(rows),
+        "usage_cutoff": filters.get("cutoff"),
+        "operational_as_of": operational_as_of,
+        "operational_state_basis": "current; independent of historical usage cutoff",
+        "groupings": groupings,
+        "workflows": workflows,
+        "attempts": rows,
+        "notice": "Controlled synthetic operations and fictional USD. No commercial provider cost or infrastructure allocation measured.",
+    }
+
+
+def _validate_report_scope(scope: Record, filters: dict[str, str]) -> None:
     permitted = {
         "from",
         "to",
@@ -81,104 +118,110 @@ def usage_report(store, scope, filters=None):
         or type(scope.get("principal_id")) is not str
     ):
         raise PermissionError("authenticated reporting scope required")
-    operational_as_of = utc_timestamp(datetime.now(timezone.utc))
-    with store.database.read():
-        records = [
-            json.loads(row[0])
-            for row in store.database.execute(
-                _queries.USAGE_REPORT_SELECT_DEV12_SUBMISSIONS
-            ).fetchall()
-        ]
-        usage_events = [
-            (sid, json.loads(raw), observed_at)
-            for sid, raw, observed_at in store.database.execute(
-                _queries.USAGE_REPORT_SELECT_DEV12_EVIDENCE_EVENTS
-            ).fetchall()
-        ]
-    by_submission = {}
+
+
+def _read_report_records(store: Store) -> tuple[list[Record], list[tuple[str, Record, str]]]:
+    records = [
+        decode_record(row[0])
+        for row in store.database.execute(_queries.USAGE_REPORT_SELECT_DEV12_SUBMISSIONS).fetchall()
+    ]
+    usage_events = [
+        (cast(str, sid), decode_record(raw), cast(str, observed_at))
+        for sid, raw, observed_at in store.database.execute(
+            _queries.USAGE_REPORT_SELECT_DEV12_EVIDENCE_EVENTS
+        ).fetchall()
+    ]
+    return records, usage_events
+
+
+def _latest_report_revisions(
+    usage_events: list[tuple[str, Record, str]], filters: dict[str, str]
+) -> dict[str, Record]:
+    by_submission: dict[str, Record] = {}
     for sid, usage, observed_at in usage_events:
         if "cutoff" not in filters or observed_at <= filters["cutoff"]:
             current = by_submission.get(sid)
             if current is None or usage["revision"] > current["revision"]:
                 by_submission[sid] = usage
-    rows = []
-    run_parents = {}
-    for record in records:
-        meta = record["request"]["metadata"]
-        identity = record["trusted_identity"]
-        if scope["role"] == "ordinary" and not (
+    return by_submission
+
+
+def _report_record_row(
+    record: Record,
+    scope: Record,
+    filters: dict[str, str],
+    by_submission: dict[str, Record],
+    run_parents: dict[WorkflowKey, str],
+    operational_as_of: str,
+) -> Record | None:
+    meta = record["request"]["metadata"]
+    identity = record["trusted_identity"]
+    if scope["role"] == "ordinary" and (
+        not (
             record["work_key"]["principal_id"] == scope["principal_id"]
             or meta.get("initiating_user_id") == scope["principal_id"]
-        ):
-            continue
-        if (
-            "from" in filters
-            and record["created_at"] < filters["from"]
-            or "to" in filters
-            and record["created_at"] >= filters["to"]
-            or "cutoff" in filters
-            and record["created_at"] > filters["cutoff"]
-        ):
-            continue
-        dimensions = {
-            "operation": record["request"]["operation"]["type"],
-            "task_id": record["work_key"]["task_id"],
-            "environment": SYNTHETIC_ENVIRONMENT,
-            "actor_id": identity["actor_id"],
-            "initiating_user_id": meta.get("initiating_user_id"),
-            "charging_owner_id": identity["charging_owner_id"],
-            "root_workflow_id": meta["root_workflow_id"],
-            "provider_ref": record["signed_plan"]["destination_ref"],
-            "configuration_ref": record["request"]["requested_configuration_ref"],
-        }
-        if any(dimensions[key] != value for key, value in filters.items() if key in dimensions):
-            continue
-        lineage_scope = (
-            meta.get("initiating_user_id") or record["work_key"]["principal_id"],
-            record["work_key"]["task_id"],
-            meta["root_workflow_id"],
         )
-        for link in meta["delegation"]:
-            run_parents[(*lineage_scope, link["to_run_id"])] = link["from_run_id"]
-        if meta.get("parent_run_id"):
-            run_parents[(*lineage_scope, meta["run_id"])] = meta["parent_run_id"]
-        usage = by_submission.get(record["submission_id"])
-        status = (
-            usage["cost_status"]
-            if usage
-            else "not_sent"
-            if record["dispatch_state"] == "blocked"
-            else "unknown"
-        )
-        item = {
-            "submission_id": record["submission_id"],
-            "attempt_id": record["attempt_id"],
-            "created_at": record["created_at"],
-            "principal_id": record["work_key"]["principal_id"],
-            "task_id": record["work_key"]["task_id"],
-            "run_id": meta["run_id"],
-            "parent_run_id": meta.get("parent_run_id"),
-            "operation": dimensions["operation"],
-            "input_role": record["request"]["input"].get("role", "rerank"),
-            "handling_profile": record["request"]["handling_profile"],
-            "price_ref": record["reservation"]["price_ref"],
-            "usage_ref": record["reservation"]["usage_ref"],
-            "reservation_decimal": record["reservation"]["max_exposure_decimal"],
-            "submission_state": record["submission_state"],
-            "dispatch_state": record["dispatch_state"],
-            "delivery_state": record["delivery_state"],
-            "candidate_access": record["candidate_access"],
-            "exposure_state": record["exposure_state"],
-            "exposure_state_as_of": operational_as_of,
-            "cost_status": status,
-            "currency": "USD",
-            "usage_revision": usage["revision"] if usage else None,
-            "native_components": usage["components"] if usage else [],
-            "amount_decimal": usage.get("amount_decimal") if usage else None,
-            **dimensions,
-        }
-        rows.append(item)
-    groupings = {}
+    ):
+        return None
+    if (
+        "from" in filters
+        and record["created_at"] < filters["from"]
+        or ("to" in filters and record["created_at"] >= filters["to"])
+        or ("cutoff" in filters and record["created_at"] > filters["cutoff"])
+    ):
+        return None
+    dimensions = _report_dimensions(record, meta, identity)
+    if any((dimensions[key] != value for key, value in filters.items() if key in dimensions)):
+        return None
+    lineage_scope = (
+        meta.get("initiating_user_id") or record["work_key"]["principal_id"],
+        record["work_key"]["task_id"],
+        meta["root_workflow_id"],
+    )
+    for link in meta["delegation"]:
+        run_parents[*lineage_scope, link["to_run_id"]] = link["from_run_id"]
+    if meta.get("parent_run_id"):
+        run_parents[*lineage_scope, meta["run_id"]] = meta["parent_run_id"]
+    usage = by_submission.get(record["submission_id"])
+    status = (
+        usage["cost_status"]
+        if usage
+        else "not_sent"
+        if record["dispatch_state"] == "blocked"
+        else "unknown"
+    )
+    item = {
+        "submission_id": record["submission_id"],
+        "attempt_id": record["attempt_id"],
+        "created_at": record["created_at"],
+        "principal_id": record["work_key"]["principal_id"],
+        "task_id": record["work_key"]["task_id"],
+        "run_id": meta["run_id"],
+        "parent_run_id": meta.get("parent_run_id"),
+        "operation": dimensions["operation"],
+        "input_role": record["request"]["input"].get("role", "rerank"),
+        "handling_profile": record["request"]["handling_profile"],
+        "price_ref": record["reservation"]["price_ref"],
+        "usage_ref": record["reservation"]["usage_ref"],
+        "reservation_decimal": record["reservation"]["max_exposure_decimal"],
+        "submission_state": record["submission_state"],
+        "dispatch_state": record["dispatch_state"],
+        "delivery_state": record["delivery_state"],
+        "candidate_access": record["candidate_access"],
+        "exposure_state": record["exposure_state"],
+        "exposure_state_as_of": operational_as_of,
+        "cost_status": status,
+        "currency": "USD",
+        "usage_revision": usage["revision"] if usage else None,
+        "native_components": usage["components"] if usage else [],
+        "amount_decimal": usage.get("amount_decimal") if usage else None,
+        **dimensions,
+    }
+    return item
+
+
+def _report_groupings(rows: list[Record]) -> dict[str, list[Record]]:
+    groupings: dict[str, list[Record]] = {}
     for key in (
         "operation",
         "actor_id",
@@ -190,14 +233,18 @@ def usage_report(store, scope, filters=None):
         "root_workflow_id",
         "configuration_ref",
     ):
-        grouped = {}
+        grouped: dict[str, list[Record]] = {}
         for row in rows:
             grouped.setdefault(row[key] or "__absent__", []).append(row)
         groupings[key] = [
             {"id": name, **_aggregate(group)} for name, group in sorted(grouped.items())
         ]
-    direct = {}
-    inclusive = {}
+    return groupings
+
+
+def _report_workflows(rows: list[Record], run_parents: dict[WorkflowKey, str]) -> list[Record]:
+    direct: dict[WorkflowKey, list[Record]] = {}
+    inclusive: dict[WorkflowKey, dict[str, Record]] = {}
     for row in rows:
         run = row["run_id"]
         lineage_scope = (
@@ -223,17 +270,18 @@ def usage_report(store, scope, filters=None):
         }
         for key, members in sorted(inclusive.items())
     ]
+    return workflows
+
+
+def _report_dimensions(record: Record, meta: Record, identity: Record) -> Record:
     return {
-        "profile": "retrieval-synthetic@1",
-        "contract_version": "0.3",
-        "scope": scope,
-        "filters": filters,
-        "total": _aggregate(rows),
-        "usage_cutoff": filters.get("cutoff"),
-        "operational_as_of": operational_as_of,
-        "operational_state_basis": "current; independent of historical usage cutoff",
-        "groupings": groupings,
-        "workflows": workflows,
-        "attempts": rows,
-        "notice": "Controlled synthetic operations and fictional USD. No commercial provider cost or infrastructure allocation measured.",
+        "operation": record["request"]["operation"]["type"],
+        "task_id": record["work_key"]["task_id"],
+        "environment": SYNTHETIC_ENVIRONMENT,
+        "actor_id": identity["actor_id"],
+        "initiating_user_id": meta.get("initiating_user_id"),
+        "charging_owner_id": identity["charging_owner_id"],
+        "root_workflow_id": meta["root_workflow_id"],
+        "provider_ref": record["signed_plan"]["destination_ref"],
+        "configuration_ref": record["request"]["requested_configuration_ref"],
     }

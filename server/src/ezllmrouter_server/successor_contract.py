@@ -139,7 +139,7 @@ def work_digest(work):
     return domain_digest(f"ezllmrouter-work-v0.3\n{op['type']}@{op['version']}\n", work)
 
 
-def valid_utc_second(value):
+def valid_utc_second(value: object) -> bool:
     return type(value) is str and is_utc_second(value)
 
 

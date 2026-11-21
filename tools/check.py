@@ -202,6 +202,7 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/core_outcomes.py",
     "server/src/ezllmrouter_server/core_status.py",
     "server/src/ezllmrouter_server/cache_accounting.py",
+    "server/src/ezllmrouter_server/successor_reporting.py",
     "tools/gateway/paths.py",
     "tests/support.py",
     "deploy/local/command_support.py",

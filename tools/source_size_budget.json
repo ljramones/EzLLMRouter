@@ -19,7 +19,6 @@
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
     "server/src/ezllmrouter_server/provider_adapters.py:function:probe": 165,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
-    "server/src/ezllmrouter_server/successor_reporting.py:function:usage_report": 191,
     "tests/client_languages/build_cases.py:function:cases": 418,
     "tests/client_parity/integration_python.py:function:main": 218,
     "tests/development_slice/test_crypto.py:function:SignedPlanTests.test_signed_frame_and_no_store_output": 244,
