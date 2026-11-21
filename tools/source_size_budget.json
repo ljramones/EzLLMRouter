@@ -32,8 +32,6 @@
     "tools/gateway/evidence/dev12_completion_auth_http.py:function:main": 348,
     "tools/gateway/evidence/dev12_completion_continue03_audit.py:function:audit": 214,
     "tools/gateway/evidence/dev12_completion_packet_audit.py:function:audit": 238,
-    "tools/gateway/evidence/dev12_completion_preflight_validation.py:function:_continuation_context": 406,
-    "tools/gateway/evidence/dev12_completion_preflight_validation.py:function:validate": 439,
     "tools/gateway/evidence/dev12_completion_zero_send_checks.py:function:main": 308,
     "tools/gateway/evidence/dev12_controls.py:function:run": 287,
     "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237,

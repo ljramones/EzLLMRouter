@@ -1170,3 +1170,24 @@ lint/formatting and script/console checks. Library typing debt remains 1,631.
 There are still 45 size allowances: two existing function caps transfer with
 six total physical lines of facade-import/qualification overhead. Their phase
 cleanup follows separately; no preflight acceptance condition was changed.
+
+### Item 11 follow-up: preflight validation phases
+
+Validation now separates case collection, catalogue/handler identity, custody/
+resource bounds, continuation inventory, unchanged database reads and retained
+campaign checks. Existing mutable coverage/error collections remain shared;
+quota accumulators and continuation state have explicit inputs/returns. Original
+continues, rejection ordering and outer exception/read scopes stay intact.
+
+The public validator is 193 lines and continuation binding is 131; all functions
+in the domain are below 200. Expanding the six phases reconstructs both original
+entry-point ASTs exactly. A replay against `9d7dca4` compares 527 synthetic inputs,
+including 38 accepted variants, and matches output, error ordering and exception
+identity/message. All 20 maintained preflight/continuation/runtime/identity cases
+also pass. These checks do not qualify an actual source or target release.
+
+Full `tools.check` passes 917 Python cases, strict typing on 107 files,
+lint/formatting and maintained script/console checks. Typing debt remains 1,631;
+the two transferred function allowances are removed, leaving 43. Remaining W6
+work is other retained runners/audits, long individual tests and deployment
+exercises. No provider, listener, dependency, build or daemon action ran.
