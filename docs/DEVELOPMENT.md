@@ -208,7 +208,13 @@ findings in deployment, evidence or test tools; those remain outside this gate.
 development, shipped service/worker, browser/client and build-backend locks.
 The PR run validates these inputs and writes `inventory.json` plus a CycloneDX
 candidate SBOM without reaching the network. It rejects the forbidden LiteLLM
-pin before any package installation or query. The SBOM describes lock candidates,
+release component after normalizing abbreviated/zero-padded spellings and local,
+pre/post suffixes. Dockerfile FROM/ARG defaults and compose/workflow image fields
+reject mutable LiteLLM references, the forbidden release family and missing
+digests. Quoted keys and inline container mappings are supported; unresolved
+image anchors and block scalars fail. Arbitrary external image-variable values
+and digest provenance are not qualified by this source check. CI runs the
+standard-library preflight before installing project dependencies. The SBOM describes lock candidates,
 not installed container contents or native-language transitive dependencies.
 
 The nightly `--audit` mode sends only package names/versions to the public OSV
@@ -220,6 +226,8 @@ audit. No scan automatically upgrades dependencies or changes frozen inputs.
 `--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
 than seven days fail. Network advisory qualification remains separate from the
 offline scanner regressions, which use explicitly synthetic advisory responses.
+That job uses the runner's standard library without installing the project's
+development or gateway dependencies.
 
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable

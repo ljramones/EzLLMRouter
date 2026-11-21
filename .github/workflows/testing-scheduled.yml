@@ -11,10 +11,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - run: python3 -m pip install uv==0.13.9
-      - run: uv sync --locked --all-groups --python 3.12.15
       - name: Query OSV for the exact locked Python and npm inputs
-        run: uv run --locked python -m tools.security_dependencies --audit
+        run: python3 -I -S tools/security_dependencies.py --audit
       - name: Retain inventory, CycloneDX candidate SBOM, advisory snapshot and outcome
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -30,6 +28,7 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
+      - run: python3 -I -S tools/security_dependencies.py
       - run: python3 -m pip install uv==0.13.9
       - run: uv sync --locked --all-groups --python 3.12.15
       - name: Repeat forced interleavings 200 times with a recorded suite-order seed
@@ -52,6 +51,7 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
+      - run: python3 -I -S tools/security_dependencies.py
       - run: python3 -m pip install uv==0.13.9
       - run: uv sync --locked --all-groups --python 3.12.15
       - name: Repeat offline and loopback modules five times, retaining every failure

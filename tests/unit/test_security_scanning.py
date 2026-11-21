@@ -56,6 +56,100 @@ class SecurityScanningTests(unittest.TestCase):
 
 
 class DependencyAuditTests(unittest.TestCase):
+    def input_copy(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        for name in INPUTS:
+            (root / name).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / name, root / name)
+        return root
+
+    def test_equivalent_forbidden_release_spellings_cannot_bypass_the_inventory(self):
+        root = self.input_copy()
+        lock = root / "deploy/local/inputs/gateway/requirements.gateway.lock"
+        original = lock.read_text()
+        for version in (
+            "1.107",
+            "1.107.0.0",
+            "1.107.0+local",
+            "v1.107.0",
+            "01.0107.000",
+            "1.107.0.post1",
+            "1.107.0rc1",
+        ):
+            with self.subTest(version=version):
+                lock.write_text(original.replace("litellm==1.105.1", "litellm==" + version))
+                with self.assertRaisesRegex(ValueError, "forbidden LiteLLM"):
+                    inventory(root)
+        lock.write_text(original)
+        self.assertTrue(inventory(root)["packages"])
+
+    def test_deployment_and_workflow_images_reject_mutable_or_forbidden_litellm(self):
+        root = self.input_copy()
+        digest = "@sha256:" + "a" * 64
+        declarations = (
+            ("deploy/nested/Dockerfile.synthetic", "FROM --platform=linux/arm64 {} AS worker\n"),
+            ("deploy/compose.synthetic.yml", 'services:\n  worker:\n    image: "{}"\n'),
+            (
+                ".github/workflows/synthetic.yaml",
+                'jobs:\n  check:\n    container: {{image: "{}"}}\n',
+            ),
+            (".github/workflows/synthetic.yaml", 'jobs:\n  check:\n    container: "{}"\n'),
+        )
+        for relative, template in declarations:
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            for tag in (
+                "latest",
+                "main-latest",
+                "main-stable",
+                "v1.105.1",
+                "latest" + digest,
+                "v1.107.0" + digest,
+                "1.107" + digest,
+            ):
+                with self.subTest(path=relative, tag=tag):
+                    path.write_text(template.format("ghcr.io/berriai/litellm:" + tag))
+                    with self.assertRaisesRegex(ValueError, "LiteLLM image"):
+                        inventory(root)
+            path.write_text(template.format("ghcr.io/berriai/litellm:v1.105.1" + digest))
+            self.assertTrue(inventory(root)["packages"])
+            path.unlink()
+
+    def test_python_environment_jobs_scan_inputs_before_installing_project_dependencies(self):
+        import re
+
+        for workflow in ("check.yml", "testing-scheduled.yml"):
+            source = (ROOT / ".github/workflows" / workflow).read_text()
+            for block in re.split(r"(?m)^  (?=[a-zA-Z0-9_-]+:\s*$)", source):
+                if "uv sync" in block:
+                    with self.subTest(workflow=workflow, job=block.splitlines()[0]):
+                        self.assertIn("python3 -I -S tools/security_dependencies.py", block)
+                        self.assertLess(
+                            block.index("python3 -I -S tools/security_dependencies.py"),
+                            block.index("uv sync"),
+                        )
+
+    def test_image_syntax_cannot_hide_a_reference_or_misclassify_a_stage_alias(self):
+        root = self.input_copy()
+        path = root / "deploy/compose.synthetic.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        for source in (
+            'services:\n  worker:\n    "image": "litellm:latest"\n',
+            "services:\n  worker:\n    image: >-\n      litellm:latest\n",
+            "services:\n  worker:\n    image: &unsafe litellm:latest\n",
+            "services:\n  worker:\n    image: *unresolved\n",
+        ):
+            with self.subTest(source=source):
+                path.write_text(source)
+                with self.assertRaisesRegex(ValueError, "image"):
+                    inventory(root)
+        path.unlink()
+        dockerfile = root / "deploy/Dockerfile.synthetic"
+        dockerfile.write_text("FROM python@sha256:" + "b" * 64 + " AS litellm\n")
+        self.assertTrue(inventory(root)["packages"])
+
     def test_inventory_distinguishes_shipped_and_development_libraries_and_emits_unique_components(
         self,
     ):

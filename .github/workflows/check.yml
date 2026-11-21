@@ -14,6 +14,9 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
         with:
           node-version-file: .nvmrc
+      - name: Validate locked inputs before installing dependencies
+        # Check source inputs with the runner's standard library before uv can install them.
+        run: python3 -I -S tools/security_dependencies.py
       - name: Install pinned environment manager
         run: python3 -m pip install uv==0.13.9
       - name: Install locked development environment
@@ -132,6 +135,8 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
         with:
           node-version-file: .nvmrc
+      - name: Validate locked inputs before installing dependencies
+        run: python3 -I -S tools/security_dependencies.py
       - name: Install pinned environment manager
         run: python3 -m pip install uv==0.13.9
       - name: Install locked service dependencies

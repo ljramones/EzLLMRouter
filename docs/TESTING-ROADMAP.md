@@ -124,7 +124,7 @@ Then fix the gate, run the regression and full checks, and update this table.
 | M1: HTTP tier lacks measurements and lock audit | Open. |
 | M2: Python coverage allowance can be reused | Open; baseline tightening and missing-exit identities. |
 | M3: dynamic JS function denominator | Open; static function inventory. |
-| M4: forbidden version spellings and mutable images | Open; parse normalized releases and image declarations without acquiring artifacts. |
+| M4: forbidden version spellings and mutable images | Fixed: release-component normalization rejects abbreviated/zero-padded/local/pre/post spellings; Docker FROM/ARG and compose/workflow fields reject forbidden/mutable/unpinned LiteLLM references. Quoted keys and inline mappings work; unresolved anchors/block scalars fail. Forty negative assertions first failed; syntax probes additionally caught four bypasses and a stage-alias false positive before correction. Standard-library CI preflight precedes project dependency installation. No artifact acquisition or approval. |
 | M5: Docker COPY/WORKDIR and unparsed validation commands | Open. |
 | M6: secret scanning, shipped SAST scope and inventory completeness | Open. |
 | M7: setup/timeout telemetry, timing overhead and stress/flake semantics | Open. |
@@ -132,5 +132,5 @@ Then fix the gate, run the regression and full checks, and update this table.
 | M9: WAL goldens, unaffected-table invariants, richer restore/crash cases | Open. |
 | L1: non-ASCII Content-Length digits | Fixed with H2; byte 0xB2 is rejected as an input error, with no dispatch, instead of wire returning 503. |
 | L2: artifact retention | Open. |
-| L3: bootstrap pins and advisory environment | Open; exact tool archives/action commits need qualification. |
+| L3: bootstrap pins and advisory environment | Partial: advisory lookup now uses only the runner's standard library and no project installation. Exact bootstrap archives and the remaining action commit still need qualification. |
 | L4: smaller measurement/SAST/decoder gaps | Open; retain individual subitems from the source report. |

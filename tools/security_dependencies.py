@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
 import tomllib
 from typing import Any, Callable
 from urllib.parse import quote
@@ -27,6 +28,78 @@ API = "https://api.osv.dev/v1/"
 MAX_RESPONSE = 10 * 1024 * 1024
 
 
+def forbidden_release(version: str) -> bool:
+    # Compare the PEP 440 numeric release component, including abbreviated and
+    # zero-padded spellings. Local/pre/post suffixes cannot bypass the banned
+    # release family. This is a deny rule, not an approval of other versions.
+    match = re.match(r"(?i)^(?:[0-9]+!)?v?([0-9]+(?:\.[0-9]+)*)", version.strip())
+    if match is None:
+        return False
+    release = [int(part) for part in match[1].split(".")]
+    while release and release[-1] == 0:
+        release.pop()
+    return release == [1, 107]
+
+
+def deployment_images(root: Path) -> dict[str, str]:
+    paths = set((root / "deploy").rglob("Dockerfile*"))
+    paths.update(
+        path
+        for pattern in ("*compose*.yml", "*compose*.yaml")
+        for path in (root / "deploy").rglob(pattern)
+    )
+    paths.update(
+        path
+        for pattern in ("*.yml", "*.yaml")
+        for path in (root / ".github/workflows").glob(pattern)
+    )
+    hashes = {}
+    fields = [
+        re.compile(
+            r"""(?<!\w)["']?""" + key + r"""["']?\s*:\s*(?:"([^"]*)"|'([^']*)'|([^\s,}]+))"""
+        )
+        for key in ("image", "container")
+    ]
+
+    def check(image: str, source: str) -> None:
+        if image.startswith((">", "|", "&", "*")):
+            raise ValueError("unresolved image declaration: " + source)
+        base = image.split("@", 1)[0].rsplit("/", 1)[-1]
+        if "litellm" not in base.lower():
+            return
+        tag = base.split(":", 1)[1] if ":" in base else ""
+        if tag.lower() in {"latest", "main-latest", "main-stable"} or forbidden_release(tag):
+            raise ValueError("forbidden LiteLLM image reference: " + source)
+        if not re.search(r"@sha256:[0-9a-f]{64}$", image):
+            raise ValueError("LiteLLM image requires a pinned digest: " + source)
+
+    for path in sorted(paths):
+        if not path.is_file():
+            continue
+        raw = path.read_bytes()
+        source = path.relative_to(root).as_posix()
+        hashes[source] = hashlib.sha256(raw).hexdigest()
+        for line in raw.decode().replace("\\\n", " ").splitlines():
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            if path.name.startswith("Dockerfile"):
+                tokens = shlex.split(line, comments=True)
+                if tokens and tokens[0].upper() == "FROM":
+                    images = [token for token in tokens[1:] if not token.startswith("--")]
+                    if not images:
+                        raise ValueError("missing Docker image declaration: " + source)
+                    check(images[0], source)
+                elif tokens and tokens[0].upper() == "ARG":
+                    for token in tokens[1:]:
+                        if "=" in token:
+                            check(token.split("=", 1)[1], source)
+            else:
+                for field in fields:
+                    for match in field.finditer(line):
+                        check(next(value for value in match.groups() if value is not None), source)
+    return hashes
+
+
 def inventory(root: Path = ROOT) -> dict[str, Any]:
     packages: dict[tuple[str, str, str], set[str]] = {}
     hashes = {}
@@ -34,7 +107,7 @@ def inventory(root: Path = ROOT) -> dict[str, Any]:
     def add(ecosystem: str, name: str, version: str, source: str) -> None:
         if ecosystem == "PyPI":
             name = re.sub(r"[-_.]+", "-", name).lower()
-        if name == "litellm" and version == "1.107.0":
+        if name == "litellm" and forbidden_release(version):
             raise ValueError("forbidden LiteLLM artifact in dependency inventory")
         packages.setdefault((ecosystem, name, version), set()).add(source)
 
@@ -83,6 +156,7 @@ def inventory(root: Path = ROOT) -> dict[str, Any]:
         "format": "ezllmrouter-lock-inventory-v1",
         "packages": rows,
         "source_sha256": hashes,
+        "image_source_sha256": deployment_images(root),
     }
     payload["sha256"] = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
