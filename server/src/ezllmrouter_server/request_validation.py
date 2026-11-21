@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from collections.abc import Collection
 from datetime import datetime, timezone
 from .records import Record
@@ -29,7 +31,27 @@ def validate_text_request(
     prompt_blocks: list[Record],
     allowed_lineages: Collection[str],
 ) -> tuple[list[Record], Record, str, str]:
-    """Resolve trusted prompt and the pinned, caller-owned lookup subset."""
+    """Resolve the wire request in the adopted validation/error-precedence order."""
+    req = _request_envelope(req)
+    for validate in _FIELD_VALIDATORS:
+        validate(req)
+    definitions = _tool_definitions(req)
+    _validate_scope(req, trusted, config)
+    features, choice = _requested_features(req)
+    settings, deadline = _generation_settings(req)
+    _validate_prompt(req, trusted, prompt_blocks)
+    resolved, tool_content = _resolve_messages(req, prompt_blocks, allowed_lineages)
+    if tool_content and (not definitions):
+        raise ContractError("SEMANTIC_INVALID", 422)
+    derived_tools = bool(definitions or tool_content or choice != "none")
+    if derived_tools != ("tools" in features):
+        raise ContractError("SEMANTIC_INVALID", 422)
+    if choice == "auto" and (not definitions):
+        raise ContractError("SEMANTIC_INVALID", 422)
+    return (resolved, settings, deadline, digest(jcs(prompt_blocks)))
+
+
+def _request_envelope(req: object) -> Record:
     restricted(req)
     required = (
         "contract_version",
@@ -61,8 +83,15 @@ def validate_text_request(
         "observed_at",
     )
     req = exact_keys(req, required, optional)
+    return req
+
+
+def _validate_version(req: Record) -> None:
     if req["contract_version"] != "0.2" or req["profile"] != "initial_1a@1":
         raise ContractError("UNSUPPORTED_VERSION", 426)
+
+
+def _validate_identifiers(req: Record) -> None:
     for key in (
         "task_id",
         "task_class",
@@ -81,8 +110,14 @@ def validate_text_request(
     ):
         if key in req:
             ident(req[key])
+
+
+def _validate_observation(req: Record) -> None:
     if "observed_at" in req:
         utc_second(req["observed_at"])
+
+
+def _validate_trace(req: Record) -> None:
     if "trace_context" in req and (
         not isinstance(req["trace_context"], dict)
         or not all(
@@ -90,6 +125,9 @@ def validate_text_request(
         )
     ):
         raise ContractError("SCHEMA_INVALID", 400)
+
+
+def _tool_definitions(req: Record) -> list[Record]:
     if "tool_definitions" in req and (
         not isinstance(req["tool_definitions"], list) or len(req["tool_definitions"]) > 32
     ):
@@ -112,6 +150,10 @@ def validate_text_request(
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
     if "tool_choice" in req and req["tool_choice"] not in ("none", "auto", "required"):
         raise ContractError("SCHEMA_INVALID", 400)
+    return cast(list[Record], definitions)
+
+
+def _validate_scope(req: Record, trusted: Record, config: Record) -> None:
     if (
         type(req["step_revision"]) is not int
         or not 1 <= req["step_revision"] <= SAFE
@@ -144,6 +186,9 @@ def validate_text_request(
         (k in req for k in ("parent_call", "subtask_id", "session_id", "construction_manifest_ref"))
     ):
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
+
+
+def _requested_features(req: Record) -> tuple[list[str], str]:
     choice = req.get("tool_choice", "none")
     if choice == "required":
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
@@ -172,6 +217,10 @@ def validate_text_request(
         raise ContractError("SEMANTIC_INVALID", 422)
     if not set(features) <= {"text", "tools"}:
         raise ContractError("CAPABILITY_UNSUPPORTED", 422)
+    return features, choice
+
+
+def _generation_settings(req: Record) -> tuple[Record, str]:
     settings = req["generation_settings"]
     settings = exact_keys(
         settings, ("max_output_tokens", "temperature_decimal", "total_timeout_ms")
@@ -193,6 +242,10 @@ def validate_text_request(
     deadline = utc_second(req["deadline"])
     if datetime.fromisoformat(deadline.replace("Z", "+00:00")) <= datetime.now(timezone.utc):
         raise ContractError("SEMANTIC_INVALID", 422)
+    return settings, deadline
+
+
+def _validate_prompt(req: Record, trusted: Record, prompt_blocks: list[Record]) -> None:
     prompt = req["resolved_prompt"]
     prompt = exact_keys(
         prompt, ("prompt_id", "prompt_version", "block_ids", "source_artifact_digest")
@@ -208,22 +261,35 @@ def validate_text_request(
         "source_artifact_digest"
     ] != digest(jcs(prompt_blocks)):
         raise ContractError("SOURCE_INVALID", 422)
+
+
+def _message_role_and_blocks(index: int, message: Record) -> tuple[str, list[Record]]:
+    exact_keys(message, ("role", "blocks"))
+    role, blocks = (message["role"], message["blocks"])
+    if (
+        role not in ("system", "user", "assistant", "tool")
+        or not isinstance(blocks, list)
+        or (not blocks)
+    ):
+        raise ContractError("CAPABILITY_UNSUPPORTED", 422)
+    if index == 0 and role != "system":
+        raise ContractError("SOURCE_INVALID", 422)
+    return role, blocks
+
+
+def _resolve_messages(
+    req: Record, prompt_blocks: list[Record], allowed_lineages: Collection[str]
+) -> tuple[list[Record], bool]:
     messages = req["messages"]
     if not isinstance(messages, list) or not 1 <= len(messages) <= 128:
         raise ContractError("SCHEMA_INVALID", 400)
-    resolved, ids, calls, results = ([], set(), {}, set())
+    resolved: list[Record] = []
+    ids: set[str] = set()
+    calls: dict[str, Record] = {}
+    results: set[str] = set()
     tool_content = False
     for index, message in enumerate(messages):
-        exact_keys(message, ("role", "blocks"))
-        role, blocks = (message["role"], message["blocks"])
-        if (
-            role not in ("system", "user", "assistant", "tool")
-            or not isinstance(blocks, list)
-            or (not blocks)
-        ):
-            raise ContractError("CAPABILITY_UNSUPPORTED", 422)
-        if index == 0 and role != "system":
-            raise ContractError("SOURCE_INVALID", 422)
+        role, blocks = _message_role_and_blocks(index, message)
         out = []
         for block in blocks:
             if not isinstance(block, dict):
@@ -285,17 +351,28 @@ def validate_text_request(
                 raise ContractError("SOURCE_INVALID", 422)
             out.append({**block, "source_labels": labels})
         resolved.append({"role": role, "blocks": out})
+    _validate_message_bindings(resolved, ids, calls, results, prompt_blocks)
+    return resolved, tool_content
+
+
+_FIELD_VALIDATORS = (
+    _validate_version,
+    _validate_identifiers,
+    _validate_observation,
+    _validate_trace,
+)
+
+
+def _validate_message_bindings(
+    resolved: list[Record],
+    ids: set[str],
+    calls: dict[str, Record],
+    results: set[str],
+    prompt_blocks: list[Record],
+) -> None:
     if [b for m in resolved if m["role"] == "system" for b in m["blocks"]] != prompt_blocks:
         raise ContractError("SOURCE_INVALID", 422)
     if len(ids) > 256:
         raise ContractError("LIMIT_EXCEEDED", 413)
     if set(calls) != results:
         raise ContractError("SEMANTIC_INVALID", 422)
-    if tool_content and (not definitions):
-        raise ContractError("SEMANTIC_INVALID", 422)
-    derived_tools = bool(definitions or tool_content or choice != "none")
-    if derived_tools != ("tools" in features):
-        raise ContractError("SEMANTIC_INVALID", 422)
-    if choice == "auto" and (not definitions):
-        raise ContractError("SEMANTIC_INVALID", 422)
-    return (resolved, settings, deadline, digest(jcs(prompt_blocks)))

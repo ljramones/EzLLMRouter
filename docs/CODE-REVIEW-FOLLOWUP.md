@@ -858,3 +858,25 @@ size allowance transfers without increasing; the new module is strictly typed.
 Full `tools.check` passes 909 Python cases, strict mypy on 99 files, lint/format,
 source/type budgets and script/console checks. Field/phase decomposition follows
 in a separate cleanup commit.
+
+
+### Item 11 follow-up: W5 canonical validator cleanup
+
+The 277-line validator becomes a 25-line phase orchestrator. An immutable ordered
+field-validator table preserves version/identifier/observation/trace precedence;
+separate phases own tool definitions, scope/features, generation settings, prompt
+binding and message resolution. Shared message IDs, call/result binding, labels
+and tool-content state retain the original validation order and final checks.
+Every request-validation function is at most 80 lines, so its size allowance is
+removed. Public canonical imports/signatures and digest/schema bytes stay stable.
+
+A differential replay against `bc2ab78` compares 2,203 synthetic request mutations,
+including pairwise error combinations and text/tool messages. All 44 accepted
+cases have identical serialized outputs; every rejection has the same exception
+type, public code, status and message. Evidence is retained under ignored
+`.artifacts/code-review/god-class/request-validation-differential.json`. Five new
+maintained tests protect import equivalence and important error precedence.
+
+Canonical cleanup verification: full `tools.check` passes 914 Python cases,
+strict mypy on 99 files, lint/formatting, the 1,805-error library-debt budget,
+74 size allowances and all maintained script/console checks.

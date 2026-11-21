@@ -18,7 +18,6 @@
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
     "server/src/ezllmrouter_server/provider_adapters.py:function:probe": 165,
-    "server/src/ezllmrouter_server/request_validation.py:function:validate_text_request": 277,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
     "server/src/ezllmrouter_server/store.py:class:SQLiteStore": 802,
     "server/src/ezllmrouter_server/store.py:file": 937,

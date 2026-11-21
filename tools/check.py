@@ -96,6 +96,7 @@ MODULES = (
     "tests.unit.test_provision_recovery",
     "tests.unit.test_quality_gates",
     "tests.unit.test_source_size",
+    "tests.unit.test_request_validation",
     "tests.unit.test_persistence_recovery",
     "tests.unit.test_structural_cleanup",
 )
