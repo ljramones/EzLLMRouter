@@ -12,6 +12,7 @@ from .core_types import Reply
 
 if TYPE_CHECKING:
     from .core import Coordinator
+    from . import core as _api
 
 import json
 import time
@@ -25,7 +26,6 @@ from .canonical import (
     work_digest,
 )
 from .states import CandidateAccess, DeliveryState, DispatchState, SubmissionState
-from . import core as _api
 
 
 def _assert_current_dispatch(
@@ -37,6 +37,8 @@ def _assert_current_dispatch(
     decision: Record | None = None,
 ) -> None:
     """Check the same current authority at dispatch and at a DEV-04 lower guard."""
+    from . import core as _api
+
     self.authority.verify(plan, plan["work_digest"], self.authority.policy["policy_version"])
     if self.registry:
         bound = _registry_dispatch_record(self, plan, decision)
@@ -109,6 +111,8 @@ def _dispatch(
     admitted_projection: Record,
     decision: Record | None = None,
 ) -> Record:
+    from . import core as _api
+
     try:
         self._assert_current_dispatch(
             plan, credential, admitted_scope, admitted_projection, decision
@@ -169,6 +173,8 @@ def _dispatch(
 def _attempt_plan(
     self: Coordinator, admitted: _api.AdmittedWork
 ) -> tuple[Record | None, Reply | None]:
+    from . import core as _api
+
     try:
         plan = self.authority.issue(
             admitted.admitted_projection,
@@ -220,6 +226,8 @@ def _attempt_plan(
 def _prepare_attempt(
     self: Coordinator, admitted: _api.AdmittedWork, plan: Record
 ) -> tuple[bytes | None, Record | None, Reply | None]:
+    from . import core as _api
+
     timeout_ms = plan["per_attempt_total_timeout_ms"]
     try:
         expected, expected_request = self.recipe.expected(admitted.projected, timeout_ms)
@@ -276,6 +284,8 @@ def _prepare_attempt(
 def _record_attempt_intent(
     self: Coordinator, admitted: _api.AdmittedWork, plan: Record, expected_request: Record
 ) -> Reply | None:
+    from . import core as _api
+
     intent = {
         "attempt_id": admitted.aid,
         "plan_id": plan["plan_id"],
@@ -308,6 +318,8 @@ def _record_attempt_intent(
 def _wait_for_attempt(
     self: Coordinator, admitted: _api.AdmittedWork, future: Future[Record], response_deadline: float
 ) -> Reply:
+    from . import core as _api
+
     with self._futures_lock:
         self._futures[admitted.sid] = future
 

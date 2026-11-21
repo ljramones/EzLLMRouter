@@ -11,12 +11,12 @@ from .accounting_types import RecordIndex, EventGroups, SnapshotIndex
 
 if TYPE_CHECKING:
     from .integration_accounting import ExternalAccounting
+    from . import integration_accounting as _api
 
 from collections import defaultdict
 from decimal import Decimal
 from .formatting import money as format_money
 from .repositories import integration_accounting as _queries
-from . import integration_accounting as _api
 
 
 def report(
@@ -26,6 +26,8 @@ def report(
     filters: dict[str, str] | None = None,
     version: str = "1",
 ) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "report")
     at = _api._time()
@@ -110,6 +112,8 @@ def _enrich_report_row(
     snapshots: SnapshotIndex,
     start: Record,
 ) -> None:
+    from . import integration_accounting as _api
+
     v2 = start.get("integration_version") in ("2", "3")
     decision = next((item for item in related if item["kind"] == "decision"), None)
     resolution = next((item for item in related if item["kind"] == "account_resolution"), None)
@@ -248,6 +252,8 @@ def _report_attempt_row(
 def _read_report_snapshot(
     self: ExternalAccounting, dataset_id: str, version: str, at: str
 ) -> _api.AccountingReportData:
+    from . import integration_accounting as _api
+
     snapshots: SnapshotIndex = {}
     eligibility_reads: RecordIndex = {}
     account_history: EventGroups = {}
@@ -302,6 +308,8 @@ def _read_report_snapshot(
 
 
 def _validate_report_filters(filters: dict[str, str]) -> None:
+    from . import integration_accounting as _api
+
     if set(filters) - {
         "actor_id",
         "provider_account_id",

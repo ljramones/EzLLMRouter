@@ -880,3 +880,19 @@ maintained tests protect import equivalence and important error precedence.
 Canonical cleanup verification: full `tools.check` passes 914 Python cases,
 strict mypy on 99 files, lint/formatting, the 1,805-error library-debt budget,
 74 size allowances and all maintained script/console checks.
+
+
+### Import-order regression after domain extraction
+
+A fresh-process check exposed a cycle when some extracted domains imported their
+facade before defining the functions that facade binds. Runtime facade imports
+now occur at the existing operation entry points; annotation-only imports stay
+under `TYPE_CHECKING`. This preserves dynamic clock/log/probe injection and
+eliminates import-order dependence without changing domain operations or ownership
+scopes. All Registry/accounting/Coordinator functions remain at most 80 lines.
+
+The maintained import regression loads each of 27 domain modules first in its
+own isolated Python process. It passes, and the full gate passes 915 Python
+cases, strict typing on 99 files, lint/formatting, source/type budgets and all
+script/console checks. The library typing debt remains 1,805 and size allowances
+remain 74. No listener, provider or existing deployment was used.

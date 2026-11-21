@@ -11,10 +11,11 @@ from .accounting_types import RecordIndex, LineageLinks
 if TYPE_CHECKING:
     from .integration_accounting import ExternalAccounting
 from .repositories import integration_accounting as _queries
-from . import integration_accounting as _api
 
 
 def _bind_run(self: ExternalAccounting, db: Database, event: Record) -> None:
+    from . import integration_accounting as _api
+
     dataset_id, run_id = event["dataset_id"], event["run_id"]
     root, parent, task = event["root_run_id"], event.get("parent_run_id"), event["task_id"]
     old = db.execute(_queries.RUN_LINEAGE, (dataset_id, run_id)).fetchone()
@@ -43,6 +44,8 @@ def _bind_run(self: ExternalAccounting, db: Database, event: Record) -> None:
 
 
 def _check_lineage(self: ExternalAccounting, db: Database, event: Record) -> None:
+    from . import integration_accounting as _api
+
     did, aid, starts, accepted_links, links = _lineage_component(db, event)
     # A new start can settle a pending predecessor, while a new link can
     # affect its descendants. Validate that connected component only:
@@ -103,6 +106,8 @@ def _check_lineage(self: ExternalAccounting, db: Database, event: Record) -> Non
 def _lineage_component(
     db: Database, event: Record
 ) -> tuple[str, str, RecordIndex, RecordIndex, LineageLinks]:
+    from . import integration_accounting as _api
+
     did = event["dataset_id"]
     aid = event["attempt_id"]
     component = db.execute(

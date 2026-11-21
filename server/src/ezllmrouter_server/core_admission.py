@@ -8,6 +8,7 @@ from .core_types import Reply
 
 if TYPE_CHECKING:
     from .core import Coordinator
+    from . import core as _api
 
 import sqlite3
 from copy import deepcopy
@@ -20,7 +21,6 @@ from .canonical import (
     validate_text_request,
 )
 from .states import CandidateAccess, DeliveryState, DispatchState, SettlementState, SubmissionState
-from . import core as _api
 
 
 def _validate_admission(
@@ -97,6 +97,8 @@ def _admission_record(
     trusted: Record,
     attribution: Record | None,
 ) -> Record:
+    from . import core as _api
+
     principal = self.registry.principal(trusted["principal_id"]) if self.registry else None
     record = {
         "submission_id": admitted.sid,
@@ -147,6 +149,8 @@ def _admission_record(
 def _persist_admission(
     self: Coordinator, admitted: _api.AdmittedWork, record: Record, req: Record, settings: Record
 ) -> Reply | None:
+    from . import core as _api
+
     campaign = (
         (self.registry.personal_campaign if self.registry is not None else None)
         if self.registry

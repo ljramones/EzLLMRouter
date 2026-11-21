@@ -19,10 +19,11 @@ from .canonical import (
     strict_loads,
 )
 from .states import CandidateAccess, DispatchState, SubmissionState
-from . import core as _api
 
 
 def _failed(self: Coordinator, sid: str, aid: str, code: str, stage: str) -> Record:
+    from . import core as _api
+
     result = self.store.update(
         sid,
         {
@@ -50,6 +51,8 @@ def _failed(self: Coordinator, sid: str, aid: str, code: str, stage: str) -> Rec
 
 
 def _failed_reply(self: Coordinator, handle: Record, aid: str, code: str, stage: str) -> Record:
+    from . import core as _api
+
     record = self.store.get(handle["submission_id"])
     return {
         "contract_version": "0.2",
@@ -69,6 +72,8 @@ def _outcome_unknown(
     decision: Record | None = None,
     response: Record | None = None,
 ) -> Record:
+    from . import core as _api
+
     record = cast(Record, self.store.get(sid))
     usage = record.get("usage", {}).get("revision")
     if usage is None and type(response) is dict and type(response.get("body")) is dict:
@@ -167,6 +172,8 @@ def _observe_usage(
     pricing: Record | None,
     provider_model: object,
 ) -> tuple[bytes | None, Record | None]:
+    from . import core as _api
+
     try:
         raw_usage = body.get("usage") if isinstance(body, dict) else None
         if isinstance(body, dict) and "usage" in body and (not isinstance(raw_usage, dict)):
@@ -283,6 +290,8 @@ def _complete_observed_candidate(
     raw_usage_bytes: bytes | None,
     provider_model: object,
 ) -> Record:
+    from . import core as _api
+
     candidate = {
         "candidate_id": "candidate." + uuid.uuid4().hex,
         "attempt_id": aid,

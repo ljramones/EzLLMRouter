@@ -16,10 +16,11 @@ import hashlib
 from datetime import timedelta
 from .repositories import integration_accounting as _queries
 from .store import encode
-from . import integration_accounting as _api
 
 
 def _expire_snapshots(self: ExternalAccounting) -> int:
+    from . import integration_accounting as _api
+
     at = _api._time()
     with self.store.database.read():
         if not self.store.database.execute(_queries.EXPIRED_SNAPSHOT_EXISTS, (at,)).fetchone():
@@ -35,6 +36,8 @@ def _expire_snapshots(self: ExternalAccounting) -> int:
 
 
 def append_snapshot(self: ExternalAccounting, principal: Record, record: Record) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     version = record.get("integration_version") if type(record) is dict else None
     if version not in ("2", "3"):
         raise _api.IntegrationError("UNSUPPORTED_VERSION", 426)
@@ -91,6 +94,8 @@ def snapshot(
     snapshot_id: str,
     version: str = "2",
 ) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "snapshot")
     if not _api._shape(snapshot_id, _api.SCHEMA_V2["$defs"]["id"]):
@@ -122,6 +127,8 @@ def snapshot(
 
 
 def _validate_snapshot_retention(self: ExternalAccounting, record: Record, dataset: Record) -> None:
+    from . import integration_accounting as _api
+
     policy = self.feature_policy
     if policy is None:
         if record["provenance"] != "synthetic" or record["classification"] != "low":
@@ -147,6 +154,8 @@ def _validate_snapshot_retention(self: ExternalAccounting, record: Record, datas
 def _check_snapshot_bindings(
     db: Database, did: str, sid: str | None, record: Record, content: Record, version: str
 ) -> None:
+    from . import integration_accounting as _api
+
     for aid, raw in db.execute(_queries.SNAPSHOT_START_REFERENCES, (did, sid)):
         attempt = decode_record(raw)
         if attempt.get("context_ref") == sid and (

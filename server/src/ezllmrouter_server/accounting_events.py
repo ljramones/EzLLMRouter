@@ -14,10 +14,11 @@ if TYPE_CHECKING:
 import hashlib
 from .repositories import integration_accounting as _queries
 from .store import encode
-from . import integration_accounting as _api
 
 
 def _check_decision_evidence(self: ExternalAccounting, db: Database, event: Record) -> None:
+    from . import integration_accounting as _api
+
     evidence = event["eligibility_evidence"]
     if "eligibility_id" not in evidence:
         return
@@ -55,6 +56,8 @@ def _check_snapshot_reference(
     attempt_id: str | None,
     kind: str,
 ) -> None:
+    from . import integration_accounting as _api
+
     row = db.execute(
         _queries.CHECK_SNAPSHOT_REFERENCE_SELECT_INTEGRATION_SNAPSHOTS,
         (dataset_id, snapshot_id),
@@ -66,6 +69,8 @@ def _check_snapshot_reference(
 def append_event(
     self: ExternalAccounting, principal: Record, event: Record, required_version: str | None = None
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     version = event.get("integration_version") if type(event) is dict else None
     if version not in _api.SCHEMAS or required_version and version != required_version:
         raise _api.IntegrationError("UNSUPPORTED_VERSION", 426)
@@ -81,6 +86,8 @@ def append_event(
 
 
 def receipt(self: ExternalAccounting, principal: Record, dataset_id: str, event_id: str) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "receipt")
     with self.store.database.read():
@@ -103,6 +110,8 @@ def _record_attempt_start(
     attempt_id: str | None,
     start: Record | None,
 ) -> None:
+    from . import integration_accounting as _api
+
     if start:
         raise _api.IntegrationError("EVENT_CONFLICT", 409)
     account = db.execute(
@@ -166,6 +175,8 @@ def _check_decision_event(
     attempt_id: str | None,
     start: Record | None,
 ) -> None:
+    from . import integration_accounting as _api
+
     previous = db.execute(_queries.DECISION_EVENT_ID, (did, attempt_id)).fetchone()
     if previous:
         raise _api.IntegrationError("EVENT_CONFLICT", 409)
@@ -212,6 +223,8 @@ def _check_decision_event(
 def _check_account_resolution(
     db: Database, event: Record, did: str, attempt_id: str | None, start: Record | None
 ) -> None:
+    from . import integration_accounting as _api
+
     resolved = db.execute(
         _queries.INTEGRATION_ACCOUNT_EXISTS,
         (event["resolved_account_id"], did),
@@ -235,6 +248,8 @@ def _record_event(
     attempt_id: str | None,
     start: Record | None,
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     ordinal = event.get("usage_revision") if kind == "usage" else None
     if (
         ordinal is not None
@@ -280,6 +295,8 @@ def _ingest_event(
     dataset: Record,
     digest: str,
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     db = self.store.database
     self._authorize(principal, self._dataset(event["dataset_id"]), "ingest")
     did, eid, kind = event["dataset_id"], event["event_id"], event["kind"]

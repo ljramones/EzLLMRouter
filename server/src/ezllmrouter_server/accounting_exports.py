@@ -13,12 +13,13 @@ import hashlib
 from collections import defaultdict
 from .repositories import integration_accounting as _queries
 from .store import encode
-from . import integration_accounting as _api
 
 
 def dataset_export(
     self: ExternalAccounting, principal: Record, dataset_id: str, version: str = "2"
 ) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "report")
     at = _api._time()
@@ -72,6 +73,8 @@ def dataset_export(
 def _read_export_snapshot(
     self: ExternalAccounting, dataset_id: str, at: str
 ) -> tuple[list[Record], set[str], list[Record], list[Record], list[SnapshotData], EventGroups]:
+    from . import integration_accounting as _api
+
     db = self.store.database
     attempts = [
         decode_record(r[0])
@@ -113,6 +116,8 @@ def _read_export_snapshot(
 def _export_snapshots(
     snapshots: list[SnapshotData], included: set[str]
 ) -> tuple[list[Record], SnapshotIndex]:
+    from . import integration_accounting as _api
+
     snapshot_rows = []
     snapshot_by_id = {
         meta["snapshot_id"]: (meta, content, digest) for meta, content, digest in snapshots

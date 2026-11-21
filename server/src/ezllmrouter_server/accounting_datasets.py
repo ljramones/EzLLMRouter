@@ -17,10 +17,11 @@ import hashlib
 import uuid
 from .repositories import integration_accounting as _queries
 from .store import encode
-from . import integration_accounting as _api
 
 
 def _dataset(self: ExternalAccounting, dataset_id: str) -> Record:
+    from . import integration_accounting as _api
+
     with self.store.database.read():
         row = self.store.database.execute(
             _queries.DATASET_SELECT_INTEGRATION_DATASETS, (dataset_id,)
@@ -36,6 +37,8 @@ def _dataset(self: ExternalAccounting, dataset_id: str) -> Record:
 
 
 def _authorize(self: ExternalAccounting, principal: Record, dataset: Record, action: str) -> None:
+    from . import integration_accounting as _api
+
     same_owner = principal["owner"] == dataset["owner_id"]
     admin = (
         same_owner
@@ -58,6 +61,8 @@ def _authorize(self: ExternalAccounting, principal: Record, dataset: Record, act
 def create_dataset(
     self: ExternalAccounting, principal: Record, body: Record, version: str = "1"
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     body = _api._checked(body, "dataset", version)
     if (
         principal["principal_id"] != body["owner_id"]
@@ -123,6 +128,8 @@ def create_dataset(
 def create_account(
     self: ExternalAccounting, principal: Record, body: Record, version: str = "1"
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     body = _api._checked(body, "account", version)
     dataset = self._dataset(body["dataset_id"])
     self._authorize(principal, dataset, "admin")
@@ -165,6 +172,8 @@ def create_account(
 def set_account_state(
     self: ExternalAccounting, principal: Record, account_id: str, body: Record, version: str = "1"
 ) -> ReceiptResult:
+    from . import integration_accounting as _api
+
     body = _api._checked(body, "account_state", version)
     dataset = self._dataset(body["dataset_id"])
     self._authorize(principal, dataset, "admin")
@@ -198,6 +207,8 @@ def set_account_permissions(
     self: ExternalAccounting, principal: Record, account_id: str, body: Record
 ) -> ReceiptResult:
     """Explicit v3 opt-in; an existing v1/v2 account starts with no speech permissions."""
+    from . import integration_accounting as _api
+
     body = _api._checked(body, "account_permissions", "3")
     dataset = self._dataset(body["dataset_id"])
     self._authorize(principal, dataset, "admin")
@@ -243,6 +254,8 @@ def eligibility(
     capability: str | None = None,
     selection_kind: str | None = None,
 ) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "eligibility")
     _validate_eligibility_selection(model_id, version, operation_family, capability, selection_kind)
@@ -309,6 +322,8 @@ def eligibility(
 
 
 def datasets(self: ExternalAccounting, principal: Record) -> Record:
+    from . import integration_accounting as _api
+
     if principal["role"] not in ("registry_admin", "read_only_operator"):
         raise _api.IntegrationError("POLICY_DENIED", 403)
     with self.store.database.read():
@@ -325,6 +340,8 @@ def datasets(self: ExternalAccounting, principal: Record) -> Record:
 
 
 def accounts(self: ExternalAccounting, principal: Record, dataset_id: str) -> Record:
+    from . import integration_accounting as _api
+
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "report")
     with self.store.database.read():
@@ -344,6 +361,8 @@ def _validate_eligibility_selection(
     capability: str | None,
     selection_kind: str | None,
 ) -> None:
+    from . import integration_accounting as _api
+
     if version == "3":
         if (
             operation_family not in _api._CAPABILITIES

@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 from .canonical import (
     ContractError,
 )
-from . import core as _api
 
 
 def _pending(self: Coordinator, record: Record) -> Record:
@@ -37,6 +36,8 @@ def _pending(self: Coordinator, record: Record) -> Record:
 
 
 def status(self: Coordinator, sid: str, trusted: Record) -> Record:
+    from . import core as _api
+
     record = cast(Record, self.store.get(sid))
     if (
         not record

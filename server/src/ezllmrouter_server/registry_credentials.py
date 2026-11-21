@@ -28,7 +28,6 @@ from .provider_adapters import ADAPTERS
 from .store import encode
 from .registry_values import timestamp, identifier
 from .registry_context import CredentialVault
-from . import registry as _registry
 
 
 def set_provider_credential(
@@ -113,6 +112,8 @@ def probe_connection(
     operation_id: str,
     operation: str,
 ) -> Record:
+    from . import registry as _registry
+
     identifier(connection_id)
     identifier(operation_id)
     if operation not in ("access", "inventory", "readiness") or type(expected_revision) is not int:
