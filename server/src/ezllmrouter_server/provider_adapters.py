@@ -304,56 +304,14 @@ def probe(
                     timeout=timeout,
                     controlled=controlled,
                 )
-                if status == 401:
-                    raise ProbeError("credential_rejected")
-                if status == 403:
-                    raise ProbeError("access_forbidden")
-                if status == 429:
-                    raise ProbeError("rate_limited")
-                if status == 400:
-                    raise ProbeError(
-                        _xai_bad_request_reason(content_type, data)
-                        if provider == "xai"
-                        else "provider_rejected_request"
-                    )
-                if status == 404:
-                    raise ProbeError("discovery_not_supported")
-                if status != 200:
-                    raise ProbeError("provider_unavailable")
+                _check_probe_status(provider, status, content_type, data)
                 if operation == "readiness":
                     return {
                         "state": "reachable",
                         "reason": "vllm_health_200_not_model_capacity",
                         "models": [],
                     }
-                if "application/json" not in content_type.lower():
-                    raise ProbeError("malformed_response")
-                value = json.loads(data)
-                if type(value) is not dict:
-                    raise ProbeError("malformed_response")
-                items = (
-                    value.get("data")
-                    if provider in ("openai", "anthropic", "xai", "vllm")
-                    else value.get("models")
-                )
-                if type(items) is not list or len(items) > 1000:
-                    raise ProbeError("malformed_response")
-                page_ids = []
-                for item in items:
-                    field = "name" if provider == "google" else "id"
-                    if type(item) is not dict or type(item.get(field)) is not str:
-                        raise ProbeError("malformed_response")
-                    identifier = item[field]
-                    if not 1 <= len(identifier) <= 256 or any(ord(c) < 33 for c in identifier):
-                        raise ProbeError("malformed_response")
-                    page_ids.append(identifier)
-                    display = item.get("display_name") or item.get("name") or identifier
-                    details[identifier] = {
-                        "id": identifier,
-                        "name": display
-                        if type(display) is str and len(display) <= 256
-                        else identifier,
-                    }
+                value, page_ids = _parse_probe_page(provider, content_type, data, details)
                 models.extend(page_ids)
                 pages += 1
                 if operation == "access":
@@ -362,21 +320,10 @@ def probe(
                         "reason": "credential_accepted_for_model_listing_only",
                         "models": [],
                     }
-                if provider == "anthropic" and value.get("has_more") is True:
-                    token = value.get("last_id")
-                    parameter = "after_id"
-                elif provider == "google" and value.get("nextPageToken"):
-                    token = value["nextPageToken"]
-                    parameter = "pageToken"
-                else:
-                    return {
-                        "state": "observed",
-                        "reason": "inventory_not_inference_entitlement",
-                        "models": sorted(set(models)),
-                        "details": [details[key] for key in sorted(details)],
-                        "has_more": False,
-                        "pages": pages,
-                    }
+                next_page = _next_probe_page(provider, value)
+                if next_page is None:
+                    return _complete_probe_inventory(models, details, pages)
+                token, parameter = next_page
                 if (
                     type(token) is not str
                     or not 1 <= len(token) <= 256
@@ -407,23 +354,8 @@ def probe(
             ) as exc:
                 if not models or operation != "inventory":
                     raise
-                reason = (
-                    exc.reason
-                    if isinstance(exc, ProbeError)
-                    else "timeout"
-                    if isinstance(exc, (socket.timeout, TimeoutError))
-                    else "network_or_tls_failure"
-                    if isinstance(exc, (ssl.SSLError, OSError))
-                    else "malformed_response"
-                )
-                return {
-                    "state": "partial",
-                    "reason": "later_page_" + reason,
-                    "models": sorted(set(models)),
-                    "details": [details[key] for key in sorted(details)],
-                    "has_more": True,
-                    "pages": pages,
-                }
+                reason = _later_probe_failure(exc)
+                return _partial_probe_inventory(reason, models, details, pages)
     except ProbeError as exc:
         return {"state": "failed", "reason": exc.reason, "models": []}
     except (socket.timeout, TimeoutError):
@@ -432,3 +364,104 @@ def probe(
         return {"state": "failed", "reason": "network_or_tls_failure", "models": []}
     except (json.JSONDecodeError, UnicodeError, TypeError):
         return {"state": "failed", "reason": "malformed_response", "models": []}
+
+
+def _check_probe_status(provider: str, status: int, content_type: str, data: bytes) -> None:
+    if status == 401:
+        raise ProbeError("credential_rejected")
+    if status == 403:
+        raise ProbeError("access_forbidden")
+    if status == 429:
+        raise ProbeError("rate_limited")
+    if status == 400:
+        raise ProbeError(
+            _xai_bad_request_reason(content_type, data)
+            if provider == "xai"
+            else "provider_rejected_request"
+        )
+    if status == 404:
+        raise ProbeError("discovery_not_supported")
+    if status != 200:
+        raise ProbeError("provider_unavailable")
+
+
+def _parse_probe_page(
+    provider: str, content_type: str, data: bytes, details: dict[str, dict[str, str]]
+) -> tuple[dict[str, Any], list[str]]:
+    if "application/json" not in content_type.lower():
+        raise ProbeError("malformed_response")
+    value = json.loads(data)
+    if type(value) is not dict:
+        raise ProbeError("malformed_response")
+    items = (
+        value.get("data")
+        if provider in ("openai", "anthropic", "xai", "vllm")
+        else value.get("models")
+    )
+    if type(items) is not list or len(items) > 1000:
+        raise ProbeError("malformed_response")
+    page_ids = []
+    for item in items:
+        field = "name" if provider == "google" else "id"
+        if type(item) is not dict or type(item.get(field)) is not str:
+            raise ProbeError("malformed_response")
+        identifier = item[field]
+        if not 1 <= len(identifier) <= 256 or any(ord(c) < 33 for c in identifier):
+            raise ProbeError("malformed_response")
+        page_ids.append(identifier)
+        display = item.get("display_name") or item.get("name") or identifier
+        details[identifier] = {
+            "id": identifier,
+            "name": display if type(display) is str and len(display) <= 256 else identifier,
+        }
+    return value, page_ids
+
+
+def _next_probe_page(provider: str, value: dict[str, Any]) -> tuple[object, str] | None:
+    if provider == "anthropic" and value.get("has_more") is True:
+        token = value.get("last_id")
+        parameter = "after_id"
+    elif provider == "google" and value.get("nextPageToken"):
+        token = value["nextPageToken"]
+        parameter = "pageToken"
+    else:
+        return None
+    return token, parameter
+
+
+def _complete_probe_inventory(
+    models: list[str], details: dict[str, dict[str, str]], pages: int
+) -> dict[str, Any]:
+    return {
+        "state": "observed",
+        "reason": "inventory_not_inference_entitlement",
+        "models": sorted(set(models)),
+        "details": [details[key] for key in sorted(details)],
+        "has_more": False,
+        "pages": pages,
+    }
+
+
+def _later_probe_failure(exc: BaseException) -> str:
+    return (
+        exc.reason
+        if isinstance(exc, ProbeError)
+        else "timeout"
+        if isinstance(exc, (socket.timeout, TimeoutError))
+        else "network_or_tls_failure"
+        if isinstance(exc, (ssl.SSLError, OSError))
+        else "malformed_response"
+    )
+
+
+def _partial_probe_inventory(
+    reason: str, models: list[str], details: dict[str, dict[str, str]], pages: int
+) -> dict[str, Any]:
+    return {
+        "state": "partial",
+        "reason": "later_page_" + reason,
+        "models": sorted(set(models)),
+        "details": [details[key] for key in sorted(details)],
+        "has_more": True,
+        "pages": pages,
+    }

@@ -17,7 +17,6 @@
     "server/src/ezllmrouter_server/operator_http/integration.py:function:IntegrationRoutes.get_operator_v1_integration": 137,
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
-    "server/src/ezllmrouter_server/provider_adapters.py:function:probe": 165,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
     "tests/client_languages/build_cases.py:function:cases": 418,
     "tests/client_parity/integration_python.py:function:main": 218,

@@ -933,3 +933,18 @@ scope, decimal rounding, output field or snapshot boundary changes.
 Successor-report verification: full `tools.check` passes 915 Python cases, strict
 mypy on 103 files, lint/formatting, the 1,785-error typing budget, 71 size
 allowances and script/console checks.
+
+### Item 11 follow-up: W5 provider probe phases
+
+Provider inventory probing separates HTTP status classification, page decoding,
+pagination selection, complete/partial result projection and later-page failure
+classification. The public probe keeps the same nested exception boundaries,
+credential/header timing, pagination limits and partially accumulated details.
+The original 165-line function is below the 100-line budget; its allowance is
+removed, leaving 70 entries.
+
+A network-denied replay against `26463dc` compares 2,634 synthetic cases,
+including malformed/partial pages, repeated tokens, page limits and transport
+failures. Results and wire-call traces match exactly. The nine transport tests
+and full `tools.check` pass: 915 Python cases, strict typing on 103 files,
+lint/formatting, type/size budgets and maintained script/console checks.
