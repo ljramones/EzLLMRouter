@@ -11,14 +11,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
         with:
           node-version-file: .nvmrc
       - name: Validate locked inputs before installing dependencies
         # Check source inputs with the runner's standard library before uv can install them.
         run: python3 -I -S tools/security_dependencies.py
+      - name: Scan tracked source and full Git history for secrets
+        run: python3 -I -S tools/security_secrets.py
       - name: Install pinned environment manager
-        run: python3 -m pip install uv==0.13.9
+        run: python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock
       - name: Install locked development environment
         run: uv sync --locked --all-groups --python 3.12.15
       - name: Install locked parser for console coverage
@@ -109,7 +113,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
-      - uses: actions/setup-dotnet@v5 # Node 24
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5, Node 24; reviewed 2026-11-21
         with:
           dotnet-version: '10.0.x'
       - name: Pack and test installed NuGet client
@@ -144,7 +148,7 @@ jobs:
       - name: Validate locked inputs before installing dependencies
         run: python3 -I -S tools/security_dependencies.py
       - name: Install pinned environment manager
-        run: python3 -m pip install uv==0.13.9
+        run: python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock
       - name: Install locked service dependencies
         run: uv sync --locked --all-groups --python 3.12.15
       - name: Install locked browser test dependencies

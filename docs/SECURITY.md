@@ -144,3 +144,20 @@ checks. Never substitute a mutable image tag or reacquire frozen inputs silently
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery
 material outside documentation and evidence exports.
+
+## Source security gates
+
+The offline gate scans reachable Git history and current source for credential
+patterns and high-entropy tokens without printing matching values. Full-history
+CI runs before installing project dependencies. Synthetic/public findings need
+exceptions bound to exact blob hashes and finding identities; an exception does
+not approve modified contents. This does not inspect ignored private runtime
+files or establish that a heuristic scanner detects every possible secret.
+
+Ruff security rules cover worker, deployment and tools code as well as server
+and Python-client sources. Reviewed findings retain exact statement/location
+identities, enclosing-code hashes and source hashes, so equal-count replacements
+or disabled guards cannot inherit an exception. Dependency checks retain declared artifact digests, local-source
+identities and native manifest scope; absent native transitive locks and
+unavailable archive bytes remain explicit limits. See the
+[development guide](DEVELOPMENT.md) for commands, bootstrap provenance and scope.

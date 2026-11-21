@@ -60,6 +60,9 @@ MODULES = (
     "tests.unit.test_lock_audit_failures",
     "tests.unit.test_schema_upgrade_fixtures",
     "tests.unit.test_security_scanning",
+    "tests.unit.test_security_gate_followup",
+    "tests.unit.test_secret_scanning",
+    "tests.unit.test_bootstrap_pins",
     "tests.unit.test_campaign_interleavings",
     "tests.unit.test_coherent_restore",
     "tests.unit.test_lock_audit",
@@ -191,6 +194,9 @@ TYPED_PATHS = (
     "tools/docker_validation.py",
     "tools/javascript_coverage.py",
     "tools/security_sast.py",
+    "tools/security_lockfiles.py",
+    "tools/security_bootstrap.py",
+    "tools/security_secrets.py",
     "tools/security_dependencies.py",
     "tools/source_size.py",
     "tools/gateway/paths.py",
@@ -571,6 +577,7 @@ def _main() -> int:
             run([sys.executable, "-m", "mypy", *TYPED_PATHS])
             run([sys.executable, "-m", "tools.type_audit"])
             run([sys.executable, "-m", "tools.security_sast"])
+            run([sys.executable, "-m", "tools.security_secrets"])
             run([sys.executable, "-m", "tools.security_dependencies"])
         # Check all application JavaScript syntax, not only modules reached by a view fixture.
         if not args.http_only:

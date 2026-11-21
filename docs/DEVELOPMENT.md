@@ -267,15 +267,41 @@ documented private keyring/vault set, restores credentials in all three scopes
 and compares retained accounting. All data and secrets are synthetic and
 temporary; the tests never open a running profile or contact a provider.
 
-`tools.security_sast` runs the locked Ruff 0.14.0 `S` rules on every server and
-Python-client module, ignoring inline suppression directives. Its five SQL-file
-exceptions record the 14 reviewed findings, exact whole-file hashes and reasons
-for the allowlisted identifiers/constant clauses. Changed source, new findings,
-or stale exceptions fail. This separate security scope does not silently ignore
-findings in deployment, evidence or test tools; those remain outside this gate.
+`tools.security_sast` runs the locked Ruff 0.14.0 `S` rules over server,
+Python-client, worker, deployment and tools Python sources, ignoring inline
+suppression directives. Git's source inventory excludes ignored runtime state.
+Exceptions bind the file hash and each finding's rule, line/column, enclosing
+symbol, statement hash and enclosing-code hash. Rehashing a changed file cannot
+silently approve a different finding at the same count or a disabled guard
+around an unchanged SQL expression. New, changed and resolved findings require
+review. Existing tool assertions, explicit subprocess calls, synthetic credentials
+and local SQL census expressions retain individual reviewed identities; the
+scanner does not disable those rule families for future code.
 
-`tools.security_dependencies` inventories exact Python/npm candidates from the
-development, shipped service/worker, browser/client and build-backend locks.
+`tools.security_secrets` scans tracked and nonignored untracked files plus all
+reachable Git blobs for known credential prefixes, private-key headers and
+high-entropy tokens. CI checks out full history and runs the standard-library
+scanner before dependency installation. Credential-assignment context
+distinguishes high-entropy hex secrets from public checksums. Git transports are
+disabled for these reads, so missing objects fail instead of triggering a lazy
+fetch. A shallow checkout or an unreadable,
+oversized or linked source fails. Reports contain source identities, locations
+and fingerprints, without matching values. Public fixture tokens, alphabets,
+signatures and package digests have reviewed exceptions tied to exact blob
+hashes and finding sets. These heuristic checks do not inspect ignored private
+runtime files, unfetched references or unreachable Git objects. The explicit
+limits are 16 MiB per blob and 256 MiB per scan; exceeding them fails rather than
+claiming a complete scan.
+
+`tools.security_dependencies` inventories Python/npm lock candidates, reviewed
+local Python projects, build backends, bootstrap inputs and native manifests.
+It validates Python archive names and SHA-256 fields, npm integrity encodings and
+manifest/lock agreement, and exact native dependency declarations. Unreviewed
+Git/path sources, missing hashes and unresolved versions fail. Go and .NET
+currently declare no external runtime packages; Maven's build plugin and Rust's
+direct runtime/development crates are included. Without a reviewed native lock,
+transitive native dependencies remain explicitly unqualified. Incomplete gateway
+drafts retain their not-installable status.
 The PR run validates these inputs and writes `inventory.json` plus a CycloneDX
 candidate SBOM without reaching the network. It rejects the forbidden LiteLLM
 release component after normalizing abbreviated/zero-padded spellings and local,
@@ -284,14 +310,27 @@ reject mutable LiteLLM references, the forbidden release family and missing
 digests. Quoted keys and inline container mappings are supported; unresolved
 image anchors and block scalars fail. Arbitrary external image-variable values
 and digest provenance are not qualified by this source check. CI runs the
-standard-library preflight before installing project dependencies. The SBOM describes lock candidates,
-not installed container contents or native-language transitive dependencies.
+standard-library preflight before installing project dependencies. The SBOM
+describes declared candidates, not installed container contents. Digest fields
+and source identities can be checked offline; unavailable archives are not
+claimed byte-verified. Package managers still enforce archive hashes/integrity
+during the corresponding qualified installations.
+
+CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
+with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.
+Reinstallation prevents an existing same-version package from bypassing archive
+verification. Its reviewed Linux x86_64
+wheel and the exact setup-dotnet action commit are recorded in
+[bootstrap-inputs.json](../.github/bootstrap-inputs.json). Source checks reject
+the former unhashed installs and mutable action reference. This bootstrap review
+does not change or reacquire the frozen worker inputs.
 
 The nightly `--audit` mode sends only package names/versions to the public OSV
-API, records the complete response snapshot and its inventory identity, and
+API, follows and retains every advisory page, records the response snapshot and its inventory identity, and
 fails on high, critical or unrated active advisories. Low/moderate findings stay
 visible. Withdrawn entries must have a valid withdrawal time. Metadata outages,
-incomplete batches and identity mismatches fail; they never establish a clean
+incomplete batches, repeated/unconsumed page tokens and identity mismatches fail;
+saved page evidence must reproduce the retained aggregate. These failures never establish a clean
 audit. No scan automatically upgrades dependencies or changes frozen inputs.
 `--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
 than seven days fail. Network advisory qualification remains separate from the

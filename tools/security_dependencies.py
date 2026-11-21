@@ -1,4 +1,4 @@
-"""Inventory locked Python/npm inputs offline; query OSV only with --audit."""
+"""Validate declared dependency inputs offline; query OSV only with --audit."""
 
 from __future__ import annotations
 
@@ -9,21 +9,17 @@ import json
 from pathlib import Path
 import re
 import shlex
-import tomllib
+import sys
 from typing import Any, Callable
 from urllib.parse import quote
 from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUTS = (
-    "uv.lock",
-    "deploy/local/inputs/requirements.runtime.lock",
-    "deploy/local/inputs/gateway/requirements.gateway.lock",
-    "tests/playwright/package-lock.json",
-    "clients/js/package-lock.json",
-    "server/pyproject.toml",
-    "clients/python/pyproject.toml",
-)
+if __package__ in (None, ""):
+    sys.path.insert(0, str(ROOT))
+from tools.security_lockfiles import INPUTS as INPUTS, locked_inputs
+from tools.security_bootstrap import errors as bootstrap_errors
+
 API = "https://api.osv.dev/v1/"
 MAX_RESPONSE = 10 * 1024 * 1024
 
@@ -111,49 +107,18 @@ def inventory(root: Path = ROOT) -> dict[str, Any]:
             raise ValueError("forbidden LiteLLM artifact in dependency inventory")
         packages.setdefault((ecosystem, name, version), set()).add(source)
 
-    for name in INPUTS:
-        path = root / name
-        raw = path.read_bytes()
-        hashes[name] = hashlib.sha256(raw).hexdigest()
-        if name == "uv.lock":
-            for package in tomllib.loads(raw.decode())["package"]:
-                if "registry" in package.get("source", {}):
-                    add("PyPI", package["name"], package["version"], name)
-        elif name.endswith("requirements.runtime.lock") or name.endswith(
-            "requirements.gateway.lock"
-        ):
-            for line in raw.decode().splitlines():
-                if not line.strip() or line.startswith("#"):
-                    continue
-                match = re.fullmatch(
-                    r"([A-Za-z0-9._-]+)==([^\s]+) --hash=sha256:[0-9a-f]{64}", line
-                )
-                if match is None:
-                    raise ValueError("unparsed frozen lock record: " + name)
-                add("PyPI", match[1], match[2], name)
-        elif name.endswith("package-lock.json"):
-            data = json.loads(raw)
-            if data.get("lockfileVersion") not in (2, 3):
-                raise ValueError("unsupported npm lock format")
-            for location, package in data["packages"].items():
-                if not location:
-                    continue
-                if "node_modules/" not in location or package.get("link"):
-                    raise ValueError("unresolved npm package in lock")
-                package_name = package.get("name") or location.rsplit("node_modules/", 1)[1]
-                add("npm", package_name, package["version"], name)
-        else:
-            for requirement in tomllib.loads(raw.decode())["build-system"]["requires"]:
-                match = re.fullmatch(r"([A-Za-z0-9._-]+)==([^\s]+)", requirement)
-                if match is None:
-                    raise ValueError("unresolved build backend pin")
-                add("PyPI", match[1], match[2], name)
+    inputs = locked_inputs(root, add)
+    failures = bootstrap_errors(root)
+    if failures:
+        raise ValueError("; ".join(failures))
+    hashes = inputs["source_sha256"]
     rows = [
         {"ecosystem": eco, "name": name, "version": version, "sources": sorted(sources)}
         for (eco, name, version), sources in sorted(packages.items())
     ]
     payload: dict[str, Any] = {
-        "format": "ezllmrouter-lock-inventory-v1",
+        "format": "ezllmrouter-lock-inventory-v2",
+        **inputs,
         "packages": rows,
         "source_sha256": hashes,
         "image_source_sha256": deployment_images(root),
@@ -167,12 +132,19 @@ def inventory(root: Path = ROOT) -> dict[str, Any]:
 def sbom(data: dict[str, Any]) -> dict[str, Any]:
     components = []
     for row in data["packages"]:
-        kind = "pypi" if row["ecosystem"] == "PyPI" else "npm"
+        kind = {
+            "PyPI": "pypi",
+            "npm": "npm",
+            "crates.io": "cargo",
+            "Go": "golang",
+            "Maven": "maven",
+            "NuGet": "nuget",
+        }[row["ecosystem"]]
         purl = (
             "pkg:"
             + kind
             + "/"
-            + quote(row["name"], safe="/")
+            + quote(row["name"].replace(":", "/") if kind == "maven" else row["name"], safe="/")
             + "@"
             + quote(row["version"], safe="")
         )
@@ -196,7 +168,7 @@ def sbom(data: dict[str, Any]) -> dict[str, Any]:
             "properties": [
                 {
                     "name": "ezllmrouter:scope",
-                    "value": "Locked Python/npm candidates; not installed image contents",
+                    "value": "Declared Python/npm/native candidates; not installed image contents or a complete native transitive graph",
                 },
                 {"name": "ezllmrouter:inventory-sha256", "value": data["sha256"]},
             ]
@@ -211,7 +183,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def fetch(route: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
-    if not re.fullmatch(r"querybatch|vulns/[A-Za-z0-9._:-]+", route):
+    if not re.fullmatch(r"query|querybatch|vulns/[A-Za-z0-9._:-]+", route):
         raise ValueError("invalid advisory route")
     request = Request(
         API + route,
@@ -248,13 +220,42 @@ def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) 
         batch = response.get("results")
         if not isinstance(batch, list) or len(batch) != len(rows):
             raise ValueError("incomplete advisory batch")
-        results.extend(batch)
+        for package, first in zip(rows, batch, strict=True):
+            pages, seen, result = [], set(), first
+            vulnerabilities = []
+            for _page in range(100):
+                if (
+                    type(result) is not dict
+                    or "error" in result
+                    or type(result.get("vulns", [])) is not list
+                ):
+                    raise ValueError("invalid package advisory page")
+                pages.append(result)
+                vulnerabilities.extend(result.get("vulns", []))
+                token = result.get("next_page_token")
+                if token is None or token == "":
+                    break
+                if not isinstance(token, str) or len(token) > 4096 or token in seen:
+                    raise ValueError("invalid/repeated advisory page token")
+                seen.add(token)
+                result = fetcher(
+                    "query",
+                    {
+                        "package": {"ecosystem": package["ecosystem"], "name": package["name"]},
+                        "version": package["version"],
+                        "page_token": token,
+                    },
+                )
+            else:
+                raise ValueError("advisory pagination limit")
+            results.append({"vulns": vulnerabilities, "pages": pages})
     identifiers = set()
     for result in results:
         if (
             type(result) is not dict
             or "error" in result
             or type(result.get("vulns", [])) is not list
+            or result.get("next_page_token")
         ):
             raise ValueError("invalid package advisory result")
         for vulnerability in result.get("vulns", []):
@@ -272,6 +273,30 @@ def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) 
         "results": results,
         "vulnerabilities": details,
     }
+
+
+def validate_pages(result: dict[str, Any]) -> None:
+    pages = result.get("pages")
+    if pages is None:
+        return  # Legacy snapshots without a page token remain explicit owner inputs.
+    if not isinstance(pages, list) or not 1 <= len(pages) <= 100:
+        raise ValueError("invalid advisory page evidence")
+    merged = []
+    seen = set()
+    for index, page in enumerate(pages):
+        if type(page) is not dict or "error" in page or type(page.get("vulns", [])) is not list:
+            raise ValueError("invalid advisory page evidence")
+        merged.extend(page.get("vulns", []))
+        token = page.get("next_page_token")
+        if index == len(pages) - 1:
+            if token not in (None, ""):
+                raise ValueError("unconsumed advisory page")
+        elif not isinstance(token, str) or not token or len(token) > 4096 or token in seen:
+            raise ValueError("invalid advisory page evidence")
+        else:
+            seen.add(token)
+    if merged != result.get("vulns", []):
+        raise ValueError("advisory page results differ from retained evidence")
 
 
 def findings(
@@ -293,8 +318,10 @@ def findings(
             type(result) is not dict
             or "error" in result
             or type(result.get("vulns", [])) is not list
+            or result.get("next_page_token")
         ):
             raise ValueError("invalid package advisory result")
+        validate_pages(result)
         for item in result.get("vulns", []):
             detail = snapshot["vulnerabilities"][item["id"]]
             if detail.get("id") != item["id"]:
@@ -348,7 +375,7 @@ def main() -> int:
         else:
             report["inventory_valid"] = True
         print(
-            f"Dependency inventory: {len(data['packages'])} locked Python/npm versions; advisory state: {report['audit_state']}"
+            f"Dependency inventory: {len(data['packages'])} declared Python/npm/native versions; advisory state: {report['audit_state']}"
         )
     except (OSError, ValueError, KeyError, TypeError) as error:
         report.update(audit_state="unavailable", error_type=type(error).__name__)

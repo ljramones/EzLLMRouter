@@ -1,0 +1,4 @@
+# Reviewed 2026-11-21: uv 0.13.9, CPython-compatible Linux x86_64 CI wheel.
+# uv-0.13.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+# PyPI metadata and downloaded archive agree; no .pth or sitecustomize hooks.
+uv==0.13.9 --hash=sha256:d7f459fe4fd247d830351c75686d3996ace3c6f3f728eb0e85a30b7ada0cef19

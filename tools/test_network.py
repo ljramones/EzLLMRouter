@@ -83,6 +83,12 @@ def process_command(command):
         index = 1
         while index < len(command) and command[index].startswith("-"):
             index += 2 if command[index] in {"-C", "-c", "--git-dir", "--work-tree"} else 1
+        if command[index:] in (
+            ["rev-list", "--objects", "--all", "--no-object-names"],
+            ["cat-file", "--batch-check"],
+            ["cat-file", "--batch"],
+        ):
+            return command
         if index < len(command) and command[index] in {
             "init",
             "add",

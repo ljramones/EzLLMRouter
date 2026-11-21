@@ -1,0 +1,22 @@
+{
+  "reviewed_on": "2026-11-21",
+  "uv": {
+    "version": "0.13.9",
+    "filename": "uv-0.13.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "url": "https://files.pythonhosted.org/packages/3d/aa/26d64642d808de4a652579ef950d7cd2d37f080a8babf9c67c6b75fc4c3f/uv-0.13.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "sha256": "d7f459fe4fd247d830351c75686d3996ace3c6f3f728eb0e85a30b7ada0cef19",
+    "yanked": false,
+    "metadata_source": "https://pypi.org/pypi/uv/0.13.9/json",
+    "metadata_sha256": "3d7a16584f536474489b8632f1c00f42d6edb2c4620e382c0087e2a202bc18e7",
+    "startup_hooks": [],
+    "archive_members": 12,
+    "scope": "Linux x86_64 CI bootstrap only; no local installation performed"
+  },
+  "setup_dotnet": {
+    "commit": "26b0ec14cb23fa6904739307f278c14f94c95bf1",
+    "source": "https://github.com/actions/setup-dotnet/commit/26b0ec14cb23fa6904739307f278c14f94c95bf1",
+    "tag_source": "https://api.github.com/repos/actions/setup-dotnet/git/ref/tags/v5",
+    "commit_verification": "valid",
+    "metadata_sha256": "d72903ade913fc67dc99b2b0a173da507a6957b4074ce484ef498671a067c8c3"
+  }
+}

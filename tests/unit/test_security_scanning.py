@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 import shutil
 
-from tools.security_sast import errors, scan
+from tools.security_sast import errors, scan, finding_identity
 from tools.security_dependencies import INPUTS, ROOT, inventory, query, findings, sbom, fetch
 
 
@@ -44,7 +44,14 @@ class SecurityScanningTests(unittest.TestCase):
             ]
         }
         findings = scan(self.root)
+        policy["exceptions"][0]["findings"] = [finding_identity(self.root, row) for row in findings]
         self.assertEqual(errors(self.root, findings, policy), [])
+        path.write_text(source.replace('table not in {"approved"}', "False"))
+        policy["exceptions"][0]["source_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        self.assertTrue(
+            errors(self.root, scan(self.root), policy), "rehashing cannot approve a disabled guard"
+        )
+        policy["exceptions"][0]["source_sha256"] = hashlib.sha256(source.encode()).hexdigest()
         path.write_text(
             source.replace(
                 '    if table not in {"approved"}:\n        raise ValueError("table")\n', ""
