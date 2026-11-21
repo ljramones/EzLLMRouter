@@ -42,45 +42,7 @@ def check_synthetic_request(request: httpx.Request, invocation: Invocation, body
         or len(body) > descriptor["max_request_bytes"]
     ):
         raise GuardRejected()
-    headers = request.headers
-    if (
-        headers.get("host") != request.url.netloc.decode()
-        or headers.get("content-type") != descriptor["content_type"]
-        or headers.get("authorization") != "Bearer " + cast(str, invocation.provider_key)
-        or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
-        or (
-            headers.get("content-length") is not None
-            and headers["content-length"] != str(len(body))
-        )
-        or any(key in headers for key in ("proxy-authorization", "cookie", "idempotency-key"))
-    ):
-        raise GuardRejected()
-    allowed = {
-        "host",
-        "content-type",
-        "authorization",
-        "content-length",
-        "accept",
-        "accept-encoding",
-        "user-agent",
-        "connection",
-        "x-ezllmrouter-attempt",
-    }
-    if any(key not in allowed for key in headers):
-        raise GuardRejected()
-    timeout = request.extensions.get("timeout")
-    phases = {"connect", "read", "write", "pool"}
-    if (
-        type(timeout) is not dict
-        or set(timeout) != phases
-        or any(
-            type(value) not in (int, float)
-            or not math.isfinite(value)
-            or value != descriptor["timeout_ms"] / 1000
-            for value in timeout.values()
-        )
-    ):
-        raise GuardRejected()
+    phases = _validate_synthetic_headers(body, descriptor, invocation, request)
     try:
         actual = json.loads(body.decode("utf-8"))
     except (UnicodeError, ValueError) as exc:
@@ -124,3 +86,48 @@ def check_synthetic_request(request: httpx.Request, invocation: Invocation, body
         "body_bytes": len(body),
         "committed_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+
+
+def _validate_synthetic_headers(
+    body: bytes, descriptor: Record, invocation: Invocation, request: httpx.Request
+) -> set[str]:
+    headers = request.headers
+    if (
+        headers.get("host") != request.url.netloc.decode()
+        or headers.get("content-type") != descriptor["content_type"]
+        or headers.get("authorization") != "Bearer " + cast(str, invocation.provider_key)
+        or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
+        or (
+            headers.get("content-length") is not None
+            and headers["content-length"] != str(len(body))
+        )
+        or any(key in headers for key in ("proxy-authorization", "cookie", "idempotency-key"))
+    ):
+        raise GuardRejected()
+    allowed = {
+        "host",
+        "content-type",
+        "authorization",
+        "content-length",
+        "accept",
+        "accept-encoding",
+        "user-agent",
+        "connection",
+        "x-ezllmrouter-attempt",
+    }
+    if any(key not in allowed for key in headers):
+        raise GuardRejected()
+    timeout = request.extensions.get("timeout")
+    phases = {"connect", "read", "write", "pool"}
+    if (
+        type(timeout) is not dict
+        or set(timeout) != phases
+        or any(
+            type(value) not in (int, float)
+            or not math.isfinite(value)
+            or value != descriptor["timeout_ms"] / 1000
+            for value in timeout.values()
+        )
+    ):
+        raise GuardRejected()
+    return phases

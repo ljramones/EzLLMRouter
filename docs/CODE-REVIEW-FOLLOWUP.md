@@ -1395,8 +1395,8 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal and gateway boundaries now leave 1,319 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
-| R2 — remove size allowances | In progress | Resolve all 12 existing file/function exceptions without increasing thresholds. Split local connector and historical Docker-input tooling domains; retain public imports and every historical runner. |
+| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 1,305 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
+| R2 — remove size allowances | In progress | Six of the 12 initial exceptions are resolved; remove the remaining six without increasing thresholds. Split local connector and historical Docker-input tooling domains; retain public imports and every historical runner. |
 | R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
 
 The first R1 batch types coroutine/future ownership and bounded connection
@@ -1428,3 +1428,23 @@ passes 921 Python cases, strict typing on 123 files, lint/formatting, unchanged
 size limits and script/console checks. Whole-library diagnostics fall from 1,599 to 1,319 in 30 files; observed
 per-file budgets are tightened. All 12 size exceptions and the report
 aggregation follow-up remain active. No live HTTP/provider/profile work runs.
+
+
+#### R2: validation steps and six resolved function allowances
+
+Python attribution response validation, outcome subject validation, relay
+content/credential validation, text/retrieval transport-header checks and
+rotation CLI arguments now have named helpers. Six copied-body expansion proofs
+preserve executable statements, ordering, admission/authority gates, transactions
+and cleanup/error scopes. The relay timeout remains an explicit returned value
+so request construction cannot lose it before the later wait-budget assignment.
+All new helpers pass the applicable strict typing scope.
+
+Six resolved function allowances are removed, leaving six: local connector and
+historical Docker-input files, the connector HTTP reader, two operator route
+handlers and operator server composition. Typing outcome identifiers and the
+run getter also reduces whole-library diagnostics from 1,319 to 1,305; observed
+per-file budgets are tightened. Full `tools.check` passes 921 Python cases, strict
+typing on 123 files, lint/formatting, source budgets and script/console checks.
+Remaining R1/R2/R3 work continues; no target execution or retained-runner deletion
+is performed.

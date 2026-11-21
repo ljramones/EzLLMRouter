@@ -2,17 +2,11 @@
   "baseline_commit": "33f7a45",
   "measurement": "physical source lines and Python AST spans; qualified names include enclosing scopes",
   "ceilings": {
-    "clients/python/src/ezllmrouter_client/__init__.py:function:EzLLMRouterClient._attribution_operation": 106,
-    "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.append_outcome": 128,
-    "server/src/ezllmrouter_server/gateway/choice_b_sender.py:function:ChoiceBSenderAdapter.process_relay": 127,
-    "server/src/ezllmrouter_server/gateway/guard.py:function:check_request": 112,
-    "server/src/ezllmrouter_server/gateway/retrieval_guard.py:function:check_synthetic_request": 107,
     "server/src/ezllmrouter_server/local_connectors.py:file": 847,
     "server/src/ezllmrouter_server/local_connectors.py:function:_read_json": 101,
     "server/src/ezllmrouter_server/operator_http/integration.py:function:IntegrationRoutes.get_operator_v1_integration": 137,
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
-    "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
     "tools/gateway/docker/prepare.py:file": 2302
   },
   "relocations": [

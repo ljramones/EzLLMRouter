@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from .repositories import secret_rotation as _queries
 
+from collections.abc import Sequence
+
 import argparse
 from contextlib import closing
 import json
@@ -20,31 +22,7 @@ from .store import SQLiteStore
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("rotate", "resume", "retire"))
-    parser.add_argument("--scope", required=True, choices=("integration", "provider", "connectors"))
-    parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--keyring", type=Path)
-    parser.add_argument("--vault", type=Path)
-    parser.add_argument("--key-id")
-    parser.add_argument("--confirm-no-dependent-backups", action="store_true")
-    args = parser.parse_args(argv)
-    if args.action == "retire":
-        if not args.key_id or not args.confirm_no_dependent_backups:
-            parser.error("retire requires --key-id and --confirm-no-dependent-backups")
-    elif args.key_id or args.confirm_no_dependent_backups:
-        parser.error("key retirement options apply only to retire")
-    if not args.db.is_absolute() or args.db.is_symlink() or not args.db.is_file():
-        parser.error("an existing absolute database path is required")
-    if args.scope == "integration" and not args.keyring:
-        parser.error("--keyring is required for integration credentials")
-    if args.scope == "provider" and not args.vault:
-        parser.error("--vault is required for provider credentials")
-    for path in (args.keyring, args.vault):
-        if path is not None and (not path.is_absolute() or path.is_symlink() or not path.exists()):
-            parser.error("keyring/vault paths must be existing absolute paths")
-    if (args.scope == "provider" and args.keyring) or (args.scope != "provider" and args.vault):
-        parser.error("use --vault for provider scope, --keyring for database scopes")
+    args = _rotation_arguments(argv)
     configure_logging()
     retiring = False
     try:
@@ -136,6 +114,35 @@ def main(argv=None):
             file=sys.stderr,
         )
         return 1
+
+
+def _rotation_arguments(argv: Sequence[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("rotate", "resume", "retire"))
+    parser.add_argument("--scope", required=True, choices=("integration", "provider", "connectors"))
+    parser.add_argument("--db", type=Path, required=True)
+    parser.add_argument("--keyring", type=Path)
+    parser.add_argument("--vault", type=Path)
+    parser.add_argument("--key-id")
+    parser.add_argument("--confirm-no-dependent-backups", action="store_true")
+    args = parser.parse_args(argv)
+    if args.action == "retire":
+        if not args.key_id or not args.confirm_no_dependent_backups:
+            parser.error("retire requires --key-id and --confirm-no-dependent-backups")
+    elif args.key_id or args.confirm_no_dependent_backups:
+        parser.error("key retirement options apply only to retire")
+    if not args.db.is_absolute() or args.db.is_symlink() or not args.db.is_file():
+        parser.error("an existing absolute database path is required")
+    if args.scope == "integration" and not args.keyring:
+        parser.error("--keyring is required for integration credentials")
+    if args.scope == "provider" and not args.vault:
+        parser.error("--vault is required for provider credentials")
+    for path in (args.keyring, args.vault):
+        if path is not None and (not path.is_absolute() or path.is_symlink() or not path.exists()):
+            parser.error("keyring/vault paths must be existing absolute paths")
+    if (args.scope == "provider" and args.keyring) or (args.scope != "provider" and args.vault):
+        parser.error("use --vault for provider scope, --keyring for database scopes")
+    return args
 
 
 if __name__ == "__main__":

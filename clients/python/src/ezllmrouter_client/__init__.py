@@ -298,67 +298,7 @@ class EzLLMRouterClient(ClientSession):
         ):
             raise EzLLMRouterError("PROTOCOL_INVALID", response.status_code, "query_first")
         item: dict[str, Any] = value[result]
-        if kind == "receipt":
-            valid = (
-                set(item)
-                == {
-                    "version",
-                    "event_id",
-                    "run_id",
-                    "kind",
-                    "subject_revision",
-                    "recorded_at",
-                    "event_digest",
-                }
-                and item["version"] == "1"
-                and all(v.identifier(item[key]) for key in ("event_id", "run_id", "event_digest"))
-                and v.positive(item["subject_revision"])
-                and v.utc(item["recorded_at"])
-                and item["kind"] in ("task_outcome", "step_evaluation")
-            )
-        else:
-            required = {
-                "run_id",
-                "principal_id",
-                "charging_owner_id",
-                "initiating_user_id",
-                "agent_id",
-                "agent_version",
-                "parent_run_id",
-                "root_run_id",
-                "task_id",
-                "task_class",
-                "evaluation_ref",
-                "mode",
-                "created_at",
-                "status",
-                "request_digest",
-            }
-            valid = (
-                (set(item) == required or set(item) == required | {"terminal_at"})
-                and all(
-                    v.identifier(item[key])
-                    for key in (
-                        "run_id",
-                        "principal_id",
-                        "charging_owner_id",
-                        "root_run_id",
-                        "task_id",
-                        "task_class",
-                        "evaluation_ref",
-                        "request_digest",
-                    )
-                )
-                and all(
-                    item[key] is None or v.identifier(item[key])
-                    for key in ("initiating_user_id", "agent_id", "agent_version", "parent_run_id")
-                )
-                and item["mode"]
-                in ("direct_human", "autonomous_agent", "user_delegated_agent", "nested_agent")
-                and item["status"] in ("running", "accepted", "rejected", "abandoned")
-                and v.utc(item["created_at"])
-                and ("terminal_at" not in item or v.utc(item["terminal_at"]))
-            )
+        valid = _valid_attribution_item(item, kind)
         if not valid:
             raise EzLLMRouterError("PROTOCOL_INVALID", response.status_code, "query_first")
         return item
@@ -623,3 +563,68 @@ __all__ = [
     "IntegrationClientError",
     "__version__",
 ]
+
+
+def _valid_attribution_item(item: dict[str, Any], kind: str) -> bool:
+    if kind == "receipt":
+        valid = (
+            set(item)
+            == {
+                "version",
+                "event_id",
+                "run_id",
+                "kind",
+                "subject_revision",
+                "recorded_at",
+                "event_digest",
+            }
+            and item["version"] == "1"
+            and all(v.identifier(item[key]) for key in ("event_id", "run_id", "event_digest"))
+            and v.positive(item["subject_revision"])
+            and v.utc(item["recorded_at"])
+            and item["kind"] in ("task_outcome", "step_evaluation")
+        )
+    else:
+        required = {
+            "run_id",
+            "principal_id",
+            "charging_owner_id",
+            "initiating_user_id",
+            "agent_id",
+            "agent_version",
+            "parent_run_id",
+            "root_run_id",
+            "task_id",
+            "task_class",
+            "evaluation_ref",
+            "mode",
+            "created_at",
+            "status",
+            "request_digest",
+        }
+        valid = (
+            (set(item) == required or set(item) == required | {"terminal_at"})
+            and all(
+                v.identifier(item[key])
+                for key in (
+                    "run_id",
+                    "principal_id",
+                    "charging_owner_id",
+                    "root_run_id",
+                    "task_id",
+                    "task_class",
+                    "evaluation_ref",
+                    "request_digest",
+                )
+            )
+            and all(
+                item[key] is None or v.identifier(item[key])
+                for key in ("initiating_user_id", "agent_id", "agent_version", "parent_run_id")
+            )
+            and item["mode"]
+            in ("direct_human", "autonomous_agent", "user_delegated_agent", "nested_agent")
+            and item["status"] in ("running", "accepted", "rejected", "abandoned")
+            and v.utc(item["created_at"])
+            and ("terminal_at" not in item or v.utc(item["terminal_at"]))
+        )
+    return valid

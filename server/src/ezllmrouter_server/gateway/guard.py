@@ -323,46 +323,7 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
     )
     if request.method != "POST" or str(request.url) != expected_url:
         raise GuardRejected()
-    headers = request.headers
-    provider_key = invocation.provider_key
-    if not valid_provider_key(provider_key, responses=provider_route):
-        raise GuardRejected()
-    if (
-        headers.get("host") != request.url.netloc.decode()
-        or headers.get("content-type", "").split(";", 1)[0] != "application/json"
-        or headers.get("authorization") != "Bearer " + provider_key
-        or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
-        or headers.get("x-stainless-retry-count", "0") != "0"
-    ):
-        raise GuardRejected()
-    if any(
-        name in headers
-        for name in (
-            "proxy-authorization",
-            "cookie",
-            "idempotency-key",
-            "openai-organization",
-            "openai-project",
-        )
-    ):
-        raise GuardRejected()
-    allowed_headers = {
-        "host",
-        "content-type",
-        "authorization",
-        "content-length",
-        "accept",
-        "accept-encoding",
-        "user-agent",
-        "connection",
-        "x-ezllmrouter-attempt",
-    }
-    if any(name not in allowed_headers | SDK_HEADERS for name in headers) or any(
-        len(value) > 256 for name, value in headers.items() if name in SDK_HEADERS
-    ):
-        raise GuardRejected()
-    if headers.get("content-length") and headers["content-length"] != str(len(body)):
-        raise GuardRejected()
+    headers = _validate_request_headers(body, invocation, provider_route, request)
     try:
         actual = json.loads(body)
     except (UnicodeError, ValueError) as exc:
@@ -490,3 +451,49 @@ class GuardTransport(httpx.AsyncBaseTransport):
             await self.lower.aclose()
         finally:
             await asyncio.to_thread(self.checks.shutdown, wait=True, cancel_futures=True)
+
+
+def _validate_request_headers(
+    body: bytes, invocation: Invocation, provider_route: bool, request: httpx.Request
+) -> httpx.Headers:
+    headers = request.headers
+    provider_key = invocation.provider_key
+    if not valid_provider_key(provider_key, responses=provider_route):
+        raise GuardRejected()
+    if (
+        headers.get("host") != request.url.netloc.decode()
+        or headers.get("content-type", "").split(";", 1)[0] != "application/json"
+        or headers.get("authorization") != "Bearer " + provider_key
+        or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
+        or headers.get("x-stainless-retry-count", "0") != "0"
+    ):
+        raise GuardRejected()
+    if any(
+        name in headers
+        for name in (
+            "proxy-authorization",
+            "cookie",
+            "idempotency-key",
+            "openai-organization",
+            "openai-project",
+        )
+    ):
+        raise GuardRejected()
+    allowed_headers = {
+        "host",
+        "content-type",
+        "authorization",
+        "content-length",
+        "accept",
+        "accept-encoding",
+        "user-agent",
+        "connection",
+        "x-ezllmrouter-attempt",
+    }
+    if any(name not in allowed_headers | SDK_HEADERS for name in headers) or any(
+        len(value) > 256 for name, value in headers.items() if name in SDK_HEADERS
+    ):
+        raise GuardRejected()
+    if headers.get("content-length") and headers["content-length"] != str(len(body)):
+        raise GuardRejected()
+    return headers

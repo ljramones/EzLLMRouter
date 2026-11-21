@@ -382,55 +382,10 @@ class ChoiceBSenderAdapter:
             or not 1 <= work_key["step_revision"] <= SAFE
         ):
             raise ValueError("registered attempt missing required work identity")
-        headers = envelope["headers"]
-        if type(headers) is not list or any(
-            type(pair) is not list or len(pair) != 2 or any(type(item) is not str for item in pair)
-            for pair in headers
-        ):
-            raise ValueError("relay headers")
-        header_map = httpx.Headers(headers)
-        if header_map.get("authorization") != "Bearer " + WORKER_KEY:
-            raise ValueError("worker placeholder authorization")
-        allowed = SDK_HEADERS | {
-            "host",
-            "authorization",
-            "content-type",
-            "content-length",
-            "accept",
-            "accept-encoding",
-            "user-agent",
-            "connection",
-        }
-        if (
-            any(name not in allowed for name in header_map)
-            or header_map.get("x-stainless-retry-count", "0") != "0"
-        ):
-            raise ValueError("worker header rejected")
-        body = base64.b64decode(envelope["body_b64"], validate=True)
-        if not body or len(body) > 65536:
-            raise ValueError("relay body size")
-        timeout = envelope["timeout"]
-        if type(timeout) is not dict:
-            raise ValueError("relay timeout")
-        if provider_route:
-            if self.provider_registry is None:
-                raise ValueError("provider registry unavailable")
-            connection = self.provider_registry.connection(destination["connection_id"])
-            if (
-                not connection
-                or connection["status"] != "active"
-                or connection["revision"] != destination["connection_revision"]
-                or connection["credential_version"] != destination["credential_version"]
-                or connection["settings"]["origin"] != destination["endpoint"]
-            ):
-                raise ValueError("provider binding stale")
-            provider_key = cast("CredentialVault", self.provider_registry.provider_vault).resolve(
-                destination["connection_id"], destination["credential_version"]
-            )
-            invocation.provider_key = provider_key
-        else:
-            provider_key = self.provider_key
-            invocation.provider_key = provider_key
+        timeout: Record | float
+        body, provider_key, timeout = _validate_worker_relay_content(
+            destination, envelope, invocation, provider_route, self
+        )
         # Provider credentials and forwarding headers belong to the trusted
         # sender. SDK metadata never becomes an unaudited worker-to-provider field.
         header_map = httpx.Headers(
@@ -524,3 +479,62 @@ class ChoiceBSenderAdapter:
                 if self.server_thread is not None and self.server_thread.is_alive():
                     cast(BoundedUnixServer, self.server).shutdown()
                     self.server_thread.join(timeout=5)
+
+
+def _validate_worker_relay_content(
+    destination: Record,
+    envelope: Record,
+    invocation: Invocation,
+    provider_route: bool,
+    self: ChoiceBSenderAdapter,
+) -> tuple[bytes, str, Record]:
+    headers = envelope["headers"]
+    if type(headers) is not list or any(
+        type(pair) is not list or len(pair) != 2 or any(type(item) is not str for item in pair)
+        for pair in headers
+    ):
+        raise ValueError("relay headers")
+    header_map = httpx.Headers(headers)
+    if header_map.get("authorization") != "Bearer " + WORKER_KEY:
+        raise ValueError("worker placeholder authorization")
+    allowed = SDK_HEADERS | {
+        "host",
+        "authorization",
+        "content-type",
+        "content-length",
+        "accept",
+        "accept-encoding",
+        "user-agent",
+        "connection",
+    }
+    if (
+        any(name not in allowed for name in header_map)
+        or header_map.get("x-stainless-retry-count", "0") != "0"
+    ):
+        raise ValueError("worker header rejected")
+    body = base64.b64decode(envelope["body_b64"], validate=True)
+    if not body or len(body) > 65536:
+        raise ValueError("relay body size")
+    timeout = envelope["timeout"]
+    if type(timeout) is not dict:
+        raise ValueError("relay timeout")
+    if provider_route:
+        if self.provider_registry is None:
+            raise ValueError("provider registry unavailable")
+        connection = self.provider_registry.connection(destination["connection_id"])
+        if (
+            not connection
+            or connection["status"] != "active"
+            or connection["revision"] != destination["connection_revision"]
+            or connection["credential_version"] != destination["credential_version"]
+            or connection["settings"]["origin"] != destination["endpoint"]
+        ):
+            raise ValueError("provider binding stale")
+        provider_key = cast("CredentialVault", self.provider_registry.provider_vault).resolve(
+            destination["connection_id"], destination["credential_version"]
+        )
+        invocation.provider_key = provider_key
+    else:
+        provider_key = self.provider_key
+        invocation.provider_key = provider_key
+    return body, provider_key, timeout

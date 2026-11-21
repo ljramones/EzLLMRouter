@@ -18,7 +18,7 @@ from .repositories import attribution as _queries
 from .store import Record, encode
 
 
-def _id(value):
+def _id(value: object) -> str:
     try:
         return identifier(value)
     except (TypeError, ValueError) as exc:
@@ -47,7 +47,7 @@ class AttributionLedger:
             rows = self.store.database.execute(_queries.AGENTS_SELECT_REGISTRY_AGENTS).fetchall()
         return [json.loads(row[0]) for row in rows]
 
-    def run(self, run_id):
+    def run(self, run_id: str) -> Record | None:
         _id(run_id)
         with self.store.database.read():
             return _record(self.store.database, "attribution_runs", "id", run_id)
@@ -260,44 +260,7 @@ class AttributionLedger:
         raise ValueError("unsupported agent authority action")
 
     def append_outcome(self, trusted, body):
-        required = {
-            "version",
-            "event_id",
-            "run_id",
-            "kind",
-            "subject_revision",
-            "verdict",
-            "evaluator_version",
-            "evidence_ref",
-        }
-        optional = {"step_id", "step_revision", "execution_generation"}
-        if (
-            type(body) is not dict
-            or not required <= body.keys()
-            or set(body) - (required | optional)
-            or body["version"] != "1"
-            or body["kind"] not in ("task_outcome", "step_evaluation")
-            or type(body["subject_revision"]) is not int
-            or body["subject_revision"] < 1
-        ):
-            raise ContractError("SCHEMA_INVALID", 400)
-        for key in ("event_id", "run_id", "evaluator_version", "evidence_ref"):
-            _id(body[key])
-        step = body["kind"] == "step_evaluation"
-        if (step and set(body) != required | optional) or (not step and set(body) != required):
-            raise ContractError("SCHEMA_INVALID", 400)
-        if step:
-            _id(body["step_id"])
-            _id(body["execution_generation"])
-            if (
-                type(body["step_revision"]) is not int
-                or body["step_revision"] < 1
-                or body["verdict"] not in ("correct", "incorrect", "undetermined")
-            ):
-                raise ContractError("SCHEMA_INVALID", 400)
-        elif body["verdict"] not in ("accepted", "rejected", "abandoned"):
-            raise ContractError("SCHEMA_INVALID", 400)
-        run = self.run(body["run_id"])
+        run, step = _validate_outcome_subject(body, self)
         if not run:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         authority = self.registry.principal(trusted["principal_id"])
@@ -559,3 +522,45 @@ def _set_outcome_authority(db: Database, subject: str, expected: int, data: Reco
     }
     db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_OUTCOME_AUTHORITIES, (subject, encode(record)))
     return record
+
+
+def _validate_outcome_subject(body: object, self: AttributionLedger) -> tuple[Record | None, bool]:
+    required = {
+        "version",
+        "event_id",
+        "run_id",
+        "kind",
+        "subject_revision",
+        "verdict",
+        "evaluator_version",
+        "evidence_ref",
+    }
+    optional = {"step_id", "step_revision", "execution_generation"}
+    if (
+        type(body) is not dict
+        or not required <= body.keys()
+        or set(body) - (required | optional)
+        or body["version"] != "1"
+        or body["kind"] not in ("task_outcome", "step_evaluation")
+        or type(body["subject_revision"]) is not int
+        or body["subject_revision"] < 1
+    ):
+        raise ContractError("SCHEMA_INVALID", 400)
+    for key in ("event_id", "run_id", "evaluator_version", "evidence_ref"):
+        _id(body[key])
+    step = body["kind"] == "step_evaluation"
+    if (step and set(body) != required | optional) or (not step and set(body) != required):
+        raise ContractError("SCHEMA_INVALID", 400)
+    if step:
+        _id(body["step_id"])
+        _id(body["execution_generation"])
+        if (
+            type(body["step_revision"]) is not int
+            or body["step_revision"] < 1
+            or body["verdict"] not in ("correct", "incorrect", "undetermined")
+        ):
+            raise ContractError("SCHEMA_INVALID", 400)
+    elif body["verdict"] not in ("accepted", "rejected", "abandoned"):
+        raise ContractError("SCHEMA_INVALID", 400)
+    run = self.run(body["run_id"])
+    return run, step
