@@ -50,6 +50,13 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_generated_properties.CampaignStateModel",
+    "tests.unit.test_generated_properties.CanonicalProperties",
+    "tests.unit.test_generated_properties.RegistryStateModel",
+    "tests.unit.test_generated_properties.AccountingOrderProperties",
+    "tests.unit.test_generated_parsers.GeneratedParserTests",
+    "tests.operator_console.test_authorization_matrix_sockets.SocketPairAuthorizationMatrixTests",
+    "tests.operator_console.test_authorization_matrix",
     "tests.operator_console.test_authority_boundaries",
     *("tests.operator_console.test_" + name for name in OPERATOR_TESTS),
     *("tests.development_slice.test_" + name for name in DEVELOPMENT_TESTS),
@@ -108,6 +115,7 @@ MODULES = (
     "tests.unit.test_structural_cleanup",
 )
 LOOPBACK_MODULES = (
+    "tests.operator_console.test_authorization_matrix_http.LoopbackAuthorizationMatrixTests",
     "tests.development_slice.test_http",
     "tests.operator_console.test_web",
     "tests.operator_console.test_registry_web",

@@ -1,4 +1,8 @@
 {
+  "tests/unit/json_differential.cjs": {
+    "runner": "helper",
+    "reason": "Bounded stdin JSON differential worker executed by tests.unit.test_generated_parsers in the offline gate."
+  },
   "tests/unit/test_javascript_measurement.cjs": {
     "runner": "offline",
     "argv": ["node", "--test", "tests/unit/test_javascript_measurement.cjs"]

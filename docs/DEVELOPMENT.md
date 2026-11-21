@@ -117,6 +117,31 @@ selector against the sources staged by preparation, including instruction-local
 bind mounts. It cannot establish that images build or run; those checks still
 require the approved frozen input bundle and a disposable Docker target.
 
+The independent operator policy table is
+`tests/fixtures/operator_authorization.json`. Adding a route without a policy row
+fails the offline gate. Matrix variants exercise the real handlers directly,
+real HTTP parsing over socket pairs, and localhost listeners in the HTTP tier.
+Expected statuses come from the checked-in table and documented roles, never
+from the implementation's route-role metadata. Empty mutation bodies cannot
+initiate sends; cross-user cases additionally assert unchanged authority state.
+
+Generated parser/property tests use deterministic standard-library generators
+without another package install. The normal gate fixes the seed and keeps small
+example budgets; scheduled tests record the run number as their seed and use
+512 examples. Replay a reported seed/index with:
+
+```sh
+EZLLMROUTER_TEST_SEED=0xdeadbeef EZLLMROUTER_TEST_EXAMPLES=512 uv run --locked python -m tools.check --test-module tests.unit.test_generated_parsers.GeneratedParserTests
+```
+
+Failures print the seed and index, with synthetic JSON bytes encoded as base64.
+The JSON comparison distinguishes free response text from the server's stricter
+request-text policy. Accounting expectations use integer nanodollars rather
+than the implementation's Decimal accumulator. The campaign model preserves
+late recorded charges, checks exact incurred/held/available exposure, and refuses
+new reservations that exceed current authority. These generators do not yet
+provide Hypothesis-style shrinking or cover all native decoder implementations.
+
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable
 localhost fixture:
