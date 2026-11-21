@@ -1042,3 +1042,25 @@ Full `tools.check` passes 916 Python cases, strict typing on 107 files,
 lint/formatting, script/console checks and both ratchets. Library typing debt
 remains 1,631; size allowances fall to 62. This is source validation; real
 listeners, Docker, browsers and finite provider executions were not run.
+
+### Item 11 follow-up: W6 completion-handler phases
+
+Completion accounting now dispatches to historical-underbound, restart exposure,
+finite cap, counter correction, ownership contention, minima and tariff phases.
+Its former 987-line function is 23 lines; its largest phase is 199. Ingress,
+authority/recovery, installed-client and retrieval handlers likewise have named
+scenario/check phases. Every function in these five domain modules is below 200
+lines. Public handler wrappers, scenario selection, call ordering, evidence
+fields and failure/transaction scopes remain unchanged.
+
+AST checks preserve the copied bodies of 31 extractions. A guarded 88-case replay
+against `647ede5` matches dependency traces, rejections and all five complete
+fictional tariff results, with sockets and subprocesses denied. This replay
+checks source dispatch and tariff behavior; it does not qualify the real target
+scenarios, which still require their retained environment and explicit release.
+
+Full `tools.check` passes 916 Python cases, strict typing on 107 files,
+lint/formatting and maintained script/console checks. Library typing debt remains
+1,631. Six resolved function allowances are removed, leaving 56. Checkpoint,
+runtime-setup, remaining retained tooling/tests and deployment exercises continue
+under W6; no runner or historical evidence has been removed.

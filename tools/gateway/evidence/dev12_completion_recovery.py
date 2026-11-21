@@ -11,77 +11,7 @@ def recovery_chain(runtime, case):
     variant = case["variant"]
     chain_path = runtime.root / "recovery-chain-reference.json"
     if variant == "unknown_pause":
-        if chain_path.exists():
-            raise RuntimeError("recoverable chain already started")
-        request = _api._case_request(runtime, case, item_id="doc.unknown.recoverable")
-        before = _api._census(runtime)
-        sent = _api._post(runtime, request, _api._headers(runtime))
-        after = _api._census(runtime)
-        status = sent["status"] or {}
-        sid = sent["reply"].get("handle", {}).get("submission_id")
-        aid = status.get("attempts", [{}])[0].get("attempt_id")
-        receipt_rows = observations(runtime.root / "receiver-receipts.jsonl")
-        matched = [row for row in receipt_rows if row.get("attempt_id") == aid]
-        okay = (
-            sid
-            and aid
-            and status.get("submission_state") == "unknown"
-            and after["campaign"]["paused"] is True
-            and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
-            and len(matched) == 1
-            and after["guard_ownership"] == before["guard_ownership"] + 1
-        )
-        checks = {
-            "recovery_chain.unknown_pause": (
-                bool(okay),
-                "Unknown reply retained receiver arrival, guarded ownership, exposure and same-scope pause",
-            )
-        }
-        stages = {
-            "admission": {"submission_id": sid or "absent"},
-            "guard": {
-                "guard_ownership_delta": after["guard_ownership"] - before["guard_ownership"]
-            },
-            "first_write": {
-                "possible_send_delta": after["campaign"]["possible_send_count"]
-                - before["campaign"]["possible_send_count"]
-            },
-            "receiver": {"arrival_delta": after["receiver_arrivals"] - before["receiver_arrivals"]},
-            "delivery": {"state": status.get("submission_state", "absent")},
-            "settlement": {
-                "paused": after["campaign"]["paused"],
-                "exposure_state": status.get("attempts", [{}])[0].get("settlement_state", "absent"),
-            },
-        }
-        result = _api._evidence(
-            runtime,
-            case,
-            stages,
-            checks,
-            {
-                "request": request,
-                "reply": sent,
-                "before": before,
-                "after": after,
-                "receiver_receipts": matched,
-            },
-            aid or "none",
-        )
-        if result["status"] != "PASS":
-            return result
-        chain_path.write_text(
-            _api.json.dumps(
-                {
-                    "submission_id": sid,
-                    "attempt_id": aid,
-                    "credential": "DIRECT_DOCUMENT",
-                    "campaign_id": runtime.plan["envelope"]["campaign_id"],
-                },
-                sort_keys=True,
-            )
-            + "\n"
-        )
-        return result
+        return _start_recovery_chain(runtime, case, chain_path, observations)
 
     if not chain_path.is_file():
         raise RuntimeError("recoverable chain predecessor absent")
@@ -250,7 +180,6 @@ def recovery_chain(runtime, case):
 
 def authority_recovery(runtime, case):
     """Fresh first-write authority checks under the same accepted plan."""
-    from tools.gateway.evidence import dev12_completion_handlers as _api
 
     if (case["scenario_id"], case["variant"]) == ("t14_a", "composed"):
         from tools.gateway.evidence.dev12_completion_boundary_handlers import assessment_transition
@@ -265,467 +194,464 @@ def authority_recovery(runtime, case):
 
         return crash_recovery(runtime, case)
     if case["scenario_id"].startswith("t45_"):
-        from ezllmrouter_server.successor_plan import execution_eligible
-
-        scenario = case["scenario_id"]
-        before = _api._census(runtime)
-        outcomes = {}
-        observed = {}
-
-        def changed_revision(name, *, send_permission=None):
-            def mutate(state):
-                state["revisions"][name] += 1
-                if send_permission is not None:
-                    state["send_permission"] = send_permission
-
-            runtime.authority.update(
-                mutate,
-                {
-                    "kind": "completion02_named_authority_change",
-                    "revision": name,
-                    "send_permission": send_permission,
-                    "at": _api._current_utc(),
-                },
-            )
-
-        def queued(label, revision):
-            request = _api._case_request(runtime, case)
-            request["work_selector"]["step_id"] += "." + label
-            fired = []
-
-            async def lower_wait():
-                if not fired:
-                    fired.append(True)
-                    changed_revision(revision)
-
-            runtime.executor.first_write_wait = lower_wait
-            try:
-                response = _api._post(runtime, request, _api._headers(runtime))
-            finally:
-                runtime.executor.first_write_wait = None
-            response["status"] or {}
-            sid = response["reply"].get("handle", {}).get("submission_id")
-            record = runtime.store.successor_get(sid) if sid else None
-            observations = {
-                "fired": bool(fired),
-                "response": response,
-                "record": record,
-                "revision": revision,
-            }
-            outcomes[label] = observations
-            return observations
-
-        def positive(label):
-            request = _api._case_request(runtime, case)
-            request["work_selector"]["step_id"] += "." + label
-            response = _api._post(runtime, request, _api._headers(runtime))
-            sid = response["reply"].get("handle", {}).get("submission_id")
-            record = runtime.store.successor_get(sid) if sid else None
-            item = {"response": response, "record": record}
-            outcomes[label] = item
-            return item
-
-        if scenario == "t45_a":
-            control = positive("control")
-            record = control["record"]
-            if not record:
-                raise AssertionError("source/account/operation control absent")
-            context = runtime.authority.current_context(record, _api._current_utc())
-            plan = record["signed_plan"]
-            negatives = {}
-            for name, mutation in (
-                ("source_isolation", {"expected_work_digest": "sha256:" + "0" * 64}),
-                ("account_isolation", {"expected_financial_owner_id": "team.other.synthetic"}),
-                (
-                    "operation_isolation",
-                    {
-                        "expected_reservation": {
-                            **context["expected_reservation"],
-                            "price_ref": "price.rerank.synthetic.a",
-                        }
-                    },
-                ),
-            ):
-                changed = _api.deepcopy(context)
-                changed.update(mutation)
-                negatives[name] = not execution_eligible(
-                    plan,
-                    record["request"],
-                    record["canonical_work"],
-                    record["admission_snapshot"],
-                    changed,
-                )
-            observed = {"signed_plan": plan, "negative_decisions": negatives}
-            checks = {
-                f"t45_a.{name}": (
-                    bool(
-                        value
-                        and control["response"]["status"].get("submission_state") == "completed"
-                    ),
-                    "Independent source, account or operation scope change cannot execute the admitted signed plan",
-                )
-                for name, value in negatives.items()
-            }
-        elif scenario in {"t45_b", "t45_c", "t45_d"}:
-            mapping = {
-                "t45_b": [("source_disallow_after_wait", "source_permission")],
-                "t45_c": [
-                    ("grant_revoke_after_wait", "grant"),
-                    ("delegation_revoke_after_wait", "registry"),
-                ],
-                "t45_d": [
-                    ("credential_scope_change", "credential_scope"),
-                    ("compromise", "source_permission"),
-                    ("revocation", "credential_scope"),
-                ],
-            }
-            blocked = {name: queued(name, revision) for name, revision in mapping[scenario]}
-            control = positive("after_revision_control")
-            checks = {
-                f"{scenario}.{name}": (
-                    bool(
-                        item["fired"]
-                        and item["response"]["status"]
-                        and item["response"]["status"].get("submission_state") == "failed"
-                        and item["record"]
-                        and item["record"].get("dispatch_state") == "blocked"
-                        and control["response"]["status"]
-                        and control["response"]["status"].get("submission_state") == "completed"
-                    ),
-                    "Named current authority revision changed during lower wait; old plan was blocked and new plan succeeded",
-                )
-                for name, item in blocked.items()
-            }
-            observed = {
-                "named_revision_cases": list(blocked),
-                "control_submission": control["record"]["submission_id"],
-            }
-        elif scenario == "t45_e":
-            from cryptography.hazmat.primitives.asymmetric import ed25519
-
-            first = positive("rotation_control")
-            old = first["record"]
-            old_plan = old["signed_plan"]
-            new_key = ed25519.Ed25519PrivateKey.generate()
-            new_version = "v.t45.rotation"
-            runtime.persist_signer(new_key, new_version)
-            runtime.authority.rotate_minting_key(
-                new_key, "key.synthetic.dev12", new_version, _api._current_utc()
-            )
-            current = runtime.authority.current_context(old, _api._current_utc())
-            old_eligible = execution_eligible(
-                old_plan, old["request"], old["canonical_work"], old["admission_snapshot"], current
-            )
-            invalid = queued("changed_revision", "grant")
-            control = positive("new_revision_control")
-            checks = {
-                "t45_e.eligible_rotation": (
-                    bool(
-                        old_eligible
-                        and old_plan["key_version"]
-                        != control["record"]["signed_plan"]["key_version"]
-                        and control["response"]["status"].get("submission_state") == "completed"
-                    ),
-                    "Old bound verification key remained eligible during ordinary active minting rotation",
-                ),
-                "t45_e.changed_revision_without_authority": (
-                    bool(
-                        invalid["fired"]
-                        and invalid["response"]["status"].get("submission_state") == "failed"
-                        and invalid["record"].get("dispatch_state") == "blocked"
-                    ),
-                    "Unrelated changed grant revision remained a first-write blocker after key rotation",
-                ),
-            }
-            observed = {
-                "old_plan": old_plan,
-                "old_eligible_after_rotation": old_eligible,
-                "changed_revision": invalid,
-            }
-        else:
-            raise NotImplementedError("unknown T-45 scenario")
-        after = _api._census(runtime)
-        if not control["record"]:
-            raise AssertionError("T-45 positive control not admitted")
-        stages = {
-            "admission": {"before": before["submissions"], "after": after["submissions"]},
-            "signed_plan": {"positive_plan_id": control["record"]["signed_plan"]["plan_id"]},
-            "authority": {"named_revisions": runtime.authority.revisions()},
-            "guard": {"before": before["guard_ownership"], "after": after["guard_ownership"]},
-            "first_write": {
-                "receiver_before": before["receiver_arrivals"],
-                "receiver_after": after["receiver_arrivals"],
-            },
-        }
-        return _api._evidence(
-            runtime,
-            case,
-            stages,
-            checks,
-            {"outcomes": outcomes, "observed": observed, "before": before, "after": after},
-            control["record"]["attempt_id"],
-        )
+        return _named_authority_revisions(runtime, case)
     if case["scenario_id"] == "t24_a" and case["variant"] in {
         "queued_revocation",
         "eligible_control",
     }:
-        request = _api._case_request(runtime, case)
-        before = _api._census(runtime)
-        fired = []
-
-        def set_permission(allowed):
-            def change(state):
-                state["send_permission"] = allowed
-
-            runtime.authority.update(
-                change,
-                {
-                    "kind": "completion02_send_permission",
-                    "allowed": allowed,
-                    "at": _api._current_utc(),
-                },
-            )
-
-        async def lower_wait():
-            if not fired:
-                fired.append(True)
-                set_permission(False)
-
-        if case["variant"] == "queued_revocation":
-            runtime.executor.first_write_wait = lower_wait
-        try:
-            reply = _api._post(runtime, request, _api._headers(runtime))
-        finally:
-            runtime.executor.first_write_wait = None
-            if fired:
-                set_permission(True)
-        after = _api._census(runtime)
-        status = reply["status"] or {}
-        if case["variant"] == "queued_revocation":
-            passed = (
-                bool(fired)
-                and status.get("submission_state") == "failed"
-                and status.get("attempts", [{}])[0].get("dispatch_state") == "blocked"
-                and after["receiver_arrivals"] == before["receiver_arrivals"]
-                and after["submissions"] == before["submissions"] + 1
-            )
-            detail = (
-                "Durable local send revocation at queued first-write wait blocked receiver bytes"
-            )
-        else:
-            passed = (
-                not fired
-                and status.get("submission_state") == "completed"
-                and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
-                and after["submissions"] == before["submissions"] + 1
-            )
-            detail = "Eligible queued control completed one guarded receiver send"
-        checks = {f"t24_a.{case['variant']}": (passed, detail)}
-        sid = reply["reply"].get("handle", {}).get("submission_id")
-        record = runtime.store.successor_get(sid) if sid else None
-        return _api._evidence(
-            runtime,
-            case,
-            {
-                "admission": {"submission_id": sid or "absent"},
-                "signed_plan": {
-                    "plan_id": record["signed_plan"]["plan_id"] if record else "absent"
-                },
-                "authority": {"revoked_at_lower_wait": bool(fired)},
-                "guard": {"ownership_delta": after["guard_ownership"] - before["guard_ownership"]},
-                "first_write": {
-                    "arrival_delta": after["receiver_arrivals"] - before["receiver_arrivals"]
-                },
-            },
-            checks,
-            {"reply": reply, "record": record, "before": before, "after": after},
-            record["attempt_id"] if record else "none",
-        )
+        return _queued_authority_revocation(runtime, case)
     if (
         case["scenario_id"] in {"t46_a", "t46_b", "t46_c", "t46_d"}
         and case["variant"] == "composed"
     ):
-        from ezllmrouter_server.successor_plan import execution_eligible, verified_signature
+        return _signed_plan_integrity(runtime, case)
+    return _minting_key_eligibility(runtime, case)
 
+
+def _named_authority_revisions(runtime, case):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+    from ezllmrouter_server.successor_plan import execution_eligible
+
+    scenario = case["scenario_id"]
+    before = _api._census(runtime)
+    outcomes = {}
+    observed = {}
+
+    def changed_revision(name, *, send_permission=None):
+        return _change_authority_revision(runtime, name, send_permission=send_permission)
+
+    def queued(label, revision):
         request = _api._case_request(runtime, case)
-        if case["scenario_id"] == "t46_a":
-            request["input"]["items"] = [
-                {"item_id": "doc.one", "text": "Sky"},
-                {"item_id": "doc.two", "text": "Earth 🌍"},
-            ]
-        before = _api._census(runtime)
-        positive = _api._post(runtime, request, _api._headers(runtime))
-        after = _api._census(runtime)
-        sid = positive["reply"].get("handle", {}).get("submission_id")
-        if not sid:
-            raise AssertionError("signed-plan mutation control was not admitted")
-        record = runtime.store.successor_get(sid)
+        request["work_selector"]["step_id"] += "." + label
+        fired = []
+
+        async def lower_wait():
+            if not fired:
+                fired.append(True)
+                changed_revision(revision)
+
+        runtime.executor.first_write_wait = lower_wait
+        try:
+            response = _api._post(runtime, request, _api._headers(runtime))
+        finally:
+            runtime.executor.first_write_wait = None
+        response["status"] or {}
+        sid = response["reply"].get("handle", {}).get("submission_id")
+        record = runtime.store.successor_get(sid) if sid else None
+        observations = {
+            "fired": bool(fired),
+            "response": response,
+            "record": record,
+            "revision": revision,
+        }
+        outcomes[label] = observations
+        return observations
+
+    def positive(label):
+        request = _api._case_request(runtime, case)
+        request["work_selector"]["step_id"] += "." + label
+        response = _api._post(runtime, request, _api._headers(runtime))
+        sid = response["reply"].get("handle", {}).get("submission_id")
+        record = runtime.store.successor_get(sid) if sid else None
+        item = {"response": response, "record": record}
+        outcomes[label] = item
+        return item
+
+    if scenario == "t45_a":
+        control = positive("control")
+        record = control["record"]
+        if not record:
+            raise AssertionError("source/account/operation control absent")
+        context = runtime.authority.current_context(record, _api._current_utc())
         plan = record["signed_plan"]
-        current = runtime.authority.current_context(record, _api._current_utc())
-        key = next(
-            item
-            for item in current["verification_keys"]
-            if (item["key_id"], item["key_version"]) == (plan["key_id"], plan["key_version"])
-        )
-
-        def eligible(
-            *,
-            changed_plan=None,
-            changed_request=None,
-            changed_work=None,
-            changed_snapshot=None,
-            changed_context=None,
-        ):
-            return execution_eligible(
-                changed_plan or plan,
-                changed_request or record["request"],
-                changed_work or record["canonical_work"],
-                changed_snapshot or record["admission_snapshot"],
-                changed_context or current,
-            )
-
-        original = eligible() and verified_signature(plan, key)
         negatives = {}
-        supplemental = {}
-        scenario = case["scenario_id"]
-        if scenario == "t46_a":
-            changes = {}
-            op = _api.deepcopy(record["request"])
-            op["operation"]["version"] = 2
-            changes["operation_mutation"] = op
-            payload = _api.deepcopy(record["request"])
-            payload["input"]["items"][0]["text"] = "River"
-            changes["payload_mutation"] = payload
-            ordered = _api.deepcopy(record["request"])
-            ordered["input"]["items"].reverse()
-            changes["order_mutation"] = ordered
-            compatibility = _api.deepcopy(record["request"])
-            compatibility["requested_configuration_ref"] = "cfg.rerank.synthetic"
-            changes["compatibility_mutation"] = compatibility
-            negatives = {
-                name: not eligible(changed_request=value) for name, value in changes.items()
-            }
-            supplemental = {"mutated_requests": changes}
-        elif scenario == "t46_b":
-            snapshot = record["admission_snapshot"]
-            changes = {}
-            status = _api.deepcopy(snapshot)
-            status["commission"] = {
-                "status": "verified",
-                "evidence_scope": "synthetic.review",
-                "evidence_ref": "evidence.synthetic",
-            }
-            changes["assessment_status_tamper"] = status
-            coverage = _api.deepcopy(snapshot)
-            coverage["delegation"]["coverage"] = "partial"
-            changes["coverage_tamper"] = coverage
-            reason = _api.deepcopy(snapshot)
-            reason["commission"]["absence_reason"] = "not_yet_issued"
-            changes["reason_tamper"] = reason
-            link = _api.deepcopy(snapshot)
-            link["work_digest"] = "sha256:" + "0" * 64
-            changes["digest_link_tamper"] = link
-            negatives = {
-                name: not eligible(changed_snapshot=value) for name, value in changes.items()
-            }
-            before_later = _api.deepcopy(runtime.store.successor_get(sid))
-            runtime.store.successor_append_evidence(
-                sid,
-                "later_assessment",
-                _api._current_utc(),
-                {"kind": "synthetic_review", "status": "recorded_only"},
+        for name, mutation in (
+            ("source_isolation", {"expected_work_digest": "sha256:" + "0" * 64}),
+            ("account_isolation", {"expected_financial_owner_id": "team.other.synthetic"}),
+            (
+                "operation_isolation",
+                {
+                    "expected_reservation": {
+                        **context["expected_reservation"],
+                        "price_ref": "price.rerank.synthetic.a",
+                    }
+                },
+            ),
+        ):
+            changed = _api.deepcopy(context)
+            changed.update(mutation)
+            negatives[name] = not execution_eligible(
+                plan,
+                record["request"],
+                record["canonical_work"],
+                record["admission_snapshot"],
+                changed,
             )
-            after_later = runtime.store.successor_get(sid)
-            negatives["later_assessment"] = (
-                after_later["work_digest"] == before_later["work_digest"]
-                and after_later["admission_snapshot"] == before_later["admission_snapshot"]
-                and after_later["signed_plan"] == before_later["signed_plan"]
+        observed = {"signed_plan": plan, "negative_decisions": negatives}
+        checks = {
+            f"t45_a.{name}": (
+                bool(
+                    value and control["response"]["status"].get("submission_state") == "completed"
+                ),
+                "Independent source, account or operation scope change cannot execute the admitted signed plan",
             )
-            supplemental = {
-                "mutated_snapshots": changes,
-                "before_later": before_later,
-                "after_later": after_later,
-            }
-        elif scenario == "t46_c":
-            activation_plan = _api.deepcopy(plan)
-            activation_plan["execution_context"] = {
-                "state": "tagged_fixture",
-                "epoch": "epoch.synthetic.changed",
-            }
-            activation_context = _api.deepcopy(current)
-            activation_context["expected_execution_context"] = {
-                "state": "tagged_fixture",
-                "epoch": "epoch.synthetic.changed",
-            }
-            negatives = {
-                "activation_mutation": (
-                    not verified_signature(activation_plan, key)
-                    and not eligible(changed_plan=activation_plan)
-                    and not eligible(changed_context=activation_context)
-                ),
-                "eligible_activation": original,
-            }
-            supplemental = {
-                "activation_plan": activation_plan,
-                "activation_context": activation_context,
-            }
-        else:
-            changed_price = _api.deepcopy(plan)
-            changed_price["price_ref"] = "price.rerank.synthetic.a"
-            changed_owner = _api.deepcopy(plan)
-            changed_owner["financial_owner_id"] = "team.forged"
-            negatives = {
-                "price_mutation": (
-                    not verified_signature(changed_price, key)
-                    and not eligible(changed_plan=changed_price)
-                ),
-                "owner_mutation": (
-                    not verified_signature(changed_owner, key)
-                    and not eligible(changed_plan=changed_owner)
-                ),
-            }
-            supplemental = {"price_plan": changed_price, "owner_plan": changed_owner}
+            for name, value in negatives.items()
+        }
+    elif scenario in {"t45_b", "t45_c", "t45_d"}:
+        mapping = {
+            "t45_b": [("source_disallow_after_wait", "source_permission")],
+            "t45_c": [
+                ("grant_revoke_after_wait", "grant"),
+                ("delegation_revoke_after_wait", "registry"),
+            ],
+            "t45_d": [
+                ("credential_scope_change", "credential_scope"),
+                ("compromise", "source_permission"),
+                ("revocation", "credential_scope"),
+            ],
+        }
+        blocked = {name: queued(name, revision) for name, revision in mapping[scenario]}
+        control = positive("after_revision_control")
         checks = {
             f"{scenario}.{name}": (
                 bool(
-                    original
-                    and rejected
-                    and positive["status"]
-                    and positive["status"].get("submission_state") == "completed"
-                    and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
+                    item["fired"]
+                    and item["response"]["status"]
+                    and item["response"]["status"].get("submission_state") == "failed"
+                    and item["record"]
+                    and item["record"].get("dispatch_state") == "blocked"
+                    and control["response"]["status"]
+                    and control["response"]["status"].get("submission_state") == "completed"
                 ),
-                "Changed signed/admitted binding rejected by the execution eligibility validator used at first-write guard",
+                "Named current authority revision changed during lower wait; old plan was blocked and new plan succeeded",
             )
-            for name, rejected in negatives.items()
+            for name, item in blocked.items()
         }
-        stages = {
-            "admission": {"submission_id": sid},
-            "signed_plan": {
-                "plan_id": plan["plan_id"],
-                "signature_valid": verified_signature(plan, key),
+        observed = {
+            "named_revision_cases": list(blocked),
+            "control_submission": control["record"]["submission_id"],
+        }
+    elif scenario == "t45_e":
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+
+        first = positive("rotation_control")
+        old = first["record"]
+        old_plan = old["signed_plan"]
+        new_key = ed25519.Ed25519PrivateKey.generate()
+        new_version = "v.t45.rotation"
+        runtime.persist_signer(new_key, new_version)
+        runtime.authority.rotate_minting_key(
+            new_key, "key.synthetic.dev12", new_version, _api._current_utc()
+        )
+        current = runtime.authority.current_context(old, _api._current_utc())
+        old_eligible = execution_eligible(
+            old_plan, old["request"], old["canonical_work"], old["admission_snapshot"], current
+        )
+        invalid = queued("changed_revision", "grant")
+        control = positive("new_revision_control")
+        checks = {
+            "t45_e.eligible_rotation": (
+                bool(
+                    old_eligible
+                    and old_plan["key_version"] != control["record"]["signed_plan"]["key_version"]
+                    and control["response"]["status"].get("submission_state") == "completed"
+                ),
+                "Old bound verification key remained eligible during ordinary active minting rotation",
+            ),
+            "t45_e.changed_revision_without_authority": (
+                bool(
+                    invalid["fired"]
+                    and invalid["response"]["status"].get("submission_state") == "failed"
+                    and invalid["record"].get("dispatch_state") == "blocked"
+                ),
+                "Unrelated changed grant revision remained a first-write blocker after key rotation",
+            ),
+        }
+        observed = {
+            "old_plan": old_plan,
+            "old_eligible_after_rotation": old_eligible,
+            "changed_revision": invalid,
+        }
+    else:
+        raise NotImplementedError("unknown T-45 scenario")
+    after = _api._census(runtime)
+    if not control["record"]:
+        raise AssertionError("T-45 positive control not admitted")
+    stages = {
+        "admission": {"before": before["submissions"], "after": after["submissions"]},
+        "signed_plan": {"positive_plan_id": control["record"]["signed_plan"]["plan_id"]},
+        "authority": {"named_revisions": runtime.authority.revisions()},
+        "guard": {"before": before["guard_ownership"], "after": after["guard_ownership"]},
+        "first_write": {
+            "receiver_before": before["receiver_arrivals"],
+            "receiver_after": after["receiver_arrivals"],
+        },
+    }
+    return _api._evidence(
+        runtime,
+        case,
+        stages,
+        checks,
+        {"outcomes": outcomes, "observed": observed, "before": before, "after": after},
+        control["record"]["attempt_id"],
+    )
+
+
+def _queued_authority_revocation(runtime, case):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+
+    request = _api._case_request(runtime, case)
+    before = _api._census(runtime)
+    fired = []
+
+    def set_permission(allowed):
+        def change(state):
+            state["send_permission"] = allowed
+
+        runtime.authority.update(
+            change,
+            {
+                "kind": "completion02_send_permission",
+                "allowed": allowed,
+                "at": _api._current_utc(),
             },
-            "authority": {"evaluated_bindings": list(negatives)},
+        )
+
+    async def lower_wait():
+        if not fired:
+            fired.append(True)
+            set_permission(False)
+
+    if case["variant"] == "queued_revocation":
+        runtime.executor.first_write_wait = lower_wait
+    try:
+        reply = _api._post(runtime, request, _api._headers(runtime))
+    finally:
+        runtime.executor.first_write_wait = None
+        if fired:
+            set_permission(True)
+    after = _api._census(runtime)
+    status = reply["status"] or {}
+    if case["variant"] == "queued_revocation":
+        passed = (
+            bool(fired)
+            and status.get("submission_state") == "failed"
+            and status.get("attempts", [{}])[0].get("dispatch_state") == "blocked"
+            and after["receiver_arrivals"] == before["receiver_arrivals"]
+            and after["submissions"] == before["submissions"] + 1
+        )
+        detail = "Durable local send revocation at queued first-write wait blocked receiver bytes"
+    else:
+        passed = (
+            not fired
+            and status.get("submission_state") == "completed"
+            and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
+            and after["submissions"] == before["submissions"] + 1
+        )
+        detail = "Eligible queued control completed one guarded receiver send"
+    checks = {f"t24_a.{case['variant']}": (passed, detail)}
+    sid = reply["reply"].get("handle", {}).get("submission_id")
+    record = runtime.store.successor_get(sid) if sid else None
+    return _api._evidence(
+        runtime,
+        case,
+        {
+            "admission": {"submission_id": sid or "absent"},
+            "signed_plan": {"plan_id": record["signed_plan"]["plan_id"] if record else "absent"},
+            "authority": {"revoked_at_lower_wait": bool(fired)},
             "guard": {"ownership_delta": after["guard_ownership"] - before["guard_ownership"]},
             "first_write": {
                 "arrival_delta": after["receiver_arrivals"] - before["receiver_arrivals"]
             },
-        }
-        return _api._evidence(
-            runtime,
-            case,
-            stages,
-            checks,
-            {
-                "positive": positive,
-                "record": record,
-                "current": current,
-                "negative_decisions": negatives,
-                "supplemental": supplemental,
-                "before": before,
-                "after": after,
-            },
-            record["attempt_id"],
+        },
+        checks,
+        {"reply": reply, "record": record, "before": before, "after": after},
+        record["attempt_id"] if record else "none",
+    )
+
+
+def _signed_plan_integrity(runtime, case):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+    from ezllmrouter_server.successor_plan import execution_eligible, verified_signature
+
+    request = _api._case_request(runtime, case)
+    if case["scenario_id"] == "t46_a":
+        request["input"]["items"] = [
+            {"item_id": "doc.one", "text": "Sky"},
+            {"item_id": "doc.two", "text": "Earth 🌍"},
+        ]
+    before = _api._census(runtime)
+    positive = _api._post(runtime, request, _api._headers(runtime))
+    after = _api._census(runtime)
+    sid = positive["reply"].get("handle", {}).get("submission_id")
+    if not sid:
+        raise AssertionError("signed-plan mutation control was not admitted")
+    record = runtime.store.successor_get(sid)
+    plan = record["signed_plan"]
+    current = runtime.authority.current_context(record, _api._current_utc())
+    key = next(
+        item
+        for item in current["verification_keys"]
+        if (item["key_id"], item["key_version"]) == (plan["key_id"], plan["key_version"])
+    )
+
+    def eligible(
+        *,
+        changed_plan=None,
+        changed_request=None,
+        changed_work=None,
+        changed_snapshot=None,
+        changed_context=None,
+    ):
+        return execution_eligible(
+            changed_plan or plan,
+            changed_request or record["request"],
+            changed_work or record["canonical_work"],
+            changed_snapshot or record["admission_snapshot"],
+            changed_context or current,
         )
+
+    original = eligible() and verified_signature(plan, key)
+    negatives = {}
+    supplemental = {}
+    scenario = case["scenario_id"]
+    if scenario == "t46_a":
+        changes = {}
+        op = _api.deepcopy(record["request"])
+        op["operation"]["version"] = 2
+        changes["operation_mutation"] = op
+        payload = _api.deepcopy(record["request"])
+        payload["input"]["items"][0]["text"] = "River"
+        changes["payload_mutation"] = payload
+        ordered = _api.deepcopy(record["request"])
+        ordered["input"]["items"].reverse()
+        changes["order_mutation"] = ordered
+        compatibility = _api.deepcopy(record["request"])
+        compatibility["requested_configuration_ref"] = "cfg.rerank.synthetic"
+        changes["compatibility_mutation"] = compatibility
+        negatives = {name: not eligible(changed_request=value) for name, value in changes.items()}
+        supplemental = {"mutated_requests": changes}
+    elif scenario == "t46_b":
+        snapshot = record["admission_snapshot"]
+        changes = {}
+        status = _api.deepcopy(snapshot)
+        status["commission"] = {
+            "status": "verified",
+            "evidence_scope": "synthetic.review",
+            "evidence_ref": "evidence.synthetic",
+        }
+        changes["assessment_status_tamper"] = status
+        coverage = _api.deepcopy(snapshot)
+        coverage["delegation"]["coverage"] = "partial"
+        changes["coverage_tamper"] = coverage
+        reason = _api.deepcopy(snapshot)
+        reason["commission"]["absence_reason"] = "not_yet_issued"
+        changes["reason_tamper"] = reason
+        link = _api.deepcopy(snapshot)
+        link["work_digest"] = "sha256:" + "0" * 64
+        changes["digest_link_tamper"] = link
+        negatives = {name: not eligible(changed_snapshot=value) for name, value in changes.items()}
+        before_later = _api.deepcopy(runtime.store.successor_get(sid))
+        runtime.store.successor_append_evidence(
+            sid,
+            "later_assessment",
+            _api._current_utc(),
+            {"kind": "synthetic_review", "status": "recorded_only"},
+        )
+        after_later = runtime.store.successor_get(sid)
+        negatives["later_assessment"] = (
+            after_later["work_digest"] == before_later["work_digest"]
+            and after_later["admission_snapshot"] == before_later["admission_snapshot"]
+            and after_later["signed_plan"] == before_later["signed_plan"]
+        )
+        supplemental = {
+            "mutated_snapshots": changes,
+            "before_later": before_later,
+            "after_later": after_later,
+        }
+    elif scenario == "t46_c":
+        activation_plan = _api.deepcopy(plan)
+        activation_plan["execution_context"] = {
+            "state": "tagged_fixture",
+            "epoch": "epoch.synthetic.changed",
+        }
+        activation_context = _api.deepcopy(current)
+        activation_context["expected_execution_context"] = {
+            "state": "tagged_fixture",
+            "epoch": "epoch.synthetic.changed",
+        }
+        negatives = {
+            "activation_mutation": (
+                not verified_signature(activation_plan, key)
+                and not eligible(changed_plan=activation_plan)
+                and not eligible(changed_context=activation_context)
+            ),
+            "eligible_activation": original,
+        }
+        supplemental = {
+            "activation_plan": activation_plan,
+            "activation_context": activation_context,
+        }
+    else:
+        changed_price = _api.deepcopy(plan)
+        changed_price["price_ref"] = "price.rerank.synthetic.a"
+        changed_owner = _api.deepcopy(plan)
+        changed_owner["financial_owner_id"] = "team.forged"
+        negatives = {
+            "price_mutation": (
+                not verified_signature(changed_price, key)
+                and not eligible(changed_plan=changed_price)
+            ),
+            "owner_mutation": (
+                not verified_signature(changed_owner, key)
+                and not eligible(changed_plan=changed_owner)
+            ),
+        }
+        supplemental = {"price_plan": changed_price, "owner_plan": changed_owner}
+    checks = {
+        f"{scenario}.{name}": (
+            bool(
+                original
+                and rejected
+                and positive["status"]
+                and positive["status"].get("submission_state") == "completed"
+                and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
+            ),
+            "Changed signed/admitted binding rejected by the execution eligibility validator used at first-write guard",
+        )
+        for name, rejected in negatives.items()
+    }
+    stages = {
+        "admission": {"submission_id": sid},
+        "signed_plan": {
+            "plan_id": plan["plan_id"],
+            "signature_valid": verified_signature(plan, key),
+        },
+        "authority": {"evaluated_bindings": list(negatives)},
+        "guard": {"ownership_delta": after["guard_ownership"] - before["guard_ownership"]},
+        "first_write": {"arrival_delta": after["receiver_arrivals"] - before["receiver_arrivals"]},
+    }
+    return _api._evidence(
+        runtime,
+        case,
+        stages,
+        checks,
+        {
+            "positive": positive,
+            "record": record,
+            "current": current,
+            "negative_decisions": negatives,
+            "supplemental": supplemental,
+            "before": before,
+            "after": after,
+        },
+        record["attempt_id"],
+    )
+
+
+def _minting_key_eligibility(runtime, case):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+
     if case["scenario_id"] != "t07_a" or case["variant"] not in {
         "eligible_current",
         "rotated_old_eligible",
@@ -889,3 +815,96 @@ def authority_recovery(runtime, case):
         },
         record["attempt_id"],
     )
+
+
+def _change_authority_revision(runtime, name, *, send_permission=None):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+
+    def mutate(state):
+        state["revisions"][name] += 1
+        if send_permission is not None:
+            state["send_permission"] = send_permission
+
+    runtime.authority.update(
+        mutate,
+        {
+            "kind": "completion02_named_authority_change",
+            "revision": name,
+            "send_permission": send_permission,
+            "at": _api._current_utc(),
+        },
+    )
+
+
+def _start_recovery_chain(runtime, case, chain_path, observations):
+    from tools.gateway.evidence import dev12_completion_handlers as _api
+
+    if chain_path.exists():
+        raise RuntimeError("recoverable chain already started")
+    request = _api._case_request(runtime, case, item_id="doc.unknown.recoverable")
+    before = _api._census(runtime)
+    sent = _api._post(runtime, request, _api._headers(runtime))
+    after = _api._census(runtime)
+    status = sent["status"] or {}
+    sid = sent["reply"].get("handle", {}).get("submission_id")
+    aid = status.get("attempts", [{}])[0].get("attempt_id")
+    receipt_rows = observations(runtime.root / "receiver-receipts.jsonl")
+    matched = [row for row in receipt_rows if row.get("attempt_id") == aid]
+    okay = (
+        sid
+        and aid
+        and status.get("submission_state") == "unknown"
+        and after["campaign"]["paused"] is True
+        and after["receiver_arrivals"] == before["receiver_arrivals"] + 1
+        and len(matched) == 1
+        and after["guard_ownership"] == before["guard_ownership"] + 1
+    )
+    checks = {
+        "recovery_chain.unknown_pause": (
+            bool(okay),
+            "Unknown reply retained receiver arrival, guarded ownership, exposure and same-scope pause",
+        )
+    }
+    stages = {
+        "admission": {"submission_id": sid or "absent"},
+        "guard": {"guard_ownership_delta": after["guard_ownership"] - before["guard_ownership"]},
+        "first_write": {
+            "possible_send_delta": after["campaign"]["possible_send_count"]
+            - before["campaign"]["possible_send_count"]
+        },
+        "receiver": {"arrival_delta": after["receiver_arrivals"] - before["receiver_arrivals"]},
+        "delivery": {"state": status.get("submission_state", "absent")},
+        "settlement": {
+            "paused": after["campaign"]["paused"],
+            "exposure_state": status.get("attempts", [{}])[0].get("settlement_state", "absent"),
+        },
+    }
+    result = _api._evidence(
+        runtime,
+        case,
+        stages,
+        checks,
+        {
+            "request": request,
+            "reply": sent,
+            "before": before,
+            "after": after,
+            "receiver_receipts": matched,
+        },
+        aid or "none",
+    )
+    if result["status"] != "PASS":
+        return result
+    chain_path.write_text(
+        _api.json.dumps(
+            {
+                "submission_id": sid,
+                "attempt_id": aid,
+                "credential": "DIRECT_DOCUMENT",
+                "campaign_id": runtime.plan["envelope"]["campaign_id"],
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    return result
