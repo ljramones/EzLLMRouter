@@ -1383,3 +1383,27 @@ Full `tools.check` passes 921 Python cases, strict typing on 107 files, existing
 size/type debt ratchets, lint/formatting and script/console checks. Actual native
 fetch over loopback remains unverified here because the executor denies listener
 binds; the replacement GitHub Actions HTTP job is still required.
+
+
+### Further review debt: typing, size allowances and report aggregation
+
+The owner authorized all three remaining cleanup workstreams after completion
+of W1–W7. These add finish lines beyond the original work-order allowances.
+Contracts, exact decimal/currency/unknown semantics, visibility, cutoff and
+cohort attribution remain required behavior. No daemon/profile update, provider
+request or dependency acquisition is part of this pass.
+
+| Workstream | Status | Finish line / current evidence |
+| --- | --- | --- |
+| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Initial lifecycle/connection/journal boundary cleanup leaves 1,599 diagnostics and 110 strictly checked files. |
+| R2 — remove size allowances | In progress | Resolve all 12 existing file/function exceptions without increasing thresholds. Split local connector and historical Docker-input tooling domains; retain public imports and every historical runner. |
+| R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
+
+The first R1 batch types coroutine/future ownership and bounded connection
+lifecycle, plus diagnostic journal records/cache fingerprints. Framework
+forwarding arguments remain the standard library's opaque boundary; concrete
+streams, threads, callbacks, futures and records are typed. Runtime cleanup and
+locking stay in their existing scopes. Full `tools.check` passes 921 Python
+cases, strict typing on 110 files, lint/formatting, size budgets and maintained
+script/console checks. Whole-library diagnostics fall from 1,631 to 1,599; the
+per-file budgets are tightened to the observed counts.

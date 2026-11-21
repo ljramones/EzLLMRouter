@@ -1,6 +1,9 @@
 """Bounded, disposable gateway diagnostics; never an accounting authority."""
 
+from __future__ import annotations
+
 from collections import OrderedDict
+from .records import Record
 import json
 import os
 from pathlib import Path
@@ -8,11 +11,13 @@ import threading
 
 MAX_BYTES = 4 * 1024 * 1024
 BACKUPS = 2
-_CACHE = OrderedDict()
+_CACHE: OrderedDict[str, tuple[list[tuple[int, int, int] | None], list[Record]]] = OrderedDict()
 _CACHE_LOCK = threading.Lock()
 
 
-def append_event(target, row, *, max_bytes=MAX_BYTES, backups=BACKUPS):
+def append_event(
+    target: str | Path, row: Record, *, max_bytes: int = MAX_BYTES, backups: int = BACKUPS
+) -> None:
     path = Path(target)
     encoded = json.dumps(row, separators=(",", ":"), ensure_ascii=True) + "\n"
     if len(encoded) > min(max_bytes, 65536):
@@ -34,11 +39,11 @@ def append_event(target, row, *, max_bytes=MAX_BYTES, backups=BACKUPS):
         os.fsync(stream.fileno())
 
 
-def read_events(target):
+def read_events(target: str | Path) -> list[Record]:
     """Cache a bounded tail of each retained file; old/missing facts stay unknown."""
     path = Path(target)
     paths = [Path(str(path) + "." + str(n)) for n in range(BACKUPS, 0, -1)] + [path]
-    fingerprint = []
+    fingerprint: list[tuple[int, int, int] | None] = []
     for current in paths:
         try:
             stat = current.stat()

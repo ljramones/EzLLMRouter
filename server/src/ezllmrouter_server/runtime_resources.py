@@ -1,5 +1,11 @@
 """Standard-library ownership helpers shared by the service, worker and ingress."""
 
+from __future__ import annotations
+
+from collections.abc import Coroutine
+from concurrent.futures import Future
+from typing import Any, TypeVar
+
 import asyncio
 import threading
 
@@ -16,10 +22,13 @@ from .connection_resources import (
 )
 
 
+T = TypeVar("T")
+
+
 class LoopThread:
     """Own a loop from creation through partial startup and cooperative task cleanup."""
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.loop = asyncio.new_event_loop()
         self.thread = threading.Thread(target=self._run, name=name, daemon=True)
         self._close_lock = threading.Lock()
@@ -31,7 +40,7 @@ class LoopThread:
             self.loop.close()
             raise
 
-    def _run(self):
+    def _run(self) -> None:
         asyncio.set_event_loop(self.loop)
         try:
             self.loop.run_forever()
@@ -45,7 +54,7 @@ class LoopThread:
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             self.loop.close()
 
-    def submit(self, coroutine):
+    def submit(self, coroutine: Coroutine[Any, Any, T]) -> Future[T]:
         with self._state_lock:
             if self._closed:
                 coroutine.close()
@@ -57,17 +66,17 @@ class LoopThread:
                 raise
 
     @staticmethod
-    def _wait(future, timeout):
+    def _wait(future: Future[T], timeout: float | None) -> T:
         try:
             return future.result(timeout=timeout)
         except BaseException:
             future.cancel()
             raise
 
-    def call(self, coroutine, *, timeout):
+    def call(self, coroutine: Coroutine[Any, Any, T], *, timeout: float | None) -> T:
         return self._wait(self.submit(coroutine), timeout)
 
-    def close(self, cleanup=None):
+    def close(self, cleanup: Coroutine[Any, Any, object] | None = None) -> None:
         with self._close_lock:
             with self._state_lock:
                 if self._closed:

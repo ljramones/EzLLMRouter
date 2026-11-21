@@ -152,6 +152,9 @@ QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
     "server/src/ezllmrouter_server/execution_policy.py",
     "server/src/ezllmrouter_server/execution_resources.py",
+    "server/src/ezllmrouter_server/runtime_resources.py",
+    "server/src/ezllmrouter_server/connection_resources.py",
+    "server/src/ezllmrouter_server/diagnostic_journal.py",
     "server/src/ezllmrouter_server/gateway/choice_b_wire.py",
     "server/src/ezllmrouter_server/store.py",
     "server/src/ezllmrouter_server/store_work.py",
