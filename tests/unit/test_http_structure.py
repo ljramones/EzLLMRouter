@@ -1,6 +1,7 @@
 """HTTP refactor regressions through real handlers, without binding listeners."""
 
 import csv
+import errno
 import io
 import json
 import socket
@@ -41,7 +42,11 @@ class HTTPFramingTests(UserHTTPFixture):
             with client:
                 client.settimeout(3)
                 client.sendall(request)
-                client.shutdown(socket.SHUT_WR)
+                try:
+                    client.shutdown(socket.SHUT_WR)
+                except OSError as exc:
+                    if exc.errno != errno.ENOTCONN:
+                        raise
                 chunks = []
                 while chunk := client.recv(65536):
                     chunks.append(chunk)
@@ -50,6 +55,19 @@ class HTTPFramingTests(UserHTTPFixture):
             thread.join(timeout=3)
             self.assertFalse(thread.is_alive())
             self.assertEqual(errors, [])
+
+    def test_closed_peer_before_write_shutdown_keeps_response_checks(self):
+        request = (
+            b"POST /operator/v1/login HTTP/1.1\r\nHost: 127.0.0.1:48761\r\n"
+            b"Origin: http://127.0.0.1:48761\r\nContent-Type: application/json\r\n"
+            b"Transfer-Encoding: chunked\r\nContent-Length: 2\r\n\r\n{}"
+        )
+        with patch.object(
+            socket.socket, "shutdown", side_effect=OSError(errno.ENOTCONN, "peer closed")
+        ):
+            reply = self.exchange(self.server, request)
+        self.assertEqual(reply.count(b"HTTP/1.1 "), 1, reply)
+        self.assertIn(b"Connection: close\r\n", reply)
 
     def test_expected_wire_rejection_has_public_code_and_no_error_stack(self):
         for code, status in (("AUTHENTICATION_FAILED", 401), ("INTERNAL_UNAVAILABLE", 503)):

@@ -1091,3 +1091,17 @@ lint/formatting and script/console checks. Library typing debt remains 1,631;
 six resolved function allowances are removed, leaving 50. Remaining W6 work is
 operator reporting, other retained tools, oversized individual tests and the
 deployment exercises. No target release, input acquisition or daemon change ran.
+
+### HTTP fixture close-race regression
+
+Repeated full-gate execution exposed a macOS socketpair race in the framing test
+fixture: an intentional early server close can precede the client's write-half
+shutdown, producing `ENOTCONN`. The fixture accepts that specific completed-close
+condition and continues reading/asserting the response. Other shutdown errors
+still propagate, and server-thread errors, response count and connection-close
+assertions remain intact. Production HTTP behavior is unchanged.
+
+A deterministic check injects the closed-peer condition and still requires one
+complete rejection response with `Connection: close`. All 23 HTTP-structure cases
+pass, and the full maintained gate passes 917 Python cases with strict typing on
+107 files, lint/formatting and script/console checks.
