@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+import json as json
+from datetime import datetime as datetime, timezone as timezone
+from decimal import Decimal as Decimal, InvalidOperation as InvalidOperation
 
 from .cache_accounting import SEMANTICS as CACHE_SEMANTICS
-from .cache_accounting import exposure_bound
-from .canonical import ContractError
-from .formatting import money, utc_timestamp
-from .identifiers import valid_identifier
-from .repositories import personal_campaign as _queries
-from .repositories import authority as authority_queries
-from .store import encode
+from .cache_accounting import exposure_bound as exposure_bound
+from .canonical import ContractError as ContractError
+from .formatting import money as money, utc_timestamp as utc_timestamp
+from .identifiers import valid_identifier as valid_identifier
+from .repositories import personal_campaign as _campaign_queries
+from .repositories import authority as _authority_queries
+from .store import encode as encode
+
+_queries = _campaign_queries
+authority_queries = _authority_queries
 
 CENT_NANO = Decimal("0.000000001")
+
+
+from ezllmrouter_server import campaign_reporting as _campaign_reporting
 
 
 def _exposure(bound, cost, state):
@@ -509,145 +515,6 @@ class PersonalCampaign:
 
         self._authority_transaction(action)
 
-    def reconcile_recorded_usage(self, actor):
-        """Owner-requested local reconciliation; never replays provider work."""
-        if actor != self.registry.identity.owner_id:
-            raise PermissionError("OWNER_REQUIRED")
+    reconcile_recorded_usage = _campaign_reporting.reconcile_recorded_usage
 
-        def action():
-            changed = 0
-            changed_campaigns = set()
-            rows = self.store.database.execute(
-                _queries.CAMPAIGN_ATTEMPTS_WITH_LATEST_USAGE
-            ).fetchall()
-            for attempt_id, bound, state, prior_revision, campaign_id, raw_usage in rows:
-                if state == "released":
-                    continue
-                if raw_usage is None:
-                    continue
-                usage = json.loads(raw_usage)
-                revision = usage.get("revision")
-                cost = usage.get("cost", {})
-                if (
-                    type(revision) is not int
-                    or (prior_revision is not None and revision <= prior_revision)
-                    or cost.get("status") != "calculated"
-                    or cost.get("currency") != "USD"
-                ):
-                    continue
-                try:
-                    amount = Decimal(cost["amount_decimal"])
-                except (KeyError, ValueError, InvalidOperation):
-                    continue
-                if not amount.is_finite() or amount < 0:
-                    continue
-                next_state = "over_bound" if amount > Decimal(bound) else "settled"
-                self.store.database.execute(
-                    _queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
-                    (next_state, money(amount), revision, attempt_id),
-                )
-                changed += 1
-                changed_campaigns.add(campaign_id)
-                if next_state == "over_bound":
-                    campaign = json.loads(
-                        self.store.database.execute(
-                            _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)
-                        ).fetchone()[0]
-                    )
-                    if campaign["state"] != "closed":
-                        campaign["state"] = "paused"
-                        campaign["revision"] += 1
-                        self.store.database.execute(
-                            _queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS,
-                            (encode(campaign), campaign["id"]),
-                        )
-            for campaign_id in sorted(changed_campaigns):
-                self._audit(
-                    self.store.database, "reconcile_recorded_usage", actor, campaign_id=campaign_id
-                )
-            return changed
-
-        return self._authority_transaction(action)
-
-    def summary(self):
-        with self.store.database.read():
-            campaign = self._record(self.store.database)
-            rows = (
-                self.store.database.execute(
-                    _queries.SUMMARY_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (campaign["id"],)
-                ).fetchall()
-                if campaign
-                else []
-            )
-            prior_count = self.store.database.execute(
-                _queries.SUMMARY_SELECT_PERSONAL_CAMPAIGNS
-            ).fetchone()[0]
-            prior_unresolved = (
-                self.store.database.execute(
-                    _queries.SUMMARY_SELECT_PRIOR_UNRESOLVED, (campaign["id"],)
-                ).fetchall()
-                if campaign
-                else []
-            )
-        if not campaign:
-            return {"state": "not_configured", "effective_state": "not_configured", "attempts": []}
-        incurred = sum(
-            (
-                _exposure(bound, cost, state)
-                for _, _, bound, cost, state, _ in rows
-                if state in ("settled", "over_bound", "acknowledged")
-            ),
-            Decimal(0),
-        )
-        outstanding = sum(
-            (
-                Decimal(bound)
-                for _, _, bound, _, state, _ in rows
-                if state in ("reserved", "unknown")
-            ),
-            Decimal(0),
-        )
-        available = max(Decimal(0), _amount(campaign["allowance_decimal"]) - incurred - outstanding)
-        effective_state = campaign["state"]
-        if effective_state == "active":
-            try:
-                self._current(campaign)
-            except ValueError:
-                effective_state = "paused_stale_authority"
-        return {
-            **campaign,
-            "effective_state": effective_state,
-            "previous_campaigns": max(0, prior_count - 1),
-            "unresolved_prior_attempts": [
-                {
-                    "attempt_id": attempt,
-                    "bound_decimal": bound,
-                    "cost_decimal": cost,
-                    "state": state,
-                    "campaign_id": campaign_id,
-                    "campaign_revision": json.loads(saved)["revision"],
-                }
-                for attempt, bound, cost, state, campaign_id, saved in prior_unresolved
-            ],
-            "incurred_decimal": money(incurred),
-            "outstanding_decimal": money(outstanding),
-            "available_decimal": money(available),
-            "request_count": len(rows),
-            "attempts": [
-                dict(
-                    zip(
-                        (
-                            "attempt_id",
-                            "submission_id",
-                            "bound_decimal",
-                            "cost_decimal",
-                            "state",
-                            "usage_revision",
-                        ),
-                        row,
-                        strict=True,
-                    )
-                )
-                for row in rows
-            ],
-        }
+    summary = _campaign_reporting.summary

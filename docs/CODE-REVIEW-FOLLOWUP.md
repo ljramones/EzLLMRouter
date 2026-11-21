@@ -1395,8 +1395,8 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 1,305 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
-| R2 — remove size allowances | In progress | Six of the 12 initial exceptions are resolved; remove the remaining six without increasing thresholds. Split local connector and historical Docker-input tooling domains; retain public imports and every historical runner. |
+| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 1,303 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
+| R2 — remove size allowances | In progress | Eight of the 12 initial exceptions are resolved; four function allowances remain. Connector and historical Docker-input file splits retain public imports and every historical runner. |
 | R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
 
 The first R1 batch types coroutine/future ownership and bounded connection
@@ -1448,3 +1448,28 @@ per-file budgets are tightened. Full `tools.check` passes 921 Python cases, stri
 typing on 123 files, lint/formatting, source budgets and script/console checks.
 Remaining R1/R2/R3 work continues; no target execution or retained-runner deletion
 is performed.
+
+
+#### R2: connector, campaign-reporting and retained-input domain moves
+
+Thirty-three function/method bodies move unchanged into connector HTTP/policy,
+connector inventory, campaign reporting and Docker-input fetch/resolution/
+collection modules. Public facade bindings, patched globals, ownership scopes
+and the collector's captured fetcher default remain available. A runtime
+binding/default regression and fresh-import checks cover the new modules.
+The collection domain binds its facade after definitions so either import order
+works; no data acquisition, backend, installation or container is invoked.
+
+The connector facade falls below 800 lines (about 600), campaign reporting leaves
+room for strict annotations within its class limit, and Docker preparation falls
+from 2,302 to about 1,225 lines. Both file allowances resolve. Four function
+allowances remain; the connector reader's transferred ceiling includes four
+physical lines of facade-qualification formatting, to be removed in cleanup.
+All tooling functions remain at most 200 lines. Existing diagnostic debt
+transfers without aggregate growth, from 1,305 to 1,303; strict cleanup of these
+domains follows separately.
+
+Full `tools.check` passes 922 Python cases, strict typing on 123 files,
+lint/formatting, transferred size/type budgets and maintained script/console
+checks. Copied-body AST proofs cover all 33 moves. No historical runner, frozen
+input, contract fixture or deployed state is removed or modified.

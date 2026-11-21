@@ -2,26 +2,32 @@
 
 from __future__ import annotations
 
-import hashlib
-import http.client
-import ipaddress
-import json
-import socket
-import ssl
-import time
-import uuid
-from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
+import hashlib as hashlib
+import ipaddress as ipaddress
+import json as json
+import socket as socket
+import ssl as ssl
+import time as time
+import uuid as uuid
+from pathlib import Path as Path
+from urllib.parse import urlsplit as urlsplit, urlunsplit as urlunsplit
 
-from .connector_availability import AvailabilityMonitor
-from .errors import RequestError
-from .formatting import utc_timestamp as timestamp
-from .json_validation import unique_pairs, MAX_SAFE_INTEGER
-from .observability import log_failure
-from .repositories import authority
-from .repositories import local_connectors as _queries
-from .secret_box import SecretBox, validate_secret
-from .store import encode
+from .connector_availability import AvailabilityMonitor as AvailabilityMonitor
+from .errors import RequestError as RequestError
+from .formatting import utc_timestamp as _connector_timestamp
+from .json_validation import unique_pairs as unique_pairs, MAX_SAFE_INTEGER as MAX_SAFE_INTEGER
+from .observability import log_failure as log_failure
+from .repositories import authority as authority
+from .repositories import local_connectors as _connector_queries
+from .secret_box import SecretBox as SecretBox, validate_secret as validate_secret
+from .store import encode as encode
+
+import http.client
+import http as http
+
+http = http
+timestamp = _connector_timestamp
+_queries = _connector_queries
 
 KINDS = {
     "ollama": {"name": "Ollama", "default_url": "http://localhost:11434", "api": "ollama"},
@@ -65,278 +71,32 @@ class ConnectorError(RequestError):
         super().__init__(code, status)
 
 
-def allowed_address(value):
-    try:
-        address = ipaddress.ip_address(value)
-        if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
-            address = address.ipv4_mapped
-        return any(
-            address.version == network.version and address in network for network in NETWORKS
-        )
-    except ValueError:
-        return False
+from ezllmrouter_server import local_connector_http as _local_connector_http
+from ezllmrouter_server import local_connector_inventory as _local_connector_inventory
 
 
-def normalize_url(value, kind="openai_compatible"):
-    if type(value) is not str or not value.strip() or len(value) > 512:
-        raise ConnectorError("INVALID_SERVER_URL")
-    value = value.strip()
-    if any(ord(char) < 33 for char in value) or "\\" in value:
-        raise ConnectorError("INVALID_SERVER_URL")
-    try:
-        url = urlsplit(value)
-        port = url.port
-        if (
-            url.scheme not in ("http", "https")
-            or not url.hostname
-            or url.username is not None
-            or url.password is not None
-            or url.query
-            or url.fragment
-            or (port is not None and not 1 <= port <= 65535)
-            or "%" in url.hostname
-        ):
-            raise ValueError()
-        host = url.hostname.encode("idna").decode("ascii").lower()
-        try:
-            ipaddress.ip_address(host)
-        except ValueError as caught_error:
-            if any(char not in "abcdefghijklmnopqrstuvwxyz0123456789.-_" for char in host):
-                raise ValueError() from caught_error
-        else:
-            if not allowed_address(host):
-                raise ConnectorError("LOCAL_ADDRESS_REQUIRED")
-        path = url.path.rstrip("/")
-        if path not in (("",) if kind == "ollama" else ("", "/v1")):
-            raise ConnectorError("USE_SERVER_ORIGIN_OR_V1")
-        authority = "[" + host + "]" if ":" in host else host
-        if port is not None:
-            authority += ":" + str(port)
-        return urlunsplit((url.scheme, authority, path, "", ""))
-    except (ValueError, UnicodeError) as exc:
-        if isinstance(exc, ConnectorError):
-            raise
-        raise ConnectorError("INVALID_SERVER_URL") from exc
+allowed_address = _local_connector_http.allowed_address
 
 
-def _pairs(items):
-    try:
-        return unique_pairs(items)
-    except ValueError as exc:
-        raise ConnectorError("INVALID_SERVER_RESPONSE", 502) from exc
+normalize_url = _local_connector_http.normalize_url
 
 
-def _reject_constant(_value):
-    raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
+_pairs = _local_connector_http._pairs
 
 
-def _read_json(base_url, path, api_key, *, timeout=3):
-    """GET one fixed inventory path, with pinned local DNS and a bounded body."""
-    if path not in ROUTES:
-        raise ConnectorError("INVALID_DISCOVERY_PATH")
-    url = urlsplit(normalize_url(base_url))
-    host, port = url.hostname, url.port or (443 if url.scheme == "https" else 80)
-    deadline = time.monotonic() + timeout
-    raw = stream = None
-    try:
-        addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-        if not addresses or any(not allowed_address(item[4][0]) for item in addresses):
-            raise ConnectorError("LOCAL_ADDRESS_REQUIRED")
-        addresses = sorted(addresses, key=lambda item: item[0] != socket.AF_INET)
-        last_error = None
-        for family, socktype, protocol, _, address in addresses[:8]:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TimeoutError()
-            raw = socket.socket(family, socktype, protocol)
-            raw.settimeout(remaining)
-            try:
-                raw.connect(address)
-                break
-            except OSError as exc:
-                last_error = exc
-                raw.close()
-                raw = None
-        if raw is None:
-            raise last_error or OSError()
-        stream = raw
-        if url.scheme == "https":
-            stream = ssl.create_default_context().wrap_socket(raw, server_hostname=host)
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            raise TimeoutError()
-        stream.settimeout(remaining)
-        authority = ("[" + host + "]") if ":" in host else host
-        if port != (443 if url.scheme == "https" else 80):
-            authority += ":" + str(port)
-        request = (
-            f"GET {path} HTTP/1.1\r\nHost: {authority}\r\nAccept: application/json\r\n"
-            "Accept-Encoding: identity\r\nConnection: close\r\n"
-        )
-        if api_key:
-            request += "Authorization: Bearer " + api_key + "\r\n"
-        stream.sendall((request + "\r\n").encode("ascii"))
-        response = http.client.HTTPResponse(stream)
-        response.begin()
-        if 300 <= response.status <= 399:
-            raise ConnectorError("REDIRECT_NOT_ALLOWED", 502)
-        if response.status in (401, 403):
-            raise ConnectorError("SERVER_AUTHENTICATION_REQUIRED", 502)
-        if response.status == 404:
-            raise ConnectorError("DISCOVERY_ENDPOINT_NOT_FOUND", 502)
-        if response.status == 429:
-            raise ConnectorError("SERVER_RATE_LIMITED", 502)
-        if response.status != 200:
-            raise ConnectorError("SERVER_UNAVAILABLE", 502)
-        content_type = response.getheader("Content-Type", "").split(";", 1)[0].strip().lower()
-        if not (
-            content_type == "application/json"
-            or content_type.startswith("application/")
-            and content_type.endswith("+json")
-        ):
-            raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-        if response.getheader("Content-Encoding", "identity").lower() != "identity":
-            raise ConnectorError("COMPRESSED_RESPONSE_NOT_SUPPORTED", 502)
-        if response.length is not None and response.length > MAX_RESPONSE:
-            raise ConnectorError("SERVER_RESPONSE_TOO_LARGE", 502)
-        data = bytearray()
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TimeoutError()
-            stream.settimeout(remaining)
-            chunk = response.read1(min(16384, MAX_RESPONSE + 1 - len(data)))
-            if not chunk:
-                break
-            data.extend(chunk)
-            if len(data) > MAX_RESPONSE:
-                raise ConnectorError("SERVER_RESPONSE_TOO_LARGE", 502)
-        return json.loads(data, object_pairs_hook=_pairs, parse_constant=_reject_constant)
-    except ConnectorError:
-        raise
-    except socket.gaierror as exc:
-        raise ConnectorError("SERVER_NAME_NOT_RESOLVED", 502) from exc
-    except (TimeoutError, socket.timeout) as exc:
-        raise ConnectorError("SERVER_TIMEOUT", 502) from exc
-    except ssl.SSLError as exc:
-        raise ConnectorError("SERVER_TLS_FAILED", 502) from exc
-    except (ValueError, UnicodeError, http.client.HTTPException) as exc:
-        raise ConnectorError("INVALID_SERVER_RESPONSE", 502) from exc
-    except PermissionError as exc:
-        raise ConnectorError("SERVER_CHECK_BLOCKED", 502) from exc
-    except OSError as exc:
-        raise ConnectorError("SERVER_UNREACHABLE", 502) from exc
-    finally:
-        if stream is not None:
-            stream.close()
-        if raw is not None and raw is not stream:
-            raw.close()
+_reject_constant = _local_connector_http._reject_constant
 
 
-def _text(value, secret, *, required=False, limit=240):
-    if value is None and not required:
-        return None
-    if (
-        type(value) is not str
-        or not value
-        or len(value) > limit
-        or any(ord(char) < 32 for char in value)
-    ):
-        raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-    if secret and secret in value:
-        if required:
-            raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-        return None
-    try:
-        value.encode("utf-8")
-    except UnicodeError as exc:
-        raise ConnectorError("INVALID_SERVER_RESPONSE", 502) from exc
-    return value
+_read_json = _local_connector_http._read_json
 
 
-def _integer(value):
-    return value if type(value) is int and 0 <= value <= MAX_SAFE_INTEGER else None
+_text = _local_connector_inventory._text
 
 
-def discover(kind, base_url, api_key="", *, read=None):
-    read = read or _read_json
-    base_url = normalize_url(base_url, kind)
-    spec = KINDS[kind]
-    value = read(base_url, "/api/tags" if spec["api"] == "ollama" else "/v1/models", api_key)
-    rows = (
-        value.get("models" if spec["api"] == "ollama" else "data") if type(value) is dict else None
-    )
-    if type(rows) is not list or any(type(row) is not dict for row in rows):
-        raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-    result = {
-        "state": "observed",
-        "models": [],
-        "checked_at": timestamp(),
-        "complete": len(rows) <= MAX_MODELS
-        and not bool(value.get("has_more") or value.get("next_page")),
-        "server_version": None,
-        "loaded_inventory_available": False,
-        "warnings": [],
-    }
-    seen = set()
-    for row in rows[:MAX_MODELS]:
-        model_id = _text(
-            (row.get("model") or row.get("name")) if spec["api"] == "ollama" else row.get("id"),
-            api_key,
-            required=True,
-        )
-        if model_id in seen:
-            raise ConnectorError("DUPLICATE_MODEL_ID", 502)
-        seen.add(model_id)
-        details = row.get("details") if type(row.get("details")) is dict else {}
-        model = {"id": model_id, "loaded": None}
-        if spec["api"] == "ollama":
-            model.update(
-                size_bytes=_integer(row.get("size")),
-                modified_at=_text(row.get("modified_at"), api_key),
-                digest=_text(row.get("digest"), api_key),
-                family=_text(details.get("family"), api_key),
-                format=_text(details.get("format"), api_key),
-                parameter_size=_text(details.get("parameter_size"), api_key),
-                quantization=_text(details.get("quantization_level"), api_key),
-            )
-        else:
-            model.update(
-                owned_by=_text(row.get("owned_by"), api_key),
-                context_window=_integer(row.get("max_model_len") or row.get("context_length")),
-            )
-        result["models"].append(model)
-    if spec["api"] == "ollama":
-        try:
-            loaded = read(base_url, "/api/ps", api_key)
-            if (
-                type(loaded) is not dict
-                or type(loaded.get("models")) is not list
-                or len(loaded["models"]) > MAX_MODELS
-            ):
-                raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-            loaded_models = {}
-            for row in loaded["models"]:
-                if type(row) is not dict:
-                    raise ConnectorError("INVALID_SERVER_RESPONSE", 502)
-                model_id = _text(row.get("model") or row.get("name"), api_key, required=True)
-                if model_id in loaded_models:
-                    raise ConnectorError("DUPLICATE_MODEL_ID", 502)
-                loaded_models[model_id] = _integer(row.get("size_vram"))
-            for model in result["models"]:
-                model["loaded"] = model["id"] in loaded_models
-                model["vram_bytes"] = loaded_models.get(model["id"])
-            result["loaded_inventory_available"] = True
-        except ConnectorError as exc:
-            result["warnings"].append({"operation": "loaded_models", "code": exc.code})
-        try:
-            version = read(base_url, "/api/version", api_key)
-            result["server_version"] = _text(
-                version.get("version") if type(version) is dict else None, api_key, required=True
-            )
-        except ConnectorError as exc:
-            result["warnings"].append({"operation": "server_version", "code": exc.code})
-    return result
+_integer = _local_connector_inventory._integer
+
+
+discover = _local_connector_inventory.discover
 
 
 def connector_key_path(database):

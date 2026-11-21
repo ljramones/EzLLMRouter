@@ -1,6 +1,8 @@
 """Extracted domain modules must import before their public facade."""
 
 from pathlib import Path
+import ast
+import importlib
 import subprocess
 import sys
 import unittest
@@ -24,6 +26,8 @@ class DomainImportTests(unittest.TestCase):
                 "successor_contract.py",
                 "successor_plan.py",
                 "retrieval_descriptor.py",
+                "local_connector_*.py",
+                "campaign_reporting.py",
             )
             for path in PACKAGE.glob(pattern)
         }
@@ -82,6 +86,10 @@ for registration in DEV12_CASE_HANDLERS.values():
 """
         modules = ["tools.gateway.evidence.dev12_completion_" + name for name in domains]
         modules.append("tools.gateway.docker.staging")
+        modules.extend(
+            "tools.gateway.docker." + name
+            for name in ("fetching", "resolution", "input_collection")
+        )
         for name in modules:
             with self.subTest(module=name):
                 self.assertTrue((ROOT / name.replace(".", "/")).with_suffix(".py").is_file())
@@ -101,3 +109,32 @@ for registration in DEV12_CASE_HANDLERS.values():
                     timeout=15,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_moved_domains_keep_facade_dependencies_and_collector_default(self):
+        domains = {
+            "ezllmrouter_server.local_connector_http": "ezllmrouter_server.local_connectors",
+            "ezllmrouter_server.local_connector_inventory": "ezllmrouter_server.local_connectors",
+            "ezllmrouter_server.campaign_reporting": "ezllmrouter_server.personal_campaign",
+            "tools.gateway.docker.fetching": "tools.gateway.docker.prepare",
+            "tools.gateway.docker.resolution": "tools.gateway.docker.prepare",
+            "tools.gateway.docker.input_collection": "tools.gateway.docker.prepare",
+        }
+        for domain_name, facade_name in domains.items():
+            domain, facade = (
+                importlib.import_module(domain_name),
+                importlib.import_module(facade_name),
+            )
+            tree = ast.parse(Path(domain.__file__).read_text())
+            names = {
+                node.attr
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "_api"
+            }
+            for name in names:
+                with self.subTest(domain=domain_name, dependency=name):
+                    self.assertTrue(hasattr(facade, name))
+        from tools.gateway.docker import prepare
+
+        self.assertIs(prepare.inputs02_collect_core.__defaults__[0], prepare.inputs02_fetch)

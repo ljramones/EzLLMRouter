@@ -2,12 +2,10 @@
   "baseline_commit": "33f7a45",
   "measurement": "physical source lines and Python AST spans; qualified names include enclosing scopes",
   "ceilings": {
-    "server/src/ezllmrouter_server/local_connectors.py:file": 847,
-    "server/src/ezllmrouter_server/local_connectors.py:function:_read_json": 101,
+    "server/src/ezllmrouter_server/local_connector_http.py:function:_read_json": 105,
     "server/src/ezllmrouter_server/operator_http/integration.py:function:IntegrationRoutes.get_operator_v1_integration": 137,
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
-    "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
-    "tools/gateway/docker/prepare.py:file": 2302
+    "server/src/ezllmrouter_server/operator_web.py:function:serve": 112
   },
   "relocations": [
     {
@@ -34,6 +32,11 @@
       "source": "dev12_completion_preflight.py",
       "baseline_commit": "9d7dca4",
       "note": "Two unchanged validator bodies, selected_ids and its immutable default move together. Public default identity is retained. The two transferred function caps include six total physical lines of facade-import/qualification overhead; phase cleanup follows separately."
+    },
+    {
+      "source": "local_connectors.py, PersonalCampaign reporting and Docker preparation",
+      "baseline_commit": "75d6af9",
+      "note": "33 functions preserve executable AST and public bindings. Both file allowances resolve. The connector reader cap transfers with four physical lines of facade qualification; its cleanup follows separately. No tooling function exceeds 200 lines."
     }
   ]
 }

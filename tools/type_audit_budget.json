@@ -6,13 +6,16 @@
   "errors": {
     "server/src/ezllmrouter_server/__main__.py": 1,
     "server/src/ezllmrouter_server/attribution.py": 15,
+    "server/src/ezllmrouter_server/campaign_reporting.py": 5,
     "server/src/ezllmrouter_server/connector_availability.py": 14,
     "server/src/ezllmrouter_server/database_audit.py": 4,
     "server/src/ezllmrouter_server/http_server.py": 27,
     "server/src/ezllmrouter_server/integration_bootstrap.py": 1,
     "server/src/ezllmrouter_server/integration_credentials.py": 43,
     "server/src/ezllmrouter_server/integration_local.py": 19,
-    "server/src/ezllmrouter_server/local_connectors.py": 198,
+    "server/src/ezllmrouter_server/local_connector_http.py": 37,
+    "server/src/ezllmrouter_server/local_connector_inventory.py": 29,
+    "server/src/ezllmrouter_server/local_connectors.py": 134,
     "server/src/ezllmrouter_server/operator_demo.py": 7,
     "server/src/ezllmrouter_server/operator_http/accounts.py": 76,
     "server/src/ezllmrouter_server/operator_http/assets.py": 3,
@@ -24,7 +27,7 @@
     "server/src/ezllmrouter_server/operator_http/transport.py": 40,
     "server/src/ezllmrouter_server/operator_projection.py": 56,
     "server/src/ezllmrouter_server/operator_web.py": 15,
-    "server/src/ezllmrouter_server/personal_campaign.py": 64,
+    "server/src/ezllmrouter_server/personal_campaign.py": 55,
     "server/src/ezllmrouter_server/plans.py": 8,
     "server/src/ezllmrouter_server/provider_vault.py": 31,
     "server/src/ezllmrouter_server/registry.py": 2,
@@ -88,6 +91,11 @@
       "destination": "server/src/ezllmrouter_server/integration_credential_records.py",
       "baseline_commit": "323de6d",
       "note": "Eight unchanged record methods move with explicit self typing and dynamic facade references; aggregate debt does not grow."
+    },
+    {
+      "source": "local_connectors.py and PersonalCampaign reporting methods",
+      "baseline_commit": "75d6af9",
+      "note": "33 unchanged executable-body moves preserve facade injection points and callback defaults. Existing diagnostic budgets transfer to the new domains with no aggregate growth. Strict cleanup follows separately."
     }
   ]
 }
