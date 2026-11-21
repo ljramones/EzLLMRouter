@@ -655,7 +655,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
 | W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
-| W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
+| W4 — Coordinator pipeline | In progress — move completed, typing cleanup follows | Named pipeline methods and keyword-only configuration are implemented. The latest move reduces `core.py` from 1,479 to 516 lines, below the 900-line target; all Coordinator methods remain at most 80 lines. New policy/admission/attempt/outcome/status modules retain executable bodies and error routing. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
 | W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
@@ -801,3 +801,21 @@ size ratchet and all maintained script/console checks. Real HTTP qualification
 remains pending; the listener-bind denial is not a passing HTTP result. No
 schema, migration, frozen dependency, provider execution or live-profile change
 was made.
+
+
+### Item 11 follow-up: W4 Coordinator code move
+
+The Coordinator facade is now 516 lines; its public class and constructor remain
+at `ezllmrouter_server.core`. Twenty-nine methods move to policy, admission,
+attempt, outcome and status modules, using the same instance context. An AST
+comparison against `3f94e21` verifies executable bodies, signatures/defaults and
+all `try`/`except`, gate/read/transaction statements. Shared helper and logging
+references still resolve through their original facade injection points.
+
+The full gate passes 909 Python cases, including tool-cycle, recovery, unknown
+outcome and release-safety regressions. Strict typing still covers the prior
+90-file scope; typing cleanup of the new modules follows separately. Existing
+debt transfers without aggregate growth; whole-library diagnostics are 1,924.
+Removing the resolved Coordinator file/class allowances leaves 76 size entries.
+There are now no server Python files over 1,000 lines. Frozen inputs, contracts,
+schemas, migrations and live deployment state remain unchanged.

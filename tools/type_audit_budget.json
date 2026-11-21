@@ -9,7 +9,12 @@
     "server/src/ezllmrouter_server/cache_accounting.py": 12,
     "server/src/ezllmrouter_server/connection_resources.py": 6,
     "server/src/ezllmrouter_server/connector_availability.py": 14,
-    "server/src/ezllmrouter_server/core.py": 185,
+    "server/src/ezllmrouter_server/core.py": 49,
+    "server/src/ezllmrouter_server/core_admission.py": 7,
+    "server/src/ezllmrouter_server/core_attempt.py": 13,
+    "server/src/ezllmrouter_server/core_outcomes.py": 20,
+    "server/src/ezllmrouter_server/core_policy.py": 11,
+    "server/src/ezllmrouter_server/core_status.py": 6,
     "server/src/ezllmrouter_server/database_audit.py": 4,
     "server/src/ezllmrouter_server/demo_common.py": 6,
     "server/src/ezllmrouter_server/demo_workspace.py": 17,
@@ -88,6 +93,19 @@
       },
       "note": "Unchanged method extraction; dynamic clock/helper references retain their public facade injection points.",
       "cleanup": "All accounting facade/domain modules enter strict typing; no relocated typing allowances remain."
+    },
+    {
+      "source": "server/src/ezllmrouter_server/core.py",
+      "source_ceiling": 185,
+      "recipients": {
+        "server/src/ezllmrouter_server/core_policy.py": 11,
+        "server/src/ezllmrouter_server/core_status.py": 6,
+        "server/src/ezllmrouter_server/core_outcomes.py": 20,
+        "server/src/ezllmrouter_server/core_attempt.py": 13,
+        "server/src/ezllmrouter_server/core_admission.py": 7,
+        "server/src/ezllmrouter_server/core.py": 49
+      },
+      "note": "Unchanged method extraction; exact try/except and gate/transaction bodies retained."
     }
   ]
 }

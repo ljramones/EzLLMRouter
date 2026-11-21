@@ -7,8 +7,6 @@
     "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.apply_admin": 157,
     "server/src/ezllmrouter_server/cache_accounting.py:function:cache_usage_revision": 109,
     "server/src/ezllmrouter_server/canonical.py:function:validate_text_request": 277,
-    "server/src/ezllmrouter_server/core.py:class:Coordinator": 1194,
-    "server/src/ezllmrouter_server/core.py:file": 1479,
     "server/src/ezllmrouter_server/demo_workspace.py:function:project_demo": 193,
     "server/src/ezllmrouter_server/demo_workspace_team.py:function:project_team_demo": 252,
     "server/src/ezllmrouter_server/gateway/choice_b_sender.py:function:ChoiceBSenderAdapter.process_relay": 127,
