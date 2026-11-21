@@ -3,7 +3,8 @@
 The browser baseline passed all 381 cases across Chromium, Firefox and WebKit
 in the owner Terminal. The subsequent Claude review is being addressed in the
 [review follow-up](CODE-REVIEW-FOLLOWUP.md). The longer-term priorities below
-still apply; measured coverage and deployment qualification remain outstanding.
+still apply. The implementation ledger below records measured coverage and the
+remaining deployment qualification separately.
 
 ## First gate: browser baseline
 
@@ -56,9 +57,10 @@ or contact a paid provider. Any live-provider qualification remains an explicit,
 bounded operation with separate credentials and spending authorization.
 
 Continue review work by affected behavior and severity, with a regression test
-for each confirmed defect. The explicit inventory and JavaScript CI jobs address
-the discovery portion of priority 1; they do not establish coverage percentages
-or complete the later test layers.
+for each confirmed defect. The implementation ledger below records coverage
+measurements, generated inputs and process-boundary tests added after the browser
+baseline. Their scoped results do not complete deployment qualification or every
+later test layer.
 
 ## Testing-review implementation ledger
 
@@ -80,7 +82,7 @@ keeps those distinct from new work and from target verification.
 | T06 | Accounting/canonical/registry properties | Partial: canonical round trips, integer-based decimal conservation, identifier boundaries, model revision/idempotency/stale writes, shuffled/duplicate/late accounting events and a campaign exposure state model pass. Registry principal/grant/price models and automated shrinking remain. |
 | T07 | Forced concurrency and lock-scope detection | Partial: PR lock auditing checks network waits, sleeps, password hashes and hash-slot waits across the module suites. Explicit exceptions cover pre-listener bootstrap, the nonblocking atomic first write and asyncio wake-up. New close/admission tests force both orders; existing sender, credential, purge/writer and session tests already force their boundaries with events. A seeded suite-order runner schedules 200 rounds nightly; full HTTP/TLS stress qualification remains to be observed. |
 | T08 | Process crashes, storage faults and coherent restore | Partial: real child kills cover 12 database and six encrypted-publication checkpoints; two-process exclusion, real SQLite full/busy errors, injected I/O rollback and a database/all-three-keyring restore pass offline. Missing rings fail closed. Actual first-provider-byte/plan/reply-publication kill points and interrupted database-credential rotation remain. |
-| T09 | Per-schema upgrade fixtures | Open. Existing v1–v3 and failed-migration tests need realistic synthetic manifests for every schema predecessor. Generated databases stay in temporary/ignored storage. |
+| T09 | Per-schema upgrade fixtures | Implemented for current schema v001–v003 and keyring format v1: checked-in synthetic seed/checksum/table/report manifests rebuild temporary release databases. Upgrades and restarts preserve exact historical rows, corrected controlled/external cost totals, pruned content digests and inventory anchors. Every pending migration has a byte-preserving failure/retry case; future database/keyring formats fail closed. New SQL resources or a newly minted keyring format without a fixture fail the inventory gate. No private or binary databases are tracked. |
 | T10 | Provider/client resilience matrix | Open. Compression, TLS, byte-limit, first-write and deadline examples exist; combine the declared transport behaviours in a shared matrix. |
 | T11 | Abuse rates and resource limits | Open. Existing throttle/session/connection/diagnostic regressions need a documented limit/limit-plus-one inventory. |
 | T12 | Logs and canary-secret contracts | Open. Exception redaction and named-route checks exist; add a complete route/level/schema/canary matrix. |

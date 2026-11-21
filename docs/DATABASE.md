@@ -23,6 +23,24 @@ the recorded revisions and applies any pending supported migration.
 Future schema changes belong in another numbered SQL resource and the ordered
 migration list; never change a previously applied SQL file in place.
 
+The offline upgrade gate rebuilds each supported schema version from immutable
+SQL resources and a public synthetic seed. Checked-in manifests under
+`tests/fixtures/schema-upgrades/` pin migration checksums, source/head table
+digests and complete controlled/external accounting reports. They include old
+prices and grants, audit history, corrected usage, unknown charges, erased
+snapshot content and retained inventory anchors. The same fixtures verify restart,
+future-version refusal and byte-for-byte rollback after failure in each pending
+migration. A public synthetic keyring/envelope vector verifies old ciphertext
+through rotation and rejects unsupported formats. Generated databases stay in
+temporary storage; no installation database or private key is a source fixture.
+
+Adding a SQL migration requires a fixture for that version; the inventory test
+compares the resources and manifest list. To regenerate manifests deliberately,
+run `uv run --locked python -m tests.fixtures.schema_upgrades --write`, review
+every changed checksum, table digest and report value, then run `tools.check`.
+CI never rewrites these expectations. Changing an old SQL resource to make a
+fixture pass is not an upgrade strategy.
+
 ## Probe observation retention
 
 Version 2 adds connection indexes and trims stored probe diagnostics to the most

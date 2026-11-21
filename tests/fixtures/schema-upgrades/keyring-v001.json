@@ -1,0 +1,21 @@
+{
+  "notice": "Public synthetic AES vector; never production material",
+  "keyring": {
+    "version": 1,
+    "purpose": "synthetic-upgrade-only",
+    "active_key_id": "key.90dcef36fcf595ec8366b533b688e936",
+    "mac_key": "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=",
+    "keys": {
+      "key.90dcef36fcf595ec8366b533b688e936": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+    }
+  },
+  "envelope": {
+    "version": 1,
+    "purpose": "synthetic-upgrade-only",
+    "key_id": "key.90dcef36fcf595ec8366b533b688e936",
+    "nonce": "AAECAwQFBgcICQoL",
+    "ciphertext": "F1eUV4ymnUjUD8PD9L0xLtyAwnekNA0jdymp3BY9Qr9v0nIPO9U5qwzKB4c="
+  },
+  "context": "fixture.account:1",
+  "plaintext": "PUBLIC_SYNTHETIC_VECTOR_ONLY"
+}
