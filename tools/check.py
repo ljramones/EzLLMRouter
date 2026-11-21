@@ -151,6 +151,7 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/store.py",
     "server/src/ezllmrouter_server/records.py",
     "server/src/ezllmrouter_server/canonical.py",
+    "server/src/ezllmrouter_server/request_validation.py",
     "server/src/ezllmrouter_server/csv_export.py",
     "server/src/ezllmrouter_server/wire_http",
     "server/src/ezllmrouter_server/identifiers.py",

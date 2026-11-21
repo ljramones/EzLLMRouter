@@ -845,3 +845,16 @@ formatting, strict mypy on 98 files, the library-debt ratchet (1,805 existing
 errors), size budgets (75 allowances) and script/console checks. The tool-cycle,
 release-safety and cache-accounting suites also pass focused checks. No provider
 call, daemon restart, schema/migration or frozen-input change was performed.
+
+
+### Item 11 follow-up: W5 canonical validator move
+
+The first canonical-validation commit moves the 277-line validator unchanged
+to `request_validation.py`, preserving its executable AST, arguments/defaults and
+error order. The public `canonical.validate_text_request` signature delegates
+lazily so either module can be imported first. Canonical primitives, digest
+domains and the existing timeout-constant import remain available. The existing
+size allowance transfers without increasing; the new module is strictly typed.
+Full `tools.check` passes 909 Python cases, strict mypy on 99 files, lint/format,
+source/type budgets and script/console checks. Field/phase decomposition follows
+in a separate cleanup commit.
