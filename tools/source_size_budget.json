@@ -4,9 +4,6 @@
   "ceilings": {
     "clients/python/src/ezllmrouter_client/__init__.py:function:EzLLMRouterClient._attribution_operation": 106,
     "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.append_outcome": 128,
-    "server/src/ezllmrouter_server/attribution.py:function:AttributionLedger.apply_admin": 157,
-    "server/src/ezllmrouter_server/demo_workspace.py:function:project_demo": 193,
-    "server/src/ezllmrouter_server/demo_workspace_team.py:function:project_team_demo": 252,
     "server/src/ezllmrouter_server/gateway/choice_b_sender.py:function:ChoiceBSenderAdapter.process_relay": 127,
     "server/src/ezllmrouter_server/gateway/guard.py:function:check_request": 112,
     "server/src/ezllmrouter_server/gateway/retrieval_guard.py:function:check_synthetic_request": 107,

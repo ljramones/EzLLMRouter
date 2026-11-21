@@ -4,20 +4,79 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
+from collections.abc import Callable
+from .store import Record
 
-from .demo_common import LABEL, amount, total, basis
+from .demo_common import LABEL, amount, total, basis, select_attempts
 from .reporting import descendant_attempts, group_attempts
 
 
 def project_team_demo(
-    legacy_path, *, collection="team", story="team", actor="", person="", provider=""
-):
+    legacy_path: str | Path,
+    *,
+    collection: str = "team",
+    story: str = "team",
+    actor: str = "",
+    person: str = "",
+    provider: str = "",
+) -> Record:
     if collection not in {"team", "expanded"}:
         raise ValueError("invalid demo collection")
     legacy = json.loads(Path(legacy_path).read_text())
     team = json.loads(Path(legacy_path).with_name("dev09_team_demo_fixture.json").read_text())
     if team["legacy_fixture"] != legacy["identity"]:
         raise ValueError("demo fixture version mismatch")
+    actors, stories, story_map, legacy_ids, team_ids, selected = _team_selection(
+        legacy, team, collection, story, actor, person, provider
+    )
+    offsets, end = _team_timeline(team, story, story_map, legacy_ids, selected)
+    source_runs, runs, root_run = _team_runs(legacy, team)
+
+    root_story = {item["root_run"]: item["id"] for item in stories}
+    attempts, all_attempts, seen = _team_attempts(
+        legacy, team, story_map, actors, runs, root_story, root_run, offsets, selected
+    )
+    events = _team_events(legacy, team, story_map, actors, seen, selected, offsets, attempts)
+    billable = select_attempts(attempts, actor, person, provider)
+    snapshots = _team_snapshots(
+        end, events, billable, attempts, runs, source_runs, root_story, root_run, selected
+    )
+    return {
+        "identity": team["identity"],
+        "label": LABEL,
+        "collection": collection,
+        "selected_story": story,
+        "selected_story_ids": selected,
+        "selected_actor": actor,
+        "selected_person": person,
+        "selected_provider": provider,
+        "actors": list(actors.values()),
+        "rates": legacy["rates"],
+        "stories": [
+            {**item, "total": total([a for a in all_attempts if a["story"] == item["id"]])}
+            for item in stories
+        ],
+        "all_total": total(attempts),
+        "legacy_total": total([a for a in all_attempts if a["story"] in legacy_ids]),
+        "team_total": total([a for a in all_attempts if a["story"] in team_ids]),
+        "expanded_total": total(all_attempts),
+        "end": end,
+        "events": events,
+        "attempts": attempts,
+        "snapshots": snapshots,
+    }
+
+
+def _team_selection(
+    legacy: Record,
+    team: Record,
+    collection: str,
+    story: str,
+    actor: str,
+    person: str,
+    provider: str,
+) -> tuple[dict[str, Record], list[Record], dict[str, Record], list[str], list[str], list[str]]:
     actors = {item["id"]: item for item in legacy["actors"]}
     actors.update((item["id"], item) for item in team["actor_overrides"])
     for item in team["actors"]:
@@ -48,6 +107,16 @@ def project_team_demo(
     selected = (
         team_ids if story == "team" else list(story_map) if story == "expanded_all" else [story]
     )
+    return actors, stories, story_map, legacy_ids, team_ids, selected
+
+
+def _team_timeline(
+    team: Record,
+    story: str,
+    story_map: dict[str, Record],
+    legacy_ids: list[str],
+    selected: list[str],
+) -> tuple[dict[str, int], int]:
     if story in {"team", "expanded_all"}:
         offsets = dict(team["team_offsets_seconds"])
         if story == "expanded_all":
@@ -60,12 +129,18 @@ def project_team_demo(
     else:
         offsets = {story: 0}
     end = max(offsets[name] + story_map[name]["end"] for name in selected)
+    return offsets, end
+
+
+def _team_runs(
+    legacy: Record, team: Record
+) -> tuple[list[Record], dict[str, Record], Callable[[str], str]]:
     source_runs = legacy["runs"] + team["runs"]
     runs = {item["run_id"]: item for item in source_runs}
     if len(runs) != len(source_runs):
         raise ValueError("duplicate demo run")
 
-    def root_run(run_id):
+    def root_run(run_id: str) -> str:
         seen = set()
         while runs[run_id].get("parent_run_id"):
             if run_id in seen:
@@ -74,7 +149,20 @@ def project_team_demo(
             run_id = runs[run_id]["parent_run_id"]
         return run_id
 
-    root_story = {item["root_run"]: item["id"] for item in stories}
+    return source_runs, runs, root_run
+
+
+def _team_attempts(
+    legacy: Record,
+    team: Record,
+    story_map: dict[str, Record],
+    actors: dict[str, Record],
+    runs: dict[str, Record],
+    root_story: dict[str, str],
+    root_run: Callable[[str], str],
+    offsets: dict[str, int],
+    selected: list[str],
+) -> tuple[list[Record], list[Record], set[str]]:
     attempts, all_attempts, seen = [], [], set()
     for source in legacy["attempts"] + team["attempts"]:
         info = story_map[source["story"]]
@@ -116,6 +204,19 @@ def project_team_demo(
         all_attempts.append(attempt)
         if source["story"] in selected:
             attempts.append(attempt)
+    return attempts, all_attempts, seen
+
+
+def _team_events(
+    legacy: Record,
+    team: Record,
+    story_map: dict[str, Record],
+    actors: dict[str, Record],
+    seen: set[str],
+    selected: list[str],
+    offsets: dict[str, int],
+    attempts: list[Record],
+) -> list[Record]:
     events, event_ids = [], set()
     for source in legacy["events"] + team["events"]:
         if (
@@ -176,7 +277,7 @@ def project_team_demo(
         if (
             sum(
                 event.get("attempt") == item["id"]
-                and event.get("cost_event")
+                and cast(bool, event.get("cost_event"))
                 and event["at"] == item["usage_at"]
                 for event in events
             )
@@ -185,13 +286,20 @@ def project_team_demo(
             raise ValueError("demo attempt needs one usage observation")
     events.sort(key=lambda item: (item["at"], item["id"]))
     attempts.sort(key=lambda item: (item["usage_at"], item["id"]))
-    billable = [
-        item
-        for item in attempts
-        if (not actor or item["actor"] == actor)
-        and (not person or item["user"] == (None if person == "__autonomous__" else person))
-        and (not provider or item["provider"] == provider)
-    ]
+    return events
+
+
+def _team_snapshots(
+    end: int,
+    events: list[Record],
+    billable: list[Record],
+    attempts: list[Record],
+    runs: dict[str, Record],
+    source_runs: list[Record],
+    root_story: dict[str, str],
+    root_run: Callable[[str], str],
+    selected: list[str],
+) -> list[Record]:
     times = sorted(
         {0, end} | {item["at"] for item in events} | {item["usage_at"] for item in billable}
     )
@@ -237,27 +345,4 @@ def project_team_demo(
                 "workflows": workflows,
             }
         )
-    return {
-        "identity": team["identity"],
-        "label": LABEL,
-        "collection": collection,
-        "selected_story": story,
-        "selected_story_ids": selected,
-        "selected_actor": actor,
-        "selected_person": person,
-        "selected_provider": provider,
-        "actors": list(actors.values()),
-        "rates": legacy["rates"],
-        "stories": [
-            {**item, "total": total([a for a in all_attempts if a["story"] == item["id"]])}
-            for item in stories
-        ],
-        "all_total": total(attempts),
-        "legacy_total": total([a for a in all_attempts if a["story"] in legacy_ids]),
-        "team_total": total([a for a in all_attempts if a["story"] in team_ids]),
-        "expanded_total": total(all_attempts),
-        "end": end,
-        "events": events,
-        "attempts": attempts,
-        "snapshots": snapshots,
-    }
+    return snapshots

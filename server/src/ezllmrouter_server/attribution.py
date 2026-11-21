@@ -5,6 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 from copy import deepcopy
+from typing import cast
+
+from .database import Database
 
 from .canonical import ContractError
 from .errors import RegistryConflict
@@ -12,7 +15,7 @@ from .formatting import utc_timestamp as timestamp
 from .identifiers import require_identifier as identifier
 from .identifiers import require_text as nonempty
 from .repositories import attribution as _queries
-from .store import encode
+from .store import Record, encode
 
 
 def _id(value):
@@ -22,9 +25,9 @@ def _id(value):
         raise ContractError("SCHEMA_INVALID", 400) from exc
 
 
-def _record(db, table, key, value):
+def _record(db: Database, table: str, key: str, value: str) -> Record | None:
     row = db.execute(_queries.RECORD_SELECT_RECORD(key=key, table=table), (value,)).fetchone()
-    return json.loads(row[0]) if row else None
+    return cast(Record, json.loads(cast(str, row[0]))) if row else None
 
 
 class AttributionLedger:
@@ -241,162 +244,19 @@ class AttributionLedger:
             )
         }
 
-    def apply_admin(self, db, action, subject, expected, data):
+    def apply_admin(
+        self, db: Database, action: str, subject: str, expected: int, data: Record
+    ) -> Record:
         if action == "register_agent":
-            if (
-                expected
-                or set(data) != {"display_name", "owner", "versions"}
-                or type(data["versions"]) is not list
-                or not data["versions"]
-                or len(set(data["versions"])) != len(data["versions"])
-            ):
-                raise ValueError("invalid agent registration")
-            if _record(db, "registry_agents", "id", subject):
-                raise RegistryConflict("agent exists")
-            versions = [identifier(item) for item in data["versions"]]
-            record = {
-                "agent_id": subject,
-                "display_name": nonempty(data["display_name"]),
-                "owner": identifier(data["owner"]),
-                "versions": versions,
-                "status": "active",
-                "instrumentation_status": "not_instrumented",
-                "instrumentation_ref": None,
-                "revision": 1,
-                "created_at": timestamp(),
-            }
-            db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_AGENTS, (subject, encode(record)))
-            return record
+            return _register_agent(db, subject, expected, data)
         if action == "agent_state":
-            record = _record(db, "registry_agents", "id", subject)
-            if (
-                not record
-                or record["revision"] != expected
-                or set(data) != {"status", "reason"}
-                or data["status"] not in ("active", "archived")
-            ):
-                raise RegistryConflict("agent revision changed or invalid state")
-            record.update(
-                status=data["status"], state_reason=nonempty(data["reason"]), revision=expected + 1
-            )
-            db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
-            return record
+            return _agent_state(db, subject, expected, data)
         if action == "agent_instrumentation":
-            record = _record(db, "registry_agents", "id", subject)
-            if (
-                not record
-                or record["revision"] != expected
-                or set(data) != {"status", "evidence_ref"}
-                or data["status"] not in ("instrumented", "not_instrumented")
-            ):
-                raise RegistryConflict("agent instrumentation revision changed")
-            reference = identifier(data["evidence_ref"])
-            record.update(
-                instrumentation_status=data["status"],
-                instrumentation_ref=reference,
-                revision=expected + 1,
-            )
-            db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
-            return record
+            return _agent_instrumentation(db, subject, expected, data)
         if action == "set_agent_permission":
-            required = {
-                "caller_principal_id",
-                "agent_id",
-                "charging_owner_id",
-                "task_classes",
-                "status",
-            }
-            if (
-                set(data) not in (required, required | {"initiating_user_id"})
-                or data["status"] not in ("active", "revoked")
-                or type(data["task_classes"]) is not list
-                or not data["task_classes"]
-            ):
-                raise ValueError("invalid agent permission")
-            caller = _record(
-                db, "registry_principals", "id", identifier(data["caller_principal_id"])
-            )
-            agent = _record(db, "registry_agents", "id", identifier(data["agent_id"]))
-            user = identifier(data["initiating_user_id"]) if "initiating_user_id" in data else None
-            user_record = _record(db, "registry_principals", "id", user) if user else None
-            owner = identifier(data["charging_owner_id"])
-            if (
-                not caller
-                or caller["kind"] != "service"
-                or caller["owner"] != owner
-                or not agent
-                or (user and (not user_record or user_record["kind"] != "human"))
-            ):
-                raise ValueError("agent permission scope invalid")
-            classes = sorted({identifier(item) for item in data["task_classes"]})
-            current = _record(db, "registry_agent_permissions", "id", subject)
-            if (
-                current
-                and (
-                    current["revision"] != expected
-                    or current["caller_principal_id"] != caller["principal_id"]
-                    or current["agent_id"] != agent["agent_id"]
-                    or current.get("initiating_user_id") != user
-                )
-            ) or (not current and expected != 0):
-                raise RegistryConflict("agent permission revision changed")
-            competing = db.execute(
-                _queries.APPLY_ADMIN_SELECT_REGISTRY_AGENT_PERMISSIONS,
-                (caller["principal_id"], agent["agent_id"], user or ""),
-            ).fetchone()
-            if competing and competing[0] != subject:
-                raise RegistryConflict("agent permission scope already recorded")
-            record = {
-                "permission_id": subject,
-                "caller_principal_id": caller["principal_id"],
-                "agent_id": agent["agent_id"],
-                "initiating_user_id": user,
-                "charging_owner_id": owner,
-                "task_classes": classes,
-                "status": data["status"],
-                "revision": expected + 1,
-            }
-            if current:
-                db.execute(
-                    _queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENT_PERMISSIONS,
-                    (encode(record), subject),
-                )
-            else:
-                db.execute(
-                    _queries.APPLY_ADMIN_INSERT_REGISTRY_AGENT_PERMISSIONS,
-                    (
-                        subject,
-                        caller["principal_id"],
-                        agent["agent_id"],
-                        user or "",
-                        encode(record),
-                    ),
-                )
-            return record
+            return _set_agent_permission(db, subject, expected, data)
         if action == "set_outcome_authority":
-            if (
-                set(data) != {"status", "task_classes"}
-                or data["status"] not in ("active", "revoked")
-                or type(data["task_classes"]) is not list
-                or not data["task_classes"]
-            ):
-                raise ValueError("invalid outcome authority")
-            principal = _record(db, "registry_principals", "id", subject)
-            if not principal:
-                raise ValueError("outcome principal unknown")
-            current = _record(db, "registry_outcome_authorities", "id", subject)
-            if (current and current["revision"] != expected) or (not current and expected):
-                raise RegistryConflict("outcome authority revision changed")
-            record = {
-                "principal_id": subject,
-                "status": data["status"],
-                "task_classes": sorted({identifier(item) for item in data["task_classes"]}),
-                "revision": expected + 1,
-            }
-            db.execute(
-                _queries.APPLY_ADMIN_INSERT_REGISTRY_OUTCOME_AUTHORITIES, (subject, encode(record))
-            )
-            return record
+            return _set_outcome_authority(db, subject, expected, data)
         raise ValueError("unsupported agent authority action")
 
     def append_outcome(self, trusted, body):
@@ -520,7 +380,7 @@ class AttributionLedger:
             )
             if not step:
                 current = _record(self.store.database, "attribution_runs", "id", run["run_id"])
-                current.update(status=body["verdict"], terminal_at=at)
+                cast(Record, current).update(status=body["verdict"], terminal_at=at)
                 self.store.database.execute(
                     _queries.SAVE_UPDATE_ATTRIBUTION_RUNS, (encode(current), run["run_id"])
                 )
@@ -538,3 +398,164 @@ class AttributionLedger:
         if not row:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         return json.loads(row[0])
+
+
+def _register_agent(db: Database, subject: str, expected: int, data: Record) -> Record:
+    if (
+        expected
+        or set(data) != {"display_name", "owner", "versions"}
+        or type(data["versions"]) is not list
+        or not data["versions"]
+        or len(set(data["versions"])) != len(data["versions"])
+    ):
+        raise ValueError("invalid agent registration")
+    if _record(db, "registry_agents", "id", subject):
+        raise RegistryConflict("agent exists")
+    versions = [identifier(item) for item in data["versions"]]
+    record = {
+        "agent_id": subject,
+        "display_name": nonempty(data["display_name"]),
+        "owner": identifier(data["owner"]),
+        "versions": versions,
+        "status": "active",
+        "instrumentation_status": "not_instrumented",
+        "instrumentation_ref": None,
+        "revision": 1,
+        "created_at": timestamp(),
+    }
+    db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_AGENTS, (subject, encode(record)))
+    return record
+
+
+def _agent_state(db: Database, subject: str, expected: int, data: Record) -> Record:
+    record = _record(db, "registry_agents", "id", subject)
+    if (
+        not record
+        or record["revision"] != expected
+        or set(data) != {"status", "reason"}
+        or data["status"] not in ("active", "archived")
+    ):
+        raise RegistryConflict("agent revision changed or invalid state")
+    record.update(
+        status=data["status"], state_reason=nonempty(data["reason"]), revision=expected + 1
+    )
+    db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
+    return record
+
+
+def _agent_instrumentation(db: Database, subject: str, expected: int, data: Record) -> Record:
+    record = _record(db, "registry_agents", "id", subject)
+    if (
+        not record
+        or record["revision"] != expected
+        or set(data) != {"status", "evidence_ref"}
+        or data["status"] not in ("instrumented", "not_instrumented")
+    ):
+        raise RegistryConflict("agent instrumentation revision changed")
+    reference = identifier(data["evidence_ref"])
+    record.update(
+        instrumentation_status=data["status"],
+        instrumentation_ref=reference,
+        revision=expected + 1,
+    )
+    db.execute(_queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENTS, (encode(record), subject))
+    return record
+
+
+def _set_agent_permission(db: Database, subject: str, expected: int, data: Record) -> Record:
+    required = {
+        "caller_principal_id",
+        "agent_id",
+        "charging_owner_id",
+        "task_classes",
+        "status",
+    }
+    if (
+        set(data) not in (required, required | {"initiating_user_id"})
+        or data["status"] not in ("active", "revoked")
+        or type(data["task_classes"]) is not list
+        or not data["task_classes"]
+    ):
+        raise ValueError("invalid agent permission")
+    caller = _record(db, "registry_principals", "id", identifier(data["caller_principal_id"]))
+    agent = _record(db, "registry_agents", "id", identifier(data["agent_id"]))
+    user = identifier(data["initiating_user_id"]) if "initiating_user_id" in data else None
+    user_record = _record(db, "registry_principals", "id", user) if user else None
+    owner = identifier(data["charging_owner_id"])
+    if (
+        not caller
+        or caller["kind"] != "service"
+        or caller["owner"] != owner
+        or not agent
+        or (user and (not user_record or user_record["kind"] != "human"))
+    ):
+        raise ValueError("agent permission scope invalid")
+    classes = sorted({identifier(item) for item in data["task_classes"]})
+    current = _record(db, "registry_agent_permissions", "id", subject)
+    if (
+        current
+        and (
+            current["revision"] != expected
+            or current["caller_principal_id"] != caller["principal_id"]
+            or current["agent_id"] != agent["agent_id"]
+            or current.get("initiating_user_id") != user
+        )
+    ) or (not current and expected != 0):
+        raise RegistryConflict("agent permission revision changed")
+    competing = db.execute(
+        _queries.APPLY_ADMIN_SELECT_REGISTRY_AGENT_PERMISSIONS,
+        (caller["principal_id"], agent["agent_id"], user or ""),
+    ).fetchone()
+    if competing and competing[0] != subject:
+        raise RegistryConflict("agent permission scope already recorded")
+    record = {
+        "permission_id": subject,
+        "caller_principal_id": caller["principal_id"],
+        "agent_id": agent["agent_id"],
+        "initiating_user_id": user,
+        "charging_owner_id": owner,
+        "task_classes": classes,
+        "status": data["status"],
+        "revision": expected + 1,
+    }
+    if current:
+        db.execute(
+            _queries.APPLY_ADMIN_UPDATE_REGISTRY_AGENT_PERMISSIONS,
+            (encode(record), subject),
+        )
+    else:
+        db.execute(
+            _queries.APPLY_ADMIN_INSERT_REGISTRY_AGENT_PERMISSIONS,
+            (
+                subject,
+                caller["principal_id"],
+                agent["agent_id"],
+                user or "",
+                encode(record),
+            ),
+        )
+    return record
+
+
+def _set_outcome_authority(db: Database, subject: str, expected: int, data: Record) -> Record:
+    if (
+        set(data) != {"status", "task_classes"}
+        or data["status"] not in ("active", "revoked")
+        or type(data["task_classes"]) is not list
+        or not data["task_classes"]
+    ):
+        raise ValueError("invalid outcome authority")
+    principal = _record(db, "registry_principals", "id", subject)
+    if not principal:
+        raise ValueError("outcome principal unknown")
+    current = _record(db, "registry_outcome_authorities", "id", subject)
+    if (current and current["revision"] != expected) or (not current and expected):
+        raise RegistryConflict("outcome authority revision changed")
+    record = {
+        "principal_id": subject,
+        "status": data["status"],
+        "task_classes": sorted({identifier(item) for item in data["task_classes"]}),
+        "revision": expected + 1,
+    }
+    db.execute(_queries.APPLY_ADMIN_INSERT_REGISTRY_OUTCOME_AUTHORITIES, (subject, encode(record)))
+    return record

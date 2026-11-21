@@ -656,7 +656,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
 | W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
 | W4 — Coordinator pipeline | Implemented — local checks pass | The facade is 577 lines, below the 900-line target; every Coordinator/domain function is at most 80 lines. Public imports and constructor arguments remain available. The facade, step modules and cache accounting pass strict typing, with concrete checks for authority, registry and sender capabilities. Failure/unknown-outcome boundaries remain around the same operations. |
-| W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical field phases and Store record decomposition are implemented. Demo projections and probe/admin function cleanup remain. |
+| W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical fields, Store records, successor reporting, provider probes, attribution actions and demo projections are decomposed. The credential-store class still exceeds the 600-line class target. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
 | W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
@@ -948,3 +948,25 @@ including malformed/partial pages, repeated tokens, page limits and transport
 failures. Results and wire-call traces match exactly. The nine transport tests
 and full `tools.check` pass: 915 Python cases, strict typing on 103 files,
 lint/formatting, type/size budgets and maintained script/console checks.
+
+### Item 11 follow-up: W5 attribution and demo phases
+
+The attribution admin dispatcher delegates to five named action helpers. An AST
+comparison preserves every original branch body, including revision checks,
+validation order, SQL and returns; no transaction is added or moved. Record
+annotations add only static casts at existing JSON/record boundaries.
+
+Both demo projections now separate identity/selector validation, timelines,
+lineage, attempts, events, reference totals and playback snapshots. Their common
+attempt filter lives in `demo_common`, alongside the fictional arithmetic.
+Public reporting helpers and Totals gain signatures without changing arithmetic.
+All three demo modules join strict checking. A differential replay against
+`8187bcc` compares 2,200 selector and malformed-fixture cases: output/error bytes
+and fixture-read traces match. The six focused demo cases and three attribution
+cases pass. No real provider or registry data is used.
+
+The full gate passes 915 Python cases, strict typing on 106 files, lint/format,
+script/console checks and both ratchets. Library typing debt falls to 1,689 and
+67 size allowances remain. All server functions are now below 150 lines. The
+credential-store class and retained evidence/test decomposition remain before
+item 11 can be marked complete.

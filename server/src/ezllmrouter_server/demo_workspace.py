@@ -4,14 +4,58 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from .store import Record
 
 from .reporting import descendant_attempts, group_attempts
-from .demo_common import LABEL, amount, total, basis
+from .demo_common import LABEL, amount, total, basis, select_attempts
 
 
-def project_demo(fixture_path, *, story="main", actor="", person="", provider=""):
+def project_demo(
+    fixture_path: str | Path,
+    *,
+    story: str = "main",
+    actor: str = "",
+    person: str = "",
+    provider: str = "",
+) -> Record:
     """Build immutable playback snapshots; no registry or provider is consulted."""
     fixture = json.loads(Path(fixture_path).read_text())
+    stories, story_ids, actor_ids, providers = _legacy_identity(
+        fixture, story, actor, person, provider
+    )
+    runs = {item["run_id"]: item for item in fixture["runs"]}
+    offsets, end = _legacy_timeline(stories, story)
+    attempts, seen = _legacy_attempts(
+        fixture, stories, story_ids, actor_ids, providers, runs, offsets, story
+    )
+    events = _legacy_events(fixture, story_ids, actor_ids, seen, story, offsets, attempts)
+    selected = select_attempts(attempts, actor, person, provider)
+    all_attempts, story_totals = _legacy_reference_totals(fixture, providers, stories)
+    # A projection of the full, unfiltered fixture is reference context, never an extra charge.
+    snapshots = _legacy_snapshots(end, events, attempts, runs, fixture, story, selected)
+    return {
+        "identity": fixture["identity"],
+        "label": LABEL,
+        "collection": "legacy",
+        "stories": story_totals,
+        "selected_story": story,
+        "selected_story_ids": [item["id"] for item in stories] if story == "all" else [story],
+        "selected_actor": actor,
+        "selected_person": person,
+        "selected_provider": provider,
+        "actors": fixture["actors"],
+        "rates": providers,
+        "all_total": total(all_attempts),
+        "end": end,
+        "events": events,
+        "attempts": attempts,
+        "snapshots": snapshots,
+    }
+
+
+def _legacy_identity(
+    fixture: Record, story: str, actor: str, person: str, provider: str
+) -> tuple[list[Record], set[str], set[str], dict[str, Record]]:
     stories = fixture["stories"]
     story_ids = {item["id"] for item in stories}
     actor_ids = {item["id"] for item in fixture["actors"]}
@@ -30,7 +74,10 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         raise ValueError("invalid demo person")
     if len(story_ids) != len(stories) or len(actor_ids) != len(fixture["actors"]):
         raise ValueError("duplicate demo identity")
-    runs = {item["run_id"]: item for item in fixture["runs"]}
+    return stories, story_ids, actor_ids, providers
+
+
+def _legacy_timeline(stories: list[Record], story: str) -> tuple[dict[str, int], int]:
     offsets = {}
     elapsed = 0
     for item in stories:
@@ -41,6 +88,19 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         if story == "all"
         else next(item["end"] for item in stories if item["id"] == story)
     )
+    return offsets, end
+
+
+def _legacy_attempts(
+    fixture: Record,
+    stories: list[Record],
+    story_ids: set[str],
+    actor_ids: set[str],
+    providers: dict[str, Record],
+    runs: dict[str, Record],
+    offsets: dict[str, int],
+    story: str,
+) -> tuple[list[Record], set[str]]:
     attempts = []
     seen = set()
     for source in fixture["attempts"]:
@@ -79,6 +139,18 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         }
         if story == "all" or source["story"] == story:
             attempts.append(attempt)
+    return attempts, seen
+
+
+def _legacy_events(
+    fixture: Record,
+    story_ids: set[str],
+    actor_ids: set[str],
+    seen: set[str],
+    story: str,
+    offsets: dict[str, int],
+    attempts: list[Record],
+) -> list[Record]:
     events = []
     event_ids = set()
     for source in fixture["events"]:
@@ -107,13 +179,12 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
             != 1
         ):
             raise ValueError("demo attempt has no unique completion event")
-    selected = [
-        item
-        for item in attempts
-        if (not actor or item["actor"] == actor)
-        and (not person or item["user"] == (None if person == "__autonomous__" else person))
-        and (not provider or item["provider"] == provider)
-    ]
+    return events
+
+
+def _legacy_reference_totals(
+    fixture: Record, providers: dict[str, Record], stories: list[Record]
+) -> tuple[list[Record], list[Record]]:
     all_attempts = []
     for source in fixture["attempts"]:
         all_attempts.append(
@@ -141,7 +212,18 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
         }
         for item in stories
     ]
-    # A projection of the full, unfiltered fixture is reference context, never an extra charge.
+    return all_attempts, story_totals
+
+
+def _legacy_snapshots(
+    end: int,
+    events: list[Record],
+    attempts: list[Record],
+    runs: dict[str, Record],
+    fixture: Record,
+    story: str,
+    selected: list[Record],
+) -> list[Record]:
     snapshot_times = sorted(
         {0, end} | {item["at"] for item in events} | {item["at"] for item in selected}
     )
@@ -184,21 +266,4 @@ def project_demo(fixture_path, *, story="main", actor="", person="", provider=""
                 "workflows": workflows,
             }
         )
-    return {
-        "identity": fixture["identity"],
-        "label": LABEL,
-        "collection": "legacy",
-        "stories": story_totals,
-        "selected_story": story,
-        "selected_story_ids": [item["id"] for item in stories] if story == "all" else [story],
-        "selected_actor": actor,
-        "selected_person": person,
-        "selected_provider": provider,
-        "actors": fixture["actors"],
-        "rates": providers,
-        "all_total": total(all_attempts),
-        "end": end,
-        "events": events,
-        "attempts": attempts,
-        "snapshots": snapshots,
-    }
+    return snapshots

@@ -10,6 +10,7 @@ from statistics import median
 from .formatting import money, utc_timestamp
 from .identifiers import valid_identifier
 from .repositories import reporting as _queries
+from .store import Record
 
 KNOWN = frozenset({"reported", "calculated", "reconciled"})
 
@@ -32,7 +33,7 @@ def _utc(value):
     return parsed.replace(tzinfo=timezone.utc)
 
 
-def _money(value):
+def _money(value: Decimal) -> str:
     return money(value, compact=True)
 
 
@@ -50,16 +51,16 @@ def _matches(record, field, value):
 
 
 class Totals:
-    def __init__(self):
+    def __init__(self) -> None:
         self.attempts = 0
         self.known_attempts = 0
         self.unknown_attempts = 0
         self.estimated_attempts = 0
         self.no_provider_charge_attempts = 0
-        self.amounts = {}
-        self.estimated_amounts = {}
+        self.amounts: dict[str, Decimal] = {}
+        self.estimated_amounts: dict[str, Decimal] = {}
 
-    def add(self, item):
+    def add(self, item: Record) -> None:
         self.attempts += 1
         status = item["cost_status"]
         if status in KNOWN:
@@ -80,7 +81,7 @@ class Totals:
         else:
             self.unknown_attempts += 1
 
-    def public(self):
+    def public(self) -> Record:
         return {
             "attempts": self.attempts,
             "known_cost_attempts": self.known_attempts,
@@ -95,16 +96,16 @@ class Totals:
         }
 
 
-def group_attempts(items, field):
-    result = {}
+def group_attempts(items: list[Record], field: str) -> list[Record]:
+    result: dict[str, Totals] = {}
     for item in items:
         key = item.get(field) or "__unknown__"
         result.setdefault(key, Totals()).add(item)
     return [{"id": key, **total.public()} for key, total in sorted(result.items())]
 
 
-def descendant_attempts(items, runs):
-    by_run = {}
+def descendant_attempts(items: list[Record], runs: dict[str, Record]) -> dict[str, set[str]]:
+    by_run: dict[str, set[str]] = {}
     for item in items:
         if item["run_id"]:
             by_run.setdefault(item["run_id"], set()).add(item["attempt_id"])
