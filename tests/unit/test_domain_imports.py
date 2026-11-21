@@ -59,6 +59,7 @@ class DomainImportTests(unittest.TestCase):
             "usage_verification",
             "write_verification",
             "supplement_state",
+            "preflight_validation",
         )
         script = """
 import importlib, inspect, sys

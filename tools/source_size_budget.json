@@ -32,8 +32,8 @@
     "tools/gateway/evidence/dev12_completion_auth_http.py:function:main": 348,
     "tools/gateway/evidence/dev12_completion_continue03_audit.py:function:audit": 214,
     "tools/gateway/evidence/dev12_completion_packet_audit.py:function:audit": 238,
-    "tools/gateway/evidence/dev12_completion_preflight.py:function:_continuation_context": 404,
-    "tools/gateway/evidence/dev12_completion_preflight.py:function:validate": 435,
+    "tools/gateway/evidence/dev12_completion_preflight_validation.py:function:_continuation_context": 406,
+    "tools/gateway/evidence/dev12_completion_preflight_validation.py:function:validate": 439,
     "tools/gateway/evidence/dev12_completion_zero_send_checks.py:function:main": 308,
     "tools/gateway/evidence/dev12_controls.py:function:run": 287,
     "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237,
@@ -68,6 +68,11 @@
       "source": "Retained supplement state operations and Docker staging",
       "baseline_commit": "2f5db41",
       "note": "Three unchanged helper bodies move to focused modules; function ceilings transfer with facade-import formatting overhead. Resolved file ceilings are removed or reduced; phase cleanup follows separately."
+    },
+    {
+      "source": "dev12_completion_preflight.py",
+      "baseline_commit": "9d7dca4",
+      "note": "Two unchanged validator bodies, selected_ids and its immutable default move together. Public default identity is retained. The two transferred function caps include six total physical lines of facade-import/qualification overhead; phase cleanup follows separately."
     }
   ]
 }

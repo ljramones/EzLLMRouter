@@ -1150,3 +1150,23 @@ lint/formatting, script/console checks and both ratchets. Library typing debt
 remains 1,631; four resolved function allowances are removed, leaving 45. No
 listener, provider request, dependency acquisition, staging run or daemon action
 was performed.
+
+### Item 11 follow-up: preflight validation code move
+
+Preflight validation and continuation binding move unchanged into
+`dev12_completion_preflight_validation.py`. The selected-label builder and its
+immutable required-ID set move with them, and the facade reexports the same
+default object. Public import paths, signatures/defaults and CLI behavior remain
+available. The facade shrinks from 1,460 to 605 lines; the new domain is 889 lines,
+leaving room for named phases without introducing an oversized file.
+
+AST comparisons preserve the three moved functions and constant initializer.
+All 20 preflight/continuation/runtime/identity cases and the cold-import check
+pass; the latter now covers 31 runtime and 16 tooling domains. The public
+required-ID default is still the same object exported by the facade.
+
+Full `tools.check` passes 917 Python cases, strict typing on 107 files,
+lint/formatting and script/console checks. Library typing debt remains 1,631.
+There are still 45 size allowances: two existing function caps transfer with
+six total physical lines of facade-import/qualification overhead. Their phase
+cleanup follows separately; no preflight acceptance condition was changed.
