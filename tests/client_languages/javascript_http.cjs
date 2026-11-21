@@ -24,7 +24,10 @@ const {EzLLMRouterClient, EzLLMRouterError} = load("@cognitivedynamics/ezllmrout
         if (["compressed", "oversize", "truncated", "stream_oversize"].includes(mode)) {
           assert.equal(error.http_status, 200, mode);
         }
-        if (mode === "stream_oversize") assert.equal(error.cause.message, "response exceeds its byte limit");
+        if (mode === "stream_oversize") {
+          assert.equal(error.cause.message, "HTTP exchange failed");
+          assert.equal(error.cause.cause.message, "response exceeds its byte limit");
+        }
         return true;
       });
     }

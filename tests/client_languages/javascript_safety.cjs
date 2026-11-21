@@ -42,6 +42,31 @@ function streamed(chunks, kind = "wire", extraHeaders = {}) {
   return {state, reader, response, fetchImpl};
 }
 
+test("wire: native response byte overflow retains its cause through the HTTP wrapper", async () => {
+  let reads = 0, cancelled = 0, calls = 0;
+  const body = new ReadableStream({
+    pull(controller) { reads++; controller.enqueue(new Uint8Array(65536)); },
+    cancel() { cancelled++; },
+  }, {highWaterMark: 0});
+  const response = new Response(body, {status: 200,
+    headers: {"EzLLMRouter-Contract-Version": "0.2"}});
+  const client = new EzLLMRouterClient({baseUrl: "http://synthetic.invalid", token: "synthetic",
+    fetchImpl: async () => { calls++; return response; }});
+  await assert.rejects(client.getCapabilities(), error => {
+    assert(error instanceof EzLLMRouterError);
+    assert.equal(error.code, "TRANSPORT_OUTCOME_UNKNOWN");
+    assert.equal(error.http_status, 200);
+    assert.equal(error.retry_guidance, "query_first");
+    assert.equal(error.cause.message, "HTTP exchange failed");
+    assert.equal(error.cause.cause.message, "response exceeds its byte limit");
+    return true;
+  });
+  assert.equal(reads, limitFor("wire") / 65536 + 1);
+  assert.equal(cancelled, 1);
+  assert.equal(calls, 1);
+  assert.equal(response.body.locked, false);
+});
+
 function operation(kind, fetchImpl, timeoutMs) {
   const settings = {baseUrl: "http://synthetic.invalid", token: "synthetic", fetchImpl, timeoutMs};
   if (kind === "integration") {

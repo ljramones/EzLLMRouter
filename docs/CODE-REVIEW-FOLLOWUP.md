@@ -374,7 +374,7 @@ also passes. A pending or unavailable check is never a passing result.
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
 | 6 | Persistence recovery | Implemented — local checks pass | Authorized retries replace only uncommitted vault successors; ambiguous commits retain sealed files. Nested rollback preserves the original error; admission uses one snapshot. Probe retry retention is documented/tested. Failed executors drain accepted work, replace their pool and expose readiness/counters (4.1.4). |
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
-| 8 | Client fixes | Implemented — Rust/.NET target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet, Java checks and packed TypeScript 5.9.3 consumer compilation pass. Commit `cfe549d` (4.5.1–4.5.3). |
+| 8 | Client fixes | Implemented — Rust/.NET target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/53 safety checks, Go race/vet, Java checks and packed TypeScript 5.9.3 consumer compilation pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
 | 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage is recorded for the final structural pass below (4.4.4). |
 | 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. All work-order size targets pass, with 12 shrinking allowances. Strict scope is 107 files; 1,631 existing library typing errors remain budgeted debt. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
@@ -1362,3 +1362,24 @@ binds with `PermissionError: [Errno 1]`; HTTP/native-fetch/browser execution and
 confirmation of the replacement GitHub Actions run remain pending. Item 1 stays
 open. TypeScript compilation is now verified locally; Rust/.NET target checks
 remain pending under item 8, and item 9 remains deferred.
+
+
+### CI follow-up: JavaScript streamed-limit error assertion
+
+The native JavaScript HTTP job reached its streamed oversized-response check
+after the loopback naming fix. Its assertion still expected the byte-limit error
+at `error.cause.message`; total-deadline transport handling wraps that failure
+in an HTTP exchange error to preserve the observed status. The actual chain is
+`TRANSPORT_OUTCOME_UNKNOWN` → `HTTP exchange failed` →
+`response exceeds its byte limit`. The HTTP fixture now checks both levels.
+No runtime client behavior or public error/retry/status fields change.
+
+An installed-client offline regression exercises a native `Response` and
+`ReadableStream`, verifies that exact error chain and HTTP 200/query-first
+metadata, and checks one cancellation, one fetch, lock release and stopping at
+the first chunk over the 1 MiB cap. The fresh packed JavaScript suite passes all
+144 contract cases and 53 safety cases, plus its other installed-consumer checks.
+Full `tools.check` passes 921 Python cases, strict typing on 107 files, existing
+size/type debt ratchets, lint/formatting and script/console checks. Actual native
+fetch over loopback remains unverified here because the executor denies listener
+binds; the replacement GitHub Actions HTTP job is still required.
