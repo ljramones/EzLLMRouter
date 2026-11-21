@@ -6,6 +6,22 @@ on:
 permissions:
   contents: read
 jobs:
+  dependency-advisories:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - run: python3 -m pip install uv==0.13.9
+      - run: uv sync --locked --all-groups --python 3.12.15
+      - name: Query OSV for the exact locked Python and npm inputs
+        run: uv run --locked python -m tools.security_dependencies --audit
+      - name: Retain inventory, CycloneDX candidate SBOM, advisory snapshot and outcome
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dependency-advisories
+          path: .artifacts/security/dependencies/
+          retention-days: 30
   concurrency-stress:
     runs-on: ubuntu-24.04
     timeout-minutes: 45

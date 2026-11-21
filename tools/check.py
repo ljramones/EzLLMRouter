@@ -50,6 +50,7 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_security_scanning",
     "tests.unit.test_campaign_interleavings",
     "tests.unit.test_coherent_restore",
     "tests.unit.test_lock_audit",
@@ -174,6 +175,8 @@ TYPED_PATHS = (
     "tools/coverage_reports.py",
     "tools/container_tests.py",
     "tools/javascript_coverage.py",
+    "tools/security_sast.py",
+    "tools/security_dependencies.py",
     "tools/source_size.py",
     "tools/gateway/paths.py",
     "tests/support.py",
@@ -466,6 +469,8 @@ def main() -> int:
             run([sys.executable, "-m", "ruff", "format", "--check", *QUALITY_PATHS])
             run([sys.executable, "-m", "mypy", *TYPED_PATHS])
             run([sys.executable, "-m", "tools.type_audit"])
+            run([sys.executable, "-m", "tools.security_sast"])
+            run([sys.executable, "-m", "tools.security_dependencies"])
         # Check all application JavaScript syntax, not only modules reached by a view fixture.
         if not args.http_only:
             for path in sorted((ROOT / "web").glob("*.js")):

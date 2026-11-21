@@ -30,6 +30,7 @@ jobs:
           path: |
             .artifacts/coverage/
             .artifacts/test-health/
+            .artifacts/security/
           retention-days: 14
       - name: Local HTTP regression fixtures
         run: uv run --locked python -m tools.check --http-only

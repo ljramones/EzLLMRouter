@@ -1,0 +1,287 @@
+"""Inventory locked Python/npm inputs offline; query OSV only with --audit."""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone, timedelta
+import hashlib
+import json
+from pathlib import Path
+import re
+import tomllib
+from typing import Any, Callable
+from urllib.parse import quote
+from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
+
+ROOT = Path(__file__).resolve().parents[1]
+INPUTS = (
+    "uv.lock",
+    "deploy/local/inputs/requirements.runtime.lock",
+    "deploy/local/inputs/gateway/requirements.gateway.lock",
+    "tests/playwright/package-lock.json",
+    "clients/js/package-lock.json",
+    "server/pyproject.toml",
+    "clients/python/pyproject.toml",
+)
+API = "https://api.osv.dev/v1/"
+MAX_RESPONSE = 10 * 1024 * 1024
+
+
+def inventory(root: Path = ROOT) -> dict[str, Any]:
+    packages: dict[tuple[str, str, str], set[str]] = {}
+    hashes = {}
+
+    def add(ecosystem: str, name: str, version: str, source: str) -> None:
+        if ecosystem == "PyPI":
+            name = re.sub(r"[-_.]+", "-", name).lower()
+        if name == "litellm" and version == "1.107.0":
+            raise ValueError("forbidden LiteLLM artifact in dependency inventory")
+        packages.setdefault((ecosystem, name, version), set()).add(source)
+
+    for name in INPUTS:
+        path = root / name
+        raw = path.read_bytes()
+        hashes[name] = hashlib.sha256(raw).hexdigest()
+        if name == "uv.lock":
+            for package in tomllib.loads(raw.decode())["package"]:
+                if "registry" in package.get("source", {}):
+                    add("PyPI", package["name"], package["version"], name)
+        elif name.endswith("requirements.runtime.lock") or name.endswith(
+            "requirements.gateway.lock"
+        ):
+            for line in raw.decode().splitlines():
+                if not line.strip() or line.startswith("#"):
+                    continue
+                match = re.fullmatch(
+                    r"([A-Za-z0-9._-]+)==([^\s]+) --hash=sha256:[0-9a-f]{64}", line
+                )
+                if match is None:
+                    raise ValueError("unparsed frozen lock record: " + name)
+                add("PyPI", match[1], match[2], name)
+        elif name.endswith("package-lock.json"):
+            data = json.loads(raw)
+            if data.get("lockfileVersion") not in (2, 3):
+                raise ValueError("unsupported npm lock format")
+            for location, package in data["packages"].items():
+                if not location:
+                    continue
+                if "node_modules/" not in location or package.get("link"):
+                    raise ValueError("unresolved npm package in lock")
+                package_name = package.get("name") or location.rsplit("node_modules/", 1)[1]
+                add("npm", package_name, package["version"], name)
+        else:
+            for requirement in tomllib.loads(raw.decode())["build-system"]["requires"]:
+                match = re.fullmatch(r"([A-Za-z0-9._-]+)==([^\s]+)", requirement)
+                if match is None:
+                    raise ValueError("unresolved build backend pin")
+                add("PyPI", match[1], match[2], name)
+    rows = [
+        {"ecosystem": eco, "name": name, "version": version, "sources": sorted(sources)}
+        for (eco, name, version), sources in sorted(packages.items())
+    ]
+    payload: dict[str, Any] = {
+        "format": "ezllmrouter-lock-inventory-v1",
+        "packages": rows,
+        "source_sha256": hashes,
+    }
+    payload["sha256"] = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return payload
+
+
+def sbom(data: dict[str, Any]) -> dict[str, Any]:
+    components = []
+    for row in data["packages"]:
+        kind = "pypi" if row["ecosystem"] == "PyPI" else "npm"
+        purl = (
+            "pkg:"
+            + kind
+            + "/"
+            + quote(row["name"], safe="/")
+            + "@"
+            + quote(row["version"], safe="")
+        )
+        components.append(
+            {
+                "type": "library",
+                "name": row["name"],
+                "version": row["version"],
+                "purl": purl,
+                "bom-ref": purl,
+                "properties": [
+                    {"name": "ezllmrouter:lock-sources", "value": ",".join(row["sources"])}
+                ],
+            }
+        )
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
+        "version": 1,
+        "metadata": {
+            "properties": [
+                {
+                    "name": "ezllmrouter:scope",
+                    "value": "Locked Python/npm candidates; not installed image contents",
+                },
+                {"name": "ezllmrouter:inventory-sha256", "value": data["sha256"]},
+            ]
+        },
+        "components": components,
+    }
+
+
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+
+def fetch(route: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+    if not re.fullmatch(r"querybatch|vulns/[A-Za-z0-9._:-]+", route):
+        raise ValueError("invalid advisory route")
+    request = Request(
+        API + route,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={"Content-Type": "application/json", "User-Agent": "EzLLMRouter-advisory-audit/1"},
+    )
+    opener = build_opener(ProxyHandler({}), NoRedirect())
+    with opener.open(request, timeout=15) as response:
+        raw = response.read(MAX_RESPONSE + 1)
+    if len(raw) > MAX_RESPONSE:
+        raise ValueError("advisory response exceeds limit")
+    result = json.loads(raw)
+    if type(result) is not dict:
+        raise ValueError("invalid advisory response")
+    return result
+
+
+def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) -> dict[str, Any]:
+    results = []
+    for offset in range(0, len(data["packages"]), 100):
+        rows = data["packages"][offset : offset + 100]
+        response = fetcher(
+            "querybatch",
+            {
+                "queries": [
+                    {
+                        "package": {"ecosystem": row["ecosystem"], "name": row["name"]},
+                        "version": row["version"],
+                    }
+                    for row in rows
+                ]
+            },
+        )
+        batch = response.get("results")
+        if not isinstance(batch, list) or len(batch) != len(rows):
+            raise ValueError("incomplete advisory batch")
+        results.extend(batch)
+    identifiers = set()
+    for result in results:
+        if (
+            type(result) is not dict
+            or "error" in result
+            or type(result.get("vulns", [])) is not list
+        ):
+            raise ValueError("invalid package advisory result")
+        for vulnerability in result.get("vulns", []):
+            identifier = vulnerability["id"]
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{1,200}", identifier):
+                raise ValueError("invalid advisory identity")
+            identifiers.add(identifier)
+    details = {identifier: fetcher("vulns/" + identifier) for identifier in sorted(identifiers)}
+    if any(value.get("id") != identifier for identifier, value in details.items()):
+        raise ValueError("advisory identity mismatch")
+    return {
+        "inventory_sha256": data["sha256"],
+        "queried_at": datetime.now(timezone.utc).isoformat(),
+        "complete": True,
+        "results": results,
+        "vulnerabilities": details,
+    }
+
+
+def findings(
+    data: dict[str, Any], snapshot: dict[str, Any], *, now: datetime | None = None
+) -> list[dict[str, Any]]:
+    now = now or datetime.now(timezone.utc)
+    observed = datetime.fromisoformat(snapshot["queried_at"])
+    if (
+        snapshot.get("complete") is not True
+        or snapshot["inventory_sha256"] != data["sha256"]
+        or not timedelta(0) <= now - observed <= timedelta(days=7)
+    ):
+        raise ValueError("stale, incomplete or mismatched advisory snapshot")
+    if len(snapshot["results"]) != len(data["packages"]):
+        raise ValueError("missing package advisory result")
+    issues = []
+    for package, result in zip(data["packages"], snapshot["results"], strict=True):
+        if (
+            type(result) is not dict
+            or "error" in result
+            or type(result.get("vulns", [])) is not list
+        ):
+            raise ValueError("invalid package advisory result")
+        for item in result.get("vulns", []):
+            detail = snapshot["vulnerabilities"][item["id"]]
+            if detail.get("id") != item["id"]:
+                raise ValueError("advisory identity mismatch")
+            if detail.get("withdrawn"):
+                withdrawn = datetime.fromisoformat(detail["withdrawn"])
+                if withdrawn.tzinfo is None or withdrawn > now:
+                    raise ValueError("invalid advisory withdrawal time")
+            if not detail.get("withdrawn"):
+                severity = detail.get("database_specific", {}).get("severity", "UNRATED")
+                if severity not in {"LOW", "MODERATE", "MEDIUM", "HIGH", "CRITICAL"}:
+                    severity = "UNRATED"
+                issues.append(
+                    {
+                        "package": package,
+                        "id": item["id"],
+                        "severity": detail.get("severity", []),
+                        "database_severity": severity,
+                        "blocking": severity in {"HIGH", "CRITICAL", "UNRATED"},
+                    }
+                )
+    return issues
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--audit", action="store_true", help="query public OSV metadata; never install packages"
+    )
+    mode.add_argument(
+        "--snapshot", type=Path, help="validate a complete matching OSV snapshot offline"
+    )
+    parser.add_argument("--output", type=Path, default=ROOT / ".artifacts/security/dependencies")
+    args = parser.parse_args()
+    args.output.mkdir(parents=True, exist_ok=True)
+    report: dict[str, Any] = {"audit_state": "not_requested", "passed": False}
+    try:
+        data = inventory()
+        (args.output / "inventory.json").write_text(json.dumps(data, indent=2) + "\n")
+        (args.output / "sbom.cdx.json").write_text(json.dumps(sbom(data), indent=2) + "\n")
+        if args.audit or args.snapshot:
+            snapshot = query(data) if args.audit else json.loads(args.snapshot.read_text())
+            (args.output / "osv-snapshot.json").write_text(json.dumps(snapshot, indent=2) + "\n")
+            issues = findings(data, snapshot)
+            report.update(
+                audit_state="complete",
+                findings=issues,
+                passed=not any(row["blocking"] for row in issues),
+            )
+        else:
+            report["inventory_valid"] = True
+        print(
+            f"Dependency inventory: {len(data['packages'])} locked Python/npm versions; advisory state: {report['audit_state']}"
+        )
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        report.update(audit_state="unavailable", error_type=type(error).__name__)
+    finally:
+        (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    return 0 if report.get("inventory_valid") or report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

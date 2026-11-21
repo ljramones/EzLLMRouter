@@ -1,0 +1,41 @@
+{
+  "tool": "Ruff 0.14.0 S rules, ignored noqa directives",
+  "reviewed_on": "2026-11-21",
+  "exceptions": [
+    {
+      "path": "server/src/ezllmrouter_server/repositories/attribution.py",
+      "code": "S608",
+      "count": 1,
+      "source_sha256": "d6936546b4591706c62daaf5a12a9bf5b1ab3a0ffcd6f8bea796861a5f55bfad",
+      "reason": "Table/key names are selected from explicit attribution allowlists; values use SQL parameters."
+    },
+    {
+      "path": "server/src/ezllmrouter_server/repositories/integration_accounting.py",
+      "code": "S608",
+      "count": 1,
+      "source_sha256": "b6c880ab7b6946e4f3b337975852dc25c540f141bd184bedddbf8dd4a169e798",
+      "reason": "The purge table is selected from an explicit allowlist; dataset identity remains a bound parameter."
+    },
+    {
+      "path": "server/src/ezllmrouter_server/repositories/operator_projection.py",
+      "code": "S608",
+      "count": 5,
+      "source_sha256": "f8184a92d891312fafad300b82aab2352c94c6692e13090d4a4a927776a52128",
+      "reason": "Predicates are validated by predicate(); identity/status values use parameters; other concatenations select fixed SQL clauses."
+    },
+    {
+      "path": "server/src/ezllmrouter_server/repositories/registry.py",
+      "code": "S608",
+      "count": 6,
+      "source_sha256": "74bd37300c1026fc93d96546014f5987614b5876648db73095f2e35335d1944a",
+      "reason": "Table/key selectors are validated by _record_key()/predicate(); inventory CTEs and grant-filter clauses are constant; data values use parameters."
+    },
+    {
+      "path": "server/src/ezllmrouter_server/repositories/reporting.py",
+      "code": "S608",
+      "count": 1,
+      "source_sha256": "74c7566bf5fc79051177b619406fd402e596702f7ae19e26055e1c2b9ff72bbe",
+      "reason": "The fact projection is assembled from constant JSON field lists and trusted SQL expressions; no caller strings enter SQL."
+    }
+  ]
+}

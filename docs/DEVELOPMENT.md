@@ -176,6 +176,30 @@ documented private keyring/vault set, restores credentials in all three scopes
 and compares retained accounting. All data and secrets are synthetic and
 temporary; the tests never open a running profile or contact a provider.
 
+`tools.security_sast` runs the locked Ruff 0.14.0 `S` rules on every server and
+Python-client module, ignoring inline suppression directives. Its five SQL-file
+exceptions record the 14 reviewed findings, exact whole-file hashes and reasons
+for the allowlisted identifiers/constant clauses. Changed source, new findings,
+or stale exceptions fail. This separate security scope does not silently ignore
+findings in deployment, evidence or test tools; those remain outside this gate.
+
+`tools.security_dependencies` inventories exact Python/npm candidates from the
+development, shipped service/worker, browser/client and build-backend locks.
+The PR run validates these inputs and writes `inventory.json` plus a CycloneDX
+candidate SBOM without reaching the network. It rejects the forbidden LiteLLM
+pin before any package installation or query. The SBOM describes lock candidates,
+not installed container contents or native-language transitive dependencies.
+
+The nightly `--audit` mode sends only package names/versions to the public OSV
+API, records the complete response snapshot and its inventory identity, and
+fails on high, critical or unrated active advisories. Low/moderate findings stay
+visible. Withdrawn entries must have a valid withdrawal time. Metadata outages,
+incomplete batches and identity mismatches fail; they never establish a clean
+audit. No scan automatically upgrades dependencies or changes frozen inputs.
+`--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
+than seven days fail. Network advisory qualification remains separate from the
+offline scanner regressions, which use explicitly synthetic advisory responses.
+
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable
 localhost fixture:
