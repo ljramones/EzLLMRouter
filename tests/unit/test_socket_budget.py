@@ -15,6 +15,40 @@ from ezllmrouter_server.gateway import choice_b_wire as wire
 
 
 class SocketBudgetTests(unittest.TestCase):
+    def test_async_exchange_retries_a_partial_header_before_reading_the_body(self):
+        async def scenario():
+            stream, peer = self.pair()
+            peer.setblocking(False)
+            loop = asyncio.get_running_loop()
+            original_recv, first_read = loop.sock_recv, asyncio.Event()
+            reads = []
+
+            async def observed_recv(connection, count):
+                part = await original_recv(connection, count)
+                reads.append((count, len(part)))
+                first_read.set()
+                return part
+
+            socket_api = SimpleNamespace(
+                AF_UNIX=socket.AF_UNIX, SOCK_STREAM=socket.SOCK_STREAM, socket=lambda *_: stream
+            )
+            frame = wire._frame({"result": "fragmented"})
+            with (
+                patch.object(wire, "socket", socket_api),
+                patch.object(loop, "sock_connect", new=AsyncMock()),
+                patch.object(loop, "sock_recv", side_effect=observed_recv),
+            ):
+                task = asyncio.create_task(wire.async_exchange("unused", {}, 2))
+                self.assertTrue(await original_recv(peer, 4096))
+                await loop.sock_sendall(peer, frame[:2])
+                await asyncio.wait_for(first_read.wait(), 1)
+                self.assertEqual(reads, [(4, 2)])
+                await loop.sock_sendall(peer, frame[2:])
+                self.assertEqual(await task, {"result": "fragmented"})
+                self.assertEqual(reads[:2], [(4, 2), (2, 2)])
+
+        asyncio.run(scenario())
+
     def test_decoder_recursion_failure_is_an_input_error(self):
         # CPython builds differ in the decoder's native recursion ceiling.
         with patch.object(wire.json, "loads", side_effect=RecursionError("decoder depth")):
