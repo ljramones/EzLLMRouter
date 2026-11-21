@@ -1395,8 +1395,8 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 833 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
-| R2 — remove size allowances | In progress | Nine of the 12 initial exceptions are resolved; three operator function allowances remain. Connector and historical Docker-input file splits retain public imports and every historical runner. |
+| R1 — complete library typing | Implemented — local checks pass | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Zero diagnostics remain. The strict gate covers both complete library roots (152 source files), plus seven maintained tooling/support files. |
+| R2 — remove size allowances | Implemented — local checks pass | All 12 initial allowances are removed; the empty budget rejects every new oversized symbol. Public facade imports and every historical runner remain. |
 | R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
 
 The first R1 batch types coroutine/future ownership and bounded connection
@@ -1491,3 +1491,31 @@ regressions pass. Full `tools.check` passes 922 Python cases, strict typing on
 132 files, lint/formatting, size budgets and maintained script/console checks.
 Whole-library diagnostics fall from 1,303 to 833 in 24 files; three size
 exceptions remain. Live HTTP/provider/profile qualification is unchanged.
+
+
+#### R1/R2: complete strict scope and zero size exceptions
+
+The strict gate now covers both complete implementation roots automatically,
+including new modules: 152 server/Python-client files and seven maintained
+tooling/support files, 159 in total. Whole-library diagnostics and the reviewed
+diagnostic budget are zero. All remaining size allowances are removed; the
+unchanged runtime limits are 800 lines/file, 100/function and 600/class.
+
+Checked operator-handler capabilities, partial/current sessions, credential
+callbacks, projection rows and CLI composition replace untyped boundaries.
+Existing route availability, role/CSRF checks, transaction gates, admission and
+unknown-outcome routing remain in their original scopes. Four operator phase
+expansion proofs cover report export, validation eligibility/execution and
+application composition; two reporting helpers keep annotations within the
+size limits. Normalized body proofs cover 242 existing functions. The two
+reviewed adapters are the equivalent rotation callback partials (same captured
+objects through the branch lifetime) and a no-op wire logger accepting the
+base handler variadic signature. A direct mixin test now supplies its checked
+registry capability; its public rejection assertion is retained.
+
+Fresh-interpreter checks cover every server module except the executable
+entry point and caught a forward-annotation error before commit. That error
+is corrected. Full `tools.check` passes 922 Python cases, strict typing on all
+159 files, lint/formatting, both empty debt budgets and maintained script/console
+checks. Report aggregation R3 remains active; deployment qualification and
+frozen/provider/daemon state are unchanged.

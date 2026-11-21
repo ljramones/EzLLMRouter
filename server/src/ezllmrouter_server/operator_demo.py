@@ -2,13 +2,39 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from contextlib import AbstractContextManager
+from typing import Protocol, TypedDict, cast
+from .records import Record
+
+
+class WireClient(Protocol):
+    def submit(self, request: Record, delivery: Record | None = None) -> Record: ...
+    def getStatus(self, handle: Record) -> Record: ...
+
+
+ClientFactory = Callable[[str, str], AbstractContextManager[WireClient]]
+
+
+class DemoResult(TypedDict):
+    submission_ids: list[str]
+    caller_lookups: int
+
+
 from copy import deepcopy
 import time
 import uuid
 
 
 class DemoRunner:
-    def __init__(self, request, scenarios, service_url, token, client_factory=None):
+    def __init__(
+        self,
+        request: Record,
+        scenarios: Record,
+        service_url: str,
+        token: str,
+        client_factory: ClientFactory | None = None,
+    ) -> None:
         if client_factory is None:
             from ezllmrouter_client import EzLLMRouterClient
 
@@ -19,25 +45,31 @@ class DemoRunner:
         self.token = token
         self.client_factory = client_factory
 
-    def _candidate(self, client, request, on_handle, no_store=False):
+    def _candidate(
+        self,
+        client: WireClient,
+        request: Record,
+        on_handle: Callable[[str], None],
+        no_store: bool = False,
+    ) -> tuple[Record, str]:
         reply = client.submit(request, {"wait_ms": 3000})
         handle = reply["handle"]["submission_id"]
         on_handle(handle)
         if reply["state"] == "delivered":
-            return reply["candidate"], handle
+            return cast(Record, reply["candidate"]), handle
         if reply["state"] != "pending" or no_store:
             raise RuntimeError("DEMO_OUTCOME_UNKNOWN")
         end = time.monotonic() + 8
         while time.monotonic() < end:
             status = client.getStatus({"submission_id": handle})
             if status["candidate_access"] == "present":
-                return status["candidate"], handle
+                return cast(Record, status["candidate"]), handle
             if status["submission_state"] != "admitted":
                 raise RuntimeError("DEMO_NO_CANDIDATE")
             time.sleep(0.1)
         raise RuntimeError("DEMO_OUTCOME_UNKNOWN")
 
-    def run(self, kind, on_handle):
+    def run(self, kind: str, on_handle: Callable[[str], None]) -> DemoResult:
         if kind not in ("text", "tool", "no_store_text"):
             raise ValueError("unsupported demo")
         suffix = uuid.uuid4().hex
@@ -104,7 +136,14 @@ class DemoRunner:
 class ProviderValidationRunner:
     """One explicit, fixed text request through the installed client and trusted path."""
 
-    def __init__(self, request, service_url, token, principal_id, client_factory=None):
+    def __init__(
+        self,
+        request: Record,
+        service_url: str,
+        token: str,
+        principal_id: str,
+        client_factory: ClientFactory | None = None,
+    ) -> None:
         if client_factory is None:
             from ezllmrouter_client import EzLLMRouterClient
 
@@ -115,7 +154,14 @@ class ProviderValidationRunner:
         self.principal_id = principal_id
         self.client_factory = client_factory
 
-    def run(self, configuration_ref, operation_id, max_output_tokens, on_handle, token=None):
+    def run(
+        self,
+        configuration_ref: str,
+        operation_id: str,
+        max_output_tokens: int,
+        on_handle: Callable[[str], None],
+        token: str | None = None,
+    ) -> Record:
         if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 32:
             raise ValueError("invalid provider validation output allowance")
         request = deepcopy(self.request)

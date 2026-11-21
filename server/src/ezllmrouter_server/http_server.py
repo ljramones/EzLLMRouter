@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from email.message import Message
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from _typeshed import WriteableBuffer
+    from .operator_http.application import OperatorApplication
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from contextlib import suppress
 import socket
@@ -19,25 +28,28 @@ MAX_CONNECTIONS = 32
 
 
 class BoundedThreadingMixIn(_BoundedThreadingMixIn):
-    def handle_error(self, request, client_address):
+    def handle_error(self, request: object, client_address: object) -> None:
         log_failure("http_connection_failed")
 
 
 class BoundedHTTPServer(BoundedThreadingMixIn, HTTPServer):
     request_queue_size = MAX_CONNECTIONS
+    application: OperatorApplication
+    operator_jobs: ThreadPoolExecutor
+    server_close: Callable[[], None]
 
 
 class _InputReader(io.RawIOBase):
     """Enforce the whole-input budget at every underlying socket read."""
 
-    def __init__(self, raw, handler):
+    def __init__(self, raw: io.RawIOBase, handler: SafeHTTPRequestHandler) -> None:
         self.raw, self.handler = raw, handler
         self.received = 0
 
-    def readable(self):
+    def readable(self) -> bool:
         return True
 
-    def readinto(self, buffer):
+    def readinto(self, buffer: WriteableBuffer) -> int | None:
         deadline = self.handler._input_deadline
         if deadline is not None:
             remaining = deadline - time.monotonic()
@@ -49,7 +61,7 @@ class _InputReader(io.RawIOBase):
         self.received += count or 0
         return count
 
-    def close(self):
+    def close(self) -> None:
         if not self.closed:
             self.raw.close()
         super().close()
@@ -58,12 +70,12 @@ class _InputReader(io.RawIOBase):
 class _BufferedInput(io.BufferedReader):
     consumed = 0
 
-    def readline(self, *args):
+    def readline(self, *args: int | None) -> bytes:
         value = super().readline(*args)
         self.consumed += len(value)
         return value
 
-    def read(self, *args):
+    def read(self, *args: int | None) -> bytes:
         value = super().read(*args)
         self.consumed += len(value)
         return value
@@ -71,27 +83,29 @@ class _BufferedInput(io.BufferedReader):
 
 class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
     timeout = REQUEST_TIMEOUT_SECONDS
+    rfile: _BufferedInput
+    _input_deadline: float | None
 
-    def setup(self):
+    def setup(self) -> None:
         super().setup()
         raw = self.rfile.detach() if isinstance(self.rfile, io.BufferedReader) else self.rfile
         self.rfile = _BufferedInput(_InputReader(raw, self))
         self._input_deadline = None
 
     @property
-    def diagnostic_id(self):
+    def diagnostic_id(self) -> str:
         if not getattr(self, "_diagnostic_id", None):
             self._diagnostic_id = "request." + uuid.uuid4().hex
         return self._diagnostic_id
 
-    def handle_one_request(self):
+    def handle_one_request(self) -> None:
         self._diagnostic_id = "request." + uuid.uuid4().hex
         self.command, self.path = "OTHER", "/"
         self.raw_requestline = b""
         self._request_start_offset = self.rfile.consumed
         self._body_bytes_read = 0
         self._body_read = False
-        self.headers = None
+        self.headers = cast("Message[str, str]", None)
         context = REQUEST_CORRELATION.set(self.diagnostic_id)
         self._response_status = 0
         started = time.monotonic()
@@ -110,22 +124,23 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
                 )
             REQUEST_CORRELATION.reset(context)
 
-    def _request_observed(self):
-        # Received minus consumed includes bytes already buffered by an earlier
-        # pipelined read, including an incomplete next request line.
-        return bool(self.raw_requestline) or self.rfile.raw.received > self._request_start_offset
+    def _request_observed(self) -> bool:
+        return (
+            bool(self.raw_requestline)
+            or cast(_InputReader, self.rfile.raw).received > self._request_start_offset
+        )
 
-    def _expire_input(self):
+    def _expire_input(self) -> None:
         with suppress(OSError):
             self.connection.shutdown(socket.SHUT_RDWR)
 
-    def _finish_input(self):
+    def _finish_input(self) -> None:
         self._input_deadline = None
         connection = getattr(self, "connection", None)
         if connection is not None:
             connection.settimeout(self.timeout)
 
-    def parse_request(self):
+    def parse_request(self) -> bool:
         accepted = super().parse_request()
         if not accepted or self.command not in {"POST", "PUT", "PATCH", "DELETE"}:
             self._finish_input()
@@ -141,7 +156,7 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             # Long model waits keep their contract deadline after input is complete.
             self._finish_input()
 
-    def _body_pending(self):
+    def _body_pending(self) -> bool:
         headers = getattr(self, "headers", None)
         if headers is None:
             return True
@@ -169,10 +184,10 @@ class SafeHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Connection", "close")
         self.send_header("X-Request-ID", self.diagnostic_id)
 
-    def log_message(self, *_args):
+    def log_message(self, *_args: object) -> None:
         return  # Access events use allowlisted routes, never raw HTTP messages.
 
-    def log_error(self, *_args):
+    def log_error(self, *_args: object) -> None:
         if isinstance(sys.exception(), TimeoutError) and not self._request_observed():
             return
         log_failure("http_request_failed")

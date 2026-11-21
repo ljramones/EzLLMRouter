@@ -16,6 +16,9 @@ class DomainImportTests(unittest.TestCase):
         paths = {
             path
             for pattern in (
+                "*.py",
+                "operator_http/*.py",
+                "wire_http/*.py",
                 "registry_*.py",
                 "accounting_*.py",
                 "core_*.py",
@@ -37,6 +40,8 @@ class DomainImportTests(unittest.TestCase):
         )
         self.assertTrue(paths)
         for path in sorted(paths):
+            if path.name == "__main__.py":
+                continue
             suffix = path.relative_to(PACKAGE).with_suffix("").parts
             if suffix[-1] == "__init__":
                 suffix = suffix[:-1]

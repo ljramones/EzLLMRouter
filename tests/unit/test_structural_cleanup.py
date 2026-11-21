@@ -275,6 +275,7 @@ class RouteBoundaryTests(unittest.TestCase):
         registry.mutate.side_effect = RequestError("POLICY_DENIED", 403)
         handler = SimpleNamespace(
             application=SimpleNamespace(registry=registry),
+            _registry=registry,
             _fail=lambda status, code: (status, code),
             _send=Mock(),
         )

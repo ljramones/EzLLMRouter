@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hashlib
 import json
 from copy import deepcopy
 from typing import cast
 
-from .database import Database
+from .database import Database, Row
 
 from .canonical import ContractError
 from .errors import RegistryConflict
@@ -33,33 +38,33 @@ def _record(db: Database, table: str, key: str, value: str) -> Record | None:
 class AttributionLedger:
     """The authenticated caller and administrator records define all run authority."""
 
-    def __init__(self, registry):
+    def __init__(self, registry: Registry) -> None:
         self.registry = registry
         self.store = registry.store
 
-    def agent(self, agent_id):
+    def agent(self, agent_id: str) -> Record | None:
         _id(agent_id)
         with self.store.database.read():
             return _record(self.store.database, "registry_agents", "id", agent_id)
 
-    def agents(self):
+    def agents(self) -> list[Record]:
         with self.store.database.read():
             rows = self.store.database.execute(_queries.AGENTS_SELECT_REGISTRY_AGENTS).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        return [json.loads(cast(str, row[0])) for row in rows]
 
     def run(self, run_id: str) -> Record | None:
         _id(run_id)
         with self.store.database.read():
             return _record(self.store.database, "attribution_runs", "id", run_id)
 
-    def permission(self, caller, agent, user):
+    def permission(self, caller: str, agent: str, user: str | None) -> Record | None:
         with self.store.database.read():
             row = self.store.database.execute(
                 _queries.PERMISSION_SELECT_REGISTRY_AGENT_PERMISSIONS, (caller, agent, user or "")
             ).fetchone()
-        return json.loads(row[0]) if row else None
+        return cast(Record, json.loads(cast(str, row[0]))) if row else None
 
-    def _authorize(self, trusted, body, parent=None):
+    def _authorize(self, trusted: Record, body: Record, parent: Record | None = None) -> str | None:
         caller = self.registry.principal(trusted["principal_id"])
         if (
             not caller
@@ -77,7 +82,7 @@ class AttributionLedger:
                 or parent is not None
             ):
                 raise ContractError("POLICY_DENIED", 403)
-            return caller["principal_id"]
+            return cast(str, caller["principal_id"])
         if caller["kind"] != "service" or mode not in (
             "autonomous_agent",
             "user_delegated_agent",
@@ -129,9 +134,9 @@ class AttributionLedger:
             or body["task_class"] not in grant["task_classes"]
         ):
             raise ContractError("POLICY_DENIED", 403)
-        return user
+        return cast(str | None, user)
 
-    def start_run(self, trusted, body):
+    def start_run(self, trusted: Record, body: Record) -> Record:
         required = {"version", "run_id", "task_id", "task_class", "evaluation_ref", "mode"}
         allowed = required | {"agent_id", "agent_version", "initiating_user_id", "parent_run_id"}
         if (
@@ -174,7 +179,7 @@ class AttributionLedger:
             "request_digest": digest,
         }
 
-        def save():
+        def save() -> Record:
             old = _record(self.store.database, "attribution_runs", "id", body["run_id"])
             if old:
                 if (
@@ -191,8 +196,8 @@ class AttributionLedger:
 
         return deepcopy(self.store.database.transaction(save))
 
-    def bind(self, trusted, req, run_id):
-        run = self.run(run_id)
+    def bind(self, trusted: Record, req: Record, run_id: str | None) -> Record:
+        run = self.run(cast(str, run_id))
         if not run or run["principal_id"] != trusted["principal_id"]:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
         if (
@@ -259,7 +264,7 @@ class AttributionLedger:
             return _set_outcome_authority(db, subject, expected, data)
         raise ValueError("unsupported agent authority action")
 
-    def append_outcome(self, trusted, body):
+    def append_outcome(self, trusted: Record, body: Record) -> Record:
         run, step = _validate_outcome_subject(body, self)
         if not run:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
@@ -301,7 +306,7 @@ class AttributionLedger:
         )
         digest = hashlib.sha256(encode(body).encode()).hexdigest()
 
-        def save():
+        def save() -> Record:
             row = self.store.database.execute(
                 _queries.SAVE_SELECT_ATTRIBUTION_OUTCOMES,
                 (trusted["principal_id"], body["event_id"]),
@@ -309,14 +314,17 @@ class AttributionLedger:
             if row:
                 if row[0] != digest:
                     raise ContractError("EVENT_CONFLICT", 409)
-                return json.loads(row[1])
+                return cast(Record, json.loads(cast(str, row[1])))
             last = (
-                self.store.database.execute(
-                    _queries.LATEST_OUTCOME_REVISION, (subject,)
-                ).fetchone()[0]
+                cast(
+                    Row,
+                    self.store.database.execute(
+                        _queries.LATEST_OUTCOME_REVISION, (subject,)
+                    ).fetchone(),
+                )[0]
                 or 0
             )
-            if body["subject_revision"] != last + 1:
+            if body["subject_revision"] != cast(int, last) + 1:
                 raise ContractError("STALE_REVISION", 409)
             at = timestamp()
             receipt = {
@@ -351,7 +359,7 @@ class AttributionLedger:
 
         return self.store.database.transaction(save)
 
-    def outcome_receipt(self, trusted, event_id):
+    def outcome_receipt(self, trusted: Record, event_id: str) -> Record:
         _id(event_id)
         with self.store.database.read():
             row = self.store.database.execute(
@@ -360,7 +368,7 @@ class AttributionLedger:
             ).fetchone()
         if not row:
             raise ContractError("NOT_FOUND_OR_FORBIDDEN", 404)
-        return json.loads(row[0])
+        return cast(Record, json.loads(cast(str, row[0])))
 
 
 def _register_agent(db: Database, subject: str, expected: int, data: Record) -> Record:

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from .database import Row
+from decimal import Decimal
+from typing import cast
+from .store import Store, Record
+
 import json
 import re
 from datetime import datetime, timezone
@@ -33,11 +38,11 @@ STATES = frozenset(
 )
 
 
-def _identifier(value):
+def _identifier(value: object) -> str | None:
     return value if valid_identifier(value) else None
 
 
-def _usage(raw):
+def _usage(raw: str | None) -> Record:
     if raw is None:
         return {"state": "not_recorded", "cost": {"status": "unknown"}, "price_version": None}
     value = json.loads(raw)
@@ -87,24 +92,25 @@ def _usage(raw):
 
 
 class OperatorProjection:
-    def __init__(self, store, principal_id, send_events_path=None):
+    def __init__(
+        self, store: Store, principal_id: str, send_events_path: str | Path | None = None
+    ) -> None:
         self.store = store
         self.principal_id = principal_id
         self.send_events_path = Path(send_events_path) if send_events_path else None
 
-        def recover():
-            # An interrupted local launcher has no automatic replay path.
+        def recover() -> None:
             store.database.execute(_queries.INIT_UPDATE_OPERATOR_LAUNCHES)
             # A restarted operator never repeats an ambiguous external request.
             store.database.execute(_queries.INIT_UPDATE_OPERATOR_PROVIDER_VALIDATIONS)
 
         store.database.transaction(recover)
 
-    def _latest_usage(self, attempt_id):
+    def _latest_usage(self, attempt_id: str) -> Record:
         row = self.store.database.execute(LATEST_USAGE, (attempt_id,)).fetchone()
-        return _usage(row[0] if row else None)
+        return _usage(cast(str, row[0]) if row else None)
 
-    def _summary(self, raw, intent_raw=None):
+    def _summary(self, raw: str, intent_raw: str | None = None) -> Record:
         record = json.loads(raw)
         intent = json.loads(intent_raw) if intent_raw else {}
         key = record["work_key"]
@@ -156,7 +162,14 @@ class OperatorProjection:
             else None,
         }
 
-    def activity(self, *, page=1, limit=20, state=None, principal_id=None):
+    def activity(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 20,
+        state: str | None = None,
+        principal_id: str | None = None,
+    ) -> Record:
         if (
             type(page) is not int
             or not 1 <= page <= 10000
@@ -169,9 +182,12 @@ class OperatorProjection:
         principal_id = self.principal_id if principal_id is None else principal_id
         where, args = _queries.activity_filter(principal_id, state)
         with self.store.database.read():
-            total = self.store.database.execute(
-                _queries.ACTIVITY_SELECT_SUBMISSIONS(where=where), args
-            ).fetchone()[0]
+            total = cast(
+                Row,
+                self.store.database.execute(
+                    _queries.ACTIVITY_SELECT_SUBMISSIONS(where=where), args
+                ).fetchone(),
+            )[0]
             rows = self.store.database.execute(
                 _queries.ACTIVITY_ORDER_SUBMISSIONS(where=where), (*args, limit, (page - 1) * limit)
             ).fetchall()
@@ -179,10 +195,10 @@ class OperatorProjection:
             "page": page,
             "limit": limit,
             "total": total,
-            "items": [self._summary(*row) for row in rows],
+            "items": [self._summary(*row) for row in cast(list[tuple[str, str | None]], rows)],
         }
 
-    def detail(self, submission_id, principal_id=None):
+    def detail(self, submission_id: str, principal_id: str | None = None) -> Record | None:
         if not _identifier(submission_id):
             raise ValueError("invalid submission id")
         principal_id = self.principal_id if principal_id is None else principal_id
@@ -193,8 +209,8 @@ class OperatorProjection:
             ).fetchone()
             if not row:
                 return None
-            value = self._summary(row[0])
-            stored = json.loads(row[0])
+            value = self._summary(cast(str, row[0]))
+            stored = json.loads(cast(str, row[0]))
             value["provider_model_reported"] = _identifier(stored.get("provider_model_reported"))
             attempt = value["attempt_id"]
             intent_row = self.store.database.execute(
@@ -204,8 +220,8 @@ class OperatorProjection:
                 _queries.DETAIL_SELECT_GUARD_DISPATCHES, (attempt, submission_id)
             ).fetchone()
             value["usage"] = self._latest_usage(attempt)
-        intent = json.loads(intent_row[0]) if intent_row else {}
-        receipt = json.loads(receipt_row[0]) if receipt_row else {}
+        intent = json.loads(cast(str, intent_row[0])) if intent_row else {}
+        receipt = json.loads(cast(str, receipt_row[0])) if receipt_row else {}
         destination = intent.get("destination") or {}
         value["configuration_ref"] = _identifier(destination.get("configuration_ref"))
         value["intent"] = {
@@ -241,11 +257,11 @@ class OperatorProjection:
         }
         return value
 
-    def _send_observations(self, attempt_ids):
+    def _send_observations(self, attempt_ids: set[str]) -> dict[str, bool | None]:
         """Diagnostic first-write facts. Missing or conflicting rows remain unknown."""
         if self.send_events_path is None:
             return {}
-        observations = {}
+        observations: dict[str, bool | None] = {}
         for row in read_events(self.send_events_path):
             attempt = row.get("attempt_id")
             if not _identifier(attempt) or attempt not in attempt_ids:
@@ -253,14 +269,14 @@ class OperatorProjection:
             accepted = row.get("first_bytes_accepted_by_local_socket")
             count = row.get("first_acceptance_events")
             if type(accepted) is not bool or type(count) is not int or count != int(accepted):
-                observations[attempt] = None
+                observations[cast(str, attempt)] = None
             elif attempt in observations:
-                observations[attempt] = None
+                observations[cast(str, attempt)] = None
             else:
-                observations[attempt] = accepted
+                observations[cast(str, attempt)] = accepted
         return observations
 
-    def usage(self, principal_id=None):
+    def usage(self, principal_id: str | None = None) -> Record:
         principal_id = self.principal_id if principal_id is None else principal_id
         with self.store.database.read():
             rows = self.store.database.execute(
@@ -269,13 +285,17 @@ class OperatorProjection:
             ).fetchall()
             truncated = len(rows) > 10000
             rows = rows[:10000]
-            summaries = [self._summary(raw, intent) for raw, intent, _, _ in rows]
-            latest = [_usage(usage) for _, _, _, usage in rows]
+            summaries = [
+                self._summary(cast(str, raw), cast(str | None, intent))
+                for raw, intent, _, _ in rows
+            ]
+            latest = [_usage(cast(str | None, usage)) for _, _, _, usage in rows]
         observations = self._send_observations({item["attempt_id"] for item in summaries})
-        groups = {}
+        groups: dict[str, Record] = {}
+
         from decimal import Decimal
 
-        known_cost = {}
+        known_cost: dict[str, Decimal] = {}
         cost_unknown = 0
         for item, usage, (_, intent_raw, receipt_raw, _) in zip(
             summaries, latest, rows, strict=True
@@ -357,14 +377,14 @@ class OperatorProjection:
             "by_step": by_step,
         }
 
-    def overview_counts(self, principal_id=None):
+    def overview_counts(self, principal_id: str | None = None) -> Record:
         principal_id = self.principal_id if principal_id is None else principal_id
         with self.store.database.snapshot() as db:
             rows = db.execute(
                 _queries.OVERVIEW_COUNTS_SELECT_SUBMISSIONS(principal_id=principal_id),
                 () if principal_id == "*" else (principal_id,),
             ).fetchall()
-        states = dict(rows)
+        states = dict(cast(list[tuple[str, int]], rows))
         return {
             "submissions": sum(states.values()),
             "completed": states.get("completed", 0),
@@ -374,12 +394,12 @@ class OperatorProjection:
             "blocked_before_send": states.get("failed_before_transmit", 0),
         }
 
-    def begin_launch(self, operation_id, kind):
+    def begin_launch(self, operation_id: str, kind: str) -> bool:
         if not _identifier(operation_id) or kind not in ("text", "tool", "no_store_text"):
             raise ValueError("invalid launch")
         at = utc_timestamp(datetime.now(timezone.utc), precise=True)
 
-        def action():
+        def action() -> bool:
             existing = self.store.database.execute(
                 _queries.ACTION_SELECT_OPERATOR_LAUNCHES, (operation_id,)
             ).fetchone()
@@ -387,7 +407,7 @@ class OperatorProjection:
                 if existing[0] != kind:
                     raise ValueError("operation kind conflict")
                 return False
-            if self.store.database.execute(_queries.RUNNING_LAUNCH_COUNT).fetchone()[0]:
+            if cast(Row, self.store.database.execute(_queries.RUNNING_LAUNCH_COUNT).fetchone())[0]:
                 raise ValueError("another synthetic launcher is running")
             self.store.database.execute(
                 _queries.ACTION_INSERT_OPERATOR_LAUNCHES,
@@ -412,7 +432,7 @@ class OperatorProjection:
             raise ValueError("invalid launch result")
         ids = [x for x in submission_ids if _identifier(x)]
 
-        def action():
+        def action() -> bool:
             result = self.store.database.execute(
                 _queries.FINISH_LAUNCH_UPDATE_OPERATOR_LAUNCHES,
                 (
@@ -435,13 +455,13 @@ class OperatorProjection:
         if not _identifier(operation_id) or not _identifier(submission_id):
             raise ValueError("invalid launcher submission")
 
-        def action():
+        def action() -> None:
             row = self.store.database.execute(
                 _queries.LAUNCH_SUBMISSION_IDS, (operation_id,)
             ).fetchone()
             if not row:
                 raise ValueError("unregistered launcher")
-            values = json.loads(row[0])
+            values = json.loads(cast(str, row[0]))
             if submission_id not in values:
                 values.append(submission_id)
                 self.store.database.execute(
@@ -464,27 +484,30 @@ class OperatorProjection:
             ).fetchone()
         if not row:
             return None
-        return {
-            "operation_id": operation_id,
-            "kind": row[0],
-            "state": row[1],
-            "created_at": row[2],
-            "updated_at": row[3],
-            "submission_ids": json.loads(row[4]),
-            "caller_lookups": row[5],
-            "error_code": row[6],
-            "in_progress": row[1] == "running",
-        }
+        return cast(
+            LaunchRecord,
+            {
+                "operation_id": operation_id,
+                "kind": row[0],
+                "state": row[1],
+                "created_at": row[2],
+                "updated_at": row[3],
+                "submission_ids": json.loads(cast(str, row[4])),
+                "caller_lookups": row[5],
+                "error_code": row[6],
+                "in_progress": row[1] == "running",
+            },
+        )
 
     def begin_provider_validation(
         self,
-        operation_id,
-        connection_id,
-        connection_revision,
-        configuration_ref,
-        configuration_revision,
-        max_output_tokens,
-    ):
+        operation_id: str,
+        connection_id: str,
+        connection_revision: int,
+        configuration_ref: str,
+        configuration_revision: int,
+        max_output_tokens: int,
+    ) -> bool:
         if (
             not all(_identifier(x) for x in (operation_id, connection_id, configuration_ref))
             or type(connection_revision) is not int
@@ -497,7 +520,7 @@ class OperatorProjection:
             raise ValueError("invalid provider validation")
         at = utc_timestamp(datetime.now(timezone.utc), precise=True)
 
-        def action():
+        def action() -> bool:
             existing = self.store.database.execute(
                 _queries.ACTION_SELECT_OPERATOR_PROVIDER_VALIDATIONS, (operation_id,)
             ).fetchone()
@@ -533,11 +556,11 @@ class OperatorProjection:
 
         return self.store.database.transaction(action)
 
-    def record_provider_validation_submission(self, operation_id, submission_id):
+    def record_provider_validation_submission(self, operation_id: str, submission_id: str) -> None:
         if not _identifier(operation_id) or not _identifier(submission_id):
             raise ValueError("invalid provider validation handle")
 
-        def action():
+        def action() -> None:
             self.store.database.execute(
                 _queries.RECORD_PROVIDER_VALIDATION_SUBMISSION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
                 (
@@ -549,7 +572,9 @@ class OperatorProjection:
 
         return self.store.database.transaction(action)
 
-    def finish_provider_validation(self, operation_id, state, error_code=None):
+    def finish_provider_validation(
+        self, operation_id: str, state: str, error_code: str | None = None
+    ) -> None:
         if not _identifier(operation_id) or state not in (
             LaunchState.COMPLETED,
             LaunchState.FAILED,
@@ -557,7 +582,7 @@ class OperatorProjection:
         ):
             raise ValueError("invalid provider validation result")
 
-        def action():
+        def action() -> None:
             self.store.database.execute(
                 _queries.FINISH_PROVIDER_VALIDATION_UPDATE_OPERATOR_PROVIDER_VALIDATIONS,
                 (
@@ -572,7 +597,7 @@ class OperatorProjection:
 
         return self.store.database.transaction(action)
 
-    def provider_validation(self, operation_id):
+    def provider_validation(self, operation_id: str) -> Record | None:
         if not _identifier(operation_id):
             raise ValueError("invalid provider validation operation")
         with self.store.database.read():

@@ -1,5 +1,13 @@
 """Operator reports handlers."""
 
+from __future__ import annotations
+
+from typing import cast
+from urllib.parse import SplitResult
+from ..records import Record
+from .context import OperatorContext, Session
+
+
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 
@@ -14,8 +22,8 @@ from ..reporting import usage_costs
 from ..successor_reporting import usage_report
 
 
-def package_versions():
-    packages = {"server": __version__}
+def package_versions() -> dict[str, str | None]:
+    packages: dict[str, str | None] = {"server": __version__}
     for key, distribution in (
         ("python_client", "cognitivedynamics-ezllmrouter-client"),
         ("litellm", "litellm"),
@@ -28,7 +36,9 @@ def package_versions():
 
 
 class ReportsRoutes:
-    def get_operator_v1_retrieval_usage(self, path, session, body, scope):
+    def get_operator_v1_retrieval_usage(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if any((len(values) != 1 for values in query.values())) or set(query) - {
             "from",
@@ -48,7 +58,7 @@ class ReportsRoutes:
             raise ValueError("invalid synthetic report filter")
         selected = {key: values[0] for key, values in query.items() if key != "export"}
         report = usage_report(
-            self.application.successor_store,
+            self._successor_store,
             {"role": session[1]["role"], "principal_id": session[1]["principal_id"]},
             selected,
         )
@@ -103,7 +113,9 @@ class ReportsRoutes:
             )
         raise ValueError("invalid synthetic report export")
 
-    def get_operator_v1_demo_workspace(self, path, session, body, scope):
+    def get_operator_v1_demo_workspace(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if any((len(values) != 1 for values in query.values())) or set(query) - {
             "collection",
@@ -141,7 +153,9 @@ class ReportsRoutes:
             )
         return self._send(200, report)
 
-    def get_operator_v1_usage_costs(self, path, session, body, scope):
+    def get_operator_v1_usage_costs(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if any((len(values) != 1 for values in query.values())) or set(query) - {
             "from",
@@ -173,7 +187,7 @@ class ReportsRoutes:
             if key not in ("page", "limit", "export", "attempt_page", "attempt_limit")
         }
         report = usage_costs(
-            self.application.registry,
+            self._registry,
             {"role": session[1]["role"], "principal_id": session[1]["principal_id"]},
             selected,
             page=int(query.get("page", ["1"])[0]),
@@ -226,7 +240,9 @@ class ReportsRoutes:
             raise ValueError("invalid report export")
         return self._send(200, report)
 
-    def get_operator_v1_overview(self, path, session, body, scope):
+    def get_operator_v1_overview(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         try:
             worker = self.application.worker_probe()
         except Exception as exc:
@@ -236,7 +252,7 @@ class ReportsRoutes:
             200,
             {
                 "profile": "LOCAL DEVELOPMENT · PROVIDER PATH GATED"
-                if self.application.registry and self.application.registry.provider_execution_ready
+                if self.application.registry and self._registry.provider_execution_ready
                 else "LIVE SYNTHETIC DEVELOPMENT",
                 "updated_at": datetime.now(timezone.utc).isoformat(),
                 "service": {"state": "live"},
@@ -255,7 +271,9 @@ class ReportsRoutes:
             },
         )
 
-    def get_operator_v1_activity(self, path, session, body, scope):
+    def get_operator_v1_activity(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if set(query) - {"page", "limit", "state", "principal_id"} or any(
             (len(x) != 1 for x in query.values())
@@ -263,7 +281,7 @@ class ReportsRoutes:
             raise ValueError("query")
         selected = query.get("principal_id", [None])[0]
         if selected is not None:
-            if not self.application.registry or not self.application.registry.principal(selected):
+            if not self.application.registry or not self._registry.principal(selected):
                 raise ValueError("invalid principal filter")
             if session[1]["role"] == "ordinary" and selected != scope:
                 return self._fail(404, "NOT_FOUND")
@@ -277,28 +295,34 @@ class ReportsRoutes:
             ),
         )
 
-    def get_activity_detail(self, path, session, body, scope):
+    def get_activity_detail(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         identifier = path.path[len("/operator/v1/activity/") :]
         if "/" in identifier:
             raise ValueError("invalid activity path")
         value = self.application.projection.detail(identifier, scope)
         return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
 
-    def get_operator_v1_usage(self, path, session, body, scope):
+    def get_operator_v1_usage(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
         if set(query) - {"principal_id"} or any((len(x) != 1 for x in query.values())):
             raise ValueError("invalid usage filter")
         selected = query.get("principal_id", [None])[0]
         if selected is not None:
-            if not self.application.registry or not self.application.registry.principal(selected):
+            if not self.application.registry or not self._registry.principal(selected):
                 raise ValueError("invalid principal filter")
             if session[1]["role"] == "ordinary" and selected != scope:
                 return self._fail(404, "NOT_FOUND")
         return self._send(200, self.application.projection.usage(selected or scope))
 
-    def get_operator_v1_config(self, path, session, body, scope):
-        destination = self.application.fixture["destination"]
-        policy = self.application.fixture["policy"]
+    def get_operator_v1_config(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
+        destination = cast(Record, self.application.fixture["destination"])
+        policy = cast(Record, self.application.fixture["policy"])
         return self._send(
             200,
             {
@@ -331,39 +355,42 @@ class ReportsRoutes:
                     "cancellation": False,
                     "real_provider": bool(
                         self.application.registry
-                        and self.application.registry.personal_campaign
-                        and (
-                            self.application.registry.personal_campaign.summary()["effective_state"]
-                            == "active"
-                        )
+                        and self._registry.personal_campaign
+                        and (self._campaign.summary()["effective_state"] == "active")
                     ),
                 },
             },
         )
 
-    def get_operator_v1_build(self, path, session, body, scope):
+    def get_operator_v1_build(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         return self._send(
             200,
             {
                 "profile": "LOCAL DEVELOPMENT · PROVIDER PATH GATED"
-                if self.application.registry and self.application.registry.provider_execution_ready
+                if self.application.registry and self._registry.provider_execution_ready
                 else "LIVE SYNTHETIC DEVELOPMENT",
                 "build": self.application.build,
                 "packages": package_versions(),
                 "environment": "local isolated synthetic HTTP/1.1 and selected provider HTTPS"
-                if self.application.registry and self.application.registry.provider_execution_ready
+                if self.application.registry and self._registry.provider_execution_ready
                 else "local isolated synthetic HTTP/1.1",
             },
         )
 
-    def get_operator_v1_launch(self, path, session, body, scope):
+    def get_operator_v1_launch(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         identifier = path.path[len("/operator/v1/launch/") :]
         if "/" in identifier:
             raise ValueError("invalid launch path")
         value = self.application.projection.launch(identifier)
         return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
 
-    def post_operator_v1_demos(self, path, session, body, scope):
+    def post_operator_v1_demos(
+        self: OperatorContext, path: None, session: Session, body: Record, scope: str | None
+    ) -> None:
         if self.application.registry and session[1]["role"] != "registry_admin":
             return self._fail(403, "ADMIN_REQUIRED")
         kind = self.path.rsplit("/", 1)[1]

@@ -1,5 +1,15 @@
 """Operator authentication handlers."""
 
+from __future__ import annotations
+
+from typing import cast
+from collections.abc import Iterable
+from urllib.parse import SplitResult
+from ..records import Record
+from .application import OperatorSession
+from .context import OperatorContext, Session, SessionDetails
+
+
 import hmac
 import secrets
 import time
@@ -9,7 +19,6 @@ from http import cookies
 from ..observability import log_failure
 from ..canonical import ContractError
 from ..user_management import ROLE_PERMISSIONS, UserError, username
-from .application import OperatorSession
 from .common import SESSION_SECONDS
 
 SESSION_LIMIT = 64
@@ -18,7 +27,9 @@ ADMIN_SESSION_RESERVE = 8
 
 
 class AuthenticationRoutes:
-    def _make_session_room(self, item, discarded):
+    def _make_session_room(
+        self: OperatorContext, item: OperatorSession, discarded: list[OperatorSession]
+    ) -> bool:
         """Called under the session lock after validating the new login."""
         sessions = self.application.sessions
         owned = sorted(
@@ -38,36 +49,38 @@ class AuthenticationRoutes:
             return False
         return len(sessions) < SESSION_LIMIT
 
-    def _session_details(self, item):
+    def _session_details(self: OperatorContext, item: OperatorSession) -> SessionDetails | None:
         """Read current account state under the caller's database read gate."""
-        details = {}
+        details: SessionDetails = {}
         if self.application.registry:
-            principal = self.application.registry.principal(item["principal_id"])
+            principal = self._registry.principal(item["principal_id"])
             if not principal or principal["status"] != "active":
                 return None
             details["role"] = principal["role"]
         if self.application.accounts:
-            account = self.application.accounts.context(item["principal_id"])
+            account = self._accounts.context(item["principal_id"])
             if item.get("user_auth_version") is not None and (
                 not account or account["auth_version"] != item["user_auth_version"]
             ):
                 return None
             if account:
                 details.update(
-                    username=account["username"],
-                    display_name=account["display_name"],
-                    must_change_password=bool(
-                        item.get("named_login") and account["must_change_password"]
-                    ),
+                    {
+                        "username": account["username"],
+                        "display_name": account["display_name"],
+                        "must_change_password": bool(
+                            item.get("named_login") and account["must_change_password"]
+                        ),
+                    }
                 )
         return details
 
-    def _revoke_session_tokens(self, items):
+    def _revoke_session_tokens(self: OperatorContext, items: Iterable[OperatorSession]) -> None:
         for item in items:
             if self.application.registry and item.get("wire_token"):
-                self.application.registry.revoke_local_operator_token(item["wire_token"])
+                self._registry.revoke_local_operator_token(cast(str, item["wire_token"]))
 
-    def _session(self):
+    def _session(self: OperatorContext) -> Session | None:
         header = self.headers.get("Cookie", "")
         jar = cookies.SimpleCookie()
         try:
@@ -91,12 +104,12 @@ class AuthenticationRoutes:
                     return None
                 if details is not None and item["expires"] > time.monotonic():
                     item.update(details)
-                    return token, dict(item)
+                    return token, cast(OperatorSession, dict(item))
                 self.application.sessions.pop(token)
         self._revoke_session_tokens((snapshot,))
         return None
 
-    def _session_payload(self, item):
+    def _session_payload(self: OperatorContext, item: OperatorSession) -> Record:
         return {
             "authenticated": True,
             "csrf": item["csrf"],
@@ -109,10 +122,14 @@ class AuthenticationRoutes:
             "user_management": self.application.accounts is not None,
         }
 
-    def get_operator_v1_session(self, path, session, body, scope):
+    def get_operator_v1_session(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         return self._send(200, self._session_payload(session[1]))
 
-    def post_operator_v1_login(self, path, session, body, scope):
+    def post_operator_v1_login(
+        self: OperatorContext, path: None, session: None, body: Record, scope: str | None
+    ) -> None:
         if (
             set(body) not in ({"password"}, {"username", "password"})
             or type(body["password"]) is not str
@@ -132,7 +149,7 @@ class AuthenticationRoutes:
             except UserError as exc:
                 return self._fail(exc.status, exc.code)
         try:
-            known = subject is None or self.application.accounts.has_username(subject)
+            known = subject is None or self._accounts.has_username(subject)
         except Exception:
             log_failure("operator_http.authentication.unavailable")
             return self._fail(503, "AUTH_UNAVAILABLE")
@@ -148,25 +165,27 @@ class AuthenticationRoutes:
         finally:
             self.application.login_throttle.finish(ticket, **outcome)
 
-    def _login_rejected(self, outcome, status, code):
+    def _login_rejected(
+        self: OperatorContext, outcome: dict[str, bool], status: int, code: str
+    ) -> None:
         outcome["failed"] = status == 401
         return self._fail(status, code)
 
-    def _login(self, body, outcome):
+    def _login(self: OperatorContext, body: Record, outcome: dict[str, bool]) -> None:
         account = None
         named_login = "username" in body
         if named_login:
             if not self.application.accounts:
                 return self._login_rejected(outcome, 401, "AUTH_FAILED")
             try:
-                account = self.application.accounts.authenticate(body["username"], body["password"])
+                account = self._accounts.authenticate(body["username"], body["password"])
             except UserError as exc:
                 return self._login_rejected(outcome, exc.status, exc.code)
             principal_id = account["principal_id"]
-            principal = self.application.registry.principal(principal_id)
+            principal = self._registry.principal(principal_id)
         elif hmac.compare_digest(self.application.password.encode(), body["password"].encode()):
             principal = (
-                self.application.registry.principal(self.application.owner_id)
+                self._registry.principal(self.application.owner_id)
                 if self.application.registry
                 else None
             )
@@ -175,9 +194,7 @@ class AuthenticationRoutes:
             principal_id = self.application.owner_id
         elif self.application.registry:
             try:
-                principal = self.application.registry.credential_principal(
-                    body["password"], "human"
-                )
+                principal = self._registry.credential_principal(body["password"], "human")
                 principal_id = principal["principal_id"]
             except ContractError as exc:
                 if exc.status != 401:
@@ -188,7 +205,7 @@ class AuthenticationRoutes:
         if self.application.registry and (not principal or principal["status"] != "active"):
             return self._login_rejected(outcome, 401, "AUTH_FAILED")
         if self.application.accounts and (not account):
-            account = self.application.accounts.context(principal_id)
+            account = self._accounts.context(principal_id)
         token, csrf = (secrets.token_urlsafe(32), secrets.token_urlsafe(32))
         item: OperatorSession = {
             "csrf": csrf,
@@ -198,7 +215,9 @@ class AuthenticationRoutes:
             "username": account["username"] if account else None,
             "display_name": principal.get("display_name") if principal else None,
             "user_auth_version": account["auth_version"] if account else None,
-            "must_change_password": bool(named_login and account["must_change_password"]),
+            "must_change_password": bool(
+                named_login and cast(Record, account)["must_change_password"]
+            ),
             "wire_token": None,
             "expires": 0.0,
         }
@@ -239,7 +258,10 @@ class AuthenticationRoutes:
         outcome["success"] = True
         return self._send(
             200,
-            {**self._session_payload(published), "expires_in_seconds": SESSION_SECONDS},
+            {
+                **self._session_payload(cast(OperatorSession, published)),
+                "expires_in_seconds": SESSION_SECONDS,
+            },
             extra=(
                 (
                     "Set-Cookie",
@@ -248,13 +270,15 @@ class AuthenticationRoutes:
             ),
         )
 
-    def post_operator_v1_logout(self, path, session, body, scope):
+    def post_operator_v1_logout(
+        self: OperatorContext, path: None, session: Session, body: Record, scope: str | None
+    ) -> None:
         if body:
             return self._fail(400, "INVALID_BODY")
         with self.application.session_lock:
             self.application.sessions.pop(session[0], None)
         if self.application.registry and session[1].get("wire_token"):
-            self.application.registry.revoke_local_operator_token(session[1]["wire_token"])
+            self._registry.revoke_local_operator_token(cast(str, session[1]["wire_token"]))
         return self._send(
             200,
             {"authenticated": False},

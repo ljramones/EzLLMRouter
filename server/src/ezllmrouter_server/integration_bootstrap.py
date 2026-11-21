@@ -8,7 +8,8 @@ from pathlib import Path
 from .errors import ServerError
 from .identity import DEFAULT_IDENTITY
 from .private_files import read_private, secret_text
-from .registry import Registry, RegistryConflict
+from .registry import Registry
+from .errors import RegistryConflict
 
 
 class BootstrapError(ServerError, ValueError):

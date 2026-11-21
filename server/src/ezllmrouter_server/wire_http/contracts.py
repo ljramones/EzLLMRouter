@@ -1,6 +1,11 @@
 """Minimal service interfaces required by the work HTTP surface."""
 
-from typing import Any, Protocol
+from __future__ import annotations
+
+from typing import Any, Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..registry import Registry
 from ..records import Record
 
 
@@ -24,3 +29,8 @@ class WorkCoordinator(WorkService, Protocol):
     successor: WorkService | None
 
     def authenticate(self, token: str) -> Record: ...
+
+
+class RegistryCoordinator(Protocol):
+    @property
+    def registry(self) -> Registry: ...

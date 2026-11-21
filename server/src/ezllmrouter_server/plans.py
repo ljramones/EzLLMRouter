@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from .records import Record
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import base64
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -31,7 +37,9 @@ def signing_message(scheme: str, key_id: str, key_version: str, signed_plan_dige
 
 
 class PlanAuthority:
-    def __init__(self, private_key: Ed25519PrivateKey, policy: dict, registry=None):
+    def __init__(
+        self, private_key: Ed25519PrivateKey, policy: Record, registry: Registry | None = None
+    ) -> None:
         self._private_key = private_key
         self.public_key = private_key.public_key()
         self.policy = policy
@@ -39,13 +47,13 @@ class PlanAuthority:
 
     def issue(
         self,
-        projection: dict,
+        projection: Record,
         work_digest: str,
-        work_key: dict,
-        classification: dict,
-        retention: dict,
+        work_key: Record,
+        classification: Record,
+        retention: Record,
         decision_record_ref: str | None = None,
-    ):
+    ) -> Record:
         work = projection["work"]
         trusted = projection["trusted"]
         tool_work = "tools" in work["requested_features"]
@@ -131,7 +139,7 @@ class PlanAuthority:
             },
         }
 
-    def verify(self, plan, expected_digest, current_policy_version):
+    def verify(self, plan: Record, expected_digest: str, current_policy_version: str) -> None:
         try:
             envelope = plan["signature_envelope"]
             unsigned = {k: v for k, v in plan.items() if k != "signature_envelope"}

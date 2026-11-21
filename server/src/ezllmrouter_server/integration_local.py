@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from types import FrameType
+from typing import NoReturn, cast
+from .records import Record
+from .http_server import BoundedHTTPServer
+
 import argparse
 from contextlib import ExitStack, closing
 from importlib.metadata import PackageNotFoundError, version
@@ -44,14 +50,14 @@ DEST = {
 
 
 class NoSendAuthority:
-    def __init__(self):
+    def __init__(self) -> None:
         self.gate = threading.RLock()
         self.epoch = 0
         self.revoked = True
 
 
 class NoSendRunner:
-    def run(self, *_args, **_kwargs):
+    def run(self, *_args: object, **_kwargs: object) -> NoReturn:
         raise RuntimeError("MODEL_EXECUTION_DISABLED")
 
 
@@ -60,13 +66,13 @@ class AccountingApplication:
     registry: Registry
 
 
-def _stop_operator(server, thread):
+def _stop_operator(server: BoundedHTTPServer, thread: threading.Thread) -> None:
     if thread.is_alive():
         server.shutdown()
     thread.join(timeout=3)
 
 
-def _arguments(argv):
+def _arguments(argv: Sequence[str] | None) -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform-id", default="platform.local")
     parser.add_argument("--owner-id", default=None)
@@ -109,7 +115,9 @@ def _arguments(argv):
     return parser, args
 
 
-def _feature_policy(args, identity, parser):
+def _feature_policy(
+    args: argparse.Namespace, identity: InstanceIdentity | None, parser: argparse.ArgumentParser
+) -> Record | None:
     feature_policy = None
     if args.feature_policy_file:
         policy_path = args.feature_policy_file
@@ -144,16 +152,20 @@ def _feature_policy(args, identity, parser):
     return feature_policy
 
 
-def _bootstrap_accounting(registry, args, parser):
+def _bootstrap_accounting(
+    registry: Registry, args: argparse.Namespace, parser: argparse.ArgumentParser
+) -> str:
     identity = registry.identity
     try:
         ensure_services(registry, args.secrets_dir)
     except BootstrapError as exc:
         parser.error(str(exc))
     registry.configure_integration_credentials(args.secrets_dir / "integration.keys.json")
-    if not registry.integration.datasets(registry.principal(identity.owner_id))["items"]:
+    if not registry.integration.datasets(cast(Record, registry.principal(identity.owner_id)))[
+        "items"
+    ]:
         registry.integration.create_dataset(
-            registry.principal(identity.owner_id),
+            cast(Record, registry.principal(identity.owner_id)),
             {
                 "dataset_id": "dataset.synthetic.credentials.local",
                 "platform_id": args.platform_id,
@@ -173,7 +185,14 @@ def _bootstrap_accounting(registry, args, parser):
     return password
 
 
-def _run_service(args, identity, identity_lookup, feature_policy, scripted_demo, parser):
+def _run_service(
+    args: argparse.Namespace,
+    identity: InstanceIdentity,
+    identity_lookup: IdentityLookup | None,
+    feature_policy: Record | None,
+    scripted_demo: ScriptedDemo | None,
+    parser: argparse.ArgumentParser,
+) -> None:
     with ExitStack() as cleanup:
         store = SQLiteStore(args.db)
         cleanup.callback(store.close)
@@ -237,8 +256,7 @@ def _run_service(args, identity, identity_lookup, feature_policy, scripted_demo,
         thread.start()
         cleanup.callback(_stop_operator, operator, thread)
 
-        def halt(_signal, _frame):
-            # BaseServer.shutdown must run outside the serve_forever thread.
+        def halt(_signal: int, _frame: FrameType | None) -> None:
             threading.Thread(target=api.shutdown, daemon=True).start()
 
         for number in (signal.SIGINT, signal.SIGTERM):
@@ -254,7 +272,7 @@ def _run_service(args, identity, identity_lookup, feature_policy, scripted_demo,
         api.serve_forever()
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> None:
     defaults = InstanceIdentity()
     parser, args = _arguments(argv)
     configure_logging()

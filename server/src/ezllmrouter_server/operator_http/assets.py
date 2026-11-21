@@ -1,6 +1,11 @@
 """The public asset allowlist; filesystem contents never create public routes."""
 
+from __future__ import annotations
 from collections.abc import Mapping
+from urllib.parse import SplitResult
+from .context import OperatorContext
+
+
 from types import MappingProxyType
 
 ASSETS: Mapping[str, tuple[str, str]] = MappingProxyType(
@@ -35,7 +40,9 @@ ASSETS: Mapping[str, tuple[str, str]] = MappingProxyType(
 
 
 class AssetsRoutes:
-    def get_assets(self, path, session, body, scope):
+    def get_assets(
+        self: OperatorContext, path: SplitResult, session: None, body: None, scope: str | None
+    ) -> None:
         filename, content_type = ASSETS[path.path]
         return self._send(
             200, (self.application.root / filename).read_bytes(), content_type=content_type

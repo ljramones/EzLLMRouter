@@ -1,5 +1,14 @@
 """Operator integration handlers."""
 
+from __future__ import annotations
+
+from typing import cast
+from urllib.parse import SplitResult
+from ..records import Record
+from ..integration_accounting import ExternalAccounting
+from .context import OperatorContext, Session
+
+
 import json
 from urllib.parse import parse_qs
 
@@ -8,14 +17,18 @@ from ..observability import log_failure
 
 
 class IntegrationRoutes:
-    def get_operator_v1_integration_identity(self, path, session, body, scope):
+    def get_operator_v1_integration_identity(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         if not self.application.integration_only or session[1]["role"] != "registry_admin":
             return self._fail(404, "NOT_FOUND")
         lookup = self.application.identity_lookup
         user = lookup(self.headers.get("Cookie", "")) if lookup else None
         return self._send(200, {"user": user})
 
-    def get_operator_v1_scripted_demo(self, path, session, body, scope):
+    def get_operator_v1_scripted_demo(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
         if self.application.scripted_demo is None or session[1]["role"] not in (
             "registry_admin",
             "read_only_operator",
@@ -90,9 +103,11 @@ class IntegrationRoutes:
                 return self._fail(404, "NOT_FOUND")
         return self._fail(404, "NOT_FOUND")
 
-    def get_operator_v1_integration(self, path, session, body, scope):
-        principal = self.application.registry.principal(session[1]["principal_id"])
-        ledger = self.application.registry.integration
+    def get_operator_v1_integration(
+        self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
+    ) -> None:
+        principal = cast(Record, self._registry.principal(session[1]["principal_id"]))
+        ledger = self._registry.integration
         if path.path == "/operator/v1/integration/datasets" and (not path.query):
             return self._send(200, ledger.datasets(principal))
         query = parse_qs(path.query, strict_parsing=True, keep_blank_values=True)
@@ -123,98 +138,12 @@ class IntegrationRoutes:
         if path.path == "/operator/v1/integration/connections":
             return self._send(
                 200,
-                self.application.registry.integration_credentials.list(principal, dataset_id),
+                self._credentials.list(principal, dataset_id),
             )
         if path.path == "/operator/v1/integration/accounts":
             return self._send(200, ledger.accounts(principal, dataset_id))
         if path.path == "/operator/v1/integration/report":
-            filters = {
-                key: value[0] for key, value in query.items() if key not in ("dataset_id", "export")
-            }
-            report = ledger.report(principal, dataset_id, filters, version="3")
-            export = query.get("export", [None])[0]
-            if export in (None, "json"):
-                return self._send(
-                    200,
-                    report,
-                    extra=(
-                        (
-                            "Content-Disposition",
-                            "attachment; filename=ezllmrouter-integration-report.json",
-                        ),
-                    )
-                    if export
-                    else (),
-                )
-            if export == "csv":
-                columns = (
-                    "dataset_id",
-                    "platform_id",
-                    "environment_id",
-                    "owner_id",
-                    "attempt_id",
-                    "started_at",
-                    "task_id",
-                    "step_id",
-                    "run_id",
-                    "root_run_id",
-                    "parent_run_id",
-                    "actor_kind",
-                    "actor_id",
-                    "initiating_user_id",
-                    "provider_account_id",
-                    "model_id",
-                    "context_ref",
-                    "result_state",
-                    "result_observed_at",
-                    "task_outcome",
-                    "task_outcome_observed_at",
-                    "usage_revision",
-                    "usage_observed_at",
-                    "cost_status",
-                    "currency",
-                    "amount_decimal",
-                    "native_units",
-                    "cost_basis",
-                    "price_ref",
-                    "price_version",
-                    "operation_family_version",
-                    "operation_family",
-                    "model_identity_state",
-                    "logical_operation_id",
-                    "attempt_role",
-                    "predecessor_attempt_id",
-                    "lineage_status",
-                    "account_resolution_status",
-                    "resolved_account_id",
-                    "decision_ref",
-                    "eligibility_evidence_status",
-                    "eligibility_assessment",
-                    "eligibility_record",
-                    "selected_action",
-                    "feature_snapshot_status",
-                    "feature_snapshot_digest",
-                    "feature_available_before_start",
-                    "decision_snapshot_status",
-                    "decision_snapshot_digest",
-                    "usage_provenance",
-                    "usage_state",
-                )
-                return self._send_csv(
-                    "ezllmrouter-integration-report.csv",
-                    columns,
-                    (
-                        {
-                            key: json.dumps(value, sort_keys=True)
-                            if key in ("native_units", "eligibility_record", "selected_action")
-                            and value is not None
-                            else value
-                            for key, value in row.items()
-                        }
-                        for row in report["attempts"]
-                    ),
-                )
-            raise ValueError("invalid report export")
+            return _send_integration_report(dataset_id, ledger, principal, query, self)
         if path.path == "/operator/v1/integration/export" and set(query) == {"dataset_id"}:
             return self._send(
                 200,
@@ -228,17 +157,17 @@ class IntegrationRoutes:
             )
         return self._fail(404, "NOT_FOUND")
 
-    def post_operator_v1_integration(self, path, session, body, scope):
+    def post_operator_v1_integration(
+        self: OperatorContext, path: None, session: Session, body: Record, scope: str | None
+    ) -> None:
         if session[1]["role"] != "registry_admin":
             return self._fail(403, "ADMIN_REQUIRED")
-        principal = self.application.registry.principal(session[1]["principal_id"])
+        principal = cast(Record, self._registry.principal(session[1]["principal_id"]))
         try:
             if self.path == "/operator/v1/integration/datasets":
-                status, result = self.application.registry.integration.create_dataset(
-                    principal, body
-                )
+                status, result = self._registry.integration.create_dataset(principal, body)
             elif self.path == "/operator/v1/integration/connections":
-                result = self.application.registry.integration_credentials.connect(principal, body)
+                result = self._credentials.connect(principal, body)
                 status = 201
             elif self.path.startswith("/operator/v1/integration/connections/"):
                 parts = self.path.split("/")
@@ -251,12 +180,12 @@ class IntegrationRoutes:
                 ):
                     return self._fail(404, "NOT_FOUND")
                 account_id = route_id(parts[-2])
-                result = getattr(self.application.registry.integration_credentials, parts[-1])(
+                result = getattr(self._registry.integration_credentials, parts[-1])(
                     principal, account_id, body
                 )
                 status = 200
             elif self.path == "/operator/v1/integration/accounts":
-                status, result = self.application.registry.integration.create_account(
+                status, result = self._registry.integration.create_account(
                     principal, body, "3" if "allowed_operations" in body else "1"
                 )
             elif self.path.endswith("/permissions") and self.path.startswith(
@@ -267,7 +196,7 @@ class IntegrationRoutes:
                 ]
                 if "/" in account_raw:
                     return self._fail(404, "NOT_FOUND")
-                status, result = self.application.registry.integration.set_account_permissions(
+                status, result = self._registry.integration.set_account_permissions(
                     principal, route_id(account_raw), body
                 )
             elif self.path.endswith("/state") and self.path.startswith(
@@ -277,7 +206,7 @@ class IntegrationRoutes:
                 if "/" in account_raw:
                     return self._fail(404, "NOT_FOUND")
                 account_id = route_id(account_raw)
-                status, result = self.application.registry.integration.set_account_state(
+                status, result = self._registry.integration.set_account_state(
                     principal, account_id, body
                 )
             else:
@@ -288,3 +217,97 @@ class IntegrationRoutes:
         except Exception:
             log_failure("operator_http.integration.post_operator_v1_integration.failed")
             return self._fail(503, "INTEGRATION_UNAVAILABLE")
+
+
+def _send_integration_report(
+    dataset_id: str,
+    ledger: ExternalAccounting,
+    principal: Record,
+    query: dict[str, list[str]],
+    self: OperatorContext,
+) -> None:
+    filters = {key: value[0] for key, value in query.items() if key not in ("dataset_id", "export")}
+    report = ledger.report(principal, dataset_id, filters, version="3")
+    export = query.get("export", [None])[0]
+    if export in (None, "json"):
+        return self._send(
+            200,
+            report,
+            extra=(
+                (
+                    "Content-Disposition",
+                    "attachment; filename=ezllmrouter-integration-report.json",
+                ),
+            )
+            if export
+            else (),
+        )
+    if export == "csv":
+        columns = (
+            "dataset_id",
+            "platform_id",
+            "environment_id",
+            "owner_id",
+            "attempt_id",
+            "started_at",
+            "task_id",
+            "step_id",
+            "run_id",
+            "root_run_id",
+            "parent_run_id",
+            "actor_kind",
+            "actor_id",
+            "initiating_user_id",
+            "provider_account_id",
+            "model_id",
+            "context_ref",
+            "result_state",
+            "result_observed_at",
+            "task_outcome",
+            "task_outcome_observed_at",
+            "usage_revision",
+            "usage_observed_at",
+            "cost_status",
+            "currency",
+            "amount_decimal",
+            "native_units",
+            "cost_basis",
+            "price_ref",
+            "price_version",
+            "operation_family_version",
+            "operation_family",
+            "model_identity_state",
+            "logical_operation_id",
+            "attempt_role",
+            "predecessor_attempt_id",
+            "lineage_status",
+            "account_resolution_status",
+            "resolved_account_id",
+            "decision_ref",
+            "eligibility_evidence_status",
+            "eligibility_assessment",
+            "eligibility_record",
+            "selected_action",
+            "feature_snapshot_status",
+            "feature_snapshot_digest",
+            "feature_available_before_start",
+            "decision_snapshot_status",
+            "decision_snapshot_digest",
+            "usage_provenance",
+            "usage_state",
+        )
+        return self._send_csv(
+            "ezllmrouter-integration-report.csv",
+            columns,
+            (
+                {
+                    key: json.dumps(value, sort_keys=True)
+                    if key in ("native_units", "eligibility_record", "selected_action")
+                    and value is not None
+                    else value
+                    for key, value in row.items()
+                }
+                for row in report["attempts"]
+            ),
+        )
+    raise ValueError("invalid report export")

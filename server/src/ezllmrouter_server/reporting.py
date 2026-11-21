@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, cast
+from .database import Database, Row
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import json
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_EVEN, Decimal
@@ -21,7 +28,7 @@ REPORT_BUCKETS = {
 }
 
 
-def _utc(value):
+def _utc(value: object) -> datetime | None:
     if value is None:
         return None
     if type(value) is not str or len(value) != 20 or not value.endswith("Z"):
@@ -37,7 +44,7 @@ def _money(value: Decimal) -> str:
     return money(value, compact=True)
 
 
-def _ratio(numerator, denominator, places="0.000000001"):
+def _ratio(numerator: str | int | Decimal, denominator: int, places: str = "0.000000001") -> str:
     return _money(
         (Decimal(numerator) / Decimal(denominator)).quantize(
             Decimal(places), rounding=ROUND_HALF_EVEN
@@ -45,7 +52,7 @@ def _ratio(numerator, denominator, places="0.000000001"):
     )
 
 
-def _matches(record, field, value):
+def _matches(record: Record, field: str, value: str) -> bool:
     observed = record.get(field)
     return observed is not None and str(observed) == value
 
@@ -120,11 +127,11 @@ def descendant_attempts(items: list[Record], runs: dict[str, Record]) -> dict[st
     return descendants
 
 
-def _latest_outcomes(db, cutoff):
+def _latest_outcomes(db: Database, cutoff: str) -> dict[str, Record]:
     rows = db.execute(_queries.LATEST_OUTCOMES_SELECT_ATTRIBUTION_OUTCOMES, (cutoff,)).fetchall()
     latest = {}
     for raw, at in rows:
-        event = json.loads(raw)
+        event = json.loads(cast(str, raw))
         if event["kind"] == "task_outcome":
             latest[event["run_id"]] = {
                 "verdict": event["verdict"],
@@ -135,7 +142,7 @@ def _latest_outcomes(db, cutoff):
     return latest
 
 
-def _visible(record, scope):
+def _visible(record: Record, scope: dict[str, str]) -> bool:
     if scope["role"] != "ordinary":
         return True
     principal = scope["principal_id"]
@@ -146,8 +153,15 @@ def _visible(record, scope):
 
 
 def usage_costs(
-    registry, scope, filters=None, *, page=1, limit=50, attempt_page=1, attempt_limit=100
-):
+    registry: Registry,
+    scope: dict[str, str],
+    filters: dict[str, str] | None = None,
+    *,
+    page: int = 1,
+    limit: int = 50,
+    attempt_page: int = 1,
+    attempt_limit: int = 100,
+) -> Record:
     """Apply visibility before any count, aggregate, table, or export."""
     filters = filters or {}
     _report_window(filters, attempt_limit, attempt_page)
@@ -161,8 +175,8 @@ def usage_costs(
             (start or end)
             and (
                 item["attempt_at"] is None
-                or (start and _utc(item["attempt_at"]) < start)
-                or (end and _utc(item["attempt_at"]) >= end)
+                or (start and cast(datetime, _utc(item["attempt_at"])) < start)
+                or (end and cast(datetime, _utc(item["attempt_at"])) >= end)
             )
         )
         and not any(
@@ -189,25 +203,7 @@ def usage_costs(
     cohort_rows, workflows = _cohort_summary(
         cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs, workflows
     )
-    groupings = {
-        field: group_attempts(items, field)
-        for field in (
-            "provider",
-            "connection_id",
-            "configuration_ref",
-            "model",
-            "agent_id",
-            "initiating_user_id",
-            "charging_owner_id",
-            "task_id",
-            "root_run_id",
-            "environment",
-        )
-    }
-    trend_items = [
-        {**item, "day": item["attempt_at"][:10] if item["attempt_at"] else "__unknown_time__"}
-        for item in items
-    ]
+    groupings, trend_items = _attempt_groupings(items)
     agent_rows.sort(key=lambda row: (row["display_name"].casefold(), row["agent_id"]))
     all_agents = len(agent_rows)
     attribution_coverage = {
@@ -244,7 +240,7 @@ def usage_costs(
     }
 
 
-def _totals_for_ids(ids, by_attempt):
+def _totals_for_ids(ids: Iterable[str], by_attempt: dict[str, Record]) -> Record:
     totals = Totals()
     for attempt in ids:
         if attempt in by_attempt:
@@ -252,7 +248,14 @@ def _totals_for_ids(ids, by_attempt):
     return totals.public()
 
 
-def _cohort_summary(cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs, workflows):
+def _cohort_summary(
+    cohort_by_attempt: dict[str, Record],
+    cohort_root_ids: set[str],
+    cohorts: dict[tuple[str, str, str, str], Record],
+    outcomes: dict[str, Record],
+    runs: dict[str, Record],
+    workflows: list[Record],
+) -> tuple[list[Record], list[Record]]:
     cohort_rows = []
     workflows = [run for run in workflows if run["root_run_id"] in cohort_root_ids]
     for key, member in sorted(cohorts.items()):
@@ -262,7 +265,10 @@ def _cohort_summary(cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs,
         for run_id in member["runs"]:
             run = runs[run_id]
             if outcomes.get(run_id, {}).get("verdict") == "accepted" and run.get("terminal_at"):
-                seconds = (_utc(run["terminal_at"]) - _utc(run["created_at"])).total_seconds()
+                seconds = (
+                    cast(datetime, _utc(run["terminal_at"]))
+                    - cast(datetime, _utc(run["created_at"]))
+                ).total_seconds()
                 if seconds >= 0:
                     accepted_durations.append(int(seconds))
         member_attempts = [
@@ -272,42 +278,9 @@ def _cohort_summary(cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs,
             type(row["input_tokens"]) is int and type(row["output_tokens"]) is int
             for row in member_attempts
         )
-        performance = {
-            "acceptance_rate_percent": _ratio(
-                member["accepted"] * 100, len(member["runs"]), "0.01"
-            ),
-            "calls_per_accepted_task": (
-                _ratio(len(member["ids"]), member["accepted"]) if member["accepted"] else None
-            ),
-            "tokens_per_accepted_task": (
-                {
-                    "input": _ratio(
-                        sum(row["input_tokens"] for row in member_attempts), member["accepted"]
-                    ),
-                    "output": _ratio(
-                        sum(row["output_tokens"] for row in member_attempts), member["accepted"]
-                    ),
-                }
-                if member["accepted"] and token_complete
-                else None
-            ),
-            "token_coverage_attempts": sum(
-                type(row["input_tokens"]) is int and type(row["output_tokens"]) is int
-                for row in member_attempts
-            ),
-            "latency_accepted_samples": len(accepted_durations),
-            "median_seconds_to_accepted": median(accepted_durations)
-            if accepted_durations
-            else None,
-            "p95_seconds_to_accepted": (
-                sorted(accepted_durations)[int((len(accepted_durations) - 1) * 0.95)]
-                if len(accepted_durations) >= 20
-                else None
-            ),
-            "retry_rate": "not_measured",
-            "escalation_rate": "not_measured",
-            "human_intervention_rate": "not_measured",
-        }
+        performance = _cohort_performance(
+            accepted_durations, member, member_attempts, token_complete
+        )
         if member["accepted"] == 0:
             efficiency = {"state": "no_accepted_tasks", "cost_per_accepted_task": None}
         elif (
@@ -347,8 +320,16 @@ def _cohort_summary(cohort_by_attempt, cohort_root_ids, cohorts, outcomes, runs,
 
 
 def _cohort_members(
-    all_items, cohort_descendants, cutoff, end, filters, outcomes, runs, scope, start
-):
+    all_items: list[Record],
+    cohort_descendants: dict[str, set[str]],
+    cutoff: datetime,
+    end: datetime | None,
+    filters: dict[str, str],
+    outcomes: dict[str, Record],
+    runs: dict[str, Record],
+    scope: dict[str, str],
+    start: datetime | None,
+) -> tuple[dict[tuple[str, str, str, str], Record], set[str]]:
     roots = [
         run
         for run in runs.values()
@@ -359,7 +340,7 @@ def _cohort_members(
             or run["initiating_user_id"] == scope["principal_id"]
         )
     ]
-    cohorts = {}
+    cohorts: dict[tuple[str, str, str, str], Record] = {}
     cohort_root_ids = set()
     run_filters = (
         "agent_id",
@@ -378,7 +359,7 @@ def _cohort_members(
         "purpose",
     )
     for run in roots:
-        started = _utc(run["created_at"])
+        started = cast(datetime, _utc(run["created_at"]))
         if (start and started < start) or (end and started >= end) or started > cutoff:
             continue
         if any(
@@ -420,7 +401,14 @@ def _cohort_members(
     return cohorts, cohort_root_ids
 
 
-def _workflow_summary(by_attempt, descendants, items, outcomes, runs, scope):
+def _workflow_summary(
+    by_attempt: dict[str, Record],
+    descendants: dict[str, set[str]],
+    items: list[Record],
+    outcomes: dict[str, Record],
+    runs: dict[str, Record],
+    scope: dict[str, str],
+) -> list[Record]:
     workflows = []
     for run_id, run in sorted(runs.items()):
         if (
@@ -455,7 +443,16 @@ def _workflow_summary(by_attempt, descendants, items, outcomes, runs, scope):
     return workflows
 
 
-def _agent_summary(by_attempt, descendants, filters, items, outcomes, registry, runs, scope):
+def _agent_summary(
+    by_attempt: dict[str, Record],
+    descendants: dict[str, set[str]],
+    filters: dict[str, str],
+    items: list[Record],
+    outcomes: dict[str, Record],
+    registry: Registry,
+    runs: dict[str, Record],
+    scope: dict[str, str],
+) -> list[Record]:
     agent_rows = []
     for agent in registry.attribution.agents():
         aid = agent["agent_id"]
@@ -521,16 +518,22 @@ def _agent_summary(by_attempt, descendants, filters, items, outcomes, registry, 
     return agent_rows
 
 
-def _visible_attempts(connections, cutoff, latest, raw, scope):
+def _visible_attempts(
+    connections: Mapping[str, Mapping[str, object]],
+    cutoff: datetime,
+    latest: dict[object, Record],
+    raw: Sequence[Row],
+    scope: dict[str, str],
+) -> list[Record]:
     all_items = []
     for record_raw, intent_raw in raw:
-        record = json.loads(record_raw)
+        record = json.loads(cast(str, record_raw))
         if not _visible(record, scope):
             continue
         when = _utc(record.get("created_at")) if record.get("created_at") else None
         if when and when > cutoff:
             continue
-        intent = json.loads(intent_raw) if intent_raw else {}
+        intent = json.loads(cast(str, intent_raw)) if intent_raw else {}
         dest = (
             intent.get("destination")
             or record.get("selected_destination")
@@ -539,7 +542,7 @@ def _visible_attempts(connections, cutoff, latest, raw, scope):
         )
         attribution = record.get("attribution") or {}
         connection_id = dest.get("connection_id")
-        connection = connections.get(connection_id)
+        connection = connections.get(cast(str, connection_id))
         service = dest.get("service")
         environment = record.get("provenance") or (
             "synthetic_legacy"
@@ -616,7 +619,15 @@ def _visible_attempts(connections, cutoff, latest, raw, scope):
     return all_items
 
 
-def _read_usage_snapshot(cutoff_text, registry, scope):
+def _read_usage_snapshot(
+    cutoff_text: str, registry: Registry, scope: dict[str, str]
+) -> tuple[
+    list[Row],
+    dict[object, Record],
+    dict[str, Record],
+    dict[str, Record],
+    Mapping[str, Mapping[str, object]],
+]:
     parameters = (cutoff_text, scope["role"], scope["principal_id"], scope["principal_id"])
     with registry.store.database.snapshot() as db:
         raw = db.execute(_queries.USAGE_COSTS_SELECT_SUBMISSIONS, parameters).fetchall()
@@ -629,12 +640,12 @@ def _read_usage_snapshot(cutoff_text, registry, scope):
     runs = {
         r["run_id"]: r
         for (value,) in run_rows
-        for r in (json.loads(value),)
+        for r in (json.loads(cast(str, value)),)
         if r["created_at"] <= cutoff_text
     }
     outcomes = {}
     for value, at in outcome_rows:
-        event = json.loads(value)
+        event = json.loads(cast(str, value))
         if event["kind"] == "task_outcome":
             outcomes[event["run_id"]] = {
                 "verdict": event["verdict"],
@@ -642,12 +653,14 @@ def _read_usage_snapshot(cutoff_text, registry, scope):
                 "evaluation_ref": event["evaluator_version"],
                 "revision": event["subject_revision"],
             }
-    latest = {attempt: json.loads(value) for attempt, value in revisions}
+    latest = {attempt: json.loads(cast(str, value)) for attempt, value in revisions}
     connections = {c["connection_id"]: c for c in registry.list_connections()}
     return raw, latest, runs, outcomes, connections
 
 
-def _report_window(filters, limit, page):
+def _report_window(
+    filters: dict[str, str], limit: int, page: int
+) -> tuple[datetime | None, datetime | None, datetime, str]:
     allowed = {
         "from",
         "to",
@@ -695,3 +708,67 @@ def _report_window(filters, limit, page):
     cutoff = _utc(filters.get("cutoff")) or datetime.now(timezone.utc).replace(microsecond=0)
     cutoff_text = utc_timestamp(cutoff)
     return start, end, cutoff, cutoff_text
+
+
+def _attempt_groupings(items: list[Record]) -> tuple[dict[str, list[Record]], list[Record]]:
+    groupings = {
+        field: group_attempts(items, field)
+        for field in (
+            "provider",
+            "connection_id",
+            "configuration_ref",
+            "model",
+            "agent_id",
+            "initiating_user_id",
+            "charging_owner_id",
+            "task_id",
+            "root_run_id",
+            "environment",
+        )
+    }
+    trend_items = [
+        {**item, "day": item["attempt_at"][:10] if item["attempt_at"] else "__unknown_time__"}
+        for item in items
+    ]
+    return groupings, trend_items
+
+
+def _cohort_performance(
+    accepted_durations: list[int],
+    member: Record,
+    member_attempts: list[Record],
+    token_complete: bool,
+) -> Record:
+    performance = {
+        "acceptance_rate_percent": _ratio(member["accepted"] * 100, len(member["runs"]), "0.01"),
+        "calls_per_accepted_task": (
+            _ratio(len(member["ids"]), member["accepted"]) if member["accepted"] else None
+        ),
+        "tokens_per_accepted_task": (
+            {
+                "input": _ratio(
+                    sum(row["input_tokens"] for row in member_attempts), member["accepted"]
+                ),
+                "output": _ratio(
+                    sum(row["output_tokens"] for row in member_attempts), member["accepted"]
+                ),
+            }
+            if member["accepted"] and token_complete
+            else None
+        ),
+        "token_coverage_attempts": sum(
+            type(row["input_tokens"]) is int and type(row["output_tokens"]) is int
+            for row in member_attempts
+        ),
+        "latency_accepted_samples": len(accepted_durations),
+        "median_seconds_to_accepted": median(accepted_durations) if accepted_durations else None,
+        "p95_seconds_to_accepted": (
+            sorted(accepted_durations)[int((len(accepted_durations) - 1) * 0.95)]
+            if len(accepted_durations) >= 20
+            else None
+        ),
+        "retry_rate": "not_measured",
+        "escalation_rate": "not_measured",
+        "human_intervention_rate": "not_measured",
+    }
+    return performance

@@ -1,5 +1,10 @@
 """Read-only integrity audit of an existing service database; never repairs records."""
 
+from __future__ import annotations
+
+from collections.abc import Sequence
+from .store import Store, Record
+from typing import cast
 import argparse
 from contextlib import closing
 import json
@@ -9,11 +14,13 @@ from .repositories import database_audit as queries
 from .store import SQLiteStore
 
 
-def audit(store):
+def audit(store: Store) -> Record:
     with store.database.read() as db:
         quick = db.execute(queries.QUICK_CHECK).fetchall()
         foreign_keys = len(db.execute(queries.FOREIGN_KEY_CHECK).fetchall())
-        ownership = dict(db.execute(queries.OWNERSHIP_COUNTS).fetchall())
+        ownership = dict(
+            cast(list[tuple[str, int]], db.execute(queries.OWNERSHIP_COUNTS).fetchall())
+        )
     return {
         "sqlite_quick_check": "ok" if quick == [("ok",)] else "failed",
         "foreign_key_violations": foreign_keys,
@@ -22,7 +29,7 @@ def audit(store):
     }
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, required=True)
     args = parser.parse_args(argv)

@@ -1,10 +1,13 @@
 """HTTP entry points with explicit routing; authentication precedes body reads."""
 
+from __future__ import annotations
+
 import json
 from typing import TYPE_CHECKING, cast
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, SplitResult
 
-from ..http_server import SafeHTTPRequestHandler
+from ..http_server import SafeHTTPRequestHandler, BoundedHTTPServer
+from ..records import Record
 from ..integration_accounting import IntegrationError
 from ..local_connectors import ConnectorError
 from ..observability import log_failure
@@ -20,6 +23,14 @@ from .transport import TransportRoutes
 
 if TYPE_CHECKING:
     from .application import OperatorApplication
+    from ..registry import Registry
+    from ..user_management import UserManager
+    from ..local_connectors import LocalConnectors
+    from ..personal_campaign import PersonalCampaign
+    from ..integration_credentials import DatabaseCredentialStore
+    from ..operator_demo import ProviderValidationRunner
+    from ..store import SQLiteStore
+    from .context import OperatorContext, Session
 
 
 class OperatorHandler(
@@ -36,9 +47,37 @@ class OperatorHandler(
 
     @property
     def application(self) -> "OperatorApplication":
-        return cast("OperatorApplication", self.server.application)
+        return cast(BoundedHTTPServer, self.server).application
 
-    def _route(self, method, path, *, query=False):
+    @property
+    def _registry(self) -> Registry:
+        return cast("Registry", self.application.registry)
+
+    @property
+    def _accounts(self) -> UserManager:
+        return cast("UserManager", self.application.accounts)
+
+    @property
+    def _connectors(self) -> LocalConnectors:
+        return cast("LocalConnectors", self.application.local_connectors)
+
+    @property
+    def _campaign(self) -> PersonalCampaign:
+        return cast("PersonalCampaign", self._registry.personal_campaign)
+
+    @property
+    def _credentials(self) -> DatabaseCredentialStore:
+        return cast("DatabaseCredentialStore", self._registry.integration_credentials)
+
+    @property
+    def _validation(self) -> ProviderValidationRunner:
+        return cast("ProviderValidationRunner", self.application.provider_validation)
+
+    @property
+    def _successor_store(self) -> SQLiteStore:
+        return cast("SQLiteStore", self.application.successor_store)
+
+    def _route(self, method: str, path: str, *, query: bool = False) -> Route | None:
         available = {
             name
             for name in ("accounts", "local_connectors", "registry", "successor_store")
@@ -47,8 +86,15 @@ class OperatorHandler(
         return ROUTER.resolve(method, path, query=query, available=available)
 
     def _dispatch(
-        self, route: Route | None, stage: Stage, *, path=None, session=None, body=None, scope=None
-    ):
+        self,
+        route: Route | None,
+        stage: Stage,
+        *,
+        path: SplitResult | None = None,
+        session: Session | None = None,
+        body: Record | None = None,
+        scope: str | None = None,
+    ) -> bool:
         if route is None or route.stage != stage:
             return False
         if route.roles and (session is None or session[1]["role"] not in route.roles):
@@ -58,7 +104,7 @@ class OperatorHandler(
         return True
 
     @staticmethod
-    def _integration_read_allowed(path):
+    def _integration_read_allowed(path: str) -> bool:
         return path.startswith(
             ("/operator/v1/principals/", "/operator/v1/models/", "/operator/v1/connections/")
         ) or path in (
@@ -72,14 +118,14 @@ class OperatorHandler(
         )
 
     @staticmethod
-    def _ordinary_read_allowed(path):
+    def _ordinary_read_allowed(path: str) -> bool:
         return path in (
             "/operator/v1/overview",
             "/operator/v1/activity",
             "/operator/v1/usage",
         ) or path.startswith("/operator/v1/activity/")
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         if not self._origin_ok():
             return self._fail(403, "ORIGIN_REJECTED")
         path = urlsplit(self.path)
@@ -128,7 +174,7 @@ class OperatorHandler(
             return self._fail(503, "METADATA_UNAVAILABLE")
         return self._fail(404, "NOT_FOUND")
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         if not self._origin_ok(mutation=True) or urlsplit(self.path).query:
             self.close_connection = True
             return self._fail(403, "ORIGIN_REJECTED")
@@ -170,7 +216,7 @@ class OperatorHandler(
             return
         return self._fail(404, "NOT_FOUND")
 
-    def do_DELETE(self):
+    def do_DELETE(self) -> None:
         path = urlsplit(self.path)
         if not self._origin_ok(mutation=True) or path.query or path.fragment:
             self.close_connection = True
@@ -192,3 +238,9 @@ class OperatorHandler(
         if self._dispatch(route, "delete", path=path, session=session, body=body):
             return
         return self._fail(404, "NOT_FOUND")
+
+
+if TYPE_CHECKING:
+
+    def _check_handler_context(handler: OperatorHandler) -> OperatorContext:
+        return handler

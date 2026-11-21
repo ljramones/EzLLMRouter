@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from .repositories import secret_rotation as _queries
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from functools import partial
+from typing import cast, Protocol
+
+
+class Rewriter(Protocol):
+    def __call__(self, *, verify_only: bool = False) -> int: ...
+
 
 import argparse
 from contextlib import closing
@@ -21,24 +28,26 @@ from .instance_lock import InstanceBusy
 from .store import SQLiteStore
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     args = _rotation_arguments(argv)
     configure_logging()
     retiring = False
+    rewrite: Rewriter
+    references: Callable[[], set[str]]
     try:
         with closing(SQLiteStore.open_existing(args.db, maintenance=True)) as store:
             if args.scope == "provider":
                 identifiers = [
-                    json.loads(row[0])["connection_id"]
+                    json.loads(cast(str, row[0]))["connection_id"]
                     for row in store.database.execute(_queries.MAIN_SELECT_REGISTRY_CONNECTIONS)
                 ]
                 vault = ProviderVault(args.vault, require_existing=True)
                 box = vault.box
-                rewrite = lambda **options: vault.reencrypt_secrets(identifiers, **options)
+                rewrite = partial(vault.reencrypt_secrets, identifiers)
                 references = vault.key_references
             elif args.scope == "integration":
                 known = {
-                    row[0]
+                    cast(str, row[0])
                     for row in store.database.execute(
                         _queries.MAIN_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
                     )
@@ -46,25 +55,25 @@ def main(argv=None):
                 box = SecretBox(
                     args.keyring, "integration-credentials", required_ids=known, required=True
                 )
-                rewrite = lambda **options: reencrypt_credentials(store, box, **options)
+                rewrite = partial(reencrypt_credentials, store, box)
                 references = lambda: {
-                    row[0]
+                    cast(str, row[0])
                     for row in store.database.execute(
                         _queries.MAIN_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
                     )
                 }
             else:
                 known = {
-                    json.loads(row[0])["key_id"]
+                    json.loads(cast(str, row[0]))["key_id"]
                     for row in store.database.execute(_queries.MAIN_SELECT_LOCAL_CONNECTORS)
                 }
                 path = args.keyring or connector_key_path(store.path)
                 box = SecretBox(
                     path, "local-connector-credentials", required_ids=known, required=True
                 )
-                rewrite = lambda **options: reencrypt_connectors(store, box, **options)
+                rewrite = partial(reencrypt_connectors, store, box)
                 references = lambda: {
-                    json.loads(row[0])["key_id"]
+                    json.loads(cast(str, row[0]))["key_id"]
                     for row in store.database.execute(_queries.MAIN_SELECT_LOCAL_CONNECTORS)
                 }
             if args.action == "rotate":

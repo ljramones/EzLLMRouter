@@ -47,7 +47,7 @@ class WireTransport(SafeHTTPRequestHandler):
             return coordinator.successor
         return coordinator
 
-    def log_message(self, _format: str, *_args: object) -> None:
+    def log_message(self, *_args: object) -> None:
         return
 
     def _log_error(self, event: str, exc: Exception) -> None:

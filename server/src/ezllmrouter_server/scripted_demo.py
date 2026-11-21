@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import cast
+from .records import Record
+
 import hashlib
 import json
 from collections import Counter, defaultdict
@@ -25,16 +28,16 @@ FILTERS = {
 }
 
 
-def _money(value):
+def _money(value: Decimal) -> str:
     return money(value, places=9)
 
 
-def _date(value):
+def _date(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 class ScriptedDemo:
-    def __init__(self, scope):
+    def __init__(self, scope: str | Path) -> None:
         root = Path(scope)
         scope_record = json.loads((root / "scope.json").read_text())
         payload = (root / "fixture.json").read_bytes()
@@ -68,7 +71,7 @@ class ScriptedDemo:
         }
         self.zone = ZoneInfo(meta["display_timezone"])
         self.cutoff = _date(meta["report_cutoff_utc"])
-        revisions = defaultdict(list)
+        revisions: defaultdict[str, list[Record]] = defaultdict(list)
         for item in data["usage_revisions"]:
             if _date(item["recorded_at"]) <= self.cutoff:
                 revisions[item["attempt_id"]].append(item)
@@ -84,7 +87,7 @@ class ScriptedDemo:
         ]
         self.rows_by_id = {item["attempt_id"]: item for item in self.rows}
 
-    def _label(self, section, identifier):
+    def _label(self, section: str, identifier: str | None) -> str:
         if identifier == "demo.bucket.scheduled":
             return "Scheduled / system — no initiating human"
         if not identifier:
@@ -92,10 +95,10 @@ class ScriptedDemo:
         for name in (section, "users", "agents", "service_actors"):
             item = self.maps.get(name, {}).get(identifier)
             if item:
-                return item.get("display_name", identifier)
+                return cast(str, item.get("display_name", identifier))
         return identifier
 
-    def _row(self, item):
+    def _row(self, item: Record) -> Record:
         observed = self.revisions[item["id"]]
         revision = (
             observed[-1]
@@ -153,7 +156,7 @@ class ScriptedDemo:
         }
 
     @staticmethod
-    def _measure(rows):
+    def _measure(rows: list[Record]) -> Record:
         known = [item for item in rows if item["amount_decimal"] is not None]
         return {
             "attempts": len(rows),
@@ -170,8 +173,8 @@ class ScriptedDemo:
             "known_output_tokens": sum(item["output_tokens"] or 0 for item in rows),
         }
 
-    def _group(self, rows, key, section=None):
-        buckets = defaultdict(list)
+    def _group(self, rows: list[Record], key: str, section: str | None = None) -> list[Record]:
+        buckets: defaultdict[str, list[Record]] = defaultdict(list)
         for item in rows:
             buckets[item[key] or "demo.bucket.scheduled"].append(item)
         return [
@@ -183,7 +186,7 @@ class ScriptedDemo:
             for identifier, members in sorted(buckets.items())
         ]
 
-    def _steps(self, rows):
+    def _steps(self, rows: list[Record]) -> list[Record]:
         allowed = {item["attempt_id"] for item in rows}
         revisions = sorted(
             (item for aid in allowed for item in self.revisions[aid]),
@@ -215,7 +218,7 @@ class ScriptedDemo:
             )
         return steps
 
-    def _select(self, filters):
+    def _select(self, filters: dict[str, str]) -> list[Record]:
         if set(filters) - FILTERS or any(not isinstance(value, str) for value in filters.values()):
             raise ValueError("invalid demo selector")
         for key in ("from_date", "to_date"):
@@ -259,7 +262,7 @@ class ScriptedDemo:
             )
         ]
 
-    def report(self, filters=None):
+    def report(self, filters: dict[str, str] | None = None) -> Record:
         filters = filters or {}
         rows = self._select(filters)
         workflow_ids = {item["workflow_id"] for item in rows}
@@ -332,7 +335,7 @@ class ScriptedDemo:
             "models": self.data["model_profiles"],
         }
 
-    def workflow(self, identifier):
+    def workflow(self, identifier: str) -> Record:
         item = self.maps["workflows"].get(identifier)
         if not item:
             raise KeyError(identifier)
@@ -344,7 +347,7 @@ class ScriptedDemo:
         outcomes = [row for row in self.data["outcomes"] if row["workflow_id"] == identifier]
         rollups = []
         by_run = {row["id"]: row for row in runs}
-        ancestors = {}
+        ancestors: dict[str, set[str]] = {}
         for run in runs:
             cursor, path, visiting = run["id"], [], set()
             while cursor is not None and cursor not in ancestors:

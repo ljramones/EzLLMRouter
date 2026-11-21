@@ -6,6 +6,14 @@ the stable credential binding, encrypted versions, and discovery metadata.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+from .database import Row
+from .store import Store
+from .integration_credential_records import Discovery
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hmac
 import json as json
 import secrets
@@ -25,10 +33,10 @@ from .secret_box import SecretBox, validate_secret as validate_secret
 from .store import Record, encode
 
 
-def _body_dataset(body):
+def _body_dataset(body: Record) -> str:
     if type(body) is not dict:
         raise IntegrationError("SCHEMA_INVALID")
-    return body.get("dataset_id")
+    return cast(str, body.get("dataset_id"))
 
 
 PROVIDERS = {
@@ -43,16 +51,20 @@ def credential_context(account_id: str, version: int, provider: str) -> bytes:
     return encode({"account_id": account_id, "version": version, "provider": provider}).encode()
 
 
-def reencrypt_credentials(store, box, *, verify_only=False):
-    def rewrite():
+def reencrypt_credentials(store: Store, box: SecretBox, *, verify_only: bool = False) -> int:
+    def rewrite() -> int:
         rows = store.database.execute(
             _queries.REWRITE_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
         ).fetchall()
         changed = 0
         for account_id, version, key_id, nonce, ciphertext, raw in rows:
-            binding = json.loads(raw)
-            context = credential_context(account_id, version, binding["provider"])
-            value = box.open_parts(key_id, nonce, ciphertext, context)
+            binding = json.loads(cast(str, raw))
+            context = credential_context(
+                cast(str, account_id), cast(int, version), binding["provider"]
+            )
+            value = box.open_parts(
+                cast(str, key_id), cast(bytes, nonce), cast(bytes, ciphertext), context
+            )
             if not verify_only and key_id != box.active_id:
                 replacement = box.seal_parts(value, context)
                 store.database.execute(
@@ -69,7 +81,14 @@ from . import integration_credential_records as _credential_records
 
 
 class DatabaseCredentialStore:
-    def __init__(self, registry, key_path, *, discover=None, controlled=False):
+    def __init__(
+        self,
+        registry: Registry,
+        key_path: str | Path,
+        *,
+        discover: Discovery | None = None,
+        controlled: bool = False,
+    ) -> None:
         self.registry = registry
         self.store = registry.store
         self.key_path = Path(key_path)
@@ -85,7 +104,7 @@ class DatabaseCredentialStore:
             ).fetchone()
         with self.store.database.read():
             known = {
-                row[0]
+                cast(str, row[0])
                 for row in self.store.database.execute(
                     _queries.INIT_SELECT_INTEGRATION_CREDENTIAL_VERSIONS
                 )
@@ -106,7 +125,7 @@ class DatabaseCredentialStore:
             )
         self._clean_pending()
 
-    def _owner(self, principal, dataset_id):
+    def _owner(self, principal: Record, dataset_id: str) -> Record:
         dataset = self.registry.integration._dataset(dataset_id)
         self.registry.integration._authorize(principal, dataset, "admin")
         if principal["principal_id"] != self.registry.identity.owner_id:
@@ -119,11 +138,11 @@ class DatabaseCredentialStore:
 
     _resolve = _credential_records._resolve
 
-    def reencrypt_secrets(self):
+    def reencrypt_secrets(self) -> int:
         with self._gate:
             return reencrypt_credentials(self.store, self.box)
 
-    def rotate_encryption_key(self):
+    def rotate_encryption_key(self) -> Record:
         with self._gate:
             identifier = self.box.rotate()
             return {"key_id": identifier, "rewritten": self.reencrypt_secrets()}
@@ -138,7 +157,7 @@ class DatabaseCredentialStore:
 
     _clean_pending = _credential_records._clean_pending
 
-    def connect(self, principal, body):
+    def connect(self, principal: Record, body: Record) -> Record:
         if type(body) is not dict or set(body) != {
             "dataset_id",
             "provider",
@@ -169,9 +188,9 @@ class DatabaseCredentialStore:
                     _queries.CONNECT_SELECT_INTEGRATION_CREDENTIAL_OPERATIONS, (operation_id,)
                 ).fetchone()
             if old:
-                if not hmac.compare_digest(old[0], digest):
+                if not hmac.compare_digest(cast(str, old[0]), digest):
                     raise IntegrationError("OPERATION_CONFLICT", 409)
-                return self._public(self._binding(old[1]))
+                return self._public(self._binding(cast(str, old[1])))
             account_id = "account.local." + secrets.token_hex(16)
             reference = "credential.local." + secrets.token_hex(16)
             key_id, nonce, ciphertext = self._seal(account_id, 1, provider, body["api_key"])
@@ -197,7 +216,7 @@ class DatabaseCredentialStore:
                 "updated_at": _time(),
             }
 
-            def create():
+            def create() -> None:
                 db = self.store.database
                 self._owner(principal, body["dataset_id"])
                 db.execute(
@@ -218,7 +237,7 @@ class DatabaseCredentialStore:
         discovery = self._discover(binding, 1, secret=secret)
         with self._gate:
 
-            def finish():
+            def finish() -> Record:
                 self._owner(principal, binding["dataset_id"])
                 current = self._binding(account_id)
                 if current["revision"] == binding["revision"]:
@@ -231,15 +250,15 @@ class DatabaseCredentialStore:
 
             return self.store.database.transaction(finish)
 
-    def list(self, principal, dataset_id):
+    def list(self, principal: Record, dataset_id: str) -> Record:
         self._owner(principal, dataset_id)
         with self.store.database.read():
             rows = self.store.database.execute(
                 _queries.LIST_SELECT_INTEGRATION_CREDENTIAL_BINDINGS, (dataset_id,)
             ).fetchall()
-        return {"items": [self._public(json.loads(row[0])) for row in rows]}
+        return {"items": [self._public(json.loads(cast(str, row[0]))) for row in rows]}
 
-    def list_for(self, principal, dataset_id):
+    def list_for(self, principal: Record, dataset_id: str) -> Record:
         if (
             principal["principal_id"] != self.registry.identity.credential_consumer_id
             or principal["kind"] != "service"
@@ -270,11 +289,11 @@ class DatabaseCredentialStore:
             "items": [
                 {key: item[key] for key in fields}
                 for (raw,) in rows
-                if (item := json.loads(raw))["state"] == "connected"
+                if (item := json.loads(cast(str, raw)))["state"] == "connected"
             ],
         }
 
-    def save(self, principal, account_id, body):
+    def save(self, principal: Record, account_id: str, body: Record) -> Record:
         _validate_selection_body(body)
         self._owner(principal, body["dataset_id"])
         with self._gate:
@@ -331,7 +350,7 @@ class DatabaseCredentialStore:
                 updated_at=_time(),
             )
 
-            def commit():
+            def commit() -> None:
                 db = self.store.database
                 self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 if account:
@@ -350,7 +369,7 @@ class DatabaseCredentialStore:
                     ).fetchone()
                     if not row:
                         raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
-                    old = json.loads(row[0])
+                    old = json.loads(cast(str, row[0]))
                     old.update(
                         allowed_models=models,
                         allowed_operations=operations,
@@ -373,18 +392,18 @@ class DatabaseCredentialStore:
             self.store.database.transaction(commit)
             return self._public(item)
 
-    def refresh(self, principal, account_id, body):
+    def refresh(self, principal: Record, account_id: str, body: Record) -> Record:
         self._owner(principal, _body_dataset(body))
         with self._gate:
             item = self._current(
-                principal, body["dataset_id"], account_id, body.get("expected_revision")
+                principal, body["dataset_id"], account_id, cast(int, body.get("expected_revision"))
             )
             version = item["pending_version"] or item["selected_version"]
             secret = self._resolve(item, version)
         discovery = self._discover(item, version, secret=secret)
         with self._gate:
 
-            def commit():
+            def commit() -> Record:
                 current = self._current(principal, item["dataset_id"], account_id, item["revision"])
                 discovery["record_revision"] = current["revision"] + 1
                 current.update(
@@ -398,20 +417,26 @@ class DatabaseCredentialStore:
 
             return self.store.database.transaction(commit)
 
-    def replace(self, principal, account_id, body):
+    def replace(self, principal: Record, account_id: str, body: Record) -> Record:
         self._owner(principal, _body_dataset(body))
-        secret = body.get("api_key")
-        dataset_id, expected_revision = body["dataset_id"], body.get("expected_revision")
+        secret = cast(str, body.get("api_key"))
+        dataset_id, expected_revision = body["dataset_id"], cast(int, body.get("expected_revision"))
         with self._gate:
 
-            def stage():
+            def stage() -> tuple[Record, int]:
                 item = self._current(principal, dataset_id, account_id, expected_revision)
                 if item["state"] not in ("connected", "pending"):
                     raise IntegrationError("STALE_REVISION", 409)
-                stored = self.store.database.execute(
-                    _queries.NEXT_CREDENTIAL_VERSION, (account_id,)
-                ).fetchone()[0]
-                version = max(stored, item["selected_version"], item["pending_version"] or 0) + 1
+                stored = cast(
+                    Row,
+                    self.store.database.execute(
+                        _queries.NEXT_CREDENTIAL_VERSION, (account_id,)
+                    ).fetchone(),
+                )[0]
+                version = (
+                    max(cast(int, stored), item["selected_version"], item["pending_version"] or 0)
+                    + 1
+                )
                 key_id, nonce, ciphertext = self._seal(
                     account_id, version, item["provider"], secret
                 )
@@ -430,7 +455,7 @@ class DatabaseCredentialStore:
                 raise
             with self._gate:
 
-                def commit():
+                def commit() -> Record:
                     current = self._current(
                         principal, item["dataset_id"], account_id, item["revision"]
                     )
@@ -468,7 +493,7 @@ class DatabaseCredentialStore:
                     )
                 )
 
-    def disable(self, principal, account_id, body):
+    def disable(self, principal: Record, account_id: str, body: Record) -> Record:
         self._owner(principal, _body_dataset(body))
         with self._gate:
             item = self._binding(account_id)
@@ -480,14 +505,14 @@ class DatabaseCredentialStore:
                 return self._public(item)
             item.update(state="disabled", revision=item["revision"] + 1, updated_at=_time())
 
-            def commit():
+            def commit() -> None:
                 self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 db = self.store.database
                 row = db.execute(
                     _queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS, (account_id, item["dataset_id"])
                 ).fetchone()
                 if row:
-                    account = json.loads(row[0])
+                    account = json.loads(cast(str, row[0]))
                     account.update(
                         state="disabled", revision=account["revision"] + 1, changed_at=_time()
                     )
@@ -507,7 +532,7 @@ class DatabaseCredentialStore:
             self.store.database.transaction(commit)
             return self._public(item)
 
-    def retire(self, principal, account_id, body):
+    def retire(self, principal: Record, account_id: str, body: Record) -> Record:
         """Delete a predecessor only after the owner supplies the consumer's acknowledged version."""
         self._owner(principal, _body_dataset(body))
         with self._gate:
@@ -515,7 +540,7 @@ class DatabaseCredentialStore:
             version = body.get("version")
             if (
                 item["dataset_id"] != body["dataset_id"]
-                or item["revision"] != body.get("expected_revision")
+                or item["revision"] != cast(int, body.get("expected_revision"))
                 or type(version) is not int
                 or not 1 <= version < item["selected_version"]
                 or body.get("acknowledged_version") != item["selected_version"]
@@ -523,7 +548,7 @@ class DatabaseCredentialStore:
                 raise IntegrationError("RETIREMENT_NOT_ACKNOWLEDGED", 409)
             item.update(revision=item["revision"] + 1, updated_at=_time())
 
-            def commit():
+            def commit() -> None:
                 self._current(principal, item["dataset_id"], account_id, item["revision"] - 1)
                 self.store.database.execute(
                     _queries.COMMIT_DELETE_INTEGRATION_CREDENTIAL_VERSIONS, (account_id, version)
@@ -536,7 +561,15 @@ class DatabaseCredentialStore:
             self.store.database.transaction(commit)
             return self._public(item)
 
-    def resolve_for(self, principal, dataset_id, account_id, model_id, operation_family, purpose):
+    def resolve_for(
+        self,
+        principal: Record,
+        dataset_id: str,
+        account_id: str,
+        model_id: str | None,
+        operation_family: str,
+        purpose: str,
+    ) -> Record:
         if (
             principal["principal_id"] != self.registry.identity.credential_consumer_id
             or principal["kind"] != "service"
@@ -549,7 +582,7 @@ class DatabaseCredentialStore:
         ):
             raise IntegrationError("NOT_FOUND_OR_FORBIDDEN", 404)
 
-        def release():
+        def release() -> Record:
             dataset = self.registry.integration._dataset(dataset_id)
             current = self.registry.principal(principal["principal_id"])
             if (
@@ -568,7 +601,7 @@ class DatabaseCredentialStore:
             row = self.store.database.execute(
                 _queries.RELEASE_SELECT_INTEGRATION_ACCOUNTS, (account_id, dataset_id)
             ).fetchone()
-            account = json.loads(row[0]) if row else None
+            account = json.loads(cast(str, row[0])) if row else None
             allowed = (
                 (
                     model_id in account["allowed_models"]
