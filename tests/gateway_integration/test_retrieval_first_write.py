@@ -184,10 +184,10 @@ class FirstWriteTests(unittest.TestCase):
 
                 async def first_wait(*, change=change):
                     if not change.startswith("would_block_then_"):
-                        prohibit()
+                        await asyncio.to_thread(prohibit)
 
                 async def fake_writable(_sock, _remaining):
-                    prohibit()
+                    await asyncio.to_thread(prohibit)
 
                 original_writable = tls_sender._writable
                 tls_sender._writable = fake_writable

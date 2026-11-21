@@ -80,7 +80,7 @@ keeps those distinct from new work and from target verification.
 | T04 | Supply-chain, secret and static security scans | Partial: the PR gate runs all Ruff S rules over server/Python-client sources, with 14 reviewed SQL findings pinned to entire source hashes. Bad-source regressions exercise the real scanner. Offline Python/npm inventory covers the shipped frozen locks and development/build/browser inputs; nightly OSV queries retain a snapshot and fail on high/critical/unrated advisories. Existing archive startup-hook checks remain. Full-history secret scanning, native-language audits and actual-image scans still need their qualified tool inputs. |
 | T05 | HTTP/JSON/IPC fuzzing | Partial: fixed-seed request-stream mutations, fragmented/bounded IPC frames, and Python/JS response-decoder differential cases run offline. Server request-control restrictions are checked separately. Nightly runs use a recorded changing seed and larger budget. Ingress, compression and the four other native decoders remain. |
 | T06 | Accounting/canonical/registry properties | Partial: canonical round trips, integer-based decimal conservation, identifier boundaries, model revision/idempotency/stale writes, shuffled/duplicate/late accounting events and a campaign exposure state model pass. Registry principal/grant/price models and automated shrinking remain. |
-| T07 | Forced concurrency and lock-scope detection | Partial: PR lock auditing checks network waits, sleeps, password hashes and hash-slot waits across the module suites. Explicit exceptions cover pre-listener bootstrap, the nonblocking atomic first write and asyncio wake-up. New close/admission tests force both orders; existing sender, credential, purge/writer and session tests already force their boundaries with events. A seeded suite-order runner schedules 200 rounds nightly; full HTTP/TLS stress qualification remains to be observed. |
+| T07 | Forced concurrency and lock-scope detection | Partial: the audit now retains cross-thread/caught violations and fails the module, watches TLS data I/O and the documented shared gates, and rejects raw/repository/store SQL on asyncio loops. Red/green bad-code probes cover these gaps. Explicit exceptions cover pre-listener bootstrap, the nonblocking atomic first write and asyncio wake-up. Broader wait detection, stronger campaign acquire-order assertions and stress-seed semantics remain follow-up work. Full HTTP/TLS stress qualification remains to be observed. |
 | T08 | Process crashes, storage faults and coherent restore | Partial: real child kills cover 12 database and six encrypted-publication checkpoints; two-process exclusion, real SQLite full/busy errors, injected I/O rollback and a database/all-three-keyring restore pass offline. Missing rings fail closed. Actual first-provider-byte/plan/reply-publication kill points and interrupted database-credential rotation remain. |
 | T09 | Per-schema upgrade fixtures | Implemented for current schema v001–v003 and keyring format v1: checked-in synthetic seed/checksum/table/report manifests rebuild temporary release databases. Upgrades and restarts preserve exact historical rows, corrected controlled/external cost totals, pruned content digests and inventory anchors. Every pending migration has a byte-preserving failure/retry case; future database/keyring formats fail closed. New SQL resources or a newly minted keyring format without a fixture fail the inventory gate. No private or binary databases are tracked. |
 | T10 | Provider/client resilience matrix | Open. Compression, TLS, byte-limit, first-write and deadline examples exist; combine the declared transport behaviours in a shared matrix. |
@@ -107,3 +107,30 @@ browser dependency pins require their actual reviewed archives/checksums and
 lock entries; an unavailable tool or frozen bundle is recorded as unverified,
 not as a passing check. No testing change authorizes real-provider traffic,
 spending, a persistent-profile restart or reacquisition of frozen gateway inputs.
+
+## Testing follow-up review, 2026-11-21
+
+The owner's `EzLLMRouter-testing-review-followup-2026-11-21.md` reviewed
+`bd18676`. Its findings take priority over extending the original roadmap.
+For each fix, first run the new bad-code/negative fixture against the old gate
+and retain that failing run under ignored `.artifacts/testing-review-followup/`.
+Then fix the gate, run the regression and full checks, and update this table.
+
+| Finding | Status |
+| --- | --- |
+| H1: lost lock violations and missing instrumentation | Core fixes implemented: retained module-wide verdict, worker/caught/loop probes, SQLite on asyncio, TLS data methods, maintenance stores and registry/credential/vault/availability gates. Initial negative run: nine failing assertions and six unguarded TLS errors; all four probe tests now pass. Broader synchronization/file-I/O waits remain outside scope. |
+| H2: generated framing never reaches body parsers | Open; add authenticated targets and parser/dispatch assertions before changing parser behavior. |
+| H3: authorization role/body/method gaps | Open; read-only/password-change sessions, valid mutation bodies, wrong methods and integration-only mode. |
+| M1: HTTP tier lacks measurements and lock audit | Open. |
+| M2: Python coverage allowance can be reused | Open; baseline tightening and missing-exit identities. |
+| M3: dynamic JS function denominator | Open; static function inventory. |
+| M4: forbidden version spellings and mutable images | Open; parse normalized releases and image declarations without acquiring artifacts. |
+| M5: Docker COPY/WORKDIR and unparsed validation commands | Open. |
+| M6: secret scanning, shipped SAST scope and inventory completeness | Open. |
+| M7: setup/timeout telemetry, timing overhead and stress/flake semantics | Open. |
+| M8: forced interleavings and richer generated models | Open. |
+| M9: WAL goldens, unaffected-table invariants, richer restore/crash cases | Open. |
+| L1: non-ASCII Content-Length digits | Open; address with H2. |
+| L2: artifact retention | Open. |
+| L3: bootstrap pins and advisory environment | Open; exact tool archives/action commits need qualification. |
+| L4: smaller measurement/SAST/decoder gaps | Open; retain individual subitems from the source report. |

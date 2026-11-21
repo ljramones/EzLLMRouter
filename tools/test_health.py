@@ -60,7 +60,13 @@ class TimedResult(unittest.TextTestResult):
 
 
 def write_result(
-    name: str, result: TimedResult, seconds: float, directory: str | None, *, loopback: bool = False
+    name: str,
+    result: TimedResult,
+    seconds: float,
+    directory: str | None,
+    *,
+    loopback: bool = False,
+    audit_violations: Sequence[dict[str, object]] = (),
 ) -> None:
     if not directory:
         return
@@ -73,7 +79,10 @@ def write_result(
         "seconds": round(seconds, 6),
         "tests_run": result.testsRun,
         "skipped": len(result.skipped),
-        "passed": result.wasSuccessful() and result.testsRun > len(result.skipped),
+        "passed": result.wasSuccessful()
+        and result.testsRun > len(result.skipped)
+        and not audit_violations,
+        "audit_violations": list(audit_violations),
         "tests": result.observations,
     }
     (output / f"module-{uuid.uuid4().hex}.json").write_text(json.dumps(payload, indent=2) + "\n")

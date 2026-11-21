@@ -41,7 +41,7 @@ class LockAuditInstrumentTests(unittest.TestCase):
             patch.object(unittest.defaultTestLoader, "loadTestsFromName", return_value=suite),
             redirect_stderr(io.StringIO()),
         ):
-            self.assertTrue(run_module("synthetic", loopback=False))
+            self.assertFalse(run_module("synthetic", loopback=False))
             self.assertEqual(activated.call_count, 1)
 
     def test_loop_wakeup_is_nonblocking_and_does_not_allow_arbitrary_socket_sends(self):

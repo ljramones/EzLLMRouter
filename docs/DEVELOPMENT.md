@@ -142,14 +142,24 @@ late recorded charges, checks exact incurred/held/available exposure, and refuse
 new reservations that exceed current authority. These generators do not yet
 provide Hypothesis-style shrinking or cover all native decoder implementations.
 
-`tools.check --lock-audit` wraps the shared store/authority gates and password
-hash semaphore in each module interpreter. It rejects socket connect/read/write,
-TLS handshake, `time.sleep`, password hashing and hash-slot waits while a shared
-gate is held. Explicit call-site exceptions preserve initial account hashing
+`tools.check --lock-audit` wraps the shared store/authority gates, registry probe
+and token locks, credential/vault gates, availability lock and password hash
+semaphore in each module interpreter, including stores opened for maintenance.
+It rejects socket connect/read/write, TLS data I/O and handshake, `time.sleep`,
+password hashing and hash-slot waits while a shared gate is held. SQLite
+connections/cursors and store entry points additionally reject synchronous
+database work on a running asyncio loop, even without a held gate. Ordinary
+synchronous SQLite transactions remain supported; this is not a general SQLite
+busy-wait detector. Explicit call-site exceptions preserve initial account hashing
 before the service binds, the sender's atomic nonblocking first write, and
 asyncio's nonblocking event-loop wake-up socket. Routine login and password
-changes have no exception. This is test instrumentation, not an OS sandbox or a
-detector for arbitrary CPU work/file I/O or nested isolated source-copy children.
+changes have no exception. Every violation is retained in the active module's
+process-wide audit scope before raising. The module/script fails even if the
+exception was caught or occurred on a worker/loop thread; module health artifacts
+retain operation/lock labels and thread IDs without SQL text or arguments. Nested
+audit probes in the instrument's own tests use isolated scopes. This is test
+instrumentation, not an OS sandbox or a detector for arbitrary CPU work/file I/O,
+every synchronization wait, or nested isolated source-copy children.
 
 The forced-order race cases include sender revocation/cancellation,
 credential rotation/release, purge versus delayed writers, session revocation

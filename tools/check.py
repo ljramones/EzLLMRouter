@@ -50,6 +50,7 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_lock_audit_failures",
     "tests.unit.test_schema_upgrade_fixtures",
     "tests.unit.test_security_scanning",
     "tests.unit.test_campaign_interleavings",
@@ -330,6 +331,7 @@ def run_script(name: str) -> int:
         raise ValueError("unknown regression script")
     sys.argv = [name, "--source-root", str(ROOT)]
     with ExitStack() as stack:
+        auditor = None
         if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
             from .test_coverage import LineCoverage
 
@@ -337,19 +339,21 @@ def run_script(name: str) -> int:
         if os.environ.get("EZLLMROUTER_LOCK_AUDIT"):
             from .lock_audit import auditing
 
-            stack.enter_context(auditing())
+            auditor = stack.enter_context(auditing())
         block_network(stack)
         try:
             runpy.run_path(str(ROOT / name), run_name="__main__")
         except SystemExit as error:
-            return 0 if error.code in (None, 0) else 1
-    return 0
+            if error.code not in (None, 0):
+                return 1
+        return 1 if auditor is not None and auditor.violations else 0
 
 
 def run_module(name: str, *, loopback: bool) -> bool:
     # Per-module interpreters isolate environment changes and loaded fixture state.
     health_directory = os.environ.get("EZLLMROUTER_TEST_HEALTH")
     with ExitStack() as stack:
+        auditor = None
         if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
             from .test_coverage import LineCoverage
 
@@ -357,21 +361,27 @@ def run_module(name: str, *, loopback: bool) -> bool:
         if os.environ.get("EZLLMROUTER_LOCK_AUDIT"):
             from .lock_audit import auditing
 
-            stack.enter_context(auditing())
+            auditor = stack.enter_context(auditing())
         block_network(stack, loopback=loopback)
         suite = unittest.defaultTestLoader.loadTestsFromName(name)
         from .test_health import TimedResult, write_result
 
         started = time.perf_counter()
         result = unittest.TextTestRunner(verbosity=1, resultclass=TimedResult).run(suite)
+        violations = auditor.violations if auditor is not None else []
+        if violations:
+            print(
+                f"Shared-lock audit failed: {len(violations)} retained violations", file=sys.stderr
+            )
         write_result(
             name,
             cast(TimedResult, result),
             time.perf_counter() - started,
             health_directory,
             loopback=loopback,
+            audit_violations=violations,
         )
-        return result.wasSuccessful() and result.testsRun > len(result.skipped)
+        return result.wasSuccessful() and result.testsRun > len(result.skipped) and not violations
 
 
 def run(argv: list[str]) -> None:
