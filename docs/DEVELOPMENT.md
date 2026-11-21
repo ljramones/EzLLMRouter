@@ -96,8 +96,9 @@ directory retains its own summary and a `combined/` report containing the union
 of offline and HTTP hits. Merge inputs must have identical Python versions,
 measurement scopes, source inventories, source hashes and static denominators.
 The PR artifact upload follows both tiers and runs even after a failure.
-Both tiers include deterministic scheduler outcomes so incidental background
-ticks cannot change their reviewed coverage sets.
+Both tiers include deterministic scheduler and connection-shutdown outcomes so
+incidental background ticks or handler completion cannot change their reviewed
+coverage sets.
 
 Each run creates a fresh directory under `.artifacts/coverage/`. `summary.json`
 records Python source hashes, executable/missing lines, and both exits of each

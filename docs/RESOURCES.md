@@ -98,7 +98,9 @@ Pending-task cancellation and already-closed connection cleanup have explicit
 regressions that force those states. Their coverage must not depend on a cancelled
 future or a handler finishing before listener/loop shutdown begins. A failed loop
 submission also verifies that its unscheduled coroutine closes and later work
-still runs. The coverage budgets remain the same across local and CI runs.
+still runs. The HTTP tier also runs the forced connection-cap, already-closed
+stream and bounded-handler-join cases. Their reviewed coverage sets must match
+across local and CI runs, independent of incidental handler completion.
 
 Run the full offline checks with `uv run --locked python -m tools.check`.
 Socket-listener and frozen-worker target qualification remain separate checks;

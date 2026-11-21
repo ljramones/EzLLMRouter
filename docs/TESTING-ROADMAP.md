@@ -145,11 +145,17 @@ reports and the previous Linux CI comparison remain under ignored
 `.artifacts/testing-review-followup/` and `.artifacts/coverage/`. Deployment,
 frozen-worker and broader T01 follow-up selectors remain separate qualifications.
 
-M5/M7/L2 local validation passes both coverage/lock-audit tiers without changing
-their reviewed missing-code budgets: 88.65% offline, 69.62% HTTP and 92.08%
-combined line coverage. A separate uninstrumented offline/HTTP pass meets the
+M5/M7/L2 local validation passes both coverage/lock-audit tiers: 88.65% offline,
+69.79% HTTP and 92.08% combined line coverage. The first Linux CI HTTP run
+correctly demanded a tighter budget when handler shutdown happened to cover
+four additional lines and five exits. Both tiers now run the eight existing
+socket-budget regressions, forcing closed-stream, handler-join, thread-start
+failure, framing and cancellation outcomes. The HTTP budget removes 38 line
+and 22 exit allowances across two unchanged sources; no allowance increases.
+A separate uninstrumented offline/HTTP pass meets the
 30-second module budget (slowest module 9.10 seconds), with no inconsistent
 outcomes. The final 54 focused regressions and a three-round offline stress
-smoke run (15 suite invocations) pass. Logs and source-bound summaries remain
+smoke run (15 suite invocations) pass, as do 22 further coverage/inventory
+regressions. Logs and source-bound summaries remain
 under ignored `.artifacts/testing-review-followup/`; no Docker build, frozen
 input change or running-profile operation was performed.
