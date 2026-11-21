@@ -6,6 +6,7 @@ from contextlib import ExitStack
 from copy import deepcopy
 import hashlib
 import importlib
+import inspect
 import json
 from pathlib import Path
 import socket
@@ -150,6 +151,45 @@ class ResourcePrimitiveTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             runtime.submit(held())
 
+    def test_loop_close_cancels_a_still_pending_task_before_returning(self):
+        runtime = LoopThread("resource-test-pending-loop")
+        self.addCleanup(runtime.close)
+        entered, cancelled = threading.Event(), threading.Event()
+
+        async def held():
+            entered.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancelled.set()
+
+        future = runtime.submit(held())
+        self.assertTrue(entered.wait(2))
+        self.assertFalse(future.done())
+        # Leave cancellation to the loop owner. Cancelling the future first lets
+        # task completion race with close(), skipping the pending-task cleanup.
+        runtime.close()
+        self.assertTrue(cancelled.is_set())
+        self.assertTrue(future.cancelled())
+        self.assertTrue(runtime.loop.is_closed())
+        self.assertFalse(runtime.thread.is_alive())
+
+    def test_failed_loop_submission_closes_the_unscheduled_coroutine(self):
+        runtime = LoopThread("resource-test-submit-failure")
+        self.addCleanup(runtime.close)
+
+        async def work():
+            return "accepted"
+
+        coroutine = work()
+        failure = RuntimeError("controlled loop scheduling failure")
+        with patch.object(asyncio, "run_coroutine_threadsafe", side_effect=failure):
+            with self.assertRaises(RuntimeError) as caught:
+                runtime.submit(coroutine)
+        self.assertIs(caught.exception, failure)
+        self.assertEqual(inspect.getcoroutinestate(coroutine), inspect.CORO_CLOSED)
+        self.assertEqual(runtime.call(work(), timeout=2), "accepted")
+
     def test_cleanup_failure_still_stops_the_event_loop(self):
         runtime = LoopThread("resource-test-loop")
 
@@ -181,6 +221,25 @@ class SocketBudgetTests(unittest.TestCase):
         self.addCleanup(first.close)
         self.addCleanup(second.close)
         return first, second
+
+    def test_shutdown_continues_when_a_tracked_connection_is_already_closed(self):
+        server = BoundedUnixServer("unused", lambda *_: None, bind_and_activate=False)
+        self.addCleanup(server.server_close)
+        closed, closed_peer = self.pair()
+        active, active_peer = self.pair()
+        closed.close()
+        with self.assertRaises(OSError):
+            closed.shutdown(socket.SHUT_RDWR)
+        # A handler can close its stream before removing it from the tracked set.
+        # Pin that state instead of relying on the handler thread winning a race.
+        with server._connections_lock:
+            server._active_connections.update((closed, active))
+        server.server_close()
+        self.assertTrue(server._connections_closed)
+        self.assertEqual(server.socket.fileno(), -1)
+        for peer in (closed_peer, active_peer):
+            peer.settimeout(2)
+            self.assertEqual(peer.recv(1), b"")
 
     def test_handler_join_uses_one_bounded_shutdown_deadline(self):
         entered, release = threading.Event(), threading.Event()

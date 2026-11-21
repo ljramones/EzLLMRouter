@@ -94,6 +94,12 @@ blocked replies, async socket cancellation, HTTP deadlines without timer threads
 startup cleanup and local-service dependency order. They invoke no model providers
 and do not bind a listener.
 
+Pending-task cancellation and already-closed connection cleanup have explicit
+regressions that force those states. Their coverage must not depend on a cancelled
+future or a handler finishing before listener/loop shutdown begins. A failed loop
+submission also verifies that its unscheduled coroutine closes and later work
+still runs. The coverage budgets remain the same across local and CI runs.
+
 Run the full offline checks with `uv run --locked python -m tools.check`.
 Socket-listener and frozen-worker target qualification remain separate checks;
 run `uv run --locked python -m tools.check --http-only` in the owner Terminal and
