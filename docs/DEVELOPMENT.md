@@ -35,7 +35,9 @@ wire HTTP package, shared execution policy and bounded executor.
 
 The same command then runs `tools.type_audit` over every server/Python-client
 module. `tools/type_audit_budget.json` records the remaining error budget per file.
-New files have a zero-error budget; increases fail, and reductions pass. Keep
+New code has a zero-error budget; increases fail, and reductions pass. A pure
+code move may explicitly transfer existing per-file debt to its new owner, with
+no aggregate increase, before a separately reviewed typing cleanup. Keep
 budgets decreasing as modules enter strict coverage. Budget changes are visible
 code-review changes. Fresh reports under `.artifacts/type-audit/` retain the full
 diagnostics and counts. The baseline for this structural pass falls from 2,934 to

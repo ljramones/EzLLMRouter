@@ -34,12 +34,10 @@
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
     "server/src/ezllmrouter_server/provider_adapters.py:function:probe": 165,
-    "server/src/ezllmrouter_server/registry.py:class:Registry": 1816,
-    "server/src/ezllmrouter_server/registry.py:file": 1911,
-    "server/src/ezllmrouter_server/registry.py:function:Registry._apply_model_change": 110,
     "server/src/ezllmrouter_server/registry.py:function:Registry.mutate": 102,
-    "server/src/ezllmrouter_server/registry.py:function:Registry.set_provider_credential": 109,
-    "server/src/ezllmrouter_server/registry.py:function:Registry.source_inventory": 147,
+    "server/src/ezllmrouter_server/registry_credentials.py:function:set_provider_credential": 109,
+    "server/src/ezllmrouter_server/registry_mutations/models.py:function:_apply_model_change": 110,
+    "server/src/ezllmrouter_server/registry_sources.py:function:source_inventory": 131,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
     "server/src/ezllmrouter_server/store.py:class:SQLiteStore": 802,
     "server/src/ezllmrouter_server/store.py:file": 937,
@@ -100,5 +98,12 @@
     "tools/operator/provider_approval_browser_smoke.py:function:main": 314,
     "tools/operator/provider_browser_smoke.py:function:main": 244,
     "tools/operator/source_onboarding_browser_smoke.py:function:main": 325
-  }
+  },
+  "relocations": [
+    {
+      "source": "server/src/ezllmrouter_server/registry.py",
+      "baseline_commit": "3894723",
+      "note": "Existing oversized methods moved with unchanged AST bodies; file/class ceilings resolved, moved function ceilings retained or lowered."
+    }
+  ]
 }

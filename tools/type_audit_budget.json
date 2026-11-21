@@ -44,7 +44,18 @@
     "server/src/ezllmrouter_server/personal_campaign.py": 65,
     "server/src/ezllmrouter_server/plans.py": 8,
     "server/src/ezllmrouter_server/provider_vault.py": 32,
-    "server/src/ezllmrouter_server/registry.py": 178,
+    "server/src/ezllmrouter_server/registry.py": 44,
+    "server/src/ezllmrouter_server/registry_credentials.py": 22,
+    "server/src/ezllmrouter_server/registry_mutations/catalogue.py": 8,
+    "server/src/ezllmrouter_server/registry_mutations/connections.py": 9,
+    "server/src/ezllmrouter_server/registry_mutations/grants.py": 5,
+    "server/src/ezllmrouter_server/registry_mutations/models.py": 12,
+    "server/src/ezllmrouter_server/registry_mutations/prices.py": 6,
+    "server/src/ezllmrouter_server/registry_mutations/principals.py": 5,
+    "server/src/ezllmrouter_server/registry_reads.py": 22,
+    "server/src/ezllmrouter_server/registry_sources.py": 9,
+    "server/src/ezllmrouter_server/registry_tokens.py": 4,
+    "server/src/ezllmrouter_server/registry_values.py": 3,
     "server/src/ezllmrouter_server/reporting.py": 71,
     "server/src/ezllmrouter_server/retrieval_descriptor.py": 3,
     "server/src/ezllmrouter_server/runtime_resources.py": 9,
@@ -56,5 +67,26 @@
     "server/src/ezllmrouter_server/successor_reporting.py": 14,
     "server/src/ezllmrouter_server/user_management.py": 112,
     "server/src/ezllmrouter_server/web.py": 3
-  }
+  },
+  "relocations": [
+    {
+      "source": "server/src/ezllmrouter_server/registry.py",
+      "source_ceiling": 178,
+      "recipients": {
+        "server/src/ezllmrouter_server/registry_values.py": 3,
+        "server/src/ezllmrouter_server/registry_tokens.py": 4,
+        "server/src/ezllmrouter_server/registry_sources.py": 9,
+        "server/src/ezllmrouter_server/registry_reads.py": 22,
+        "server/src/ezllmrouter_server/registry_mutations/principals.py": 5,
+        "server/src/ezllmrouter_server/registry_mutations/prices.py": 6,
+        "server/src/ezllmrouter_server/registry_mutations/models.py": 12,
+        "server/src/ezllmrouter_server/registry_mutations/grants.py": 5,
+        "server/src/ezllmrouter_server/registry_mutations/connections.py": 9,
+        "server/src/ezllmrouter_server/registry_mutations/catalogue.py": 8,
+        "server/src/ezllmrouter_server/registry_credentials.py": 22,
+        "server/src/ezllmrouter_server/registry.py": 44
+      },
+      "note": "Unchanged body/signature extraction; no aggregate increase. Cleanup enters strict typing separately."
+    }
+  ]
 }

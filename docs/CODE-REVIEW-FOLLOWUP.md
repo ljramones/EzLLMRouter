@@ -653,7 +653,7 @@ No additional runtime refactoring is included in this reconciliation.
 | Work item | Current status | Remaining finish line |
 | --- | --- | --- |
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
-| W2 — Registry domains | Open | `registry.py` is 1,911 lines; `Registry` spans 1,816. Split reads, sources, credentials, tokens and mutation families, retaining the public facade. Target: facade at most 600 lines and methods at most 80. |
+| W2 — Registry domains | In progress — move completed, cleanup follows | The initial extraction reduces `registry.py` from 1,911 to 540 lines. Existing method bodies and signatures are preserved in domain modules. Split reads, sources, credentials, tokens and mutation families, retaining the public facade. Target: facade at most 600 lines and methods at most 80. |
 | W3 — ExternalAccounting domains/tests | Open | `integration_accounting.py` is 1,826 lines; `ExternalAccounting` spans 1,438. Split datasets, events, snapshots and reports, plus the 2,257-line accounting test module. Target: accounting modules at most 600 lines and functions at most 80. |
 | W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
@@ -699,3 +699,27 @@ qualified nested/async definitions, class limits and non-Python file limits.
 W7 verification: full `tools.check` passes 909 Python cases, lint/formatting,
 strict mypy on 67 files, the library typing budget and script/console checks.
 The frozen inputs, schemas and runtime behavior are unchanged.
+
+
+### Item 11 follow-up: W2 Registry code move
+
+The first Registry commit relocates 38 methods into reads, source permissions,
+credentials/probes, local tokens and six mutation-family modules. Existing
+`Registry` methods remain descriptors on the original class, with the same
+signatures and shared instance context. Common constants/value validators and
+`ConnectionSchedule` retain their original public imports. The existing
+`registry.provider_probe` injection point is preserved.
+
+An AST comparison against `3894723` verifies every moved executable body/signature
+(normalizing only docstring indentation) and every
+retained method, including lock/read/transaction statements. The sole expression
+rebinding routes the probe import through its existing patch point. The facade
+is now 540 lines; cleanup of long methods and typing follows separately. Existing
+size/type allowances transfer with their code and never increase in aggregate;
+the moved Registry typing diagnostics change from 178 to 149. That count alone
+is not a claim that the new domain modules are already strictly typed.
+
+W2 move verification: the full gate passes 909 Python cases and strict mypy
+on the existing 67-file scope. The unchanged resource-lifecycle tests also pass
+after retaining their original clock injection point. No routes, contracts,
+locks, migrations, frozen inputs or deployment state changed.

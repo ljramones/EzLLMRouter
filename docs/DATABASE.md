@@ -346,3 +346,14 @@ metadata. Reopen preserves the recorded identity and rejects conflicting
 configuration. Older custom instances should supply their existing identity flags
 when first opened by this version. Saved feature policies are checked against the
 resolved owner. No principal, grant, attribution or historical record is renamed.
+
+
+Registry keeps its public facade in `registry.py`. Read models, source inventory
+and permission changes, credential/probe operations, and local operator tokens
+live in `registry_reads.py`, `registry_sources.py`, `registry_credentials.py`
+and `registry_tokens.py`. Mutation families live under `registry_mutations/`;
+common value validation lives in `registry_values.py`. All operations receive the
+same Registry instance context. Mutation helpers execute under the facade
+publishing transaction and sender gate; moved credential/probe methods retain
+their existing lock/read/write scopes. No domain helper creates a new database,
+authority gate, audit writer or token table.
