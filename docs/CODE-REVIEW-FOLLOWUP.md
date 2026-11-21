@@ -367,7 +367,7 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence: 904 unittest cases, seven console scripts and 370 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
+| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence at `f6746d4`: 919 unittest cases, seven console scripts and 472 packaged-wheel tests; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
 | 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). Full cohort aggregates intentionally still process all visible attempt metadata (4.1.3, 4.2.2, 4.3.3). |
 | 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
 | 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
@@ -376,8 +376,8 @@ also passes. A pending or unavailable check is never a passing result.
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
 | 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Latest Python executable-line coverage measures 86.69% (4.4.4). |
-| 11 | Structural cleanup | Partial — class/file-size follow-up remains | Initial cleanup is implemented in `8c43850`: HTTP/Coordinator steps, direct registry routes, checked Store interface, shared helpers, explicit composition, identity/time handling, worker isolation and source organization. The subsequent file-size work order adds stricter completion targets: Registry/accounting domain splits, smaller Coordinator/module files, retained evidence/test splits and a size ratchet. Follow-up W1–W7 status and measured counts are recorded below. Strict scope is 66 files; 2,383 existing library typing errors remain budgeted debt. |
+| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage is recorded for the final structural pass below (4.4.4). |
+| 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. All work-order size targets pass, with 12 shrinking allowances. Strict scope is 107 files; 1,631 existing library typing errors remain budgeted debt. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
 
 ### Implementation pass: items 2–5
 
@@ -643,44 +643,47 @@ provider inference, acquiring gateway inputs or changing migrations.
 ### Item 11 follow-up: class and file-size work order
 
 The owner's `EzLLMRouter-file-size-report-2026-11-20.md`, outside the repository,
-measures `c2712db`. The following reconciliation measures current source at
-`8c43850`, using physical Python source lines and AST function/class spans. This
-work order supplies completion targets beyond the initial structural pass above;
-item 11 is therefore reopened as **Partial**. The current checklist has eight
-implemented workstreams, one partial workstream and two open workstreams.
-No additional runtime refactoring is included in this reconciliation.
+measures `c2712db`. The completed reconciliation below measures source at
+`f6746d4`, using physical Python source lines and AST function/class spans. This
+work order extended the initial structural pass at `8c43850`; all seven source
+work items are now implemented and the size targets pass. The current checklist
+has nine implemented workstreams and two open workstreams: deployment
+qualification (item 1) and the owner-deferred dependency/CI work (item 9). Target
+checks remain explicit within the implemented workstreams.
 
 | Work item | Current status | Remaining finish line |
 | --- | --- | --- |
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
-| W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
+| W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Long individual test journeys are decomposed under W6, retaining their assertions. |
 | W4 — Coordinator pipeline | Implemented — local checks pass | The facade is 577 lines, below the 900-line target; every Coordinator/domain function is at most 80 lines. Public imports and constructor arguments remain available. The facade, step modules and cache accounting pass strict typing, with concrete checks for authority, registry and sender capabilities. Failure/unknown-outcome boundaries remain around the same operations. |
 | W5 — medium runtime modules | Implemented — local checks pass | Canonical fields, Store records, successor reporting, provider probes, attribution actions, demo projections and credential records have named boundaries. Direct operator routes and CLI composition are implemented. No server function exceeds 150 lines; nine exceed 100 under capped allowances. The largest class is 599 lines. |
-| W6 — evidence and large tests | Partial | Completion handlers/runtime have domain and phase splits, and preflight/tool-cycle suites are split by behavior. Historical Docker-input tooling lives under `tools/` with configurable private inputs. Remaining retained tools, long individual tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
-| W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
+| W6 — evidence and large tests | Implemented — target checks pending in item 1 | Completion handlers/runtime, retained audits/browser/client runners, long test journeys and deployment exercises have domain/phase boundaries. Every tooling/test function is at most 200 lines. Historical Docker-input tooling lives under `tools/` with configurable private inputs. All `dev12_*`/`ct02b_*` runners are retained; no deletion/archive decision is needed for this implementation. Actual listener/browser/frozen-profile execution remains pending. |
+| W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The initial 98 allowances at the `33f7a45` baseline are reduced to 12; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
-| Server measure | Report baseline `c2712db` | Current `8c43850` | Work-order target |
+| Server measure | Report baseline `c2712db` | Current `f6746d4` | Work-order target |
 | --- | ---: | ---: | ---: |
-| Files over 1,000 lines | 3 | 3 | 0 |
-| Files over 800 lines | 5 | 5 | 0, or shrinking explicit allowances |
-| Functions over 150 lines | 16 | 9 | 0 |
-| Functions over 100 lines | 38 | 31 | At most 10, explicitly allowlisted |
-| Largest class span | 1,805 | 1,816 (`Registry`) | At most 600 |
+| Files over 1,000 lines | 3 | 0 | 0 |
+| Files over 800 lines | 5 | 1 (`local_connectors.py`, 847; capped) | 0, or shrinking explicit allowances |
+| Functions over 150 lines | 16 | 0 | 0 |
+| Functions over 100 lines | 38 | 9 (all capped) | At most 10, explicitly allowlisted |
+| Largest class span | 1,805 | 599 (`PersonalCampaign`) | At most 600 |
 
-Recommended implementation order: W7 to freeze growth, then W2, W3, and the
-remaining W4/W5/W6 work. Keep code moves and subsequent cleanup in separate
-commits. Public imports/signatures and all route/error/schema/contract bytes stay
-stable. Existing lock, transaction and read-snapshot scopes must enclose the same
-statements after extraction. Run the full `tools.check` gate and `git diff --check`
+Implementation is complete in separate move and cleanup commits. Future changes
+must retain the same size ratchet and ownership boundaries. Public imports/
+signatures and all route/error/schema/contract bytes stay stable. Existing lock,
+transaction and read-snapshot scopes must enclose the same statements after
+extraction. Run the full `tools.check` gate and `git diff --check`
 before each implementation commit; real HTTP checks require an environment that
 allows loopback. New split modules should enter strict typing when clean. Frozen
 LiteLLM inputs and the existing daemon remain outside this refactoring scope.
 
-Reconciliation validation: the full `tools.check` gate passes with 904 Python
-cases, lint/formatting, strict mypy on 66 files, the library typing-debt budget
+Initial reconciliation validation at `8c43850`: the full `tools.check` gate passed
+with 904 Python cases, lint/formatting, strict mypy on 66 files, the library
+typing-debt budget
 and the maintained script/console checks. Markdown links and `git diff --check`
-pass. This documentation-only update performs no additional target qualification.
+passed. That initial documentation-only reconciliation performed no additional
+target qualification.
 
 
 ### Item 11 follow-up: W7 size ratchet
@@ -1286,3 +1289,40 @@ affected deployment exercises are at most 200 lines. W6 source decomposition is
 implemented; no evidence runner has been deleted or archived. Final installed
 wheel verification and checklist reconciliation follow. Real listener/browser/
 frozen-profile qualification remains item 1.
+
+
+### Item 11 follow-up: final source and package validation
+
+All W1–W7 source work is implemented through `f6746d4`. Server files over 1,000
+lines fall from three to zero, functions over 150 lines from 16 to zero, and
+functions over 100 lines from 38 to nine (all capped). The largest runtime class
+is 599 lines; the largest tooling function is 199 and test function 189. The
+remaining 12 size allowances are nine server functions, `local_connectors.py`
+(847 lines), the Python client's attribution operation (106 lines), and Docker
+input preparation (2,302 lines). Their ceilings cannot grow; resolved entries
+must be removed. No requested source refactoring remains in this work order.
+
+Full `tools.check` passes 919 Python cases, strict typing on 107 files, the
+whole-library typing ratchet (1,631 existing diagnostics), size budgets, lint/
+formatting, seven console scripts and maintained JavaScript/contract checks.
+Final Python executable-line coverage: 87.46% (18,930/21,645 executable lines;
+Python server/client scope only).
+
+Both distributions were rebuilt with the cached pinned `uv_build==0.13.1`,
+without dependency acquisition. Complete wheel manifests and bytes match all
+161 source namespace files, including every new domain. Extracted wheels pass
+472 installed-package tests with network access blocked; imported runtime
+modules resolve to the extracted wheels. Server wheel SHA-256:
+`4ee9cb493745b4d4a6af6e4d4e774fe29d6602cd1c5b33e9a3ceaa505017045e`.
+Python client wheel SHA-256:
+`7eb2153a2daa8177d4464130468fcb7cba33a888f2eb6d4d05ab7ce11c7fc772`.
+Ignored proof scripts, expansion/differential records, logs, wheels and the
+final validation record are under `.artifacts/code-review/god-class/`.
+
+Against `33f7a45`, schema/migration files, adopted contract fixtures and frozen
+requirements/wheel inventory bytes remain unchanged. Source proofs and local
+checks do not qualify a deployed image or service. Real HTTP/TLS listeners,
+browser journeys, frozen worker/image builds and deployment exercises remain
+pending under item 1; native target checks remain stated in item 8. Item 9 stays
+deferred at the owner's request. The old daemon/profile has not been updated
+or restarted, and no provider request has been made.
