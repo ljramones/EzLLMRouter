@@ -192,218 +192,11 @@ class Dev05Tests(unittest.TestCase):
 
     def full_fixture(self):
         arrivals, receipts = self.fixture()
-        for actor in ("python", "js"):
-            self.write_one(
-                "d05-" + actor + "-no-store",
-                {
-                    "variant": "live_no_store",
-                    "provider_sends_delta": 2,
-                    "caller_tool_executions": 1,
-                    "forged_source_rejected": True,
-                    "negative_stable_ms": 5200,
-                    "candidate_access": ["not_retained", "not_retained"],
-                    "destinations": [self.destination, self.destination],
-                },
-            )
-        for mode, expected in (("503", "failed_after_transmit"), ("close", "outcome_unknown")):
-            actor = {
-                "receiver_delta": 1,
-                "submission_id": "submission." + mode,
-                "attempt_id": "attempt." + mode,
-                "submission_state": expected,
-                "usage_state": "not_recorded",
-            }
-            if mode == "503":
-                actor.update(public_code="REMOTE_EXECUTION_FAILED", http_status=502)
-            self.write_one("d05-" + mode, actor)
-            self.write_one(
-                "d05-js-cross-" + mode,
-                {
-                    "cross_read": actor["submission_id"],
-                    "attempt_id": actor["attempt_id"],
-                    "submission_state": expected,
-                    "usage_state": "not_recorded",
-                    "provider_sends_delta": 0,
-                    "caller_tool_executions": 0,
-                },
-            )
-            self.write_one("d05-" + mode + "-drain", {"submission_state": expected})
-            (self.run / ("d05-" + mode + "-horizon.stdout")).write_text("5200\n")
-        extra_roles = [
-            ["system", "user"],
-            ["system", "user", "assistant", "tool"],
-            ["system", "user"],
-            ["system", "user", "assistant", "tool"],
-            ["system", "user"],
-            ["system", "user"],
-        ]
-        for i, role in enumerate(extra_roles, 6):
-            arrival = {
-                "attempt_id": "attempt." + str(i),
-                "method": "POST",
-                "body_sha256": "a" * 64,
-                "body_bytes": 100,
-                "model": "model.demo",
-                "message_roles": role,
-                "tool_call_ids": ["call.lookup.1"] if len(role) == 4 else [],
-            }
-            arrivals.append(arrival)
-            receipts.append(
-                {
-                    "attempt_id": arrival["attempt_id"],
-                    "receipt": {
-                        "method": "POST",
-                        "body_sha256": "a" * 64,
-                        "body_bytes": 100,
-                        "timeout_seconds": {"connect": 1, "read": 1, "write": 1, "pool": 1},
-                    },
-                }
-            )
+        _populate_guarded_tool_receipts(arrivals, receipts, self)
         self.write_rows("d05-receiver", arrivals)
         self.write_rows("d05-receipts", receipts)
-        events = [
-            event
-            for item in arrivals
-            for event in (
-                {"attempt_id": item["attempt_id"], "stage": "entered", "code": None},
-                {"attempt_id": item["attempt_id"], "stage": "commit_acknowledged", "code": None},
-                {
-                    "attempt_id": item["attempt_id"],
-                    "stage": "released_to_lower_transport",
-                    "code": None,
-                },
-            )
-        ]
-        events.extend(
-            [
-                {"attempt_id": "attempt.mutation", "stage": "entered", "code": None},
-                {"attempt_id": "attempt.mutation", "stage": "blocked", "code": "FDC_REJECTED"},
-            ]
-        )
-        self.write_rows("d05-guard-events", events)
-        sends = [
-            {
-                "attempt_id": item["attempt_id"],
-                "first_acceptance_events": 1,
-                "first_bytes_accepted_by_local_socket": True,
-            }
-            for item in arrivals
-        ]
-        sends.append(
-            {
-                "attempt_id": "attempt.mutation",
-                "first_acceptance_events": 0,
-                "first_bytes_accepted_by_local_socket": False,
-            }
-        )
-        self.write_rows("d05-send-events", sends)
-        self.write_rows(
-            "d05-tool-mutation-events",
-            [
-                {
-                    "attempt_id": "attempt.mutation",
-                    "field": "tools[0].function.description",
-                    "bound_sha256": "a" * 64,
-                    "mutated_sha256": "b" * 64,
-                    "same_length": True,
-                }
-            ],
-        )
-        store = [
-            {
-                "attempt_id": item["attempt_id"],
-                "step_id": "step.other",
-                "content_store_allowed": True,
-                "candidate_present": True,
-                "candidate_access": "present",
-                "usage_state": "available",
-            }
-            for item in arrivals
-        ]
-        for i, step in zip(
-            range(6, 10), ["step.dev03.no_store"] * 2 + ["step.dev03.js.no_store"] * 2, strict=True
-        ):
-            store[i].update(
-                step_id=step,
-                content_store_allowed=False,
-                candidate_present=False,
-                candidate_access="not_retained",
-            )
-        store.append({"attempt_id": "attempt.mutation", "step_id": "step.dev03.mutation"})
-        self.write_rows("d05-store-metadata", store)
-        self.write_rows(
-            "d05-authority-chain",
-            [
-                {
-                    "attempt_id": row["attempt_id"],
-                    "submission_id": "submission." + row["attempt_id"],
-                    "step_id": row["step_id"],
-                    "work_digest": "sha256:" + "c" * 64,
-                    "intent": {
-                        "attempt_id": row["attempt_id"],
-                        "work_digest": "sha256:" + "c" * 64,
-                        "plan_id": "plan." + row["attempt_id"],
-                        "prepared_request_digest": "sha256:" + "d" * 64,
-                    },
-                    "receipt_plan_id": None
-                    if row["step_id"] == "step.dev03.mutation"
-                    else "plan." + row["attempt_id"],
-                    "receipt_work_digest": None
-                    if row["step_id"] == "step.dev03.mutation"
-                    else "sha256:" + "c" * 64,
-                    "usage_revisions": 0
-                    if row["step_id"] == "step.dev03.mutation"
-                    or row["attempt_id"] in ("attempt.10", "attempt.11")
-                    else 1,
-                }
-                for row in store
-            ],
-        )
-        self.write_one(
-            "d05-worker-attempts", {"relay_attempt_counts": {row["attempt_id"]: 1 for row in store}}
-        )
-        self.write_one(
-            "d05-no-store-storage",
-            {
-                "no_store_submissions": 4,
-                "candidate_or_prompt_literals_present": False,
-                "checked_rows": {
-                    "submissions": 4,
-                    "intents": 4,
-                    "guard_dispatches": 4,
-                    "usage_revisions": 4,
-                },
-            },
-        )
-        self.write_one("d05-log-scan", {"log_scan": "PASS"})
-        self.write_one(
-            "d05-tool-mutation",
-            {
-                "failure": "FDC_REJECTED",
-                "provider_sends_delta": 0,
-                "caller_tool_executions": 0,
-                "negative_stable_ms": 5200,
-            },
-        )
-        self.write_one("d05-raw-probe", {"error_type": "ConnectError"})
-        self.write_one(
-            "d05-forged-attempt",
-            {"probe": "forged_sender_attempt", "rejected": True, "error_type": "ValueError"},
-        )
-        self.write_one("d05-probes-health", 200)
-        (self.run / "d05-probes-horizon.stdout").write_text("5200\n")
-        for name in (
-            "d05-mutation-before",
-            "d05-mutation-after",
-            "d05-503-before-horizon",
-            "d05-503-after-horizon",
-            "d05-close-before-horizon",
-            "d05-close-after-horizon",
-        ):
-            (self.run / (name + ".stdout")).write_text("stable\n")
-        (self.run / "d05-probes-before.stdout").write_bytes(
-            (self.run / "d05-receiver.stdout").read_bytes()
-        )
+        store = _write_guarded_tool_dispatch_evidence(arrivals, self)
+        _write_guarded_tool_probe_evidence(self, store)
         return arrivals, receipts
 
     def test_checkpoint_and_corrupted_final_receipt(self):
@@ -457,6 +250,226 @@ class Dev05Tests(unittest.TestCase):
         self.write_one("d05-js-cross-503", value)
         with self.assertRaises(AssertionError):
             verify_dev05.full(self.run)
+
+
+def _populate_guarded_tool_receipts(arrivals, receipts, self):
+    for actor in ("python", "js"):
+        self.write_one(
+            "d05-" + actor + "-no-store",
+            {
+                "variant": "live_no_store",
+                "provider_sends_delta": 2,
+                "caller_tool_executions": 1,
+                "forged_source_rejected": True,
+                "negative_stable_ms": 5200,
+                "candidate_access": ["not_retained", "not_retained"],
+                "destinations": [self.destination, self.destination],
+            },
+        )
+    for mode, expected in (("503", "failed_after_transmit"), ("close", "outcome_unknown")):
+        actor = {
+            "receiver_delta": 1,
+            "submission_id": "submission." + mode,
+            "attempt_id": "attempt." + mode,
+            "submission_state": expected,
+            "usage_state": "not_recorded",
+        }
+        if mode == "503":
+            actor.update(public_code="REMOTE_EXECUTION_FAILED", http_status=502)
+        self.write_one("d05-" + mode, actor)
+        self.write_one(
+            "d05-js-cross-" + mode,
+            {
+                "cross_read": actor["submission_id"],
+                "attempt_id": actor["attempt_id"],
+                "submission_state": expected,
+                "usage_state": "not_recorded",
+                "provider_sends_delta": 0,
+                "caller_tool_executions": 0,
+            },
+        )
+        self.write_one("d05-" + mode + "-drain", {"submission_state": expected})
+        (self.run / ("d05-" + mode + "-horizon.stdout")).write_text("5200\n")
+    extra_roles = [
+        ["system", "user"],
+        ["system", "user", "assistant", "tool"],
+        ["system", "user"],
+        ["system", "user", "assistant", "tool"],
+        ["system", "user"],
+        ["system", "user"],
+    ]
+    for i, role in enumerate(extra_roles, 6):
+        arrival = {
+            "attempt_id": "attempt." + str(i),
+            "method": "POST",
+            "body_sha256": "a" * 64,
+            "body_bytes": 100,
+            "model": "model.demo",
+            "message_roles": role,
+            "tool_call_ids": ["call.lookup.1"] if len(role) == 4 else [],
+        }
+        arrivals.append(arrival)
+        receipts.append(
+            {
+                "attempt_id": arrival["attempt_id"],
+                "receipt": {
+                    "method": "POST",
+                    "body_sha256": "a" * 64,
+                    "body_bytes": 100,
+                    "timeout_seconds": {"connect": 1, "read": 1, "write": 1, "pool": 1},
+                },
+            }
+        )
+
+
+def _write_guarded_tool_dispatch_evidence(arrivals, self):
+    events = [
+        event
+        for item in arrivals
+        for event in (
+            {"attempt_id": item["attempt_id"], "stage": "entered", "code": None},
+            {"attempt_id": item["attempt_id"], "stage": "commit_acknowledged", "code": None},
+            {
+                "attempt_id": item["attempt_id"],
+                "stage": "released_to_lower_transport",
+                "code": None,
+            },
+        )
+    ]
+    events.extend(
+        [
+            {"attempt_id": "attempt.mutation", "stage": "entered", "code": None},
+            {"attempt_id": "attempt.mutation", "stage": "blocked", "code": "FDC_REJECTED"},
+        ]
+    )
+    self.write_rows("d05-guard-events", events)
+    sends = [
+        {
+            "attempt_id": item["attempt_id"],
+            "first_acceptance_events": 1,
+            "first_bytes_accepted_by_local_socket": True,
+        }
+        for item in arrivals
+    ]
+    sends.append(
+        {
+            "attempt_id": "attempt.mutation",
+            "first_acceptance_events": 0,
+            "first_bytes_accepted_by_local_socket": False,
+        }
+    )
+    self.write_rows("d05-send-events", sends)
+    self.write_rows(
+        "d05-tool-mutation-events",
+        [
+            {
+                "attempt_id": "attempt.mutation",
+                "field": "tools[0].function.description",
+                "bound_sha256": "a" * 64,
+                "mutated_sha256": "b" * 64,
+                "same_length": True,
+            }
+        ],
+    )
+    store = [
+        {
+            "attempt_id": item["attempt_id"],
+            "step_id": "step.other",
+            "content_store_allowed": True,
+            "candidate_present": True,
+            "candidate_access": "present",
+            "usage_state": "available",
+        }
+        for item in arrivals
+    ]
+    for i, step in zip(
+        range(6, 10), ["step.dev03.no_store"] * 2 + ["step.dev03.js.no_store"] * 2, strict=True
+    ):
+        store[i].update(
+            step_id=step,
+            content_store_allowed=False,
+            candidate_present=False,
+            candidate_access="not_retained",
+        )
+    store.append({"attempt_id": "attempt.mutation", "step_id": "step.dev03.mutation"})
+    self.write_rows("d05-store-metadata", store)
+    return store
+
+
+def _write_guarded_tool_probe_evidence(self, store):
+    self.write_rows(
+        "d05-authority-chain",
+        [
+            {
+                "attempt_id": row["attempt_id"],
+                "submission_id": "submission." + row["attempt_id"],
+                "step_id": row["step_id"],
+                "work_digest": "sha256:" + "c" * 64,
+                "intent": {
+                    "attempt_id": row["attempt_id"],
+                    "work_digest": "sha256:" + "c" * 64,
+                    "plan_id": "plan." + row["attempt_id"],
+                    "prepared_request_digest": "sha256:" + "d" * 64,
+                },
+                "receipt_plan_id": None
+                if row["step_id"] == "step.dev03.mutation"
+                else "plan." + row["attempt_id"],
+                "receipt_work_digest": None
+                if row["step_id"] == "step.dev03.mutation"
+                else "sha256:" + "c" * 64,
+                "usage_revisions": 0
+                if row["step_id"] == "step.dev03.mutation"
+                or row["attempt_id"] in ("attempt.10", "attempt.11")
+                else 1,
+            }
+            for row in store
+        ],
+    )
+    self.write_one(
+        "d05-worker-attempts", {"relay_attempt_counts": {row["attempt_id"]: 1 for row in store}}
+    )
+    self.write_one(
+        "d05-no-store-storage",
+        {
+            "no_store_submissions": 4,
+            "candidate_or_prompt_literals_present": False,
+            "checked_rows": {
+                "submissions": 4,
+                "intents": 4,
+                "guard_dispatches": 4,
+                "usage_revisions": 4,
+            },
+        },
+    )
+    self.write_one("d05-log-scan", {"log_scan": "PASS"})
+    self.write_one(
+        "d05-tool-mutation",
+        {
+            "failure": "FDC_REJECTED",
+            "provider_sends_delta": 0,
+            "caller_tool_executions": 0,
+            "negative_stable_ms": 5200,
+        },
+    )
+    self.write_one("d05-raw-probe", {"error_type": "ConnectError"})
+    self.write_one(
+        "d05-forged-attempt",
+        {"probe": "forged_sender_attempt", "rejected": True, "error_type": "ValueError"},
+    )
+    self.write_one("d05-probes-health", 200)
+    (self.run / "d05-probes-horizon.stdout").write_text("5200\n")
+    for name in (
+        "d05-mutation-before",
+        "d05-mutation-after",
+        "d05-503-before-horizon",
+        "d05-503-after-horizon",
+        "d05-close-before-horizon",
+        "d05-close-after-horizon",
+    ):
+        (self.run / (name + ".stdout")).write_text("stable\n")
+    (self.run / "d05-probes-before.stdout").write_bytes(
+        (self.run / "d05-receiver.stdout").read_bytes()
+    )
 
 
 if __name__ == "__main__":

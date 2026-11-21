@@ -13,16 +13,6 @@
     "server/src/ezllmrouter_server/operator_http/registry_routes.py:function:RegistryRoutes.post_operator_v1_provider_validation": 132,
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
-    "tests/client_languages/build_cases.py:function:cases": 418,
-    "tests/client_parity/integration_python.py:function:main": 218,
-    "tests/development_slice/test_crypto.py:function:SignedPlanTests.test_signed_frame_and_no_store_output": 244,
-    "tests/gateway_integration/test_completion_continuation.py:function:CompletionContinuationTests.test_second_continuation_binds_first_plan_receipt_failure_and_counters": 305,
-    "tests/gateway_integration/test_guarded_tool_execution.py:function:Dev05Tests.full_fixture": 215,
-    "tests/gateway_integration/test_provider_plan.py:function:ProviderPlanTests.test_exact_provider_deployment_uses_existing_admission_and_signed_plan": 319,
-    "tests/operator_console/test_integration_accounting_datasets.py:function:AccountingDatasetTests.test_v3_speech_opt_in_and_model_scope": 239,
-    "tests/operator_console/test_integration_accounting_policy.py:function:AccountingPolicyTests.test_correction_v2_negative_policy_lineage_and_expiry": 349,
-    "tests/operator_console/test_integration_accounting_reports.py:function:AccountingReportTests.test_correction_v2_accounting_lineage_snapshots_and_export": 246,
-    "tests/operator_console/test_integration_credentials.py:function:CredentialHTTPTests.test_owner_http_journey_and_nonowner_boundary": 214,
     "tools/gateway/docker/prepare.py:file": 2302
   },
   "relocations": [

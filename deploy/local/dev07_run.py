@@ -706,45 +706,7 @@ def main():
         positive.append(run.actor("alpha-a-tool", "python", alpha, "tool", a))
         for case in ("grant", "principal", "model"):
             revocation(run, client, case, a, b, people)
-        arrivals = run.arrivals("receiver-final")
-        require(len(arrivals) - len(initial) == 13, "finite target receiver inventory is not 13")
-        require(
-            len(run.accepted) == 13 and len(set(run.accepted)) == 13,
-            "accepted submission inventory is not thirteen distinct records",
-        )
-        new_rows = arrivals[len(initial) :]
-        by_attempt = {}
-        for row in new_rows:
-            require(row["attempt_id"] not in by_attempt, "duplicate receiver attempt")
-            by_attempt[row["attempt_id"]] = row
-        correlated = []
-        for sid in run.accepted:
-            detail = run.detail(client, sid)
-            observed = by_attempt.get(detail["attempt_id"])
-            receipt = detail["dispatch_receipt"]
-            require(
-                detail["submission_state"] == "completed"
-                and receipt["present"]
-                and observed
-                and observed["body_sha256"] == receipt["body_sha256"]
-                and observed["body_bytes"] == receipt["body_bytes"]
-                and observed["model"] == detail["selected_configuration"]["model"],
-                "service receipt and independent receiver mismatch",
-            )
-            correlated.append(
-                {
-                    "submission_id": sid,
-                    "attempt_id": detail["attempt_id"],
-                    "model": observed["model"],
-                    "body_sha256": observed["body_sha256"],
-                    "price_version": detail["usage"].get("price_version"),
-                }
-            )
-        run.save("receiver-correlation", {"count": len(correlated), "rows": correlated})
-        require(
-            sum(x.get("caller_lookups", 0) for x in positive) == 1,
-            "finite target caller lookup inventory is not one",
-        )
+        arrivals = _verify_independent_receiver_correlation(client, initial, positive, run)
         # Leave an explicit revoked grant for the restart anti-resurrection readback.
         alpha_id = people["alpha"][0]["principal_id"]
         grant = next(
@@ -818,6 +780,49 @@ def main():
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
+
+
+def _verify_independent_receiver_correlation(client, initial, positive, run):
+    arrivals = run.arrivals("receiver-final")
+    require(len(arrivals) - len(initial) == 13, "finite target receiver inventory is not 13")
+    require(
+        len(run.accepted) == 13 and len(set(run.accepted)) == 13,
+        "accepted submission inventory is not thirteen distinct records",
+    )
+    new_rows = arrivals[len(initial) :]
+    by_attempt = {}
+    for row in new_rows:
+        require(row["attempt_id"] not in by_attempt, "duplicate receiver attempt")
+        by_attempt[row["attempt_id"]] = row
+    correlated = []
+    for sid in run.accepted:
+        detail = run.detail(client, sid)
+        observed = by_attempt.get(detail["attempt_id"])
+        receipt = detail["dispatch_receipt"]
+        require(
+            detail["submission_state"] == "completed"
+            and receipt["present"]
+            and observed
+            and observed["body_sha256"] == receipt["body_sha256"]
+            and observed["body_bytes"] == receipt["body_bytes"]
+            and observed["model"] == detail["selected_configuration"]["model"],
+            "service receipt and independent receiver mismatch",
+        )
+        correlated.append(
+            {
+                "submission_id": sid,
+                "attempt_id": detail["attempt_id"],
+                "model": observed["model"],
+                "body_sha256": observed["body_sha256"],
+                "price_version": detail["usage"].get("price_version"),
+            }
+        )
+    run.save("receiver-correlation", {"count": len(correlated), "rows": correlated})
+    require(
+        sum(x.get("caller_lookups", 0) for x in positive) == 1,
+        "finite target caller lookup inventory is not one",
+    )
+    return arrivals
 
 
 if __name__ == "__main__":

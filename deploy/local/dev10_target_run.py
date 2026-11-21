@@ -89,6 +89,32 @@ def main():
     created_volume = False
     started_worker = False
     started_service = False
+    return _run_owned_target_resources(
+        commit,
+        created_volume,
+        dirty,
+        meta,
+        run,
+        service,
+        started_service,
+        started_worker,
+        volume,
+        worker,
+    )
+
+
+def _run_owned_target_resources(
+    commit,
+    created_volume,
+    dirty,
+    meta,
+    run,
+    service,
+    started_service,
+    started_worker,
+    volume,
+    worker,
+):
     try:
         if dirty:
             raise RuntimeError("source checkout is dirty; commit reviewed source first")
@@ -106,18 +132,7 @@ def main():
             error = (run / ("collision-" + kind + "-" + resource + ".stderr.txt")).read_text()
             if not absent_resource(error, resource):
                 raise RuntimeError("Docker inspect failed for a reason other than resource absence")
-        for stage in ("prepare", "build-images"):
-            _, code = command(
-                stage,
-                [sys.executable, "-B", str(ROOT / "deploy/local/local_profile.py"), stage],
-                run,
-                timeout=900,
-            )
-            meta["stages"].append({"name": stage, "exit": code})
-        build = local_profile.current()
-        if build["commit"] != commit or build["dirty"]:
-            raise RuntimeError("staged build does not match clean source")
-        env = local_profile.environment(build)
+        build, env = _prepare_matching_target_build(commit, meta, run)
         command("create-link", [*DOCKER, "volume", "create", volume], run)
         created_volume = True
         command(
@@ -145,70 +160,8 @@ def main():
             run,
         )
         started_worker = True
-        command(
-            "worker-topology",
-            [*DOCKER, "inspect", "--format", "{{.HostConfig.NetworkMode}}", worker],
-            run,
-        )
-        if (run / "worker-topology.stdout.txt").read_text().strip() != "none":
-            raise RuntimeError("worker network mode differs from none")
-        output, _ = command(
-            "installed-client-proof",
-            [
-                *DOCKER,
-                "run",
-                "--rm",
-                "--pull=never",
-                "--name",
-                service,
-                "--network=none",
-                "--read-only",
-                "--user",
-                "10001:10001",
-                "--tmpfs",
-                "/tmp:rw,nosuid,nodev,size=32m",
-                "--cap-drop=ALL",
-                "--security-opt",
-                "no-new-privileges:true",
-                "-v",
-                volume + ":/link",
-                *local_profile.fixture_mounts(build),
-                env["EZLLMROUTER_SERVICE_IMAGE"],
-                "python",
-                "-B",
-                "/app/gateway/dev10_target.py",
-            ],
-            run,
-            timeout=300,
-        )
-        result = json.loads(output)
-        if (
-            result.get("status") != "PASS"
-            or result.get("receiver_arrivals") != 3
-            or result.get("first_byte_sends") != 3
-            or result.get("guard_commits") != 3
-            or result.get("real_provider_calls") != 0
-        ):
-            raise RuntimeError("integrated receipt is incomplete")
-        source = Path(build["build_dir"]) / "dev09_js"
-        js_image = "ezllmrouter-dev10-jsactor:" + build["fingerprint"][:16]
-        command(
-            "build-installed-commonjs",
-            [
-                *DOCKER,
-                "build",
-                "--pull=false",
-                "--network=none",
-                "--build-arg",
-                "NODE_IMAGE=" + local_profile.NODE,
-                "-t",
-                js_image,
-                "-f",
-                str(source / "Dockerfile"),
-                str(source),
-            ],
-            run,
-            timeout=600,
+        js_image, result = _verify_worker_and_prepare_commonjs_actor(
+            build, env, run, service, volume, worker
         )
         command(
             "start-commonjs-service",
@@ -328,6 +281,91 @@ def main():
                     )
                 except (RuntimeError, OSError) as exc:
                     print("worker log capture failed: " + type(exc).__name__, file=sys.stderr)
+
+
+def _prepare_matching_target_build(commit, meta, run):
+    for stage in ("prepare", "build-images"):
+        _, code = command(
+            stage,
+            [sys.executable, "-B", str(ROOT / "deploy/local/local_profile.py"), stage],
+            run,
+            timeout=900,
+        )
+        meta["stages"].append({"name": stage, "exit": code})
+    build = local_profile.current()
+    if build["commit"] != commit or build["dirty"]:
+        raise RuntimeError("staged build does not match clean source")
+    env = local_profile.environment(build)
+    return build, env
+
+
+def _verify_worker_and_prepare_commonjs_actor(build, env, run, service, volume, worker):
+    command(
+        "worker-topology",
+        [*DOCKER, "inspect", "--format", "{{.HostConfig.NetworkMode}}", worker],
+        run,
+    )
+    if (run / "worker-topology.stdout.txt").read_text().strip() != "none":
+        raise RuntimeError("worker network mode differs from none")
+    output, _ = command(
+        "installed-client-proof",
+        [
+            *DOCKER,
+            "run",
+            "--rm",
+            "--pull=never",
+            "--name",
+            service,
+            "--network=none",
+            "--read-only",
+            "--user",
+            "10001:10001",
+            "--tmpfs",
+            "/tmp:rw,nosuid,nodev,size=32m",
+            "--cap-drop=ALL",
+            "--security-opt",
+            "no-new-privileges:true",
+            "-v",
+            volume + ":/link",
+            *local_profile.fixture_mounts(build),
+            env["EZLLMROUTER_SERVICE_IMAGE"],
+            "python",
+            "-B",
+            "/app/gateway/dev10_target.py",
+        ],
+        run,
+        timeout=300,
+    )
+    result = json.loads(output)
+    if (
+        result.get("status") != "PASS"
+        or result.get("receiver_arrivals") != 3
+        or result.get("first_byte_sends") != 3
+        or result.get("guard_commits") != 3
+        or result.get("real_provider_calls") != 0
+    ):
+        raise RuntimeError("integrated receipt is incomplete")
+    source = Path(build["build_dir"]) / "dev09_js"
+    js_image = "ezllmrouter-dev10-jsactor:" + build["fingerprint"][:16]
+    command(
+        "build-installed-commonjs",
+        [
+            *DOCKER,
+            "build",
+            "--pull=false",
+            "--network=none",
+            "--build-arg",
+            "NODE_IMAGE=" + local_profile.NODE,
+            "-t",
+            js_image,
+            "-f",
+            str(source / "Dockerfile"),
+            str(source),
+        ],
+        run,
+        timeout=600,
+    )
+    return js_image, result
 
 
 if __name__ == "__main__":

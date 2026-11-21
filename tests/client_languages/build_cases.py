@@ -111,6 +111,23 @@ def cases():
             }
         )
 
+    _add_legacy_wire_cases(add, legacy, request, selector)
+    completed, rerank = _add_successor_wire_cases(add, successor)
+    _add_integration_version_cases(add)
+    run = _add_attribution_cases(add)
+    _add_protocol_rejection_cases(add, completed, legacy, request, rerank, run)
+    for case in out:
+        case["expected"] = evaluate(case)
+    return out
+
+
+if __name__ == "__main__":
+    value = cases()
+    (HERE / "cases.json").write_text(json.dumps(value, ensure_ascii=True, indent=2) + "\n")
+    print(f"Wrote {len(value)} shared client cases")
+
+
+def _add_legacy_wire_cases(add, legacy, request, selector):
     for name, value in legacy.items():
         if name.startswith("reply_"):
             status = (
@@ -198,6 +215,9 @@ def cases():
         status=307,
         response_headers={"Location": "https://foreign.invalid"},
     )
+
+
+def _add_successor_wire_cases(add, successor):
     rerank = next(x["request"] for x in successor["examples"] if x["id"] == "DELEGATED_RERANK")
     completed = next(x["value"] for x in successor["protocol_fixtures"] if x["id"] == "COMPLETED")
     for name, text in (("newline", "reason\n"), ("tab", "reason\tvalue")):
@@ -246,6 +266,10 @@ def cases():
     result["attempt_id"] = response["attempt_id"]
     response["result"] = result
     add("embedding", "submit_embedding", response, [embedding], wire="0.3")
+    return completed, rerank
+
+
+def _add_integration_version_cases(add):
     for version in ("1", "2", "3"):
         example = read(f"tests/fixtures/contracts/integration-readiness-v{version}/examples.json")
         if version == "3":
@@ -403,6 +427,9 @@ def cases():
                 integration=True,
                 version=version,
             )
+
+
+def _add_attribution_cases(add):
     run = {
         "version": "1",
         "run_id": "run.synthetic",
@@ -444,6 +471,10 @@ def cases():
     envelope = {"contract_version": "0.2", "outcome_version": "1", "receipt": receipt}
     add("report_outcome", "report_outcome", envelope, [event], status=201)
     add("recover_outcome", "get_outcome_receipt", envelope, [event["event_id"]])
+    return run
+
+
+def _add_protocol_rejection_cases(add, completed, legacy, request, rerank, run):
     null_request = deepcopy(request)
     null_request["unserializable_null"] = None
     add("null_request_value", "submit", legacy["reply_delivered"], [null_request])
@@ -504,12 +535,3 @@ def cases():
                 version=version,
                 status=503,
             )
-    for case in out:
-        case["expected"] = evaluate(case)
-    return out
-
-
-if __name__ == "__main__":
-    value = cases()
-    (HERE / "cases.json").write_text(json.dumps(value, ensure_ascii=True, indent=2) + "\n")
-    print(f"Wrote {len(value)} shared client cases")

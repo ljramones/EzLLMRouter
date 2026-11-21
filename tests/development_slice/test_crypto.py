@@ -70,57 +70,9 @@ class SignedPlanTests(unittest.TestCase):
         )
         private_key.public_key().verify(signature, oracle)
         # Independently signed adopted frame must also be consumed by the implementation.
-        other = {
-            **plan,
-            "signature_envelope": {
-                **envelope,
-                "signature": base64.urlsafe_b64encode(private_key.sign(oracle))
-                .decode()
-                .rstrip("="),
-            },
-        }
-        authority.verify(other, wd, fixture["policy"]["policy_version"])
-        for mutation in ["work_digest", "configuration_ref"]:
-            altered = dict(plan)
-            altered[mutation] = "sha256:" + "0" * 64 if mutation == "work_digest" else "cfg.other"
-            try:
-                authority.verify(altered, wd, fixture["policy"]["policy_version"])
-            except ContractError as exc:
-                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
-            else:
-                raise AssertionError("tampered plan accepted")
-        for field in ["key_id", "key_version", "signed_plan_digest"]:
-            changed = {**plan, "signature_envelope": {**envelope, field: "changed"}}
-            try:
-                authority.verify(changed, wd, fixture["policy"]["policy_version"])
-            except ContractError as exc:
-                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
-            else:
-                raise AssertionError("framing field tamper accepted: " + field)
-        for field in [
-            "policy_version",
-            "registry_version",
-            "recovery_policy_version",
-            "adapter_version",
-            "quality_approval_ref",
-            "adapter_recipe_ref",
-            "decision_record_ref",
-            "limit_ref",
-            "limit_version",
-            "max_attempt_charge_decimal",
-            "currency",
-            "alert_policy_ref",
-        ]:
-            original = authority.policy[field]
-            authority.policy[field] = "changed"
-            try:
-                authority.verify(plan, wd, authority.policy["policy_version"])
-            except ContractError as exc:
-                self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
-            else:
-                raise AssertionError("current authority drift accepted: " + field)
-            finally:
-                authority.policy[field] = original
+        _check_signed_plan_mutations(
+            authority, envelope, fixture, oracle, plan, private_key, self, wd
+        )
 
         class SyntheticAdapter:
             def __init__(self):
@@ -146,131 +98,185 @@ class SignedPlanTests(unittest.TestCase):
                 self.sent.append(prepared)
                 return {"status": 200, "body": {"text": "Hello."}}
 
-        for changed in (True, False):
-            store = SQLiteStore(":memory:")
-            current = copy.deepcopy(trusted)
-            adapter = SyntheticAdapter()
-            coordinator = Coordinator(
-                store,
-                identity={"token.synthetic": current},
-                config=copy.deepcopy(fixture["destination"]),
-                prompt_blocks=fixture["prompt_blocks"],
-                allowed_lineages=fixture["allowed_lineages"],
-                authority=PlanAuthority(
-                    Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])
-                ),
-                adapter=adapter,
-                retention=copy.deepcopy(fixture["retention"]),
-                classification=copy.deepcopy(fixture["classification"]),
-                recipe=SyntheticTextRecipe(),
-            )
-            gate = threading.Event()
-            blockers = [coordinator.pool.submit(gate.wait, 3) for _ in range(4)]
-            try:
-                code, reply = coordinator.submit(request, current, 0, "token.synthetic")
-                self.assertEqual(code, 202)
-                sid = reply["handle"]["submission_id"]
-                current["expires_at"] = "2099-01-01T00:00:00Z"
-                if changed:
-                    current["charging_owner_id"] = "owner.changed"
-            finally:
-                gate.set()
-                for blocker in blockers:
-                    blocker.result(timeout=3)
-            wait_until(
-                lambda store=store, sid=sid: store.get(sid)["submission_state"]
-                in ("completed", "failed_before_transmit")
-            )
-            self.assertEqual(
-                store.get(sid)["submission_state"],
-                "failed_before_transmit" if changed else "completed",
-            )
-            self.assertEqual(len(adapter.sent), 0 if changed else 1)
-            coordinator.pool.shutdown(wait=True)
-            store.close()
+        _check_queued_authority_scope(SyntheticAdapter, fixture, request, self, trusted)
 
-        class CapturingPlanAuthority(PlanAuthority):
-            def __init__(self, private_key, policy):
-                super().__init__(private_key, policy)
-                self.plans = []
+        _check_signed_no_store_output(SyntheticAdapter, fixture, request, self, trusted)
 
-            def issue(self, *args):
-                plan = super().issue(*args)
-                self.plans.append(plan)
-                return plan
 
-        restricted = copy.deepcopy(request)
-        restricted.update(
-            step_id="step.restricted.crypto",
-            requested_features=["text", "tools"],
-            tool_definitions=[
-                {
-                    "name": "lookup",
-                    "description": "Synthetic lookup",
-                    "input_schema": {
-                        "type": "object",
-                        "properties": {"key": {"type": "string"}},
-                        "required": ["key"],
-                    },
-                }
-            ],
-            tool_choice="auto",
-        )
-        restricted_label = {
-            "lineage_ids": ["src.user.1"],
-            "sensitivity": "confidential",
-            "restrictions": ["no.content.store"],
-        }
-        restricted["messages"][1]["blocks"][0]["source_labels"] = restricted_label
-        trusted_labels = copy.deepcopy(fixture["trusted_source_labels"])
-        trusted_labels["src.user.1"] = restricted_label
+def _check_signed_plan_mutations(authority, envelope, fixture, oracle, plan, private_key, self, wd):
+    other = {
+        **plan,
+        "signature_envelope": {
+            **envelope,
+            "signature": base64.urlsafe_b64encode(private_key.sign(oracle)).decode().rstrip("="),
+        },
+    }
+    authority.verify(other, wd, fixture["policy"]["policy_version"])
+    for mutation in ["work_digest", "configuration_ref"]:
+        altered = dict(plan)
+        altered[mutation] = "sha256:" + "0" * 64 if mutation == "work_digest" else "cfg.other"
+        try:
+            authority.verify(altered, wd, fixture["policy"]["policy_version"])
+        except ContractError as exc:
+            self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
+        else:
+            raise AssertionError("tampered plan accepted")
+    for field in ["key_id", "key_version", "signed_plan_digest"]:
+        changed = {**plan, "signature_envelope": {**envelope, field: "changed"}}
+        try:
+            authority.verify(changed, wd, fixture["policy"]["policy_version"])
+        except ContractError as exc:
+            self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
+        else:
+            raise AssertionError("framing field tamper accepted: " + field)
+    for field in [
+        "policy_version",
+        "registry_version",
+        "recovery_policy_version",
+        "adapter_version",
+        "quality_approval_ref",
+        "adapter_recipe_ref",
+        "decision_record_ref",
+        "limit_ref",
+        "limit_version",
+        "max_attempt_charge_decimal",
+        "currency",
+        "alert_policy_ref",
+    ]:
+        original = authority.policy[field]
+        authority.policy[field] = "changed"
+        try:
+            authority.verify(plan, wd, authority.policy["policy_version"])
+        except ContractError as exc:
+            self.assertEqual(exc.code, "PLAN_INVALID_OR_STALE")
+        else:
+            raise AssertionError("current authority drift accepted: " + field)
+        finally:
+            authority.policy[field] = original
+
+
+def _check_queued_authority_scope(SyntheticAdapter, fixture, request, self, trusted):
+    for changed in (True, False):
         store = SQLiteStore(":memory:")
+        current = copy.deepcopy(trusted)
         adapter = SyntheticAdapter()
-        authority = CapturingPlanAuthority(
-            Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])
-        )
         coordinator = Coordinator(
             store,
-            identity={"token.synthetic": copy.deepcopy(trusted)},
+            identity={"token.synthetic": current},
             config=copy.deepcopy(fixture["destination"]),
             prompt_blocks=fixture["prompt_blocks"],
             allowed_lineages=fixture["allowed_lineages"],
-            authority=authority,
+            authority=PlanAuthority(Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])),
             adapter=adapter,
             retention=copy.deepcopy(fixture["retention"]),
             classification=copy.deepcopy(fixture["classification"]),
-            recipe=SyntheticDevelopmentRecipe(),
-            trusted_source_labels=trusted_labels,
+            recipe=SyntheticTextRecipe(),
         )
+        gate = threading.Event()
+        blockers = [coordinator.pool.submit(gate.wait, 3) for _ in range(4)]
         try:
-            code, reply = coordinator.submit(restricted, trusted, 3000, "token.synthetic")
-            self.assertTrue(
-                code == 200 and reply["state"] == "delivered" and (len(adapter.sent) == 1)
-            )
-            signed = authority.plans[-1]
-            authority.verify(signed, signed["work_digest"], authority.policy["policy_version"])
-            self.assertEqual(
-                signed["classification_snapshot"]["combined_restrictions"], ["no.content.store"]
-            )
-            self.assertTrue(signed["effective_retention"]["content_store_allowed"] is False)
-            self.assertEqual(
-                reply["candidate"]["output_blocks"][0]["source_labels"],
-                {
-                    "lineage_ids": ["src.candidate.synthetic"],
-                    "sensitivity": "confidential",
-                    "restrictions": ["no.content.store"],
-                },
-            )
-            status = coordinator.status(reply["handle"]["submission_id"], trusted)
-            self.assertTrue(
-                status["candidate_access"] == "not_retained" and "candidate" not in status
-            )
+            code, reply = coordinator.submit(request, current, 0, "token.synthetic")
+            self.assertEqual(code, 202)
+            sid = reply["handle"]["submission_id"]
+            current["expires_at"] = "2099-01-01T00:00:00Z"
+            if changed:
+                current["charging_owner_id"] = "owner.changed"
         finally:
-            coordinator.pool.shutdown(wait=True)
-            store.close()
-        print(
-            "PASS: adopted Ed25519 frame, queued scope and signed source handling with no-store output"
+            gate.set()
+            for blocker in blockers:
+                blocker.result(timeout=3)
+        wait_until(
+            lambda store=store, sid=sid: store.get(sid)["submission_state"]
+            in ("completed", "failed_before_transmit")
         )
+        self.assertEqual(
+            store.get(sid)["submission_state"],
+            "failed_before_transmit" if changed else "completed",
+        )
+        self.assertEqual(len(adapter.sent), 0 if changed else 1)
+        coordinator.pool.shutdown(wait=True)
+        store.close()
+
+
+def _check_signed_no_store_output(SyntheticAdapter, fixture, request, self, trusted):
+    class CapturingPlanAuthority(PlanAuthority):
+        def __init__(self, private_key, policy):
+            super().__init__(private_key, policy)
+            self.plans = []
+
+        def issue(self, *args):
+            plan = super().issue(*args)
+            self.plans.append(plan)
+            return plan
+
+    restricted = copy.deepcopy(request)
+    restricted.update(
+        step_id="step.restricted.crypto",
+        requested_features=["text", "tools"],
+        tool_definitions=[
+            {
+                "name": "lookup",
+                "description": "Synthetic lookup",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"key": {"type": "string"}},
+                    "required": ["key"],
+                },
+            }
+        ],
+        tool_choice="auto",
+    )
+    restricted_label = {
+        "lineage_ids": ["src.user.1"],
+        "sensitivity": "confidential",
+        "restrictions": ["no.content.store"],
+    }
+    restricted["messages"][1]["blocks"][0]["source_labels"] = restricted_label
+    trusted_labels = copy.deepcopy(fixture["trusted_source_labels"])
+    trusted_labels["src.user.1"] = restricted_label
+    store = SQLiteStore(":memory:")
+    adapter = SyntheticAdapter()
+    authority = CapturingPlanAuthority(
+        Ed25519PrivateKey.generate(), copy.deepcopy(fixture["policy"])
+    )
+    coordinator = Coordinator(
+        store,
+        identity={"token.synthetic": copy.deepcopy(trusted)},
+        config=copy.deepcopy(fixture["destination"]),
+        prompt_blocks=fixture["prompt_blocks"],
+        allowed_lineages=fixture["allowed_lineages"],
+        authority=authority,
+        adapter=adapter,
+        retention=copy.deepcopy(fixture["retention"]),
+        classification=copy.deepcopy(fixture["classification"]),
+        recipe=SyntheticDevelopmentRecipe(),
+        trusted_source_labels=trusted_labels,
+    )
+    try:
+        code, reply = coordinator.submit(restricted, trusted, 3000, "token.synthetic")
+        self.assertTrue(code == 200 and reply["state"] == "delivered" and (len(adapter.sent) == 1))
+        signed = authority.plans[-1]
+        authority.verify(signed, signed["work_digest"], authority.policy["policy_version"])
+        self.assertEqual(
+            signed["classification_snapshot"]["combined_restrictions"], ["no.content.store"]
+        )
+        self.assertTrue(signed["effective_retention"]["content_store_allowed"] is False)
+        self.assertEqual(
+            reply["candidate"]["output_blocks"][0]["source_labels"],
+            {
+                "lineage_ids": ["src.candidate.synthetic"],
+                "sensitivity": "confidential",
+                "restrictions": ["no.content.store"],
+            },
+        )
+        status = coordinator.status(reply["handle"]["submission_id"], trusted)
+        self.assertTrue(status["candidate_access"] == "not_retained" and "candidate" not in status)
+    finally:
+        coordinator.pool.shutdown(wait=True)
+        store.close()
+    print(
+        "PASS: adopted Ed25519 frame, queued scope and signed source handling with no-store output"
+    )
 
 
 if __name__ == "__main__":

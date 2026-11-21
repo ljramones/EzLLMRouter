@@ -144,149 +144,7 @@ class ProviderPlanTests(unittest.TestCase):
                 )["record"]
 
             try:
-                model = change(
-                    "register_catalogue",
-                    "catalogue.operator.plan",
-                    0,
-                    {
-                        "display_name": "Test-only response model",
-                        "vendor": "Test only",
-                        "family": "Responses",
-                        "api_model_id": "test-response-model",
-                        "model_version": "test-v1",
-                        "owner": "owner.local",
-                        "capabilities": ["text"],
-                        "context_window": None,
-                        "max_output": None,
-                        "notes": "Controlled component",
-                        "price": {
-                            "snapshot_id": "test.reference.v1",
-                            "source_title": "Test reference",
-                            "source_url": "https://example.org/test",
-                            "bands": [
-                                {
-                                    "label": "Test",
-                                    "conditions": {},
-                                    "rates_usd_per_1000000_tokens": {
-                                        "input_uncached": "1",
-                                        "output": "2",
-                                        "input_cached": None,
-                                    },
-                                }
-                            ],
-                        },
-                    },
-                )
-                change(
-                    "create_connection",
-                    "conn.plan",
-                    0,
-                    {
-                        "display_name": "Controlled Responses",
-                        "adapter_id": "openai.responses.v1",
-                        "settings": {
-                            "origin": "https://api.openai.com",
-                            "location": "commercial",
-                            "site": "Test scope",
-                        },
-                        "owner": "owner.local",
-                        "funding_kind": "personal_testing",
-                    },
-                )
-                registry.set_provider_credential(
-                    "owner.local",
-                    "conn.plan",
-                    1,
-                    "op.provider.plan.credential",
-                    "replace",
-                    "test-provider-key-123456",
-                )["record"]
-                change(
-                    "connection_state",
-                    "conn.plan",
-                    2,
-                    {"status": "active", "reason": "Explicit controlled component"},
-                )
-                change(
-                    "associate_deployment",
-                    "conn.plan",
-                    3,
-                    {
-                        "deployment_id": "deployment.plan",
-                        "model_ref": model["configuration_ref"],
-                        "serving_id": "test-response-model",
-                        "site": "Test scope",
-                        "status": "catalogued",
-                    },
-                )
-                config = change(
-                    "create_provider_configuration",
-                    "cfg.provider.plan",
-                    0,
-                    {
-                        "display_name": "Controlled Responses route",
-                        "deployment_id": "deployment.plan",
-                        "owner": "owner.local",
-                        "purposes": ["execution"],
-                        "task_classes": ["class.demo"],
-                    },
-                )
-                self.assertEqual(config["destination"]["connection_revision"], 4)
-                config = change(
-                    "publish_price",
-                    "cfg.provider.plan",
-                    1,
-                    {
-                        "price_version": "plan.rate.v1",
-                        "currency": "USD",
-                        "rates": {
-                            "input_uncached": "1",
-                            "input_cache_read": "0.1",
-                            "input_cache_write_30m": "1.25",
-                            "output_text": "2",
-                        },
-                        "source": "operator-approved provider schedule",
-                        "usage_semantics_version": "openai.responses.text.cache.v2",
-                        "contract": {
-                            "version": "openai.responses.implicit-cache.v1",
-                            "requested_model": "test-response-model",
-                            "returned_models": ["test-response-model"],
-                            "cache_mode": "implicit_default_30m",
-                            "input_token_ceiling": 1000,
-                            "max_output_tokens": 32,
-                            "input_bound_basis": "provider_enforced_context_window",
-                            "temperature_zero_supported": True,
-                            "price_conditions": "single_tier_no_modifiers",
-                            "price_source_url": "https://example.test/fictional-rates",
-                            "observed_on": "2026-10-25",
-                        },
-                    },
-                )
-                change(
-                    "set_source_permissions",
-                    "conn.plan",
-                    0,
-                    {
-                        "allowed": True,
-                        "items": [{"serving_id": "test-response-model", "expected_revision": 0}],
-                    },
-                )
-                registry.provider_execution_ready = False
-                with self.assertRaisesRegex(ValueError, "execution path not validated"):
-                    change(
-                        "model_state",
-                        "cfg.provider.plan",
-                        2,
-                        {"status": "enabled", "reason": "Premature target activation"},
-                    )
-                self.assertEqual(registry.model("cfg.provider.plan")["status"], "draft")
-                registry.provider_execution_ready = True
-                config = change(
-                    "model_state",
-                    "cfg.provider.plan",
-                    2,
-                    {"status": "enabled", "reason": "Explicit controlled component"},
-                )
+                _configure_provider_plan_route(change, registry, self)
                 adapter = Adapter()
                 coordinator = Coordinator(
                     store,
@@ -348,83 +206,8 @@ class ProviderPlanTests(unittest.TestCase):
                     )
                     # The authenticated owner uses the same Coordinator route,
                     # with a server-only short-lived wire credential.
-                    change(
-                        "set_grant",
-                        "owner.local",
-                        0,
-                        {
-                            "configuration_ref": "cfg.provider.plan",
-                            "status": "active",
-                            "purposes": ["execution"],
-                            "task_classes": ["class.demo"],
-                        },
-                    )
-                    registry.controlled_provider_proof = False
-                    registry.personal_campaign = PersonalCampaign(store, registry)
-                    campaign = registry.personal_campaign
-                    campaign.configure(
-                        "owner.local",
-                        {
-                            "connection_id": "conn.plan",
-                            "configuration_ref": "cfg.provider.plan",
-                            "principal_id": "owner.local",
-                            "currency": "USD",
-                            "allowance_decimal": "0.02",
-                            "per_request_decimal": "0.01",
-                            "max_requests": 1,
-                            "max_input_bytes": 4096,
-                            "max_output_tokens": 32,
-                            "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1))
-                            .isoformat()
-                            .replace("+00:00", "Z"),
-                        },
-                    )
-                    campaign.transition("owner.local", "active")
-                    owner_token = registry.issue_local_operator_token("owner.local")
-                    owner_work = deepcopy(work)
-                    owner_work["step_id"] = "step.provider.personal"
-                    owner_work["execution_generation"] = "gen.provider.personal"
-                    adapter.return_details = True
-                    owner_status, owner_reply = coordinator.submit(
-                        owner_work,
-                        coordinator.authenticate(owner_token),
-                        credential=owner_token,
-                        wait_ms=3000,
-                    )
-                    self.assertEqual(owner_status, 200, owner_reply)
-                    self.assertEqual(
-                        owner_reply["candidate"]["usage"]["revision"]["cost"]["amount_decimal"],
-                        "0.000009000",
-                    )
-                    self.assertEqual(campaign.summary()["incurred_decimal"], "0.000009000")
-                    self.assertEqual(campaign.summary()["request_count"], 1)
-                    report = usage_costs(
-                        registry,
-                        {"role": "registry_admin", "principal_id": "owner.local"},
-                        {"environment": "live_personal_test"},
-                    )
-                    self.assertEqual(report["total"]["known_subtotals"], {"USD": "0.000009"})
-                    self.assertEqual(report["attempts"][0]["charging_owner_id"], "owner.local")
-                    self.assertEqual(report["attempts"][0]["initiating_user_id"], "owner.local")
-                    self.assertEqual(report["attempts"][0]["agent_id"], "__direct_human__")
-                    with self.assertRaises(ContractError):
-                        coordinator.submit(
-                            {**owner_work, "step_id": "step.provider.personal.2"},
-                            coordinator.authenticate(owner_token),
-                            credential=owner_token,
-                            wait_ms=3000,
-                        )
-                    self.assertEqual(len(adapter.sent), 2)
-                    registry.revoke_local_operator_token(owner_token)
-                    change(
-                        "connection_state",
-                        "conn.plan",
-                        4,
-                        {"status": "disabled", "reason": "Test queued revocation"},
-                    )
-                    self.assertEqual(
-                        registry.readiness(registry.model("cfg.provider.plan")),
-                        "provider_connection_stale",
+                    _check_personal_provider_campaign(
+                        adapter, change, coordinator, registry, self, store, work
                     )
                 finally:
                     coordinator.pool.shutdown(wait=True)
@@ -496,6 +279,233 @@ class ClientCampaignFixtureTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "campaign authority is stale"):
             campaign.transition("owner.local", "active")
+
+
+def _configure_provider_plan_route(change, registry, self):
+    model = change(
+        "register_catalogue",
+        "catalogue.operator.plan",
+        0,
+        {
+            "display_name": "Test-only response model",
+            "vendor": "Test only",
+            "family": "Responses",
+            "api_model_id": "test-response-model",
+            "model_version": "test-v1",
+            "owner": "owner.local",
+            "capabilities": ["text"],
+            "context_window": None,
+            "max_output": None,
+            "notes": "Controlled component",
+            "price": {
+                "snapshot_id": "test.reference.v1",
+                "source_title": "Test reference",
+                "source_url": "https://example.org/test",
+                "bands": [
+                    {
+                        "label": "Test",
+                        "conditions": {},
+                        "rates_usd_per_1000000_tokens": {
+                            "input_uncached": "1",
+                            "output": "2",
+                            "input_cached": None,
+                        },
+                    }
+                ],
+            },
+        },
+    )
+    change(
+        "create_connection",
+        "conn.plan",
+        0,
+        {
+            "display_name": "Controlled Responses",
+            "adapter_id": "openai.responses.v1",
+            "settings": {
+                "origin": "https://api.openai.com",
+                "location": "commercial",
+                "site": "Test scope",
+            },
+            "owner": "owner.local",
+            "funding_kind": "personal_testing",
+        },
+    )
+    registry.set_provider_credential(
+        "owner.local",
+        "conn.plan",
+        1,
+        "op.provider.plan.credential",
+        "replace",
+        "test-provider-key-123456",
+    )["record"]
+    change(
+        "connection_state",
+        "conn.plan",
+        2,
+        {"status": "active", "reason": "Explicit controlled component"},
+    )
+    change(
+        "associate_deployment",
+        "conn.plan",
+        3,
+        {
+            "deployment_id": "deployment.plan",
+            "model_ref": model["configuration_ref"],
+            "serving_id": "test-response-model",
+            "site": "Test scope",
+            "status": "catalogued",
+        },
+    )
+    config = change(
+        "create_provider_configuration",
+        "cfg.provider.plan",
+        0,
+        {
+            "display_name": "Controlled Responses route",
+            "deployment_id": "deployment.plan",
+            "owner": "owner.local",
+            "purposes": ["execution"],
+            "task_classes": ["class.demo"],
+        },
+    )
+    self.assertEqual(config["destination"]["connection_revision"], 4)
+    config = change(
+        "publish_price",
+        "cfg.provider.plan",
+        1,
+        {
+            "price_version": "plan.rate.v1",
+            "currency": "USD",
+            "rates": {
+                "input_uncached": "1",
+                "input_cache_read": "0.1",
+                "input_cache_write_30m": "1.25",
+                "output_text": "2",
+            },
+            "source": "operator-approved provider schedule",
+            "usage_semantics_version": "openai.responses.text.cache.v2",
+            "contract": {
+                "version": "openai.responses.implicit-cache.v1",
+                "requested_model": "test-response-model",
+                "returned_models": ["test-response-model"],
+                "cache_mode": "implicit_default_30m",
+                "input_token_ceiling": 1000,
+                "max_output_tokens": 32,
+                "input_bound_basis": "provider_enforced_context_window",
+                "temperature_zero_supported": True,
+                "price_conditions": "single_tier_no_modifiers",
+                "price_source_url": "https://example.test/fictional-rates",
+                "observed_on": "2026-10-25",
+            },
+        },
+    )
+    change(
+        "set_source_permissions",
+        "conn.plan",
+        0,
+        {
+            "allowed": True,
+            "items": [{"serving_id": "test-response-model", "expected_revision": 0}],
+        },
+    )
+    registry.provider_execution_ready = False
+    with self.assertRaisesRegex(ValueError, "execution path not validated"):
+        change(
+            "model_state",
+            "cfg.provider.plan",
+            2,
+            {"status": "enabled", "reason": "Premature target activation"},
+        )
+    self.assertEqual(registry.model("cfg.provider.plan")["status"], "draft")
+    registry.provider_execution_ready = True
+    config = change(
+        "model_state",
+        "cfg.provider.plan",
+        2,
+        {"status": "enabled", "reason": "Explicit controlled component"},
+    )
+
+
+def _check_personal_provider_campaign(adapter, change, coordinator, registry, self, store, work):
+    change(
+        "set_grant",
+        "owner.local",
+        0,
+        {
+            "configuration_ref": "cfg.provider.plan",
+            "status": "active",
+            "purposes": ["execution"],
+            "task_classes": ["class.demo"],
+        },
+    )
+    registry.controlled_provider_proof = False
+    registry.personal_campaign = PersonalCampaign(store, registry)
+    campaign = registry.personal_campaign
+    campaign.configure(
+        "owner.local",
+        {
+            "connection_id": "conn.plan",
+            "configuration_ref": "cfg.provider.plan",
+            "principal_id": "owner.local",
+            "currency": "USD",
+            "allowance_decimal": "0.02",
+            "per_request_decimal": "0.01",
+            "max_requests": 1,
+            "max_input_bytes": 4096,
+            "max_output_tokens": 32,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1))
+            .isoformat()
+            .replace("+00:00", "Z"),
+        },
+    )
+    campaign.transition("owner.local", "active")
+    owner_token = registry.issue_local_operator_token("owner.local")
+    owner_work = deepcopy(work)
+    owner_work["step_id"] = "step.provider.personal"
+    owner_work["execution_generation"] = "gen.provider.personal"
+    adapter.return_details = True
+    owner_status, owner_reply = coordinator.submit(
+        owner_work,
+        coordinator.authenticate(owner_token),
+        credential=owner_token,
+        wait_ms=3000,
+    )
+    self.assertEqual(owner_status, 200, owner_reply)
+    self.assertEqual(
+        owner_reply["candidate"]["usage"]["revision"]["cost"]["amount_decimal"],
+        "0.000009000",
+    )
+    self.assertEqual(campaign.summary()["incurred_decimal"], "0.000009000")
+    self.assertEqual(campaign.summary()["request_count"], 1)
+    report = usage_costs(
+        registry,
+        {"role": "registry_admin", "principal_id": "owner.local"},
+        {"environment": "live_personal_test"},
+    )
+    self.assertEqual(report["total"]["known_subtotals"], {"USD": "0.000009"})
+    self.assertEqual(report["attempts"][0]["charging_owner_id"], "owner.local")
+    self.assertEqual(report["attempts"][0]["initiating_user_id"], "owner.local")
+    self.assertEqual(report["attempts"][0]["agent_id"], "__direct_human__")
+    with self.assertRaises(ContractError):
+        coordinator.submit(
+            {**owner_work, "step_id": "step.provider.personal.2"},
+            coordinator.authenticate(owner_token),
+            credential=owner_token,
+            wait_ms=3000,
+        )
+    self.assertEqual(len(adapter.sent), 2)
+    registry.revoke_local_operator_token(owner_token)
+    change(
+        "connection_state",
+        "conn.plan",
+        4,
+        {"status": "disabled", "reason": "Test queued revocation"},
+    )
+    self.assertEqual(
+        registry.readiness(registry.model("cfg.provider.plan")),
+        "provider_connection_stale",
+    )
 
 
 if __name__ == "__main__":

@@ -610,165 +610,188 @@ class CredentialHTTPTests(unittest.TestCase):
                 conn.close()
 
         status, headers, login = operator("POST", "/operator/v1/login", {"password": "p" * 40})
-        self.assertEqual(operator("GET", "/operator/v1/session")[0], 401)
-        self.assertEqual(status, 200)
-        cookie, csrf = headers["Set-Cookie"].split(";", 1)[0], login["csrf"]
-        body = {
-            "dataset_id": self.dataset,
-            "provider": "anthropic",
-            "api_key": "known-fixture-api-key-0001",
-            "friendly_name": "Owner test",
-            "operation_id": "op.owner.connect",
-        }
-        self.assertEqual(
-            operator("POST", "/operator/v1/integration/connections", body, cookie)[0], 403
+        body, cookie, csrf, listing, pending = _check_owner_login_and_connection_setup(
+            headers, login, operator, self, status
         )
-        status, _, pending = operator(
-            "POST", "/operator/v1/integration/connections", body, cookie, csrf
+        report_path = _check_owner_console_and_accounting_exports(
+            cookie, csrf, listing, operator, operator_port, pending, self
         )
-        self.assertEqual(status, 201)
-        self.assertNotIn("api_key", pending)
-        listing = "/operator/v1/integration/connections?dataset_id=" + self.dataset
-        session_status, _, restored = operator("GET", "/operator/v1/session", cookie=cookie)
-        self.assertEqual(session_status, 200)
-        self.assertEqual(restored["csrf"], csrf)
-        self.assertEqual(restored["principal_id"], "owner.local")
-        self.assertEqual(operator("GET", "/operator/v1/integration/identity")[0], 401)
-        identity_status, _, identity = operator(
-            "GET", "/operator/v1/integration/identity", cookie=cookie
+        reader_token = _check_nonowner_console_boundaries(
+            body, listing, operator, report_path, self
         )
-        self.assertEqual((identity_status, identity), (200, {"user": None}))
-        self.assertEqual(
-            operator("GET", listing, cookie=cookie)[2]["items"][0]["account_id"],
-            pending["account_id"],
+        _check_consumer_credential_boundary(pending, reader_token, self)
+
+
+def _check_owner_login_and_connection_setup(headers, login, operator, self, status):
+    self.assertEqual(operator("GET", "/operator/v1/session")[0], 401)
+    self.assertEqual(status, 200)
+    cookie, csrf = headers["Set-Cookie"].split(";", 1)[0], login["csrf"]
+    body = {
+        "dataset_id": self.dataset,
+        "provider": "anthropic",
+        "api_key": "known-fixture-api-key-0001",
+        "friendly_name": "Owner test",
+        "operation_id": "op.owner.connect",
+    }
+    self.assertEqual(operator("POST", "/operator/v1/integration/connections", body, cookie)[0], 403)
+    status, _, pending = operator(
+        "POST", "/operator/v1/integration/connections", body, cookie, csrf
+    )
+    self.assertEqual(status, 201)
+    self.assertNotIn("api_key", pending)
+    listing = "/operator/v1/integration/connections?dataset_id=" + self.dataset
+    session_status, _, restored = operator("GET", "/operator/v1/session", cookie=cookie)
+    self.assertEqual(session_status, 200)
+    self.assertEqual(restored["csrf"], csrf)
+    self.assertEqual(restored["principal_id"], "owner.local")
+    self.assertEqual(operator("GET", "/operator/v1/integration/identity")[0], 401)
+    identity_status, _, identity = operator(
+        "GET", "/operator/v1/integration/identity", cookie=cookie
+    )
+    self.assertEqual((identity_status, identity), (200, {"user": None}))
+    self.assertEqual(
+        operator("GET", listing, cookie=cookie)[2]["items"][0]["account_id"],
+        pending["account_id"],
+    )
+    return body, cookie, csrf, listing, pending
+
+
+def _check_owner_console_and_accounting_exports(
+    cookie, csrf, listing, operator, operator_port, pending, self
+):
+    save = {
+        "dataset_id": self.dataset,
+        "expected_revision": pending["revision"],
+        "selected_models": ["claude-opus-4-8"],
+        "allowed_operations": [],
+    }
+    status, _, saved = operator(
+        "POST",
+        "/operator/v1/integration/connections/" + pending["account_id"] + "/save",
+        save,
+        cookie,
+        csrf,
+    )
+    self.assertEqual(status, 200)
+    self.assertEqual(saved["state"], "connected")
+    self.assertEqual(operator("GET", listing, cookie=cookie)[2]["items"][0]["selected_version"], 1)
+    native = operator("GET", "/operator/v1/usage-costs?page=1&limit=1", cookie=cookie)
+    self.assertEqual(native[0], 200)
+    self.assertEqual(operator("GET", "/operator/v1/usage-costs?page=1&limit=1")[0], 401)
+    self.assertEqual(operator("GET", "/operator/v1/models", cookie=cookie)[0], 200)
+    self.assertEqual(operator("GET", "/operator/v1/principals", cookie=cookie)[0], 200)
+    demo_path = "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
+    self.assertEqual(operator("GET", demo_path)[0], 401)
+    status, _, demo = operator("GET", demo_path, cookie=cookie)
+    self.assertEqual(
+        (status, demo["identity"], demo["collection"]),
+        (200, "dev09-team-scripted-cost-demo-v2", "team"),
+    )
+    report_path = "/operator/v1/integration/report?dataset_id=" + self.dataset
+    status, _, report = operator("GET", report_path, cookie=cookie)
+    self.assertEqual(
+        (status, report["integration_version"], report["attempt_count"]), (200, "3", 0)
+    )
+    self.assertEqual(operator("GET", report_path + "&actor_id=svc.demo", cookie=cookie)[0], 200)
+    self.assertEqual(operator("GET", report_path + "&export=json", cookie=cookie)[2], report)
+    status, _, exported = operator(
+        "GET", "/operator/v1/integration/export?dataset_id=" + self.dataset, cookie=cookie
+    )
+    self.assertEqual(
+        (status, exported["integration_version"], len(exported["events"])), (200, "3", 0)
+    )
+    self.assertEqual(operator("GET", report_path)[0], 401)
+    conn = http.client.HTTPConnection("127.0.0.1", operator_port, timeout=3)
+    try:
+        conn.request(
+            "GET",
+            report_path + "&export=csv",
+            headers={"Host": f"127.0.0.1:{operator_port}", "Cookie": cookie},
         )
-        save = {
-            "dataset_id": self.dataset,
-            "expected_revision": pending["revision"],
-            "selected_models": ["claude-opus-4-8"],
-            "allowed_operations": [],
-        }
-        status, _, saved = operator(
+        csv_response = conn.getresponse()
+        self.assertEqual(csv_response.status, 200)
+        self.assertIn("attempt_id", csv_response.read().decode().splitlines()[0])
+    finally:
+        conn.close()
+    return report_path
+
+
+def _check_nonowner_console_boundaries(body, listing, operator, report_path, self):
+    self.assertEqual(operator("GET", listing)[0], 401)
+    self.registry.mutate(
+        "owner.local",
+        {
+            "operation_id": "op.reader.create",
+            "action": "create_principal",
+            "subject": "user.reader",
+            "expected_revision": 0,
+            "data": {"display_name": "Reader", "kind": "human", "owner": "owner.local"},
+        },
+    )
+    _, reader_token = self.registry.provision_credential(
+        "owner.local", "user.reader", 1, "op.reader.provision"
+    )
+    self.registry.mutate(
+        "owner.local",
+        {
+            "operation_id": "op.reader.activate",
+            "action": "principal_state",
+            "subject": "user.reader",
+            "expected_revision": 2,
+            "data": {"status": "active", "reason": "controlled"},
+        },
+    )
+    status, headers, reader_login = operator(
+        "POST", "/operator/v1/login", {"password": reader_token}
+    )
+    self.assertEqual(status, 200)
+    reader_cookie = headers["Set-Cookie"].split(";", 1)[0]
+    self.assertEqual(operator("GET", listing, cookie=reader_cookie)[0], 404)
+    self.assertEqual(operator("GET", report_path, cookie=reader_cookie)[0], 404)
+    self.assertEqual(
+        operator(
             "POST",
-            "/operator/v1/integration/connections/" + pending["account_id"] + "/save",
-            save,
-            cookie,
-            csrf,
-        )
-        self.assertEqual(status, 200)
-        self.assertEqual(saved["state"], "connected")
-        self.assertEqual(
-            operator("GET", listing, cookie=cookie)[2]["items"][0]["selected_version"], 1
-        )
-        native = operator("GET", "/operator/v1/usage-costs?page=1&limit=1", cookie=cookie)
-        self.assertEqual(native[0], 200)
-        self.assertEqual(operator("GET", "/operator/v1/usage-costs?page=1&limit=1")[0], 401)
-        self.assertEqual(operator("GET", "/operator/v1/models", cookie=cookie)[0], 200)
-        self.assertEqual(operator("GET", "/operator/v1/principals", cookie=cookie)[0], 200)
-        demo_path = "/operator/v1/demo-workspace?collection=team&story=oren_opportunity"
-        self.assertEqual(operator("GET", demo_path)[0], 401)
-        status, _, demo = operator("GET", demo_path, cookie=cookie)
-        self.assertEqual(
-            (status, demo["identity"], demo["collection"]),
-            (200, "dev09-team-scripted-cost-demo-v2", "team"),
-        )
-        report_path = "/operator/v1/integration/report?dataset_id=" + self.dataset
-        status, _, report = operator("GET", report_path, cookie=cookie)
-        self.assertEqual(
-            (status, report["integration_version"], report["attempt_count"]), (200, "3", 0)
-        )
-        self.assertEqual(operator("GET", report_path + "&actor_id=svc.demo", cookie=cookie)[0], 200)
-        self.assertEqual(operator("GET", report_path + "&export=json", cookie=cookie)[2], report)
-        status, _, exported = operator(
-            "GET", "/operator/v1/integration/export?dataset_id=" + self.dataset, cookie=cookie
-        )
-        self.assertEqual(
-            (status, exported["integration_version"], len(exported["events"])), (200, "3", 0)
-        )
-        self.assertEqual(operator("GET", report_path)[0], 401)
-        conn = http.client.HTTPConnection("127.0.0.1", operator_port, timeout=3)
+            "/operator/v1/integration/connections",
+            body,
+            reader_cookie,
+            reader_login["csrf"],
+        )[0],
+        403,
+    )
+    return reader_token
+
+
+def _check_consumer_credential_boundary(pending, reader_token, self):
+    api_port = 0
+    api = serve_api("127.0.0.1", api_port, SimpleNamespace(registry=self.registry))
+    api_port = api.server_port
+    api_thread = threading.Thread(target=api.serve_forever)
+    api_thread.start()
+    self.addCleanup(lambda: (api.shutdown(), api.server_close(), api_thread.join(timeout=3)))
+
+    def resolve(token):
+        conn = http.client.HTTPConnection("127.0.0.1", api_port, timeout=3)
         try:
             conn.request(
                 "GET",
-                report_path + "&export=csv",
-                headers={"Host": f"127.0.0.1:{operator_port}", "Cookie": cookie},
+                "/integration/v3/credentials/"
+                + pending["account_id"]
+                + "/resolve?dataset_id="
+                + self.dataset
+                + "&purpose=ezllmrouter-provider-dispatch&"
+                "operation_family=generation&model_id=claude-opus-4-8",
+                headers={
+                    "Authorization": "Bearer " + token,
+                    "EzLLMRouter-Integration-Version": "3",
+                },
             )
-            csv_response = conn.getresponse()
-            self.assertEqual(csv_response.status, 200)
-            self.assertIn("attempt_id", csv_response.read().decode().splitlines()[0])
+            response = conn.getresponse()
+            return response.status, json.loads(response.read())
         finally:
             conn.close()
-        self.assertEqual(operator("GET", listing)[0], 401)
-        self.registry.mutate(
-            "owner.local",
-            {
-                "operation_id": "op.reader.create",
-                "action": "create_principal",
-                "subject": "user.reader",
-                "expected_revision": 0,
-                "data": {"display_name": "Reader", "kind": "human", "owner": "owner.local"},
-            },
-        )
-        _, reader_token = self.registry.provision_credential(
-            "owner.local", "user.reader", 1, "op.reader.provision"
-        )
-        self.registry.mutate(
-            "owner.local",
-            {
-                "operation_id": "op.reader.activate",
-                "action": "principal_state",
-                "subject": "user.reader",
-                "expected_revision": 2,
-                "data": {"status": "active", "reason": "controlled"},
-            },
-        )
-        status, headers, reader_login = operator(
-            "POST", "/operator/v1/login", {"password": reader_token}
-        )
-        self.assertEqual(status, 200)
-        reader_cookie = headers["Set-Cookie"].split(";", 1)[0]
-        self.assertEqual(operator("GET", listing, cookie=reader_cookie)[0], 404)
-        self.assertEqual(operator("GET", report_path, cookie=reader_cookie)[0], 404)
-        self.assertEqual(
-            operator(
-                "POST",
-                "/operator/v1/integration/connections",
-                body,
-                reader_cookie,
-                reader_login["csrf"],
-            )[0],
-            403,
-        )
-        api_port = 0
-        api = serve_api("127.0.0.1", api_port, SimpleNamespace(registry=self.registry))
-        api_port = api.server_port
-        api_thread = threading.Thread(target=api.serve_forever)
-        api_thread.start()
-        self.addCleanup(lambda: (api.shutdown(), api.server_close(), api_thread.join(timeout=3)))
 
-        def resolve(token):
-            conn = http.client.HTTPConnection("127.0.0.1", api_port, timeout=3)
-            try:
-                conn.request(
-                    "GET",
-                    "/integration/v3/credentials/"
-                    + pending["account_id"]
-                    + "/resolve?dataset_id="
-                    + self.dataset
-                    + "&purpose=ezllmrouter-provider-dispatch&"
-                    "operation_family=generation&model_id=claude-opus-4-8",
-                    headers={
-                        "Authorization": "Bearer " + token,
-                        "EzLLMRouter-Integration-Version": "3",
-                    },
-                )
-                response = conn.getresponse()
-                return response.status, json.loads(response.read())
-            finally:
-                conn.close()
-
-        self.assertEqual(resolve(self.consumer_token)[1]["credential_version"], 1)
-        self.assertEqual(resolve(reader_token)[0], 404)
+    self.assertEqual(resolve(self.consumer_token)[1]["credential_version"], 1)
+    self.assertEqual(resolve(reader_token)[0], 404)
 
 
 if __name__ == "__main__":

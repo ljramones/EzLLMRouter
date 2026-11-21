@@ -172,199 +172,206 @@ class AccountingReportTests(accounting_support.AccountingHTTPFixture, unittest.T
         }
         start.pop("parent_run_id")
         self.assertEqual(api("POST", "/events", start)[0], 201)
-        feature = {
-            "integration_version": "2",
-            "snapshot_id": "feature.base",
-            "dataset_id": did,
-            "attempt_id": "attempt.base",
-            "snapshot_kind": "feature",
-            "status": "captured",
-            "schema_version": "1",
-            "producer_version": "producer.synthetic.1",
-            "provenance": "synthetic",
-            "source_at": "2099-01-01T00:00:01Z",
-            "available_at": "2099-01-01T00:00:02Z",
-            "classification": "low",
-            "retention_until": "2099-12-31T00:00:00Z",
-            "source_expires_at": "2099-12-31T00:00:00Z",
-            "features": {
-                "task_category": "briefing",
-                "modalities": ["text"],
-                "input_size": {
-                    "unit": "tokens",
-                    "quantity_decimal": "10",
-                    "provenance": "estimated",
-                },
+        usage = _check_accounting_snapshots_and_unknown_usage(account, api, did, eligibility, self)
+        _check_corrected_usage_and_retry_lineage(api, did, eligibility, self, start, usage)
+        _check_unresolved_usage_and_exports(api, did, self, start, usage)
+
+
+def _check_accounting_snapshots_and_unknown_usage(account, api, did, eligibility, self):
+    feature = {
+        "integration_version": "2",
+        "snapshot_id": "feature.base",
+        "dataset_id": did,
+        "attempt_id": "attempt.base",
+        "snapshot_kind": "feature",
+        "status": "captured",
+        "schema_version": "1",
+        "producer_version": "producer.synthetic.1",
+        "provenance": "synthetic",
+        "source_at": "2099-01-01T00:00:01Z",
+        "available_at": "2099-01-01T00:00:02Z",
+        "classification": "low",
+        "retention_until": "2099-12-31T00:00:00Z",
+        "source_expires_at": "2099-12-31T00:00:00Z",
+        "features": {
+            "task_category": "briefing",
+            "modalities": ["text"],
+            "input_size": {
+                "unit": "tokens",
+                "quantity_decimal": "10",
+                "provenance": "estimated",
             },
-        }
-        self.assertEqual(api("POST", "/snapshots", feature)[0], 201)
-        self.assertEqual(api("POST", "/snapshots", feature)[0], 200)
-        self.assertEqual(
-            api("GET", "/snapshots/feature.base?dataset_id=" + did)[1]["features"],
-            feature["features"],
-        )
-        self.assertEqual(
-            api(
-                "POST",
-                "/snapshots",
-                {**feature, "snapshot_id": "feature.bad", "features": {"raw_prompt": "secret"}},
-            )[0],
-            400,
-        )
-        decision = {
-            "integration_version": "2",
-            "event_id": "event.decision.base",
-            "dataset_id": did,
-            "kind": "decision",
-            "occurred_at": "2099-01-01T00:00:09Z",
-            "attempt_id": "attempt.base",
-            "decision_ref": "decision.base",
-            "selected_account_id": account["account_id"],
-            "selected_model_id": "model.synthetic",
-            "policy_version": "policy.synthetic",
-            "eligibility_evidence": {
-                "status": "verified",
-                "eligibility_id": eligibility["eligibility_id"],
+        },
+    }
+    self.assertEqual(api("POST", "/snapshots", feature)[0], 201)
+    self.assertEqual(api("POST", "/snapshots", feature)[0], 200)
+    self.assertEqual(
+        api("GET", "/snapshots/feature.base?dataset_id=" + did)[1]["features"],
+        feature["features"],
+    )
+    self.assertEqual(
+        api(
+            "POST",
+            "/snapshots",
+            {**feature, "snapshot_id": "feature.bad", "features": {"raw_prompt": "secret"}},
+        )[0],
+        400,
+    )
+    decision = {
+        "integration_version": "2",
+        "event_id": "event.decision.base",
+        "dataset_id": did,
+        "kind": "decision",
+        "occurred_at": "2099-01-01T00:00:09Z",
+        "attempt_id": "attempt.base",
+        "decision_ref": "decision.base",
+        "selected_account_id": account["account_id"],
+        "selected_model_id": "model.synthetic",
+        "policy_version": "policy.synthetic",
+        "eligibility_evidence": {
+            "status": "verified",
+            "eligibility_id": eligibility["eligibility_id"],
+        },
+    }
+    self.assertEqual(api("POST", "/events", decision)[0], 201)
+    decision_snapshot = {
+        **feature,
+        "snapshot_id": "decision.base",
+        "snapshot_kind": "decision",
+        "available_at": "2099-01-01T00:00:09Z",
+        "selected_action": {
+            key: decision[key]
+            for key in (
+                "selected_account_id",
+                "selected_model_id",
+                "policy_version",
+                "eligibility_evidence",
+            )
+        },
+    }
+    decision_snapshot.pop("features")
+    self.assertEqual(api("POST", "/snapshots", decision_snapshot)[0], 201)
+    usage = {
+        "integration_version": "2",
+        "event_id": "event.usage.base.1",
+        "dataset_id": did,
+        "kind": "usage",
+        "occurred_at": "2099-01-01T00:00:20Z",
+        "attempt_id": "attempt.base",
+        "usage_revision": 1,
+        "usage_state": "known",
+        "cost_state": "unknown",
+        "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
+        "usage_provenance": "provider_reported",
+    }
+    self.assertEqual(api("POST", "/events", usage)[0], 201)
+    report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
+    self.assertEqual(report["attempts"][0]["native_units"], usage["native_units"])
+    self.assertEqual(report["unknown_cost_attempts"], 1)
+    self.assertIsNone(report["attempts"][0]["amount_decimal"])
+    return usage
+
+
+def _check_corrected_usage_and_retry_lineage(api, did, eligibility, self, start, usage):
+    second = {
+        **usage,
+        "event_id": "event.usage.base.2",
+        "usage_revision": 2,
+        "cost_state": "known",
+        "currency": "USD",
+        "amount_decimal": "0.020000000",
+        "cost_basis": "provider_reported",
+        "price_ref": "tariff.synthetic",
+        "price_version": "v1",
+    }
+    self.assertEqual(api("POST", "/events", second)[0], 201)
+    self.assertEqual(api("POST", "/events", second)[0], 200)
+    self.assertEqual(
+        api("POST", "/events", {**second, "event_id": "event.gap", "usage_revision": 4})[0], 201
+    )
+    report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
+    self.assertEqual(report["known_total_by_currency"], {"USD": "0.020000000"})
+    self.assertEqual(report["attempts"][0]["usage_revision"], 2)
+    self.assertEqual(
+        report["attempts"][0]["eligibility_record"]["eligibility_id"],
+        eligibility["eligibility_id"],
+    )
+    self.assertEqual(report["attempts"][0]["feature_snapshot_status"], "captured")
+    self.assertEqual(report["attempts"][0]["decision_snapshot_status"], "captured")
+    retry = {
+        **start,
+        "event_id": "event.retry",
+        "attempt_id": "attempt.retry",
+        "context_ref": "feature.retry",
+        "started_at": "2099-01-01T00:00:11Z",
+        "attempt_role": "retry",
+        "predecessor_attempt_id": "attempt.base",
+    }
+    self.assertEqual(api("POST", "/events", retry)[0], 201)
+    self.assertEqual(
+        api(
+            "POST",
+            "/events",
+            {
+                **retry,
+                "event_id": "event.self",
+                "attempt_id": "attempt.self",
+                "predecessor_attempt_id": "attempt.self",
             },
-        }
-        self.assertEqual(api("POST", "/events", decision)[0], 201)
-        decision_snapshot = {
-            **feature,
-            "snapshot_id": "decision.base",
-            "snapshot_kind": "decision",
-            "available_at": "2099-01-01T00:00:09Z",
-            "selected_action": {
-                key: decision[key]
-                for key in (
-                    "selected_account_id",
-                    "selected_model_id",
-                    "policy_version",
-                    "eligibility_evidence",
-                )
-            },
-        }
-        decision_snapshot.pop("features")
-        self.assertEqual(api("POST", "/snapshots", decision_snapshot)[0], 201)
-        usage = {
-            "integration_version": "2",
-            "event_id": "event.usage.base.1",
-            "dataset_id": did,
-            "kind": "usage",
-            "occurred_at": "2099-01-01T00:00:20Z",
-            "attempt_id": "attempt.base",
-            "usage_revision": 1,
-            "usage_state": "known",
-            "cost_state": "unknown",
-            "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
-            "usage_provenance": "provider_reported",
-        }
-        self.assertEqual(api("POST", "/events", usage)[0], 201)
-        report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
-        self.assertEqual(report["attempts"][0]["native_units"], usage["native_units"])
-        self.assertEqual(report["unknown_cost_attempts"], 1)
-        self.assertIsNone(report["attempts"][0]["amount_decimal"])
-        second = {
-            **usage,
-            "event_id": "event.usage.base.2",
-            "usage_revision": 2,
-            "cost_state": "known",
-            "currency": "USD",
-            "amount_decimal": "0.020000000",
-            "cost_basis": "provider_reported",
-            "price_ref": "tariff.synthetic",
-            "price_version": "v1",
-        }
-        self.assertEqual(api("POST", "/events", second)[0], 201)
-        self.assertEqual(api("POST", "/events", second)[0], 200)
-        self.assertEqual(
-            api("POST", "/events", {**second, "event_id": "event.gap", "usage_revision": 4})[0], 201
-        )
-        report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
-        self.assertEqual(report["known_total_by_currency"], {"USD": "0.020000000"})
-        self.assertEqual(report["attempts"][0]["usage_revision"], 2)
-        self.assertEqual(
-            report["attempts"][0]["eligibility_record"]["eligibility_id"],
-            eligibility["eligibility_id"],
-        )
-        self.assertEqual(report["attempts"][0]["feature_snapshot_status"], "captured")
-        self.assertEqual(report["attempts"][0]["decision_snapshot_status"], "captured")
-        retry = {
-            **start,
-            "event_id": "event.retry",
-            "attempt_id": "attempt.retry",
-            "context_ref": "feature.retry",
-            "started_at": "2099-01-01T00:00:11Z",
-            "attempt_role": "retry",
-            "predecessor_attempt_id": "attempt.base",
-        }
-        self.assertEqual(api("POST", "/events", retry)[0], 201)
-        self.assertEqual(
-            api(
-                "POST",
-                "/events",
-                {
-                    **retry,
-                    "event_id": "event.self",
-                    "attempt_id": "attempt.self",
-                    "predecessor_attempt_id": "attempt.self",
-                },
-            )[0],
-            400,
-        )
-        unresolved = {
-            **start,
-            "event_id": "event.unresolved",
-            "attempt_id": "attempt.unresolved",
-            "provider_account_id": "account.unregistered",
-            "model_identity_state": "not_applicable",
-            "operation_family": "search",
-            "logical_operation_id": "logical.other",
-            "attempt_role": "fanout",
-            "context_ref": "feature.unavailable",
-        }
-        unresolved.pop("model_id")
-        self.assertEqual(api("POST", "/events", unresolved)[0], 201)
-        unpriced = {
-            **usage,
-            "event_id": "event.unresolved.usage",
-            "attempt_id": "attempt.unresolved",
-            "usage_state": "unknown",
-            "cost_state": "known",
-            "currency": "USD",
-            "amount_decimal": "0.010000000",
-            "cost_basis": "provider_reported",
-            "price_ref": "tariff.synthetic",
-            "price_version": "v1",
-        }
-        unpriced.pop("native_units")
-        unpriced.pop("usage_provenance")
-        self.assertEqual(api("POST", "/events", unpriced)[0], 201)
-        report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
-        self.assertEqual(report["known_total_by_currency"], {"USD": "0.030000000"})
-        self.assertEqual(
-            next(x for x in report["attempts"] if x["attempt_id"] == "attempt.unresolved")[
-                "account_resolution_status"
-            ],
-            "unresolved",
-        )
-        self.assertEqual(
-            next(x for x in report["attempts"] if x["attempt_id"] == "attempt.retry")[
-                "lineage_status"
-            ],
-            "linked",
-        )
-        exported = api("GET", "/reports/dataset?dataset_id=" + did, admin=True)[1]
-        self.assertEqual(len(exported["attempts"]), 3)
-        self.assertEqual(len(exported["eligibility_reads"]), 1)
-        self.assertEqual(len(exported["snapshots"]), 2)
-        status, csv_data = api(
-            "GET", "/reports/usage?dataset_id=" + did + "&export=csv", admin=True
-        )
-        self.assertEqual(status, 200)
-        csv_rows = list(csv.DictReader(io.StringIO(csv_data)))
-        self.assertEqual(
-            sum(
-                (Decimal(x["amount_decimal"]) for x in csv_rows if x["amount_decimal"]), Decimal(0)
-            ),
-            Decimal("0.03"),
-        )
+        )[0],
+        400,
+    )
+
+
+def _check_unresolved_usage_and_exports(api, did, self, start, usage):
+    unresolved = {
+        **start,
+        "event_id": "event.unresolved",
+        "attempt_id": "attempt.unresolved",
+        "provider_account_id": "account.unregistered",
+        "model_identity_state": "not_applicable",
+        "operation_family": "search",
+        "logical_operation_id": "logical.other",
+        "attempt_role": "fanout",
+        "context_ref": "feature.unavailable",
+    }
+    unresolved.pop("model_id")
+    self.assertEqual(api("POST", "/events", unresolved)[0], 201)
+    unpriced = {
+        **usage,
+        "event_id": "event.unresolved.usage",
+        "attempt_id": "attempt.unresolved",
+        "usage_state": "unknown",
+        "cost_state": "known",
+        "currency": "USD",
+        "amount_decimal": "0.010000000",
+        "cost_basis": "provider_reported",
+        "price_ref": "tariff.synthetic",
+        "price_version": "v1",
+    }
+    unpriced.pop("native_units")
+    unpriced.pop("usage_provenance")
+    self.assertEqual(api("POST", "/events", unpriced)[0], 201)
+    report = api("GET", "/reports/usage?dataset_id=" + did, admin=True)[1]
+    self.assertEqual(report["known_total_by_currency"], {"USD": "0.030000000"})
+    self.assertEqual(
+        next(x for x in report["attempts"] if x["attempt_id"] == "attempt.unresolved")[
+            "account_resolution_status"
+        ],
+        "unresolved",
+    )
+    self.assertEqual(
+        next(x for x in report["attempts"] if x["attempt_id"] == "attempt.retry")["lineage_status"],
+        "linked",
+    )
+    exported = api("GET", "/reports/dataset?dataset_id=" + did, admin=True)[1]
+    self.assertEqual(len(exported["attempts"]), 3)
+    self.assertEqual(len(exported["eligibility_reads"]), 1)
+    self.assertEqual(len(exported["snapshots"]), 2)
+    status, csv_data = api("GET", "/reports/usage?dataset_id=" + did + "&export=csv", admin=True)
+    self.assertEqual(status, 200)
+    csv_rows = list(csv.DictReader(io.StringIO(csv_data)))
+    self.assertEqual(
+        sum((Decimal(x["amount_decimal"]) for x in csv_rows if x["amount_decimal"]), Decimal(0)),
+        Decimal("0.03"),
+    )

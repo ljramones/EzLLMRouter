@@ -125,160 +125,11 @@ def exercise(path, run_id, client, env, before):
     users = ["user.synthetic.alpha." + suffix, "user.synthetic.beta." + suffix]
     agent = "agent.synthetic." + suffix
     tokens = {}
-    for n, user in enumerate(users):
-        mutate(
-            client,
-            run_id,
-            10 + n * 10,
-            "create_principal",
-            user,
-            0,
-            {
-                "display_name": "Synthetic DEV-09 user " + str(n + 1),
-                "kind": "human",
-                "owner": "team.demo",
-            },
-        )
-        issued = client.call(
-            "POST",
-            "/operator/v1/provision",
-            {
-                "operation_id": "op." + run_id + ".credential." + str(n),
-                "principal_id": user,
-                "expected_revision": 1,
-            },
-        )
-        tokens[user] = issued["one_time_credential"]
-        mutate(
-            client,
-            run_id,
-            11 + n * 10,
-            "principal_state",
-            user,
-            2,
-            {"status": "active", "reason": "Controlled DEV-09 proof"},
-        )
-        mutate(
-            client,
-            run_id,
-            12 + n * 10,
-            "set_grant",
-            user,
-            0,
-            {
-                "configuration_ref": "cfg.demo",
-                "status": "active",
-                "purposes": ["execution"],
-                "task_classes": ["class.demo"],
-            },
-        )
-    mutate(
-        client,
-        run_id,
-        40,
-        "register_agent",
-        agent,
-        0,
-        {"display_name": "Synthetic DEV-09 shared agent", "owner": "team.demo", "versions": ["v1"]},
-    )
-    for n, user in enumerate((None, *users)):
-        data = {
-            "caller_principal_id": "svc.demo",
-            "agent_id": agent,
-            "charging_owner_id": "team.demo",
-            "task_classes": ["class.demo"],
-            "status": "active",
-        }
-        if user:
-            data["initiating_user_id"] = user
-        mutate(
-            client,
-            run_id,
-            41 + n,
-            "set_agent_permission",
-            "permission.synthetic." + suffix + "." + str(n),
-            0,
-            data,
-        )
+    _provision_exercise_users_and_agent(agent, client, run_id, suffix, tokens, users)
 
-    request = json.loads((profile.ROOT / "tests/development_slice/request.json").read_text())
-
-    def row(name, mode, **fields):
-        req = deepcopy(request)
-        req["execution_generation"] = "gen." + suffix + "." + name
-        req["step_id"] = "step." + suffix + "." + name
-        if req["requested_configuration_ref"] != "cfg.demo":
-            raise RuntimeError("controlled target request no longer selects synthetic cfg.demo")
-        run = {
-            "version": "1",
-            "run_id": "run." + suffix + "." + name,
-            "task_id": req["task_id"],
-            "task_class": req["task_class"],
-            "evaluation_ref": "rubric.synthetic.v1",
-            "mode": mode,
-            **fields,
-        }
-        return {"run": run, "request": req}
-
-    direct = row("direct", "direct_human")
-    alpha = row(
-        "alpha",
-        "user_delegated_agent",
-        agent_id=agent,
-        agent_version="v1",
-        initiating_user_id=users[0],
+    auto, beta, child, netns, py, rejected, results, service_token = (
+        _exercise_installed_python_attribution(agent, env, path, suffix, tokens, users)
     )
-    child = row(
-        "child",
-        "nested_agent",
-        agent_id=agent,
-        agent_version="v1",
-        parent_run_id=alpha["run"]["run_id"],
-    )
-    beta = row(
-        "beta",
-        "user_delegated_agent",
-        agent_id=agent,
-        agent_version="v1",
-        initiating_user_id=users[1],
-    )
-    auto = row("auto", "autonomous_agent", agent_id=agent, agent_version="v1")
-    service_token = profile.secrets_on_disk()[0]["service_token"]
-    py = profile.compose_args(
-        "exec",
-        "-T",
-        "service",
-        "python",
-        "-B",
-        "-c",
-        (Path(profile.current()["build_dir"]) / "service/local/dev09_python_actor.py").read_text(),
-    )
-    results = [
-        actor(path, "installed-python-direct", py, env, token=tokens[users[0]], rows=[direct])
-    ]
-    rejected = {
-        "version": "1",
-        "event_id": "event." + suffix + ".denied",
-        "run_id": alpha["run"]["run_id"],
-        "kind": "task_outcome",
-        "subject_revision": 1,
-        "verdict": "accepted",
-        "evaluator_version": "rubric.synthetic.v1",
-        "evidence_ref": "evidence.synthetic",
-    }
-    results.append(
-        actor(
-            path,
-            "installed-python-delegated",
-            py,
-            env,
-            token=service_token,
-            rows=[alpha],
-            outcome=rejected,
-            denied=True,
-        )
-    )
-    netns = command(path, "netns-container-id", profile.compose_args("ps", "-q", "netns"), env)
     if not re.fullmatch(r"[0-9a-f]{12,64}", netns):
         raise RuntimeError("one owned netns container required")
     js_image = "ezllmrouter-dev09-jsactor:" + env["EZLLMROUTER_SERVICE_IMAGE"].split(":")[-1]
@@ -556,6 +407,166 @@ def main():
             file=sys.stderr,
         )
         raise SystemExit(1) from None
+
+
+def _provision_exercise_users_and_agent(agent, client, run_id, suffix, tokens, users):
+    for n, user in enumerate(users):
+        mutate(
+            client,
+            run_id,
+            10 + n * 10,
+            "create_principal",
+            user,
+            0,
+            {
+                "display_name": "Synthetic DEV-09 user " + str(n + 1),
+                "kind": "human",
+                "owner": "team.demo",
+            },
+        )
+        issued = client.call(
+            "POST",
+            "/operator/v1/provision",
+            {
+                "operation_id": "op." + run_id + ".credential." + str(n),
+                "principal_id": user,
+                "expected_revision": 1,
+            },
+        )
+        tokens[user] = issued["one_time_credential"]
+        mutate(
+            client,
+            run_id,
+            11 + n * 10,
+            "principal_state",
+            user,
+            2,
+            {"status": "active", "reason": "Controlled DEV-09 proof"},
+        )
+        mutate(
+            client,
+            run_id,
+            12 + n * 10,
+            "set_grant",
+            user,
+            0,
+            {
+                "configuration_ref": "cfg.demo",
+                "status": "active",
+                "purposes": ["execution"],
+                "task_classes": ["class.demo"],
+            },
+        )
+    mutate(
+        client,
+        run_id,
+        40,
+        "register_agent",
+        agent,
+        0,
+        {"display_name": "Synthetic DEV-09 shared agent", "owner": "team.demo", "versions": ["v1"]},
+    )
+    for n, user in enumerate((None, *users)):
+        data = {
+            "caller_principal_id": "svc.demo",
+            "agent_id": agent,
+            "charging_owner_id": "team.demo",
+            "task_classes": ["class.demo"],
+            "status": "active",
+        }
+        if user:
+            data["initiating_user_id"] = user
+        mutate(
+            client,
+            run_id,
+            41 + n,
+            "set_agent_permission",
+            "permission.synthetic." + suffix + "." + str(n),
+            0,
+            data,
+        )
+
+
+def _exercise_installed_python_attribution(agent, env, path, suffix, tokens, users):
+    request = json.loads((profile.ROOT / "tests/development_slice/request.json").read_text())
+
+    def row(name, mode, **fields):
+        req = deepcopy(request)
+        req["execution_generation"] = "gen." + suffix + "." + name
+        req["step_id"] = "step." + suffix + "." + name
+        if req["requested_configuration_ref"] != "cfg.demo":
+            raise RuntimeError("controlled target request no longer selects synthetic cfg.demo")
+        run = {
+            "version": "1",
+            "run_id": "run." + suffix + "." + name,
+            "task_id": req["task_id"],
+            "task_class": req["task_class"],
+            "evaluation_ref": "rubric.synthetic.v1",
+            "mode": mode,
+            **fields,
+        }
+        return {"run": run, "request": req}
+
+    direct = row("direct", "direct_human")
+    alpha = row(
+        "alpha",
+        "user_delegated_agent",
+        agent_id=agent,
+        agent_version="v1",
+        initiating_user_id=users[0],
+    )
+    child = row(
+        "child",
+        "nested_agent",
+        agent_id=agent,
+        agent_version="v1",
+        parent_run_id=alpha["run"]["run_id"],
+    )
+    beta = row(
+        "beta",
+        "user_delegated_agent",
+        agent_id=agent,
+        agent_version="v1",
+        initiating_user_id=users[1],
+    )
+    auto = row("auto", "autonomous_agent", agent_id=agent, agent_version="v1")
+    service_token = profile.secrets_on_disk()[0]["service_token"]
+    py = profile.compose_args(
+        "exec",
+        "-T",
+        "service",
+        "python",
+        "-B",
+        "-c",
+        (Path(profile.current()["build_dir"]) / "service/local/dev09_python_actor.py").read_text(),
+    )
+    results = [
+        actor(path, "installed-python-direct", py, env, token=tokens[users[0]], rows=[direct])
+    ]
+    rejected = {
+        "version": "1",
+        "event_id": "event." + suffix + ".denied",
+        "run_id": alpha["run"]["run_id"],
+        "kind": "task_outcome",
+        "subject_revision": 1,
+        "verdict": "accepted",
+        "evaluator_version": "rubric.synthetic.v1",
+        "evidence_ref": "evidence.synthetic",
+    }
+    results.append(
+        actor(
+            path,
+            "installed-python-delegated",
+            py,
+            env,
+            token=service_token,
+            rows=[alpha],
+            outcome=rejected,
+            denied=True,
+        )
+    )
+    netns = command(path, "netns-container-id", profile.compose_args("ps", "-q", "netns"), env)
+    return auto, beta, child, netns, py, rejected, results, service_token
 
 
 if __name__ == "__main__":

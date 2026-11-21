@@ -1255,3 +1255,34 @@ files, lint/formatting and script/console checks. Library typing debt remains
 1,631; eight resolved function allowances are removed, leaving 22. The long
 individual test journeys and two deployment exercises remain under W6. Real
 listener/browser/profile qualification remains pending.
+
+
+### Item 11 follow-up: W6 test journeys and deployment exercises
+
+Ten oversized test/fixture journeys now have 36 named phases: signed-plan
+mutations, queued authority/no-store behavior, continuation receipts/counters,
+guarded-tool evidence, provider configuration and personal campaigns, accounting
+eligibility/lineage/snapshots/exports, and credential owner/nonowner boundaries.
+Client parity command modes keep their terminal returns inside the same client
+context. Public test names, decorators and all assertions remain available.
+The six accounting HTTP test files remain below 400 lines.
+
+DEV-09/DEV-10 deployment exercises separate provisioning, installed actors, build
+custody and worker verification. DEV-10 retains its complete ownership and
+cleanup scope; initial resource flags remain explicit inputs. DEV-07 separates
+independent receiver correlation. These six phase extractions preserve the
+original executable statements and error scopes. No profile is started, built
+or restarted. Fifteen injected success/failure replays match DEV-10 command and
+cleanup order exactly, using substitutes without executing external commands.
+
+Expansion proofs cover all 42 extracted phases. All 144 generated native-client
+fixtures, including evaluated expected transport calls, are byte-identical
+(SHA-256 `1873f92188625ab6a8986137afb70603681053aa35638f7bae1bd1d7b030a979`).
+Focused crypto, continuation and provider-plan suites pass eight cases. Full
+`tools.check` passes 919 Python cases, strict typing on 107 files, lint/formatting
+and script/console checks. Library typing debt remains 1,631; ten resolved test
+allowances are removed, leaving 12. Every tooling/test function and the three
+affected deployment exercises are at most 200 lines. W6 source decomposition is
+implemented; no evidence runner has been deleted or archived. Final installed
+wheel verification and checklist reconciliation follow. Real listener/browser/
+frozen-profile qualification remains item 1.
