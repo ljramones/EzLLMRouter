@@ -380,7 +380,7 @@ class OwnedTLSProof(unittest.TestCase):
             try:
                 task = asyncio.create_task(transport.handle_async_request(self.request()))
                 await asyncio.wait_for(entered.wait(), timeout=3)
-                change()
+                await asyncio.to_thread(change)
                 release.set()
                 with self.assertRaises(GuardRejected):
                     await task

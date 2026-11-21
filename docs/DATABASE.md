@@ -389,9 +389,11 @@ live in `registry_reads.py`, `registry_sources.py`, `registry_credentials.py`
 and `registry_tokens.py`. Mutation families live under `registry_mutations/`;
 common value validation lives in `registry_values.py`. All operations receive the
 same Registry instance context. Mutation helpers execute under the facade
-publishing transaction and sender gate; moved credential/probe methods retain
-their existing lock/read/write scopes. No domain helper creates a new database,
-authority gate, audit writer or token table.
+publishing transaction and sender gate. Provider probes retain one in-flight
+operation per Registry. A short bookkeeping lock selects its completion event;
+provider I/O and queued-probe waits run after releasing that lock. Completion or
+failure wakes queued callers, and duplicate operation IDs reuse the saved result.
+No domain helper creates a new database, authority gate, audit writer or token table.
 
 
 External accounting retains its public facade and validator/error imports in

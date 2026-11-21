@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sqlite3
 import tempfile
+import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -170,6 +171,91 @@ class ObservationRetentionTests(unittest.TestCase):
                 "SELECT 1 FROM registry_observations WHERE connection_id='connection.foreign'"
             ).fetchone()
         )
+
+    def test_provider_waits_release_the_probe_bookkeeping_lock(self):
+        self.registry.provider_vault = SimpleNamespace(resolve=lambda *_: "synthetic-credential")
+
+        def probe(*_args, **_kwargs):
+            acquired = self.registry._probe_lock.acquire(blocking=False)
+            if acquired:
+                self.registry._probe_lock.release()
+            self.assertTrue(acquired, "provider I/O retains the shared probe bookkeeping lock")
+            return {"state": "observed", "reason": "synthetic_metadata", "models": []}
+
+        with patch.object(registry_module, "provider_probe", side_effect=probe):
+            self.registry.probe_connection(
+                "owner.local", self.connection, 1, "probe.unlocked", "inventory"
+            )
+
+    def test_duplicate_probes_wait_without_shared_locks_and_reuse_the_saved_result(self):
+        self.registry.provider_vault = SimpleNamespace(resolve=lambda *_: "synthetic-credential")
+        entered, release, waiting = threading.Event(), threading.Event(), threading.Event()
+        results, errors = [], []
+
+        def probe(*_args, **_kwargs):
+            entered.set()
+            if not release.wait(3):
+                raise RuntimeError("fixture probe was not released")
+            return {"state": "observed", "reason": "synthetic_metadata", "models": []}
+
+        def invoke():
+            try:
+                results.append(
+                    self.registry.probe_connection(
+                        "owner.local", self.connection, 1, "probe.duplicate", "inventory"
+                    )
+                )
+            except Exception as error:
+                errors.append(error)
+
+        leader, follower = threading.Thread(target=invoke), threading.Thread(target=invoke)
+        with patch.object(registry_module, "provider_probe", side_effect=probe) as external:
+            leader.start()
+            try:
+                self.assertTrue(entered.wait(3))
+                active = self.registry._probe_active
+                self.assertIsNotNone(active)
+                original_wait = active.wait
+
+                def wait(*args, **kwargs):
+                    waiting.set()
+                    return original_wait(*args, **kwargs)
+
+                with patch.object(active, "wait", side_effect=wait):
+                    follower.start()
+                    self.assertTrue(waiting.wait(3))
+            finally:
+                release.set()
+                leader.join(3)
+                if follower.ident is not None:
+                    follower.join(3)
+            self.assertFalse(leader.is_alive())
+            self.assertFalse(follower.is_alive())
+            self.assertEqual(errors, [])
+            external.assert_called_once()
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0], results[1])
+        self.assertIsNone(self.registry._probe_active)
+
+    def test_failed_probe_releases_the_slot_for_a_retry(self):
+        self.registry.provider_vault = SimpleNamespace(resolve=lambda *_: "synthetic-credential")
+        with patch.object(registry_module, "provider_probe", side_effect=RuntimeError("synthetic")):
+            with self.assertRaisesRegex(RuntimeError, "synthetic"):
+                self.registry.probe_connection(
+                    "owner.local", self.connection, 1, "probe.retry", "inventory"
+                )
+        self.assertIsNone(self.registry._probe_active)
+        with patch.object(
+            registry_module,
+            "provider_probe",
+            return_value={"state": "observed", "reason": "synthetic_metadata", "models": []},
+        ):
+            self.assertEqual(
+                self.registry.probe_connection(
+                    "owner.local", self.connection, 1, "probe.retry", "inventory"
+                )["state"],
+                "observed",
+            )
 
     def test_anchor_queries_use_their_connection_indexes(self):
         self.seed()

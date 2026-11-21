@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import cast
 from .database import Row
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+import threading
 from typing import TYPE_CHECKING
 from .database import Database
 from .records import Record
@@ -104,6 +106,24 @@ def set_provider_credential(
         return reply
 
 
+@contextmanager
+def _probe_slot(self: Registry) -> Iterator[None]:
+    """Keep one probe in flight while releasing bookkeeping during provider waits."""
+    while True:
+        with self._probe_lock:
+            pending = self._probe_active
+            if pending is None:
+                owner = self._probe_active = threading.Event()
+                break
+        pending.wait()
+    try:
+        yield
+    finally:
+        with self._probe_lock:
+            self._probe_active = None
+        owner.set()
+
+
 def probe_connection(
     self: Registry,
     actor: str,
@@ -118,9 +138,9 @@ def probe_connection(
     identifier(operation_id)
     if operation not in ("access", "inventory", "readiness") or type(expected_revision) is not int:
         raise ValueError("invalid probe request")
-    # Serialize probes, including duplicate operation IDs, without holding the send gate
+    # Serialize probes, including duplicate operation IDs, without shared locks
     # over DNS, TLS or provider waits.
-    with self._probe_lock:
+    with _probe_slot(self):
         with self.store.database.read():
             self._require_admin(self.store.database, actor)
             old = self.store.database.execute(

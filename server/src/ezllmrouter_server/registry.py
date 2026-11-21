@@ -105,6 +105,7 @@ class Registry:
         self.provider_execution_ready = provider_execution_ready
         self.controlled_provider_proof = controlled_provider_proof
         self._probe_lock = threading.Lock()
+        self._probe_active: threading.Event | None = None
         self._operator_tokens: dict[str, tuple[str, float]] = {}
         self._token_lock = threading.Lock()
         self._bootstrap(legacy_destination, legacy_token, legacy_trusted)
