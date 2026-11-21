@@ -654,7 +654,7 @@ No additional runtime refactoring is included in this reconciliation.
 | --- | --- | --- |
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
-| W3 — ExternalAccounting domains/tests | Open | `integration_accounting.py` is 1,826 lines; `ExternalAccounting` spans 1,438. Split datasets, events, snapshots and reports, plus the 2,257-line accounting test module. Target: accounting modules at most 600 lines and functions at most 80. |
+| W3 — ExternalAccounting domains/tests | In progress — move completed, cleanup follows | Runtime methods move into datasets, events, snapshots and reports. The original facade falls from 1,826 to 507 lines; its 16 HTTP tests move unchanged into six files, each below 400 lines. Long function cleanup and strict typing follow in a separate commit. |
 | W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
@@ -747,3 +747,26 @@ formatting, strict mypy on 82 files, the typing-debt budget, the size ratchet an
 the maintained script/console checks. All Registry/domain files are at most 600
 lines and every function is at most 80. A real loopback bind is denied with
 `PermissionError` (errno 1), so provider/HTTP target checks remain pending.
+
+
+### Item 11 follow-up: W3 accounting code and test move
+
+The first W3 commit relocates 23 methods under the original ExternalAccounting
+instance context. Facade imports, schema resources, errors and clock injection
+remain available at `integration_accounting`. AST comparisons preserve all moved
+executable bodies/signatures, with only facade-qualified global references and
+docstring indentation normalized. In-transaction dataset authorization rechecks
+and all read/write scopes are preserved.
+
+The 2,257-line HTTP test module becomes six domain files (299–382 lines) plus one
+shared fixture. All 16 test bodies, decorators and assertions are identical. The
+new modules are registered in the loopback suite; their actual HTTP execution
+remains pending because this host denies listener binds. Offline accounting
+recovery, concurrency and database regressions run in the normal suite.
+
+Full `tools.check` passes 909 Python cases, lint/formatting, strict mypy on the
+existing 82-file scope, size/type budgets and script/console checks. Existing
+typing debt transfers explicitly with the code, without an aggregate increase;
+the whole-library count is 2,137. The move resolves five size allowances, leaving
+85. These figures do not claim the newly moved accounting modules are already
+strictly typed. Cleanup follows separately.
