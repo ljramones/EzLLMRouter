@@ -62,43 +62,7 @@ def _recovery(runtime, case):
         raise AssertionError("recovery control did not complete once")
     admitted = _api._census(runtime)
     record = runtime.store.successor_get(sid)
-    old_direct_token = runtime.credentials["DIRECT_DOCUMENT"]
-    if variant == "wheel":
-        retained = runtime.root / "continuation-direct-secret.json"
-        if retained.exists():
-            # The previous stopped case committed the one-use registry change.
-            # _bind_contexts loaded this private token; never provision twice.
-            if retained.is_symlink() or retained.stat().st_mode & 0o077:
-                raise RuntimeError("retained disposable credential unsafe")
-            if (
-                runtime.registry.credential_principal(old_direct_token)["principal_id"]
-                != record["work_key"]["principal_id"]
-            ):
-                raise AssertionError("renewed credential does not bind original owner")
-            old_direct_token = "dev12.completion02.synthetic.0." + "x" * 32
-        else:
-            principal = runtime.registry.principal(record["work_key"]["principal_id"])
-            _credential, new_token = runtime.registry.provision_credential(
-                "owner.local",
-                record["work_key"]["principal_id"],
-                principal["revision"],
-                "op.dev12.ct02.renew.direct",
-            )
-            if not new_token:
-                raise AssertionError("one-use synthetic credential renewal unavailable")
-            with _api.os.fdopen(
-                _api.os.open(retained, _api.os.O_WRONLY | _api.os.O_CREAT | _api.os.O_EXCL, 0o600),
-                "wb",
-            ) as stream:
-                stream.write((_api.json.dumps({"direct": new_token}) + "\n").encode())
-                stream.flush()
-                _api.os.fsync(stream.fileno())
-            context = runtime.contexts_by_credential.pop(old_direct_token)
-            runtime.contexts_by_credential[new_token] = context
-            runtime.coordinator.identity[new_token] = runtime.coordinator.identity.pop(
-                old_direct_token
-            )
-            runtime.credentials["DIRECT_DOCUMENT"] = new_token
+    old_direct_token = _rotate_recovery_credential(_api, record, runtime, variant)
     selector_id = {"submission_id": sid}
     selector_work = {"work_selector": _api.deepcopy(request["work_selector"])}
     cutoff = _api.datetime.fromisoformat(
@@ -117,59 +81,17 @@ def _recovery(runtime, case):
     original_clock = runtime.successor.clock
     outcomes = {}
 
-    def wheel(duplicate):
-        with EzLLMRouterClient(
-            runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"], timeout=12
-        ) as client:
-            selected = {
-                "by_id": client.get_successor_status(selector_id),
-                "by_work": client.get_successor_status(selector_work),
-            }
-            if duplicate:
-                try:
-                    selected["duplicate"] = client.submit_embedding(request, {"wait_ms": 5000})
-                except EzLLMRouterError as exc:
-                    selected["duplicate_error"] = {
-                        "code": exc.code,
-                        "http_status": exc.http_status,
-                        "retry_guidance": exc.retry_guidance,
-                        "handle": exc.handle,
-                    }
-            return selected
-
-    def tarball(duplicate, label):
-        private = runtime.root / "cases" / (case["id"] + "." + label + ".js-private-input.json")
-        data = {
-            "package_path": str(runtime.installed_js_root),
-            "base_url": runtime.base_url,
-            "token": runtime.credentials["DIRECT_DOCUMENT"],
-            "action": "recover",
-            "selectors": {"by_id": selector_id, "by_work": selector_work},
-            "duplicate_request": request if duplicate else None,
-        }
-        raw = (_api.json.dumps(data, sort_keys=True, ensure_ascii=True) + "\n").encode()
-        with _api.os.fdopen(
-            _api.os.open(private, _api.os.O_WRONLY | _api.os.O_CREAT | _api.os.O_EXCL, 0o600), "wb"
-        ) as stream:
-            stream.write(raw)
-            stream.flush()
-            _api.os.fsync(stream.fileno())
-        run = _api.subprocess.run(
-            [
-                "/dev12-node",
-                str(_api.Path(_api.__file__).with_name("dev12_completion_js_actor.cjs")),
-                str(private),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        if run.returncode:
-            raise AssertionError("exact installed CommonJS recovery failed: " + run.stderr[-400:])
-        return _api.json.loads(run.stdout)
-
-    selected = wheel if variant == "wheel" else tarball
+    selected = _recovery_selector_client(
+        EzLLMRouterClient,
+        EzLLMRouterError,
+        _api,
+        case,
+        request,
+        runtime,
+        selector_id,
+        selector_work,
+        variant,
+    )
     try:
         runtime.successor.clock = lambda: before_cutoff
         outcomes["before"] = selected(True) if variant == "wheel" else selected(True, "before")
@@ -224,73 +146,9 @@ def _recovery(runtime, case):
             )
     after = _api._census(runtime)
 
-    def status(item, key):
-        return item[key] if variant == "wheel" else item[key].get("status")
-
-    def duplicate(item):
-        return item.get("duplicate") if variant == "wheel" else item["duplicate"]
-
-    before_result = outcomes["before"]
-    cutoff_result = outcomes["cutoff"]
-    initial_visible = all(
-        status(before_result, key) and status(before_result, key)["candidate_access"] == "present"
-        for key in ("by_id", "by_work")
+    checks, status, cutoff_result = _recovery_retention_checks(
+        admitted, after, outcomes, sent, sid, variant
     )
-    expired_visible = all(
-        status(cutoff_result, key)
-        and status(cutoff_result, key)["candidate_access"] == "expired"
-        and "result" not in status(cutoff_result, key)["attempts"][0]
-        and status(cutoff_result, key)["attempts"][0]["settlement_state"]
-        == sent["status"]["attempts"][0]["settlement_state"]
-        for key in ("by_id", "by_work")
-    )
-    before_duplicate = duplicate(before_result) or {}
-    cutoff_duplicate = duplicate(cutoff_result) or {}
-    duplicate_before_ok = (
-        before_duplicate.get("handle", {}).get("submission_id") == sid
-        if variant == "wheel"
-        else before_duplicate.get("reply", {}).get("handle", {}).get("submission_id") == sid
-    )
-    cutoff_error = (
-        outcomes["cutoff"].get("duplicate_error")
-        if variant == "wheel"
-        else cutoff_duplicate.get("error")
-    ) or {}
-    checks = {
-        f"ct02_recovery.{variant}.selectors": (
-            bool(initial_visible and expired_visible),
-            "Both installed-client selectors retain same attempt and finance before/at cutoff",
-        ),
-        f"ct02_recovery.{variant}.duplicate": (
-            bool(
-                duplicate_before_ok
-                and cutoff_error.get("code") == "POLICY_DENIED"
-                and cutoff_error.get("http_status") == 403
-                and cutoff_error.get("retry_guidance") == "query_first"
-            ),
-            "Unchanged duplicate recovers before cutoff and becomes strict query-first at cutoff",
-        ),
-        f"ct02_recovery.{variant}.denial": (
-            bool(
-                outcomes["current_denial"]["http_status"] == 404
-                and (variant != "wheel" or outcomes["old_credential_denial"]["http_status"] == 401)
-                and outcomes["renewed"]["http_status"] == 200
-                and outcomes["changed"]["http_status"] == 409
-                and outcomes["wrong_version"]["http_status"] == 409
-            ),
-            "Current denial is non-enumerating; restored auth reads; conflicts remain conflicts",
-        ),
-        f"ct02_recovery.{variant}.no_repeat": (
-            bool(
-                after["submissions"] == admitted["submissions"]
-                and after["guard_ownership"] == admitted["guard_ownership"]
-                and after["receiver_arrivals"] == admitted["receiver_arrivals"]
-                and after["campaign"]["cumulative_reserved_decimal"]
-                == admitted["campaign"]["cumulative_reserved_decimal"]
-            ),
-            "Read, duplicate and denied recovery allocated no additional attempt or send",
-        ),
-    }
     return _api._evidence(
         runtime,
         case,
@@ -358,67 +216,9 @@ def _authority_atomic(runtime, case):
     rollback_revision = runtime.authority.revisions()["grant"]
     rollback_coherent = not runtime.authority.revoked and rollback_revision == original_revision
 
-    entered, release, read_done = (
-        _api.threading.Event(),
-        _api.threading.Event(),
-        _api.threading.Event(),
+    order, errors, reader_blocked, stalled_revision, original_publish = (
+        _observe_commit_publication_order(_api, original_transaction, runtime)
     )
-    order = []
-    errors = []
-
-    def stalled_transaction(action):
-        order.append("gate_held_transaction_entered")
-        entered.set()
-        if not release.wait(5):
-            raise TimeoutError("synthetic authority commit stall exceeded bound")
-        result = original_transaction(action)
-        order.append("durable_authority_audit_committed")
-        return result
-
-    original_publish = runtime.authority._publish
-
-    def observed_publish(state):
-        order.append("matching_view_published")
-        return original_publish(state)
-
-    runtime.store._transaction = stalled_transaction
-    runtime.authority._publish = observed_publish
-
-    def writer():
-        try:
-            runtime.authority.update(
-                lambda state: state["revisions"].__setitem__(
-                    "grant", state["revisions"]["grant"] + 1
-                ),
-                {"kind": "ct02_stalled_commit"},
-            )
-            order.append("update_acknowledged")
-        except BaseException as exc:
-            errors.append(type(exc).__name__)
-
-    def reader():
-        runtime.authority.revisions()
-        order.append("reader_acquired_released_gate")
-        read_done.set()
-
-    try:
-        commit_thread = _api.threading.Thread(target=writer, daemon=True)
-        commit_thread.start()
-        if not entered.wait(5):
-            raise TimeoutError("authority update never entered stalled transaction")
-        read_thread = _api.threading.Thread(target=reader, daemon=True)
-        read_thread.start()
-        reader_blocked = not read_done.wait(0.05)
-        release.set()
-        commit_thread.join(5)
-        read_thread.join(5)
-        if commit_thread.is_alive() or read_thread.is_alive():
-            raise TimeoutError("authority gate stall did not resolve")
-    finally:
-        release.set()
-        runtime.store._transaction = original_transaction
-        runtime.authority._publish = original_publish
-    stalled_revision = runtime.authority.revisions()["grant"]
 
     def fail_publish(_state):
         raise RuntimeError("synthetic publication interruption after commit")
@@ -541,3 +341,247 @@ def _authority_atomic(runtime, case):
         },
         fresh["reply"].get("attempt_id", "none"),
     )
+
+
+def _rotate_recovery_credential(_api, record, runtime, variant):
+    old_direct_token = runtime.credentials["DIRECT_DOCUMENT"]
+    if variant == "wheel":
+        retained = runtime.root / "continuation-direct-secret.json"
+        if retained.exists():
+            # The previous stopped case committed the one-use registry change.
+            # _bind_contexts loaded this private token; never provision twice.
+            if retained.is_symlink() or retained.stat().st_mode & 0o077:
+                raise RuntimeError("retained disposable credential unsafe")
+            if (
+                runtime.registry.credential_principal(old_direct_token)["principal_id"]
+                != record["work_key"]["principal_id"]
+            ):
+                raise AssertionError("renewed credential does not bind original owner")
+            old_direct_token = "dev12.completion02.synthetic.0." + "x" * 32
+        else:
+            principal = runtime.registry.principal(record["work_key"]["principal_id"])
+            _credential, new_token = runtime.registry.provision_credential(
+                "owner.local",
+                record["work_key"]["principal_id"],
+                principal["revision"],
+                "op.dev12.ct02.renew.direct",
+            )
+            if not new_token:
+                raise AssertionError("one-use synthetic credential renewal unavailable")
+            with _api.os.fdopen(
+                _api.os.open(retained, _api.os.O_WRONLY | _api.os.O_CREAT | _api.os.O_EXCL, 0o600),
+                "wb",
+            ) as stream:
+                stream.write((_api.json.dumps({"direct": new_token}) + "\n").encode())
+                stream.flush()
+                _api.os.fsync(stream.fileno())
+            context = runtime.contexts_by_credential.pop(old_direct_token)
+            runtime.contexts_by_credential[new_token] = context
+            runtime.coordinator.identity[new_token] = runtime.coordinator.identity.pop(
+                old_direct_token
+            )
+            runtime.credentials["DIRECT_DOCUMENT"] = new_token
+    return old_direct_token
+
+
+def _recovery_selector_client(
+    EzLLMRouterClient,
+    EzLLMRouterError,
+    _api,
+    case,
+    request,
+    runtime,
+    selector_id,
+    selector_work,
+    variant,
+):
+    def wheel(duplicate):
+        with EzLLMRouterClient(
+            runtime.base_url, runtime.credentials["DIRECT_DOCUMENT"], timeout=12
+        ) as client:
+            selected = {
+                "by_id": client.get_successor_status(selector_id),
+                "by_work": client.get_successor_status(selector_work),
+            }
+            if duplicate:
+                try:
+                    selected["duplicate"] = client.submit_embedding(request, {"wait_ms": 5000})
+                except EzLLMRouterError as exc:
+                    selected["duplicate_error"] = {
+                        "code": exc.code,
+                        "http_status": exc.http_status,
+                        "retry_guidance": exc.retry_guidance,
+                        "handle": exc.handle,
+                    }
+            return selected
+
+    def tarball(duplicate, label):
+        private = runtime.root / "cases" / (case["id"] + "." + label + ".js-private-input.json")
+        data = {
+            "package_path": str(runtime.installed_js_root),
+            "base_url": runtime.base_url,
+            "token": runtime.credentials["DIRECT_DOCUMENT"],
+            "action": "recover",
+            "selectors": {"by_id": selector_id, "by_work": selector_work},
+            "duplicate_request": request if duplicate else None,
+        }
+        raw = (_api.json.dumps(data, sort_keys=True, ensure_ascii=True) + "\n").encode()
+        with _api.os.fdopen(
+            _api.os.open(private, _api.os.O_WRONLY | _api.os.O_CREAT | _api.os.O_EXCL, 0o600), "wb"
+        ) as stream:
+            stream.write(raw)
+            stream.flush()
+            _api.os.fsync(stream.fileno())
+        run = _api.subprocess.run(
+            [
+                "/dev12-node",
+                str(_api.Path(_api.__file__).with_name("dev12_completion_js_actor.cjs")),
+                str(private),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        if run.returncode:
+            raise AssertionError("exact installed CommonJS recovery failed: " + run.stderr[-400:])
+        return _api.json.loads(run.stdout)
+
+    selected = wheel if variant == "wheel" else tarball
+    return selected
+
+
+def _recovery_retention_checks(admitted, after, outcomes, sent, sid, variant):
+    def status(item, key):
+        return item[key] if variant == "wheel" else item[key].get("status")
+
+    def duplicate(item):
+        return item.get("duplicate") if variant == "wheel" else item["duplicate"]
+
+    before_result = outcomes["before"]
+    cutoff_result = outcomes["cutoff"]
+    initial_visible = all(
+        status(before_result, key) and status(before_result, key)["candidate_access"] == "present"
+        for key in ("by_id", "by_work")
+    )
+    expired_visible = all(
+        status(cutoff_result, key)
+        and status(cutoff_result, key)["candidate_access"] == "expired"
+        and "result" not in status(cutoff_result, key)["attempts"][0]
+        and status(cutoff_result, key)["attempts"][0]["settlement_state"]
+        == sent["status"]["attempts"][0]["settlement_state"]
+        for key in ("by_id", "by_work")
+    )
+    before_duplicate = duplicate(before_result) or {}
+    cutoff_duplicate = duplicate(cutoff_result) or {}
+    duplicate_before_ok = (
+        before_duplicate.get("handle", {}).get("submission_id") == sid
+        if variant == "wheel"
+        else before_duplicate.get("reply", {}).get("handle", {}).get("submission_id") == sid
+    )
+    cutoff_error = (
+        outcomes["cutoff"].get("duplicate_error")
+        if variant == "wheel"
+        else cutoff_duplicate.get("error")
+    ) or {}
+    checks = {
+        f"ct02_recovery.{variant}.selectors": (
+            bool(initial_visible and expired_visible),
+            "Both installed-client selectors retain same attempt and finance before/at cutoff",
+        ),
+        f"ct02_recovery.{variant}.duplicate": (
+            bool(
+                duplicate_before_ok
+                and cutoff_error.get("code") == "POLICY_DENIED"
+                and cutoff_error.get("http_status") == 403
+                and cutoff_error.get("retry_guidance") == "query_first"
+            ),
+            "Unchanged duplicate recovers before cutoff and becomes strict query-first at cutoff",
+        ),
+        f"ct02_recovery.{variant}.denial": (
+            bool(
+                outcomes["current_denial"]["http_status"] == 404
+                and (variant != "wheel" or outcomes["old_credential_denial"]["http_status"] == 401)
+                and outcomes["renewed"]["http_status"] == 200
+                and outcomes["changed"]["http_status"] == 409
+                and outcomes["wrong_version"]["http_status"] == 409
+            ),
+            "Current denial is non-enumerating; restored auth reads; conflicts remain conflicts",
+        ),
+        f"ct02_recovery.{variant}.no_repeat": (
+            bool(
+                after["submissions"] == admitted["submissions"]
+                and after["guard_ownership"] == admitted["guard_ownership"]
+                and after["receiver_arrivals"] == admitted["receiver_arrivals"]
+                and after["campaign"]["cumulative_reserved_decimal"]
+                == admitted["campaign"]["cumulative_reserved_decimal"]
+            ),
+            "Read, duplicate and denied recovery allocated no additional attempt or send",
+        ),
+    }
+    return checks, status, cutoff_result
+
+
+def _observe_commit_publication_order(_api, original_transaction, runtime):
+    entered, release, read_done = (
+        _api.threading.Event(),
+        _api.threading.Event(),
+        _api.threading.Event(),
+    )
+    order = []
+    errors = []
+
+    def stalled_transaction(action):
+        order.append("gate_held_transaction_entered")
+        entered.set()
+        if not release.wait(5):
+            raise TimeoutError("synthetic authority commit stall exceeded bound")
+        result = original_transaction(action)
+        order.append("durable_authority_audit_committed")
+        return result
+
+    original_publish = runtime.authority._publish
+
+    def observed_publish(state):
+        order.append("matching_view_published")
+        return original_publish(state)
+
+    runtime.store._transaction = stalled_transaction
+    runtime.authority._publish = observed_publish
+
+    def writer():
+        try:
+            runtime.authority.update(
+                lambda state: state["revisions"].__setitem__(
+                    "grant", state["revisions"]["grant"] + 1
+                ),
+                {"kind": "ct02_stalled_commit"},
+            )
+            order.append("update_acknowledged")
+        except BaseException as exc:
+            errors.append(type(exc).__name__)
+
+    def reader():
+        runtime.authority.revisions()
+        order.append("reader_acquired_released_gate")
+        read_done.set()
+
+    try:
+        commit_thread = _api.threading.Thread(target=writer, daemon=True)
+        commit_thread.start()
+        if not entered.wait(5):
+            raise TimeoutError("authority update never entered stalled transaction")
+        read_thread = _api.threading.Thread(target=reader, daemon=True)
+        read_thread.start()
+        reader_blocked = not read_done.wait(0.05)
+        release.set()
+        commit_thread.join(5)
+        read_thread.join(5)
+        if commit_thread.is_alive() or read_thread.is_alive():
+            raise TimeoutError("authority gate stall did not resolve")
+    finally:
+        release.set()
+        runtime.store._transaction = original_transaction
+        runtime.authority._publish = original_publish
+    stalled_revision = runtime.authority.revisions()["grant"]
+    return order, errors, reader_blocked, stalled_revision, original_publish

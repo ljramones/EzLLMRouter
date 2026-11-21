@@ -1127,3 +1127,26 @@ cases, strict typing on 107 files, lint/formatting and script/console checks.
 Library typing debt remains 1,631; 49 size allowances remain after explicit
 unchanged-body transfers and removal/reduction of resolved file ceilings. Phase
 cleanup of the moved functions follows separately.
+
+### Item 11 follow-up: operator, supplement and staging phases
+
+Operator reporting separates grouping, period, revision, filter, export,
+visibility and browser-attestation checks while the original client context and
+census boundaries stay on the caller. Supplement recovery separates credential
+rotation, client-selector construction and retention assertions; its clock and
+historical-access restoration remain in the same try/finally. Atomic-publication
+checks name the stalled commit observation without changing lock, callback,
+thread-join or transaction restoration order. Staging separates custody validation
+before the existing copy/receipt/error scope.
+
+All functions in these three modules are below 200 lines. Expanding the 12 new
+phases reconstructs all four original entry-point ASTs exactly, including closure
+bodies and returned callback/state references. The guarded 23-case helper replay
+continues to match the original implementation; actual target and successful
+staging qualification remain separate.
+
+Full `tools.check` passes 917 Python cases, strict typing on 107 files,
+lint/formatting, script/console checks and both ratchets. Library typing debt
+remains 1,631; four resolved function allowances are removed, leaving 45. No
+listener, provider request, dependency acquisition, staging run or daemon action
+was performed.

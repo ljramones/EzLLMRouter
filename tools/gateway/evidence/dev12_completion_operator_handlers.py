@@ -576,445 +576,21 @@ def operator_reporting(runtime, case):
         if not rows:
             raise AssertionError("populated operator report required")
         if scenario == "t61":
-            demo_response = client.get(
-                "/operator/v1/demo-workspace?collection=expanded&story=expanded_all"
-            )
-            demo = demo_response.json() if demo_response.status_code == 200 else {}
-            demo_actors = {item["id"]: item for item in demo.get("actors", [])}
-            synthetic_noncharges = {"demo.agent.idle", "demo.agent.uninstrumented"}
-            demo_attempt_actors = {item["actor"] for item in demo.get("attempts", [])}
-            groupings = full["groupings"]
-            known = _known_sum(rows)
-
-            def groups_exact(name):
-                actual = {item["id"]: item for item in groupings[name]}
-                expected = {}
-                for item in rows:
-                    expected.setdefault(item[name] or "__absent__", []).append(item)
-                return set(actual) == set(expected) and all(
-                    actual[key]["attempts"] == len(members)
-                    and Decimal(actual[key]["known_usd"]) == _known_sum(members)
-                    for key, members in expected.items()
-                )
-
-            groups_ok = all(
-                groups_exact(name) for name in ("actor_id", "provider_ref", "initiating_user_id")
-            )
-            workflows = full["workflows"]
-
-            def scope_for(item):
-                return (
-                    item.get("initiating_user_id") or item.get("principal_id"),
-                    item["task_id"],
-                    item["root_workflow_id"],
-                )
-
-            parents = {
-                (
-                    item["initiating_or_autonomous_principal_id"],
-                    item["task_id"],
-                    item["root_workflow_id"],
-                    item["run_id"],
-                ): item["parent_run_id"]
-                for item in workflows
-            }
-
-            def descends(row, workflow):
-                if scope_for(row) != (
-                    workflow["initiating_or_autonomous_principal_id"],
-                    workflow["task_id"],
-                    workflow["root_workflow_id"],
-                ):
-                    return False
-                current, seen = row["run_id"], set()
-                while current and current not in seen:
-                    if current == workflow["run_id"]:
-                        return True
-                    seen.add(current)
-                    current = parents.get((*scope_for(row), current))
-                return False
-
-            inclusive_ok = all(
-                item["direct"]["attempts"]
-                == sum(
-                    row["run_id"] == item["run_id"]
-                    and scope_for(row)
-                    == (
-                        item["initiating_or_autonomous_principal_id"],
-                        item["task_id"],
-                        item["root_workflow_id"],
-                    )
-                    for row in rows
-                )
-                and Decimal(item["direct"]["known_usd"])
-                == _known_sum(
-                    [
-                        row
-                        for row in rows
-                        if row["run_id"] == item["run_id"]
-                        and scope_for(row)
-                        == (
-                            item["initiating_or_autonomous_principal_id"],
-                            item["task_id"],
-                            item["root_workflow_id"],
-                        )
-                    ]
-                )
-                and item["total_including_delegated"]["attempts"]
-                == sum(descends(row, item) for row in rows)
-                and Decimal(item["total_including_delegated"]["known_usd"])
-                == _known_sum([row for row in rows if descends(row, item)])
-                for item in workflows
-            )
-            statuses = {row["cost_status"] for row in rows}
-            unknown_view = full_result
-            if "unknown" not in statuses:
-                with runtime.store._lock:
-                    candidates = [
-                        (json.loads(raw), at)
-                        for raw, at in runtime.store.db.execute(
-                            "SELECT evidence,observed_at FROM dev12_evidence_events "
-                            "WHERE event_kind='native_usage_accepted' ORDER BY event_id"
-                        )
-                    ]
-                cutoff = next(
-                    (
-                        at
-                        for usage, at in candidates
-                        if usage.get("revision") == 1 and usage.get("cost_status") == "unknown"
-                    ),
-                    None,
-                )
-                if cutoff:
-                    unknown_view = _read(client, {"cutoff": cutoff})
-            unknown_report = unknown_view.get("report", {})
-            unknown_rows = [
-                item
-                for item in unknown_report.get("attempts", [])
-                if item["cost_status"] == "unknown"
-            ]
-            checks = {
-                "t61.direct_inclusive": (
-                    bool(
-                        inclusive_ok
-                        and workflows
-                        and len({row["attempt_id"] for row in rows}) == len(rows)
-                    ),
-                    "Each direct attempt appears once; inclusive lineage does not shrink below direct",
-                ),
-                "t61.provider_person": (
-                    groups_ok and known == Decimal(full["total"]["known_usd"]),
-                    "Actor, provider and initiating-person group totals each reconcile to unique attempts",
-                ),
-                "t61.unknown_uninstrumented_idle": (
-                    bool(
-                        unknown_rows
-                        and unknown_report.get("total", {}).get("unknown_cost_attempts", 0) > 0
-                        and synthetic_noncharges.issubset(demo_actors)
-                        and not synthetic_noncharges.intersection(demo_attempt_actors)
-                        and demo_actors["demo.agent.idle"].get("coverage") == "No activity recorded"
-                        and demo_actors["demo.agent.uninstrumented"].get("coverage")
-                        == "Not measured"
-                    ),
-                    "Unknown charged attempt, idle demo actor and uninstrumented demo actor remain distinct",
-                ),
-            }
-            selected = {
-                "total": full["total"],
-                "groupings": groupings,
-                "workflows": workflows,
-                "cost_statuses": sorted(statuses),
-                "unknown_cutoff_view": unknown_view,
-                "demo_noncharge_actors": [
-                    demo_actors.get(name) for name in sorted(synthetic_noncharges)
-                ],
-                "demo_http_status": demo_response.status_code,
-            }
+            checks, selected = _report_grouping_checks(client, full, full_result, rows, runtime)
         elif scenario == "t62_a":
-            first = sorted(rows, key=lambda row: row["created_at"])[0]
-            start = first["created_at"]
-            end = (
-                datetime.fromisoformat(start.replace("Z", "+00:00")) + timedelta(seconds=1)
-            ).strftime("%Y-%m-%dT%H:%M:%SZ")
-            selected = {
-                "at_start": _read(client, {"from": start, "to": end}),
-                "before_start": _read(client, {"to": start}),
-                "at_end": _read(client, {"from": end}),
-                "offset_rejected": _read(client, {"from": start.replace("Z", "+00:00")}),
-            }
-            at_start = selected["at_start"].get("report", {}).get("attempts", [])
-            before_start = selected["before_start"].get("report", {}).get("attempts", [])
-            at_end = selected["at_end"].get("report", {}).get("attempts", [])
-            checks = {
-                "t62_a.period_boundary": (
-                    bool(
-                        first["attempt_id"] in {row["attempt_id"] for row in at_start}
-                        and first["attempt_id"]
-                        not in {row["attempt_id"] for row in before_start + at_end}
-                    ),
-                    "From includes its UTC second; to excludes its UTC second",
-                ),
-                "t62_a.timezone_boundary": (
-                    selected["offset_rejected"]["status"] == 400,
-                    "Noncanonical offset timestamp is rejected rather than shifted silently",
-                ),
-            }
+            checks, selected = _report_period_checks(client, rows)
         elif scenario == "t62_b":
-            with runtime.store._lock:
-                events = [
-                    (sid, json.loads(raw), at)
-                    for sid, raw, at in runtime.store.db.execute(
-                        "SELECT submission_id,evidence,observed_at FROM dev12_evidence_events "
-                        "WHERE event_kind='native_usage_accepted' AND submission_id=? "
-                        "ORDER BY event_id",
-                        (cutoff_submission,),
-                    )
-                ]
-            pair = None
-            for sid, usage, at in events:
-                if usage.get("revision") == 3:
-                    prior = next(
-                        (
-                            (p_usage, p_at)
-                            for p_sid, p_usage, p_at in events
-                            if p_sid == sid and p_usage.get("revision") == 2
-                        ),
-                        None,
-                    )
-                    if prior and prior[1] < at:
-                        pair = (sid, prior[0], prior[1], usage, at)
-                        break
-            if pair is None:
-                raise AssertionError("two accepted revisions at distinct UTC seconds required")
-            sid, early_usage, early_at, late_usage, late_at = pair
-            early = _read(client, {"cutoff": early_at})
-            late = _read(client, {"cutoff": late_at})
-            early_row = next(
-                (
-                    row
-                    for row in early.get("report", {}).get("attempts", [])
-                    if row["submission_id"] == sid
-                ),
-                {},
+            checks, selected = _report_revision_checks(
+                client, correction, cutoff_submission, runtime
             )
-            late_row = next(
-                (
-                    row
-                    for row in late.get("report", {}).get("attempts", [])
-                    if row["submission_id"] == sid
-                ),
-                {},
-            )
-            selected = {
-                "submission_id": sid,
-                "attempt_id": correction["attempt_id"],
-                "controlled_correction": {
-                    "kind": "same-amount historical re-adjudication",
-                    "outcome": correction["outcome"],
-                    "receiver_arrivals_delta": correction["after"]["receiver_arrivals"]
-                    - correction["before"]["receiver_arrivals"],
-                    "possible_sends_delta": correction["after"]["possible_send_count"]
-                    - correction["before"]["possible_send_count"],
-                },
-                "early_at": early_at,
-                "late_at": late_at,
-                "early_usage": early_usage,
-                "late_usage": late_usage,
-                "early_row": early_row,
-                "late_row": late_row,
-            }
-            checks = {
-                "t62_b.revision_cutoff": (
-                    bool(
-                        early_row.get("usage_revision") == 2
-                        and late_row.get("usage_revision") == 3
-                        and early_row.get("attempt_id")
-                        == late_row.get("attempt_id")
-                        == correction["attempt_id"]
-                        and early_usage["amount_decimal"] == late_usage["amount_decimal"]
-                        and correction["outcome"] == "accepted"
-                        and correction["after"]["receiver_arrivals"]
-                        == correction["before"]["receiver_arrivals"]
-                    ),
-                    "UTC cutoff selects accepted revisions two and three without another send or charge",
-                )
-            }
         elif scenario == "t62_c":
-            row = rows[0]
-            if row.get("environment") != "standalone-synthetic":
-                raise AssertionError("fixed synthetic environment missing from populated report")
-            keys = {
-                "provider_filter": ("provider_ref", row["provider_ref"]),
-                "actor_filter": ("actor_id", row["actor_id"]),
-                "task_filter": ("task_id", row["task_id"]),
-                "environment_filter": ("environment", row["environment"]),
-            }
-            selected = {name: _read(client, {key: value}) for name, (key, value) in keys.items()}
-            checks = {
-                f"t62_c.{name}": (
-                    bool(
-                        result["status"] == 200
-                        and result.get("report", {}).get("attempts")
-                        and all(item.get(key) == value for item in result["report"]["attempts"])
-                    ),
-                    f"Authorized {key} filter selects only matching unique attempts",
-                )
-                for name, (key, value) in keys.items()
-                for result in (selected[name],)
-            }
+            checks, selected = _report_filter_checks(client, rows)
         elif scenario == "t62_d":
-            exported = _read(client, export="csv")
-            exported_json = _read(client, export="json")
-            csv_rows = exported.get("rows", [])
-            reconciled, financial_detail = (
-                _csv_finance_reconcile(
-                    csv_rows,
-                    exported_json.get("report", {}).get("attempts", []),
-                    exported_json.get("report", {}).get("total", {}),
-                )
-                if (exported["status"] == exported_json["status"] == 200)
-                else (False, {})
-            )
-            selected = {
-                "csv": csv_rows,
-                "json_export": exported_json,
-                "full": full_result,
-                "financial_reconciliation": financial_detail,
-            }
-            checks = {
-                "t62_d.timeline_csv_json_reconcile": (
-                    bool(
-                        exported["status"] == exported_json["status"] == 200
-                        and reconciled
-                        and {item["attempt_id"] for item in rows}
-                        == {item["attempt_id"] for item in csv_rows}
-                        and exported_json["report"]["total"] == full["total"]
-                        and _known_sum(rows) == Decimal(full["total"]["known_usd"])
-                    ),
-                    "CSV and JSON contain matching per-attempt finance and independently summed USD",
-                )
-            }
+            checks, selected = _report_export_checks(client, full, full_result, rows)
         elif scenario == "t62_e":
-            with _operator_client(runtime, "other") as other:
-                other_report = _read(other)
-                other_csv = _read(other, export="csv")
-                other_filtered = _read(other, {"actor_id": rows[0]["actor_id"]})
-            selected = {
-                "ordinary": other_report,
-                "ordinary_csv": other_csv,
-                "ordinary_filtered": other_filtered,
-                "admin_total": full["total"],
-            }
-            visible = other_report.get("report", {}).get("attempts", [])
-            checks = {
-                "t62_e.cross_principal_denial": (
-                    bool(
-                        other_report["status"]
-                        == other_csv["status"]
-                        == other_filtered["status"]
-                        == 200
-                        and all(
-                            item["principal_id"] == "user.other.synthetic"
-                            or item.get("initiating_user_id") == "user.other.synthetic"
-                            for item in visible
-                        )
-                        and not {item["attempt_id"] for item in rows}.intersection(
-                            {item["attempt_id"] for item in visible}
-                        )
-                        and not other_csv["rows"]
-                        and not other_filtered["report"]["attempts"]
-                    ),
-                    "Ordinary principal receives no other-principal attempt or export row",
-                )
-            }
+            checks, selected = _report_visibility_checks(full, rows, runtime)
         elif scenario in {"t64", "t65"}:
-            attestation, attestation_hash = _browser_attestation(
-                runtime,
-                "operator-browser-evidence.json"
-                if scenario == "t64"
-                else "preview-browser-evidence.json",
-                full,
-            )
-            browser = attestation["browser"]
-            selected = {
-                "browser_attestation": attestation,
-                "browser_attestation_sha256": attestation_hash,
-            }
-            if scenario == "t64":
-                desktop = browser.get("desktop", {})
-                narrow = browser.get("narrow", {})
-                keyboard = browser.get("keyboard", {})
-                management = browser.get("management", {})
-                checks = {
-                    "t64.keyboard": (
-                        bool(
-                            keyboard.get("focused_tag") == "BUTTON"
-                            and keyboard.get("activated_detail") is True
-                        ),
-                        "Keyboard focused a real button and opened selected detail",
-                    ),
-                    "t64.narrow": (
-                        bool(
-                            all(
-                                type(view.get("inner_width")) is int
-                                and type(view.get("scroll_width")) is int
-                                and view["scroll_width"] <= view["inner_width"] + 2
-                                for view in (desktop, narrow)
-                            )
-                            and narrow.get("inner_width", 0) < desktop.get("inner_width", 0)
-                        ),
-                        "Desktop and narrower viewport controls stayed within document width",
-                    ),
-                    "t64.error_reason": (
-                        bool(
-                            type(browser.get("error_reason")) is str
-                            and len(browser["error_reason"].strip()) > 5
-                        ),
-                        "Browser exposed a concrete management or report error reason",
-                    ),
-                    "t64.management_edit_or_disabled": (
-                        bool(
-                            management.get("worked") is True
-                            or (
-                                management.get("disabled") is True
-                                and type(management.get("reason")) is str
-                                and management["reason"].strip()
-                            )
-                        ),
-                        "Management edit worked or was disabled with a visible reason",
-                    ),
-                    "t64.no_secret": (
-                        browser.get("secret_text_visible") is False,
-                        "Captured browser text contained no synthetic credential or secret",
-                    ),
-                }
-            else:
-                seek = browser.get("seek", {})
-                checks = {
-                    "t65.preview_seek": (
-                        bool(
-                            seek.get("start") == 0
-                            and type(seek.get("midpoint")) in (int, float)
-                            and type(seek.get("end")) in (int, float)
-                            and 0 < seek["midpoint"] < seek["end"]
-                        ),
-                        "Isolated preview exposed start, midpoint and end seek positions",
-                    ),
-                    "t65.replay_no_send": (
-                        bool(
-                            browser.get("replayed") is True
-                            and attestation["ledger_before"] == attestation["ledger_after"]
-                        ),
-                        "Replaying did not change retained attempt or receiver census",
-                    ),
-                    "t65.no_ledger_mutation": (
-                        bool(
-                            attestation["ledger_before"] == attestation["ledger_after"]
-                            and _same_census(before, _census(runtime))
-                        ),
-                        "Read-only preview did not modify operational or target ledger",
-                    ),
-                }
+            checks, selected = _report_browser_checks(before, full, runtime, scenario)
         else:
             raise NotImplementedError(scenario)
     after = _census(runtime)
@@ -1218,3 +794,441 @@ OPERATOR_CASE_HANDLERS = {
         "persistence_migration", persistence_migration, {("t66", "composed")}
     ),
 }
+
+
+def _report_grouping_checks(client, full, full_result, rows, runtime):
+    demo_response = client.get("/operator/v1/demo-workspace?collection=expanded&story=expanded_all")
+    demo = demo_response.json() if demo_response.status_code == 200 else {}
+    demo_actors = {item["id"]: item for item in demo.get("actors", [])}
+    synthetic_noncharges = {"demo.agent.idle", "demo.agent.uninstrumented"}
+    demo_attempt_actors = {item["actor"] for item in demo.get("attempts", [])}
+    groupings = full["groupings"]
+    known = _known_sum(rows)
+
+    def groups_exact(name):
+        actual = {item["id"]: item for item in groupings[name]}
+        expected = {}
+        for item in rows:
+            expected.setdefault(item[name] or "__absent__", []).append(item)
+        return set(actual) == set(expected) and all(
+            actual[key]["attempts"] == len(members)
+            and Decimal(actual[key]["known_usd"]) == _known_sum(members)
+            for key, members in expected.items()
+        )
+
+    groups_ok = all(
+        groups_exact(name) for name in ("actor_id", "provider_ref", "initiating_user_id")
+    )
+    workflows = full["workflows"]
+
+    def scope_for(item):
+        return (
+            item.get("initiating_user_id") or item.get("principal_id"),
+            item["task_id"],
+            item["root_workflow_id"],
+        )
+
+    parents = {
+        (
+            item["initiating_or_autonomous_principal_id"],
+            item["task_id"],
+            item["root_workflow_id"],
+            item["run_id"],
+        ): item["parent_run_id"]
+        for item in workflows
+    }
+
+    def descends(row, workflow):
+        if scope_for(row) != (
+            workflow["initiating_or_autonomous_principal_id"],
+            workflow["task_id"],
+            workflow["root_workflow_id"],
+        ):
+            return False
+        current, seen = row["run_id"], set()
+        while current and current not in seen:
+            if current == workflow["run_id"]:
+                return True
+            seen.add(current)
+            current = parents.get((*scope_for(row), current))
+        return False
+
+    inclusive_ok = all(
+        item["direct"]["attempts"]
+        == sum(
+            row["run_id"] == item["run_id"]
+            and scope_for(row)
+            == (
+                item["initiating_or_autonomous_principal_id"],
+                item["task_id"],
+                item["root_workflow_id"],
+            )
+            for row in rows
+        )
+        and Decimal(item["direct"]["known_usd"])
+        == _known_sum(
+            [
+                row
+                for row in rows
+                if row["run_id"] == item["run_id"]
+                and scope_for(row)
+                == (
+                    item["initiating_or_autonomous_principal_id"],
+                    item["task_id"],
+                    item["root_workflow_id"],
+                )
+            ]
+        )
+        and item["total_including_delegated"]["attempts"]
+        == sum(descends(row, item) for row in rows)
+        and Decimal(item["total_including_delegated"]["known_usd"])
+        == _known_sum([row for row in rows if descends(row, item)])
+        for item in workflows
+    )
+    statuses = {row["cost_status"] for row in rows}
+    unknown_view = full_result
+    if "unknown" not in statuses:
+        with runtime.store._lock:
+            candidates = [
+                (json.loads(raw), at)
+                for raw, at in runtime.store.db.execute(
+                    "SELECT evidence,observed_at FROM dev12_evidence_events "
+                    "WHERE event_kind='native_usage_accepted' ORDER BY event_id"
+                )
+            ]
+        cutoff = next(
+            (
+                at
+                for usage, at in candidates
+                if usage.get("revision") == 1 and usage.get("cost_status") == "unknown"
+            ),
+            None,
+        )
+        if cutoff:
+            unknown_view = _read(client, {"cutoff": cutoff})
+    unknown_report = unknown_view.get("report", {})
+    unknown_rows = [
+        item for item in unknown_report.get("attempts", []) if item["cost_status"] == "unknown"
+    ]
+    checks = {
+        "t61.direct_inclusive": (
+            bool(
+                inclusive_ok and workflows and len({row["attempt_id"] for row in rows}) == len(rows)
+            ),
+            "Each direct attempt appears once; inclusive lineage does not shrink below direct",
+        ),
+        "t61.provider_person": (
+            groups_ok and known == Decimal(full["total"]["known_usd"]),
+            "Actor, provider and initiating-person group totals each reconcile to unique attempts",
+        ),
+        "t61.unknown_uninstrumented_idle": (
+            bool(
+                unknown_rows
+                and unknown_report.get("total", {}).get("unknown_cost_attempts", 0) > 0
+                and synthetic_noncharges.issubset(demo_actors)
+                and not synthetic_noncharges.intersection(demo_attempt_actors)
+                and demo_actors["demo.agent.idle"].get("coverage") == "No activity recorded"
+                and demo_actors["demo.agent.uninstrumented"].get("coverage") == "Not measured"
+            ),
+            "Unknown charged attempt, idle demo actor and uninstrumented demo actor remain distinct",
+        ),
+    }
+    selected = {
+        "total": full["total"],
+        "groupings": groupings,
+        "workflows": workflows,
+        "cost_statuses": sorted(statuses),
+        "unknown_cutoff_view": unknown_view,
+        "demo_noncharge_actors": [demo_actors.get(name) for name in sorted(synthetic_noncharges)],
+        "demo_http_status": demo_response.status_code,
+    }
+    return checks, selected
+
+
+def _report_period_checks(client, rows):
+    first = sorted(rows, key=lambda row: row["created_at"])[0]
+    start = first["created_at"]
+    end = (datetime.fromisoformat(start.replace("Z", "+00:00")) + timedelta(seconds=1)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    selected = {
+        "at_start": _read(client, {"from": start, "to": end}),
+        "before_start": _read(client, {"to": start}),
+        "at_end": _read(client, {"from": end}),
+        "offset_rejected": _read(client, {"from": start.replace("Z", "+00:00")}),
+    }
+    at_start = selected["at_start"].get("report", {}).get("attempts", [])
+    before_start = selected["before_start"].get("report", {}).get("attempts", [])
+    at_end = selected["at_end"].get("report", {}).get("attempts", [])
+    checks = {
+        "t62_a.period_boundary": (
+            bool(
+                first["attempt_id"] in {row["attempt_id"] for row in at_start}
+                and first["attempt_id"] not in {row["attempt_id"] for row in before_start + at_end}
+            ),
+            "From includes its UTC second; to excludes its UTC second",
+        ),
+        "t62_a.timezone_boundary": (
+            selected["offset_rejected"]["status"] == 400,
+            "Noncanonical offset timestamp is rejected rather than shifted silently",
+        ),
+    }
+    return checks, selected
+
+
+def _report_revision_checks(client, correction, cutoff_submission, runtime):
+    with runtime.store._lock:
+        events = [
+            (sid, json.loads(raw), at)
+            for sid, raw, at in runtime.store.db.execute(
+                "SELECT submission_id,evidence,observed_at FROM dev12_evidence_events "
+                "WHERE event_kind='native_usage_accepted' AND submission_id=? "
+                "ORDER BY event_id",
+                (cutoff_submission,),
+            )
+        ]
+    pair = None
+    for sid, usage, at in events:
+        if usage.get("revision") == 3:
+            prior = next(
+                (
+                    (p_usage, p_at)
+                    for p_sid, p_usage, p_at in events
+                    if p_sid == sid and p_usage.get("revision") == 2
+                ),
+                None,
+            )
+            if prior and prior[1] < at:
+                pair = (sid, prior[0], prior[1], usage, at)
+                break
+    if pair is None:
+        raise AssertionError("two accepted revisions at distinct UTC seconds required")
+    sid, early_usage, early_at, late_usage, late_at = pair
+    early = _read(client, {"cutoff": early_at})
+    late = _read(client, {"cutoff": late_at})
+    early_row = next(
+        (row for row in early.get("report", {}).get("attempts", []) if row["submission_id"] == sid),
+        {},
+    )
+    late_row = next(
+        (row for row in late.get("report", {}).get("attempts", []) if row["submission_id"] == sid),
+        {},
+    )
+    selected = {
+        "submission_id": sid,
+        "attempt_id": correction["attempt_id"],
+        "controlled_correction": {
+            "kind": "same-amount historical re-adjudication",
+            "outcome": correction["outcome"],
+            "receiver_arrivals_delta": correction["after"]["receiver_arrivals"]
+            - correction["before"]["receiver_arrivals"],
+            "possible_sends_delta": correction["after"]["possible_send_count"]
+            - correction["before"]["possible_send_count"],
+        },
+        "early_at": early_at,
+        "late_at": late_at,
+        "early_usage": early_usage,
+        "late_usage": late_usage,
+        "early_row": early_row,
+        "late_row": late_row,
+    }
+    checks = {
+        "t62_b.revision_cutoff": (
+            bool(
+                early_row.get("usage_revision") == 2
+                and late_row.get("usage_revision") == 3
+                and early_row.get("attempt_id")
+                == late_row.get("attempt_id")
+                == correction["attempt_id"]
+                and early_usage["amount_decimal"] == late_usage["amount_decimal"]
+                and correction["outcome"] == "accepted"
+                and correction["after"]["receiver_arrivals"]
+                == correction["before"]["receiver_arrivals"]
+            ),
+            "UTC cutoff selects accepted revisions two and three without another send or charge",
+        )
+    }
+    return checks, selected
+
+
+def _report_filter_checks(client, rows):
+    row = rows[0]
+    if row.get("environment") != "standalone-synthetic":
+        raise AssertionError("fixed synthetic environment missing from populated report")
+    keys = {
+        "provider_filter": ("provider_ref", row["provider_ref"]),
+        "actor_filter": ("actor_id", row["actor_id"]),
+        "task_filter": ("task_id", row["task_id"]),
+        "environment_filter": ("environment", row["environment"]),
+    }
+    selected = {name: _read(client, {key: value}) for name, (key, value) in keys.items()}
+    checks = {
+        f"t62_c.{name}": (
+            bool(
+                result["status"] == 200
+                and result.get("report", {}).get("attempts")
+                and all(item.get(key) == value for item in result["report"]["attempts"])
+            ),
+            f"Authorized {key} filter selects only matching unique attempts",
+        )
+        for name, (key, value) in keys.items()
+        for result in (selected[name],)
+    }
+    return checks, selected
+
+
+def _report_export_checks(client, full, full_result, rows):
+    exported = _read(client, export="csv")
+    exported_json = _read(client, export="json")
+    csv_rows = exported.get("rows", [])
+    reconciled, financial_detail = (
+        _csv_finance_reconcile(
+            csv_rows,
+            exported_json.get("report", {}).get("attempts", []),
+            exported_json.get("report", {}).get("total", {}),
+        )
+        if (exported["status"] == exported_json["status"] == 200)
+        else (False, {})
+    )
+    selected = {
+        "csv": csv_rows,
+        "json_export": exported_json,
+        "full": full_result,
+        "financial_reconciliation": financial_detail,
+    }
+    checks = {
+        "t62_d.timeline_csv_json_reconcile": (
+            bool(
+                exported["status"] == exported_json["status"] == 200
+                and reconciled
+                and {item["attempt_id"] for item in rows}
+                == {item["attempt_id"] for item in csv_rows}
+                and exported_json["report"]["total"] == full["total"]
+                and _known_sum(rows) == Decimal(full["total"]["known_usd"])
+            ),
+            "CSV and JSON contain matching per-attempt finance and independently summed USD",
+        )
+    }
+    return checks, selected
+
+
+def _report_visibility_checks(full, rows, runtime):
+    with _operator_client(runtime, "other") as other:
+        other_report = _read(other)
+        other_csv = _read(other, export="csv")
+        other_filtered = _read(other, {"actor_id": rows[0]["actor_id"]})
+    selected = {
+        "ordinary": other_report,
+        "ordinary_csv": other_csv,
+        "ordinary_filtered": other_filtered,
+        "admin_total": full["total"],
+    }
+    visible = other_report.get("report", {}).get("attempts", [])
+    checks = {
+        "t62_e.cross_principal_denial": (
+            bool(
+                other_report["status"] == other_csv["status"] == other_filtered["status"] == 200
+                and all(
+                    item["principal_id"] == "user.other.synthetic"
+                    or item.get("initiating_user_id") == "user.other.synthetic"
+                    for item in visible
+                )
+                and not {item["attempt_id"] for item in rows}.intersection(
+                    {item["attempt_id"] for item in visible}
+                )
+                and not other_csv["rows"]
+                and not other_filtered["report"]["attempts"]
+            ),
+            "Ordinary principal receives no other-principal attempt or export row",
+        )
+    }
+    return checks, selected
+
+
+def _report_browser_checks(before, full, runtime, scenario):
+    attestation, attestation_hash = _browser_attestation(
+        runtime,
+        "operator-browser-evidence.json" if scenario == "t64" else "preview-browser-evidence.json",
+        full,
+    )
+    browser = attestation["browser"]
+    selected = {
+        "browser_attestation": attestation,
+        "browser_attestation_sha256": attestation_hash,
+    }
+    if scenario == "t64":
+        desktop = browser.get("desktop", {})
+        narrow = browser.get("narrow", {})
+        keyboard = browser.get("keyboard", {})
+        management = browser.get("management", {})
+        checks = {
+            "t64.keyboard": (
+                bool(
+                    keyboard.get("focused_tag") == "BUTTON"
+                    and keyboard.get("activated_detail") is True
+                ),
+                "Keyboard focused a real button and opened selected detail",
+            ),
+            "t64.narrow": (
+                bool(
+                    all(
+                        type(view.get("inner_width")) is int
+                        and type(view.get("scroll_width")) is int
+                        and view["scroll_width"] <= view["inner_width"] + 2
+                        for view in (desktop, narrow)
+                    )
+                    and narrow.get("inner_width", 0) < desktop.get("inner_width", 0)
+                ),
+                "Desktop and narrower viewport controls stayed within document width",
+            ),
+            "t64.error_reason": (
+                bool(
+                    type(browser.get("error_reason")) is str
+                    and len(browser["error_reason"].strip()) > 5
+                ),
+                "Browser exposed a concrete management or report error reason",
+            ),
+            "t64.management_edit_or_disabled": (
+                bool(
+                    management.get("worked") is True
+                    or (
+                        management.get("disabled") is True
+                        and type(management.get("reason")) is str
+                        and management["reason"].strip()
+                    )
+                ),
+                "Management edit worked or was disabled with a visible reason",
+            ),
+            "t64.no_secret": (
+                browser.get("secret_text_visible") is False,
+                "Captured browser text contained no synthetic credential or secret",
+            ),
+        }
+    else:
+        seek = browser.get("seek", {})
+        checks = {
+            "t65.preview_seek": (
+                bool(
+                    seek.get("start") == 0
+                    and type(seek.get("midpoint")) in (int, float)
+                    and type(seek.get("end")) in (int, float)
+                    and 0 < seek["midpoint"] < seek["end"]
+                ),
+                "Isolated preview exposed start, midpoint and end seek positions",
+            ),
+            "t65.replay_no_send": (
+                bool(
+                    browser.get("replayed") is True
+                    and attestation["ledger_before"] == attestation["ledger_after"]
+                ),
+                "Replaying did not change retained attempt or receiver census",
+            ),
+            "t65.no_ledger_mutation": (
+                bool(
+                    attestation["ledger_before"] == attestation["ledger_after"]
+                    and _same_census(before, _census(runtime))
+                ),
+                "Read-only preview did not modify operational or target ledger",
+            ),
+        }
+    return checks, selected

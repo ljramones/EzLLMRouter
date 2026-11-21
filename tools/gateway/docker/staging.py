@@ -13,68 +13,7 @@ def stage_phase(run, phase, data=None, copier=shutil.copyfileobj):
     data = data or _api.load_inputs()
     if data.get("ready_for_build") is not True:
         raise ValueError("real incomplete-input gate: staging refused")
-    proof = data.get("closure_evidence", {})
-    needed = ("python_runtime", "python_build", "oci", "cargo", "native")
-    for category in needed:
-        claim = proof.get(category)
-        if (
-            not isinstance(claim, dict)
-            or claim.get("status") != "STATIC_DEPENDENCY_CHECKED"
-            or not isinstance(claim.get("receipt_sha256"), str)
-            or not _api.SHA_RE.fullmatch(claim["receipt_sha256"])
-        ):
-            raise ValueError("closed graph/category receipt absent: " + category)
-        source = run / "closure" / (category + ".json")
-        _api.safe_component_path(source, run, require_file=True)
-        if _api.sha(source) != claim["receipt_sha256"]:
-            raise ValueError("closure receipt hash mismatch: " + category)
-        content = _api.read_json(source)
-        if (
-            content.get("category") != category
-            or content.get("status") != "STATIC_DEPENDENCY_CHECKED"
-            or not content.get("evidence")
-        ):
-            raise ValueError("closure receipt contents incomplete: " + category)
-    images = data.get("oci_images", [])
-    if len(images) != 3 or {x.get("role") for x in images} != {
-        "python_builder",
-        "python_runtime_and_tools",
-        "rust_toolchain",
-    }:
-        raise ValueError("exact three OCI image roles absent")
-    for image in images:
-        role = image["role"]
-        if image.get("platform") != "linux/arm64/v8" or image.get("layers_acquired") is not True:
-            raise ValueError("Linux ARM64 image/layer custody incomplete: " + role)
-        for label, field in (
-            ("index", "index_digest"),
-            ("manifest", "selected_manifest_digest"),
-            ("config", "config_digest"),
-        ):
-            digest = image.get(field)
-            if not isinstance(digest, str) or not _api.re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-                raise ValueError("OCI digest absent: " + role + "/" + label)
-            path = run / "oci" / (role + "-" + label + ".json")
-            _api.safe_component_path(path, run, require_file=True)
-            if "sha256:" + _api.sha(path) != digest:
-                raise ValueError("OCI metadata bytes mismatch: " + role + "/" + label)
-        index = _api.read_json(run / "oci" / (role + "-index.json"))
-        choices = [
-            x
-            for x in index.get("manifests", [])
-            if x.get("digest") == image["selected_manifest_digest"]
-            and x.get("platform", {}).get("os") == "linux"
-            and x.get("platform", {}).get("architecture") == "arm64"
-            and x.get("platform", {}).get("variant", "v8") == "v8"
-        ]
-        config = _api.read_json(run / "oci" / (role + "-config.json"))
-        manifest = _api.read_json(run / "oci" / (role + "-manifest.json"))
-        if (
-            len(choices) != 1
-            or manifest.get("config", {}).get("digest") != image["config_digest"]
-            or (config.get("os"), config.get("architecture")) != ("linux", "arm64")
-        ):
-            raise ValueError("OCI index/child/config relationship mismatch: " + role)
+    _validate_staging_custody(_api, data, run)
     entries = data.get("staging_files", {}).get(phase)
     if not isinstance(entries, list) or not entries:
         raise ValueError("phase staging manifest absent")
@@ -257,3 +196,68 @@ def stage_phase(run, phase, data=None, copier=shutil.copyfileobj):
         raise
     _api.receipt(run, "stage", result)
     return result
+
+
+def _validate_staging_custody(_api, data, run):
+    proof = data.get("closure_evidence", {})
+    needed = ("python_runtime", "python_build", "oci", "cargo", "native")
+    for category in needed:
+        claim = proof.get(category)
+        if (
+            not isinstance(claim, dict)
+            or claim.get("status") != "STATIC_DEPENDENCY_CHECKED"
+            or not isinstance(claim.get("receipt_sha256"), str)
+            or not _api.SHA_RE.fullmatch(claim["receipt_sha256"])
+        ):
+            raise ValueError("closed graph/category receipt absent: " + category)
+        source = run / "closure" / (category + ".json")
+        _api.safe_component_path(source, run, require_file=True)
+        if _api.sha(source) != claim["receipt_sha256"]:
+            raise ValueError("closure receipt hash mismatch: " + category)
+        content = _api.read_json(source)
+        if (
+            content.get("category") != category
+            or content.get("status") != "STATIC_DEPENDENCY_CHECKED"
+            or not content.get("evidence")
+        ):
+            raise ValueError("closure receipt contents incomplete: " + category)
+    images = data.get("oci_images", [])
+    if len(images) != 3 or {x.get("role") for x in images} != {
+        "python_builder",
+        "python_runtime_and_tools",
+        "rust_toolchain",
+    }:
+        raise ValueError("exact three OCI image roles absent")
+    for image in images:
+        role = image["role"]
+        if image.get("platform") != "linux/arm64/v8" or image.get("layers_acquired") is not True:
+            raise ValueError("Linux ARM64 image/layer custody incomplete: " + role)
+        for label, field in (
+            ("index", "index_digest"),
+            ("manifest", "selected_manifest_digest"),
+            ("config", "config_digest"),
+        ):
+            digest = image.get(field)
+            if not isinstance(digest, str) or not _api.re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                raise ValueError("OCI digest absent: " + role + "/" + label)
+            path = run / "oci" / (role + "-" + label + ".json")
+            _api.safe_component_path(path, run, require_file=True)
+            if "sha256:" + _api.sha(path) != digest:
+                raise ValueError("OCI metadata bytes mismatch: " + role + "/" + label)
+        index = _api.read_json(run / "oci" / (role + "-index.json"))
+        choices = [
+            x
+            for x in index.get("manifests", [])
+            if x.get("digest") == image["selected_manifest_digest"]
+            and x.get("platform", {}).get("os") == "linux"
+            and x.get("platform", {}).get("architecture") == "arm64"
+            and x.get("platform", {}).get("variant", "v8") == "v8"
+        ]
+        config = _api.read_json(run / "oci" / (role + "-config.json"))
+        manifest = _api.read_json(run / "oci" / (role + "-manifest.json"))
+        if (
+            len(choices) != 1
+            or manifest.get("config", {}).get("digest") != image["config_digest"]
+            or (config.get("os"), config.get("architecture")) != ("linux", "arm64")
+        ):
+            raise ValueError("OCI index/child/config relationship mismatch: " + role)
