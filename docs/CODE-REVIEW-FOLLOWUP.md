@@ -657,7 +657,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
 | W4 — Coordinator pipeline | Implemented — local checks pass | The facade is 577 lines, below the 900-line target; every Coordinator/domain function is at most 80 lines. Public imports and constructor arguments remain available. The facade, step modules and cache accounting pass strict typing, with concrete checks for authority, registry and sender capabilities. Failure/unknown-outcome boundaries remain around the same operations. |
 | W5 — medium runtime modules | Implemented — local checks pass | Canonical fields, Store records, successor reporting, provider probes, attribution actions, demo projections and credential records have named boundaries. Direct operator routes and CLI composition are implemented. No server function exceeds 150 lines; nine exceed 100 under capped allowances. The largest class is 599 lines. |
-| W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
+| W6 — evidence and large tests | Partial | Completion handlers/runtime have domain and phase splits, and preflight/tool-cycle suites are split by behavior. Historical Docker-input tooling lives under `tools/` with configurable private inputs. Remaining retained tools, long individual tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
 | W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
 | Server measure | Report baseline `c2712db` | Current `8c43850` | Work-order target |
@@ -1064,3 +1064,30 @@ lint/formatting and maintained script/console checks. Library typing debt remain
 1,631. Six resolved function allowances are removed, leaving 56. Checkpoint,
 runtime-setup, remaining retained tooling/tests and deployment exercises continue
 under W6; no runner or historical evidence has been removed.
+
+### Item 11 follow-up: W6 completion setup and continuation phases
+
+Checkpoint verification separates the original release and seven retained
+continuation boundaries. Its former 825-line function is now 135 lines; each
+phase is at most 132. Inputs and returned state are explicit, while the same
+passed-ID list, exact file checks, journal order, SQL reads and failure gates
+remain in their original sequence. Expanding all eight helpers reconstructs the
+original checkpoint AST exactly.
+
+Runtime setup names registry construction and service endpoint phases. Start is
+167 lines and continuation is 183. Inventory case projection, CLI parsing and
+retained identity checks likewise have named phases; every function in the
+plan, runner, setup, checkpoint and identity-verification modules is below 200.
+AST expansion verifies the unchanged six original entry-point bodies across
+15 extractions, including callback, try/finally and reader ownership.
+
+A replay against `a32a9b5` matches 19 prospective plan cases (six accepted),
+32 synthetic checkpoint cases (two accepted) and eight parse-only CLI cases.
+The historical-evidence verifier is stubbed for synthetic checkpoint fixtures;
+these are control-flow checks, not approval of a real retained campaign.
+
+Full `tools.check` passes 916 Python cases, strict typing on 107 files,
+lint/formatting and script/console checks. Library typing debt remains 1,631;
+six resolved function allowances are removed, leaving 50. Remaining W6 work is
+operator reporting, other retained tools, oversized individual tests and the
+deployment exercises. No target release, input acquisition or daemon change ran.

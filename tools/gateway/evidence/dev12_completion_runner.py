@@ -452,44 +452,7 @@ class CompletionRuntime:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("plan", type=Path)
-    parser.add_argument("artifact_root")
-    parser.add_argument(
-        "--build-plan",
-        action="store_true",
-        help="freeze a prospective exact inventory without target release",
-    )
-    parser.add_argument(
-        "--build-continuation",
-        action="store_true",
-        help="freeze one no-send successor plan for a stopped campaign",
-    )
-    parser.add_argument(
-        "--continue-existing",
-        action="store_true",
-        help="reopen the stopped campaign without starting or reseeding it",
-    )
-    parser.add_argument(
-        "--prior-plan", type=Path, help="immutable original plan for continuation evidence"
-    )
-    parser.add_argument(
-        "--receipt-path", type=Path, help="new host preflight receipt for the continuation plan"
-    )
-    parser.add_argument("--wheel", type=Path)
-    parser.add_argument("--js-package", type=Path)
-    parser.add_argument("--service-image")
-    parser.add_argument("--node-image")
-    parser.add_argument("--operator-port", type=int)
-    parser.add_argument("--campaign-id")
-    parser.add_argument("--budget-account-id")
-    parser.add_argument("--financial-owner-id")
-    parser.add_argument(
-        "--release",
-        action="store_true",
-        help="start the already-authorized finite target after preflight",
-    )
-    args = parser.parse_args(argv)
+    args = _completion_arguments(argv)
     root = _checked_artifact_root(args.artifact_root)
     if args.build_plan:
         if args.release or args.plan.resolve() != (root / "plan.json").resolve():
@@ -688,3 +651,45 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+
+def _completion_arguments(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("plan", type=Path)
+    parser.add_argument("artifact_root")
+    parser.add_argument(
+        "--build-plan",
+        action="store_true",
+        help="freeze a prospective exact inventory without target release",
+    )
+    parser.add_argument(
+        "--build-continuation",
+        action="store_true",
+        help="freeze one no-send successor plan for a stopped campaign",
+    )
+    parser.add_argument(
+        "--continue-existing",
+        action="store_true",
+        help="reopen the stopped campaign without starting or reseeding it",
+    )
+    parser.add_argument(
+        "--prior-plan", type=Path, help="immutable original plan for continuation evidence"
+    )
+    parser.add_argument(
+        "--receipt-path", type=Path, help="new host preflight receipt for the continuation plan"
+    )
+    parser.add_argument("--wheel", type=Path)
+    parser.add_argument("--js-package", type=Path)
+    parser.add_argument("--service-image")
+    parser.add_argument("--node-image")
+    parser.add_argument("--operator-port", type=int)
+    parser.add_argument("--campaign-id")
+    parser.add_argument("--budget-account-id")
+    parser.add_argument("--financial-owner-id")
+    parser.add_argument(
+        "--release",
+        action="store_true",
+        help="start the already-authorized finite target after preflight",
+    )
+    args = parser.parse_args(argv)
+    return args

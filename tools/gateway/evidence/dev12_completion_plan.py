@@ -149,6 +149,122 @@ def build_plan(
     if len(ordered) != len(REQUIRED_PAIRS) or set(ordered) != REQUIRED_PAIRS:
         raise AssertionError("full fixed scenario inventory construction differs")
 
+    cases = _inventory_cases(
+        DEV12_CASE_HANDLERS,
+        SCENARIOS,
+        _api,
+        campaign_id,
+        completion_receiver,
+        limits,
+        ordered,
+        source_tree,
+        tariffs,
+        vectors,
+    )
+    envelope = {
+        "campaign_id": campaign_id,
+        "budget_account_id": budget_account_id,
+        "financial_owner_id": financial_owner_id,
+        "currency": "USD",
+        "max_admissions": 512,
+        "max_possible_sends": 512,
+        "max_inflight": 2,
+        "ceiling_decimal": "6.000000000",
+        "window_hours": 24,
+        "real_provider_calls": 0,
+        "operator_port": operator_port,
+        "service_network_mode": "bridge",
+        "rerun_headroom_admissions": 64,
+        "rerun_headroom_sends": 64,
+        "rerun_headroom_decimal": "1.000000000",
+        "preexisting_exposure_decimal": "0.000000000",
+    }
+    return {
+        "envelope": envelope,
+        "cases": cases,
+        "artifacts": artifacts,
+        "source_tree": source_tree,
+    }
+
+
+def build_continuation_plan(*, root: Path, prior_plan: dict, checkpoint: dict) -> dict:
+    """Create a successor prospectus without rewriting the original plan."""
+    from tools.gateway.evidence import dev12_completion_runner as _api
+
+    artifacts = {item["kind"]: item for item in prior_plan["artifacts"]}
+    envelope = prior_plan["envelope"]
+    plan = _api.build_plan(
+        root=root,
+        wheel=_api.Path(artifacts["python_wheel"]["path"]),
+        js_package=_api.Path(artifacts["js_tarball"]["path"]),
+        service_image=artifacts["service_image"]["path"],
+        node_image=artifacts["node_image"]["path"],
+        operator_port=envelope["operator_port"],
+        campaign_id=envelope["campaign_id"],
+        budget_account_id=envelope["budget_account_id"],
+        financial_owner_id=envelope["financial_owner_id"],
+    )
+    if plan["artifacts"] != prior_plan["artifacts"] or {
+        k: v for k, v in plan["envelope"].items() if k != "preexisting_exposure_decimal"
+    } != {k: v for k, v in envelope.items() if k != "preexisting_exposure_decimal"}:
+        raise RuntimeError("continuation changes frozen inputs or finite allowance")
+    previous_pairs = [(case["scenario_id"], case["variant"]) for case in prior_plan["cases"]]
+    current_pairs = [(case["scenario_id"], case["variant"]) for case in plan["cases"]]
+    if previous_pairs != current_pairs:
+        raise RuntimeError("continuation changes selected case order")
+    inherited_ids = {}
+    if checkpoint["continuation_number"] >= 3:
+        prior_successor_path = _api.Path(checkpoint["latest_plan_path"])
+        if not prior_successor_path.is_file() or prior_successor_path.is_symlink():
+            raise RuntimeError("latest reviewed continuation plan absent")
+        prior_successor = _api.json.loads(prior_successor_path.read_bytes())
+        if [
+            (row["scenario_id"], row["variant"]) for row in prior_successor["cases"]
+        ] != current_pairs or prior_successor["artifacts"] != plan["artifacts"]:
+            raise RuntimeError("latest continuation plan differs from selected inventory")
+        for case, predecessor in zip(plan["cases"], prior_successor["cases"], strict=True):
+            inherited_ids[case["id"]] = predecessor["id"]
+            case["id"] = predecessor["id"]
+            case["evidence_paths"] = predecessor["evidence_paths"]
+            if predecessor["id"] in checkpoint["passed_ids"]:
+                case["max_admissions"] = predecessor["max_admissions"]
+                case["max_possible_sends"] = predecessor["max_possible_sends"]
+                case["max_exposure_decimal"] = predecessor["max_exposure_decimal"]
+    old_id = checkpoint["failed_id"]
+    new_id = old_id + ".continuation" + str(checkpoint["continuation_number"])
+    for case in plan["cases"]:
+        case["prerequisites"] = [
+            new_id if value == old_id else inherited_ids.get(value, value)
+            for value in case["prerequisites"]
+        ]
+        case["late_dependencies"] = [
+            new_id if value == old_id else inherited_ids.get(value, value)
+            for value in case["late_dependencies"]
+        ]
+        if case["id"] == old_id:
+            case["id"] = new_id
+            case["evidence_paths"] = ["cases/" + new_id + ".json"]
+            case["max_admissions"] = 0
+            case["max_possible_sends"] = 0
+            case["max_exposure_decimal"] = "0.000000000"
+    plan["envelope"]["preexisting_exposure_decimal"] = checkpoint["last_campaign"][
+        "cumulative_reserved_decimal"
+    ]
+    return plan
+
+
+def _inventory_cases(
+    DEV12_CASE_HANDLERS,
+    SCENARIOS,
+    _api,
+    campaign_id,
+    completion_receiver,
+    limits,
+    ordered,
+    source_tree,
+    tariffs,
+    vectors,
+):
     cases = []
     chain_id = lambda variant: "case.recovery_chain." + variant
     for scenario, variant in ordered:
@@ -273,93 +389,4 @@ def build_plan(
                 "phase": variant_spec.phase,
             }
         )
-    envelope = {
-        "campaign_id": campaign_id,
-        "budget_account_id": budget_account_id,
-        "financial_owner_id": financial_owner_id,
-        "currency": "USD",
-        "max_admissions": 512,
-        "max_possible_sends": 512,
-        "max_inflight": 2,
-        "ceiling_decimal": "6.000000000",
-        "window_hours": 24,
-        "real_provider_calls": 0,
-        "operator_port": operator_port,
-        "service_network_mode": "bridge",
-        "rerun_headroom_admissions": 64,
-        "rerun_headroom_sends": 64,
-        "rerun_headroom_decimal": "1.000000000",
-        "preexisting_exposure_decimal": "0.000000000",
-    }
-    return {
-        "envelope": envelope,
-        "cases": cases,
-        "artifacts": artifacts,
-        "source_tree": source_tree,
-    }
-
-
-def build_continuation_plan(*, root: Path, prior_plan: dict, checkpoint: dict) -> dict:
-    """Create a successor prospectus without rewriting the original plan."""
-    from tools.gateway.evidence import dev12_completion_runner as _api
-
-    artifacts = {item["kind"]: item for item in prior_plan["artifacts"]}
-    envelope = prior_plan["envelope"]
-    plan = _api.build_plan(
-        root=root,
-        wheel=_api.Path(artifacts["python_wheel"]["path"]),
-        js_package=_api.Path(artifacts["js_tarball"]["path"]),
-        service_image=artifacts["service_image"]["path"],
-        node_image=artifacts["node_image"]["path"],
-        operator_port=envelope["operator_port"],
-        campaign_id=envelope["campaign_id"],
-        budget_account_id=envelope["budget_account_id"],
-        financial_owner_id=envelope["financial_owner_id"],
-    )
-    if plan["artifacts"] != prior_plan["artifacts"] or {
-        k: v for k, v in plan["envelope"].items() if k != "preexisting_exposure_decimal"
-    } != {k: v for k, v in envelope.items() if k != "preexisting_exposure_decimal"}:
-        raise RuntimeError("continuation changes frozen inputs or finite allowance")
-    previous_pairs = [(case["scenario_id"], case["variant"]) for case in prior_plan["cases"]]
-    current_pairs = [(case["scenario_id"], case["variant"]) for case in plan["cases"]]
-    if previous_pairs != current_pairs:
-        raise RuntimeError("continuation changes selected case order")
-    inherited_ids = {}
-    if checkpoint["continuation_number"] >= 3:
-        prior_successor_path = _api.Path(checkpoint["latest_plan_path"])
-        if not prior_successor_path.is_file() or prior_successor_path.is_symlink():
-            raise RuntimeError("latest reviewed continuation plan absent")
-        prior_successor = _api.json.loads(prior_successor_path.read_bytes())
-        if [
-            (row["scenario_id"], row["variant"]) for row in prior_successor["cases"]
-        ] != current_pairs or prior_successor["artifacts"] != plan["artifacts"]:
-            raise RuntimeError("latest continuation plan differs from selected inventory")
-        for case, predecessor in zip(plan["cases"], prior_successor["cases"], strict=True):
-            inherited_ids[case["id"]] = predecessor["id"]
-            case["id"] = predecessor["id"]
-            case["evidence_paths"] = predecessor["evidence_paths"]
-            if predecessor["id"] in checkpoint["passed_ids"]:
-                case["max_admissions"] = predecessor["max_admissions"]
-                case["max_possible_sends"] = predecessor["max_possible_sends"]
-                case["max_exposure_decimal"] = predecessor["max_exposure_decimal"]
-    old_id = checkpoint["failed_id"]
-    new_id = old_id + ".continuation" + str(checkpoint["continuation_number"])
-    for case in plan["cases"]:
-        case["prerequisites"] = [
-            new_id if value == old_id else inherited_ids.get(value, value)
-            for value in case["prerequisites"]
-        ]
-        case["late_dependencies"] = [
-            new_id if value == old_id else inherited_ids.get(value, value)
-            for value in case["late_dependencies"]
-        ]
-        if case["id"] == old_id:
-            case["id"] = new_id
-            case["evidence_paths"] = ["cases/" + new_id + ".json"]
-            case["max_admissions"] = 0
-            case["max_possible_sends"] = 0
-            case["max_exposure_decimal"] = "0.000000000"
-    plan["envelope"]["preexisting_exposure_decimal"] = checkpoint["last_campaign"][
-        "cumulative_reserved_decimal"
-    ]
-    return plan
+    return cases

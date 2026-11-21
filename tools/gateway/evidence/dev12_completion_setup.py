@@ -279,65 +279,7 @@ def start(self, *, finite_scope=None):
         stderr=(self.root / "receiver.stderr").open("ab"),
     )
     self._wait_port(self.receiver, receiver_port)
-    self.store = SQLiteStore(self.root / "campaign.sqlite")
-    self.authority = SyntheticSuccessorAuthority(self.store, signer, "key.synthetic.dev12", "v1")
-    direct = self.contexts_by_credential[self.credentials["DIRECT_DOCUMENT"]]["identity"]
-    self.registry = Registry(
-        self.store,
-        self.authority,
-        legacy_destination={
-            "configuration_ref": "cfg.synthetic.dev12.operator",
-            "service": "controlled.synthetic",
-            "endpoint": "127.0.0.1",
-            "model": "model.demo",
-            "model_version": "synthetic-v1",
-            "processing_region": "local",
-        },
-        legacy_token=self.credentials["DIRECT_DOCUMENT"],
-        legacy_trusted=direct,
-    )
-    ordinary = self.registry.mutate(
-        "owner.local",
-        {
-            "operation_id": "op.dev12.completion02.create.other",
-            "action": "create_principal",
-            "subject": "user.other.synthetic",
-            "expected_revision": 0,
-            "data": {
-                "display_name": "Other synthetic user",
-                "kind": "human",
-                "owner": "owner.local",
-            },
-        },
-    )["record"]
-    ordinary, other_secret = self.registry.provision_credential(
-        "owner.local",
-        ordinary["principal_id"],
-        ordinary["revision"],
-        "op.dev12.completion02.credential.other",
-    )
-    self.registry.mutate(
-        "owner.local",
-        {
-            "operation_id": "op.dev12.completion02.activate.other",
-            "action": "principal_state",
-            "subject": ordinary["principal_id"],
-            "expected_revision": ordinary["revision"],
-            "data": {"status": "active", "reason": "isolated qualification"},
-        },
-    )
-    self.operator_credentials = {
-        "owner": "dev12.synthetic.operator." + "x" * 32,
-        "other": other_secret,
-    }
-    for context in self.contexts_by_credential.values():
-        self.authority.set_historical_access(
-            context["identity"],
-            read=True,
-            write=True,
-            resume=True,
-            observed_at=_api.datetime.now(_api.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        )
+    _start_operator_registry(Registry, SQLiteStore, SyntheticSuccessorAuthority, _api, self, signer)
     self.allowance = FiniteSuccessorCampaign(
         self.store,
         envelope["campaign_id"],
@@ -399,60 +341,20 @@ def start(self, *, finite_scope=None):
     self.executor = Dev12SyntheticExecutor(worker, receiver_port, cert.read_text(), TEST_KEY)
     _api.os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(self.guard_log)
 
-    def permitted(current, original):
-        return (
-            current["principal_id"] == original["work_key"]["principal_id"]
-            and current["source_authority_id"]
-            == original["trusted_identity"]["source_authority_id"]
-            and current["identity_binding_id"]
-            == original["trusted_identity"]["identity_binding_id"]
-        )
-
-    self.coordinator = Coordinator(
-        self.store,
-        identity=identities,
-        config={},
-        prompt_blocks={},
-        allowed_lineages={},
-        authority=None,
-        adapter=None,
-        retention={},
-        classification={},
-        recipe=None,
-    )
-    self.successor = attach_standalone_synthetic(
-        self.coordinator,
-        store=self.store,
-        contexts_by_credential=self.contexts_by_credential,
-        authority=self.authority,
-        executor=self.executor,
-        allowance=self.allowance,
-        read_allowed=permitted,
-        usage_write_allowed=permitted,
-        receiver_receipts=DurableReceiverReceipts(self.root / "receiver-receipts.jsonl"),
-    )
-    self.successor.recover_incomplete()
-    self.wire = serve("127.0.0.1", service_port, self.coordinator)
-    _api.threading.Thread(target=self.wire.serve_forever, daemon=True).start()
-    # Docker publishes this container listener only on the host's 127.0.0.1.
-    # Binding container loopback would make the published port unreachable.
-    self.operator = serve_operator(
-        "0.0.0.0",
+    _start_service_endpoints(
+        Coordinator,
+        DurableReceiverReceipts,
+        OperatorProjection,
+        _api,
+        attach_standalone_synthetic,
+        identities,
+        identity,
         operator_port,
-        projection=OperatorProjection(
-            self.store, "user.demo", str(self.root / "send-events.jsonl")
-        ),
-        runner=None,
-        password=self.operator_credentials["owner"],
-        fixture={"destination": {}, "policy": {}},
-        build={"commit": "disposable.dev12", "dirty": False, "fingerprint": identity["sha256"]},
-        web_root=_api.ROOT / "web",
-        worker_probe=lambda: {"state": "networkless"},
-        sender_status=lambda: {"state": "controlled"},
-        successor_store=self.store,
-        registry=self.registry,
+        self,
+        serve,
+        serve_operator,
+        service_port,
     )
-    _api.threading.Thread(target=self.operator.serve_forever, daemon=True).start()
     self.started = True
     _api.append_durable(
         self.journal,
@@ -536,39 +438,8 @@ def continue_existing(self, checkpoint: dict, receipt: dict) -> None:
     self.operator_port = self._operator_port(envelope, free_port)
     self.base_url = f"http://127.0.0.1:{self.service_port}"
     self.operator_url = f"http://127.0.0.1:{self.operator_port}"
-    identities = self._bind_contexts()
-    with sqlite3.connect(f"file:{self.root / 'campaign.sqlite'}?immutable=1", uri=True) as db:
-        row = db.execute(
-            "SELECT state FROM dev12_authority WHERE authority_id='standalone.synthetic'"
-        ).fetchone()
-    if row is None:
-        raise RuntimeError("original durable authority absent")
-    active = _api.json.loads(row[0])["active_minting_key"]
-    version = active["key_version"]
-    signer_path = (
-        self.root / "signing-key.pem"
-        if version == "v1"
-        else self.root / ("signing-key-" + version + ".pem")
-    )
-    if not signer_path.is_file() or signer_path.is_symlink():
-        raise RuntimeError("exact durable active signer unavailable")
-    signer = serialization.load_pem_private_key(signer_path.read_bytes(), password=None)
-    self.store = SQLiteStore(self.root / "campaign.sqlite")
-    self.authority = SyntheticSuccessorAuthority(self.store, signer, active["key_id"], version)
-    direct = self.contexts_by_credential[self.credentials["DIRECT_DOCUMENT"]]["identity"]
-    self.registry = Registry(
-        self.store,
-        self.authority,
-        legacy_destination={
-            "configuration_ref": "cfg.synthetic.dev12.operator",
-            "service": "controlled.synthetic",
-            "endpoint": "127.0.0.1",
-            "model": "model.demo",
-            "model_version": "synthetic-v1",
-            "processing_region": "local",
-        },
-        legacy_token=self.credentials["DIRECT_DOCUMENT"],
-        legacy_trusted=direct,
+    identities = _load_continuation_registry(
+        Registry, SQLiteStore, SyntheticSuccessorAuthority, _api, self, serialization, sqlite3
     )
     self.allowance = FiniteSuccessorCampaign(
         self.store,
@@ -617,58 +488,20 @@ def continue_existing(self, checkpoint: dict, receipt: dict) -> None:
         stderr=(self.root / "receiver.stderr").open("ab"),
     )
     self._wait_port(self.receiver, self.receiver_port)
-    self.executor = Dev12SyntheticExecutor(worker, self.receiver_port, cert.read_text(), TEST_KEY)
-    _api.os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(self.guard_log)
-
-    def permitted(current, original):
-        return (
-            current["principal_id"] == original["work_key"]["principal_id"]
-            and current["source_authority_id"]
-            == original["trusted_identity"]["source_authority_id"]
-            and current["identity_binding_id"]
-            == original["trusted_identity"]["identity_binding_id"]
-        )
-
-    self.coordinator = Coordinator(
-        self.store,
-        identity=identities,
-        config={},
-        prompt_blocks={},
-        allowed_lineages={},
-        authority=None,
-        adapter=None,
-        retention={},
-        classification={},
-        recipe=None,
+    arrivals_before, arrivals_after = _continue_service_endpoints(
+        Coordinator,
+        Dev12SyntheticExecutor,
+        DurableReceiverReceipts,
+        TEST_KEY,
+        _api,
+        attach_standalone_synthetic,
+        before,
+        cert,
+        identities,
+        self,
+        serve,
+        worker,
     )
-    self.successor = attach_standalone_synthetic(
-        self.coordinator,
-        store=self.store,
-        contexts_by_credential=self.contexts_by_credential,
-        authority=self.authority,
-        executor=self.executor,
-        allowance=self.allowance,
-        read_allowed=permitted,
-        usage_write_allowed=permitted,
-        receiver_receipts=DurableReceiverReceipts(self.root / "receiver-receipts.jsonl"),
-    )
-    arrivals_before = len(self.receiver_log.read_bytes().splitlines())
-    self.successor.recover_incomplete()
-    after = self.allowance.inspect()
-    arrivals_after = len(self.receiver_log.read_bytes().splitlines())
-    for field in (
-        "start_at",
-        "expires_at",
-        "attempt_count",
-        "possible_send_count",
-        "cumulative_reserved_decimal",
-    ):
-        if after[field] != before[field]:
-            raise RuntimeError("recovery changed finite campaign boundary: " + field)
-    if arrivals_after != arrivals_before:
-        raise RuntimeError("continuation recovery replayed receiver work")
-    self.wire = serve("127.0.0.1", self.service_port, self.coordinator)
-    _api.threading.Thread(target=self.wire.serve_forever, daemon=True).start()
     source = mounted_source_identity()
     if source != receipt["mounted_source_identity"]:
         raise RuntimeError("continued assembly differs from new host source receipt")
@@ -917,3 +750,246 @@ def restart_service(self) -> dict:
         self.journal, {"kind": "service_restart_end", "at": _api.time.time_ns(), **result}
     )
     return result
+
+
+def _start_operator_registry(
+    Registry, SQLiteStore, SyntheticSuccessorAuthority, _api, self, signer
+):
+    self.store = SQLiteStore(self.root / "campaign.sqlite")
+    self.authority = SyntheticSuccessorAuthority(self.store, signer, "key.synthetic.dev12", "v1")
+    direct = self.contexts_by_credential[self.credentials["DIRECT_DOCUMENT"]]["identity"]
+    self.registry = Registry(
+        self.store,
+        self.authority,
+        legacy_destination={
+            "configuration_ref": "cfg.synthetic.dev12.operator",
+            "service": "controlled.synthetic",
+            "endpoint": "127.0.0.1",
+            "model": "model.demo",
+            "model_version": "synthetic-v1",
+            "processing_region": "local",
+        },
+        legacy_token=self.credentials["DIRECT_DOCUMENT"],
+        legacy_trusted=direct,
+    )
+    ordinary = self.registry.mutate(
+        "owner.local",
+        {
+            "operation_id": "op.dev12.completion02.create.other",
+            "action": "create_principal",
+            "subject": "user.other.synthetic",
+            "expected_revision": 0,
+            "data": {
+                "display_name": "Other synthetic user",
+                "kind": "human",
+                "owner": "owner.local",
+            },
+        },
+    )["record"]
+    ordinary, other_secret = self.registry.provision_credential(
+        "owner.local",
+        ordinary["principal_id"],
+        ordinary["revision"],
+        "op.dev12.completion02.credential.other",
+    )
+    self.registry.mutate(
+        "owner.local",
+        {
+            "operation_id": "op.dev12.completion02.activate.other",
+            "action": "principal_state",
+            "subject": ordinary["principal_id"],
+            "expected_revision": ordinary["revision"],
+            "data": {"status": "active", "reason": "isolated qualification"},
+        },
+    )
+    self.operator_credentials = {
+        "owner": "dev12.synthetic.operator." + "x" * 32,
+        "other": other_secret,
+    }
+    for context in self.contexts_by_credential.values():
+        self.authority.set_historical_access(
+            context["identity"],
+            read=True,
+            write=True,
+            resume=True,
+            observed_at=_api.datetime.now(_api.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
+
+
+def _start_service_endpoints(
+    Coordinator,
+    DurableReceiverReceipts,
+    OperatorProjection,
+    _api,
+    attach_standalone_synthetic,
+    identities,
+    identity,
+    operator_port,
+    self,
+    serve,
+    serve_operator,
+    service_port,
+):
+    def permitted(current, original):
+        return (
+            current["principal_id"] == original["work_key"]["principal_id"]
+            and current["source_authority_id"]
+            == original["trusted_identity"]["source_authority_id"]
+            and current["identity_binding_id"]
+            == original["trusted_identity"]["identity_binding_id"]
+        )
+
+    self.coordinator = Coordinator(
+        self.store,
+        identity=identities,
+        config={},
+        prompt_blocks={},
+        allowed_lineages={},
+        authority=None,
+        adapter=None,
+        retention={},
+        classification={},
+        recipe=None,
+    )
+    self.successor = attach_standalone_synthetic(
+        self.coordinator,
+        store=self.store,
+        contexts_by_credential=self.contexts_by_credential,
+        authority=self.authority,
+        executor=self.executor,
+        allowance=self.allowance,
+        read_allowed=permitted,
+        usage_write_allowed=permitted,
+        receiver_receipts=DurableReceiverReceipts(self.root / "receiver-receipts.jsonl"),
+    )
+    self.successor.recover_incomplete()
+    self.wire = serve("127.0.0.1", service_port, self.coordinator)
+    _api.threading.Thread(target=self.wire.serve_forever, daemon=True).start()
+    # Docker publishes this container listener only on the host's 127.0.0.1.
+    # Binding container loopback would make the published port unreachable.
+    self.operator = serve_operator(
+        "0.0.0.0",
+        operator_port,
+        projection=OperatorProjection(
+            self.store, "user.demo", str(self.root / "send-events.jsonl")
+        ),
+        runner=None,
+        password=self.operator_credentials["owner"],
+        fixture={"destination": {}, "policy": {}},
+        build={"commit": "disposable.dev12", "dirty": False, "fingerprint": identity["sha256"]},
+        web_root=_api.ROOT / "web",
+        worker_probe=lambda: {"state": "networkless"},
+        sender_status=lambda: {"state": "controlled"},
+        successor_store=self.store,
+        registry=self.registry,
+    )
+    _api.threading.Thread(target=self.operator.serve_forever, daemon=True).start()
+
+
+def _load_continuation_registry(
+    Registry, SQLiteStore, SyntheticSuccessorAuthority, _api, self, serialization, sqlite3
+):
+    identities = self._bind_contexts()
+    with sqlite3.connect(f"file:{self.root / 'campaign.sqlite'}?immutable=1", uri=True) as db:
+        row = db.execute(
+            "SELECT state FROM dev12_authority WHERE authority_id='standalone.synthetic'"
+        ).fetchone()
+    if row is None:
+        raise RuntimeError("original durable authority absent")
+    active = _api.json.loads(row[0])["active_minting_key"]
+    version = active["key_version"]
+    signer_path = (
+        self.root / "signing-key.pem"
+        if version == "v1"
+        else self.root / ("signing-key-" + version + ".pem")
+    )
+    if not signer_path.is_file() or signer_path.is_symlink():
+        raise RuntimeError("exact durable active signer unavailable")
+    signer = serialization.load_pem_private_key(signer_path.read_bytes(), password=None)
+    self.store = SQLiteStore(self.root / "campaign.sqlite")
+    self.authority = SyntheticSuccessorAuthority(self.store, signer, active["key_id"], version)
+    direct = self.contexts_by_credential[self.credentials["DIRECT_DOCUMENT"]]["identity"]
+    self.registry = Registry(
+        self.store,
+        self.authority,
+        legacy_destination={
+            "configuration_ref": "cfg.synthetic.dev12.operator",
+            "service": "controlled.synthetic",
+            "endpoint": "127.0.0.1",
+            "model": "model.demo",
+            "model_version": "synthetic-v1",
+            "processing_region": "local",
+        },
+        legacy_token=self.credentials["DIRECT_DOCUMENT"],
+        legacy_trusted=direct,
+    )
+    return identities
+
+
+def _continue_service_endpoints(
+    Coordinator,
+    Dev12SyntheticExecutor,
+    DurableReceiverReceipts,
+    TEST_KEY,
+    _api,
+    attach_standalone_synthetic,
+    before,
+    cert,
+    identities,
+    self,
+    serve,
+    worker,
+):
+    self.executor = Dev12SyntheticExecutor(worker, self.receiver_port, cert.read_text(), TEST_KEY)
+    _api.os.environ["EZLLMROUTER_GATEWAY_GUARD_EVENTS"] = str(self.guard_log)
+
+    def permitted(current, original):
+        return (
+            current["principal_id"] == original["work_key"]["principal_id"]
+            and current["source_authority_id"]
+            == original["trusted_identity"]["source_authority_id"]
+            and current["identity_binding_id"]
+            == original["trusted_identity"]["identity_binding_id"]
+        )
+
+    self.coordinator = Coordinator(
+        self.store,
+        identity=identities,
+        config={},
+        prompt_blocks={},
+        allowed_lineages={},
+        authority=None,
+        adapter=None,
+        retention={},
+        classification={},
+        recipe=None,
+    )
+    self.successor = attach_standalone_synthetic(
+        self.coordinator,
+        store=self.store,
+        contexts_by_credential=self.contexts_by_credential,
+        authority=self.authority,
+        executor=self.executor,
+        allowance=self.allowance,
+        read_allowed=permitted,
+        usage_write_allowed=permitted,
+        receiver_receipts=DurableReceiverReceipts(self.root / "receiver-receipts.jsonl"),
+    )
+    arrivals_before = len(self.receiver_log.read_bytes().splitlines())
+    self.successor.recover_incomplete()
+    after = self.allowance.inspect()
+    arrivals_after = len(self.receiver_log.read_bytes().splitlines())
+    for field in (
+        "start_at",
+        "expires_at",
+        "attempt_count",
+        "possible_send_count",
+        "cumulative_reserved_decimal",
+    ):
+        if after[field] != before[field]:
+            raise RuntimeError("recovery changed finite campaign boundary: " + field)
+    if arrivals_after != arrivals_before:
+        raise RuntimeError("continuation recovery replayed receiver work")
+    self.wire = serve("127.0.0.1", self.service_port, self.coordinator)
+    _api.threading.Thread(target=self.wire.serve_forever, daemon=True).start()
+    return arrivals_before, arrivals_after

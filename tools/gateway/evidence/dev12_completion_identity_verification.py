@@ -23,40 +23,7 @@ def _verify_operator_identity_continuation(self, case: dict, checkpoint: dict) -
         raise RuntimeError("unregistered operator-identity continuation case")
     before = _census(self)
     before_campaign = self.allowance.inspect()
-    correlated_before = self._correlation_snapshot()
-    expected = checkpoint["retained_t60_positive_attempt_ids"]
-    positives = {}
-    for principal, aid in zip(("user.demo", "svc.vega", "svc.orion"), expected, strict=True):
-        sid, record = correlated_before["submissions"].get(aid, (None, None))
-        guard_sid, guard = correlated_before["guards"].get(aid, (None, None))
-        usage = correlated_before["latest_usage"].get(aid)
-        arrivals = [
-            row for row in correlated_before["receiver_rows"] if row.get("attempt_id") == aid
-        ]
-        if (
-            record is None
-            or record["work_key"]["principal_id"] != principal
-            or record["work_key"]["step_id"] != "step.completion02.t60.composed"
-            or record["campaign_id"] != self.allowance.campaign_id
-            or record["submission_state"] != "completed"
-            or record["delivery_state"] != "valid"
-            or guard_sid != sid
-            or guard.get("plan_id") != record["signed_plan"]["plan_id"]
-            or len(arrivals) != 1
-            or arrivals[0]["body_sha256"] != guard["body_sha256"]
-            or usage is None
-            or usage[2]["cost_status"] != "calculated"
-        ):
-            raise RuntimeError("retained T60 positive attempt lineage differs")
-        positives[principal] = {
-            "attempt_id": aid,
-            "submission_id": sid,
-            "actor_id": record["trusted_identity"]["actor_id"],
-            "initiating_user_id": record["request"]["metadata"].get("initiating_user_id"),
-            "delegation": record["request"]["metadata"].get("delegation", []),
-            "cost_status": usage[2]["cost_status"],
-            "receiver_arrivals": len(arrivals),
-        }
+    correlated_before, expected, positives = _retained_positive_identities(checkpoint, self)
     delegated = _case_request(self, case, "DELEGATED_RERANK")
     forged_agent = deepcopy(delegated)
     forged_agent["work_selector"]["step_id"] += ".forged.agent"
@@ -210,3 +177,41 @@ def _verify_operator_identity_continuation(self, case: dict, checkpoint: dict) -
         "effective_known_delta_decimal": "0.000000000",
     }
     return result, actual
+
+
+def _retained_positive_identities(checkpoint, self):
+    correlated_before = self._correlation_snapshot()
+    expected = checkpoint["retained_t60_positive_attempt_ids"]
+    positives = {}
+    for principal, aid in zip(("user.demo", "svc.vega", "svc.orion"), expected, strict=True):
+        sid, record = correlated_before["submissions"].get(aid, (None, None))
+        guard_sid, guard = correlated_before["guards"].get(aid, (None, None))
+        usage = correlated_before["latest_usage"].get(aid)
+        arrivals = [
+            row for row in correlated_before["receiver_rows"] if row.get("attempt_id") == aid
+        ]
+        if (
+            record is None
+            or record["work_key"]["principal_id"] != principal
+            or record["work_key"]["step_id"] != "step.completion02.t60.composed"
+            or record["campaign_id"] != self.allowance.campaign_id
+            or record["submission_state"] != "completed"
+            or record["delivery_state"] != "valid"
+            or guard_sid != sid
+            or guard.get("plan_id") != record["signed_plan"]["plan_id"]
+            or len(arrivals) != 1
+            or arrivals[0]["body_sha256"] != guard["body_sha256"]
+            or usage is None
+            or usage[2]["cost_status"] != "calculated"
+        ):
+            raise RuntimeError("retained T60 positive attempt lineage differs")
+        positives[principal] = {
+            "attempt_id": aid,
+            "submission_id": sid,
+            "actor_id": record["trusted_identity"]["actor_id"],
+            "initiating_user_id": record["request"]["metadata"].get("initiating_user_id"),
+            "delegation": record["request"]["metadata"].get("delegation", []),
+            "cost_status": usage[2]["cost_status"],
+            "receiver_arrivals": len(arrivals),
+        }
+    return correlated_before, expected, positives
