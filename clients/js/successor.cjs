@@ -57,7 +57,7 @@ function strictDecode(bytes, limit=SUCCESSOR_RESPONSE_LIMIT) {
     if(!match)throw Error("JSON number");position+=match[0].length;
     if(/[.eE]/.test(source[position]||""))throw Error("JSON noninteger");
     const number=Number(match[0]);if(!Number.isSafeInteger(number))throw Error("JSON unsafe integer");
-    return number;
+    return number === 0 ? 0 : number;
   }
   const value=parse(0);space();if(position!==source.length)throw Error("JSON trailing bytes");
   return value;

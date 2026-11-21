@@ -17,6 +17,7 @@ def settings(default=128):
 
 def json_value(rng, depth=0):
     scalars = [
+        None,
         True,
         False,
         0,
@@ -28,12 +29,67 @@ def json_value(rng, depth=0):
         "é",
         "😀",
         "plain.text",
+        1.0,
+        -0.0,
+        1.25,
+        'line\nquote"slash\\',
+        "\0\t\r\x7f",
     ]
     if depth >= 4 or rng.randrange(3) == 0:
         return rng.choice(scalars)
     if rng.randrange(2):
         return [json_value(rng, depth + 1) for _ in range(rng.randrange(5))]
-    return {"key." + str(i): json_value(rng, depth + 1) for i in range(rng.randrange(5))}
+    keys = rng.sample(("", "key.0", "é", "😀", "\ue000", "\n", '"', "\\"), rng.randrange(5))
+    return {key: json_value(rng, depth + 1) for key in keys}
+
+
+# Literal tokens in UTF-16 order. Expected canonical bytes are constructed before
+# decoding; neither the runtime canonicalizer nor a second serializer is an oracle.
+CANONICAL_KEYS = (
+    '""',
+    '"\\u0000"',
+    '"\\n"',
+    '"\\""',
+    '"0"',
+    '"10"',
+    '"2"',
+    '"\\\\"',
+    '"a"',
+    '"é"',
+    '"z"',
+    '"é"',
+    '"𐀀"',
+    '"😀"',
+    '"\ue000"',
+)
+CANONICAL_SCALARS = (
+    "true",
+    "false",
+    "0",
+    "1",
+    "-1",
+    "9007199254740991",
+    "-9007199254740991",
+    *CANONICAL_KEYS,
+)
+
+
+def canonical_case(rng, depth=0):
+    def literal(level):
+        if level >= 4 or rng.randrange(3) == 0:
+            return rng.choice(CANONICAL_SCALARS)
+        if rng.randrange(2):
+            return "[" + ",".join(literal(level + 1) for _ in range(rng.randrange(5))) + "]"
+        ranks = sorted(rng.sample(range(len(CANONICAL_KEYS)), rng.randrange(5)))
+        return "{" + ",".join(CANONICAL_KEYS[i] + ":" + literal(level + 1) for i in ranks) + "}"
+
+    raw = literal(depth).encode()
+    value = json.loads(raw)
+    if isinstance(value, dict):
+        items = list(value.items())
+        rng.shuffle(items)
+        value = dict(items)
+    return value, raw
 
 
 def json_cases(seed, count):

@@ -8,7 +8,7 @@
 | Successor execution | Two worker threads and at most 64 running or queued actions per service. |
 | HTTP, sender IPC, worker IPC and console ingress | At most 32 active connections per listener. Excess connections close without creating another handler thread. |
 | HTTP input | A 15-second absolute header/body deadline, checked at each underlying socket read. No per-request timer thread. The completed input restores the ordinary socket timeout before model processing. |
-| IPC records | At most 262,144 bytes. Accepted sender/worker connections allow five seconds for the entire incoming frame and five seconds for writing the reply. |
+| IPC records | At most 262,144 bytes and 64 nested levels below the record object. Deep JSON and decoder recursion failures are input errors on synchronous and asynchronous paths. Accepted sender/worker connections allow five seconds for the entire incoming frame and five seconds for writing the reply. |
 | Worker exchange | Connect, request and response share the caller's total attempt budget plus the existing bounded protocol allowance. Cancelling the worker's async exchange closes its socket immediately. |
 | Console ingress | Three seconds to connect upstream, five seconds per write, a 30-second idle wait and a six-minute connection lifetime. |
 | Operator wire tokens | A 30-minute lifetime and at most 4,096 live tokens per registry. Issue/authentication prune expired entries; capacity exhaustion preserves existing live credentials. |

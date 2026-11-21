@@ -211,13 +211,39 @@ A separate EOF case rejects valid JSON shorter than its declared body. Applicati
 write/send entry points are controlled probes; no users or provider attempts are
 created. Early 401/404 cases remain distinct and assert that parsers are bypassed.
 
-Failures print the seed and index, with synthetic JSON bytes encoded as base64.
-The JSON comparison distinguishes free response text from the server's stricter
-request-text policy. Accounting expectations use integer nanodollars rather
-than the implementation's Decimal accumulator. The campaign model preserves
-late recorded charges, checks exact incurred/held/available exposure, and refuses
-new reservations that exceed current authority. These generators do not yet
-provide Hypothesis-style shrinking or cover all native decoder implementations.
+Parser failures print the seed and index, with synthetic JSON bytes encoded as
+base64. Typed observations distinguish booleans, integers, floating-point values
+and signed zero before transport serialization; request text still has a stricter
+control-character policy than response text. The JavaScript integer decoder
+normalizes `-0` to zero, matching Python. General inputs include null, floats,
+escaped/control text and Unicode keys. Separate canonical cases start from literal
+tokens in known UTF-16 order, then decode and shuffle insertion order; fixed
+SHA-256 known answers check digest formatting.
+
+Campaign and registry models stop at the first divergent invariant. A bounded
+48-replay command-deletion reducer preserves that invariant and saves the failing
+prefix plus minimized trace under the health directory's `generated-failures/`.
+Without an explicit health directory, managed outputs retain five failures under
+`.artifacts/test-health/`. These traces contain synthetic commands only; ordinary
+health summaries remain value-free. Replay a saved minimized campaign trace with
+`tests.generated_campaign.execute(trace["minimized"])`, or use
+`tests.generated_registry.execute` for registry traces, after loading its JSON.
+This is bounded command deletion, with no claim of globally minimal inputs or
+general scalar/JSON shrinking.
+
+Campaign expectations use integer nanodollars, renew allowances by explicitly
+closing and configuring new synthetic campaigns, and include unknown and
+over-bound settlements, late corrections, duplicate settlement/reconciliation,
+and rejected admissions. Registry generation covers two models and two principals,
+edits and state changes, exact operation replay, conflicting operation-ID reuse,
+stale revisions, unchanged rejected-write versions and unaffected subjects.
+Grant/price models and the other native decoders remain follow-up work.
+
+Both campaign close/admission orders observe an actual failed nonblocking
+authority-gate acquire by the competitor while the first transaction is held.
+Only that checkpoint releases the transaction; an event before calling the
+operation does not satisfy the test. A sensitivity probe delays the competitor
+until after commit and verifies that this test fails.
 
 `tools.check --lock-audit` wraps the shared store/authority gates, registry probe
 and token locks, credential/vault gates, availability lock and password hash

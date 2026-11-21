@@ -72,6 +72,7 @@ MODULES = (
     "tests.unit.test_generated_properties.RegistryStateModel",
     "tests.unit.test_generated_properties.AccountingOrderProperties",
     "tests.unit.test_generated_parsers.GeneratedParserTests",
+    "tests.unit.test_generated_test_sensitivity",
     "tests.operator_console.test_authorization_matrix_sockets.SocketPairAuthorizationMatrixTests",
     "tests.operator_console.test_authorization_matrix",
     "tests.operator_console.test_authority_boundaries",

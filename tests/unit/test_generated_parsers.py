@@ -16,6 +16,7 @@ from ezllmrouter_server.web import serve
 from ezllmrouter_server.operator_http.transport import TransportRoutes
 from ezllmrouter_server.wire_http.transport import WireTransport
 from tests.generated_inputs import json_cases, settings
+from tests.json_observations import observe
 from tests.operator_console.test_user_management_web import MemoryServer, UserHTTPFixture
 from tests.unit.test_http_structure import HTTPFramingTests
 
@@ -103,16 +104,17 @@ class GeneratedParserTests(UserHTTPFixture):
         for index, (raw, javascript) in enumerate(zip(cases, decoded, strict=True)):
             with self.subTest(seed=seed, index=index, raw_base64=base64.b64encode(raw).decode()):
                 try:
-                    python = {"accepted": True, "value": strict_reply(raw)}
+                    value = strict_reply(raw)
+                    python = {"accepted": True, "observation": observe(value)}
                 except (ValueError, UnicodeError, RecursionError):
                     python = {"accepted": False}
                 self.assertEqual(python, javascript)
                 # Request text intentionally excludes controls that free response text permits.
-                if python["accepted"] and has_controls(python["value"]):
+                if python["accepted"] and has_controls(value):
                     with self.assertRaises(ContractError):
                         strict_decode(raw)
                 elif python["accepted"]:
-                    self.assertEqual(strict_decode(raw), python["value"])
+                    self.assertEqual(observe(strict_decode(raw)), observe(value))
                 else:
                     with self.assertRaises(ContractError):
                         strict_decode(raw)

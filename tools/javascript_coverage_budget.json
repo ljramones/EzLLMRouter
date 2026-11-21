@@ -124,7 +124,7 @@
       "missing_function_ids": []
     },
     "clients/js/successor.cjs": {
-      "sha256": "6e93e6e2a5462b19cb4251330eb493c5c065cc17b93451d5fff308b0362b4d31",
+      "sha256": "10301a9b9f3f7de5c9511da17a06bfce72fe497aeaa598e548a1ee9ca30e25b1",
       "measured": true,
       "missing_functions": 0,
       "functions": 27,

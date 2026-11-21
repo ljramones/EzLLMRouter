@@ -3,9 +3,44 @@
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import unittest
+from unittest.mock import patch
 
 from ezllmrouter_server.canonical import ContractError
 from tests.operator_console import test_personal_campaign as support
+
+
+class ContendedGate:
+    """Observe an actual failed acquire by the designated competing thread."""
+
+    def __init__(self, original):
+        self.original, self.local = original, threading.local()
+        self.contended = threading.Event()
+
+    def compete(self, function, *args):
+        self.local.observe = True
+        return function(*args)
+
+    def acquire(self, *args, **kwargs):
+        if getattr(self.local, "observe", False):
+            self.local.observe = False
+            if self.original.acquire(False):
+                self.original.release()
+                raise AssertionError("competitor did not encounter a held authority gate")
+            self.contended.set()
+        return self.original.acquire(*args, **kwargs)
+
+    def release(self):
+        self.original.release()
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, *_):
+        self.release()
+
+    def __getattr__(self, name):
+        return getattr(self.original, name)
 
 
 class CampaignInterleavingTests(unittest.TestCase):
@@ -19,7 +54,9 @@ class CampaignInterleavingTests(unittest.TestCase):
 
     def test_reservation_commits_before_close_and_exposure_is_retained(self):
         self.activate()
-        entered, release, closing = threading.Event(), threading.Event(), threading.Event()
+        entered, release = threading.Event(), threading.Event()
+        gate = ContendedGate(self.registry.send_authority.gate)
+        self.registry.send_authority.gate = gate
         record = self._record("close-race")
 
         def reserve():
@@ -33,16 +70,14 @@ class CampaignInterleavingTests(unittest.TestCase):
             with self.registry.send_authority.gate:
                 self.store.create(record, reserve=at_reservation)
 
-        def close():
-            closing.set()
-            return self.campaign.transition("owner.local", "closed")
-
         with ThreadPoolExecutor(max_workers=2) as executor:
             reserved = executor.submit(reserve)
             try:
                 self.assertTrue(entered.wait(2))
-                closed = executor.submit(close)
-                self.assertTrue(closing.wait(2))
+                closed = executor.submit(
+                    gate.compete, self.campaign.transition, "owner.local", "closed"
+                )
+                self.assertTrue(gate.contended.wait(2), "close never contended on authority")
                 self.assertFalse(closed.done())
             finally:
                 release.set()
@@ -62,21 +97,34 @@ class CampaignInterleavingTests(unittest.TestCase):
     def test_close_commits_before_waiting_admission_and_no_work_claim_leaks(self):
         self.activate()
         entered, release = threading.Event(), threading.Event()
+        gate = ContendedGate(self.registry.send_authority.gate)
+        self.registry.send_authority.gate = gate
+        original_audit = self.campaign._audit
+
+        def audit(db, action, actor, **kwargs):
+            if action == "closed":
+                entered.set()
+                if not release.wait(3):
+                    raise AssertionError("close checkpoint was not released")
+            return original_audit(db, action, actor, **kwargs)
 
         def reserve():
-            entered.set()
-            if not release.wait(3):
-                raise AssertionError("admission checkpoint was not released")
             with self.registry.send_authority.gate:
                 return self._reserve("after-close")
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            pending = executor.submit(reserve)
+        with (
+            patch.object(self.campaign, "_audit", side_effect=audit),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            closed = executor.submit(self.campaign.transition, "owner.local", "closed")
             try:
                 self.assertTrue(entered.wait(2))
-                self.campaign.transition("owner.local", "closed")
+                pending = executor.submit(gate.compete, reserve)
+                self.assertTrue(gate.contended.wait(2), "admission never contended on authority")
+                self.assertFalse(pending.done())
             finally:
                 release.set()
+            self.assertEqual(closed.result(timeout=3)["state"], "closed")
             with self.assertRaises(ContractError):
                 pending.result(timeout=3)
         self.assertEqual(self.campaign.summary()["request_count"], 0)

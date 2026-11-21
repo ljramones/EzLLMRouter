@@ -1,7 +1,9 @@
 """Bounded socket ownership and framing without worker-package import fixtures."""
 
 import asyncio
+import io
 import socket
+import struct
 import threading
 import time
 from types import SimpleNamespace
@@ -13,6 +15,53 @@ from ezllmrouter_server.gateway import choice_b_wire as wire
 
 
 class SocketBudgetTests(unittest.TestCase):
+    def test_decoder_recursion_failure_is_an_input_error(self):
+        # CPython builds differ in the decoder's native recursion ceiling.
+        with patch.object(wire.json, "loads", side_effect=RecursionError("decoder depth")):
+            with self.assertRaisesRegex(ValueError, "nesting"):
+                wire._decode_record(b"{}")
+
+    def test_sync_and_async_records_map_deep_json_to_input_errors(self):
+        self.assertIsInstance(
+            wire._decode_record(b'{"v":' + b"[" * 63 + b"0" + b"]" * 63 + b"}"), dict
+        )
+        with self.assertRaisesRegex(ValueError, "nesting"):
+            wire._decode_record(b'{"v":' + b"[" * 64 + b"0" + b"]" * 64 + b"}")
+        deep = b'{"value":' + b"[" * 4096 + b"0" + b"]" * 4096 + b"}"
+        for raw in (deep, b"[]", b"{", b'{"ok":true}'):
+            with self.subTest(raw_size=len(raw)):
+                frame = struct.pack("!I", len(raw)) + raw
+                stream = SimpleNamespace(recv=io.BytesIO(frame).read)
+                if raw == b'{"ok":true}':
+                    self.assertEqual(wire.receive(stream), {"ok": True})
+                else:
+                    with self.assertRaises(ValueError):
+                        wire.receive(stream)
+
+                async def scenario(frame=frame, raw=raw):
+                    stream, peer = self.pair()
+                    peer.setblocking(False)
+                    loop = asyncio.get_running_loop()
+                    socket_api = SimpleNamespace(
+                        AF_UNIX=socket.AF_UNIX,
+                        SOCK_STREAM=socket.SOCK_STREAM,
+                        socket=lambda *_: stream,
+                    )
+                    with (
+                        patch.object(wire, "socket", socket_api),
+                        patch.object(loop, "sock_connect", new=AsyncMock()),
+                    ):
+                        task = asyncio.create_task(wire.async_exchange("unused", {}, 1))
+                        self.assertTrue(await loop.sock_recv(peer, 4096))
+                        await loop.sock_sendall(peer, frame)
+                        if raw == b'{"ok":true}':
+                            self.assertEqual(await task, {"ok": True})
+                        else:
+                            with self.assertRaises(ValueError):
+                                await task
+
+                asyncio.run(scenario())
+
     def pair(self):
         first, second = socket.socketpair()
         self.addCleanup(first.close)

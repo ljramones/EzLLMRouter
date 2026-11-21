@@ -54,15 +54,31 @@ def _read_exact(stream: socket.socket, count: int, deadline: float | None = None
     return b"".join(chunks)
 
 
+def _decode_record(raw: bytes) -> dict[str, Any]:
+    try:
+        value = json.loads(raw)
+    except RecursionError as error:
+        raise ValueError("gateway socket record nesting") from error
+    if type(value) is not dict:
+        raise ValueError("gateway socket record shape")
+    pending = [(value, 0)]
+    while pending:
+        item, depth = pending.pop()
+        if depth > 64:
+            raise ValueError("gateway socket record nesting")
+        if isinstance(item, dict):
+            pending.extend((child, depth + 1) for child in item.values())
+        elif isinstance(item, list):
+            pending.extend((child, depth + 1) for child in item)
+    return value
+
+
 def receive(stream: socket.socket, *, timeout: float | None = None) -> dict[str, Any]:
     deadline = None if timeout is None else time.monotonic() + timeout
     size = struct.unpack("!I", _read_exact(stream, 4, deadline))[0]
     if not 0 < size <= LIMIT:
         raise ValueError("gateway socket record size")
-    value = json.loads(_read_exact(stream, size, deadline))
-    if type(value) is not dict:
-        raise ValueError("gateway socket record shape")
-    return value
+    return _decode_record(_read_exact(stream, size, deadline))
 
 
 def _frame(value: dict[str, Any]) -> bytes:
@@ -118,7 +134,4 @@ async def async_exchange(path: str | Path, value: dict[str, Any], timeout: float
             size = struct.unpack("!I", await read_exact(4))[0]
             if not 0 < size <= LIMIT:
                 raise ValueError("gateway socket record size")
-            result = json.loads(await read_exact(size))
-            if type(result) is not dict:
-                raise ValueError("gateway socket record shape")
-            return result
+            return _decode_record(await read_exact(size))
