@@ -126,6 +126,7 @@ MODULES = (
     "tests.unit.test_structural_cleanup",
 )
 LOOPBACK_MODULES = (
+    "tests.unit.test_operator_scheduler",
     "tests.operator_console.test_authorization_matrix_http.LoopbackAuthorizationMatrixTests",
     "tests.development_slice.test_http",
     "tests.operator_console.test_web",

@@ -64,6 +64,12 @@ class PythonCoverageGateTests(unittest.TestCase):
 
 
 class HTTPCoverageGateTests(unittest.TestCase):
+    def test_both_tiers_exercise_scheduler_outcomes_deterministically(self):
+        from tools import check
+
+        self.assertIn("tests.unit.test_operator_scheduler", check.MODULES)
+        self.assertIn("tests.unit.test_operator_scheduler", check.LOOPBACK_MODULES)
+
     def test_measurements_reject_reusing_nonempty_output_directories(self):
         from tools.coverage_run import prepare
 
