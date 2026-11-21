@@ -23,15 +23,7 @@
     "tests/operator_console/test_integration_accounting_policy.py:function:AccountingPolicyTests.test_correction_v2_negative_policy_lineage_and_expiry": 349,
     "tests/operator_console/test_integration_accounting_reports.py:function:AccountingReportTests.test_correction_v2_accounting_lineage_snapshots_and_export": 246,
     "tests/operator_console/test_integration_credentials.py:function:CredentialHTTPTests.test_owner_http_journey_and_nonowner_boundary": 214,
-    "tools/accounting/evidence/correction02_release.py:function:main": 259,
-    "tools/accounting/evidence/correction03_release.py:function:main": 249,
-    "tools/accounting/evidence/correction_release.py:function:main": 283,
-    "tools/gateway/docker/prepare.py:file": 2302,
-    "tools/gateway/evidence/dev12_completion_auth_http.py:function:main": 348,
-    "tools/gateway/evidence/dev12_completion_continue03_audit.py:function:audit": 214,
-    "tools/gateway/evidence/dev12_completion_packet_audit.py:function:audit": 238,
-    "tools/gateway/evidence/dev12_completion_zero_send_checks.py:function:main": 308,
-    "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237
+    "tools/gateway/docker/prepare.py:file": 2302
   },
   "relocations": [
     {

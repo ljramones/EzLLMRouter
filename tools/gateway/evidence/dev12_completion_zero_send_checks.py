@@ -120,115 +120,13 @@ def main(target, output):
         financial_owner_id="team.dev12.c02.20261026.continue01",
     )
     assert campaign.inspect()["paused"] and "authority" in campaign.inspect()["pause_reasons"]
-    before = table_state(store)
-    published_before = deepcopy(authority.state)
-    epoch_before = authority.epoch
-    trace = []
-    store.db.set_trace_callback(lambda sql: trace.append(sql.lstrip().split(None, 1)[0].upper()))
-    original_transaction = store._transaction
-    staged = {}
-
-    class StagedFailure(RuntimeError):
-        pass
-
-    def real_staged_failure(action):
-        def stage_then_fail():
-            action()  # real authority and audit SQL, inside real BEGIN IMMEDIATE
-            durable = json.loads(
-                store.db.execute(
-                    "SELECT state FROM dev12_authority WHERE authority_id='standalone.synthetic'"
-                ).fetchone()[0]
-            )
-            audit_rows = store.db.execute("SELECT COUNT(*) FROM dev12_authority_audit").fetchone()[
-                0
-            ]
-            staged.update(
-                {"grant_revision": durable["revisions"]["grant"], "audit_rows": audit_rows}
-            )
-            assert staged["grant_revision"] == published_before["revisions"]["grant"] + 1
-            assert audit_rows == before["dev12_authority_audit"]["rows"] + 1
-            raise StagedFailure("injected after both real staged writes")
-
-        return original_transaction(stage_then_fail)
-
-    store._transaction = real_staged_failure
-    try:
-        try:
-            authority.update(
-                lambda next_state: next_state["revisions"].__setitem__(
-                    "grant", next_state["revisions"]["grant"] + 1
-                ),
-                {"kind": "ct02_actual_staged_rollback", "at": utc()},
-            )
-        except StagedFailure as exc:
-            definite = getattr(exc, "ezllmrouter_definite_rollback", False)
-        else:
-            raise AssertionError("staged authority failure committed unexpectedly")
-    finally:
-        store._transaction = original_transaction
-        store.db.set_trace_callback(None)
-    rollback_after = table_state(store)
-    if (
-        not definite
-        or not staged
-        or "BEGIN" not in trace
-        or "UPDATE" not in trace
-        or "INSERT" not in trace
-        or "ROLLBACK" not in trace
-        or "COMMIT" in trace
-        or before != rollback_after
-        or authority.state != published_before
-        or authority.epoch != epoch_before
-        or authority.revoked
-    ):
-        raise AssertionError("actual staged rollback/coherent view not established")
-    rollback = {
-        "status": "PASS",
-        "definite_rollback_from_store": definite,
-        "staged_before_failure": staged,
-        "sql_operations": trace,
-        "all_table_hashes_before": before,
-        "all_table_hashes_after": rollback_after,
-        "published_epoch_before_after": [epoch_before, authority.epoch],
-        "published_view_unchanged": True,
-    }
+    rollback = _observe_definite_transaction_rollback(authority, store)
 
     # Select an actual completed same-campaign attempt with accepted known
     # native usage. Its next revision is a re-adjudication of retained evidence.
-    with store._lock:
-        records = [
-            json.loads(row[0])
-            for row in store.db.execute(
-                "SELECT record FROM dev12_submissions WHERE "
-                "json_extract(record,'$.work_key.principal_id')='user.demo' "
-                "AND json_extract(record,'$.submission_state')='completed' ORDER BY rowid"
-            )
-        ]
-    selected = next(
-        (
-            row
-            for row in records
-            if row["campaign_id"] == campaign.campaign_id
-            and (latest := store.successor_latest_usage(row["attempt_id"]))
-            and latest["cost_status"] == "calculated"
-        ),
-        None,
+    attempt, latest, proposed, selected, sid, token, trusted = _select_retained_usage_revision(
+        campaign, store
     )
-    if selected is None:
-        raise AssertionError("retained known-cost historical attempt absent")
-    sid, attempt = selected["submission_id"], selected["attempt_id"]
-    latest = store.successor_latest_usage(attempt)
-    proposed = deepcopy(latest)
-    proposed["revision"] += 1
-    proposed["previous_revision"] = latest["revision"]
-    token = "dev12.continue03.disposable.read." + "x" * 24
-    trusted = {
-        **selected["trusted_identity"],
-        "task_id": selected["work_key"]["task_id"],
-        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        ),
-    }
     coordinator = Coordinator(
         None,
         identity={token: trusted},
@@ -368,6 +266,128 @@ def main(target, output):
         service.pool.shutdown(wait=True)
         coordinator.pool.shutdown(wait=True)
         store.close()
+    _write_zero_send_observations(
+        copy, denied, output, positive, receiver_before, rollback, source, source_before, target
+    )
+
+
+def _observe_definite_transaction_rollback(authority, store):
+    before = table_state(store)
+    published_before = deepcopy(authority.state)
+    epoch_before = authority.epoch
+    trace = []
+    store.db.set_trace_callback(lambda sql: trace.append(sql.lstrip().split(None, 1)[0].upper()))
+    original_transaction = store._transaction
+    staged = {}
+
+    class StagedFailure(RuntimeError):
+        pass
+
+    def real_staged_failure(action):
+        def stage_then_fail():
+            action()  # real authority and audit SQL, inside real BEGIN IMMEDIATE
+            durable = json.loads(
+                store.db.execute(
+                    "SELECT state FROM dev12_authority WHERE authority_id='standalone.synthetic'"
+                ).fetchone()[0]
+            )
+            audit_rows = store.db.execute("SELECT COUNT(*) FROM dev12_authority_audit").fetchone()[
+                0
+            ]
+            staged.update(
+                {"grant_revision": durable["revisions"]["grant"], "audit_rows": audit_rows}
+            )
+            assert staged["grant_revision"] == published_before["revisions"]["grant"] + 1
+            assert audit_rows == before["dev12_authority_audit"]["rows"] + 1
+            raise StagedFailure("injected after both real staged writes")
+
+        return original_transaction(stage_then_fail)
+
+    store._transaction = real_staged_failure
+    try:
+        try:
+            authority.update(
+                lambda next_state: next_state["revisions"].__setitem__(
+                    "grant", next_state["revisions"]["grant"] + 1
+                ),
+                {"kind": "ct02_actual_staged_rollback", "at": utc()},
+            )
+        except StagedFailure as exc:
+            definite = getattr(exc, "ezllmrouter_definite_rollback", False)
+        else:
+            raise AssertionError("staged authority failure committed unexpectedly")
+    finally:
+        store._transaction = original_transaction
+        store.db.set_trace_callback(None)
+    rollback_after = table_state(store)
+    if (
+        not definite
+        or not staged
+        or "BEGIN" not in trace
+        or "UPDATE" not in trace
+        or "INSERT" not in trace
+        or "ROLLBACK" not in trace
+        or "COMMIT" in trace
+        or before != rollback_after
+        or authority.state != published_before
+        or authority.epoch != epoch_before
+        or authority.revoked
+    ):
+        raise AssertionError("actual staged rollback/coherent view not established")
+    rollback = {
+        "status": "PASS",
+        "definite_rollback_from_store": definite,
+        "staged_before_failure": staged,
+        "sql_operations": trace,
+        "all_table_hashes_before": before,
+        "all_table_hashes_after": rollback_after,
+        "published_epoch_before_after": [epoch_before, authority.epoch],
+        "published_view_unchanged": True,
+    }
+    return rollback
+
+
+def _select_retained_usage_revision(campaign, store):
+    with store._lock:
+        records = [
+            json.loads(row[0])
+            for row in store.db.execute(
+                "SELECT record FROM dev12_submissions WHERE "
+                "json_extract(record,'$.work_key.principal_id')='user.demo' "
+                "AND json_extract(record,'$.submission_state')='completed' ORDER BY rowid"
+            )
+        ]
+    selected = next(
+        (
+            row
+            for row in records
+            if row["campaign_id"] == campaign.campaign_id
+            and (latest := store.successor_latest_usage(row["attempt_id"]))
+            and latest["cost_status"] == "calculated"
+        ),
+        None,
+    )
+    if selected is None:
+        raise AssertionError("retained known-cost historical attempt absent")
+    sid, attempt = selected["submission_id"], selected["attempt_id"]
+    latest = store.successor_latest_usage(attempt)
+    proposed = deepcopy(latest)
+    proposed["revision"] += 1
+    proposed["previous_revision"] = latest["revision"]
+    token = "dev12.continue03.disposable.read." + "x" * 24
+    trusted = {
+        **selected["trusted_identity"],
+        "task_id": selected["work_key"]["task_id"],
+        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+    }
+    return attempt, latest, proposed, selected, sid, token, trusted
+
+
+def _write_zero_send_observations(
+    copy, denied, output, positive, receiver_before, rollback, source, source_before, target
+):
     assert digest(source) == source_before and digest(target / "receiver.jsonl") == receiver_before
     result_doc = {
         "kind": "dev12_completion02_continue03_zero_send_actual_store_v1",

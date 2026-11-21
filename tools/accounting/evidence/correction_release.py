@@ -55,193 +55,7 @@ def main():
         IntegrationClient(BASE, ingest_token, version="2") as sender,
     ):
         if mode == "seed":
-            dataset = {
-                "dataset_id": DID,
-                "platform_id": "platform.synthetic",
-                "environment_id": "env.synthetic",
-                "owner_id": "owner.local",
-                "ingest_principal_id": "svc.integration",
-                "activated_at": "2099-01-01T00:00:00Z",
-            }
-            assert owner.create_dataset(dataset)["dataset_id"] == DID
-            account = {
-                "account_id": ACCOUNT,
-                "dataset_id": DID,
-                "provider_id": "provider.synthetic",
-                "credential_ref": "manager.synthetic",
-                "allowed_models": ["model.synthetic"],
-                "state": "usable",
-            }
-            assert owner.register_account(account)["revision"] == 1
-            actor = subprocess.run(
-                (
-                    node,
-                    str(ROOT / "tools/accounting/evidence/correction_js_actor.cjs"),
-                    BASE,
-                    str(secrets / "ingest.token"),
-                    str(package),
-                    "seed",
-                ),
-                capture_output=True,
-                text=True,
-                env={
-                    **os.environ,
-                    "PATH": str(Path(node).parent) + ":" + os.environ.get("PATH", ""),
-                },
-            )
-            if actor.returncode:
-                (evidence / "node-seed-failure.log").write_text(actor.stdout + actor.stderr)
-                raise RuntimeError("installed Node seed failed: " + actor.stderr)
-            (evidence / "node-seed.json").write_text(actor.stdout)
-            start = {
-                "integration_version": "2",
-                "event_id": "event.search.start",
-                "dataset_id": DID,
-                "kind": "attempt_started",
-                "occurred_at": "2099-01-01T00:00:11Z",
-                "attempt_id": "attempt.search",
-                "started_at": "2099-01-01T00:00:11Z",
-                "task_id": "task.synthetic",
-                "step_id": "step.synthetic",
-                "run_id": "run.synthetic",
-                "root_run_id": "run.synthetic",
-                "actor_kind": "service",
-                "actor_id": "service.synthetic",
-                "provider_account_id": "account.unregistered",
-                "model_identity_state": "not_applicable",
-                "context_ref": "feature.search",
-                "operation_family_version": "1",
-                "operation_family": "search",
-                "logical_operation_id": "logical.search",
-                "attempt_role": "fanout",
-            }
-            assert sender.submit_observation(start)["membership_at_receipt"] == "included"
-            known_cost = {
-                "integration_version": "2",
-                "event_id": "event.search.usage",
-                "dataset_id": DID,
-                "kind": "usage",
-                "occurred_at": "2099-01-01T00:00:21Z",
-                "attempt_id": "attempt.search",
-                "usage_revision": 1,
-                "usage_state": "unknown",
-                "cost_state": "known",
-                "currency": "USD",
-                "amount_decimal": "0.010000000",
-                "cost_basis": "provider_reported",
-                "price_ref": "tariff.synthetic",
-                "price_version": "v1",
-            }
-            sender.submit_observation(known_cost)
-            fallback = {
-                **start,
-                "event_id": "event.fallback.start",
-                "attempt_id": "attempt.fallback",
-                "started_at": "2099-01-01T00:00:12Z",
-                "occurred_at": "2099-01-01T00:00:12Z",
-                "actor_kind": "agent",
-                "actor_id": "agent.synthetic.other",
-                "provider_account_id": ACCOUNT,
-                "model_id": "model.synthetic",
-                "model_identity_state": "known",
-                "context_ref": "feature.fallback",
-                "operation_family": "generation",
-                "logical_operation_id": "logical.synthetic",
-                "attempt_role": "fallback",
-                "predecessor_attempt_id": "attempt.base",
-            }
-            sender.submit_observation(fallback)
-            sender.submit_observation(
-                {
-                    "integration_version": "2",
-                    "event_id": "event.fallback.usage",
-                    "dataset_id": DID,
-                    "kind": "usage",
-                    "occurred_at": "2099-01-01T00:00:22Z",
-                    "attempt_id": "attempt.fallback",
-                    "usage_revision": 1,
-                    "usage_state": "known",
-                    "cost_state": "unknown",
-                    "native_units": [{"unit": "input_tokens", "quantity_decimal": "8"}],
-                    "usage_provenance": "provider_reported",
-                }
-            )
-            sender.submit_observation(
-                {
-                    "integration_version": "2",
-                    "event_id": "event.result.base",
-                    "dataset_id": DID,
-                    "kind": "result",
-                    "occurred_at": "2099-01-01T00:00:23Z",
-                    "attempt_id": "attempt.base",
-                    "result_state": "completed",
-                }
-            )
-            sender.submit_observation(
-                {
-                    "integration_version": "2",
-                    "event_id": "event.outcome",
-                    "dataset_id": DID,
-                    "kind": "activity",
-                    "activity_kind": "outcome",
-                    "occurred_at": "2099-01-01T00:00:30Z",
-                    "task_id": "task.synthetic",
-                    "run_id": "run.synthetic",
-                    "root_run_id": "run.synthetic",
-                    "actor_kind": "human",
-                    "actor_id": "user.synthetic",
-                    "outcome": "accepted",
-                }
-            )
-            # Resolve the *same* previously unregistered reported ID; do not rewrite the start.
-            owner.register_account(
-                {
-                    "account_id": "account.unregistered",
-                    "dataset_id": DID,
-                    "provider_id": "provider.synthetic",
-                    "credential_ref": "manager.synthetic.other",
-                    "allowed_models": ["model.synthetic"],
-                    "state": "disabled",
-                }
-            )
-            sender.submit_observation(
-                {
-                    "integration_version": "2",
-                    "event_id": "event.search.resolution",
-                    "dataset_id": DID,
-                    "kind": "account_resolution",
-                    "occurred_at": "2099-01-01T00:00:31Z",
-                    "attempt_id": "attempt.search",
-                    "resolved_account_id": "account.unregistered",
-                }
-            )
-            owner.set_account_state(
-                ACCOUNT, {"dataset_id": DID, "expected_revision": 1, "state": "disabled"}
-            )
-            assert (
-                sender.eligibility(DID, ACCOUNT, "model.synthetic")["reason"] == "account_disabled"
-            )
-            # Financial evidence arrives after disable; one effective amount replaces unknown.
-            sender.submit_observation(
-                {
-                    "integration_version": "2",
-                    "event_id": "event.usage.base.2",
-                    "dataset_id": DID,
-                    "kind": "usage",
-                    "occurred_at": "2099-01-01T00:00:40Z",
-                    "attempt_id": "attempt.base",
-                    "usage_revision": 2,
-                    "usage_state": "known",
-                    "cost_state": "known",
-                    "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
-                    "usage_provenance": "provider_reported",
-                    "currency": "USD",
-                    "amount_decimal": "0.020000000",
-                    "cost_basis": "provider_reported",
-                    "price_ref": "tariff.synthetic",
-                    "price_version": "v1",
-                }
-            )
+            _seed_correction_release(evidence, node, owner, package, secrets, sender)
         report = owner.report(DID)
         rows = list(csv.DictReader(io.StringIO(csv_report(admin_token))))
         exported = owner.export_dataset(DID)
@@ -318,6 +132,194 @@ def main():
         }
         (evidence / (mode + "-summary.json")).write_text(json.dumps(summary, indent=2) + "\n")
         print(json.dumps(summary, sort_keys=True))
+
+
+def _seed_correction_release(evidence, node, owner, package, secrets, sender):
+    dataset = {
+        "dataset_id": DID,
+        "platform_id": "platform.synthetic",
+        "environment_id": "env.synthetic",
+        "owner_id": "owner.local",
+        "ingest_principal_id": "svc.integration",
+        "activated_at": "2099-01-01T00:00:00Z",
+    }
+    assert owner.create_dataset(dataset)["dataset_id"] == DID
+    account = {
+        "account_id": ACCOUNT,
+        "dataset_id": DID,
+        "provider_id": "provider.synthetic",
+        "credential_ref": "manager.synthetic",
+        "allowed_models": ["model.synthetic"],
+        "state": "usable",
+    }
+    assert owner.register_account(account)["revision"] == 1
+    actor = subprocess.run(
+        (
+            node,
+            str(ROOT / "tools/accounting/evidence/correction_js_actor.cjs"),
+            BASE,
+            str(secrets / "ingest.token"),
+            str(package),
+            "seed",
+        ),
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PATH": str(Path(node).parent) + ":" + os.environ.get("PATH", ""),
+        },
+    )
+    if actor.returncode:
+        (evidence / "node-seed-failure.log").write_text(actor.stdout + actor.stderr)
+        raise RuntimeError("installed Node seed failed: " + actor.stderr)
+    (evidence / "node-seed.json").write_text(actor.stdout)
+    start = {
+        "integration_version": "2",
+        "event_id": "event.search.start",
+        "dataset_id": DID,
+        "kind": "attempt_started",
+        "occurred_at": "2099-01-01T00:00:11Z",
+        "attempt_id": "attempt.search",
+        "started_at": "2099-01-01T00:00:11Z",
+        "task_id": "task.synthetic",
+        "step_id": "step.synthetic",
+        "run_id": "run.synthetic",
+        "root_run_id": "run.synthetic",
+        "actor_kind": "service",
+        "actor_id": "service.synthetic",
+        "provider_account_id": "account.unregistered",
+        "model_identity_state": "not_applicable",
+        "context_ref": "feature.search",
+        "operation_family_version": "1",
+        "operation_family": "search",
+        "logical_operation_id": "logical.search",
+        "attempt_role": "fanout",
+    }
+    assert sender.submit_observation(start)["membership_at_receipt"] == "included"
+    known_cost = {
+        "integration_version": "2",
+        "event_id": "event.search.usage",
+        "dataset_id": DID,
+        "kind": "usage",
+        "occurred_at": "2099-01-01T00:00:21Z",
+        "attempt_id": "attempt.search",
+        "usage_revision": 1,
+        "usage_state": "unknown",
+        "cost_state": "known",
+        "currency": "USD",
+        "amount_decimal": "0.010000000",
+        "cost_basis": "provider_reported",
+        "price_ref": "tariff.synthetic",
+        "price_version": "v1",
+    }
+    sender.submit_observation(known_cost)
+    fallback = {
+        **start,
+        "event_id": "event.fallback.start",
+        "attempt_id": "attempt.fallback",
+        "started_at": "2099-01-01T00:00:12Z",
+        "occurred_at": "2099-01-01T00:00:12Z",
+        "actor_kind": "agent",
+        "actor_id": "agent.synthetic.other",
+        "provider_account_id": ACCOUNT,
+        "model_id": "model.synthetic",
+        "model_identity_state": "known",
+        "context_ref": "feature.fallback",
+        "operation_family": "generation",
+        "logical_operation_id": "logical.synthetic",
+        "attempt_role": "fallback",
+        "predecessor_attempt_id": "attempt.base",
+    }
+    sender.submit_observation(fallback)
+    sender.submit_observation(
+        {
+            "integration_version": "2",
+            "event_id": "event.fallback.usage",
+            "dataset_id": DID,
+            "kind": "usage",
+            "occurred_at": "2099-01-01T00:00:22Z",
+            "attempt_id": "attempt.fallback",
+            "usage_revision": 1,
+            "usage_state": "known",
+            "cost_state": "unknown",
+            "native_units": [{"unit": "input_tokens", "quantity_decimal": "8"}],
+            "usage_provenance": "provider_reported",
+        }
+    )
+    sender.submit_observation(
+        {
+            "integration_version": "2",
+            "event_id": "event.result.base",
+            "dataset_id": DID,
+            "kind": "result",
+            "occurred_at": "2099-01-01T00:00:23Z",
+            "attempt_id": "attempt.base",
+            "result_state": "completed",
+        }
+    )
+    sender.submit_observation(
+        {
+            "integration_version": "2",
+            "event_id": "event.outcome",
+            "dataset_id": DID,
+            "kind": "activity",
+            "activity_kind": "outcome",
+            "occurred_at": "2099-01-01T00:00:30Z",
+            "task_id": "task.synthetic",
+            "run_id": "run.synthetic",
+            "root_run_id": "run.synthetic",
+            "actor_kind": "human",
+            "actor_id": "user.synthetic",
+            "outcome": "accepted",
+        }
+    )
+    # Resolve the *same* previously unregistered reported ID; do not rewrite the start.
+    owner.register_account(
+        {
+            "account_id": "account.unregistered",
+            "dataset_id": DID,
+            "provider_id": "provider.synthetic",
+            "credential_ref": "manager.synthetic.other",
+            "allowed_models": ["model.synthetic"],
+            "state": "disabled",
+        }
+    )
+    sender.submit_observation(
+        {
+            "integration_version": "2",
+            "event_id": "event.search.resolution",
+            "dataset_id": DID,
+            "kind": "account_resolution",
+            "occurred_at": "2099-01-01T00:00:31Z",
+            "attempt_id": "attempt.search",
+            "resolved_account_id": "account.unregistered",
+        }
+    )
+    owner.set_account_state(
+        ACCOUNT, {"dataset_id": DID, "expected_revision": 1, "state": "disabled"}
+    )
+    assert sender.eligibility(DID, ACCOUNT, "model.synthetic")["reason"] == "account_disabled"
+    # Financial evidence arrives after disable; one effective amount replaces unknown.
+    sender.submit_observation(
+        {
+            "integration_version": "2",
+            "event_id": "event.usage.base.2",
+            "dataset_id": DID,
+            "kind": "usage",
+            "occurred_at": "2099-01-01T00:00:40Z",
+            "attempt_id": "attempt.base",
+            "usage_revision": 2,
+            "usage_state": "known",
+            "cost_state": "known",
+            "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
+            "usage_provenance": "provider_reported",
+            "currency": "USD",
+            "amount_decimal": "0.020000000",
+            "cost_basis": "provider_reported",
+            "price_ref": "tariff.synthetic",
+            "price_version": "v1",
+        }
+    )
 
 
 if __name__ == "__main__":

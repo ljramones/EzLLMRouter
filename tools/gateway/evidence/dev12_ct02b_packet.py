@@ -275,69 +275,7 @@ def verify_manifest(root):
 
 
 def audit(root):
-    listed = verify_manifest(root)
-    plan = document(root / "PLAN.json")
-    source = document(root / "SOURCE-FILES.json")
-    if (
-        plan["kind"] != "ct02b_one_case_plan_v1"
-        or plan["case_id"] != CASE
-        or plan["target_root_basename"] != ROOT_BASENAME
-        or plan["envelope"]["campaign_id"] != CAMPAIGN
-        or plan["envelope"]["budget_account_id"] != BUDGET
-        or plan["envelope"]["financial_owner_id"] != OWNER
-        or plan["envelope"]["max_admissions"] != 1
-        or plan["envelope"]["max_possible_sends"] != 1
-        or plan["envelope"]["max_inflight"] != 1
-        or plan["envelope"]["ceiling_decimal"] != "0.010000000"
-        or plan["original_expiry"] != EXPIRY
-        or digest((root / "ADOPTED-INSTRUCTION.md").read_bytes())
-        != plan["adopted_instruction_sha256"]
-        or digest((root / "OWNER-START.txt").read_bytes()) != plan["owner_forwarding_sha256"]
-        or digest((root / "LEGACY-ALLOCATION-ADJUDICATION-01.json").read_bytes())
-        != ADJUDICATION_SHA
-    ):
-        raise AssertionError("adopted one-case plan differs")
-    if (
-        digest((root / "history/continue03.zip").read_bytes()) != PREDECESSOR_PACKET_SHA
-        or document(root / "PREPARE.json")["status"] != "PASS"
-    ):
-        raise AssertionError("predecessor or no-target preparation differs")
-    with ZipFile(root / "history/continue03.zip") as z:
-        if (
-            document_bytes(z.read("AUDIT-RESULT.json"))["status"] != "PASS"
-            or document_bytes(z.read("IDENTITY.json"))["commit"]
-            != "a49926e5b7ae107f35b5a045812fb15dfcc706cc"
-        ):
-            raise AssertionError("nested reviewed predecessor differs")
-    if digest((root / "source.tar").read_bytes()) != source["source_tar_sha256"]:
-        raise AssertionError("exact source TAR differs")
-    with tarfile.open(fileobj=BytesIO((root / "source.tar").read_bytes()), mode="r:") as tar:
-        files = {}
-        for item in tar:
-            if item.isfile():
-                if item.name.startswith("/") or ".." in Path(item.name).parts:
-                    raise AssertionError("unsafe source TAR member")
-                files[item.name.removeprefix("source/")] = tar.extractfile(item).read()
-    value = sha256()
-    for row in source["files"]:
-        raw = files[row["path"]]
-        if len(raw) != row["bytes"] or digest(raw) != row["sha256"]:
-            raise AssertionError("frozen mounted source member differs")
-        name = row["path"].encode()
-        value.update(len(name).to_bytes(4, "big") + name)
-        value.update(len(raw).to_bytes(8, "big") + raw)
-    if (
-        len(source["files"]) != source["mounted_source_identity"]["file_count"]
-        or value.hexdigest() != source["mounted_source_identity"]["sha256"]
-        or plan["mounted_source_identity"] != source["mounted_source_identity"]
-        or source["source_commit"] != plan["source_commit"]
-        or source["source_tree"] != plan["source_tree"]
-    ):
-        raise AssertionError("mounted source aggregate differs")
-    for artifact in plan["artifacts"]:
-        path = root / "packages" / Path(artifact["path"]).name
-        if digest(path.read_bytes()) != artifact["sha256"]:
-            raise AssertionError("exact corrected client archive differs")
+    files, listed, plan = _audit_packet_source_custody(root)
     booking = document(root / "LEGACY-BOOKING.json")
     allocation = document(root / "SUPPLEMENTAL-ALLOCATION.json")
     gate = document(root / "NO-SEND-GATE.json")
@@ -685,3 +623,70 @@ if __name__ == "__main__":
             "audit ROOT, capture-failure REVIEW TARGET ORIGINAL, "
             "or build REVIEW TARGET PREDECESSOR_ZIP STAGE OUTPUT"
         )
+
+
+def _audit_packet_source_custody(root):
+    listed = verify_manifest(root)
+    plan = document(root / "PLAN.json")
+    source = document(root / "SOURCE-FILES.json")
+    if (
+        plan["kind"] != "ct02b_one_case_plan_v1"
+        or plan["case_id"] != CASE
+        or plan["target_root_basename"] != ROOT_BASENAME
+        or plan["envelope"]["campaign_id"] != CAMPAIGN
+        or plan["envelope"]["budget_account_id"] != BUDGET
+        or plan["envelope"]["financial_owner_id"] != OWNER
+        or plan["envelope"]["max_admissions"] != 1
+        or plan["envelope"]["max_possible_sends"] != 1
+        or plan["envelope"]["max_inflight"] != 1
+        or plan["envelope"]["ceiling_decimal"] != "0.010000000"
+        or plan["original_expiry"] != EXPIRY
+        or digest((root / "ADOPTED-INSTRUCTION.md").read_bytes())
+        != plan["adopted_instruction_sha256"]
+        or digest((root / "OWNER-START.txt").read_bytes()) != plan["owner_forwarding_sha256"]
+        or digest((root / "LEGACY-ALLOCATION-ADJUDICATION-01.json").read_bytes())
+        != ADJUDICATION_SHA
+    ):
+        raise AssertionError("adopted one-case plan differs")
+    if (
+        digest((root / "history/continue03.zip").read_bytes()) != PREDECESSOR_PACKET_SHA
+        or document(root / "PREPARE.json")["status"] != "PASS"
+    ):
+        raise AssertionError("predecessor or no-target preparation differs")
+    with ZipFile(root / "history/continue03.zip") as z:
+        if (
+            document_bytes(z.read("AUDIT-RESULT.json"))["status"] != "PASS"
+            or document_bytes(z.read("IDENTITY.json"))["commit"]
+            != "a49926e5b7ae107f35b5a045812fb15dfcc706cc"
+        ):
+            raise AssertionError("nested reviewed predecessor differs")
+    if digest((root / "source.tar").read_bytes()) != source["source_tar_sha256"]:
+        raise AssertionError("exact source TAR differs")
+    with tarfile.open(fileobj=BytesIO((root / "source.tar").read_bytes()), mode="r:") as tar:
+        files = {}
+        for item in tar:
+            if item.isfile():
+                if item.name.startswith("/") or ".." in Path(item.name).parts:
+                    raise AssertionError("unsafe source TAR member")
+                files[item.name.removeprefix("source/")] = tar.extractfile(item).read()
+    value = sha256()
+    for row in source["files"]:
+        raw = files[row["path"]]
+        if len(raw) != row["bytes"] or digest(raw) != row["sha256"]:
+            raise AssertionError("frozen mounted source member differs")
+        name = row["path"].encode()
+        value.update(len(name).to_bytes(4, "big") + name)
+        value.update(len(raw).to_bytes(8, "big") + raw)
+    if (
+        len(source["files"]) != source["mounted_source_identity"]["file_count"]
+        or value.hexdigest() != source["mounted_source_identity"]["sha256"]
+        or plan["mounted_source_identity"] != source["mounted_source_identity"]
+        or source["source_commit"] != plan["source_commit"]
+        or source["source_tree"] != plan["source_tree"]
+    ):
+        raise AssertionError("mounted source aggregate differs")
+    for artifact in plan["artifacts"]:
+        path = root / "packages" / Path(artifact["path"]).name
+        if digest(path.read_bytes()) != artifact["sha256"]:
+            raise AssertionError("exact corrected client archive differs")
+    return files, listed, plan

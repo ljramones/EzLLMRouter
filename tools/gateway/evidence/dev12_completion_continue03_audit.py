@@ -109,40 +109,7 @@ def audit(root, source):
     assert custody["complete_source_snapshots"] == 22 and custody["releases"] == 17
     assert custody["mounted_files_rehashed"] == 4771
 
-    wheel = root / "packages/corrected/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"
-    tarball = root / "packages/corrected/cognitivedynamics-ezllmrouter-client-0.3.0.tgz"
-    assert (
-        digest(wheel.read_bytes())
-        == "955b15582de0739377a1f1206a686283ba3b8d4b39212ef36d3f02baf63210c0"
-    )
-    assert (
-        digest(tarball.read_bytes())
-        == "cfe563b1c50a597e6d65876432436b9cf9cb6d9bfeb22dee80520b90a69ac52d"
-    )
-    with ZipFile(wheel) as z:
-        assert (
-            z.read("ezllmrouter_client/_successor_validation.py")
-            == (
-                source / "clients/python/src/ezllmrouter_client/_successor_validation.py"
-            ).read_bytes()
-        )
-    with tarfile.open(fileobj=io.BytesIO(tarball.read_bytes()), mode="r:gz") as tar:
-        assert (
-            tar.extractfile("package/successor.cjs").read()
-            == (source / "clients/js/successor.cjs").read_bytes()
-        )
-    assert (
-        digest(
-            (
-                export / "packages/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"
-            ).read_bytes()
-        )
-        == "d4cdea6ffabd7aa62985040e4a92a4870d73dc8e4240f43d4472d86ce595bb98"
-    )
-    assert (
-        digest((export / "packages/cognitivedynamics-ezllmrouter-client-0.3.0.tgz").read_bytes())
-        == "b871b64c98e299e031e4a6e11766a06e7a494f6e4b8b787fd70bfb8144694a3f"
-    )
+    _audit_corrected_client_artifacts(export, root, source)
 
     auth = document(root / "evidence/auth/AUTH-HTTP.json")
     js = document(root / "evidence/auth/COMMONJS-HTTP.json")
@@ -269,3 +236,40 @@ def audit(root, source):
 
 if __name__ == "__main__":
     print(json.dumps(audit(Path(sys.argv[1]), Path(sys.argv[2])), sort_keys=True, indent=2))
+
+
+def _audit_corrected_client_artifacts(export, root, source):
+    wheel = root / "packages/corrected/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"
+    tarball = root / "packages/corrected/cognitivedynamics-ezllmrouter-client-0.3.0.tgz"
+    assert (
+        digest(wheel.read_bytes())
+        == "955b15582de0739377a1f1206a686283ba3b8d4b39212ef36d3f02baf63210c0"
+    )
+    assert (
+        digest(tarball.read_bytes())
+        == "cfe563b1c50a597e6d65876432436b9cf9cb6d9bfeb22dee80520b90a69ac52d"
+    )
+    with ZipFile(wheel) as z:
+        assert (
+            z.read("ezllmrouter_client/_successor_validation.py")
+            == (
+                source / "clients/python/src/ezllmrouter_client/_successor_validation.py"
+            ).read_bytes()
+        )
+    with tarfile.open(fileobj=io.BytesIO(tarball.read_bytes()), mode="r:gz") as tar:
+        assert (
+            tar.extractfile("package/successor.cjs").read()
+            == (source / "clients/js/successor.cjs").read_bytes()
+        )
+    assert (
+        digest(
+            (
+                export / "packages/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl"
+            ).read_bytes()
+        )
+        == "d4cdea6ffabd7aa62985040e4a92a4870d73dc8e4240f43d4472d86ce595bb98"
+    )
+    assert (
+        digest((export / "packages/cognitivedynamics-ezllmrouter-client-0.3.0.tgz").read_bytes())
+        == "b871b64c98e299e031e4a6e11766a06e7a494f6e4b8b787fd70bfb8144694a3f"
+    )

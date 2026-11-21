@@ -85,176 +85,7 @@ def main():
         IntegrationClient(base, ingest_token, version="2") as sender,
     ):
         if mode == "seed":
-            dataset = {
-                "dataset_id": DID,
-                "platform_id": "platform.synthetic",
-                "environment_id": "env.synthetic",
-                "owner_id": "owner.local",
-                "ingest_principal_id": "svc.integration",
-                "activated_at": "2026-10-27T00:00:00Z",
-            }
-            assert owner.create_dataset(dataset)["dataset_id"] == DID
-            assert (
-                owner.register_account(
-                    {
-                        "account_id": ACCOUNT,
-                        "dataset_id": DID,
-                        "provider_id": "provider.synthetic",
-                        "credential_ref": "manager.synthetic",
-                        "allowed_models": ["model.synthetic"],
-                        "state": "usable",
-                    }
-                )["revision"]
-                == 1
-            )
-            node = actor(base, secrets / "ingest.token", package, "seed", evidence)
-            start_at = node["start_at"]
-            root = {"integration_version": "2", "dataset_id": DID}
-            lineage = {
-                **root,
-                "event_id": "event.fallback.lineage",
-                "kind": "lineage",
-                "occurred_at": later(start_at, 1),
-                "attempt_id": "attempt.fallback",
-                "logical_operation_id": "logical.synthetic",
-                "attempt_role": "fallback",
-                "predecessor_attempt_id": "attempt.base",
-            }
-            assert sender.submit_observation(lineage)["membership_at_receipt"] == "pending_start"
-            fallback = {
-                **root,
-                "event_id": "event.fallback.start",
-                "kind": "attempt_started",
-                "occurred_at": later(start_at, 1),
-                "attempt_id": "attempt.fallback",
-                "started_at": later(start_at, 1),
-                "task_id": "task.synthetic",
-                "step_id": "step.synthetic",
-                "run_id": "run.synthetic",
-                "root_run_id": "run.synthetic",
-                "actor_kind": "agent",
-                "actor_id": "agent.synthetic.other",
-                "provider_account_id": ACCOUNT,
-                "model_id": "model.synthetic",
-                "model_identity_state": "known",
-                "context_ref": "feature.fallback",
-                "operation_family_version": "1",
-                "operation_family": "generation",
-                "logical_operation_id": "logical.synthetic",
-                "attempt_role": "unknown",
-            }
-            assert sender.submit_observation(fallback)["membership_at_receipt"] == "included"
-            search = {
-                **fallback,
-                "event_id": "event.search.start",
-                "attempt_id": "attempt.search",
-                "occurred_at": later(start_at, 2),
-                "started_at": later(start_at, 2),
-                "actor_kind": "service",
-                "actor_id": "service.synthetic",
-                "provider_account_id": "account.unregistered",
-                "context_ref": "feature.search",
-                "operation_family": "search",
-                "model_identity_state": "not_applicable",
-                "logical_operation_id": "logical.search",
-                "attempt_role": "fanout",
-            }
-            search.pop("model_id")
-            assert sender.submit_observation(search)["membership_at_receipt"] == "included"
-            for bad in (
-                {
-                    **search,
-                    "event_id": "event.search.wrong.feature",
-                    "attempt_id": "attempt.wrong",
-                    "context_ref": "feature.base",
-                },
-                {
-                    **root,
-                    "event_id": "event.search.wrong.decision",
-                    "kind": "decision",
-                    "occurred_at": search["started_at"],
-                    "attempt_id": "attempt.search",
-                    "decision_ref": "feature.base",
-                    "selected_account_id": "account.unregistered",
-                    "policy_version": "policy.synthetic",
-                    "eligibility_evidence": {"status": "unavailable"},
-                },
-            ):
-                try:
-                    sender.submit_observation(bad)
-                except IntegrationClientError as error:
-                    assert error.code == "EVENT_CONFLICT"
-                else:
-                    raise AssertionError("incompatible snapshot reference accepted")
-            units = [{"unit": "input_tokens", "quantity_decimal": "8"}]
-            assert (
-                sender.submit_observation(
-                    {
-                        **root,
-                        "event_id": "event.fallback.usage",
-                        "kind": "usage",
-                        "occurred_at": later(start_at, 3),
-                        "attempt_id": "attempt.fallback",
-                        "usage_revision": 1,
-                        "usage_state": "known",
-                        "cost_state": "unknown",
-                        "native_units": units,
-                        "usage_provenance": "provider_reported",
-                    }
-                )["kind"]
-                == "usage"
-            )
-            assert (
-                sender.submit_observation(
-                    {
-                        **root,
-                        "event_id": "event.search.usage",
-                        "kind": "usage",
-                        "occurred_at": later(start_at, 3),
-                        "attempt_id": "attempt.search",
-                        "usage_revision": 1,
-                        "usage_state": "unknown",
-                        "cost_state": "known",
-                        "currency": "USD",
-                        "amount_decimal": "0.010000000",
-                        "cost_basis": "provider_reported",
-                        "price_ref": "tariff.synthetic",
-                        "price_version": "v1",
-                    }
-                )["kind"]
-                == "usage"
-            )
-            assert (
-                sender.submit_observation(
-                    {
-                        **root,
-                        "event_id": "event.base.usage.2",
-                        "kind": "usage",
-                        "occurred_at": later(start_at, 4),
-                        "attempt_id": "attempt.base",
-                        "usage_revision": 2,
-                        "usage_state": "known",
-                        "cost_state": "known",
-                        "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
-                        "usage_provenance": "provider_reported",
-                        "currency": "USD",
-                        "amount_decimal": "0.020000000",
-                        "cost_basis": "provider_reported",
-                        "price_ref": "tariff.synthetic",
-                        "price_version": "v1",
-                    }
-                )["kind"]
-                == "usage"
-            )
-            assert (
-                owner.set_account_state(
-                    ACCOUNT, {"dataset_id": DID, "expected_revision": 1, "state": "disabled"}
-                )["revision"]
-                == 2
-            )
-            assert (
-                sender.eligibility(DID, ACCOUNT, "model.synthetic")["reason"] == "account_disabled"
-            )
+            _seed_snapshot_correction_release(base, evidence, owner, package, secrets, sender)
         report = owner.report(DID)
         exported = owner.export_dataset(DID)
         rows = list(csv.DictReader(io.StringIO(csv_report(base, admin_token))))
@@ -327,6 +158,177 @@ def main():
             json.dumps(summary, indent=2, sort_keys=True) + "\n"
         )
         print(json.dumps(summary, sort_keys=True))
+
+
+def _seed_snapshot_correction_release(base, evidence, owner, package, secrets, sender):
+    dataset = {
+        "dataset_id": DID,
+        "platform_id": "platform.synthetic",
+        "environment_id": "env.synthetic",
+        "owner_id": "owner.local",
+        "ingest_principal_id": "svc.integration",
+        "activated_at": "2026-10-27T00:00:00Z",
+    }
+    assert owner.create_dataset(dataset)["dataset_id"] == DID
+    assert (
+        owner.register_account(
+            {
+                "account_id": ACCOUNT,
+                "dataset_id": DID,
+                "provider_id": "provider.synthetic",
+                "credential_ref": "manager.synthetic",
+                "allowed_models": ["model.synthetic"],
+                "state": "usable",
+            }
+        )["revision"]
+        == 1
+    )
+    node = actor(base, secrets / "ingest.token", package, "seed", evidence)
+    start_at = node["start_at"]
+    root = {"integration_version": "2", "dataset_id": DID}
+    lineage = {
+        **root,
+        "event_id": "event.fallback.lineage",
+        "kind": "lineage",
+        "occurred_at": later(start_at, 1),
+        "attempt_id": "attempt.fallback",
+        "logical_operation_id": "logical.synthetic",
+        "attempt_role": "fallback",
+        "predecessor_attempt_id": "attempt.base",
+    }
+    assert sender.submit_observation(lineage)["membership_at_receipt"] == "pending_start"
+    fallback = {
+        **root,
+        "event_id": "event.fallback.start",
+        "kind": "attempt_started",
+        "occurred_at": later(start_at, 1),
+        "attempt_id": "attempt.fallback",
+        "started_at": later(start_at, 1),
+        "task_id": "task.synthetic",
+        "step_id": "step.synthetic",
+        "run_id": "run.synthetic",
+        "root_run_id": "run.synthetic",
+        "actor_kind": "agent",
+        "actor_id": "agent.synthetic.other",
+        "provider_account_id": ACCOUNT,
+        "model_id": "model.synthetic",
+        "model_identity_state": "known",
+        "context_ref": "feature.fallback",
+        "operation_family_version": "1",
+        "operation_family": "generation",
+        "logical_operation_id": "logical.synthetic",
+        "attempt_role": "unknown",
+    }
+    assert sender.submit_observation(fallback)["membership_at_receipt"] == "included"
+    search = {
+        **fallback,
+        "event_id": "event.search.start",
+        "attempt_id": "attempt.search",
+        "occurred_at": later(start_at, 2),
+        "started_at": later(start_at, 2),
+        "actor_kind": "service",
+        "actor_id": "service.synthetic",
+        "provider_account_id": "account.unregistered",
+        "context_ref": "feature.search",
+        "operation_family": "search",
+        "model_identity_state": "not_applicable",
+        "logical_operation_id": "logical.search",
+        "attempt_role": "fanout",
+    }
+    search.pop("model_id")
+    assert sender.submit_observation(search)["membership_at_receipt"] == "included"
+    for bad in (
+        {
+            **search,
+            "event_id": "event.search.wrong.feature",
+            "attempt_id": "attempt.wrong",
+            "context_ref": "feature.base",
+        },
+        {
+            **root,
+            "event_id": "event.search.wrong.decision",
+            "kind": "decision",
+            "occurred_at": search["started_at"],
+            "attempt_id": "attempt.search",
+            "decision_ref": "feature.base",
+            "selected_account_id": "account.unregistered",
+            "policy_version": "policy.synthetic",
+            "eligibility_evidence": {"status": "unavailable"},
+        },
+    ):
+        try:
+            sender.submit_observation(bad)
+        except IntegrationClientError as error:
+            assert error.code == "EVENT_CONFLICT"
+        else:
+            raise AssertionError("incompatible snapshot reference accepted")
+    units = [{"unit": "input_tokens", "quantity_decimal": "8"}]
+    assert (
+        sender.submit_observation(
+            {
+                **root,
+                "event_id": "event.fallback.usage",
+                "kind": "usage",
+                "occurred_at": later(start_at, 3),
+                "attempt_id": "attempt.fallback",
+                "usage_revision": 1,
+                "usage_state": "known",
+                "cost_state": "unknown",
+                "native_units": units,
+                "usage_provenance": "provider_reported",
+            }
+        )["kind"]
+        == "usage"
+    )
+    assert (
+        sender.submit_observation(
+            {
+                **root,
+                "event_id": "event.search.usage",
+                "kind": "usage",
+                "occurred_at": later(start_at, 3),
+                "attempt_id": "attempt.search",
+                "usage_revision": 1,
+                "usage_state": "unknown",
+                "cost_state": "known",
+                "currency": "USD",
+                "amount_decimal": "0.010000000",
+                "cost_basis": "provider_reported",
+                "price_ref": "tariff.synthetic",
+                "price_version": "v1",
+            }
+        )["kind"]
+        == "usage"
+    )
+    assert (
+        sender.submit_observation(
+            {
+                **root,
+                "event_id": "event.base.usage.2",
+                "kind": "usage",
+                "occurred_at": later(start_at, 4),
+                "attempt_id": "attempt.base",
+                "usage_revision": 2,
+                "usage_state": "known",
+                "cost_state": "known",
+                "native_units": [{"unit": "input_tokens", "quantity_decimal": "10"}],
+                "usage_provenance": "provider_reported",
+                "currency": "USD",
+                "amount_decimal": "0.020000000",
+                "cost_basis": "provider_reported",
+                "price_ref": "tariff.synthetic",
+                "price_version": "v1",
+            }
+        )["kind"]
+        == "usage"
+    )
+    assert (
+        owner.set_account_state(
+            ACCOUNT, {"dataset_id": DID, "expected_revision": 1, "state": "disabled"}
+        )["revision"]
+        == 2
+    )
+    assert sender.eligibility(DID, ACCOUNT, "model.synthetic")["reason"] == "account_disabled"
 
 
 if __name__ == "__main__":

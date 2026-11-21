@@ -139,114 +139,10 @@ def audit(packet: Path, registry_path: Path):
         arrival = by_arrival[receipt["attempt_id"]]
         assert receipt["body_sha256"] == arrival["body_sha256"]
         assert receipt["body_bytes"] == arrival["body_bytes"]
-    histories = defaultdict(list)
-    for row in usage_rows:
-        usage = json.loads(row["usage"])
-        attempt_id = row["attempt_id"]
-        assert attempt_id in by_attempt
-        assert row["submission_id"] == by_attempt[attempt_id]["submission_id"]
-        assert usage["attempt_id"] == attempt_id
-        assert usage["revision"] == row["revision"]
-        assert usage["price_ref"] == by_attempt[attempt_id]["reservation"]["price_ref"]
-        histories[attempt_id].append(usage)
-    known = Decimal(0)
-    cost_states = Counter()
-    over_bound = 0
-    for attempt_id, history in histories.items():
-        history.sort(key=lambda r: r["revision"])
-        assert [r["revision"] for r in history] == list(range(1, len(history) + 1))
-        for index, row in enumerate(history):
-            if index:
-                assert row["previous_revision"] == index
-            else:
-                assert "previous_revision" not in row
-        latest = history[-1]
-        assert by_attempt[attempt_id]["effective_usage_revision"] == latest["revision"]
-        status = latest["cost_status"]
-        cost_states[status] += 1
-        if status in {"calculated", "over_bound"}:
-            assert len(latest["components"]) == 1
-            component = latest["components"][0]
-            assert component["presence"] == "known" and component["evidence"] == "reported"
-            amount = tariff(latest["price_ref"], component["component"], component["quantity"])
-            assert Decimal(latest["amount_decimal"]) == amount
-            bound = Decimal(by_attempt[attempt_id]["reservation"]["max_exposure_decimal"])
-            assert (status == "over_bound") == (amount > bound)
-            over_bound += status == "over_bound"
-            known += amount
-        elif status == "unknown":
-            assert "amount_decimal" not in latest
-        else:
-            raise AssertionError(f"unsupported cost state {status}")
-    assert all(
-        (row.get("effective_usage_revision") is None) == (row["attempt_id"] not in histories)
-        for row in submissions
+    cost_states, histories, known, over_bound = _audit_effective_native_usage(
+        by_attempt, submissions, usage_rows
     )
-    journal = [
-        json.loads(line)
-        for line in (packet / "target" / "case-journal.jsonl").read_text().splitlines()
-    ]
-    plans = {}
-    for path in (packet / "target").glob("plan*.json"):
-        value = json.loads(path.read_text())
-        plans[sha256(path.read_bytes()).hexdigest()] = value
-        if path.name == "plan.json":
-            compact = (
-                json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
-            ).encode()
-            plans[sha256(compact).hexdigest()] = value
-    releases = [
-        json.loads(line)
-        for line in (packet / "target" / "release-identity.jsonl").read_text().splitlines()
-    ]
-    for release in releases:
-        assert release["campaign_id"] == campaign_id
-        assert release["real_provider_calls"] == 0
-        assert release["plan_sha256"] in plans
-        assert release["source_tree"] == plans[release["plan_sha256"]]["source_tree"]
-        if "original_start_at" in release:
-            assert release["original_start_at"] == campaign["start_at"]
-            assert release["original_expires_at"] == campaign["expires_at"]
-    assert (
-        releases[-1]["plan_sha256"]
-        == sha256((packet / "target" / "plan.supplement9.json").read_bytes()).hexdigest()
-    )
-    for entry in journal:
-        if entry.get("kind") == "supplement_case_begin":
-            assert entry["plan_sha256"] in plans
-    # Every claimed passing case must have an available case document with its exact hash.
-    original_pass = set()
-    supplement_pass = set()
-    failed = []
-    for entry in journal:
-        if entry.get("kind") not in {
-            "case_end",
-            "supplement_case_end",
-            "supplement_case_reconciled",
-        }:
-            continue
-        case_id = entry["case_id"]
-        if entry["status"] != "PASS":
-            failed.append(case_id)
-            continue
-        for assertion in entry["result"]["assertions"]:
-            assert assertion["executed"] and assertion["passed"]
-            for relative in assertion["evidence_paths"]:
-                source = packet / "target" / relative
-                assert source.is_file(), relative
-                recorded = [
-                    ob for ob in entry["result"]["observations"] if ob["evidence_path"] == relative
-                ]
-                assert recorded and all(
-                    ob["sha256"] == sha256(source.read_bytes()).hexdigest() for ob in recorded
-                )
-        if entry["kind"] == "case_end":
-            original_pass.add(case_id)
-        else:
-            supplement_pass.add(case_id)
-    assert len(original_pass) == 80
-    assert QUALIFIED_SUPPLEMENT <= supplement_pass
-    assert "case.ct02_workkey.wire03_first" in supplement_pass  # retained weak pass
+    failed, original_pass = _audit_release_journal_lineage(campaign, campaign_id, packet)
     campaign_audits = [json.loads(row["record"]) for row in rows(ledger, "dev12_campaign_audit")]
     audit_decisions = Counter(row.get("decision", row.get("kind")) for row in campaign_audits)
     assert campaign["paused"] and campaign["pause_reasons"] == ["authority"]
@@ -313,3 +209,119 @@ def audit(packet: Path, registry_path: Path):
 
 if __name__ == "__main__":
     print(json.dumps(audit(Path(sys.argv[1]), Path(sys.argv[2])), sort_keys=True, indent=2))
+
+
+def _audit_effective_native_usage(by_attempt, submissions, usage_rows):
+    histories = defaultdict(list)
+    for row in usage_rows:
+        usage = json.loads(row["usage"])
+        attempt_id = row["attempt_id"]
+        assert attempt_id in by_attempt
+        assert row["submission_id"] == by_attempt[attempt_id]["submission_id"]
+        assert usage["attempt_id"] == attempt_id
+        assert usage["revision"] == row["revision"]
+        assert usage["price_ref"] == by_attempt[attempt_id]["reservation"]["price_ref"]
+        histories[attempt_id].append(usage)
+    known = Decimal(0)
+    cost_states = Counter()
+    over_bound = 0
+    for attempt_id, history in histories.items():
+        history.sort(key=lambda r: r["revision"])
+        assert [r["revision"] for r in history] == list(range(1, len(history) + 1))
+        for index, row in enumerate(history):
+            if index:
+                assert row["previous_revision"] == index
+            else:
+                assert "previous_revision" not in row
+        latest = history[-1]
+        assert by_attempt[attempt_id]["effective_usage_revision"] == latest["revision"]
+        status = latest["cost_status"]
+        cost_states[status] += 1
+        if status in {"calculated", "over_bound"}:
+            assert len(latest["components"]) == 1
+            component = latest["components"][0]
+            assert component["presence"] == "known" and component["evidence"] == "reported"
+            amount = tariff(latest["price_ref"], component["component"], component["quantity"])
+            assert Decimal(latest["amount_decimal"]) == amount
+            bound = Decimal(by_attempt[attempt_id]["reservation"]["max_exposure_decimal"])
+            assert (status == "over_bound") == (amount > bound)
+            over_bound += status == "over_bound"
+            known += amount
+        elif status == "unknown":
+            assert "amount_decimal" not in latest
+        else:
+            raise AssertionError(f"unsupported cost state {status}")
+    assert all(
+        (row.get("effective_usage_revision") is None) == (row["attempt_id"] not in histories)
+        for row in submissions
+    )
+    return cost_states, histories, known, over_bound
+
+
+def _audit_release_journal_lineage(campaign, campaign_id, packet):
+    journal = [
+        json.loads(line)
+        for line in (packet / "target" / "case-journal.jsonl").read_text().splitlines()
+    ]
+    plans = {}
+    for path in (packet / "target").glob("plan*.json"):
+        value = json.loads(path.read_text())
+        plans[sha256(path.read_bytes()).hexdigest()] = value
+        if path.name == "plan.json":
+            compact = (
+                json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
+            ).encode()
+            plans[sha256(compact).hexdigest()] = value
+    releases = [
+        json.loads(line)
+        for line in (packet / "target" / "release-identity.jsonl").read_text().splitlines()
+    ]
+    for release in releases:
+        assert release["campaign_id"] == campaign_id
+        assert release["real_provider_calls"] == 0
+        assert release["plan_sha256"] in plans
+        assert release["source_tree"] == plans[release["plan_sha256"]]["source_tree"]
+        if "original_start_at" in release:
+            assert release["original_start_at"] == campaign["start_at"]
+            assert release["original_expires_at"] == campaign["expires_at"]
+    assert (
+        releases[-1]["plan_sha256"]
+        == sha256((packet / "target" / "plan.supplement9.json").read_bytes()).hexdigest()
+    )
+    for entry in journal:
+        if entry.get("kind") == "supplement_case_begin":
+            assert entry["plan_sha256"] in plans
+    # Every claimed passing case must have an available case document with its exact hash.
+    original_pass = set()
+    supplement_pass = set()
+    failed = []
+    for entry in journal:
+        if entry.get("kind") not in {
+            "case_end",
+            "supplement_case_end",
+            "supplement_case_reconciled",
+        }:
+            continue
+        case_id = entry["case_id"]
+        if entry["status"] != "PASS":
+            failed.append(case_id)
+            continue
+        for assertion in entry["result"]["assertions"]:
+            assert assertion["executed"] and assertion["passed"]
+            for relative in assertion["evidence_paths"]:
+                source = packet / "target" / relative
+                assert source.is_file(), relative
+                recorded = [
+                    ob for ob in entry["result"]["observations"] if ob["evidence_path"] == relative
+                ]
+                assert recorded and all(
+                    ob["sha256"] == sha256(source.read_bytes()).hexdigest() for ob in recorded
+                )
+        if entry["kind"] == "case_end":
+            original_pass.add(case_id)
+        else:
+            supplement_pass.add(case_id)
+    assert len(original_pass) == 80
+    assert QUALIFIED_SUPPLEMENT <= supplement_pass
+    assert "case.ct02_workkey.wire03_first" in supplement_pass  # retained weak pass
+    return failed, original_pass

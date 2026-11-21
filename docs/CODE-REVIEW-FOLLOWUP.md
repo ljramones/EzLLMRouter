@@ -1236,3 +1236,22 @@ Full `tools.check` passes 919 Python cases, strict typing on 107 files,
 lint/formatting, script/console checks and both ratchets. Typing debt remains
 1,631; nine resolved function allowances are removed, leaving 30. Remaining W6
 work is retained correction/audit/auth tools, long tests and deployment exercises.
+
+
+### Item 11 follow-up: retained correction and audit phases
+
+The three correction release scripts retain their command modes and client
+contexts, with named seeding phases. Completion/CT02B audits now separate source
+custody, installed artifacts, native usage and release-journal lineage. The
+retained authorization HTTP runner keeps its complete request/cleanup scope
+together; zero-send checks separate rollback observation, revision selection
+and immutable-source reporting. No historical runner is removed or executed
+against a target.
+
+Twelve copied-body extractions expand back to the original executable AST,
+including exception and cleanup scopes. Every function under `tools/` is now at
+most 200 lines. Full `tools.check` passes 919 Python cases, strict typing on 107
+files, lint/formatting and script/console checks. Library typing debt remains
+1,631; eight resolved function allowances are removed, leaving 22. The long
+individual test journeys and two deployment exercises remain under W6. Real
+listener/browser/profile qualification remains pending.

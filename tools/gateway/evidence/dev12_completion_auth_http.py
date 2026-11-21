@@ -172,118 +172,52 @@ def main(target, package_root, output):
         "/v1/submissions/by-work/" + "/".join(str(work[key]) for key in work),
     )
     raw = []
+    return _serve_retained_authorization_checks(
+        before,
+        coordinator,
+        copy,
+        origin,
+        output,
+        package_root,
+        paths,
+        raw,
+        receiver_hash,
+        record,
+        server,
+        sid,
+        source,
+        source_hash,
+        store,
+        successor,
+        target,
+        thread,
+        work,
+    )
+
+
+def _serve_retained_authorization_checks(
+    before,
+    coordinator,
+    copy,
+    origin,
+    output,
+    package_root,
+    paths,
+    raw,
+    receiver_hash,
+    record,
+    server,
+    sid,
+    source,
+    source_hash,
+    store,
+    successor,
+    target,
+    thread,
+    work,
+):
     try:
-        with httpx.Client(base_url=origin, timeout=5, trust_env=False) as client:
-            for path in ("/v1/submissions", *paths):
-                for label, header in (
-                    ("missing", None),
-                    ("malformed", "Broken synthetic"),
-                    ("invalid", "Bearer invalid.synthetic"),
-                    ("revoked", "Bearer " + OLD),
-                ):
-                    headers = {"EzLLMRouter-Contract-Version": "0.3"}
-                    if header is not None:
-                        headers["Authorization"] = header
-                    response = (
-                        client.post(
-                            path,
-                            content=b"{malformed-json",
-                            headers={**headers, "Content-Type": "application/json"},
-                        )
-                        if path == "/v1/submissions"
-                        else client.get(path, headers=headers)
-                    )
-                    try:
-                        value = response.json()
-                    except ValueError as exc:
-                        raise AssertionError(
-                            f"non-JSON {label} {path}: HTTP {response.status_code} "
-                            f"{response.text[:120]!r}"
-                        ) from exc
-                    assert response.status_code == 401
-                    assert response.headers["EzLLMRouter-Contract-Version"] == "0.3"
-                    assert set(value) == {
-                        "contract_version",
-                        "code",
-                        "correlation_id",
-                        "retry_guidance",
-                    }
-                    assert (value["contract_version"], value["code"], value["retry_guidance"]) == (
-                        "0.3",
-                        "POLICY_DENIED",
-                        "never",
-                    )
-                    assert value["correlation_id"].startswith("error.")
-                    raw.append(
-                        {
-                            "selector": "pre_body_post"
-                            if path == "/v1/submissions"
-                            else "submission_id"
-                            if path == paths[0]
-                            else "work_key",
-                            "credential_state": label,
-                            "http_status": response.status_code,
-                            "contract_header": response.headers["EzLLMRouter-Contract-Version"],
-                            "body": value,
-                            "exact_body_utf8": response.text,
-                            "body_sha256": sha256(response.content).hexdigest(),
-                        }
-                    )
-                if path == "/v1/submissions":
-                    continue
-                renewed = client.get(
-                    path,
-                    headers={
-                        "EzLLMRouter-Contract-Version": "0.3",
-                        "Authorization": "Bearer " + RENEWED,
-                    },
-                )
-                answer = renewed.json()
-                assert renewed.status_code == 200 and answer["handle"]["submission_id"] == sid
-                assert answer["handle"]["work_key"] == record["work_key"]
-                latest = store.successor_latest_usage(record["attempt_id"])
-                assert answer["attempts"][0]["usage_revision"] == latest
-                assert answer["attempts"][0]["settlement_state"] == record["settlement_state"]
-                raw.append(
-                    {
-                        "selector": "submission_id" if path == paths[0] else "work_key",
-                        "credential_state": "renewed",
-                        "http_status": renewed.status_code,
-                        "contract_header": renewed.headers["EzLLMRouter-Contract-Version"],
-                        "handle": answer["handle"],
-                        "attempt_id": answer["attempts"][0]["attempt_id"],
-                        "settlement_state": answer["attempts"][0]["settlement_state"],
-                        "usage_revision": latest,
-                    }
-                )
-                denied = client.get(
-                    path,
-                    headers={
-                        "EzLLMRouter-Contract-Version": "0.3",
-                        "Authorization": "Bearer " + FOREIGN,
-                    },
-                )
-                denied_body = denied.json()
-                assert (
-                    denied.status_code,
-                    denied.headers["EzLLMRouter-Contract-Version"],
-                    denied_body["code"],
-                    denied_body["retry_guidance"],
-                ) == (404, "0.3", "NOT_FOUND_OR_FORBIDDEN", "never")
-                raw.append(
-                    {
-                        "selector": "submission_id" if path == paths[0] else "work_key",
-                        "credential_state": "authenticated_foreign",
-                        "http_status": denied.status_code,
-                        "contract_header": denied.headers["EzLLMRouter-Contract-Version"],
-                        "body": denied_body,
-                    }
-                )
-            legacy = client.get(paths[0], headers={"EzLLMRouter-Contract-Version": "0.2"})
-            assert (
-                legacy.status_code == 401
-                and legacy.json()["error"]["code"] == "AUTHENTICATION_FAILED"
-            )
+        legacy = _check_retained_raw_authorization(origin, paths, raw, record, sid, store)
         sys.path.insert(0, str(package_root))
         from ezllmrouter_client import EzLLMRouterClient, EzLLMRouterError
         import ezllmrouter_client
@@ -416,6 +350,120 @@ def main(target, package_root, output):
         successor.pool.shutdown(wait=True)
         coordinator.pool.shutdown(wait=True)
         store.close()
+
+
+def _check_retained_raw_authorization(origin, paths, raw, record, sid, store):
+    with httpx.Client(base_url=origin, timeout=5, trust_env=False) as client:
+        for path in ("/v1/submissions", *paths):
+            for label, header in (
+                ("missing", None),
+                ("malformed", "Broken synthetic"),
+                ("invalid", "Bearer invalid.synthetic"),
+                ("revoked", "Bearer " + OLD),
+            ):
+                headers = {"EzLLMRouter-Contract-Version": "0.3"}
+                if header is not None:
+                    headers["Authorization"] = header
+                response = (
+                    client.post(
+                        path,
+                        content=b"{malformed-json",
+                        headers={**headers, "Content-Type": "application/json"},
+                    )
+                    if path == "/v1/submissions"
+                    else client.get(path, headers=headers)
+                )
+                try:
+                    value = response.json()
+                except ValueError as exc:
+                    raise AssertionError(
+                        f"non-JSON {label} {path}: HTTP {response.status_code} "
+                        f"{response.text[:120]!r}"
+                    ) from exc
+                assert response.status_code == 401
+                assert response.headers["EzLLMRouter-Contract-Version"] == "0.3"
+                assert set(value) == {
+                    "contract_version",
+                    "code",
+                    "correlation_id",
+                    "retry_guidance",
+                }
+                assert (value["contract_version"], value["code"], value["retry_guidance"]) == (
+                    "0.3",
+                    "POLICY_DENIED",
+                    "never",
+                )
+                assert value["correlation_id"].startswith("error.")
+                raw.append(
+                    {
+                        "selector": "pre_body_post"
+                        if path == "/v1/submissions"
+                        else "submission_id"
+                        if path == paths[0]
+                        else "work_key",
+                        "credential_state": label,
+                        "http_status": response.status_code,
+                        "contract_header": response.headers["EzLLMRouter-Contract-Version"],
+                        "body": value,
+                        "exact_body_utf8": response.text,
+                        "body_sha256": sha256(response.content).hexdigest(),
+                    }
+                )
+            if path == "/v1/submissions":
+                continue
+            renewed = client.get(
+                path,
+                headers={
+                    "EzLLMRouter-Contract-Version": "0.3",
+                    "Authorization": "Bearer " + RENEWED,
+                },
+            )
+            answer = renewed.json()
+            assert renewed.status_code == 200 and answer["handle"]["submission_id"] == sid
+            assert answer["handle"]["work_key"] == record["work_key"]
+            latest = store.successor_latest_usage(record["attempt_id"])
+            assert answer["attempts"][0]["usage_revision"] == latest
+            assert answer["attempts"][0]["settlement_state"] == record["settlement_state"]
+            raw.append(
+                {
+                    "selector": "submission_id" if path == paths[0] else "work_key",
+                    "credential_state": "renewed",
+                    "http_status": renewed.status_code,
+                    "contract_header": renewed.headers["EzLLMRouter-Contract-Version"],
+                    "handle": answer["handle"],
+                    "attempt_id": answer["attempts"][0]["attempt_id"],
+                    "settlement_state": answer["attempts"][0]["settlement_state"],
+                    "usage_revision": latest,
+                }
+            )
+            denied = client.get(
+                path,
+                headers={
+                    "EzLLMRouter-Contract-Version": "0.3",
+                    "Authorization": "Bearer " + FOREIGN,
+                },
+            )
+            denied_body = denied.json()
+            assert (
+                denied.status_code,
+                denied.headers["EzLLMRouter-Contract-Version"],
+                denied_body["code"],
+                denied_body["retry_guidance"],
+            ) == (404, "0.3", "NOT_FOUND_OR_FORBIDDEN", "never")
+            raw.append(
+                {
+                    "selector": "submission_id" if path == paths[0] else "work_key",
+                    "credential_state": "authenticated_foreign",
+                    "http_status": denied.status_code,
+                    "contract_header": denied.headers["EzLLMRouter-Contract-Version"],
+                    "body": denied_body,
+                }
+            )
+        legacy = client.get(paths[0], headers={"EzLLMRouter-Contract-Version": "0.2"})
+        assert (
+            legacy.status_code == 401 and legacy.json()["error"]["code"] == "AUTHENTICATION_FAILED"
+        )
+    return legacy
 
 
 if __name__ == "__main__":

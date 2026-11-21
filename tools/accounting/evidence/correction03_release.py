@@ -311,80 +311,17 @@ def main():
             print(json.dumps(summary, sort_keys=True))
             return
         if mode == "seed_corrected":
-            check_historical(owner, sender, base, admin_token, db, expected, 2)
-            related = start(
-                DID,
-                "attempt.related",
-                ACCOUNT,
-                "task.old",
-                "logical.original",
-                "fallback",
-                "attempt.old",
-            )
-            rejected(lambda: sender.submit_observation(related))
-            unrelated = start(DID, "attempt.after", ACCOUNT, "task.after", "logical.after")
-            receipt = sender.submit_observation(unrelated)
-            assert sender.submit_observation(unrelated) == receipt
-            assert sender.recover_receipt(DID, unrelated["event_id"]) == receipt
-            assert history_hash(db) == expected
-            for did in (
-                "dataset.c03.mixed.linkfirst",
-                "dataset.c03.mixed.startfirst",
-                "dataset.c03.pure",
-            ):
-                assert owner.create_dataset(dataset(did))["dataset_id"] == did
-                assert owner.register_account(account(did, "account:" + did))["revision"] == 1
-            package = (
-                instance / "consumer-node24/node_modules/@cognitivedynamics/ezllmrouter-client"
-            )
-            assert package.is_dir()
-            node_actor(base, secrets / "ingest.token", package, "seed", evidence)
-            did = "dataset.c03.mixed.startfirst"
-            legacy = {
-                "integration_version": "1",
-                "event_id": "event.reverse.legacy",
-                "dataset_id": did,
-                "kind": "attempt_started",
-                "occurred_at": AT,
-                "attempt_id": "attempt.reverse.legacy",
-                "started_at": AT,
-                "task_id": "task.reverse",
-                "step_id": "step.c03",
-                "run_id": "run.reverse",
-                "root_run_id": "run.reverse",
-                "actor_kind": "agent",
-                "actor_id": "agent.synthetic",
-                "provider_account_id": "account:" + did,
-                "model_id": "model.synthetic",
-                "context_ref": "context.reverse",
-            }
-            with IntegrationClient(base, ingest_token, version="1") as v1:
-                accepted = v1.submit_observation(legacy)
-                assert v1.submit_observation(legacy) == accepted
-                assert v1.recover_receipt(did, legacy["event_id"]) == accepted
-            rejected(
-                lambda: sender.submit_observation(
-                    {
-                        "integration_version": "2",
-                        "event_id": "link.reverse",
-                        "dataset_id": did,
-                        "kind": "lineage",
-                        "occurred_at": AT,
-                        "attempt_id": "attempt.reverse.legacy",
-                        "logical_operation_id": "logical.reverse",
-                        "attempt_role": "fallback",
-                        "predecessor_attempt_id": "attempt.reverse.pending",
-                    }
-                )
-            )
-            sender.submit_observation(
-                start(
-                    did,
-                    "attempt.reverse.unrelated",
-                    "account:" + did,
-                    "task.reverse.unrelated",
-                    "logical.reverse.unrelated",
-                )
+            _seed_corrected_accounting_history(
+                admin_token,
+                base,
+                db,
+                evidence,
+                expected,
+                ingest_token,
+                instance,
+                owner,
+                secrets,
+                sender,
             )
         report, exported, rows = check_historical(owner, sender, base, admin_token, db, expected, 3)
         assert len(exported["events"]) == 5
@@ -430,6 +367,84 @@ def main():
             json.dumps(summary, indent=2, sort_keys=True) + "\n"
         )
         print(json.dumps(summary, sort_keys=True))
+
+
+def _seed_corrected_accounting_history(
+    admin_token, base, db, evidence, expected, ingest_token, instance, owner, secrets, sender
+):
+    check_historical(owner, sender, base, admin_token, db, expected, 2)
+    related = start(
+        DID,
+        "attempt.related",
+        ACCOUNT,
+        "task.old",
+        "logical.original",
+        "fallback",
+        "attempt.old",
+    )
+    rejected(lambda: sender.submit_observation(related))
+    unrelated = start(DID, "attempt.after", ACCOUNT, "task.after", "logical.after")
+    receipt = sender.submit_observation(unrelated)
+    assert sender.submit_observation(unrelated) == receipt
+    assert sender.recover_receipt(DID, unrelated["event_id"]) == receipt
+    assert history_hash(db) == expected
+    for did in (
+        "dataset.c03.mixed.linkfirst",
+        "dataset.c03.mixed.startfirst",
+        "dataset.c03.pure",
+    ):
+        assert owner.create_dataset(dataset(did))["dataset_id"] == did
+        assert owner.register_account(account(did, "account:" + did))["revision"] == 1
+    package = instance / "consumer-node24/node_modules/@cognitivedynamics/ezllmrouter-client"
+    assert package.is_dir()
+    node_actor(base, secrets / "ingest.token", package, "seed", evidence)
+    did = "dataset.c03.mixed.startfirst"
+    legacy = {
+        "integration_version": "1",
+        "event_id": "event.reverse.legacy",
+        "dataset_id": did,
+        "kind": "attempt_started",
+        "occurred_at": AT,
+        "attempt_id": "attempt.reverse.legacy",
+        "started_at": AT,
+        "task_id": "task.reverse",
+        "step_id": "step.c03",
+        "run_id": "run.reverse",
+        "root_run_id": "run.reverse",
+        "actor_kind": "agent",
+        "actor_id": "agent.synthetic",
+        "provider_account_id": "account:" + did,
+        "model_id": "model.synthetic",
+        "context_ref": "context.reverse",
+    }
+    with IntegrationClient(base, ingest_token, version="1") as v1:
+        accepted = v1.submit_observation(legacy)
+        assert v1.submit_observation(legacy) == accepted
+        assert v1.recover_receipt(did, legacy["event_id"]) == accepted
+    rejected(
+        lambda: sender.submit_observation(
+            {
+                "integration_version": "2",
+                "event_id": "link.reverse",
+                "dataset_id": did,
+                "kind": "lineage",
+                "occurred_at": AT,
+                "attempt_id": "attempt.reverse.legacy",
+                "logical_operation_id": "logical.reverse",
+                "attempt_role": "fallback",
+                "predecessor_attempt_id": "attempt.reverse.pending",
+            }
+        )
+    )
+    sender.submit_observation(
+        start(
+            did,
+            "attempt.reverse.unrelated",
+            "account:" + did,
+            "task.reverse.unrelated",
+            "logical.reverse.unrelated",
+        )
+    )
 
 
 if __name__ == "__main__":
