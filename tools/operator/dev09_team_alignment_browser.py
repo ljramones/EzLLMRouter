@@ -144,147 +144,7 @@ def main():
         observations, differences = [], []
         with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-alignment-") as scratch:
             with HeadlessChrome(Path(scratch), f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                time.sleep(0.4)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
-                )
-                wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
-                call(browser, "navigate", "usage")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Open demo workspace')",
-                    "operational usage",
-                )
-                call(browser, "click", "Open demo workspace")
-                wait(browser, "demoUi.data?.identity==='dev09-team-scripted-cost-demo-v2'", "demo")
-                call(browser, "click", "Team activity")
-                wait(browser, "demoUi.story==='team'&&demoUi.data?.end===115", "team")
-                for width in (1440, 900, 640):
-                    browser.call(
-                        "Emulation.setDeviceMetricsOverride",
-                        {"width": width, "height": 913, "deviceScaleFactor": 1, "mobile": False},
-                    )
-                    browser.evaluate("demoSeek(0);true")
-                    start = measure(browser)
-                    assert start["total"] == "0.00" and start["at"] == 0, start
-                    check_plot(start, 0, differences)
-                    browser.evaluate("demoSeek(demoUi.data.end);true")
-                    end = measure(browser)
-                    assert end["total"] == "1.25" and end["at"] == 115, end
-                    check_plot(end, 115, differences)
-                    browser.evaluate("demoSelect('demo.event.oren.ask');true")
-                    collapsed = measure(browser)
-                    assert collapsed["at"] == 10 and collapsed["participant"] is None, collapsed
-                    check_plot(collapsed, 10, differences, event=True)
-                    browser.evaluate(
-                        "[...document.querySelectorAll('.demo-workflow-group')]"
-                        ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
-                        ".querySelector('button').click();true"
-                    )
-                    expanded = measure(browser)
-                    check_plot(expanded, 10, differences, participant=True, event=True)
-                    close(
-                        expanded["summaryMarker"],
-                        collapsed["summaryMarker"],
-                        "expand preserves summary event",
-                        differences,
-                    )
-                    if width == 1440:
-                        browser.call(
-                            "Emulation.setDeviceMetricsOverride",
-                            {
-                                "width": 1440,
-                                "height": 1200,
-                                "deviceScaleFactor": 1,
-                                "mobile": False,
-                            },
-                        )
-                        capture_layout = browser.evaluate(
-                            "(()=>{const chart=document.querySelector('.demo-viz svg')"
-                            ".getBoundingClientRect();return {chart_bottom:chart.bottom,viewport:innerHeight}})()"
-                        )
-                        assert capture_layout["chart_bottom"] <= capture_layout["viewport"], (
-                            capture_layout
-                        )
-                        shot = screenshot(browser, Path(scratch), "selected-oren-request-aligned")
-                        browser.call(
-                            "Emulation.setDeviceMetricsOverride",
-                            {
-                                "width": width,
-                                "height": 913,
-                                "deviceScaleFactor": 1,
-                                "mobile": False,
-                            },
-                        )
-                    browser.evaluate(
-                        "[...document.querySelectorAll('.demo-workflow-group')]"
-                        ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
-                        ".querySelector('button').click();true"
-                    )
-                    recollapsed = measure(browser)
-                    check_plot(recollapsed, 10, differences, event=True)
-                    close(
-                        recollapsed["summaryMarker"],
-                        collapsed["summaryMarker"],
-                        "collapse preserves summary event",
-                        differences,
-                    )
-                    browser.evaluate(
-                        "demoSelect('demo.attempt.brant.boole.check.done');"
-                        "for(const name of ['Brant','Andrew · delivery','Andrew · direct'])"
-                        "[...document.querySelectorAll('.demo-workflow-group')]"
-                        ".find(g=>g.querySelector('strong')?.textContent.startsWith(name))"
-                        ".querySelector('button').click();true"
-                    )
-                    simultaneous = measure(browser)
-                    assert simultaneous["at"] == 65 and simultaneous["total"] == "0.84", (
-                        simultaneous
-                    )
-                    check_plot(simultaneous, 65, differences)
-                    x65 = simultaneous["axis"]["left"] + simultaneous["axis"]["width"] * 65 / 115
-                    close(simultaneous["guide"], x65, "65-second selected guide", differences)
-                    for name, surfaces in simultaneous["bars"].items():
-                        close(
-                            surfaces["summary"], x65, name + " summary usage endpoint", differences
-                        )
-                        close(
-                            surfaces["participant"],
-                            x65,
-                            name + " participant usage endpoint",
-                            differences,
-                        )
-                    observations.append(
-                        {
-                            "width": width,
-                            "start": start,
-                            "end": end,
-                            "collapsed_10": collapsed,
-                            "expanded_10": expanded,
-                            "recollapsed_10": recollapsed,
-                            "simultaneous_65": simultaneous,
-                        }
-                    )
-                    browser.evaluate("demoUi.expanded.clear();demoDraw();true")
-                browser.evaluate("demoChange({collection:'expanded',story:'expanded_all'});true")
-                wait(
-                    browser,
-                    "demoUi.data?.collection==='expanded'&&demoUi.data?.end>115",
-                    "expanded",
-                )
-                browser.evaluate("demoSeek(demoUi.data.end);true")
-                assert browser.evaluate(
-                    "demoSnapshot().total.known_subtotals.USD==='1.39'&&"
-                    "demoSnapshot().total.attempts===33"
-                ), "expanded total changed"
-                legacy = browser.evaluate(
-                    "fetch('/operator/v1/demo-workspace?collection=legacy&story=all')"
-                    ".then(r=>r.json())"
-                )
-                assert legacy["all_total"]["known_subtotals"]["USD"] == "0.46", legacy
+                shot = _verify_team_demo_alignment(browser, differences, observations, scratch)
             assert counters() == before, "disposable operational counters changed"
             target = (
                 destination.parent / "screenshots/dev09-team-alignment-02-selected-oren-request.png"
@@ -344,6 +204,143 @@ def main():
             server.operator_jobs.shutdown(wait=True)
             thread.join(timeout=3)
         fixture_test.doCleanups()
+
+
+def _verify_team_demo_alignment(browser, differences, observations, scratch):
+    wait_initial_page(browser)
+    time.sleep(0.4)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
+    call(browser, "navigate", "usage")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Open demo workspace')",
+        "operational usage",
+    )
+    call(browser, "click", "Open demo workspace")
+    wait(browser, "demoUi.data?.identity==='dev09-team-scripted-cost-demo-v2'", "demo")
+    call(browser, "click", "Team activity")
+    wait(browser, "demoUi.story==='team'&&demoUi.data?.end===115", "team")
+    for width in (1440, 900, 640):
+        browser.call(
+            "Emulation.setDeviceMetricsOverride",
+            {"width": width, "height": 913, "deviceScaleFactor": 1, "mobile": False},
+        )
+        browser.evaluate("demoSeek(0);true")
+        start = measure(browser)
+        assert start["total"] == "0.00" and start["at"] == 0, start
+        check_plot(start, 0, differences)
+        browser.evaluate("demoSeek(demoUi.data.end);true")
+        end = measure(browser)
+        assert end["total"] == "1.25" and end["at"] == 115, end
+        check_plot(end, 115, differences)
+        browser.evaluate("demoSelect('demo.event.oren.ask');true")
+        collapsed = measure(browser)
+        assert collapsed["at"] == 10 and collapsed["participant"] is None, collapsed
+        check_plot(collapsed, 10, differences, event=True)
+        browser.evaluate(
+            "[...document.querySelectorAll('.demo-workflow-group')]"
+            ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
+            ".querySelector('button').click();true"
+        )
+        expanded = measure(browser)
+        check_plot(expanded, 10, differences, participant=True, event=True)
+        close(
+            expanded["summaryMarker"],
+            collapsed["summaryMarker"],
+            "expand preserves summary event",
+            differences,
+        )
+        if width == 1440:
+            browser.call(
+                "Emulation.setDeviceMetricsOverride",
+                {
+                    "width": 1440,
+                    "height": 1200,
+                    "deviceScaleFactor": 1,
+                    "mobile": False,
+                },
+            )
+            capture_layout = browser.evaluate(
+                "(()=>{const chart=document.querySelector('.demo-viz svg')"
+                ".getBoundingClientRect();return {chart_bottom:chart.bottom,viewport:innerHeight}})()"
+            )
+            assert capture_layout["chart_bottom"] <= capture_layout["viewport"], capture_layout
+            shot = screenshot(browser, Path(scratch), "selected-oren-request-aligned")
+            browser.call(
+                "Emulation.setDeviceMetricsOverride",
+                {
+                    "width": width,
+                    "height": 913,
+                    "deviceScaleFactor": 1,
+                    "mobile": False,
+                },
+            )
+        browser.evaluate(
+            "[...document.querySelectorAll('.demo-workflow-group')]"
+            ".find(g=>g.querySelector('strong')?.textContent.startsWith('Oren'))"
+            ".querySelector('button').click();true"
+        )
+        recollapsed = measure(browser)
+        check_plot(recollapsed, 10, differences, event=True)
+        close(
+            recollapsed["summaryMarker"],
+            collapsed["summaryMarker"],
+            "collapse preserves summary event",
+            differences,
+        )
+        browser.evaluate(
+            "demoSelect('demo.attempt.brant.boole.check.done');"
+            "for(const name of ['Brant','Andrew · delivery','Andrew · direct'])"
+            "[...document.querySelectorAll('.demo-workflow-group')]"
+            ".find(g=>g.querySelector('strong')?.textContent.startsWith(name))"
+            ".querySelector('button').click();true"
+        )
+        simultaneous = measure(browser)
+        assert simultaneous["at"] == 65 and simultaneous["total"] == "0.84", simultaneous
+        check_plot(simultaneous, 65, differences)
+        x65 = simultaneous["axis"]["left"] + simultaneous["axis"]["width"] * 65 / 115
+        close(simultaneous["guide"], x65, "65-second selected guide", differences)
+        for name, surfaces in simultaneous["bars"].items():
+            close(surfaces["summary"], x65, name + " summary usage endpoint", differences)
+            close(
+                surfaces["participant"],
+                x65,
+                name + " participant usage endpoint",
+                differences,
+            )
+        observations.append(
+            {
+                "width": width,
+                "start": start,
+                "end": end,
+                "collapsed_10": collapsed,
+                "expanded_10": expanded,
+                "recollapsed_10": recollapsed,
+                "simultaneous_65": simultaneous,
+            }
+        )
+        browser.evaluate("demoUi.expanded.clear();demoDraw();true")
+    browser.evaluate("demoChange({collection:'expanded',story:'expanded_all'});true")
+    wait(
+        browser,
+        "demoUi.data?.collection==='expanded'&&demoUi.data?.end>115",
+        "expanded",
+    )
+    browser.evaluate("demoSeek(demoUi.data.end);true")
+    assert browser.evaluate(
+        "demoSnapshot().total.known_subtotals.USD==='1.39'&&demoSnapshot().total.attempts===33"
+    ), "expanded total changed"
+    legacy = browser.evaluate(
+        "fetch('/operator/v1/demo-workspace?collection=legacy&story=all').then(r=>r.json())"
+    )
+    assert legacy["all_total"]["known_subtotals"]["USD"] == "0.46", legacy
+    return shot
 
 
 if __name__ == "__main__":

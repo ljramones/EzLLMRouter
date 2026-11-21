@@ -105,146 +105,13 @@ def main():
         thread.start()
         base_url = "http://127.0.0.1:" + str(server.server_address[1])
 
-        def row(name, mode, **fields):
-            request = deepcopy(REQUEST)
-            request["execution_generation"] = "gen.dev09." + name
-            request["step_id"] = "step.dev09." + name
-            run = {
-                "version": "1",
-                "run_id": "run.dev09." + name,
-                "task_id": request["task_id"],
-                "task_class": request["task_class"],
-                "evaluation_ref": "rubric.synthetic.v1",
-                "mode": mode,
-                **fields,
-            }
-            return {"run": run, "request": request}
-
-        python_rows = [row("direct", "direct_human")]
-        alpha = row(
-            "alpha",
-            "user_delegated_agent",
-            agent_id="agent.synthetic",
-            agent_version="v1",
-            initiating_user_id="user.alpha",
-        )
-        child = row(
-            "child",
-            "nested_agent",
-            agent_id="agent.synthetic",
-            agent_version="v1",
-            parent_run_id="run.dev09.alpha",
-        )
-        beta = row(
-            "beta",
-            "user_delegated_agent",
-            agent_id="agent.synthetic",
-            agent_version="v1",
-            initiating_user_id="user.beta",
-        )
-        auto = row("auto", "autonomous_agent", agent_id="agent.synthetic", agent_version="v1")
-        common = dict(os.environ, PYTHONPATH=str(python_dir), NODE_PATH=str(js_dir))
-
-        def actor(command, data):
-            result = subprocess.run(
-                command,
-                input=json.dumps(data),
-                text=True,
-                capture_output=True,
-                env=common,
-                cwd=ROOT,
-                timeout=30,
-            )
-            if result.returncode:
-                raise RuntimeError("installed actor failed: " + result.stderr[-1200:])
-            return json.loads(result.stdout)
-
-        direct = actor(
-            [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
-            {"base_url": base_url, "token": credentials["user.alpha"], "rows": python_rows},
-        )
-        alpha_result = actor(
-            [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
-            {
-                "base_url": base_url,
-                "token": TOKEN,
-                "rows": [alpha],
-                "outcome": {
-                    "version": "1",
-                    "event_id": "event.dev09.denied",
-                    "run_id": alpha["run"]["run_id"],
-                    "kind": "task_outcome",
-                    "subject_revision": 1,
-                    "verdict": "accepted",
-                    "evaluator_version": "rubric.synthetic.v1",
-                    "evidence_ref": "evidence.synthetic",
-                },
-            },
-        )
-        node = "/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node"
-        child_result = actor(
-            [node, str(ROOT / "tools/operator/dev09_js_actor.cjs")],
-            {"base_url": base_url, "token": TOKEN, "rows": [child, beta, auto]},
+        actor, alpha, alpha_result, child_result, direct, node = (
+            _exercise_installed_attributed_runs(base_url, credentials, js_dir, python_dir)
         )
         assert len(fixture.adapter.sent) == 5
-        fixture.change(
-            160,
-            "create_principal",
-            "svc.evaluator",
-            0,
-            {"display_name": "Synthetic evaluator", "kind": "service", "owner": "team.demo"},
+        outcome_js, outcome_py = _exercise_installed_outcome_revisions(
+            actor, alpha, base_url, fixture, node, registry
         )
-        _, evaluator_token = registry.provision_credential(
-            "owner.local", "svc.evaluator", 1, "op.dev09.credential.evaluator"
-        )
-        fixture.change(
-            161,
-            "principal_state",
-            "svc.evaluator",
-            2,
-            {"status": "active", "reason": "Disposable evaluator"},
-        )
-        fixture.change(
-            162,
-            "set_outcome_authority",
-            "svc.evaluator",
-            0,
-            {"status": "active", "task_classes": ["class.demo"]},
-        )
-        accepted = {
-            "version": "1",
-            "event_id": "event.dev09.accepted",
-            "run_id": alpha["run"]["run_id"],
-            "kind": "task_outcome",
-            "subject_revision": 1,
-            "verdict": "accepted",
-            "evaluator_version": "rubric.synthetic.v1",
-            "evidence_ref": "evidence.synthetic.accepted",
-        }
-        outcome_py = actor(
-            [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
-            {
-                "base_url": base_url,
-                "token": evaluator_token,
-                "rows": [],
-                "outcome": accepted,
-                "expect_outcome_authority": True,
-            },
-        )
-        revised = {
-            **accepted,
-            "event_id": "event.dev09.revised",
-            "subject_revision": 2,
-            "verdict": "rejected",
-            "evidence_ref": "evidence.synthetic.revised",
-        }
-        outcome_js = actor(
-            [node, str(ROOT / "tools/operator/dev09_js_actor.cjs")],
-            {"base_url": base_url, "token": evaluator_token, "rows": [], "outcome": revised},
-        )
-        assert outcome_py["outcome"]["subject_revision"] == 1
-        assert outcome_js["outcome"]["subject_revision"] == 2
-        assert len(fixture.adapter.sent) == 5
         observed_states = [
             item["state"]
             for result in (direct, alpha_result, child_result)
@@ -314,6 +181,153 @@ def main():
             server.server_close()
             thread.join(timeout=3)
         fixture.doCleanups()
+
+
+def _exercise_installed_attributed_runs(base_url, credentials, js_dir, python_dir):
+    def row(name, mode, **fields):
+        request = deepcopy(REQUEST)
+        request["execution_generation"] = "gen.dev09." + name
+        request["step_id"] = "step.dev09." + name
+        run = {
+            "version": "1",
+            "run_id": "run.dev09." + name,
+            "task_id": request["task_id"],
+            "task_class": request["task_class"],
+            "evaluation_ref": "rubric.synthetic.v1",
+            "mode": mode,
+            **fields,
+        }
+        return {"run": run, "request": request}
+
+    python_rows = [row("direct", "direct_human")]
+    alpha = row(
+        "alpha",
+        "user_delegated_agent",
+        agent_id="agent.synthetic",
+        agent_version="v1",
+        initiating_user_id="user.alpha",
+    )
+    child = row(
+        "child",
+        "nested_agent",
+        agent_id="agent.synthetic",
+        agent_version="v1",
+        parent_run_id="run.dev09.alpha",
+    )
+    beta = row(
+        "beta",
+        "user_delegated_agent",
+        agent_id="agent.synthetic",
+        agent_version="v1",
+        initiating_user_id="user.beta",
+    )
+    auto = row("auto", "autonomous_agent", agent_id="agent.synthetic", agent_version="v1")
+    common = dict(os.environ, PYTHONPATH=str(python_dir), NODE_PATH=str(js_dir))
+
+    def actor(command, data):
+        result = subprocess.run(
+            command,
+            input=json.dumps(data),
+            text=True,
+            capture_output=True,
+            env=common,
+            cwd=ROOT,
+            timeout=30,
+        )
+        if result.returncode:
+            raise RuntimeError("installed actor failed: " + result.stderr[-1200:])
+        return json.loads(result.stdout)
+
+    direct = actor(
+        [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
+        {"base_url": base_url, "token": credentials["user.alpha"], "rows": python_rows},
+    )
+    alpha_result = actor(
+        [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
+        {
+            "base_url": base_url,
+            "token": TOKEN,
+            "rows": [alpha],
+            "outcome": {
+                "version": "1",
+                "event_id": "event.dev09.denied",
+                "run_id": alpha["run"]["run_id"],
+                "kind": "task_outcome",
+                "subject_revision": 1,
+                "verdict": "accepted",
+                "evaluator_version": "rubric.synthetic.v1",
+                "evidence_ref": "evidence.synthetic",
+            },
+        },
+    )
+    node = "/Users/larrymitchell/.nvm/versions/node/v24.22.1/bin/node"
+    child_result = actor(
+        [node, str(ROOT / "tools/operator/dev09_js_actor.cjs")],
+        {"base_url": base_url, "token": TOKEN, "rows": [child, beta, auto]},
+    )
+    return actor, alpha, alpha_result, child_result, direct, node
+
+
+def _exercise_installed_outcome_revisions(actor, alpha, base_url, fixture, node, registry):
+    fixture.change(
+        160,
+        "create_principal",
+        "svc.evaluator",
+        0,
+        {"display_name": "Synthetic evaluator", "kind": "service", "owner": "team.demo"},
+    )
+    _, evaluator_token = registry.provision_credential(
+        "owner.local", "svc.evaluator", 1, "op.dev09.credential.evaluator"
+    )
+    fixture.change(
+        161,
+        "principal_state",
+        "svc.evaluator",
+        2,
+        {"status": "active", "reason": "Disposable evaluator"},
+    )
+    fixture.change(
+        162,
+        "set_outcome_authority",
+        "svc.evaluator",
+        0,
+        {"status": "active", "task_classes": ["class.demo"]},
+    )
+    accepted = {
+        "version": "1",
+        "event_id": "event.dev09.accepted",
+        "run_id": alpha["run"]["run_id"],
+        "kind": "task_outcome",
+        "subject_revision": 1,
+        "verdict": "accepted",
+        "evaluator_version": "rubric.synthetic.v1",
+        "evidence_ref": "evidence.synthetic.accepted",
+    }
+    outcome_py = actor(
+        [sys.executable, str(ROOT / "tools/operator/dev09_python_actor.py")],
+        {
+            "base_url": base_url,
+            "token": evaluator_token,
+            "rows": [],
+            "outcome": accepted,
+            "expect_outcome_authority": True,
+        },
+    )
+    revised = {
+        **accepted,
+        "event_id": "event.dev09.revised",
+        "subject_revision": 2,
+        "verdict": "rejected",
+        "evidence_ref": "evidence.synthetic.revised",
+    }
+    outcome_js = actor(
+        [node, str(ROOT / "tools/operator/dev09_js_actor.cjs")],
+        {"base_url": base_url, "token": evaluator_token, "rows": [], "outcome": revised},
+    )
+    assert outcome_py["outcome"]["subject_revision"] == 1
+    assert outcome_js["outcome"]["subject_revision"] == 2
+    assert len(fixture.adapter.sent) == 5
+    return outcome_js, outcome_py
 
 
 if __name__ == "__main__":

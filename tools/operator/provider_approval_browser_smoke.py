@@ -111,192 +111,9 @@ def main():
         ) as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
+                allowed, denied, shots = _verify_provider_approval_journey(
+                    browser, model_ref, registry, run
                 )
-                wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
-                call(browser, "navigate", "providers")
-                call(browser, "click", "Add connection")
-                call(browser, "submit", {"adapter_id": "openai.responses.v1"})
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=connection_id]')",
-                    "OpenAI form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "connection_id": "conn.approval-browser",
-                        "display_name": "Controlled Responses connection",
-                        "site": "Controlled account",
-                        "origin": "https://api.openai.com",
-                        "owner": "owner.local",
-                    },
-                )
-                call(browser, "rowClick", "conn.approval-browser", "View")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled Responses connection')",
-                    "connection detail",
-                )
-                call(browser, "click", "Replace credential")
-                call(browser, "submit", {"secret": "test-provider-key-123456"})
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
-                    "credential stored",
-                )
-                call(browser, "click", "Activate connection")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('active')",
-                    "active connection",
-                )
-                call(browser, "click", "Associate model")
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=deployment_id]')",
-                    "association form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "deployment_id": "deployment.approval-browser",
-                        "model_ref": model_ref,
-                        "serving_id": "model-test",
-                        "site": "Controlled account",
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Create execution configuration')",
-                    "association",
-                )
-                call(browser, "click", "Create execution configuration")
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=configuration_ref]')",
-                    "configuration form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "configuration_ref": "cfg.provider.approval-browser",
-                        "display_name": "Controlled Responses route",
-                        "owner": "owner.local",
-                        "purposes": "execution",
-                        "task_classes": "class.demo",
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('cfg.provider.approval-browser')",
-                    "draft configuration",
-                )
-                shots = [screenshot(browser, run, "provider-configuration-draft")]
-                call(browser, "click", "cfg.provider.approval-browser")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled Responses route')",
-                    "configuration detail",
-                )
-                call(browser, "click", "Update prices")
-                call(
-                    browser,
-                    "submit",
-                    {"price_version": "browser.approved.v1", "input": "1", "output": "2"},
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('browser.approved.v1')",
-                    "approved price",
-                )
-                # The separate source-page browser proof exercises this control in the UI.
-                # This older approval walkthrough needs the new exact source permission
-                # before it can reach its intended configuration/grant assertions.
-                registry.mutate(
-                    "owner.local",
-                    {
-                        "operation_id": "op.approval.source-allow",
-                        "action": "set_source_permissions",
-                        "subject": "conn.approval-browser",
-                        "expected_revision": 0,
-                        "data": {
-                            "allowed": True,
-                            "items": [{"serving_id": "model-test", "expected_revision": 0}],
-                        },
-                    },
-                )
-                call(browser, "click", "Enable")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('enabled')",
-                    "enabled configuration",
-                )
-                shots.append(screenshot(browser, run, "provider-configuration-enabled"))
-                call(browser, "navigate", "users")
-                call(browser, "toggle", "Show test fixtures")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('svc.demo')",
-                    "fixture identity",
-                )
-                call(browser, "rowClick", "svc.demo", "Manage model access")
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=configuration_ref]')",
-                    "grant form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "configuration_ref": "cfg.provider.approval-browser",
-                        "status": "active",
-                        "purposes": "execution",
-                        "task_classes": "class.demo",
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Explicit model access')",
-                    "grant detail",
-                )
-                query = "'/operator/v1/access/explain?principal_id=svc.demo&configuration_ref=cfg.provider.approval-browser&purpose=execution&task_class=class.demo'"
-                allowed = browser.evaluate(
-                    "fetch(" + query + ").then(x=>x.json()).then(x=>x.reason)"
-                )
-                if allowed != "ALLOWED":
-                    raise RuntimeError("approved route not admitted: " + str(allowed))
-                shots.append(screenshot(browser, run, "provider-grant"))
-                call(browser, "navigate", "providers")
-                call(browser, "rowClick", "conn.approval-browser", "View")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled Responses connection')",
-                    "connection detail",
-                )
-                call(browser, "click", "Disable")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('disabled')",
-                    "disabled connection",
-                )
-                denied = browser.evaluate(
-                    "fetch(" + query + ").then(x=>x.json()).then(x=>x.reason)"
-                )
-                if denied != "TRANSPORT_UNAVAILABLE":
-                    raise RuntimeError("disabled route remained admitted: " + str(denied))
-                shots.append(screenshot(browser, run, "provider-disabled"))
-                browser.evaluate("document.querySelector('#logout').click();true")
-                wait(browser, "!document.querySelector('#login-view').hidden", "signed out")
             after = counters(store)
             if after != before:
                 raise RuntimeError("approval browsing created model traffic")
@@ -346,6 +163,192 @@ def main():
             server.server_close()
             server.operator_jobs.shutdown(wait=True)
         fixture_test.doCleanups()
+
+
+def _verify_provider_approval_journey(browser, model_ref, registry, run):
+    wait_initial_page(browser)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
+    call(browser, "navigate", "providers")
+    call(browser, "click", "Add connection")
+    call(browser, "submit", {"adapter_id": "openai.responses.v1"})
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=connection_id]')",
+        "OpenAI form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "connection_id": "conn.approval-browser",
+            "display_name": "Controlled Responses connection",
+            "site": "Controlled account",
+            "origin": "https://api.openai.com",
+            "owner": "owner.local",
+        },
+    )
+    call(browser, "rowClick", "conn.approval-browser", "View")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled Responses connection')",
+        "connection detail",
+    )
+    call(browser, "click", "Replace credential")
+    call(browser, "submit", {"secret": "test-provider-key-123456"})
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
+        "credential stored",
+    )
+    call(browser, "click", "Activate connection")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('active')",
+        "active connection",
+    )
+    call(browser, "click", "Associate model")
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=deployment_id]')",
+        "association form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "deployment_id": "deployment.approval-browser",
+            "model_ref": model_ref,
+            "serving_id": "model-test",
+            "site": "Controlled account",
+        },
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Create execution configuration')",
+        "association",
+    )
+    call(browser, "click", "Create execution configuration")
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=configuration_ref]')",
+        "configuration form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "configuration_ref": "cfg.provider.approval-browser",
+            "display_name": "Controlled Responses route",
+            "owner": "owner.local",
+            "purposes": "execution",
+            "task_classes": "class.demo",
+        },
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('cfg.provider.approval-browser')",
+        "draft configuration",
+    )
+    shots = [screenshot(browser, run, "provider-configuration-draft")]
+    call(browser, "click", "cfg.provider.approval-browser")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled Responses route')",
+        "configuration detail",
+    )
+    call(browser, "click", "Update prices")
+    call(
+        browser,
+        "submit",
+        {"price_version": "browser.approved.v1", "input": "1", "output": "2"},
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('browser.approved.v1')",
+        "approved price",
+    )
+    # The separate source-page browser proof exercises this control in the UI.
+    # This older approval walkthrough needs the new exact source permission
+    # before it can reach its intended configuration/grant assertions.
+    registry.mutate(
+        "owner.local",
+        {
+            "operation_id": "op.approval.source-allow",
+            "action": "set_source_permissions",
+            "subject": "conn.approval-browser",
+            "expected_revision": 0,
+            "data": {
+                "allowed": True,
+                "items": [{"serving_id": "model-test", "expected_revision": 0}],
+            },
+        },
+    )
+    call(browser, "click", "Enable")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('enabled')",
+        "enabled configuration",
+    )
+    shots.append(screenshot(browser, run, "provider-configuration-enabled"))
+    call(browser, "navigate", "users")
+    call(browser, "toggle", "Show test fixtures")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('svc.demo')",
+        "fixture identity",
+    )
+    call(browser, "rowClick", "svc.demo", "Manage model access")
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=configuration_ref]')",
+        "grant form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "configuration_ref": "cfg.provider.approval-browser",
+            "status": "active",
+            "purposes": "execution",
+            "task_classes": "class.demo",
+        },
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Explicit model access')",
+        "grant detail",
+    )
+    query = "'/operator/v1/access/explain?principal_id=svc.demo&configuration_ref=cfg.provider.approval-browser&purpose=execution&task_class=class.demo'"
+    allowed = browser.evaluate("fetch(" + query + ").then(x=>x.json()).then(x=>x.reason)")
+    if allowed != "ALLOWED":
+        raise RuntimeError("approved route not admitted: " + str(allowed))
+    shots.append(screenshot(browser, run, "provider-grant"))
+    call(browser, "navigate", "providers")
+    call(browser, "rowClick", "conn.approval-browser", "View")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled Responses connection')",
+        "connection detail",
+    )
+    call(browser, "click", "Disable")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('disabled')",
+        "disabled connection",
+    )
+    denied = browser.evaluate("fetch(" + query + ").then(x=>x.json()).then(x=>x.reason)")
+    if denied != "TRANSPORT_UNAVAILABLE":
+        raise RuntimeError("disabled route remained admitted: " + str(denied))
+    shots.append(screenshot(browser, run, "provider-disabled"))
+    browser.evaluate("document.querySelector('#logout').click();true")
+    wait(browser, "!document.querySelector('#login-view').hidden", "signed out")
+    return allowed, denied, shots
 
 
 if __name__ == "__main__":

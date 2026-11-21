@@ -31,16 +31,7 @@
     "tools/gateway/evidence/dev12_completion_continue03_audit.py:function:audit": 214,
     "tools/gateway/evidence/dev12_completion_packet_audit.py:function:audit": 238,
     "tools/gateway/evidence/dev12_completion_zero_send_checks.py:function:main": 308,
-    "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237,
-    "tools/operator/dev09_demo_browser.py:function:main": 351,
-    "tools/operator/dev09_installed_proof.py:function:main": 286,
-    "tools/operator/dev09_provider_browser.py:function:main": 267,
-    "tools/operator/dev09_report_browser.py:function:main": 238,
-    "tools/operator/dev09_team_alignment_browser.py:function:main": 239,
-    "tools/operator/dev09_team_demo_browser.py:function:main": 408,
-    "tools/operator/provider_approval_browser_smoke.py:function:main": 314,
-    "tools/operator/provider_browser_smoke.py:function:main": 244,
-    "tools/operator/source_onboarding_browser_smoke.py:function:main": 325
+    "tools/gateway/evidence/dev12_ct02b_packet.py:function:audit": 237
   },
   "relocations": [
     {

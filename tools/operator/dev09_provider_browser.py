@@ -116,137 +116,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-provider-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "window.confirm=()=>true;document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
-                )
-                wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
-                call(browser, "navigate", "source_providers")
-                call(browser, "click", "Add provider")
-                call(browser, "submit", {"adapter_id": "openai.responses.v1"})
-                wait(
-                    browser,
-                    "!!document.querySelector('form [name=display_name]')",
-                    "provider setup form",
-                )
-                if (
-                    browser.evaluate("document.querySelector('form [name=origin]').value")
-                    != "https://api.openai.com"
-                ):
-                    raise RuntimeError("approved OpenAI origin was not preselected")
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "display_name": "New disconnected setup",
-                        "connection_id": "conn.dev09-new",
-                        "site": "Test account",
-                        "owner": "owner.local",
-                    },
-                )
-                wait(browser, "location.hash.includes('conn.dev09-new')", "source return")
-                if registry.connection("conn.dev09-new")["credential_state"] != "absent":
-                    raise RuntimeError("setup creation saved an implicit credential")
-                call(browser, "navigate", "providers")
-                call(browser, "rowClick", "conn.dev09-controlled", "View")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Not set up')",
-                    "unchecked setup",
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Usage & Costs · Controlled API setup')",
-                    "connection scoped cost panel",
-                )
-                call(browser, "click", "Set up API access")
-                browser.evaluate("document.querySelector('[name=test_access]').checked=true;true")
-                call(browser, "submit", {"secret": "test-key-123456789"})
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('API access verified')",
-                    "verified access",
-                )
-                if browser.evaluate(
-                    "document.querySelector('#view-content').textContent.includes('test-key-123456789')"
-                ):
-                    raise RuntimeError("credential appeared in operator view")
-                call(browser, "click", "Discover models")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('model-test')",
-                    "explicit inventory",
-                )
-                verified = screenshot(browser, run, "verified-api-setup")
-                call(browser, "click", "Replace credential")
-                browser.evaluate("document.querySelector('[name=test_access]').checked=true;true")
-                call(browser, "submit", {"secret": "invalid-key-123456789"})
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Credential rejected')",
-                    "credential rejection",
-                )
-                if browser.evaluate(
-                    "document.querySelector('#view-content').textContent.includes('invalid-key-123456789')"
-                ):
-                    raise RuntimeError("rejected credential appeared in operator view")
-                call(browser, "navigate", "models")
-                call(browser, "rowClick", "catalogue.operator.dev09", "View")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('One observed price')",
-                    "one-point chart",
-                )
-                call(browser, "click", "Edit EzLLMRouter settings")
-                call(
-                    browser,
-                    "submit",
-                    {"display_name": "Local reference alias", "notes": "Local note"},
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Local reference alias')",
-                    "saved local alias",
-                )
-                call(browser, "click", "Edit EzLLMRouter settings")
-                call(browser, "fill", "display_name", "Discarded alias")
-                call(browser, "click", "Cancel")
-                wait(
-                    browser,
-                    "[...document.querySelectorAll('#view-content button')].some(x=>x.textContent.trim()==='Correct recorded price data')",
-                    "cancelled edit",
-                )
-                if (
-                    registry.model("catalogue.operator.dev09")["display_name"]
-                    != "Local reference alias"
-                ):
-                    raise RuntimeError("cancel mutated model")
-                call(browser, "click", "Correct recorded price data")
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "source_title": "Corrected test source",
-                        "source_url": "https://example.org/correction",
-                        "band_0_input": "3",
-                        "band_0_output": "4",
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelectorAll('.price-history-row').length===2",
-                    "two-point chart",
-                )
-                if not browser.evaluate(
-                    "[...document.querySelectorAll('.price-history-chart + div tr')].length===3"
-                ):
-                    raise RuntimeError("chart and exact price table disagree")
-                price = screenshot(browser, run, "price-history-and-local-settings")
-                browser.evaluate("document.querySelector('#logout').click();true")
-                wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+                price, verified = _verify_provider_access_and_reference_data(browser, registry, run)
             after = counters(store)
             if after != before:
                 raise RuntimeError("provider browser workflow launched model work")
@@ -298,6 +168,138 @@ def main():
             server.server_close()
             server.operator_jobs.shutdown(wait=True)
         fixture_test.doCleanups()
+
+
+def _verify_provider_access_and_reference_data(browser, registry, run):
+    wait_initial_page(browser)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "window.confirm=()=>true;document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
+    call(browser, "navigate", "source_providers")
+    call(browser, "click", "Add provider")
+    call(browser, "submit", {"adapter_id": "openai.responses.v1"})
+    wait(
+        browser,
+        "!!document.querySelector('form [name=display_name]')",
+        "provider setup form",
+    )
+    if (
+        browser.evaluate("document.querySelector('form [name=origin]').value")
+        != "https://api.openai.com"
+    ):
+        raise RuntimeError("approved OpenAI origin was not preselected")
+    call(
+        browser,
+        "submit",
+        {
+            "display_name": "New disconnected setup",
+            "connection_id": "conn.dev09-new",
+            "site": "Test account",
+            "owner": "owner.local",
+        },
+    )
+    wait(browser, "location.hash.includes('conn.dev09-new')", "source return")
+    if registry.connection("conn.dev09-new")["credential_state"] != "absent":
+        raise RuntimeError("setup creation saved an implicit credential")
+    call(browser, "navigate", "providers")
+    call(browser, "rowClick", "conn.dev09-controlled", "View")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Not set up')",
+        "unchecked setup",
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Usage & Costs · Controlled API setup')",
+        "connection scoped cost panel",
+    )
+    call(browser, "click", "Set up API access")
+    browser.evaluate("document.querySelector('[name=test_access]').checked=true;true")
+    call(browser, "submit", {"secret": "test-key-123456789"})
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('API access verified')",
+        "verified access",
+    )
+    if browser.evaluate(
+        "document.querySelector('#view-content').textContent.includes('test-key-123456789')"
+    ):
+        raise RuntimeError("credential appeared in operator view")
+    call(browser, "click", "Discover models")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('model-test')",
+        "explicit inventory",
+    )
+    verified = screenshot(browser, run, "verified-api-setup")
+    call(browser, "click", "Replace credential")
+    browser.evaluate("document.querySelector('[name=test_access]').checked=true;true")
+    call(browser, "submit", {"secret": "invalid-key-123456789"})
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Credential rejected')",
+        "credential rejection",
+    )
+    if browser.evaluate(
+        "document.querySelector('#view-content').textContent.includes('invalid-key-123456789')"
+    ):
+        raise RuntimeError("rejected credential appeared in operator view")
+    call(browser, "navigate", "models")
+    call(browser, "rowClick", "catalogue.operator.dev09", "View")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('One observed price')",
+        "one-point chart",
+    )
+    call(browser, "click", "Edit EzLLMRouter settings")
+    call(
+        browser,
+        "submit",
+        {"display_name": "Local reference alias", "notes": "Local note"},
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Local reference alias')",
+        "saved local alias",
+    )
+    call(browser, "click", "Edit EzLLMRouter settings")
+    call(browser, "fill", "display_name", "Discarded alias")
+    call(browser, "click", "Cancel")
+    wait(
+        browser,
+        "[...document.querySelectorAll('#view-content button')].some(x=>x.textContent.trim()==='Correct recorded price data')",
+        "cancelled edit",
+    )
+    if registry.model("catalogue.operator.dev09")["display_name"] != "Local reference alias":
+        raise RuntimeError("cancel mutated model")
+    call(browser, "click", "Correct recorded price data")
+    call(
+        browser,
+        "submit",
+        {
+            "source_title": "Corrected test source",
+            "source_url": "https://example.org/correction",
+            "band_0_input": "3",
+            "band_0_output": "4",
+        },
+    )
+    wait(
+        browser,
+        "document.querySelectorAll('.price-history-row').length===2",
+        "two-point chart",
+    )
+    if not browser.evaluate(
+        "[...document.querySelectorAll('.price-history-chart + div tr')].length===3"
+    ):
+        raise RuntimeError("chart and exact price table disagree")
+    price = screenshot(browser, run, "price-history-and-local-settings")
+    browser.evaluate("document.querySelector('#logout').click();true")
+    wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+    return price, verified
 
 
 if __name__ == "__main__":

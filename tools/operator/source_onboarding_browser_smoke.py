@@ -102,207 +102,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="ezllmrouter-source-onboarding-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "window.confirm=()=>true;document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
-                )
-                wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
-                call(browser, "navigate", "source_providers")
-                call(browser, "click", "OpenAI")
-                wait(browser, "location.hash==='#/providers/openai'", "provider detail")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled reference model')",
-                    "provider reference inventory",
-                )
-                if not browser.evaluate(
-                    "document.querySelector('#view-content')?.textContent.includes('$1 input / $2 output · USD per 1M tokens')"
-                ):
-                    raise RuntimeError("provider reference list lacks numeric unit prices")
-                call(browser, "click", "Add account / connection")
-                if (
-                    browser.evaluate("document.querySelector('form [name=origin]')?.value")
-                    != "https://api.openai.com"
-                ):
-                    raise RuntimeError("provider account form did not preselect its API context")
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "connection_id": "conn.onboard-provider",
-                        "display_name": "Controlled provider account",
-                        "site": "Test account",
-                        "origin": "https://api.openai.com",
-                        "owner": "owner.local",
-                    },
-                )
-                wait(
-                    browser,
-                    "location.hash.includes('/connections/conn.onboard-provider')",
-                    "new provider source route",
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled provider account')",
-                    "new provider detail",
-                )
-                if registry.connection("conn.onboard-provider")["status"] != "draft":
-                    raise RuntimeError("provider registration unexpectedly activated a connection")
-                shots = [screenshot(browser, run, "provider-account-created")]
-                browser.evaluate("history.back();true")
-                wait(browser, "location.hash==='#/providers/openai'", "provider overview")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled reference model')",
-                    "reference row",
-                )
-                shots.append(screenshot(browser, run, "provider-reference-prices"))
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content tr')].find(x=>x.textContent.includes('Controlled reference model'))?.querySelector('button')?.click();true"
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-title')?.textContent==='Model & pricing detail'",
-                    "reference detail",
-                )
-                wait(
-                    browser,
-                    "!!document.querySelector('.reference-source-list')",
-                    "reference sources",
-                )
-                if (
-                    browser.evaluate(
-                        "getComputedStyle(document.querySelector('.reference-source-list')).display"
-                    )
-                    != "grid"
-                ):
-                    raise RuntimeError("reference sources were not visually separated")
-                call(browser, "click", "← Source models")
-                wait(
-                    browser,
-                    "location.hash==='#/providers/openai'&&document.querySelector('#view-title')?.textContent==='OpenAI'",
-                    "source-aware back",
-                )
-
-                call(browser, "navigate", "source_private")
-                call(browser, "click", "Register installation")
-                if not browser.evaluate(
-                    "document.querySelector('#view-content')?.textContent.includes('vllm.openai-compatible.v1')"
-                ):
-                    raise RuntimeError("private installation form lacks adapter context")
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "connection_id": "conn.onboard-private",
-                        "display_name": "Controlled private installation",
-                        "site": "Private test installation",
-                        "origin": fixture_test.origin,
-                        "owner": "owner.local",
-                        "engine_version": "vllm.test",
-                        "ca_pem": fixture_test.cert,
-                    },
-                )
-                wait(
-                    browser,
-                    "location.hash==='#/private-hosting/conn.onboard-private'",
-                    "private source route",
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled private installation')",
-                    "private source detail",
-                )
-                call(browser, "click", "Connection & Credentials")
-                wait(
-                    browser,
-                    "[...document.querySelectorAll('#view-content button')].some(x=>x.textContent.trim()==='Replace credential')",
-                    "private connection tab",
-                )
-                call(browser, "click", "Replace credential")
-                call(browser, "submit", {"secret": "test-private-key-123456"})
-                wait(
-                    browser,
-                    "location.hash==='#/private-hosting/conn.onboard-private'&&document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
-                    "private credential return",
-                )
-                call(browser, "click", "Activate connection")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('active')",
-                    "private active",
-                )
-                call(browser, "click", "Models")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('discovery never run')",
-                    "private models tab",
-                )
-                call(browser, "click", "Refresh inventory")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('discovery complete')&&document.querySelector('#view-content')?.textContent.includes('model-test')",
-                    "complete controlled inventory",
-                )
-                if registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
-                    raise RuntimeError("discovery unexpectedly allowed a model")
-                shots.append(screenshot(browser, run, "private-discovered-disallowed"))
-                call(browser, "rowClick", "model-test", "Allow")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Allowed')",
-                    "private allowed",
-                )
-                if not registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
-                    raise RuntimeError("source Allow was not persisted")
-                shots.append(screenshot(browser, run, "private-allowed"))
-                call(browser, "rowClick", "model-test", "Disallow")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Disallowed')",
-                    "private disallowed",
-                )
-                if registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
-                    raise RuntimeError("source Disallow was not persisted")
-
-                call(browser, "navigate", "source_labs")
-                call(browser, "click", "Register lab / serving connection")
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "connection_id": "conn.onboard-lab",
-                        "display_name": "Controlled lab pool",
-                        "site": "Office test lab",
-                        "origin": fixture_test.origin,
-                        "owner": "owner.local",
-                        "engine_version": "vllm.test",
-                        "ca_pem": fixture_test.cert,
-                    },
-                )
-                wait(
-                    browser,
-                    "location.hash==='#/office-labs/Office%20test%20lab/connections/conn.onboard-lab'",
-                    "lab source route",
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled lab pool')",
-                    "lab source detail",
-                )
-                shots.append(screenshot(browser, run, "lab-connection-created"))
-                call(browser, "navigate", "providers")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('conn.onboard-provider')&&document.querySelector('#view-content')?.textContent.includes('conn.onboard-private')&&document.querySelector('#view-content')?.textContent.includes('conn.onboard-lab')",
-                    "central connection readback",
-                )
-                shots.append(screenshot(browser, run, "central-connections"))
-                browser.evaluate("document.querySelector('#logout').click();true")
-                wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+                shots = _verify_source_onboarding_journey(browser, fixture_test, registry, run)
             after = counters(store)
             if after != before:
                 raise RuntimeError("onboarding browser generated model traffic")
@@ -356,6 +156,216 @@ def main():
             server.server_close()
             server.operator_jobs.shutdown(wait=True)
         fixture_test.doCleanups()
+
+
+def _verify_source_onboarding_journey(browser, fixture_test, registry, run):
+    shots = _register_commercial_provider_source(browser, registry, run)
+
+    call(browser, "navigate", "source_private")
+    call(browser, "click", "Register installation")
+    if not browser.evaluate(
+        "document.querySelector('#view-content')?.textContent.includes('vllm.openai-compatible.v1')"
+    ):
+        raise RuntimeError("private installation form lacks adapter context")
+    call(
+        browser,
+        "submit",
+        {
+            "connection_id": "conn.onboard-private",
+            "display_name": "Controlled private installation",
+            "site": "Private test installation",
+            "origin": fixture_test.origin,
+            "owner": "owner.local",
+            "engine_version": "vllm.test",
+            "ca_pem": fixture_test.cert,
+        },
+    )
+    wait(
+        browser,
+        "location.hash==='#/private-hosting/conn.onboard-private'",
+        "private source route",
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled private installation')",
+        "private source detail",
+    )
+    call(browser, "click", "Connection & Credentials")
+    wait(
+        browser,
+        "[...document.querySelectorAll('#view-content button')].some(x=>x.textContent.trim()==='Replace credential')",
+        "private connection tab",
+    )
+    call(browser, "click", "Replace credential")
+    call(browser, "submit", {"secret": "test-private-key-123456"})
+    wait(
+        browser,
+        "location.hash==='#/private-hosting/conn.onboard-private'&&document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
+        "private credential return",
+    )
+    call(browser, "click", "Activate connection")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('active')",
+        "private active",
+    )
+    call(browser, "click", "Models")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('discovery never run')",
+        "private models tab",
+    )
+    call(browser, "click", "Refresh inventory")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('discovery complete')&&document.querySelector('#view-content')?.textContent.includes('model-test')",
+        "complete controlled inventory",
+    )
+    if registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
+        raise RuntimeError("discovery unexpectedly allowed a model")
+    shots.append(screenshot(browser, run, "private-discovered-disallowed"))
+    call(browser, "rowClick", "model-test", "Allow")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Allowed')",
+        "private allowed",
+    )
+    if not registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
+        raise RuntimeError("source Allow was not persisted")
+    shots.append(screenshot(browser, run, "private-allowed"))
+    call(browser, "rowClick", "model-test", "Disallow")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Disallowed')",
+        "private disallowed",
+    )
+    if registry.source_inventory("conn.onboard-private")["items"][0]["allowed"]:
+        raise RuntimeError("source Disallow was not persisted")
+
+    call(browser, "navigate", "source_labs")
+    call(browser, "click", "Register lab / serving connection")
+    call(
+        browser,
+        "submit",
+        {
+            "connection_id": "conn.onboard-lab",
+            "display_name": "Controlled lab pool",
+            "site": "Office test lab",
+            "origin": fixture_test.origin,
+            "owner": "owner.local",
+            "engine_version": "vllm.test",
+            "ca_pem": fixture_test.cert,
+        },
+    )
+    wait(
+        browser,
+        "location.hash==='#/office-labs/Office%20test%20lab/connections/conn.onboard-lab'",
+        "lab source route",
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled lab pool')",
+        "lab source detail",
+    )
+    shots.append(screenshot(browser, run, "lab-connection-created"))
+    call(browser, "navigate", "providers")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('conn.onboard-provider')&&document.querySelector('#view-content')?.textContent.includes('conn.onboard-private')&&document.querySelector('#view-content')?.textContent.includes('conn.onboard-lab')",
+        "central connection readback",
+    )
+    shots.append(screenshot(browser, run, "central-connections"))
+    browser.evaluate("document.querySelector('#logout').click();true")
+    wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+    return shots
+
+
+def _register_commercial_provider_source(browser, registry, run):
+    wait_initial_page(browser)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "window.confirm=()=>true;document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
+    call(browser, "navigate", "source_providers")
+    call(browser, "click", "OpenAI")
+    wait(browser, "location.hash==='#/providers/openai'", "provider detail")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled reference model')",
+        "provider reference inventory",
+    )
+    if not browser.evaluate(
+        "document.querySelector('#view-content')?.textContent.includes('$1 input / $2 output · USD per 1M tokens')"
+    ):
+        raise RuntimeError("provider reference list lacks numeric unit prices")
+    call(browser, "click", "Add account / connection")
+    if (
+        browser.evaluate("document.querySelector('form [name=origin]')?.value")
+        != "https://api.openai.com"
+    ):
+        raise RuntimeError("provider account form did not preselect its API context")
+    call(
+        browser,
+        "submit",
+        {
+            "connection_id": "conn.onboard-provider",
+            "display_name": "Controlled provider account",
+            "site": "Test account",
+            "origin": "https://api.openai.com",
+            "owner": "owner.local",
+        },
+    )
+    wait(
+        browser,
+        "location.hash.includes('/connections/conn.onboard-provider')",
+        "new provider source route",
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled provider account')",
+        "new provider detail",
+    )
+    if registry.connection("conn.onboard-provider")["status"] != "draft":
+        raise RuntimeError("provider registration unexpectedly activated a connection")
+    shots = [screenshot(browser, run, "provider-account-created")]
+    browser.evaluate("history.back();true")
+    wait(browser, "location.hash==='#/providers/openai'", "provider overview")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled reference model')",
+        "reference row",
+    )
+    shots.append(screenshot(browser, run, "provider-reference-prices"))
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content tr')].find(x=>x.textContent.includes('Controlled reference model'))?.querySelector('button')?.click();true"
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-title')?.textContent==='Model & pricing detail'",
+        "reference detail",
+    )
+    wait(
+        browser,
+        "!!document.querySelector('.reference-source-list')",
+        "reference sources",
+    )
+    if (
+        browser.evaluate(
+            "getComputedStyle(document.querySelector('.reference-source-list')).display"
+        )
+        != "grid"
+    ):
+        raise RuntimeError("reference sources were not visually separated")
+    call(browser, "click", "← Source models")
+    wait(
+        browser,
+        "location.hash==='#/providers/openai'&&document.querySelector('#view-title')?.textContent==='OpenAI'",
+        "source-aware back",
+    )
+    return shots
 
 
 if __name__ == "__main__":

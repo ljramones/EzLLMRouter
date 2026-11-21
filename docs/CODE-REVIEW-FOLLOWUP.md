@@ -1215,3 +1215,24 @@ Full `tools.check` passes 919 Python cases, strict typing on 107 files,
 lint/formatting and script/console checks. Typing debt remains 1,631. Four resolved
 runner allowances are removed, leaving 39. Other retained tools, long individual
 tests and deployment exercises remain under W6.
+
+### Item 11 follow-up: browser and installed-proof phases
+
+Eight retained browser runners now have named workspace, playback, filtering,
+provider setup/approval, report and source-onboarding verification phases. Their
+existing server/browser context owners, assertions, screenshots, export checks,
+request capture and final cleanup stay in place. The installed-client proof
+separates attributed runs and outcome revisions, returning the original actor
+callback and values needed by later checks. All functions in these nine modules
+are below 200 lines.
+
+Fourteen phase extractions expand to the original nine entry-point ASTs, including
+explicitly returned callback bindings and shared mutable capture collections.
+The enclosing error/cleanup liveness audit passes, and tool entry declarations
+remain ahead of direct CLI execution. Browser and installed HTTP journeys were
+not launched here; their real target qualification remains pending.
+
+Full `tools.check` passes 919 Python cases, strict typing on 107 files,
+lint/formatting, script/console checks and both ratchets. Typing debt remains
+1,631; nine resolved function allowances are removed, leaving 30. Remaining W6
+work is retained correction/audit/auth tools, long tests and deployment exercises.

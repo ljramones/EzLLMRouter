@@ -118,126 +118,9 @@ def main():
         with tempfile.TemporaryDirectory(prefix="ezllmrouter-provider-browser-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
+                shots, signed_out = _verify_private_provider_journey(
+                    browser, catalogue_ref, fixture_test, run
                 )
-                wait(browser, "!document.querySelector('#workspace').hidden", "signed-in workspace")
-                call(browser, "navigate", "providers")
-                call(browser, "click", "Add connection")
-                call(browser, "submit", {"adapter_id": "vllm.openai-compatible.v1"})
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=connection_id]')",
-                    "typed vLLM form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "connection_id": "conn.browser-test",
-                        "display_name": "Controlled lab",
-                        "site": "Disposable local TLS",
-                        "origin": fixture_test.origin,
-                        "owner": "owner.local",
-                        "engine_version": "vllm.test",
-                        "ca_pem": fixture_test.cert,
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('conn.browser-test')",
-                    "connection row",
-                )
-                shots = [screenshot(browser, run, "connection-created")]
-                call(browser, "rowClick", "conn.browser-test", "View")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Controlled lab')",
-                    "connection detail",
-                )
-                call(browser, "click", "Edit label")
-                call(browser, "submit", {"display_name": "Edited controlled lab"})
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Edited controlled lab')",
-                    "edited detail",
-                )
-                call(browser, "click", "Replace credential")
-                call(browser, "submit", {"secret": "test-provider-key-123456"})
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
-                    "credential state",
-                )
-                if browser.evaluate("document.body.innerText.includes('test-provider-key-123456')"):
-                    raise RuntimeError("credential leaked into rendered browser text")
-                shots.append(screenshot(browser, run, "credential-masked"))
-                call(browser, "click", "Test access")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('credential accepted for model listing only')",
-                    "access observation",
-                )
-                call(browser, "click", "Refresh inventory")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('model-test')",
-                    "inventory observation",
-                )
-                call(browser, "click", "Check readiness")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('vllm health 200 not model capacity')",
-                    "readiness observation",
-                )
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content .panel')].find(x=>x.querySelector('h2')?.textContent==='Scoped observations')?.scrollIntoView();true"
-                )
-                shots.append(screenshot(browser, run, "scoped-observations"))
-                call(browser, "click", "Associate model")
-                wait(
-                    browser,
-                    "!!document.querySelector('#view-content form [name=deployment_id]')",
-                    "association form",
-                )
-                call(
-                    browser,
-                    "submit",
-                    {
-                        "deployment_id": "deployment.browser-test",
-                        "model_ref": catalogue_ref,
-                        "serving_id": "model-test",
-                        "site": "Disposable local TLS",
-                    },
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('deployment.browser-test')",
-                    "model association",
-                )
-                shots.append(screenshot(browser, run, "model-associated"))
-                call(browser, "click", "Disable")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('disabled')",
-                    "disabled connection",
-                )
-                call(browser, "click", "Archive…")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content')?.textContent.includes('archived')",
-                    "archived connection",
-                )
-                shots.append(screenshot(browser, run, "connection-archived"))
-                browser.evaluate("document.querySelector('#logout').click();true")
-                wait(browser, "!document.querySelector('#login-view').hidden", "signed out")
-                signed_out = browser.evaluate("fetch('/operator/v1/connections').then(x=>x.status)")
-                if signed_out != 401:
-                    raise RuntimeError("signed-out connection API remained accessible")
             after = counters(store)
             if before != after:
                 raise RuntimeError("browser connection management created model traffic")
@@ -288,6 +171,130 @@ def main():
             server.server_close()
             server.operator_jobs.shutdown(wait=True)
         fixture_test.doCleanups()
+
+
+def _verify_private_provider_journey(browser, catalogue_ref, fixture_test, run):
+    wait_initial_page(browser)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "signed-in workspace")
+    call(browser, "navigate", "providers")
+    call(browser, "click", "Add connection")
+    call(browser, "submit", {"adapter_id": "vllm.openai-compatible.v1"})
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=connection_id]')",
+        "typed vLLM form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "connection_id": "conn.browser-test",
+            "display_name": "Controlled lab",
+            "site": "Disposable local TLS",
+            "origin": fixture_test.origin,
+            "owner": "owner.local",
+            "engine_version": "vllm.test",
+            "ca_pem": fixture_test.cert,
+        },
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('conn.browser-test')",
+        "connection row",
+    )
+    shots = [screenshot(browser, run, "connection-created")]
+    call(browser, "rowClick", "conn.browser-test", "View")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Controlled lab')",
+        "connection detail",
+    )
+    call(browser, "click", "Edit label")
+    call(browser, "submit", {"display_name": "Edited controlled lab"})
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Edited controlled lab')",
+        "edited detail",
+    )
+    call(browser, "click", "Replace credential")
+    call(browser, "submit", {"secret": "test-provider-key-123456"})
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('Stored · version 1')",
+        "credential state",
+    )
+    if browser.evaluate("document.body.innerText.includes('test-provider-key-123456')"):
+        raise RuntimeError("credential leaked into rendered browser text")
+    shots.append(screenshot(browser, run, "credential-masked"))
+    call(browser, "click", "Test access")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('credential accepted for model listing only')",
+        "access observation",
+    )
+    call(browser, "click", "Refresh inventory")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('model-test')",
+        "inventory observation",
+    )
+    call(browser, "click", "Check readiness")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('vllm health 200 not model capacity')",
+        "readiness observation",
+    )
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content .panel')].find(x=>x.querySelector('h2')?.textContent==='Scoped observations')?.scrollIntoView();true"
+    )
+    shots.append(screenshot(browser, run, "scoped-observations"))
+    call(browser, "click", "Associate model")
+    wait(
+        browser,
+        "!!document.querySelector('#view-content form [name=deployment_id]')",
+        "association form",
+    )
+    call(
+        browser,
+        "submit",
+        {
+            "deployment_id": "deployment.browser-test",
+            "model_ref": catalogue_ref,
+            "serving_id": "model-test",
+            "site": "Disposable local TLS",
+        },
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('deployment.browser-test')",
+        "model association",
+    )
+    shots.append(screenshot(browser, run, "model-associated"))
+    call(browser, "click", "Disable")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('disabled')",
+        "disabled connection",
+    )
+    call(browser, "click", "Archive…")
+    wait(
+        browser,
+        "document.querySelector('#view-content')?.textContent.includes('archived')",
+        "archived connection",
+    )
+    shots.append(screenshot(browser, run, "connection-archived"))
+    browser.evaluate("document.querySelector('#logout').click();true")
+    wait(browser, "!document.querySelector('#login-view').hidden", "signed out")
+    signed_out = browser.evaluate("fetch('/operator/v1/connections').then(x=>x.status)")
+    if signed_out != 401:
+        raise RuntimeError("signed-out connection API remained accessible")
+    return shots, signed_out
 
 
 if __name__ == "__main__":

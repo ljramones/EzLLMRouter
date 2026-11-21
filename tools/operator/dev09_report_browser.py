@@ -63,171 +63,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="ezllmrouter-dev09-report-") as scratch:
             run = Path(scratch)
             with HeadlessChrome(run, f"http://127.0.0.1:{port}/") as browser:
-                wait_initial_page(browser)
-                browser.evaluate(HELPERS)
-                browser.evaluate(
-                    "document.querySelector('#password').value='"
-                    + "p" * 40
-                    + "';document.querySelector('#login-form').requestSubmit();true"
-                )
-                wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
-                call(browser, "navigate", "usage")
-                wait(
-                    browser,
-                    "document.querySelector('#view-title').textContent==='Usage & Costs' && "
-                    "document.querySelector('#view-content').textContent.includes('Recorded through EzLLMRouter')",
-                    "usage landing",
-                )
-                browser.evaluate("document.querySelector('.cost-filters summary').click();true")
-                browser.evaluate(
-                    "[...document.querySelectorAll('.cost-filter-grid label')]"
-                    ".find(x=>x.textContent.includes('Revision cutoff')).querySelector('input').value="
-                    "'2030-01-01T00:00:20Z';true"
-                )
-                call(browser, "click", "Apply filters")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('USD 32')",
-                    "reconciled subtotal",
-                )
-                if (
-                    browser.evaluate("document.querySelectorAll('.cost-bars .cost-bar-row').length")
-                    < 2
-                ):
-                    raise RuntimeError("report bars were not drawn")
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content h2')]"
-                    ".find(x=>x.textContent.includes('Known cost over time')).scrollIntoView();true"
-                )
-                overview = screenshot(browser, run, "usage-costs-overview")
-                browser.evaluate("document.querySelector('#view-content button').focus();true")
-                browser.call(
-                    "Input.dispatchKeyEvent",
-                    {"type": "keyDown", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9},
-                )
-                browser.call(
-                    "Input.dispatchKeyEvent",
-                    {"type": "keyUp", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9},
-                )
-                if not browser.evaluate("document.activeElement.tagName==='BUTTON'"):
-                    raise RuntimeError("report tabs were not keyboard reachable")
-                call(browser, "click", "Agents")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('agent.idle')",
-                    "all-agent inventory",
-                )
-                if not browser.evaluate(
-                    "document.querySelector('#view-content').textContent.includes('Not instrumented')"
-                ):
-                    raise RuntimeError("instrumentation state missing")
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content h2')]"
-                    ".find(x=>x.textContent.includes('All registered agents')).scrollIntoView();true"
-                )
-                agents = screenshot(browser, run, "all-agent-report")
-                if suffix == "04":
-                    call(
-                        browser,
-                        "submit",
-                        {
-                            "agent_id": "agent.disposable.dev09",
-                            "display_name": "Disposable synthetic agent",
-                            "owner": "team.fixture",
-                            "versions": "v1, v2",
-                        },
-                    )
-                    wait(
-                        browser,
-                        "document.querySelector('#view-content').textContent.includes('agent.disposable.dev09')",
-                        "agent registration",
-                    )
-                    browser.evaluate(
-                        "window.confirm=()=>true;"
-                        "[...document.querySelectorAll('#view-content tr')]"
-                        ".find(x=>x.textContent.includes('agent.disposable.dev09'))"
-                        ".querySelector('button.primary-link').click();true"
-                    )
-                    wait(
-                        browser,
-                        "document.querySelector('#view-content').textContent.includes('Identity and version')",
-                        "new agent detail",
-                    )
-                    call(browser, "click", "Archive agent…")
-                    wait(
-                        browser,
-                        "[...document.querySelectorAll('#view-content tr')]"
-                        ".some(x=>x.textContent.includes('agent.disposable.dev09')&&x.textContent.includes('Archived'))",
-                        "agent archived",
-                    )
-                    browser.evaluate(
-                        "[...document.querySelectorAll('#view-content tr')]"
-                        ".find(x=>x.textContent.includes('agent.disposable.dev09'))"
-                        ".querySelector('button.primary-link').click();true"
-                    )
-                    wait(
-                        browser,
-                        "[...document.querySelectorAll('#view-content button')]"
-                        ".some(x=>x.textContent.trim()==='Restore agent')",
-                        "archived agent detail",
-                    )
-                    call(browser, "click", "Restore agent")
-                    wait(
-                        browser,
-                        "[...document.querySelectorAll('#view-content tr')]"
-                        ".some(x=>x.textContent.includes('agent.disposable.dev09')&&x.textContent.includes('Active'))",
-                        "agent restored",
-                    )
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content tr')]"
-                    ".find(x=>x.textContent.includes('agent.coordinator'))"
-                    ".querySelector('button.primary-link').click();true"
-                )
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('Identity and version')",
-                    "agent detail",
-                )
-                call(browser, "click", "Tasks & workflows")
-                wait(
-                    browser,
-                    "document.querySelector('#view-content').textContent.includes('27')",
-                    "cohort cost and accepted task",
-                )
-                browser.evaluate(
-                    "[...document.querySelectorAll('#view-content h2')]"
-                    ".find(x=>x.textContent.includes('Task cohort performance')).scrollIntoView();true"
-                )
-                tasks = screenshot(browser, run, "task-cohorts")
-                if suffix == "04":
-                    browser.evaluate("sourceGo('#/providers/openai');true")
-                    wait(
-                        browser,
-                        "document.querySelector('#view-content').textContent.includes('Usage & Costs · openai')",
-                        "provider scoped cost panel",
-                    )
-                    call(browser, "click", "Open filtered Usage & Costs")
-                    wait(
-                        browser,
-                        "document.querySelector('#view-title').textContent==='Usage & Costs'&&"
-                        "document.querySelector('#view-content').textContent.includes('0/0')",
-                        "provider scoped report",
-                    )
-                exported = browser.evaluate(
-                    "Promise.all(['csv','json'].map(async format=>{"
-                    "const r=await fetch('/operator/v1/usage-costs?cutoff=2030-01-01T00%3A00%3A20Z&export='+format);"
-                    "return {format,status:r.status,contentType:r.headers.get('content-type'),body:await r.text()};}))"
-                )
-                if len(exported) != 2 or any(row["status"] != 200 for row in exported):
-                    raise RuntimeError("authorized exports failed")
-                csv_body = next(row["body"] for row in exported if row["format"] == "csv")
-                json_body = next(row["body"] for row in exported if row["format"] == "json")
-                if len(csv_body.splitlines()) != 11 or json.loads(json_body)["total"][
-                    "known_subtotals"
-                ] != {"EUR": "4", "USD": "32"}:
-                    raise RuntimeError("report and export did not reconcile")
-                browser.evaluate("document.querySelector('#logout').click();true")
-                wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+                agents, overview, tasks = _verify_usage_report_panels(browser, run, suffix)
             after = counters(store)
             if before != after:
                 raise RuntimeError("report browsing added model traffic")
@@ -268,6 +104,173 @@ def main():
             server.operator_jobs.shutdown(wait=True)
             thread.join(timeout=3)
         test.doCleanups()
+
+
+def _verify_usage_report_panels(browser, run, suffix):
+    wait_initial_page(browser)
+    browser.evaluate(HELPERS)
+    browser.evaluate(
+        "document.querySelector('#password').value='"
+        + "p" * 40
+        + "';document.querySelector('#login-form').requestSubmit();true"
+    )
+    wait(browser, "!document.querySelector('#workspace').hidden", "workspace")
+    call(browser, "navigate", "usage")
+    wait(
+        browser,
+        "document.querySelector('#view-title').textContent==='Usage & Costs' && "
+        "document.querySelector('#view-content').textContent.includes('Recorded through EzLLMRouter')",
+        "usage landing",
+    )
+    browser.evaluate("document.querySelector('.cost-filters summary').click();true")
+    browser.evaluate(
+        "[...document.querySelectorAll('.cost-filter-grid label')]"
+        ".find(x=>x.textContent.includes('Revision cutoff')).querySelector('input').value="
+        "'2030-01-01T00:00:20Z';true"
+    )
+    call(browser, "click", "Apply filters")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('USD 32')",
+        "reconciled subtotal",
+    )
+    if browser.evaluate("document.querySelectorAll('.cost-bars .cost-bar-row').length") < 2:
+        raise RuntimeError("report bars were not drawn")
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content h2')]"
+        ".find(x=>x.textContent.includes('Known cost over time')).scrollIntoView();true"
+    )
+    overview = screenshot(browser, run, "usage-costs-overview")
+    browser.evaluate("document.querySelector('#view-content button').focus();true")
+    browser.call(
+        "Input.dispatchKeyEvent",
+        {"type": "keyDown", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9},
+    )
+    browser.call(
+        "Input.dispatchKeyEvent",
+        {"type": "keyUp", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9},
+    )
+    if not browser.evaluate("document.activeElement.tagName==='BUTTON'"):
+        raise RuntimeError("report tabs were not keyboard reachable")
+    call(browser, "click", "Agents")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('agent.idle')",
+        "all-agent inventory",
+    )
+    if not browser.evaluate(
+        "document.querySelector('#view-content').textContent.includes('Not instrumented')"
+    ):
+        raise RuntimeError("instrumentation state missing")
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content h2')]"
+        ".find(x=>x.textContent.includes('All registered agents')).scrollIntoView();true"
+    )
+    agents = screenshot(browser, run, "all-agent-report")
+    if suffix == "04":
+        call(
+            browser,
+            "submit",
+            {
+                "agent_id": "agent.disposable.dev09",
+                "display_name": "Disposable synthetic agent",
+                "owner": "team.fixture",
+                "versions": "v1, v2",
+            },
+        )
+        wait(
+            browser,
+            "document.querySelector('#view-content').textContent.includes('agent.disposable.dev09')",
+            "agent registration",
+        )
+        browser.evaluate(
+            "window.confirm=()=>true;"
+            "[...document.querySelectorAll('#view-content tr')]"
+            ".find(x=>x.textContent.includes('agent.disposable.dev09'))"
+            ".querySelector('button.primary-link').click();true"
+        )
+        wait(
+            browser,
+            "document.querySelector('#view-content').textContent.includes('Identity and version')",
+            "new agent detail",
+        )
+        call(browser, "click", "Archive agent…")
+        wait(
+            browser,
+            "[...document.querySelectorAll('#view-content tr')]"
+            ".some(x=>x.textContent.includes('agent.disposable.dev09')&&x.textContent.includes('Archived'))",
+            "agent archived",
+        )
+        browser.evaluate(
+            "[...document.querySelectorAll('#view-content tr')]"
+            ".find(x=>x.textContent.includes('agent.disposable.dev09'))"
+            ".querySelector('button.primary-link').click();true"
+        )
+        wait(
+            browser,
+            "[...document.querySelectorAll('#view-content button')]"
+            ".some(x=>x.textContent.trim()==='Restore agent')",
+            "archived agent detail",
+        )
+        call(browser, "click", "Restore agent")
+        wait(
+            browser,
+            "[...document.querySelectorAll('#view-content tr')]"
+            ".some(x=>x.textContent.includes('agent.disposable.dev09')&&x.textContent.includes('Active'))",
+            "agent restored",
+        )
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content tr')]"
+        ".find(x=>x.textContent.includes('agent.coordinator'))"
+        ".querySelector('button.primary-link').click();true"
+    )
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('Identity and version')",
+        "agent detail",
+    )
+    call(browser, "click", "Tasks & workflows")
+    wait(
+        browser,
+        "document.querySelector('#view-content').textContent.includes('27')",
+        "cohort cost and accepted task",
+    )
+    browser.evaluate(
+        "[...document.querySelectorAll('#view-content h2')]"
+        ".find(x=>x.textContent.includes('Task cohort performance')).scrollIntoView();true"
+    )
+    tasks = screenshot(browser, run, "task-cohorts")
+    if suffix == "04":
+        browser.evaluate("sourceGo('#/providers/openai');true")
+        wait(
+            browser,
+            "document.querySelector('#view-content').textContent.includes('Usage & Costs · openai')",
+            "provider scoped cost panel",
+        )
+        call(browser, "click", "Open filtered Usage & Costs")
+        wait(
+            browser,
+            "document.querySelector('#view-title').textContent==='Usage & Costs'&&"
+            "document.querySelector('#view-content').textContent.includes('0/0')",
+            "provider scoped report",
+        )
+    exported = browser.evaluate(
+        "Promise.all(['csv','json'].map(async format=>{"
+        "const r=await fetch('/operator/v1/usage-costs?cutoff=2030-01-01T00%3A00%3A20Z&export='+format);"
+        "return {format,status:r.status,contentType:r.headers.get('content-type'),body:await r.text()};}))"
+    )
+    if len(exported) != 2 or any(row["status"] != 200 for row in exported):
+        raise RuntimeError("authorized exports failed")
+    csv_body = next(row["body"] for row in exported if row["format"] == "csv")
+    json_body = next(row["body"] for row in exported if row["format"] == "json")
+    if len(csv_body.splitlines()) != 11 or json.loads(json_body)["total"]["known_subtotals"] != {
+        "EUR": "4",
+        "USD": "32",
+    }:
+        raise RuntimeError("report and export did not reconcile")
+    browser.evaluate("document.querySelector('#logout').click();true")
+    wait(browser, "!document.querySelector('#login-view').hidden", "sign out")
+    return agents, overview, tasks
 
 
 if __name__ == "__main__":
