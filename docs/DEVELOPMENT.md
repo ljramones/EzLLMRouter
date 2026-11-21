@@ -82,6 +82,10 @@ accidental test network use; they are not an OS sandbox for hostile code or
 native extensions. Target containers and native-language harnesses retain their
 own fixture/isolation checks.
 
+In loopback mode, HTTP server naming uses the literal local address or
+`localhost`, avoiding the standard library's reverse-DNS lookup during binding.
+External names, direct reverse-DNS calls and all offline naming remain blocked.
+
 Optional Python line coverage needs no additional dependency:
 
 ```sh

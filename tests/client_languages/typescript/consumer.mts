@@ -23,9 +23,6 @@ const deadlineAware: FetchImplementation = async (_url, options) => {
   return injected(_url, options);
 };
 new IntegrationClient("http://synthetic.invalid", "synthetic", {fetchImpl: deadlineAware, timeoutMs: null});
-declare const accountingError: IntegrationClientError;
-const accountingStatus: number | null = accountingError.http_status;
-void accountingStatus;
 const client = new EzLLMRouterClient({ baseUrl: "http://synthetic.invalid", token: "synthetic-token", fetchImpl: injected });
 const capabilities: Promise<Wire02.CapabilityResponse> = client.getCapabilities();
 const status: Promise<Wire02.StatusSnapshot> = client.getStatus({ submission_id: "submission.synthetic" });
@@ -68,4 +65,5 @@ const executionError = new EzLLMRouterError("TRANSPORT_OUTCOME_UNKNOWN", null, "
 const accountingError = new IntegrationClientError("PROTOCOL_INVALID", 200, "query_first");
 const executionStatus: number | null | undefined = executionError.http_status;
 const accountingStatus: number | null = accountingError.httpStatus;
-void [version, capabilities, status, successor, executionStatus, accountingStatus];
+const accountingSnakeStatus: number | null = accountingError.http_status;
+void [version, capabilities, status, successor, executionStatus, accountingStatus, accountingSnakeStatus];

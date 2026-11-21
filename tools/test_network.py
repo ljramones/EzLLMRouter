@@ -163,6 +163,13 @@ def block_network(stack: ExitStack, *, loopback=False):
             denied()
         return addresses
 
+    def local_fqdn(host=""):
+        # HTTPServer names its bound address during server_bind. Keep this
+        # metadata local instead of performing the usual reverse-DNS lookup.
+        if not local(host):
+            denied()
+        return host.decode("ascii") if isinstance(host, bytes) else host
+
     for attribute in ("connect", "connect_ex", "bind"):
         operation = guarded(getattr(socket.socket, attribute)) if loopback else denied
         stack.enter_context(patch.object(socket.socket, attribute, operation))
@@ -191,6 +198,7 @@ def block_network(stack: ExitStack, *, loopback=False):
 
         stack.enter_context(patch.object(socket.socket, "sendmsg", sendmsg))
     stack.enter_context(patch.object(socket, "getaddrinfo", local_resolve if loopback else denied))
+    stack.enter_context(patch.object(socket, "getfqdn", local_fqdn if loopback else denied))
     for name in ("gethostbyname", "gethostbyname_ex", "gethostbyaddr", "getnameinfo"):
         stack.enter_context(patch.object(socket, name, denied))
     original_popen = subprocess.Popen

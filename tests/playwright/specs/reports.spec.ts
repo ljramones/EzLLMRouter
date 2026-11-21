@@ -39,14 +39,26 @@ for (const tab of ['Providers', 'Models', 'Agents', 'People & teams', 'Tasks & w
   });
 }
 for (const format of ['CSV', 'JSON']) {
-  test('native report exports a complete ' + format + ' download', async ({ page, app }) => {
+  test('native report exports the current attempt page as ' + format, async ({ page, app }) => {
     await login(page, app); await ready(page); await screen(page, 'Usage & Costs');
-    const downloading = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export ' + format, exact: true }).click();
-    const download = await downloading; expect(download.suggestedFilename()).toBe('ezllmrouter-usage-costs.' + format.toLowerCase());
+    const button = page.getByRole('button', { name: 'Export attempt page · ' + format, exact: true });
+    await expect(button).toBeVisible();
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+    expect(download.suggestedFilename()).toBe('ezllmrouter-usage-costs.' + format.toLowerCase());
     const raw = await contents(download);
-    if (format === 'JSON') expect(JSON.parse(raw).total.attempts).toBe(3);
-    else { expect(raw).toContain('attempt_id'); expect(raw).toContain('attempt.browser.1'); }
+    const ids = ['attempt.browser.1', 'attempt.browser.2', 'attempt.browser.3'];
+    if (format === 'JSON') {
+      const report = JSON.parse(raw);
+      expect(report.total.attempts).toBe(3);
+      expect(report.attempt_pagination).toMatchObject({ page: 1, limit: 100, total: 3 });
+      expect(report.attempts.map((item: { attempt_id: string }) => item.attempt_id).sort()).toEqual(ids);
+    } else {
+      const rows = raw.trim().split(/\r?\n/);
+      expect(rows).toHaveLength(4);
+      const column = rows[0].split(',').indexOf('attempt_id');
+      expect(column).toBeGreaterThanOrEqual(0);
+      expect(rows.slice(1).map(row => row.split(',')[column]).sort()).toEqual(ids);
+    }
   });
 }
 

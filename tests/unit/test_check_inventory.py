@@ -8,6 +8,7 @@ import sys
 
 from pathlib import Path
 from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 import socket
 import subprocess
 import tempfile
@@ -181,6 +182,43 @@ print('guarded')
             with self.assertRaises(AssertionError):
                 socket.getaddrinfo("provider.invalid", 80)
             self.assertEqual(resolve.call_count, 1)
+
+    def test_http_server_bind_names_loopback_without_reverse_dns(self):
+        from ezllmrouter_server.http_server import BoundedHTTPServer
+
+        with (
+            patch.object(socket.socket, "bind") as bind,
+            patch.object(socket.socket, "getsockname", return_value=("127.0.0.1", 8765)),
+            ExitStack() as stack,
+        ):
+            block_network(stack, loopback=True)
+            for server_type in (HTTPServer, ThreadingHTTPServer, BoundedHTTPServer):
+                with self.subTest(server=server_type.__name__):
+                    with server_type(
+                        ("127.0.0.1", 0), BaseHTTPRequestHandler, bind_and_activate=False
+                    ) as server:
+                        server.server_bind()
+                        self.assertEqual(server.server_name, "127.0.0.1")
+                        self.assertEqual(server.server_port, 8765)
+            self.assertEqual(bind.call_count, 3)
+
+    def test_loopback_names_do_not_enable_dns_or_offline_access(self):
+        with ExitStack() as stack:
+            block_network(stack, loopback=True)
+            for host in ("127.0.0.1", "::1", "localhost", b"127.0.0.1"):
+                with self.subTest(host=host):
+                    expected = host.decode("ascii") if isinstance(host, bytes) else host
+                    self.assertEqual(socket.getfqdn(host), expected)
+            for host in ("192.0.2.1", "0.0.0.0", "provider.invalid", "", b"\xff"):
+                with self.subTest(host=host), self.assertRaises(AssertionError):
+                    socket.getfqdn(host)
+            for name in ("gethostbyname", "gethostbyname_ex", "gethostbyaddr", "getnameinfo"):
+                with self.subTest(operation=name), self.assertRaises(AssertionError):
+                    getattr(socket, name)("127.0.0.1")
+        with ExitStack() as stack:
+            block_network(stack)
+            with self.assertRaises(AssertionError):
+                socket.getfqdn("127.0.0.1")
 
     def test_localhost_cannot_resolve_to_an_external_address(self):
         with (

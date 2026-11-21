@@ -374,7 +374,7 @@ also passes. A pending or unavailable check is never a passing result.
 | 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
 | 6 | Persistence recovery | Implemented — local checks pass | Authorized retries replace only uncommitted vault successors; ambiguous commits retain sealed files. Nested rollback preserves the original error; admission uses one snapshot. Probe retry retention is documented/tested. Failed executors drain accepted work, replace their pool and expose readiness/counters (4.1.4). |
 | 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
-| 8 | Client fixes | Implemented — Rust/.NET/TypeScript target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet and Java checks pass. Commit `cfe549d` (4.5.1–4.5.3). |
+| 8 | Client fixes | Implemented — Rust/.NET target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/52 safety checks, Go race/vet, Java checks and packed TypeScript 5.9.3 consumer compilation pass. Commit `cfe549d` (4.5.1–4.5.3). |
 | 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
 | 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage is recorded for the final structural pass below (4.4.4). |
 | 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. All work-order size targets pass, with 12 shrinking allowances. Strict scope is 107 files; 1,631 existing library typing errors remain budgeted debt. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
@@ -1326,3 +1326,39 @@ browser journeys, frozen worker/image builds and deployment exercises remain
 pending under item 1; native target checks remain stated in item 8. Item 9 stays
 deferred at the owner's request. The old daemon/profile has not been updated
 or restarted, and no provider request has been made.
+
+
+### CI follow-up: guarded HTTP setup, TypeScript consumers and native exports
+
+GitHub Actions exposed three test-harness defects after `26bbeb8`. Loopback
+Python HTTP fixtures bind successfully in CI, then fail when `HTTPServer` names
+the bound host using reverse DNS. The shared guard now returns the literal local
+name from `getfqdn` in loopback mode without resolving it. Direct reverse DNS,
+external names and offline naming remain blocked; the same guard applies to
+isolated Python children and the installed JavaScript HTTP fixture. New tests
+exercise the real `server_bind` implementation for standard, threaded and bounded
+HTTP servers with only the OS bind/address calls substituted, plus allowed and
+rejected naming operations. These are listener-free regressions.
+
+The packed TypeScript consumer no longer redeclares `accountingError` and
+`accountingStatus`. It still checks both `httpStatus` and `http_status` against
+`number | null`. The TypeScript 5.9.3 compiler passes the actual package consumers
+in NodeNext and CommonJS modes; package export/declaration checks also pass.
+
+Native report download tests now select the current `Export attempt page ·
+CSV/JSON` buttons. They assert visibility before waiting for a download and
+check all three seeded attempt IDs, JSON pagination and CSV row count. The test
+names describe page-scoped exports. Application export behavior is unchanged.
+Browser-suite type checking and discovery of both corrected tests in all three
+projects pass. The seeded JSON export also matches the new pagination/attempt
+assertions through the real fixture and handler without a listener.
+
+Verification: full `tools.check` passes 921 Python cases, strict typing on 107
+files, lint/formatting, unchanged size/type debt ratchets and the maintained
+script/console checks. The 21 inventory/network-guard tests and installed
+JavaScript offline runtime checks pass separately. Runtime schemas, frozen
+inputs and the daemon/profile are unchanged. This executor denies real loopback
+binds with `PermissionError: [Errno 1]`; HTTP/native-fetch/browser execution and
+confirmation of the replacement GitHub Actions run remain pending. Item 1 stays
+open. TypeScript compilation is now verified locally; Rust/.NET target checks
+remain pending under item 8, and item 9 remains deferred.
