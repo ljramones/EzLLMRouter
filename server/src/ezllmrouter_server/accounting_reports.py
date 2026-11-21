@@ -2,198 +2,35 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
+from .accounting_types import MoneyTotals, MoneyGroups
+
+from typing import TYPE_CHECKING, cast
+from .records import Record
+from .store import decode_record
+from .accounting_types import RecordIndex, EventGroups, SnapshotIndex
+
+if TYPE_CHECKING:
+    from .integration_accounting import ExternalAccounting
+
 from collections import defaultdict
 from decimal import Decimal
 from .formatting import money as format_money
 from .repositories import integration_accounting as _queries
-from .store import encode
 from . import integration_accounting as _api
 
 
-def dataset_export(self, principal, dataset_id, version="2"):
-    dataset = self._dataset(dataset_id)
-    self._authorize(principal, dataset, "report")
-    at = _api._time()
-    with self.store.database.read():
-        db = self.store.database
-        attempts = [
-            json.loads(r[0])
-            for r in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_ATTEMPTS, (dataset_id,))
-        ]
-        included = {item["attempt_id"] for item in attempts}
-        events = [
-            json.loads(r[0])
-            for r in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_EVENTS, (dataset_id,))
-        ]
-        eligible_ids = {
-            e["eligibility_evidence"]["eligibility_id"]
-            for e in events
-            if e.get("attempt_id") in included
-            and e["kind"] == "decision"
-            and e.get("eligibility_evidence", {}).get("eligibility_id")
-        }
-        eligibility = [
-            json.loads(r[0])
-            for r in db.execute(
-                _queries.DATASET_EXPORT_SELECT_INTEGRATION_ELIGIBILITY_READS, (dataset_id,)
-            )
-            if json.loads(r[0])["eligibility_id"] in eligible_ids
-        ]
-        snapshots = [
-            _api._snapshot_record(*r, at)
-            for r in db.execute(_queries.DATASET_EXPORT_SELECT_INTEGRATION_SNAPSHOTS, (dataset_id,))
-        ]
-        history = defaultdict(list)
-        for (raw,) in db.execute(
-            _queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY, (dataset_id,)
-        ):
-            item = json.loads(raw)
-            if item["dataset_id"] == dataset_id:
-                history[item["account_id"]].append(item)
-    snapshot_rows = []
-    snapshot_by_id = {
-        meta["snapshot_id"]: (meta, content, digest) for meta, content, digest in snapshots
-    }
-    for meta, content, digest in snapshots:
-        if meta["attempt_id"] not in included:
-            continue
-        decoded = json.loads(content) if content else {}
-        if (
-            content
-            and "sha256:" + hashlib.sha256(encode({**meta, **decoded}).encode()).hexdigest()
-            != digest
-        ):
-            raise _api.IntegrationError("SNAPSHOT_INTEGRITY_FAILED", 503, "query_first")
-        snapshot_rows.append(
-            {
-                **meta,
-                "status": "expired"
-                if meta["status"] == "captured" and content is None
-                else meta["status"],
-                "snapshot_digest": digest,
-                **decoded,
-            }
-        )
-    reference_assessments = []
-    for event in attempts:
-        if event.get("integration_version") not in ("2", "3"):
-            continue
-        sid, kind = event["context_ref"], "feature"
-        target = snapshot_by_id.get(sid)
-        status = (
-            "missing"
-            if target is None
-            else "binding_conflict"
-            if target[0]["attempt_id"] != event["attempt_id"] or target[0]["snapshot_kind"] != kind
-            else "expired"
-            if target[0]["status"] == "captured" and target[1] is None
-            else target[0]["status"]
-        )
-        reference_assessments.append(
-            {
-                "attempt_id": event["attempt_id"],
-                "reference_kind": kind,
-                "snapshot_id": sid,
-                "status": status,
-            }
-        )
-    for event in events:
-        if (
-            event.get("attempt_id") not in included
-            or event["kind"] != "decision"
-            or event.get("integration_version") not in ("2", "3")
-        ):
-            continue
-        sid = event["decision_ref"]
-        target = snapshot_by_id.get(sid)
-        status = (
-            "missing"
-            if target is None
-            else "binding_conflict"
-            if target[0]["attempt_id"] != event["attempt_id"]
-            or target[0]["snapshot_kind"] != "decision"
-            else "expired"
-            if target[0]["status"] == "captured" and target[1] is None
-            else target[0]["status"]
-        )
-        reference_assessments.append(
-            {
-                "attempt_id": event["attempt_id"],
-                "reference_kind": "decision",
-                "snapshot_id": sid,
-                "status": status,
-            }
-        )
-    return {
-        "integration_version": version,
-        "dataset": dataset,
-        "attempts": attempts,
-        "events": [
-            e
-            for e in events
-            if e.get("attempt_id") in included
-            or e["kind"] == "activity"
-            and e["task_id"] in {a["task_id"] for a in attempts}
-        ],
-        "eligibility_reads": eligibility,
-        "snapshots": snapshot_rows,
-        "snapshot_reference_assessments": reference_assessments,
-        "eligibility_assessments": [
-            {
-                "event_id": e["event_id"],
-                "attempt_id": e["attempt_id"],
-                "reported_status": e["eligibility_evidence"]["status"],
-                "assessment": _api._eligibility_assessment(
-                    e,
-                    next(
-                        (
-                            answer
-                            for answer in eligibility
-                            if answer["eligibility_id"]
-                            == e["eligibility_evidence"].get("eligibility_id")
-                        ),
-                        None,
-                    ),
-                    history.get(e["selected_account_id"], ()),
-                ),
-            }
-            for e in events
-            if e.get("attempt_id") in included
-            and e["kind"] == "decision"
-            and e.get("integration_version") in ("2", "3")
-        ],
-    }
-
-
-def report(self, principal, dataset_id, filters=None, version="1"):
+def report(
+    self: ExternalAccounting,
+    principal: Record,
+    dataset_id: str,
+    filters: dict[str, str] | None = None,
+    version: str = "1",
+) -> Record:
     dataset = self._dataset(dataset_id)
     self._authorize(principal, dataset, "report")
     at = _api._time()
     filters = filters or {}
-    if set(filters) - {
-        "actor_id",
-        "provider_account_id",
-        "task_id",
-        "model_id",
-        "initiating_user_id",
-        "root_run_id",
-        "run_id",
-        "from",
-        "to",
-    }:
-        raise _api.IntegrationError("SCHEMA_INVALID")
-    if (
-        any(
-            not _api._shape(value, _api.SCHEMA["$defs"]["id"])
-            for key, value in filters.items()
-            if key not in ("from", "to")
-        )
-        or any(not _api._utc(value) for key, value in filters.items() if key in ("from", "to"))
-        or (filters.get("from") and filters.get("to") and filters["from"] > filters["to"])
-    ):
-        raise _api.IntegrationError("SCHEMA_INVALID")
+    _validate_report_filters(filters)
     data = self._read_report_snapshot(dataset_id, version, at)
     by_attempt = defaultdict(list)
     lineage_links = {
@@ -206,11 +43,11 @@ def report(self, principal, dataset_id, filters=None, version="1"):
         if event["kind"] == "activity" and event["activity_kind"] == "outcome":
             outcomes[event["task_id"]].append(event)
     rows = []
-    totals = defaultdict(Decimal)
-    by_actor = defaultdict(lambda: defaultdict(Decimal))
-    by_account = defaultdict(lambda: defaultdict(Decimal))
-    by_root = defaultdict(lambda: defaultdict(Decimal))
-    by_inclusive_run = defaultdict(lambda: defaultdict(Decimal))
+    totals: MoneyTotals = defaultdict(Decimal)
+    by_actor: MoneyGroups = defaultdict(lambda: defaultdict(Decimal))
+    by_account: MoneyGroups = defaultdict(lambda: defaultdict(Decimal))
+    by_root: MoneyGroups = defaultdict(lambda: defaultdict(Decimal))
+    by_inclusive_run: MoneyGroups = defaultdict(lambda: defaultdict(Decimal))
     unknown = 0
     for start in data.attempts:
         row = self._report_attempt_row(
@@ -245,12 +82,6 @@ def report(self, principal, dataset_id, filters=None, version="1"):
             seen.add(run)
             by_inclusive_run[run][currency] += amount
             run = data.runs.get(run)
-    money = lambda group: {
-        key: {
-            currency: format_money(amount, places=9) for currency, amount in sorted(values.items())
-        }
-        for key, values in sorted(group.items())
-    }
     return {
         "integration_version": version,
         "dataset_id": dataset_id,
@@ -259,26 +90,26 @@ def report(self, principal, dataset_id, filters=None, version="1"):
         "known_total_by_currency": {
             currency: format_money(value, places=9) for currency, value in sorted(totals.items())
         },
-        "by_actor": money(by_actor),
-        "by_account": money(by_account),
-        "by_root_workflow": money(by_root),
-        "by_run_including_descendants": money(by_inclusive_run),
+        "by_actor": _money_groups(by_actor),
+        "by_account": _money_groups(by_account),
+        "by_root_workflow": _money_groups(by_root),
+        "by_run_including_descendants": _money_groups(by_inclusive_run),
         "attempts": rows,
     }
 
 
 def _enrich_report_row(
-    self,
-    row,
-    account_history,
-    all_starts,
-    effective,
-    eligibility_reads,
-    lineage_links,
-    related,
-    snapshots,
-    start,
-):
+    self: ExternalAccounting,
+    row: Record,
+    account_history: EventGroups,
+    all_starts: RecordIndex,
+    effective: Record | None,
+    eligibility_reads: RecordIndex,
+    lineage_links: RecordIndex,
+    related: list[Record],
+    snapshots: SnapshotIndex,
+    start: Record,
+) -> None:
     v2 = start.get("integration_version") in ("2", "3")
     decision = next((item for item in related if item["kind"] == "decision"), None)
     resolution = next((item for item in related if item["kind"] == "account_resolution"), None)
@@ -287,37 +118,19 @@ def _enrich_report_row(
     )
     history = account_history.get(start["provider_account_id"], ())
     registration = history[0]["registered_at"] if history else None
-    if resolution:
-        account_status = "resolved"
-    elif not registration:
-        account_status = "unresolved"
-    elif registration > start["started_at"]:
-        account_status = "registered_after_start_unconfirmed"
-    else:
-        account_status = "registered_at_start"
+    account_status = _account_status(registration, resolution, start)
 
-    def snapshot_state(sid, expected_kind, *, start=start):
-        if not sid or sid not in snapshots:
-            return "missing", None
-        meta, content, digest = snapshots[sid]
-        if meta["attempt_id"] != start["attempt_id"] or meta["snapshot_kind"] != expected_kind:
-            return "binding_conflict", None
-        return (
-            "expired" if meta["status"] == "captured" and content is None else meta["status"],
-            digest,
-        )
-
-    feature_status, feature_digest = snapshot_state(
-        start.get("context_ref") if v2 else None, "feature"
+    feature_status, feature_digest = _snapshot_state(
+        start.get("context_ref") if v2 else None, "feature", start, snapshots
     )
-    decision_status, decision_digest = snapshot_state(
-        decision.get("decision_ref") if decision else None, "decision"
+    decision_status, decision_digest = _snapshot_state(
+        decision.get("decision_ref") if decision else None, "decision", start, snapshots
     )
     evidence = decision.get("eligibility_evidence", {}) if decision else {}
     assessment = (
         _api._eligibility_assessment(
             decision,
-            eligibility_reads.get(evidence.get("eligibility_id")),
+            eligibility_reads.get(cast(str, evidence.get("eligibility_id"))),
             account_history.get(decision["selected_account_id"], ()),
         )
         if decision and decision.get("integration_version") in ("2", "3")
@@ -325,22 +138,7 @@ def _enrich_report_row(
         if decision
         else "missing"
     )
-    selected_action = (
-        {
-            key: decision.get(key)
-            for key in (
-                "selected_account_id",
-                "selected_model_id",
-                "operation_family",
-                "capability",
-                "selection_kind",
-                "policy_version",
-                "eligibility_evidence",
-            )
-        }
-        if decision
-        else None
-    )
+    selected_action = _selected_action(decision)
     row.update(
         operation_family_version=start.get("operation_family_version"),
         operation_family=start.get("operation_family"),
@@ -355,7 +153,7 @@ def _enrich_report_row(
         selected_action=selected_action,
         eligibility_evidence_status=evidence.get("status", "missing"),
         eligibility_assessment=assessment,
-        eligibility_record=eligibility_reads.get(evidence.get("eligibility_id")),
+        eligibility_record=eligibility_reads.get(cast(str, evidence.get("eligibility_id"))),
         feature_snapshot_status=feature_status,
         feature_snapshot_digest=feature_digest,
         feature_available_before_start=(
@@ -373,53 +171,26 @@ def _enrich_report_row(
 
 
 def _report_attempt_row(
-    self,
-    account_history,
-    all_starts,
-    by_attempt,
-    dataset,
-    dataset_id,
-    eligibility_reads,
-    filters,
-    lineage_links,
-    outcomes,
-    snapshots,
-    start,
-    version,
-):
-    if any(
-        (key in filters and start.get(key) != filters[key])
-        for key in (
-            "actor_id",
-            "provider_account_id",
-            "task_id",
-            "model_id",
-            "initiating_user_id",
-            "root_run_id",
-            "run_id",
-        )
-    ):
-        return None
-    if filters.get("from") and start["started_at"] < filters["from"]:
-        return None
-    if filters.get("to") and start["started_at"] >= filters["to"]:
+    self: ExternalAccounting,
+    account_history: EventGroups,
+    all_starts: RecordIndex,
+    by_attempt: EventGroups,
+    dataset: Record,
+    dataset_id: str,
+    eligibility_reads: RecordIndex,
+    filters: dict[str, str],
+    lineage_links: RecordIndex,
+    outcomes: EventGroups,
+    snapshots: SnapshotIndex,
+    start: Record,
+    version: str,
+) -> Record | None:
+    if not _attempt_matches_filters(start, filters):
         return None
     related = by_attempt[start["attempt_id"]]
-    usage = {item["usage_revision"]: item for item in related if item["kind"] == "usage"}
-    ordinal = 0
-    while ordinal + 1 in usage:
-        ordinal += 1
-    effective = usage.get(ordinal)
-    results = [item for item in related if item["kind"] == "result"]
-    latest_result = (
-        max(results, key=lambda x: (x["occurred_at"], x["event_id"])) if results else None
+    ordinal, effective, latest_result, task_outcome, status = _attempt_evidence(
+        related, outcomes, start
     )
-    task_outcome = (
-        max(outcomes[start["task_id"]], key=lambda x: (x["occurred_at"], x["event_id"]))
-        if (outcomes[start["task_id"]])
-        else None
-    )
-    status = effective.get("cost_state", effective["usage_state"]) if effective else "not_observed"
     row = {
         "dataset_id": dataset_id,
         "platform_id": dataset["platform_id"],
@@ -474,42 +245,46 @@ def _report_attempt_row(
     return row
 
 
-def _read_report_snapshot(self, dataset_id, version, at) -> _api.AccountingReportData:
-    snapshots, eligibility_reads, account_history = {}, {}, {}
+def _read_report_snapshot(
+    self: ExternalAccounting, dataset_id: str, version: str, at: str
+) -> _api.AccountingReportData:
+    snapshots: SnapshotIndex = {}
+    eligibility_reads: RecordIndex = {}
+    account_history: EventGroups = {}
     with self.store.database.read():
         attempts = [
-            json.loads(row[0])
+            decode_record(row[0])
             for row in self.store.database.execute(
                 _queries.DATASET_EXPORT_SELECT_INTEGRATION_ATTEMPTS, (dataset_id,)
             )
         ]
         all_starts = {
-            row[0]: json.loads(row[1])
+            cast(str, row[0]): decode_record(row[1])
             for row in self.store.database.execute(
                 _queries.ACTION_SELECT_INTEGRATION_ATTEMPTS, (dataset_id,)
             )
         }
         events = [
-            json.loads(row[0])
+            decode_record(row[0])
             for row in self.store.database.execute(
                 _queries.DATASET_EXPORT_SELECT_INTEGRATION_EVENTS, (dataset_id,)
             )
         ]
         runs = {
-            row[0]: row[1]
+            cast(str, row[0]): cast(str | None, row[1])
             for row in self.store.database.execute(
                 _queries.REPORT_SELECT_INTEGRATION_RUNS, (dataset_id,)
             )
         }
         if version in ("2", "3"):
             snapshots = {
-                row[0]: _api._snapshot_record(row[1], row[2], row[3], at)
+                cast(str, row[0]): _api._snapshot_record(row[1], row[2], row[3], at)
                 for row in self.store.database.execute(
                     _queries.REPORT_SELECT_INTEGRATION_SNAPSHOTS, (dataset_id,)
                 )
             }
             eligibility_reads = {
-                row[0]: json.loads(row[1])
+                cast(str, row[0]): decode_record(row[1])
                 for row in self.store.database.execute(
                     _queries.REPORT_SELECT_INTEGRATION_ELIGIBILITY_READS, (dataset_id,)
                 )
@@ -518,9 +293,131 @@ def _read_report_snapshot(self, dataset_id, version, at) -> _api.AccountingRepor
             for (raw,) in self.store.database.execute(
                 _queries.DATASET_EXPORT_SELECT_INTEGRATION_ACCOUNT_HISTORY, (dataset_id,)
             ):
-                item = json.loads(raw)
+                item = decode_record(raw)
                 if item["dataset_id"] == dataset_id:
                     account_history[item["account_id"]].append(item)
     return _api.AccountingReportData(
         attempts, all_starts, events, runs, snapshots, eligibility_reads, account_history
     )
+
+
+def _validate_report_filters(filters: dict[str, str]) -> None:
+    if set(filters) - {
+        "actor_id",
+        "provider_account_id",
+        "task_id",
+        "model_id",
+        "initiating_user_id",
+        "root_run_id",
+        "run_id",
+        "from",
+        "to",
+    }:
+        raise _api.IntegrationError("SCHEMA_INVALID")
+    if (
+        any(
+            not _api._shape(value, _api.SCHEMA["$defs"]["id"])
+            for key, value in filters.items()
+            if key not in ("from", "to")
+        )
+        or any(not _api._utc(value) for key, value in filters.items() if key in ("from", "to"))
+        or (filters.get("from") and filters.get("to") and filters["from"] > filters["to"])
+    ):
+        raise _api.IntegrationError("SCHEMA_INVALID")
+
+
+def _snapshot_state(
+    sid: str | None, expected_kind: str, start: Record, snapshots: SnapshotIndex
+) -> tuple[str, str | None]:
+    if not sid or sid not in snapshots:
+        return "missing", None
+    meta, content, digest = snapshots[sid]
+    if meta["attempt_id"] != start["attempt_id"] or meta["snapshot_kind"] != expected_kind:
+        return "binding_conflict", None
+    return (
+        "expired" if meta["status"] == "captured" and content is None else meta["status"],
+        digest,
+    )
+
+
+def _account_status(registration: str | None, resolution: Record | None, start: Record) -> str:
+    if resolution:
+        account_status = "resolved"
+    elif not registration:
+        account_status = "unresolved"
+    elif registration > start["started_at"]:
+        account_status = "registered_after_start_unconfirmed"
+    else:
+        account_status = "registered_at_start"
+    return account_status
+
+
+def _selected_action(decision: Record | None) -> Record | None:
+    selected_action = (
+        {
+            key: decision.get(key)
+            for key in (
+                "selected_account_id",
+                "selected_model_id",
+                "operation_family",
+                "capability",
+                "selection_kind",
+                "policy_version",
+                "eligibility_evidence",
+            )
+        }
+        if decision
+        else None
+    )
+    return selected_action
+
+
+def _attempt_matches_filters(start: Record, filters: dict[str, str]) -> bool:
+    if any(
+        (key in filters and start.get(key) != filters[key])
+        for key in (
+            "actor_id",
+            "provider_account_id",
+            "task_id",
+            "model_id",
+            "initiating_user_id",
+            "root_run_id",
+            "run_id",
+        )
+    ):
+        return False
+    if filters.get("from") and start["started_at"] < filters["from"]:
+        return False
+    if filters.get("to") and start["started_at"] >= filters["to"]:
+        return False
+    return True
+
+
+def _attempt_evidence(
+    related: list[Record], outcomes: EventGroups, start: Record
+) -> tuple[int, Record | None, Record | None, Record | None, str]:
+    usage = {item["usage_revision"]: item for item in related if item["kind"] == "usage"}
+    ordinal = 0
+    while ordinal + 1 in usage:
+        ordinal += 1
+    effective = usage.get(ordinal)
+    results = [item for item in related if item["kind"] == "result"]
+    latest_result = (
+        max(results, key=lambda x: (x["occurred_at"], x["event_id"])) if results else None
+    )
+    task_outcome = (
+        max(outcomes[start["task_id"]], key=lambda x: (x["occurred_at"], x["event_id"]))
+        if (outcomes[start["task_id"]])
+        else None
+    )
+    status = effective.get("cost_state", effective["usage_state"]) if effective else "not_observed"
+    return ordinal, effective, latest_result, task_outcome, cast(str, status)
+
+
+def _money_groups(group: MoneyGroups) -> dict[str, dict[str, str]]:
+    return {
+        key: {
+            currency: format_money(amount, places=9) for currency, amount in sorted(values.items())
+        }
+        for key, values in sorted(group.items())
+    }

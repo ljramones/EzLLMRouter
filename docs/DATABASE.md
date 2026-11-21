@@ -357,3 +357,12 @@ same Registry instance context. Mutation helpers execute under the facade
 publishing transaction and sender gate; moved credential/probe methods retain
 their existing lock/read/write scopes. No domain helper creates a new database,
 authority gate, audit writer or token table.
+
+
+External accounting retains its public facade and validator/error imports in
+`integration_accounting.py`. Datasets, events, connected lineage, snapshots,
+reports and exports have separate `accounting_*` owners. They share the same
+Registry/Store instance. Ingestion and snapshot actions still reauthorize the
+dataset inside their original write transaction. Projection helpers called under
+a read scope do not open their own scopes. All accounting facade/domain modules
+are strictly typed at the validated-record and persisted-JSON boundaries.

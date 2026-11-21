@@ -2,28 +2,36 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from datetime import datetime
+from typing import TYPE_CHECKING, cast
+from .records import Record
+from .store import Store, decode_record
+from .accounting_types import RecordIndex, EventGroups, SnapshotData, SnapshotIndex
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
 import hashlib
-import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from urllib.parse import unquote_to_bytes
 
 from .errors import RequestError
 from .formatting import utc_timestamp
-from .json_validation import JSONValue
 from .observability import log_failure
 from .repositories import integration_accounting as _queries
 from .store import encode
 
 VERSION = "1"
-SCHEMA = json.loads((Path(__file__).parent / "integration_schema.json").read_text())
-SCHEMA_V2 = json.loads((Path(__file__).parent / "integration_schema_v2.json").read_text())
-SCHEMA_V3 = json.loads((Path(__file__).parent / "integration_schema_v3.json").read_text())
+SCHEMA = decode_record((Path(__file__).parent / "integration_schema.json").read_text())
+SCHEMA_V2 = decode_record((Path(__file__).parent / "integration_schema_v2.json").read_text())
+SCHEMA_V3 = decode_record((Path(__file__).parent / "integration_schema_v3.json").read_text())
 SCHEMAS = {"1": SCHEMA, "2": SCHEMA_V2, "3": SCHEMA_V3}
-_CAPABILITIES = {
+_CAPABILITIES: dict[str, tuple[str, ...]] = {
     name: (
         "transcription"
         if name == "speech_input"
@@ -41,7 +49,7 @@ class IntegrationError(RequestError):
         self.retry_guidance = retry_guidance
 
 
-def _cohort_expiry(dataset, days, activated_at):
+def _cohort_expiry(dataset: Record, days: object, activated_at: object) -> datetime:
     try:
         if (
             type(days) is not int
@@ -50,12 +58,14 @@ def _cohort_expiry(dataset, days, activated_at):
             or dataset["activated_at"] != activated_at
         ):
             raise ValueError("invalid accounting retention metadata")
-        return datetime.fromisoformat(activated_at.replace("Z", "+00:00")) + timedelta(days=days)
+        return datetime.fromisoformat(cast(str, activated_at).replace("Z", "+00:00")) + timedelta(
+            days=days
+        )
     except (ValueError, KeyError, TypeError, OverflowError):
         raise ValueError("invalid accounting retention metadata") from None
 
 
-def _dataset_available(dataset, days, activated_at, at):
+def _dataset_available(dataset: Record, days: object, activated_at: object, at: datetime) -> bool:
     if not dataset["dataset_id"].startswith("dataset.local.real."):
         return True
     try:
@@ -64,14 +74,14 @@ def _dataset_available(dataset, days, activated_at, at):
         return False
 
 
-def _snapshot_record(metadata, content, digest, at):
-    meta = json.loads(metadata)
+def _snapshot_record(metadata: object, content: object, digest: object, at: str) -> SnapshotData:
+    meta = decode_record(metadata)
     if meta["status"] == "captured" and meta["retention_until"] <= at:
         content = None
-    return meta, content, digest
+    return meta, cast(str | None, content), cast(str | None, digest)
 
 
-def _shape(value, schema, definitions=None):
+def _shape(value: object, schema: Record, definitions: Record | None = None) -> bool:
     definitions = definitions or SCHEMA["$defs"]
     if "$ref" in schema:
         return _shape(value, definitions[schema["$ref"].rsplit("/", 1)[1]], definitions)
@@ -114,7 +124,7 @@ def _shape(value, schema, definitions=None):
     return True
 
 
-def _utc(value):
+def _utc(value: object) -> bool:
     if type(value) is not str or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", value):
         return False
     try:
@@ -125,11 +135,13 @@ def _utc(value):
         return False
 
 
-def _time():
+def _time() -> str:
     return utc_timestamp(datetime.now(timezone.utc))
 
 
-def _eligibility_assessment(event, observed, history):
+def _eligibility_assessment(
+    event: Record, observed: Record | None, history: Sequence[Record]
+) -> str:
     """Assess a reported answer without treating same-second mutations as ordered."""
     evidence = event.get("eligibility_evidence", {})
     if "eligibility_id" not in evidence:
@@ -198,21 +210,12 @@ def _eligibility_assessment(event, observed, history):
         return "binding_conflict"
     if not usable:
         return "denied"
-    later = [
-        item.get("changed_at", item.get("registered_at"))
-        for item in history
-        if item["revision"] > observed["account_revision"]
-    ]
-    if any(moment < event["occurred_at"] for moment in later):
-        return "stale"
-    if observed["evaluated_at"] == event["occurred_at"] or any(
-        moment == event["occurred_at"] for moment in later
-    ):
-        return "indeterminate"
-    return "verified"
+    return _eligibility_freshness(event, observed, history)
 
 
-def _lineage_projection(start, link, starts, links):
+def _lineage_projection(
+    start: Record, link: Record | None, starts: RecordIndex, links: RecordIndex
+) -> tuple[str | None, str | None, str]:
     """Project accepted lineage without blessing contradictory historical records."""
     v2 = start.get("integration_version") in ("2", "3")
     if not v2:
@@ -252,108 +255,17 @@ def _lineage_projection(start, link, starts, links):
     return role, predecessor, "linked"
 
 
-def _checked(value, definition, version="1"):
+def _checked(value: object, definition: str, version: str = "1") -> Record:
     definitions = SCHEMAS[version]["$defs"]
     if not _shape(value, definitions[definition], definitions):
         raise IntegrationError("SCHEMA_INVALID")
 
-    def walk(item):
-        if isinstance(item, dict):
-            for key, child in item.items():
-                if key in (
-                    "activated_at",
-                    "occurred_at",
-                    "started_at",
-                    "source_at",
-                    "available_at",
-                    "retention_until",
-                    "source_expires_at",
-                ) and not _utc(child):
-                    raise IntegrationError("SCHEMA_INVALID")
-                walk(child)
-        elif isinstance(item, list):
-            for child in item:
-                walk(child)
-        elif type(item) is str and any(ord(c) < 32 or 0xD800 <= ord(c) <= 0xDFFF for c in item):
-            raise IntegrationError("SCHEMA_INVALID")
-
-    walk(value)
+    value = cast(Record, value)
+    _walk_values(value)
     if definition == "event":
-        if value["kind"] in ("activity", "attempt_started"):
-            root = value["root_run_id"] == value["run_id"]
-            if root == ("parent_run_id" in value) or value.get("parent_run_id") == value["run_id"]:
-                raise IntegrationError("SEMANTIC_INVALID")
-        if (
-            version in ("2", "3")
-            and value["kind"] == "activity"
-            and value["activity_kind"] == "outcome"
-            and "outcome" not in value
-        ):
-            raise IntegrationError("SEMANTIC_INVALID")
-        if version in ("2", "3") and value["kind"] == "attempt_started":
-            if (value["model_identity_state"] == "known") != ("model_id" in value) or (
-                value["attempt_role"] in ("retry", "fallback")
-            ) != ("predecessor_attempt_id" in value):
-                raise IntegrationError("SEMANTIC_INVALID")
-        if version in ("2", "3") and value["kind"] == "decision":
-            evidence = value["eligibility_evidence"]
-            if (evidence["status"] in ("verified", "stale", "denied")) != (
-                "eligibility_id" in evidence
-            ):
-                raise IntegrationError("SEMANTIC_INVALID")
-            if version == "3" and (
-                (value["selection_kind"] == "known_model") != ("selected_model_id" in value)
-                or value["capability"] not in _CAPABILITIES.get(value["operation_family"], ())
-            ):
-                raise IntegrationError("SEMANTIC_INVALID")
-        if value["kind"] == "usage":
-            if version == "1":
-                units = [item["unit"] for item in value.get("native_units", ())]
-                if value["usage_state"] == "known" and (
-                    len(units) != len(set(units))
-                    or (Decimal(value["amount_decimal"]) == 0) != ("zero_basis" in value)
-                ):
-                    raise IntegrationError("SEMANTIC_INVALID")
-            else:
-                units = [item["unit"] for item in value.get("native_units", ())]
-                known_units = value["usage_state"] == "known"
-                known_cost = value["cost_state"] == "known"
-                fields = ("currency", "amount_decimal", "cost_basis", "price_ref", "price_version")
-                if (
-                    len(units) != len(set(units))
-                    or known_units != ("native_units" in value and "usage_provenance" in value)
-                    or not known_units
-                    and ("native_units" in value or "usage_provenance" in value)
-                    or known_cost != all(key in value for key in fields)
-                    or not known_cost
-                    and any(key in value for key in fields + ("zero_basis",))
-                    or known_cost
-                    and (Decimal(value["amount_decimal"]) == 0) != ("zero_basis" in value)
-                ):
-                    raise IntegrationError("SEMANTIC_INVALID")
+        _check_event_semantics(value, version)
     if definition == "snapshot":
-        captured = value["status"] == "captured"
-        content_key = "features" if value["snapshot_kind"] == "feature" else "selected_action"
-        if (
-            captured != (content_key in value)
-            or any(key in value for key in ({"features", "selected_action"} - {content_key}))
-            or value["source_at"] > value["available_at"]
-            or value["available_at"] > value["retention_until"]
-            or value.get("source_expires_at", value["retention_until"]) < value["retention_until"]
-        ):
-            raise IntegrationError("SEMANTIC_INVALID")
-        if "selected_action" in value:
-            evidence = value["selected_action"]["eligibility_evidence"]
-            if (evidence["status"] in ("verified", "stale", "denied")) != (
-                "eligibility_id" in evidence
-            ):
-                raise IntegrationError("SEMANTIC_INVALID")
-            action = value["selected_action"]
-            if value["integration_version"] == "3" and (
-                (action["selection_kind"] == "known_model") != ("selected_model_id" in action)
-                or action["capability"] not in _CAPABILITIES.get(action["operation_family"], ())
-            ):
-                raise IntegrationError("SEMANTIC_INVALID")
+        _check_snapshot_semantics(value)
     return value
 
 
@@ -374,39 +286,47 @@ def route_id(raw: str) -> str:
 class AccountingReportData:
     """One database snapshot used by all projections and aggregates in a report."""
 
-    attempts: list[dict[str, JSONValue]]
-    all_starts: dict[str, dict[str, JSONValue]]
-    events: list[dict[str, JSONValue]]
+    attempts: list[Record]
+    all_starts: RecordIndex
+    events: list[Record]
     runs: dict[str, str | None]
-    snapshots: dict[str, tuple[dict[str, JSONValue], str | None, str | None]]
-    eligibility_reads: dict[str, dict[str, JSONValue]]
-    account_history: dict[str, list[dict[str, JSONValue]]]
+    snapshots: SnapshotIndex
+    eligibility_reads: RecordIndex
+    account_history: EventGroups
 
 
 from . import accounting_datasets
 from . import accounting_events
+from . import accounting_lineage
 from . import accounting_snapshots
 from . import accounting_reports
+from . import accounting_exports
 
 
 class ExternalAccounting:
-    def __init__(self, registry, *, feature_policy=None, accounting_retention_days=None):
+    def __init__(
+        self: ExternalAccounting,
+        registry: Registry,
+        *,
+        feature_policy: Record | None = None,
+        accounting_retention_days: int | None = None,
+    ) -> None:
         self.feature_policy = feature_policy
         self.accounting_retention_days = accounting_retention_days
-        self.registry = registry
-        self.store = registry.store
+        self.registry: Registry = registry
+        self.store: Store = registry.store
         self._expire_snapshots()
 
     _expire_snapshots = accounting_snapshots._expire_snapshots
 
-    def maintain(self):
+    def maintain(self: ExternalAccounting) -> dict[str, int]:
         """Explicit physical cleanup; read methods enforce expiry without writing."""
         return {
             "expired_datasets": self.expire_datasets(),
             "expired_snapshots": self._expire_snapshots(),
         }
 
-    def expire_datasets(self):
+    def expire_datasets(self: ExternalAccounting) -> int:
         """Purge adopted local real cohorts at T0 plus the configured horizon.
 
         The default service has no accounting expiry, preserving historical
@@ -417,9 +337,9 @@ class ExternalAccounting:
 
         db = self.store.database
 
-        def due(raw, days, activated_at):
+        def due(raw: object, days: object, activated_at: object) -> bool:
             try:
-                return _cohort_expiry(json.loads(raw), days, activated_at) <= now
+                return _cohort_expiry(decode_record(raw), days, activated_at) <= now
             except (ValueError, KeyError, TypeError):
                 log_failure("accounting_retention_metadata_invalid")
                 return False
@@ -435,7 +355,7 @@ class ExternalAccounting:
         if not candidates:
             return 0
 
-        def action():
+        def action() -> int:
             expired = []
             for did in candidates:
                 row = db.execute(_queries.DATASET_SELECT_INTEGRATION_DATASETS, (did,)).fetchone()
@@ -480,9 +400,9 @@ class ExternalAccounting:
 
     accounts = accounting_datasets.accounts
 
-    _bind_run = accounting_events._bind_run
+    _bind_run = accounting_lineage._bind_run
 
-    _check_lineage = accounting_events._check_lineage
+    _check_lineage = accounting_lineage._check_lineage
 
     _check_decision_evidence = accounting_events._check_decision_evidence
 
@@ -496,7 +416,7 @@ class ExternalAccounting:
 
     snapshot = accounting_snapshots.snapshot
 
-    dataset_export = accounting_reports.dataset_export
+    dataset_export = accounting_exports.dataset_export
 
     report = accounting_reports.report
 
@@ -505,3 +425,119 @@ class ExternalAccounting:
     _report_attempt_row = accounting_reports._report_attempt_row
 
     _read_report_snapshot = accounting_reports._read_report_snapshot
+
+
+def _walk_values(item: object) -> None:
+    if isinstance(item, dict):
+        for key, child in item.items():
+            if key in (
+                "activated_at",
+                "occurred_at",
+                "started_at",
+                "source_at",
+                "available_at",
+                "retention_until",
+                "source_expires_at",
+            ) and (not _utc(child)):
+                raise IntegrationError("SCHEMA_INVALID")
+            _walk_values(child)
+    elif isinstance(item, list):
+        for child in item:
+            _walk_values(child)
+    elif type(item) is str and any((ord(c) < 32 or 55296 <= ord(c) <= 57343 for c in item)):
+        raise IntegrationError("SCHEMA_INVALID")
+
+
+def _check_event_semantics(value: Record, version: str) -> None:
+    if value["kind"] in ("activity", "attempt_started"):
+        root = value["root_run_id"] == value["run_id"]
+        if root == ("parent_run_id" in value) or value.get("parent_run_id") == value["run_id"]:
+            raise IntegrationError("SEMANTIC_INVALID")
+    if (
+        version in ("2", "3")
+        and value["kind"] == "activity"
+        and value["activity_kind"] == "outcome"
+        and "outcome" not in value
+    ):
+        raise IntegrationError("SEMANTIC_INVALID")
+    if version in ("2", "3") and value["kind"] == "attempt_started":
+        if (value["model_identity_state"] == "known") != ("model_id" in value) or (
+            value["attempt_role"] in ("retry", "fallback")
+        ) != ("predecessor_attempt_id" in value):
+            raise IntegrationError("SEMANTIC_INVALID")
+    if version in ("2", "3") and value["kind"] == "decision":
+        evidence = value["eligibility_evidence"]
+        if (evidence["status"] in ("verified", "stale", "denied")) != (
+            "eligibility_id" in evidence
+        ):
+            raise IntegrationError("SEMANTIC_INVALID")
+        if version == "3" and (
+            (value["selection_kind"] == "known_model") != ("selected_model_id" in value)
+            or value["capability"] not in _CAPABILITIES.get(value["operation_family"], ())
+        ):
+            raise IntegrationError("SEMANTIC_INVALID")
+    if value["kind"] == "usage":
+        if version == "1":
+            units = [item["unit"] for item in value.get("native_units", ())]
+            if value["usage_state"] == "known" and (
+                len(units) != len(set(units))
+                or (Decimal(value["amount_decimal"]) == 0) != ("zero_basis" in value)
+            ):
+                raise IntegrationError("SEMANTIC_INVALID")
+        else:
+            units = [item["unit"] for item in value.get("native_units", ())]
+            known_units = value["usage_state"] == "known"
+            known_cost = value["cost_state"] == "known"
+            fields = ("currency", "amount_decimal", "cost_basis", "price_ref", "price_version")
+            if (
+                len(units) != len(set(units))
+                or known_units != ("native_units" in value and "usage_provenance" in value)
+                or not known_units
+                and ("native_units" in value or "usage_provenance" in value)
+                or known_cost != all(key in value for key in fields)
+                or not known_cost
+                and any(key in value for key in fields + ("zero_basis",))
+                or known_cost
+                and (Decimal(value["amount_decimal"]) == 0) != ("zero_basis" in value)
+            ):
+                raise IntegrationError("SEMANTIC_INVALID")
+
+
+def _check_snapshot_semantics(value: Record) -> None:
+    captured = value["status"] == "captured"
+    content_key = "features" if value["snapshot_kind"] == "feature" else "selected_action"
+    if (
+        captured != (content_key in value)
+        or any(key in value for key in ({"features", "selected_action"} - {content_key}))
+        or value["source_at"] > value["available_at"]
+        or value["available_at"] > value["retention_until"]
+        or value.get("source_expires_at", value["retention_until"]) < value["retention_until"]
+    ):
+        raise IntegrationError("SEMANTIC_INVALID")
+    if "selected_action" in value:
+        evidence = value["selected_action"]["eligibility_evidence"]
+        if (evidence["status"] in ("verified", "stale", "denied")) != (
+            "eligibility_id" in evidence
+        ):
+            raise IntegrationError("SEMANTIC_INVALID")
+        action = value["selected_action"]
+        if value["integration_version"] == "3" and (
+            (action["selection_kind"] == "known_model") != ("selected_model_id" in action)
+            or action["capability"] not in _CAPABILITIES.get(action["operation_family"], ())
+        ):
+            raise IntegrationError("SEMANTIC_INVALID")
+
+
+def _eligibility_freshness(event: Record, observed: Record, history: Sequence[Record]) -> str:
+    later = [
+        item.get("changed_at", item.get("registered_at"))
+        for item in history
+        if item["revision"] > observed["account_revision"]
+    ]
+    if any(moment < event["occurred_at"] for moment in later):
+        return "stale"
+    if observed["evaluated_at"] == event["occurred_at"] or any(
+        moment == event["occurred_at"] for moment in later
+    ):
+        return "indeterminate"
+    return "verified"

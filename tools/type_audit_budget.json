@@ -5,10 +5,6 @@
   "review_baseline_errors": 2934,
   "errors": {
     "server/src/ezllmrouter_server/__main__.py": 1,
-    "server/src/ezllmrouter_server/accounting_datasets.py": 32,
-    "server/src/ezllmrouter_server/accounting_events.py": 11,
-    "server/src/ezllmrouter_server/accounting_reports.py": 28,
-    "server/src/ezllmrouter_server/accounting_snapshots.py": 12,
     "server/src/ezllmrouter_server/attribution.py": 45,
     "server/src/ezllmrouter_server/cache_accounting.py": 12,
     "server/src/ezllmrouter_server/connection_resources.py": 6,
@@ -28,9 +24,8 @@
     "server/src/ezllmrouter_server/gateway/synthetic_recipe.py": 7,
     "server/src/ezllmrouter_server/gateway/worker_ready.py": 6,
     "server/src/ezllmrouter_server/http_server.py": 27,
-    "server/src/ezllmrouter_server/integration_accounting.py": 35,
     "server/src/ezllmrouter_server/integration_bootstrap.py": 1,
-    "server/src/ezllmrouter_server/integration_credentials.py": 110,
+    "server/src/ezllmrouter_server/integration_credentials.py": 96,
     "server/src/ezllmrouter_server/integration_local.py": 19,
     "server/src/ezllmrouter_server/local_connectors.py": 199,
     "server/src/ezllmrouter_server/operator_demo.py": 7,
@@ -47,7 +42,7 @@
     "server/src/ezllmrouter_server/personal_campaign.py": 65,
     "server/src/ezllmrouter_server/plans.py": 8,
     "server/src/ezllmrouter_server/provider_vault.py": 32,
-    "server/src/ezllmrouter_server/registry.py": 6,
+    "server/src/ezllmrouter_server/registry.py": 4,
     "server/src/ezllmrouter_server/reporting.py": 71,
     "server/src/ezllmrouter_server/retrieval_descriptor.py": 3,
     "server/src/ezllmrouter_server/runtime_resources.py": 9,
@@ -91,7 +86,8 @@
         "server/src/ezllmrouter_server/accounting_events.py": 11,
         "server/src/ezllmrouter_server/accounting_datasets.py": 32
       },
-      "note": "Unchanged method extraction; dynamic clock/helper references retain their public facade injection points."
+      "note": "Unchanged method extraction; dynamic clock/helper references retain their public facade injection points.",
+      "cleanup": "All accounting facade/domain modules enter strict typing; no relocated typing allowances remain."
     }
   ]
 }

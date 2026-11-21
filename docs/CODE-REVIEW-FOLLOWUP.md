@@ -654,7 +654,7 @@ No additional runtime refactoring is included in this reconciliation.
 | --- | --- | --- |
 | W1 — wire HTTP package | Implemented — local checks pass | `web.py` is composition only, and every function in `wire_http/` is at most 80 lines. Existing HTTP regressions pass; real listener qualification remains item 1. |
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
-| W3 — ExternalAccounting domains/tests | In progress — move completed, cleanup follows | Runtime methods move into datasets, events, snapshots and reports. The original facade falls from 1,826 to 507 lines; its 16 HTTP tests move unchanged into six files, each below 400 lines. Long function cleanup and strict typing follow in a separate commit. |
+| W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
 | W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
@@ -770,3 +770,34 @@ typing debt transfers explicitly with the code, without an aggregate increase;
 the whole-library count is 2,137. The move resolves five size allowances, leaving
 85. These figures do not claim the newly moved accounting modules are already
 strictly typed. Cleanup follows separately.
+
+
+### Item 11 follow-up: W3 accounting cleanup
+
+Ingestion now names parse/admission, receipt recovery, run/lineage validation,
+attempt start, decision/account-resolution checks and receipt persistence. The
+original transaction wrapper still encloses its first dataset authorization
+recheck and every subsequent write. Snapshot publication retains the same
+transaction recheck and separates retention policy from reference binding.
+
+Report/export snapshot reads remain inside their original caller read scopes.
+Filtering, account/snapshot state, usage/result selection, money rendering and
+export reference projection have named owners; no totals, currencies, decimal
+rounding, snapshot digests, status strings or response fields change. Connected
+lineage has one focused module and traverses the same affected component in the
+same validation order. Shared validators separate shape, string/time traversal
+and event/snapshot semantics without changing schema bytes or public errors.
+
+Every accounting runtime module is below 600 lines and every runtime function at
+most 80. All eight facade/domain modules pass strict mypy, bringing checked scope
+to 90 files. Whole-library typing diagnostics fall to 2,003, with no increased
+per-file allowance. The 16 HTTP test bodies/assertions remain in their domain
+files; individual long test journeys are still explicitly size-budgeted and will
+be decomposed with the remaining oversized-test work in W6.
+
+W3 cleanup verification: full `tools.check` passes 909 Python cases, lint and
+formatting, strict mypy on 90 files, the 2,003-error library-debt budget, the
+size ratchet and all maintained script/console checks. Real HTTP qualification
+remains pending; the listener-bind denial is not a passing HTTP result. No
+schema, migration, frozen dependency, provider execution or live-profile change
+was made.
