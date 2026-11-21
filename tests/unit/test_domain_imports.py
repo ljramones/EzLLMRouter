@@ -17,6 +17,7 @@ class DomainImportTests(unittest.TestCase):
                 "registry_*.py",
                 "accounting_*.py",
                 "core_*.py",
+                "store_*.py",
                 "registry_mutations/*.py",
             )
             for path in PACKAGE.glob(pattern)

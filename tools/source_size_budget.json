@@ -19,8 +19,6 @@
     "server/src/ezllmrouter_server/operator_web.py:function:serve": 112,
     "server/src/ezllmrouter_server/provider_adapters.py:function:probe": 165,
     "server/src/ezllmrouter_server/secret_rotation.py:function:main": 117,
-    "server/src/ezllmrouter_server/store.py:class:SQLiteStore": 802,
-    "server/src/ezllmrouter_server/store.py:file": 937,
     "server/src/ezllmrouter_server/successor_reporting.py:function:usage_report": 191,
     "tests/client_languages/build_cases.py:function:cases": 418,
     "tests/client_parity/integration_python.py:function:main": 218,

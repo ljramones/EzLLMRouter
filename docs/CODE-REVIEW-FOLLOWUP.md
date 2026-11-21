@@ -656,7 +656,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W2 — Registry domains | Implemented — local checks pass | The facade is 510 lines, down from 1,911; all Registry/domain functions are at most 80 lines and domain modules at most 600. Public methods/signatures remain available, locks and publishing transactions retain ownership, and new domain modules pass strict typing. Move and cleanup are separate commits. |
 | W3 — ExternalAccounting domains/tests | Implemented — HTTP target checks pending | Accounting facade/domain modules are each below 600 lines and all runtime functions at most 80. All eight modules pass strict typing. The 16 HTTP tests retain their assertions in six files below 400 lines; actual listener execution remains pending. Oversized individual test journeys remain explicitly budgeted for the W6 test cleanup. |
 | W4 — Coordinator pipeline | Implemented — local checks pass | The facade is 577 lines, below the 900-line target; every Coordinator/domain function is at most 80 lines. Public imports and constructor arguments remain available. The facade, step modules and cache accounting pass strict typing, with concrete checks for authority, registry and sender capabilities. Failure/unknown-outcome boundaries remain around the same operations. |
-| W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
+| W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical field phases and Store record decomposition are implemented. Demo projections and report/probe/admin function cleanup remain. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
 | W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
@@ -896,3 +896,21 @@ own isolated Python process. It passes, and the full gate passes 915 Python
 cases, strict typing on 99 files, lint/formatting, source/type budgets and all
 script/console checks. The library typing debt remains 1,805 and size allowances
 remain 74. No listener, provider or existing deployment was used.
+
+
+### Item 11 follow-up: W5 Store record ownership
+
+Twenty-five record methods move unchanged into `store_work.py`,
+`store_results.py` and `store_successor.py`. Database opening, instance leases,
+reader lifecycle, nested transaction/savepoint ownership and close remain on
+SQLiteStore. Public methods and the complete Store protocol still bind at their
+original paths. The facade falls from 937 to 349 lines and SQLiteStore from 802
+to 213. Every moved executable body, gate/transaction scope and signature is
+verified against `66bbcf1`, allowing only explicit self typing and import wiring.
+
+All four Store modules pass strict typing, including the existing concrete
+SQLiteStore-to-Store protocol proof. Cold-import checks now cover 30 domains.
+Full `tools.check` passes 915 Python cases, strict mypy on 102 files, lint/format,
+source/type budgets and script/console checks. The library debt remains 1,805;
+two resolved Store size allowances are removed, leaving 72. Schemas, SQL, frozen
+inputs, signed fixtures and transaction behavior are unchanged.

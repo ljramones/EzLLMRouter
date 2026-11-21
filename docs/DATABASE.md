@@ -366,3 +366,11 @@ Registry/Store instance. Ingestion and snapshot actions still reauthorize the
 dataset inside their original write transaction. Projection helpers called under
 a read scope do not open their own scopes. All accounting facade/domain modules
 are strictly typed at the validated-record and persisted-JSON boundaries.
+
+
+SQLiteStore keeps database/lease/reader/transaction lifecycle in `store.py`; work
+and guard records, candidate/usage results, and successor records have focused
+`store_work.py`, `store_results.py` and `store_successor.py` helpers. These are
+methods on the same instance, with the same private lock/connection ownership;
+they do not create separate stores or transactions. The public Store protocol
+and all four implementation modules remain strictly checked.
