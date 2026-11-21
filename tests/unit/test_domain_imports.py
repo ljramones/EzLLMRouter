@@ -42,3 +42,56 @@ class DomainImportTests(unittest.TestCase):
                     timeout=15,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_completion_domains_import_first_and_keep_registered_source_identity(self):
+        directory = ROOT / "tools/gateway/evidence"
+        domains = (
+            "accounting",
+            "checkpoint",
+            "clients",
+            "correlation",
+            "handler_common",
+            "identity_verification",
+            "ingress",
+            "plan",
+            "recovery",
+            "retrieval",
+            "setup",
+            "usage_verification",
+            "write_verification",
+        )
+        script = """
+import importlib, inspect, sys
+from hashlib import sha256
+from pathlib import Path
+sys.path[:0] = [sys.argv[1], sys.argv[2]]
+importlib.import_module(sys.argv[3])
+from tools.gateway.evidence.dev12_completion_handlers import DEV12_CASE_HANDLERS
+from tools.gateway.evidence.dev12_completion_catalog import source_path_for_handler
+for registration in DEV12_CASE_HANDLERS.values():
+    path = Path(registration.source_path).resolve()
+    assert inspect.isfunction(registration.run)
+    assert Path(inspect.getsourcefile(registration.run)).resolve() == path
+    assert path == source_path_for_handler(registration.name)
+    assert sha256(path.read_bytes()).hexdigest() == registration.source_sha256
+"""
+        for domain in domains:
+            name = "dev12_completion_" + domain
+            with self.subTest(domain=domain):
+                self.assertTrue((directory / (name + ".py")).is_file())
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-I",
+                        "-c",
+                        script,
+                        str(ROOT),
+                        str(PACKAGE.parent),
+                        "tools.gateway.evidence." + name,
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    capture_output=True,
+                    timeout=15,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)

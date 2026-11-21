@@ -39,7 +39,7 @@ DEVELOPMENT_TESTS = (
 GATEWAY_TESTS = (
     "guard provider_guard provider_plan compressed_responses retrieval_guard_timeout core_bridge choice_b "
     "guarded_tool_execution runtime_capture provider_worker_diagnostic retrieval_first_write "
-    "python_actor_recovery completion_preflight "
+    "python_actor_recovery completion_preflight completion_continuation completion_runtime completion_identity "
     "completion_supplement first_owner_supplement_followup first_owner_supplement "
     "retrieval_receiver_decode retrieval_tls_receiver_modes "
     "model_identity owned_sender_transport"
@@ -53,6 +53,9 @@ MODULES = (
     *("tests.development_slice.test_" + name for name in DEVELOPMENT_TESTS),
     *("tests.gateway_integration.test_" + name for name in GATEWAY_TESTS),
     "tests.tool_cycle.test_core",
+    "tests.tool_cycle.test_core_sources",
+    "tests.tool_cycle.test_core_retention",
+    "tests.tool_cycle.test_core_transport",
     "tests.gateway_integration.test_worker_ready.WorkerReadyOfflineTests",
     "tests.operator_console.test_integration_credentials.CredentialTests",
     "tests.unit.test_release_safety",

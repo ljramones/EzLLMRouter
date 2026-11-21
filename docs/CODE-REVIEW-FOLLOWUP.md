@@ -1011,3 +1011,34 @@ remain tracked separately; none is implied by these source checks.
 W6 remains: retain and decompose the completion evidence domains/runtime,
 separate the large preflight/tool-cycle suites, shorten retained runners and
 extract deployment exercise steps. No evidence runner is deleted or archived.
+
+### Item 11 follow-up: W6 completion-domain and test moves
+
+The retained completion handlers move to common, ingress, recovery, accounting,
+retrieval and client modules. The runner separates plan/checkpoint generation,
+setup, correlation and write/usage/identity verification. Public functions and
+CompletionRuntime methods remain at their existing import paths. Handler entry
+wrappers retain their original reviewed source identities; preflight still checks
+the complete committed source tree, including the extracted implementations.
+Standalone runner execution binds the same facade for its extracted operations.
+
+Scope-aware AST comparisons preserve 37 tooling function/method bodies, comments,
+arguments/defaults and ownership/exception boundaries. `dev12_completion_handlers`
+falls from 3,556 to below 300 lines and the runner from 3,761 to below 700. The
+large accounting and checkpoint functions are intentionally unchanged in this
+move commit; phase extraction follows separately. Existing function ceilings
+transfer with up to ten lines of import/qualification formatting overhead while
+resolved file/class allowances are removed. No runner is deleted or archived.
+
+The preflight suite splits into inventory, continuation, runtime and identity
+suites; tool-cycle tests split into history, source authority, retention and
+transport. Shared fixtures contain no discovered tests. All 44 original cases
+and 51 test/fixture method bodies retain their assertions and executable ASTs.
+The new modules are registered in the same offline gate. Fresh-process checks
+also import each of 13 tooling domains first and validate all nine real handler
+registrations against their expected source path/hash.
+
+Full `tools.check` passes 916 Python cases, strict typing on 107 files,
+lint/formatting, script/console checks and both ratchets. Library typing debt
+remains 1,631; size allowances fall to 62. This is source validation; real
+listeners, Docker, browsers and finite provider executions were not run.
