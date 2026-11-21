@@ -1,14 +1,18 @@
 """Pinned synthetic text recipe, independent of the HTTP adapter under test."""
 
+from __future__ import annotations
+
+from ..records import Record
+
 import hashlib
 import json
 
 
 class SyntheticTextRecipe:
-    def __init__(self, endpoint="receiver", port=8766):
+    def __init__(self, endpoint: str = "receiver", port: int = 8766) -> None:
         self.endpoint, self.port = endpoint, port
 
-    def expected(self, projected, timeout_ms):
+    def expected(self, projected: Record, timeout_ms: int) -> tuple[bytes, Record]:
         destination = projected["destination"]
         if destination["endpoint"] != self.endpoint:
             raise ValueError("recipe destination changed")
@@ -46,11 +50,11 @@ class SyntheticDevelopmentRecipe:
 
     tool_version = "recipe.dev03.tool.v1"
 
-    def __init__(self, endpoint="receiver", port=8766):
+    def __init__(self, endpoint: str = "receiver", port: int = 8766) -> None:
         self.endpoint, self.port = endpoint, port
         self.text = SyntheticTextRecipe(endpoint, port)
 
-    def expected(self, projected, timeout_ms):
+    def expected(self, projected: Record, timeout_ms: int) -> tuple[bytes, Record]:
         work = projected["work"]
         if "tools" not in work["requested_features"]:
             return self.text.expected(projected, timeout_ms)
@@ -81,7 +85,7 @@ class SyntheticDevelopmentRecipe:
                     for b in blocks
                     if b["kind"] == "tool_call"
                 ]
-                item = {
+                item: Record = {
                     "role": "assistant",
                     "content": "\n".join(
                         b["text"] for b in blocks if b["kind"] == "assistant_text"

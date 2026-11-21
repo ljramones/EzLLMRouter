@@ -11,7 +11,8 @@ import re
 from decimal import ROUND_CEILING, ROUND_HALF_EVEN, Decimal, InvalidOperation
 from hashlib import sha256
 from importlib.resources import files
-from typing import Any
+from typing import Any, cast
+from .records import Record
 from .json_validation import JSONValue
 
 from .canonical import ContractError
@@ -34,21 +35,21 @@ TARIFFS = json.loads(files("ezllmrouter_server").joinpath("retrieval/tariffs.jso
 QUANTUM = Decimal(TARIFFS["quantum"])
 
 
-def strict_decode(data: bytes):
+def strict_decode(data: bytes) -> JSONValue:
     try:
         return decode_json(data, WORK_V03)
     except JSONValidationError as exc:
         raise ContractError(exc.code, exc.status) from exc
 
 
-def _restricted(value, depth=0):
+def _restricted(value: object, depth: int = 0) -> None:
     try:
         validate_json(value, WORK_V03, depth)
     except JSONValidationError as exc:
         raise ContractError(exc.code, exc.status) from exc
 
 
-def schema_valid(value, schema, bundle=SCHEMAS):
+def schema_valid(value: object, schema: Record, bundle: Record = SCHEMAS) -> bool:
     if "$ref" in schema:
         match = re.fullmatch(r"#/\$defs/([A-Za-z][A-Za-z0-9]*)", schema["$ref"])
         if not match or match[1] not in bundle["$defs"]:
@@ -105,16 +106,16 @@ def schema_valid(value, schema, bundle=SCHEMAS):
     return True
 
 
-def canonical(value: JSONValue) -> bytes:
+def canonical(value: JSONValue) -> str:
     """A1's ASCII-key-order canonical JSON for its restricted value domain."""
     return canonical_json(value, allow_null=True, exact_types=True)
 
 
-def domain_digest(prefix: str, value) -> str:
+def domain_digest(prefix: str, value: JSONValue) -> str:
     return "sha256:" + sha256((prefix + canonical(value)).encode("utf-8")).hexdigest()
 
 
-def work_projection(request, trusted):
+def work_projection(request: Record, trusted: Record) -> Record:
     return {
         "schema_id": "ezllmrouter-work-v0.3",
         "profile": request["capability_profile"],
@@ -134,7 +135,7 @@ def work_projection(request, trusted):
     }
 
 
-def work_digest(work):
+def work_digest(work: Record) -> str:
     op = work["operation"]
     return domain_digest(f"ezllmrouter-work-v0.3\n{op['type']}@{op['version']}\n", work)
 
@@ -143,27 +144,27 @@ def valid_utc_second(value: object) -> bool:
     return type(value) is str and is_utc_second(value)
 
 
-def public_text_digest(text):
+def public_text_digest(text: str) -> str:
     return "sha256:" + sha256(("ezllmrouter-public-text-v1\n" + text).encode()).hexdigest()
 
 
-def content_digest(candidate):
+def content_digest(candidate: Record) -> str:
     text = "ezllmrouter-content-v1\n" + candidate["content_version"] + "\n" + candidate["text"]
     return "sha256:" + sha256(text.encode()).hexdigest()
 
 
-def config_for(request, registry=REGISTRATIONS):
+def config_for(request: Record, registry: Record = REGISTRATIONS) -> Record | None:
     return next(
         (
             item
-            for item in registry["configurations"]
+            for item in cast(list[Record], registry["configurations"])
             if item["configuration_ref"] == request["requested_configuration_ref"]
         ),
         None,
     )
 
 
-def price_for(request, registry=REGISTRATIONS):
+def price_for(request: Record, registry: Record = REGISTRATIONS) -> Record | None:
     config = config_for(request, registry)
     if not config:
         return None
@@ -172,10 +173,19 @@ def price_for(request, registry=REGISTRATIONS):
         if request["operation"]["type"] == "rerank"
         else config["role_price_refs"].get(request["input"]["role"])
     )
-    return next((item for item in registry["price_contracts"] if item["price_ref"] == ref), None)
+    return next(
+        (
+            item
+            for item in cast(list[Record], registry["price_contracts"])
+            if item["price_ref"] == ref
+        ),
+        None,
+    )
 
 
-def semantic_request(request, trusted, registry=REGISTRATIONS, *, fresh=True):
+def semantic_request(
+    request: Record, trusted: Record, registry: Record = REGISTRATIONS, *, fresh: bool = True
+) -> bool:
     metadata, identity = request["metadata"], trusted["identity"]
     config = config_for(request, registry)
     if not all(
@@ -268,9 +278,12 @@ def semantic_request(request, trusted, registry=REGISTRATIONS, *, fresh=True):
     return price_for(request, registry) is not None
 
 
-def classify_request(request, trusted, registry=REGISTRATIONS, *, fresh=True):
+def classify_request(
+    request: object, trusted: Record, registry: Record = REGISTRATIONS, *, fresh: bool = True
+) -> str:
     if not schema_valid(request, SCHEMAS["$defs"]["RequestEnvelope"]):
         return "SCHEMA_INVALID"
+    request = cast(Record, request)
     if request["contract_version"] != "0.3":
         return "UNSUPPORTED_VERSION"
     op = request["operation"]
@@ -292,7 +305,7 @@ def classify_request(request, trusted, registry=REGISTRATIONS, *, fresh=True):
 _DECIMAL = re.compile(r"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]{1,3})?$")
 
 
-def decimal_valid(value, score=False):
+def decimal_valid(value: object, score: bool = False) -> bool:
     if type(value) is not str or _DECIMAL.fullmatch(value) is None:
         return False
     try:
@@ -311,13 +324,16 @@ def decimal_valid(value, score=False):
     return not score or 0 <= number <= 1
 
 
-def result_valid(result, request, attempt_id, registry=REGISTRATIONS):
+def result_valid(
+    result: object, request: Record, attempt_id: str, registry: Record = REGISTRATIONS
+) -> bool:
     if (
         not schema_valid(result, SCHEMAS["$defs"]["Result"])
-        or result["attempt_id"] != attempt_id
-        or canonical(result["operation"]) != canonical(request["operation"])
+        or cast(Record, result)["attempt_id"] != attempt_id
+        or canonical(cast(Record, result)["operation"]) != canonical(request["operation"])
     ):
         return False
+    result = cast(Record, result)
     config = config_for(request, registry)
     if not config:
         return False
@@ -368,7 +384,7 @@ def result_valid(result, request, attempt_id, registry=REGISTRATIONS):
     return True
 
 
-def tariff(request, price):
+def tariff(request: Record, price: Record) -> Record:
     count = len(
         request["input"]["candidates"]
         if request["operation"]["type"] == "rerank"
@@ -401,7 +417,7 @@ def tariff(request, price):
     if not minimum <= count <= maximum:
         raise ValueError("tariff cardinality outside registered domain")
 
-    def rate(key):
+    def rate(key: str) -> Decimal:
         if type(schedule[key]) is not str:
             raise ValueError("invalid tariff rate")
         try:
@@ -470,12 +486,17 @@ def usage_valid(
     if not reported or row["amount_decimal"] != expected["settled"]:
         return False
     over = Decimal(row["amount_decimal"]) > Decimal(max_exposure_decimal)
-    return row["cost_status"] == ("over_bound" if over else "calculated")
+    return cast(bool, row["cost_status"] == ("over_bound" if over else "calculated"))
 
 
 def native_usage_row(
-    request, attempt_id, revision, component, max_exposure_decimal, previous_revision=None
-):
+    request: Record,
+    attempt_id: str,
+    revision: int,
+    component: Record,
+    max_exposure_decimal: str,
+    previous_revision: int | None = None,
+) -> Record:
     """Project actual receiver evidence; absent/insufficient evidence stays unknown."""
     price = price_for(request)
     if price is None or component.get("component") != price["component"]:

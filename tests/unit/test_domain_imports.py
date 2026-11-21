@@ -20,6 +20,10 @@ class DomainImportTests(unittest.TestCase):
                 "store_*.py",
                 "integration_credential_*.py",
                 "registry_mutations/*.py",
+                "gateway/*.py",
+                "successor_contract.py",
+                "successor_plan.py",
+                "retrieval_descriptor.py",
             )
             for path in PACKAGE.glob(pattern)
         }

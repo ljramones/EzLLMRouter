@@ -1,9 +1,10 @@
 """Exact descriptor and recipe for the adopted synthetic retrieval profile."""
 
+from .records import Record
 from .successor_contract import domain_digest
 
 
-def recipe_for(request, work_hash, config, descriptor):
+def recipe_for(request: Record, work_hash: str, config: Record, descriptor: Record) -> Record:
     return {
         "work_digest": work_hash,
         "operation": request["operation"],
@@ -14,7 +15,7 @@ def recipe_for(request, work_hash, config, descriptor):
     }
 
 
-def execution_descriptor(request, work_hash, config):
+def execution_descriptor(request: Record, work_hash: str, config: Record) -> Record:
     route = (
         "/synthetic/v1/rerank"
         if request["operation"]["type"] == "rerank"

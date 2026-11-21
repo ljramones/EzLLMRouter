@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ..records import Record
+
 from copy import deepcopy
 import hashlib
 import json
@@ -16,7 +18,7 @@ PUBLIC_SERVICE = "litellm.dev04"
 PUBLIC_ENDPOINT = "127.0.0.1"
 
 
-def public_destination(fixture: dict) -> dict:
+def public_destination(fixture: Record) -> Record:
     return {
         **fixture["destination"],
         "service": PUBLIC_SERVICE,
@@ -25,7 +27,7 @@ def public_destination(fixture: dict) -> dict:
     }
 
 
-def proxy_policy(fixture: dict) -> dict:
+def proxy_policy(fixture: Record) -> Record:
     return {
         **fixture["policy"],
         "adapter_recipe_ref": "recipe.dev04.proxy.text.v4",
@@ -33,7 +35,7 @@ def proxy_policy(fixture: dict) -> dict:
     }
 
 
-def require_public_destination(destination: dict) -> None:
+def require_public_destination(destination: Record) -> None:
     if (
         destination.get("service") != PUBLIC_SERVICE
         or destination.get("endpoint") != PUBLIC_ENDPOINT
@@ -42,7 +44,7 @@ def require_public_destination(destination: dict) -> None:
         raise ValueError("unregistered gateway public destination")
 
 
-def provider_text_input(projected):
+def provider_text_input(projected: Record) -> list[Record]:
     work = projected["work"]
     if (
         projected["destination"].get("service") != "openai.responses.v1"
@@ -74,11 +76,11 @@ def provider_text_input(projected):
 class GatewayProxyRecipe:
     """Prepare the private proxy body from a copy of approved signed work."""
 
-    def __init__(self, *, controlled_provider_proof=False):
+    def __init__(self, *, controlled_provider_proof: bool = False) -> None:
         self.inner = SyntheticDevelopmentRecipe(PUBLIC_ENDPOINT, 8767)
         self.controlled_provider_proof = controlled_provider_proof
 
-    def expected(self, projected: dict, timeout_ms: int):
+    def expected(self, projected: Record, timeout_ms: int) -> tuple[bytes, Record]:
         if projected["destination"].get("service") == "openai.responses.v1":
             destination = projected["destination"]
             from ezllmrouter_server.provider_adapters import validate_settings

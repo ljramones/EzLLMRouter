@@ -6,6 +6,9 @@ not receive it. Current authority records are supplied separately from plans.
 
 from __future__ import annotations
 
+from typing import Protocol, cast
+from .records import Record
+
 import base64
 from decimal import Decimal
 
@@ -24,25 +27,29 @@ from .successor_contract import (
 )
 
 
-def signing_message(plan):
+class PlanSigner(Protocol):
+    def sign(self, data: bytes) -> bytes: ...
+
+
+def signing_message(plan: Record) -> bytes:
     unsigned = {key: value for key, value in plan.items() if key != "signature"}
     return ("ezllmrouter-plan-v1\n" + canonical(unsigned)).encode("utf-8")
 
 
 def mint_plan(
-    request,
-    work_hash,
-    admission_hash,
-    submission_id,
-    attempt_id,
-    owner_id,
-    budget_account_id,
-    authority_revisions,
-    activation,
-    key_id,
-    key_version,
-    private_key,
-):
+    request: Record,
+    work_hash: str,
+    admission_hash: str,
+    submission_id: str,
+    attempt_id: str,
+    owner_id: str,
+    budget_account_id: str,
+    authority_revisions: Record,
+    activation: Record,
+    key_id: str,
+    key_version: str,
+    private_key: PlanSigner,
+) -> Record:
     """Mint only for an already validated admitted request and assessed work."""
     config = config_for(request)
     price = price_for(request)
@@ -90,7 +97,7 @@ def mint_plan(
     return plan
 
 
-def verified_signature(plan, key):
+def verified_signature(plan: Record, key: Record) -> bool:
     """Use exact signed tuple/material; malformed base64 and wrong key type fail."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -124,14 +131,14 @@ def verified_signature(plan, key):
 
 
 def plan_valid(
-    plan,
-    request,
-    admitted_work_hash,
-    admitted_snapshot_hash,
-    owner_id,
+    plan: Record,
+    request: Record,
+    admitted_work_hash: str,
+    admitted_snapshot_hash: str,
+    owner_id: str,
     *,
-    permit_historical_underbound=False,
-):
+    permit_historical_underbound: bool = False,
+) -> bool:
     if not schema_valid(plan, SCHEMAS["$defs"]["SignedPlan"]):
         return False
     config, price = config_for(request), price_for(request)
@@ -159,10 +166,18 @@ def plan_valid(
         return False
     if descriptor != execution_descriptor(request, admitted_work_hash, config):
         return False
-    return valid_utc_second(plan["expires_at"]) and plan["expires_at"] <= request["deadline"]
+    return valid_utc_second(plan["expires_at"]) and cast(
+        bool, plan["expires_at"] <= request["deadline"]
+    )
 
 
-def execution_eligible(plan, request, admitted_work, admission_snapshot, context):
+def execution_eligible(
+    plan: Record,
+    request: Record,
+    admitted_work: Record,
+    admission_snapshot: Record,
+    context: Record,
+) -> bool:
     """Full work+assessment prevalidation and independently resolved current gate."""
     if not schema_valid(context, SCHEMAS["$defs"]["ExecutionEligibilityContext"]):
         return False

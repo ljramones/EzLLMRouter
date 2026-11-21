@@ -1,5 +1,7 @@
 """Bounded, side-effect-free Choice B worker identity handshake."""
 
+from ..records import Record
+
 import argparse
 import json
 from pathlib import Path
@@ -11,7 +13,7 @@ import time
 from .choice_b_wire import receive, send, socket_path
 
 
-def validate_identity(value, require_empty=True):
+def validate_identity(value: Record, require_empty: bool = True) -> Record:
     if set(value) != {
         "boundary",
         "litellm",
@@ -52,7 +54,12 @@ def validate_identity(value, require_empty=True):
     return value
 
 
-def probe(path, deadline_seconds=50.0, interval_seconds=0.2, require_empty=True):
+def probe(
+    path: str | Path,
+    deadline_seconds: float = 50.0,
+    interval_seconds: float = 0.2,
+    require_empty: bool = True,
+) -> Record:
     if deadline_seconds <= 0 or interval_seconds <= 0:
         raise ValueError("worker readiness bounds")
     end = time.monotonic() + deadline_seconds
@@ -69,7 +76,7 @@ def probe(path, deadline_seconds=50.0, interval_seconds=0.2, require_empty=True)
             time.sleep(min(interval_seconds, max(0.0, end - time.monotonic())))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--socket", type=Path, default=socket_path("worker"))
     parser.add_argument("--deadline", type=float, default=50.0)

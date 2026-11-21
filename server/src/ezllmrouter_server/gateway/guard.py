@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import cast
+from ..records import Record
+
 import asyncio
 import atexit
 import hashlib
@@ -41,7 +45,7 @@ class CheckExecutor(Protocol):
 
 
 class GuardRejected(ServerError, RuntimeError):
-    def __init__(self, code="FDC_REJECTED"):
+    def __init__(self, code: str = "FDC_REJECTED") -> None:
         super().__init__(code)
         self.code = code
 
@@ -50,10 +54,10 @@ class GuardRejected(ServerError, RuntimeError):
 class Invocation:
     submission_id: str
     attempt_id: str
-    plan: dict
-    projection: dict
+    plan: Record
+    projection: Record
     fresh_check: Callable[[], None]
-    commit: Callable[[dict], None]
+    commit: Callable[[Record], None]
     attempted: bool = False
     committed: bool = False
     released: bool = False
@@ -69,12 +73,14 @@ class Invocation:
         default_factory=threading.RLock, repr=False
     )
     check_executor: CheckExecutor | None = field(default=None, repr=False)
-    relay_future: Future[httpx.Response] | None = field(default=None, repr=False)
+    relay_future: Future[Record] | None = field(default=None, repr=False)
     observations: list[str] = field(default_factory=list)
 
     @property
-    def deadline(self):
-        return self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
+    def deadline(self) -> str:
+        return cast(
+            str, self.execution_deadline or self.plan.get("deadline", self.plan.get("expires_at"))
+        )
 
 
 async def run_check(invocation: Invocation, action: Callable[[], R]) -> R:
@@ -100,21 +106,23 @@ SDK_HEADERS = frozenset(
 )
 
 ACTIVE: ContextVar[Invocation | None] = ContextVar("ezllmrouter_gateway_invocation", default=None)
-_EVENT_QUEUE = queue.Queue(maxsize=1024)
+_EVENT_QUEUE: queue.Queue[tuple[str | Path, Record] | tuple[None, threading.Event]] = queue.Queue(
+    maxsize=1024
+)
 _EVENT_START = threading.Lock()
-_EVENT_WRITER = None
+_EVENT_WRITER: threading.Thread | None = None
 _EVENT_COUNTS = {"written": 0, "dropped": 0, "write_errors": 0}
 _EVENT_COUNT_LOCK = threading.Lock()
 
 
-def _write_events():
+def _write_events() -> None:
     while True:
         target, row = _EVENT_QUEUE.get()
         try:
             if target is None:
-                row.set()
+                cast(threading.Event, row).set()
                 continue
-            append_event(target, row)
+            append_event(target, cast(Record, row))
             with _EVENT_COUNT_LOCK:
                 _EVENT_COUNTS["written"] += 1
         except (OSError, ValueError, TypeError):
@@ -125,7 +133,7 @@ def _write_events():
             _EVENT_QUEUE.task_done()
 
 
-def enqueue_event(target, row):
+def enqueue_event(target: str | Path | None, row: Record) -> None:
     global _EVENT_WRITER
     if not target:
         return
@@ -145,12 +153,12 @@ def enqueue_event(target, row):
         return
 
 
-def diagnostic_status():
+def diagnostic_status() -> dict[str, int]:
     with _EVENT_COUNT_LOCK:
         return {**_EVENT_COUNTS, "queued": _EVENT_QUEUE.qsize(), "capacity": _EVENT_QUEUE.maxsize}
 
 
-def flush_events(timeout=1):
+def flush_events(timeout: float = 1) -> bool:
     if _EVENT_WRITER is None:
         return True
     done = threading.Event()
@@ -164,7 +172,7 @@ def flush_events(timeout=1):
 atexit.register(flush_events)
 
 
-def _event(invocation: Invocation | None, stage: str, code: str | None = None):
+def _event(invocation: Invocation | None, stage: str, code: str | None = None) -> None:
     target = os.environ.get("EZLLMROUTER_GATEWAY_GUARD_EVENTS")
     if not target:
         return
@@ -178,11 +186,11 @@ def _event(invocation: Invocation | None, stage: str, code: str | None = None):
     enqueue_event(target, row)
 
 
-def _text(blocks):
+def _text(blocks: list[Record]) -> str:
     return "\n".join(block["text"] for block in blocks)
 
 
-def provider_expectation(projected: dict) -> dict:
+def provider_expectation(projected: Record) -> Record:
     """Independent versioned map from admitted work to provider semantics."""
     work, destination = projected["work"], projected["destination"]
     try:
@@ -212,7 +220,7 @@ def provider_expectation(projected: dict) -> dict:
                 for block in blocks
                 if block["kind"] == "tool_call"
             ]
-            item = {
+            item: Record = {
                 "role": "assistant",
                 "content": _text([block for block in blocks if block["kind"] == "assistant_text"]),
             }
@@ -258,7 +266,7 @@ def provider_expectation(projected: dict) -> dict:
     return expected
 
 
-def responses_expectation(projected: dict) -> dict:
+def responses_expectation(projected: Record) -> Record:
     """Independent selected Responses map; reject every unsupported message/feature."""
     destination, work = projected["destination"], projected["work"]
     if (
@@ -296,7 +304,7 @@ def responses_expectation(projected: dict) -> dict:
     }
 
 
-def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -> dict:
+def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -> Record:
     plan = invocation.plan
     if plan.get("plan_version") == "dev12-plan@1":
         from .retrieval_guard import check_synthetic_request
@@ -413,7 +421,7 @@ def check_request(request: httpx.Request, invocation: Invocation, body: bytes) -
 class GuardTransport(httpx.AsyncBaseTransport):
     """One lower HTTPX invocation per authenticated in-process work context."""
 
-    def __init__(self, lower: httpx.AsyncBaseTransport):
+    def __init__(self, lower: httpx.AsyncBaseTransport) -> None:
         self.lower = lower
         self.checks = BoundedExecutor(
             max_workers=2, max_pending=32, thread_name_prefix="ezllmrouter-send-check"
@@ -440,7 +448,7 @@ class GuardTransport(httpx.AsyncBaseTransport):
             receipt = check_request(request, invocation, body)
             invocation.check_executor = self.checks
 
-            def authorize():
+            def authorize() -> None:
                 with invocation.authority_gate:
                     if invocation.abandoned:
                         raise GuardRejected("ATTEMPT_ABANDONED")
@@ -477,7 +485,7 @@ class GuardTransport(httpx.AsyncBaseTransport):
                 _event(invocation, "blocked", invocation.guard_error)
             raise
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         try:
             await self.lower.aclose()
         finally:

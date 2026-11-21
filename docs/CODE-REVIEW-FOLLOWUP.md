@@ -1395,7 +1395,7 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Initial lifecycle/connection/journal boundary cleanup leaves 1,599 diagnostics and 110 strictly checked files. |
+| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal and gateway boundaries now leave 1,319 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
 | R2 — remove size allowances | In progress | Resolve all 12 existing file/function exceptions without increasing thresholds. Split local connector and historical Docker-input tooling domains; retain public imports and every historical runner. |
 | R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
 
@@ -1407,3 +1407,24 @@ locking stay in their existing scopes. Full `tools.check` passes 921 Python
 cases, strict typing on 110 files, lint/formatting, size budgets and maintained
 script/console checks. Whole-library diagnostics fall from 1,631 to 1,599; the
 per-file budgets are tightened to the observed counts.
+
+
+#### R1: owned gateway and successor boundaries
+
+Every gateway module and the successor contract, signer/eligibility and
+descriptor modules now pass strict mypy. Send-authority and closable async-body
+protocols describe transport capabilities; the local authority has a checked
+conformance proof. Callback/deadline/socket/TLS/reader ownership is typed without
+changing first-write, revocation, cleanup or error routing. The relay future is
+correctly typed as its returned relay record rather than an HTTPX response. The
+successor canonical JSON helper's annotation now matches its existing string
+return. JSON shape validation and decimal calculations remain unchanged.
+
+After stripping type annotations and identity casts, 118 existing functions
+have the same executable AST. Fresh-interpreter import coverage now includes
+all gateway modules and successor contract/plan/descriptor modules. Focused
+guard, owned sender and compressed-response regressions pass. Full `tools.check`
+passes 921 Python cases, strict typing on 123 files, lint/formatting, unchanged
+size limits and script/console checks. Whole-library diagnostics fall from 1,599 to 1,319 in 30 files; observed
+per-file budgets are tightened. All 12 size exceptions and the report
+aggregation follow-up remain active. No live HTTP/provider/profile work runs.

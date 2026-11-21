@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+import httpx
+from ..records import Record
+from .guard import Invocation
+
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -12,7 +17,7 @@ from ezllmrouter_server.successor_plan import plan_valid
 from .guard import GuardRejected
 
 
-def check_synthetic_request(request, invocation, body):
+def check_synthetic_request(request: httpx.Request, invocation: Invocation, body: bytes) -> Record:
     plan = invocation.plan
     descriptor = plan["execution_descriptor"]
     projection = invocation.projection
@@ -41,7 +46,7 @@ def check_synthetic_request(request, invocation, body):
     if (
         headers.get("host") != request.url.netloc.decode()
         or headers.get("content-type") != descriptor["content_type"]
-        or headers.get("authorization") != "Bearer " + invocation.provider_key
+        or headers.get("authorization") != "Bearer " + cast(str, invocation.provider_key)
         or headers.get("x-ezllmrouter-attempt") != invocation.attempt_id
         or (
             headers.get("content-length") is not None

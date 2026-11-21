@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Coroutine
+from typing import TYPE_CHECKING, Any, cast
+from ..records import Record
+from .capabilities import SendAuthority
+
+if TYPE_CHECKING:
+    from ..registry import Registry
+    from ..registry_context import CredentialVault
+
 import asyncio
 import base64
 from concurrent.futures import Future
@@ -12,6 +21,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import socket
 import socketserver
 from contextlib import ExitStack
 import threading
@@ -44,7 +54,7 @@ LINK = Path("/link")
 RESPONSE_LIMIT = 65536
 
 
-async def read_response(response):
+async def read_response(response: httpx.Response) -> bytes:
     """Stop at the response limit without buffering an unbounded provider body."""
     try:
         length = response.headers.get("content-length")
@@ -64,7 +74,14 @@ async def read_response(response):
 class ChoiceBSenderAdapter:
     """Single-use trusted attempt registry and pinned lower transport."""
 
-    def __init__(self, authority, registry=None, *, provider_key, controlled_provider_proof=False):
+    def __init__(
+        self,
+        authority: SendAuthority,
+        registry: Registry | None = None,
+        *,
+        provider_key: str,
+        controlled_provider_proof: bool = False,
+    ) -> None:
         self.authority = authority
         self.provider_registry = registry
         self.controlled_provider_proof = controlled_provider_proof
@@ -76,8 +93,9 @@ class ChoiceBSenderAdapter:
         self.lock = threading.Lock()
         self._close_lock = threading.Lock()
         self._closed = False
-        self._socket_identity = None
-        self.server = self.server_thread = None
+        self._socket_identity: tuple[int, int] | None = None
+        self.server: BoundedUnixServer | None = None
+        self.server_thread: threading.Thread | None = None
         self._socket_path = socket_path("sender", LINK)
         if self._socket_path.exists() or self._socket_path.is_symlink():
             raise RuntimeError("trusted sender socket collision")
@@ -88,7 +106,7 @@ class ChoiceBSenderAdapter:
             adapter = self
 
             class Handler(socketserver.BaseRequestHandler):
-                def handle(self):
+                def handle(self) -> None:
                     adapter.handle_relay(self.request)
 
             self.server = BoundedUnixServer(
@@ -110,7 +128,7 @@ class ChoiceBSenderAdapter:
                 log_failure("gateway.sender.startup_cleanup_failed")
             raise
 
-    def handle_relay(self, stream):
+    def handle_relay(self, stream: socket.socket) -> None:
         try:
             result = self.process_relay(receive(stream, timeout=5))
         except Exception as exc:
@@ -121,15 +139,15 @@ class ChoiceBSenderAdapter:
         except Exception:
             log_failure("gateway.relay.reply_failed")
 
-    def _call(self, coro) -> Future:
+    def _call(self, coro: Coroutine[Any, Any, Record]) -> Future[Record]:
         return self._runtime.submit(coro)
 
-    async def _start_lower(self):
+    async def _start_lower(self) -> None:
         self.lower = OwnedHTTPTransport(self.authority)
         adapter = self
 
         class SelectedLower(httpx.AsyncBaseTransport):
-            async def handle_async_request(self, request):
+            async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
                 invocation = ACTIVE.get()
                 if invocation is None:
                     raise GuardRejected("NO_TRUSTED_CONTEXT")
@@ -140,7 +158,9 @@ class ChoiceBSenderAdapter:
                     raise GuardRejected("PROVIDER_UNAVAILABLE")
                 connection = await run_check(
                     invocation,
-                    lambda: adapter.provider_registry.connection(destination["connection_id"]),
+                    lambda: cast("Registry", adapter.provider_registry).connection(
+                        destination["connection_id"]
+                    ),
                 )
                 if (
                     not connection
@@ -171,12 +191,12 @@ class ChoiceBSenderAdapter:
                 finally:
                     await lower.aclose()
 
-            async def aclose(self):
+            async def aclose(self) -> None:
                 await adapter.lower.aclose()
 
         self.guard = GuardTransport(SelectedLower())
 
-    def _record_send(self, invocation):
+    def _record_send(self, invocation: Invocation) -> None:
         target = os.environ.get("EZLLMROUTER_GATEWAY_SEND_EVENTS")
         if not target:
             return
@@ -193,11 +213,11 @@ class ChoiceBSenderAdapter:
         enqueue_event(target, row)
 
     @staticmethod
-    def prepare(body):
+    def prepare(body: Record) -> bytes:
         return json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
     @staticmethod
-    def describe(prepared, timeout_ms, destination):
+    def describe(prepared: bytes, timeout_ms: int, destination: Record) -> Record:
         if destination.get("service") == "openai.responses.v1":
             if destination.get("adapter_id") != "openai.responses.v1":
                 raise ValueError("unsupported provider adapter")
@@ -216,10 +236,12 @@ class ChoiceBSenderAdapter:
         }
 
     @staticmethod
-    def _worker_command(value, timeout):
+    def _worker_command(value: Record, timeout: float) -> Record:
         return exchange(socket_path("worker", LINK), value, timeout)
 
-    def send_with_context(self, prepared, timeout_ms, expected, guard_context):
+    def send_with_context(
+        self, prepared: bytes, timeout_ms: int, expected: Record, guard_context: Record
+    ) -> Record:
         try:
             actual = self.describe(prepared, timeout_ms, guard_context["plan"]["destination"])
             if actual != expected:
@@ -245,6 +267,7 @@ class ChoiceBSenderAdapter:
                 raise ContractError("FDC_REJECTED", 409)
             self.registry[invocation.attempt_id] = invocation
         try:
+            worker_failure: BaseException | None
             try:
                 self._worker_command(
                     {
@@ -300,7 +323,7 @@ class ChoiceBSenderAdapter:
                 self.claimed.discard(invocation.attempt_id)
 
     @staticmethod
-    def _reject_or_unknown(invocation: Invocation, cause: BaseException) -> NoReturn:
+    def _reject_or_unknown(invocation: Invocation, cause: BaseException | None) -> NoReturn:
         with invocation.authority_gate:
             invocation.abandoned = True
             possible_send = invocation.first_bytes_accepted
@@ -313,7 +336,7 @@ class ChoiceBSenderAdapter:
         )
         raise ContractError(code, 503 if code == "INTENT_PERSIST_FAILED" else 409) from cause
 
-    def process_relay(self, envelope):
+    def process_relay(self, envelope: Record) -> Record:
         if set(envelope) != {
             "kind",
             "attempt_id",
@@ -401,7 +424,7 @@ class ChoiceBSenderAdapter:
                 or connection["settings"]["origin"] != destination["endpoint"]
             ):
                 raise ValueError("provider binding stale")
-            provider_key = self.provider_registry.provider_vault.resolve(
+            provider_key = cast("CredentialVault", self.provider_registry.provider_vault).resolve(
                 destination["connection_id"], destination["credential_version"]
             )
             invocation.provider_key = provider_key
@@ -441,7 +464,7 @@ class ChoiceBSenderAdapter:
             future.cancel()
             raise
 
-    async def _send(self, request, invocation):
+    async def _send(self, request: httpx.Request, invocation: Invocation) -> Record:
         token = ACTIVE.set(invocation)
         try:
             async with asyncio.timeout(
@@ -466,7 +489,7 @@ class ChoiceBSenderAdapter:
             self._record_send(invocation)
             ACTIVE.reset(token)
 
-    def _remove_socket(self):
+    def _remove_socket(self) -> None:
         try:
             status = self._socket_path.lstat()
         except FileNotFoundError:
@@ -474,12 +497,12 @@ class ChoiceBSenderAdapter:
         if (status.st_dev, status.st_ino) == self._socket_identity:
             self._socket_path.unlink()
 
-    async def _cleanup(self):
+    async def _cleanup(self) -> None:
         transport = getattr(self, "guard", None) or getattr(self, "lower", None)
         if transport is not None:
             await transport.aclose()
 
-    def close(self):
+    def close(self) -> None:
         with self._close_lock:
             if self._closed:
                 return
@@ -499,5 +522,5 @@ class ChoiceBSenderAdapter:
                 if self.server is not None:
                     cleanup.callback(self.server.server_close)
                 if self.server_thread is not None and self.server_thread.is_alive():
-                    self.server.shutdown()
+                    cast(BoundedUnixServer, self.server).shutdown()
                     self.server_thread.join(timeout=5)

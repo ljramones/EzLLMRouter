@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterable
+from typing import TYPE_CHECKING, cast
+import ssl
+from .capabilities import AsyncResponseBody, SendAuthority
+from .guard import Invocation
+
 import asyncio
 from contextlib import nullcontext
 from datetime import datetime
@@ -22,39 +28,39 @@ PORT = 8766
 class LocalSendAuthority:
     """The only local effective-revocation/write gate for this experiment."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.gate = threading.RLock()
         self.revoked = False
         self.epoch = 0
 
-    def revoke(self):
+    def revoke(self) -> int:
         with self.gate:
             self.revoked = True
             self.epoch += 1
             return self.epoch
 
-    def restore(self):
+    def restore(self) -> int:
         with self.gate:
             self.revoked = False
             self.epoch += 1
             return self.epoch
 
-    def is_revoked(self):
+    def is_revoked(self) -> bool:
         with self.gate:
             return self.revoked
 
-    def snapshot_epoch(self):
+    def snapshot_epoch(self) -> int:
         with self.gate:
             if self.revoked:
                 raise GuardRejected("FDC_REJECTED")
             return self.epoch
 
 
-async def _writable(sock, timeout):
+async def _writable(sock: socket.socket, timeout: float | None) -> None:
     loop = asyncio.get_running_loop()
-    ready = loop.create_future()
+    ready: asyncio.Future[None] = loop.create_future()
 
-    def wake():
+    def wake() -> None:
         if not ready.done():
             ready.set_result(None)
 
@@ -68,22 +74,22 @@ async def _writable(sock, timeout):
 class OwnedSocketStream(httpcore.AsyncNetworkStream):
     """One connection, one trusted invocation; no TLS or keep-alive reuse."""
 
-    def __init__(self, sock, authority):
+    def __init__(self, sock: socket.socket, authority: SendAuthority) -> None:
         if sock.getblocking():
             raise ValueError("owned sender socket must be nonblocking")
         self.sock = sock
         self.authority = authority
-        self.invocation = None
+        self.invocation: Invocation | None = None
         self.first_bytes_accepted = False
         self.accepted_bytes = 0
         self.terminal = False
 
-    async def read(self, max_bytes, timeout=None):
+    async def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
         loop = asyncio.get_running_loop()
         operation = loop.sock_recv(self.sock, max_bytes)
         return await asyncio.wait_for(operation, timeout=timeout)
 
-    async def write(self, buffer, timeout=None):
+    async def write(self, buffer: bytes, timeout: float | None = None) -> None:
         if self.terminal:
             raise GuardRejected("SECOND_SEND_REJECTED")
         try:
@@ -95,7 +101,7 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
             self.sock.close()
             raise
 
-    async def _write_once(self, buffer, timeout):
+    async def _write_once(self, buffer: bytes, timeout: float | None) -> None:
         if not buffer:
             return
         invocation = ACTIVE.get()
@@ -115,9 +121,7 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
         offset = 0
         while offset < len(data):
 
-            def emit(*, offset=offset):
-                # Fresh database checks and first-byte acceptance share one gate
-                # on a check thread. No await can split that authorization.
+            def emit(*, offset: int = offset) -> int:
                 with self.authority.gate if not self.first_bytes_accepted else nullcontext():
                     if not self.first_bytes_accepted:
                         invocation.fresh_check()
@@ -149,13 +153,18 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
                 raise httpcore.WriteTimeout()
             await _writable(self.sock, remaining)
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         self.sock.close()
 
-    async def start_tls(self, ssl_context, server_hostname=None, timeout=None):
+    async def start_tls(
+        self,
+        ssl_context: ssl.SSLContext,
+        server_hostname: str | None = None,
+        timeout: float | None = None,
+    ) -> httpcore.AsyncNetworkStream:
         raise RuntimeError("gateway owned sender excludes TLS")
 
-    def get_extra_info(self, info):
+    def get_extra_info(self, info: str) -> object:
         if info == "socket":
             return self.sock
         if info == "is_readable":
@@ -164,10 +173,17 @@ class OwnedSocketStream(httpcore.AsyncNetworkStream):
 
 
 class OwnedSocketBackend(httpcore.AsyncNetworkBackend):
-    def __init__(self, authority):
+    def __init__(self, authority: SendAuthority) -> None:
         self.authority = authority
 
-    async def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Iterable[tuple[object, ...]] | None = None,
+    ) -> OwnedSocketStream:
         if (host, port, local_address, socket_options) != (HOST, PORT, None, None):
             raise RuntimeError("gateway owned sender destination/options rejected")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -181,29 +197,34 @@ class OwnedSocketBackend(httpcore.AsyncNetworkBackend):
             sock.close()
             raise
 
-    async def connect_unix_socket(self, path, timeout=None, socket_options=None):
+    async def connect_unix_socket(
+        self,
+        path: str,
+        timeout: float | None = None,
+        socket_options: Iterable[tuple[object, ...]] | None = None,
+    ) -> httpcore.AsyncNetworkStream:
         raise RuntimeError("gateway owned sender excludes Unix provider destinations")
 
-    async def sleep(self, seconds):
+    async def sleep(self, seconds: float) -> None:
         raise RuntimeError("gateway owned sender excludes connection retries")
 
 
 class _ResponseStream(httpx.AsyncByteStream):
-    def __init__(self, stream):
+    def __init__(self, stream: AsyncResponseBody) -> None:
         self.stream = stream
 
-    async def __aiter__(self):
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         async for part in self.stream:
             yield part
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         await self.stream.aclose()
 
 
 class OwnedHTTPTransport(httpx.AsyncBaseTransport):
     """HTTPX public transport adapter; httpcore retains HTTP and pool logic."""
 
-    def __init__(self, authority):
+    def __init__(self, authority: SendAuthority) -> None:
         self.pool = httpcore.AsyncConnectionPool(
             max_connections=1,
             max_keepalive_connections=0,
@@ -213,7 +234,7 @@ class OwnedHTTPTransport(httpx.AsyncBaseTransport):
             network_backend=OwnedSocketBackend(authority),
         )
 
-    async def handle_async_request(self, request):
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         if (request.method, str(request.url)) != (
             "POST",
             f"http://{HOST}:{PORT}/v1/chat/completions",
@@ -235,10 +256,16 @@ class OwnedHTTPTransport(httpx.AsyncBaseTransport):
         return httpx.Response(
             response.status,
             headers=response.headers,
-            stream=_ResponseStream(response.stream),
+            stream=_ResponseStream(cast(AsyncResponseBody, response.stream)),
             extensions=response.extensions,
             request=request,
         )
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         await self.pool.aclose()
+
+
+if TYPE_CHECKING:
+
+    def _local_authority_contract(value: LocalSendAuthority) -> SendAuthority:
+        return value
