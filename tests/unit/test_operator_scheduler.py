@@ -50,6 +50,12 @@ class OperatorSchedulerTests(unittest.TestCase):
         application.scheduled_checks()
         application.scheduler_stop.wait.assert_not_called()
 
+    def test_already_stopped_scheduler_performs_no_registry_reads(self):
+        registry, logged = self.run_schedule([], [])
+        registry.list_connections.assert_not_called()
+        registry.probe_connection.assert_not_called()
+        logged.assert_not_called()
+
     def test_list_failure_logs_and_continues_to_the_next_tick(self):
         registry, logged = self.run_schedule([RuntimeError("synthetic list failure"), []], [])
         registry.probe_connection.assert_not_called()
