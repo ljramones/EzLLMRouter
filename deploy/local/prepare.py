@@ -59,6 +59,25 @@ SERVICE_VALIDATION_FILES = (
 WORKER_VALIDATION_FILES = ("test_alt_handler.py", "test_cache_frozen_usage.py")
 
 
+def stage_profile_checks(build: Path) -> None:
+    gateway = build / "service/gateway"
+    gateway.mkdir(parents=True, exist_ok=True)
+    (build / "worker").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / "tests/gateway_integration/test_provider_worker_target.py",
+        build / "worker/test_provider_worker_target.py",
+    )
+    shutil.copy2(ROOT / "tools/gateway/evidence/dev07_target_preflight.py", gateway)
+    for name in (
+        "dev08_integrated.py",
+        "dev08_tls_receiver.py",
+        "dev10_target.py",
+        "dev11_cache_target.py",
+        "dev11_browser_service.py",
+    ):
+        shutil.copy2(ROOT / "tools/gateway/evidence" / name, gateway / name)
+
+
 def stage_worker_validation(build: Path) -> None:
     destination = build / "worker/validation"
     destination.mkdir(parents=True)
@@ -272,22 +291,7 @@ def prepare_work(work, run, source_hash, artifact):
     stage_worker_validation(build)
     shutil.copy2(ROOT / "deploy/local/Dockerfile.service", build / "service/Dockerfile")
     shutil.copy2(ROOT / "deploy/local/Dockerfile.worker", build / "worker/Dockerfile")
-    shutil.copy2(
-        ROOT / "tests/gateway_integration/test_provider_worker_target.py",
-        build / "worker/test_provider_worker_target.py",
-    )
-    shutil.copy2(
-        ROOT / "tools/gateway/evidence/dev07_target_preflight.py",
-        build / "service/gateway/dev07_target_preflight.py",
-    )
-    for name in (
-        "dev08_integrated.py",
-        "dev08_tls_receiver.py",
-        "dev10_target.py",
-        "dev11_cache_target.py",
-        "dev11_browser_service.py",
-    ):
-        shutil.copy2(ROOT / "tools/gateway/evidence" / name, build / "service/gateway" / name)
+    stage_profile_checks(build)
     local = build / "service/local"
     local.mkdir()
     for source, name in (

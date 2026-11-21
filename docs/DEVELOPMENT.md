@@ -79,18 +79,19 @@ coverage also needs the already-locked TypeScript parser:
 
 ```sh
 npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
-uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30
+uv run --locked python -m tools.check --coverage --coverage-gate
 ```
 
 The PR gate measures and audits both tiers independently, then merges their
 Python hits into one combined report. Use fresh output directories for each run:
 
 ```sh
-uv run --locked python -m tools.check --coverage --coverage-gate --lock-audit --health-budget 30 --coverage-dir .artifacts/coverage/offline
-uv run --locked python -m tools.check --http-only --coverage --coverage-gate --lock-audit --health-budget 30 --coverage-dir .artifacts/coverage/http --coverage-merge .artifacts/coverage/offline
+uv run --locked python -m tools.check --coverage --coverage-gate --lock-audit --coverage-dir .artifacts/coverage/offline
+uv run --locked python -m tools.check --http-only --coverage --coverage-gate --lock-audit --coverage-dir .artifacts/coverage/http --coverage-merge .artifacts/coverage/offline
+uv run --locked python -m tools.check --tests-only --loopback --health-budget 30
 ```
 
-The second command requires permission to bind localhost fixtures. The HTTP
+The second and third commands require permission to bind localhost fixtures. The HTTP
 directory retains its own summary and a `combined/` report containing the union
 of offline and HTTP hits. Merge inputs must have identical Python versions,
 measurement scopes, source inventories, source hashes and static denominators.
@@ -117,6 +118,12 @@ step. Select the HTTP budget with `--baseline tools/coverage_budget_http.json`
 when reviewing an HTTP baseline. `--loopback` measures both tiers together and
 checks against the intersection of the independently reviewed missing-code sets.
 
+Python monitoring disables each code-entry and line callback after its first hit,
+and each conditional callback once both exits have been observed. A loop whose
+second exit has not yet run still incurs branch callbacks. Coverage and lock
+auditing therefore have separate timing observations from the uninstrumented
+duration gate; their timings are not application performance measurements.
+
 Installed SDK coverage maps native V8 function hits onto a static function
 inventory from TypeScript 5.9.3. Nested functions remain in the denominator even
 when their outer function is never called; never-loaded SDK files retain their
@@ -136,17 +143,37 @@ because their denominator changes when outer functions execute. Installed source
 recorded before temporary packages are removed and must match canonical hashes.
 
 Every normal check also writes sanitized per-test outcomes and durations under
-`.artifacts/test-health/`, including failed subtests and skips. `--health-dir`
-selects a collection directory, `--health-budget 30` caps Python module durations,
-and `--repeat 5` repeats module suites while retaining all failures. The nightly
-workflow repeats offline and loopback modules five times and reports inconsistent
-outcomes. A passing retry never erases the original failure. Telemetry contains
-test identifiers and timings, without exception messages, locals or subtest values.
+`.artifacts/test-health/`, including failed subtests, skips and class/module
+fixture failures. Parent processes retain module timeouts and unexpected exits
+even when the child cannot write a result. Atomic records carry an invocation
+identity and instrumentation labels. `--health-dir` selects a collection
+directory, and `--repeat 5` repeats module suites while retaining all failures.
+Inconsistent test or module outcomes fail the runner, including the nightly
+five-repeat run. A passing retry never erases the original failure. Telemetry
+contains test identifiers and timings, without exception messages, locals or
+subtest values.
 
-`python -m tools.container_tests` checks every Docker unittest/discovery/script
-selector against the sources staged by preparation, including instruction-local
-bind mounts. It cannot establish that images build or run; those checks still
-require the approved frozen input bundle and a disposable Docker target.
+`--health-budget 30` caps uninstrumented Python module durations. Combining it
+with coverage or lock auditing is rejected; instrumented observations are also
+excluded when checking an existing collection. The PR workflow runs the separate
+uninstrumented offline/HTTP command above after collecting coverage.
+
+Default health, coverage, type-audit and concurrency-stress outputs use managed
+run directories. Each kind retains its newest five successful and five failed
+runs; a crashed run joins the failed group once its process lease is released.
+Active leases and a `.keep` entry protect evidence from pruning. Explicit output
+directories, legacy directories without ownership markers, and curated evidence
+under `.artifacts/testing-review-followup/` are outside automatic retention.
+
+`python -m tools.container_tests` inventories all tracked Dockerfiles and models
+the service/worker validation contexts through preparation's pure staging helpers.
+It follows COPY, stage inheritance, WORKDIR, PYTHONPATH, removal and temporary
+bind mounts, checking unittest, discovery, pytest and standalone Python scripts
+(including preflights without test-like filenames). Exec-form RUN and supported
+shell wrappers are parsed; unsupported validation forms and recipes without a
+qualified staging context fail. It cannot establish that images build or run;
+those checks still require the approved frozen input bundle and a disposable
+Docker target.
 
 The independent operator policy table is
 `tests/fixtures/operator_authorization.json`. Adding a route without a policy row
@@ -220,9 +247,13 @@ nightly 200-round HTTP/TLS pass:
 uv run --locked python -m tools.concurrency_stress --rounds 3 --offline-only
 ```
 
-The runner shuffles suite order with a recorded seed; the individual races use
-events/barriers, rather than sleeps to hope for an ordering. A failure or timeout
-stops the run and remains failed in `summary.json`.
+The runner records the master seed and each round's seed, which controls both
+suite order and the generated campaign-model inputs. Replaying those seeds does
+not replay OS thread scheduling: the individual races use explicit events and
+barriers. A failure or timeout stops the run and remains failed in `summary.json`
+and the health records. The scheduled run uses 200 rounds and 512 generated
+examples per round. Richer models and additional forced interleavings remain
+separate follow-up work.
 
 `test_process_durability` kills real child processes after a handshake at named
 fixture-only checkpoints. It covers before-BEGIN, before-COMMIT and after-COMMIT

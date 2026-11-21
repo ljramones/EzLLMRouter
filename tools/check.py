@@ -10,7 +10,6 @@ import argparse
 import ast
 import json
 import os
-import tempfile
 import time
 from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
@@ -20,6 +19,7 @@ import subprocess
 import sys
 from typing import Any, cast
 import unittest
+import uuid
 
 from .test_network import block_network as block_network
 
@@ -50,6 +50,9 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_container_validation",
+    "tests.unit.test_health_failures",
+    "tests.unit.test_artifact_retention",
     "tests.unit.test_coverage_gates",
     "tests.unit.test_operator_scheduler",
     "tests.unit.test_authorization_gate_sensitivity.AuthorizationGateSensitivityTests",
@@ -178,10 +181,12 @@ TYPED_PATHS = (
     "tools/check.py",
     "tools/type_audit.py",
     "tools/test_health.py",
+    "tools/artifact_runs.py",
     "tools/branch_coverage.py",
     "tools/coverage_reports.py",
     "tools/coverage_run.py",
     "tools/container_tests.py",
+    "tools/docker_validation.py",
     "tools/javascript_coverage.py",
     "tools/security_sast.py",
     "tools/security_dependencies.py",
@@ -336,6 +341,23 @@ def run_script(name: str) -> int:
     if name not in SCRIPT_TESTS:
         raise ValueError("unknown regression script")
     sys.argv = [name, "--source-root", str(ROOT)]
+    from .test_health import instrumentation, write_script_result
+
+    started, status, instruments = time.perf_counter(), 1, instrumentation()
+    try:
+        status = _run_script(name)
+        return status
+    finally:
+        write_script_result(
+            name,
+            time.perf_counter() - started,
+            status == 0,
+            os.environ.get("EZLLMROUTER_TEST_HEALTH"),
+            instruments,
+        )
+
+
+def _run_script(name: str) -> int:
     with ExitStack() as stack:
         auditor = None
         if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
@@ -352,12 +374,16 @@ def run_script(name: str) -> int:
         except SystemExit as error:
             if error.code not in (None, 0):
                 return 1
-        return 1 if auditor is not None and auditor.violations else 0
+        status = 1 if auditor is not None and auditor.violations else 0
+        return status
 
 
 def run_module(name: str, *, loopback: bool) -> bool:
     # Per-module interpreters isolate environment changes and loaded fixture state.
     health_directory = os.environ.get("EZLLMROUTER_TEST_HEALTH")
+    from .test_health import TimedResult, instrumentation, write_module_failure, write_result
+
+    started, instruments = time.perf_counter(), instrumentation()
     with ExitStack() as stack:
         auditor = None
         if os.environ.get("EZLLMROUTER_TEST_COVERAGE"):
@@ -369,10 +395,18 @@ def run_module(name: str, *, loopback: bool) -> bool:
 
             auditor = stack.enter_context(auditing())
         block_network(stack, loopback=loopback)
-        suite = unittest.defaultTestLoader.loadTestsFromName(name)
-        from .test_health import TimedResult, write_result
+        try:
+            suite = unittest.defaultTestLoader.loadTestsFromName(name)
+        except BaseException:
+            write_module_failure(
+                name,
+                time.perf_counter() - started,
+                "load_error",
+                health_directory,
+                loopback=loopback,
+            )
+            raise
 
-        started = time.perf_counter()
         result = unittest.TextTestRunner(verbosity=1, resultclass=TimedResult).run(suite)
         violations = auditor.violations if auditor is not None else []
         if violations:
@@ -386,6 +420,7 @@ def run_module(name: str, *, loopback: bool) -> bool:
             health_directory,
             loopback=loopback,
             audit_violations=violations,
+            instruments=instruments,
         )
         return result.wasSuccessful() and result.testsRun > len(result.skipped) and not violations
 
@@ -398,16 +433,46 @@ def run(argv: list[str]) -> None:
 
     started = time.perf_counter()
     outcome = "failed"
+    invocation = uuid.uuid4().hex
+    environment = child_environment()
+    environment["EZLLMROUTER_TEST_INVOCATION"] = invocation
     try:
-        subprocess.run(argv, cwd=ROOT, env=child_environment(), check=True, timeout=180)
+        subprocess.run(argv, cwd=ROOT, env=environment, check=True, timeout=180)
         outcome = "passed"
+    except subprocess.TimeoutExpired:
+        outcome = "timeout"
+        raise
+    except OSError:
+        outcome = "spawn_error"
+        raise
     finally:
+        from .test_health import has_failed_invocation, write_module_failure
+
+        for flag in ("--test-module", "--test-script"):
+            directory = os.environ.get("EZLLMROUTER_TEST_HEALTH")
+            if (
+                outcome != "passed"
+                and flag in argv
+                and (outcome == "timeout" or not has_failed_invocation(directory, invocation))
+            ):
+                identity = argv[argv.index(flag) + 1]
+                if flag == "--test-script":
+                    identity = "script:" + identity
+                write_module_failure(
+                    identity,
+                    time.perf_counter() - started,
+                    outcome,
+                    os.environ.get("EZLLMROUTER_TEST_HEALTH"),
+                    loopback="--loopback" in argv,
+                    invocation=invocation,
+                )
+                break
         write_command(
             argv, time.perf_counter() - started, outcome, os.environ.get("EZLLMROUTER_TEST_HEALTH")
         )
 
 
-def main() -> int:
+def _main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--coverage",
@@ -446,6 +511,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.lock_audit:
         os.environ["EZLLMROUTER_LOCK_AUDIT"] = "1"
+    if args.health_dir is not None:
+        os.environ["EZLLMROUTER_TEST_HEALTH"] = str(args.health_dir.resolve())
     if args.test_script:
         return run_script(args.test_script)
     if args.test_module:
@@ -460,9 +527,14 @@ def main() -> int:
         parser.error("coverage-merge requires coverage and http-only")
     if args.health_budget is not None and not 0 < args.health_budget <= 180:
         parser.error("health-budget must be positive and at most 180 seconds")
+    from .test_health import instrumentation
+
+    if args.health_budget is not None and (args.coverage or instrumentation()):
+        parser.error("health-budget requires an uninstrumented run; omit coverage and lock-audit")
+    from .artifact_runs import new_run
+
     health_parent = ROOT / ".artifacts/test-health"
-    health_parent.mkdir(parents=True, exist_ok=True)
-    health_directory = args.health_dir or Path(tempfile.mkdtemp(prefix="run-", dir=health_parent))
+    health_directory = args.health_dir or new_run(health_parent, "run-", "health")
     health_directory.mkdir(parents=True, exist_ok=True)
     os.environ["EZLLMROUTER_TEST_HEALTH"] = str(health_directory.resolve())
     coverage_directory = None
@@ -545,9 +617,13 @@ def main() -> int:
             if errors:
                 print("\n".join(errors), file=sys.stderr)
                 failures.append("coverage budgets")
-        from .test_health import budget_errors, summarize
+        from .test_health import budget_errors, instability_errors, summarize
 
-        summarize(health_directory)
+        summary_health = summarize(health_directory)
+        unstable = instability_errors(summary_health)
+        if unstable:
+            print("\n".join(unstable), file=sys.stderr)
+            failures.append("unstable test/module outcomes")
         if args.health_budget is not None:
             errors = budget_errors(health_directory, args.health_budget)
             if errors:
@@ -562,6 +638,29 @@ def main() -> int:
         return 1
     print("Quality checks passed.")
     return 0
+
+
+def main() -> int:
+    from .artifact_runs import session
+
+    configured = (
+        "EZLLMROUTER_LOCK_AUDIT",
+        "EZLLMROUTER_TEST_HEALTH",
+        "EZLLMROUTER_TEST_COVERAGE",
+        "EZLLMROUTER_JS_COVERAGE",
+    )
+    saved = {key: os.environ.get(key) for key in configured}
+    try:
+        with session() as artifacts:
+            result = _main()
+            artifacts.passed = result == 0
+            return result
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 if __name__ == "__main__":

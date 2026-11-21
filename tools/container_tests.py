@@ -4,60 +4,21 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Mapping
-from dataclasses import dataclass
-import fnmatch
 import inspect
 from pathlib import Path
-import shlex
+import shutil
+import subprocess
 import tempfile
+from unittest.mock import patch
+from typing import Any
 
 from deploy.local import prepare
 from tools.gateway.stage import source_mapping
+from tools.docker_validation import resolve_recipe
+from tools.docker_validation import TestCommand as TestCommand
+from tools.docker_validation import test_commands as test_commands
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-@dataclass(frozen=True)
-class TestCommand:
-    kind: str
-    selectors: tuple[str, ...]
-    directory: str = ""
-    pattern: str = "test*.py"
-
-
-def test_commands(dockerfile: str) -> list[TestCommand]:
-    commands = []
-    for line in dockerfile.replace("\\\n", " ").splitlines():
-        if not line.lstrip().startswith("RUN "):
-            continue
-        tokens = shlex.split(line)
-        for index, token in enumerate(tokens):
-            if token == "unittest" and index and tokens[index - 1] == "-m":
-                end = next(
-                    (i for i in range(index + 1, len(tokens)) if tokens[i] in {"&&", ";", "|"}),
-                    len(tokens),
-                )
-                args = tokens[index + 1 : end]
-                if args and args[0] == "discover":
-                    directory = args[args.index("-s") + 1] if "-s" in args else "/app"
-                    pattern = args[args.index("-p") + 1] if "-p" in args else "test*.py"
-                    commands.append(TestCommand("discover", (), directory, pattern))
-                else:
-                    selectors = tuple(
-                        arg for arg in args if arg not in {"-v", "-q", "--verbose", "--quiet"}
-                    )
-                    if not selectors or any(selector.startswith("-") for selector in selectors):
-                        raise ValueError(
-                            "Docker unittest command needs explicit supported selectors"
-                        )
-                    commands.append(TestCommand("module", selectors))
-            if (
-                token.startswith(("/app/", "/tmp/"))
-                and token.endswith(".py")
-                and Path(token).name.startswith("test_")
-            ):
-                commands.append(TestCommand("script", (token,)))
-    return commands
 
 
 def _path(node: ast.expr, name: str) -> str | None:
@@ -104,88 +65,82 @@ def staged_sources(root: Path = ROOT) -> dict[str, Path]:
         package = build / "service/server/ezllmrouter_server"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("")
-        prepare.stage_service_validation(build)
-        prepare.stage_worker_validation(build)
+        original = shutil.copy2
+
+        def capture(source: str | Path, target: str | Path, **options: Any) -> str:
+            destination = Path(target)
+            if destination.is_dir():
+                destination /= Path(source).name
+            relative = destination.relative_to(build).as_posix()
+            result[relative] = Path(source)
+            return original(str(source), str(target), **options)
+
+        with (
+            patch.object(prepare, "ROOT", root),
+            patch.object(shutil, "copy2", side_effect=capture),
+        ):
+            prepare.stage_service_validation(build)
+            prepare.stage_worker_validation(build)
+            prepare.stage_profile_checks(build)
         for path in build.rglob("*"):
-            if path.is_file() and path.name.startswith("test_"):
+            if path.is_file() and path.name == "__init__.py":
                 relative = path.relative_to(build).as_posix()
-                # Keep canonical paths after the temporary tree is removed.
-                candidates = [
-                    root / "tests/operator_console" / path.name,
-                    root / "tests/gateway_integration" / path.name,
-                ]
-                result[relative] = next(
-                    candidate for candidate in candidates if candidate.is_file()
-                )
+                result.setdefault(relative, root / "tests/__init__.py")
+        # The real worker helper copies the entire trusted package into its
+        # temporary validation mount; mirror its canonical source identities.
+        for target, source in list(result.items()):
+            if target.startswith("service/server/"):
+                result["worker/validation/server/" + target[len("service/server/") :]] = source
     return result
 
 
 def resolve(dockerfile: str, context: str, staged: Mapping[str, Path]) -> list[str]:
-    base = {
-        "/app/" + key[len(context) + 1 :]: source
-        for key, source in staged.items()
-        if key.startswith(context + "/")
+    return resolve_recipe(dockerfile, context, staged)
+
+
+def dockerfiles(root: Path = ROOT) -> list[str]:
+    names = subprocess.check_output(
+        ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        text=True,
+    ).split("\0")
+    return sorted(
+        name
+        for name in set(names)
+        if Path(name).name.startswith("Dockerfile") and (root / name).is_file()
+    )
+
+
+def repository_errors(root: Path, sources: Mapping[str, Path]) -> list[str]:
+    qualified = {
+        "deploy/local/Dockerfile.service": "service",
+        "deploy/local/Dockerfile.worker": "worker",
     }
     errors = []
-    for line in dockerfile.replace("\\\n", " ").splitlines():
-        if not line.lstrip().startswith("RUN "):
-            continue
-        virtual = dict(base)
-        # Bind mounts exist only for this instruction, not later RUN commands.
-        for token in shlex.split(line):
-            if not token.startswith("--mount="):
+    for name in dockerfiles(root):
+        recipe = (root / name).read_text()
+        try:
+            commands = test_commands(recipe)
+            if not commands:
                 continue
-            fields = dict(part.split("=", 1) for part in token[8:].split(",") if "=" in part)
-            if "source" in fields and "target" in fields:
-                prefix = context + "/" + fields["source"]
-                for key, source in staged.items():
-                    if key == prefix or key.startswith(prefix + "/"):
-                        virtual[fields["target"] + key[len(prefix) :]] = source
-        for command in test_commands(line):
-            if command.kind == "discover":
-                matches = [
-                    path
-                    for path in virtual
-                    if path.startswith(command.directory.rstrip("/") + "/")
-                    and fnmatch.fnmatch(Path(path).name, command.pattern)
-                ]
-                if not matches:
-                    errors.append(
-                        "empty Docker discovery: " + command.directory + "/" + command.pattern
-                    )
-            elif command.kind == "script":
-                for path in command.selectors:
-                    if path not in virtual or not virtual[path].is_file():
-                        errors.append("unstaged Docker test script: " + path)
-            else:
-                for selector in command.selectors:
-                    parts = selector.split(".")
-                    candidates = [
-                        "/app/" + "/".join(parts[:end]) + ".py" for end in range(len(parts), 0, -1)
-                    ]
-                    selected = next(
-                        (
-                            path
-                            for path in candidates
-                            if path in virtual and virtual[path].is_file()
-                        ),
-                        None,
-                    )
-                    if selected is None:
-                        errors.append("unstaged Docker test module: " + selector)
+            context = qualified.get(name)
+            if context is None:
+                errors.append(name + ": validation has no qualified staging context")
+                continue
+            errors.extend(name + ": " + error for error in resolve(recipe, context, sources))
+        except ValueError as error:
+            errors.append(name + ": " + str(error))
     return errors
 
 
 def main() -> int:
     sources = staged_sources()
-    failures = []
-    for context in ("service", "worker"):
-        dockerfile = (ROOT / f"deploy/local/Dockerfile.{context}").read_text()
-        failures.extend(resolve(dockerfile, context, sources))
+    failures = repository_errors(ROOT, sources)
     if failures:
         print("\n".join(failures))
         return 1
-    print("Docker validation test modules, discovery patterns and scripts are staged.")
+    print(
+        f"Inspected {len(dockerfiles())} Dockerfiles; validation entry points resolve through actual COPY/stage/mount contents."
+    )
     return 0
 
 

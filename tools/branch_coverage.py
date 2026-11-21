@@ -79,10 +79,12 @@ class BranchCoverage:
         self.observed: dict[int, set[tuple[int, int]]] = {}
         self.enabled: list[types.CodeType] = []
         self.identities: dict[int, str] = {}
+        self.targets: dict[int, dict[int, set[int]]] = {}
+        self.destinations: dict[int, dict[int, set[int]]] = {}
         self.lines: dict[str, set[int]] = defaultdict(set)
         self.active = False
 
-    def _start(self, code: types.CodeType, _offset: int) -> None:
+    def _start(self, code: types.CodeType, _offset: int) -> object:
         if (
             self.active
             and code.co_filename.startswith(self.prefixes)
@@ -91,16 +93,36 @@ class BranchCoverage:
             self.enabled.append(code)
             self.identities[id(code)] = identity(code)
             self.observed[id(code)] = set()
+            expected: dict[int, set[int]] = {}
+            prefix = self.identities[id(code)] + ":"
+            for key in branches(code):
+                if key.startswith(prefix):
+                    source, target = key[len(prefix) :].split("->")
+                    expected.setdefault(int(source), set()).add(int(target))
+            self.targets[id(code)] = expected
+            self.destinations[id(code)] = {}
             events = sys.monitoring.events
             sys.monitoring.set_local_events(self.tool_id, code, events.BRANCH | events.LINE)
+        # PY_START is global, so otherwise every call outside the source roots
+        # also pays for this callback. Local LINE/BRANCH events remain enabled.
+        return sys.monitoring.DISABLE
 
-    def _branch(self, code: types.CodeType, source: int, destination: int) -> None:
-        if self.active:
-            self.observed[id(code)].add((source, destination))
+    def _branch(self, code: types.CodeType, source: int, destination: int) -> object | None:
+        if not self.active or source not in self.targets[id(code)]:
+            return sys.monitoring.DISABLE
+        self.observed[id(code)].add((source, destination))
+        seen = self.destinations[id(code)].setdefault(source, set())
+        seen.add(destination)
+        # DISABLE applies to the source instruction, not one of its exits.
+        # Keep observing it until both exits have been recorded.
+        if self.targets[id(code)][source] <= seen:
+            return sys.monitoring.DISABLE
+        return None
 
-    def _line(self, code: types.CodeType, line: int) -> None:
+    def _line(self, code: types.CodeType, line: int) -> object:
         if self.active:
             self.lines[code.co_filename].add(line)
+        return sys.monitoring.DISABLE
 
     def __enter__(self) -> BranchCoverage:
         monitoring = sys.monitoring

@@ -23,6 +23,8 @@ jobs:
   concurrency-stress:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      EZLLMROUTER_TEST_EXAMPLES: '512'
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -31,7 +33,7 @@ jobs:
       - run: python3 -I -S tools/security_dependencies.py
       - run: python3 -m pip install uv==0.13.9
       - run: uv sync --locked --all-groups --python 3.12.15
-      - name: Repeat forced interleavings 200 times with a recorded suite-order seed
+      - name: Repeat synchronized races and seeded models 200 times
         run: uv run --locked python -m tools.concurrency_stress --seed ${{ github.run_number }}
       - name: Retain each run, including the first failure
         if: always()

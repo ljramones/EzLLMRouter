@@ -51,6 +51,12 @@ read-only; ordinary profile startup has no fixture-code mounts. These Dockerfile
 changes need qualification in the target Docker environment with the existing
 reviewed lock and pinned images.
 
+The source-only `python -m tools.container_tests` check invokes the same pure
+validation staging helpers, including profile preflights, and follows Docker
+COPY, WORKDIR, stages and temporary mounts. It scans every tracked Dockerfile
+and rejects validation commands without a qualified staging context. This check
+does not prepare frozen inputs or start a Docker build.
+
 Command capture is bounded and records timeouts as exit 124, with redacted output
 in private evidence files. One-use catalogue/CRUD/usage run IDs accept valid
 `YYYYMMDD` dates and reject collisions before starting work.

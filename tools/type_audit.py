@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
+from .artifact_runs import new_run, session
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "tools/type_audit_budget.json"
@@ -29,7 +29,7 @@ def regressions(expected: Mapping[str, int], observed: Mapping[str, int]) -> lis
     ]
 
 
-def main() -> int:
+def _main() -> int:
     budget = json.loads(BASELINE.read_text())
     result = subprocess.run(
         [sys.executable, "-m", "mypy", *SOURCES],
@@ -45,8 +45,7 @@ def main() -> int:
         return 1
     failures = regressions(budget["errors"], counts)
     parent = ROOT / ".artifacts/type-audit"
-    parent.mkdir(parents=True, exist_ok=True)
-    output = Path(tempfile.mkdtemp(prefix="library-", dir=parent))
+    output = new_run(parent, "library-", "typing")
     (output / "diagnostics.txt").write_text(result.stdout + result.stderr)
     summary = {
         "source_roots": list(SOURCES),
@@ -63,6 +62,13 @@ def main() -> int:
         f"Whole-library typing debt: {summary['total_errors']} errors within reviewed budgets; {output}/summary.json"
     )
     return 0
+
+
+def main() -> int:
+    with session() as artifacts:
+        status = _main()
+        artifacts.passed = status == 0
+        return status
 
 
 if __name__ == "__main__":

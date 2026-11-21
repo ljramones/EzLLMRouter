@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-import tempfile
 from typing import Any
 
 from .coverage_reports import gaps, merge_baselines, merge_summaries, regressions, render
@@ -15,9 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def prepare(directory: Path | None, tier: str) -> Path:
     if directory is None:
+        from .artifact_runs import new_run
+
         parent = ROOT / ".artifacts/coverage"
-        parent.mkdir(parents=True, exist_ok=True)
-        directory = Path(tempfile.mkdtemp(prefix=f"python-{tier}-", dir=parent))
+        directory = new_run(parent, f"python-{tier}-", "coverage-" + tier)
     else:
         directory = directory.resolve()
         directory.mkdir(parents=True, exist_ok=True)

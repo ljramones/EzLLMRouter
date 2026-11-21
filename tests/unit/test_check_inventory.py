@@ -253,6 +253,7 @@ class RunnerResultsTests(unittest.TestCase):
         ):
             with (
                 patch.object(unittest.defaultTestLoader, "loadTestsFromName", return_value=suite),
+                patch.dict("os.environ", {"EZLLMROUTER_TEST_HEALTH": ""}),
                 redirect_stderr(io.StringIO()),
             ):
                 self.assertFalse(check.run_module("synthetic", loopback=False))
