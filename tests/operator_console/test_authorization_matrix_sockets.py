@@ -2,6 +2,7 @@
 
 from http.client import HTTPResponse
 import io
+import json
 
 from tests.operator_console.test_authorization_matrix import AuthorizationMatrixTests
 from tests.unit.test_http_structure import HTTPFramingTests
@@ -22,15 +23,15 @@ class SocketPairAuthorizationMatrixTests(AuthorizationMatrixTests):
         self.assertEqual(status, 200)
         self.assertEqual(headers["Cache-Control"], "no-store, max-age=0")
 
-    def exchange(self, method, path, *, host=None, origin=None, csrf=True):
+    def exchange(self, method, path, *, host=None, origin=None, csrf=True, body=None):
         headers = {"Host": host or "127.0.0.1:48761", "Origin": origin or "http://127.0.0.1:48761"}
         if self.cookie:
             headers["Cookie"] = self.cookie
         if csrf and self.csrf:
             headers["X-EzLLMRouter-CSRF"] = self.csrf
-        body = b"{}" if method != "GET" else b""
+        body = json.dumps(body if body is not None else {}).encode() if method != "GET" else b""
         if body:
-            headers.update({"Content-Type": "application/json", "Content-Length": "2"})
+            headers.update({"Content-Type": "application/json", "Content-Length": str(len(body))})
         raw = (
             method
             + " "
@@ -40,6 +41,6 @@ class SocketPairAuthorizationMatrixTests(AuthorizationMatrixTests):
             + "\r\n"
         ).encode() + body
         reply = HTTPFramingTests.exchange(self, self.server, raw)
-        response = HTTPResponse(ResponseSocket(reply))
+        response = HTTPResponse(ResponseSocket(reply), method=method)
         response.begin()
         return response.status, response.headers, response.read()

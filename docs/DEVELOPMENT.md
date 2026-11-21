@@ -122,8 +122,15 @@ The independent operator policy table is
 fails the offline gate. Matrix variants exercise the real handlers directly,
 real HTTP parsing over socket pairs, and localhost listeners in the HTTP tier.
 Expected statuses come from the checked-in table and documented roles, never
-from the implementation's route-role metadata. Empty mutation bodies cannot
-initiate sends; cross-user cases additionally assert unchanged authority state.
+from the implementation's route-role metadata. The matrix covers administrator,
+ordinary, read-only and password-change-required sessions in both full-console
+and integration-only modes. Empty-body expectations and valid-body mutation
+denials are separate; wrong-method requests must also fail. Positive controls
+exercise user/connector creation and login, logout and own-password changes.
+Sensitivity regressions verify that permitting a read-only user mutation, including
+one conditional on a valid body, fails the matrix. Cross-user and rejected-write
+cases additionally assert unchanged registry authority version. Broader resource
+family scenarios and the wire API matrix remain separate follow-up work.
 
 Generated parser/property tests use deterministic standard-library generators
 without another package install. The normal gate fixes the seed and keeps small

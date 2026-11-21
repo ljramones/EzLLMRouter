@@ -1,55 +1,643 @@
 {
-  "scope": "Independent operator policy expectations; empty mutation bodies are deliberately invalid and cannot initiate a send. Families use the listed concrete resource, with separate cross-user checks.",
-  "policy_sources": ["docs/USER-MANAGEMENT.md#roles", "docs/LOCAL-CONNECTORS.md", "docs/SECURITY.md"],
-  "public_assets": ["/", "/integration", "/app.js", "/users_view.js", "/local_connectors_view.js", "/integration_view.js", "/integration_console.js", "/integration_accounting.js", "/catalogue_view.js", "/activity_usage_view.js", "/crud_view.js", "/providers_view.js", "/source_pages.js", "/usage_costs_view.js", "/demo_workspace_view.js", "/demo_workspace_team_view.js", "/scripted_demo_view.js", "/app.css", "/integration_console.css"],
-  "columns": ["method", "registered_path", "sample_path", "admin_status", "ordinary_status"],
+  "scope": "Independent operator role/status policy. Empty-body route checks and valid-body mutation denials are distinct. No provider traffic is configured.",
+  "policy_sources": [
+    "docs/USER-MANAGEMENT.md#roles",
+    "docs/LOCAL-CONNECTORS.md",
+    "docs/SECURITY.md"
+  ],
+  "public_assets": [
+    "/",
+    "/integration",
+    "/app.js",
+    "/users_view.js",
+    "/local_connectors_view.js",
+    "/integration_view.js",
+    "/integration_console.js",
+    "/integration_accounting.js",
+    "/catalogue_view.js",
+    "/activity_usage_view.js",
+    "/crud_view.js",
+    "/providers_view.js",
+    "/source_pages.js",
+    "/usage_costs_view.js",
+    "/demo_workspace_view.js",
+    "/demo_workspace_team_view.js",
+    "/scripted_demo_view.js",
+    "/app.css",
+    "/integration_console.css"
+  ],
+  "columns": [
+    "method",
+    "registered_path",
+    "sample_path",
+    "admin_status",
+    "ordinary_status",
+    "read_only_status",
+    "password_change_status",
+    "integration_hidden"
+  ],
   "routes": [
-    ["GET", "/operator/v1/session", "/operator/v1/session", 200, 200],
-    ["GET", "/operator/v1/local-connectors", "/operator/v1/local-connectors", 200, 403],
-    ["GET", "/operator/v1/local-connectors/availability", "/operator/v1/local-connectors/availability", 200, 403],
-    ["GET", "/operator/v1/local-connectors/nearby", "/operator/v1/local-connectors/nearby", 200, 403],
-    ["GET", "/operator/v1/local-connectors/*", "/operator/v1/local-connectors/connector.absent", 404, 403],
-    ["GET", "/operator/v1/users", "/operator/v1/users", 200, 403],
-    ["GET", "/operator/v1/users/*", "/operator/v1/users/owner.local", 200, 403],
-    ["GET", "/operator/v1/integration/identity", "/operator/v1/integration/identity", 404, 404],
-    ["GET", "/operator/v1/scripted-demo/*", "/operator/v1/scripted-demo/report", 404, 404],
-    ["GET", "/operator/v1/integration/*", "/operator/v1/integration/datasets", 200, 403],
-    ["GET", "/operator/v1/retrieval-usage", "/operator/v1/retrieval-usage", 200, 200],
-    ["GET", "/operator/v1/demo-workspace", "/operator/v1/demo-workspace", 200, 200],
-    ["GET", "/operator/v1/usage-costs", "/operator/v1/usage-costs", 200, 200],
-    ["GET", "/operator/v1/providers", "/operator/v1/providers", 200, 403],
-    ["GET", "/operator/v1/provider-validations/*", "/operator/v1/provider-validations/op.absent", 404, 403],
-    ["GET", "/operator/v1/connections", "/operator/v1/connections", 200, 403],
-    ["GET", "/operator/v1/personal-campaign", "/operator/v1/personal-campaign", 200, 403],
-    ["GET", "/operator/v1/connections/*", "/operator/v1/connections/conn.absent", 404, 403],
-    ["GET", "/operator/v1/models", "/operator/v1/models", 200, 200],
-    ["GET", "/operator/v1/models/*", "/operator/v1/models/cfg.demo", 200, 404],
-    ["GET", "/operator/v1/principals", "/operator/v1/principals", 200, 200],
-    ["GET", "/operator/v1/principals/*", "/operator/v1/principals/owner.local", 200, 404],
-    ["GET", "/operator/v1/access/explain", "/operator/v1/access/explain?principal_id=owner.local&configuration_ref=cfg.demo&purpose=execution&task_class=class.demo", 200, 404],
-    ["GET", "/operator/v1/overview", "/operator/v1/overview", 200, 200],
-    ["GET", "/operator/v1/activity", "/operator/v1/activity", 200, 200],
-    ["GET", "/operator/v1/activity/*", "/operator/v1/activity/submission.absent", 404, 404],
-    ["GET", "/operator/v1/usage", "/operator/v1/usage", 200, 200],
-    ["GET", "/operator/v1/config", "/operator/v1/config", 200, 403],
-    ["GET", "/operator/v1/build", "/operator/v1/build", 200, 403],
-    ["GET", "/operator/v1/launch/*", "/operator/v1/launch/op.absent", 404, 403],
-    ["POST", "/operator/v1/login", "/operator/v1/login", 400, 400],
-    ["POST", "/operator/v1/users", "/operator/v1/users", 400, 403],
-    ["POST", "/operator/v1/account/password", "/operator/v1/account/password", 400, 400],
-    ["POST", "/operator/v1/users/*", "/operator/v1/users/owner.local", 400, 403],
-    ["POST", "/operator/v1/local-connectors", "/operator/v1/local-connectors", 400, 403],
-    ["POST", "/operator/v1/local-connectors/*", "/operator/v1/local-connectors/connector.absent", 400, 403],
-    ["POST", "/operator/v1/integration/*", "/operator/v1/integration/datasets", 400, 403],
-    ["POST", "/operator/v1/logout", "/operator/v1/logout", 200, 200],
-    ["POST", "/operator/v1/registry", "/operator/v1/registry", 400, 403],
-    ["POST", "/operator/v1/personal-campaign", "/operator/v1/personal-campaign", 400, 403],
-    ["POST", "/operator/v1/provider-credential", "/operator/v1/provider-credential", 400, 403],
-    ["POST", "/operator/v1/provider-probe", "/operator/v1/provider-probe", 400, 403],
-    ["POST", "/operator/v1/provider-validation", "/operator/v1/provider-validation", 400, 403],
-    ["POST", "/operator/v1/provision", "/operator/v1/provision", 400, 403],
-    ["POST", "/operator/v1/demos/*", "/operator/v1/demos/text", 400, 403],
-    ["DELETE", "/operator/v1/users/*", "/operator/v1/users/user.absent", 400, 403],
-    ["DELETE", "/operator/v1/local-connectors/*", "/operator/v1/local-connectors/connector.absent", 400, 403]
-  ]
+    [
+      "GET",
+      "/operator/v1/session",
+      "/operator/v1/session",
+      200,
+      200,
+      200,
+      200,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/local-connectors",
+      "/operator/v1/local-connectors",
+      200,
+      403,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/local-connectors/availability",
+      "/operator/v1/local-connectors/availability",
+      200,
+      403,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/local-connectors/nearby",
+      "/operator/v1/local-connectors/nearby",
+      200,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/local-connectors/*",
+      "/operator/v1/local-connectors/connector.absent",
+      404,
+      403,
+      404,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/users",
+      "/operator/v1/users",
+      200,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/users/*",
+      "/operator/v1/users/owner.local",
+      200,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/integration/identity",
+      "/operator/v1/integration/identity",
+      404,
+      404,
+      404,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/scripted-demo/*",
+      "/operator/v1/scripted-demo/report",
+      404,
+      404,
+      404,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/integration/*",
+      "/operator/v1/integration/datasets",
+      200,
+      403,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/retrieval-usage",
+      "/operator/v1/retrieval-usage",
+      200,
+      200,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/demo-workspace",
+      "/operator/v1/demo-workspace",
+      200,
+      200,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/usage-costs",
+      "/operator/v1/usage-costs",
+      200,
+      200,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/providers",
+      "/operator/v1/providers",
+      200,
+      403,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/provider-validations/*",
+      "/operator/v1/provider-validations/op.absent",
+      404,
+      403,
+      404,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/connections",
+      "/operator/v1/connections",
+      200,
+      403,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/personal-campaign",
+      "/operator/v1/personal-campaign",
+      200,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/connections/*",
+      "/operator/v1/connections/conn.absent",
+      404,
+      403,
+      404,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/models",
+      "/operator/v1/models",
+      200,
+      200,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/models/*",
+      "/operator/v1/models/cfg.demo",
+      200,
+      404,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/principals",
+      "/operator/v1/principals",
+      200,
+      200,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/principals/*",
+      "/operator/v1/principals/owner.local",
+      200,
+      404,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/access/explain",
+      "/operator/v1/access/explain?principal_id=owner.local&configuration_ref=cfg.demo&purpose=execution&task_class=class.demo",
+      200,
+      404,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/overview",
+      "/operator/v1/overview",
+      200,
+      200,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/activity",
+      "/operator/v1/activity",
+      200,
+      200,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/activity/*",
+      "/operator/v1/activity/submission.absent",
+      404,
+      404,
+      404,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/usage",
+      "/operator/v1/usage",
+      200,
+      200,
+      200,
+      403,
+      false
+    ],
+    [
+      "GET",
+      "/operator/v1/config",
+      "/operator/v1/config",
+      200,
+      403,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/build",
+      "/operator/v1/build",
+      200,
+      403,
+      200,
+      403,
+      true
+    ],
+    [
+      "GET",
+      "/operator/v1/launch/*",
+      "/operator/v1/launch/op.absent",
+      404,
+      403,
+      404,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/login",
+      "/operator/v1/login",
+      400,
+      400,
+      400,
+      400,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/users",
+      "/operator/v1/users",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/account/password",
+      "/operator/v1/account/password",
+      400,
+      400,
+      400,
+      400,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/users/*",
+      "/operator/v1/users/owner.local",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/local-connectors",
+      "/operator/v1/local-connectors",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/local-connectors/*",
+      "/operator/v1/local-connectors/connector.absent",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/integration/*",
+      "/operator/v1/integration/datasets",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/logout",
+      "/operator/v1/logout",
+      200,
+      200,
+      200,
+      200,
+      false
+    ],
+    [
+      "POST",
+      "/operator/v1/registry",
+      "/operator/v1/registry",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/personal-campaign",
+      "/operator/v1/personal-campaign",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/provider-credential",
+      "/operator/v1/provider-credential",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/provider-probe",
+      "/operator/v1/provider-probe",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/provider-validation",
+      "/operator/v1/provider-validation",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/provision",
+      "/operator/v1/provision",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "POST",
+      "/operator/v1/demos/*",
+      "/operator/v1/demos/text",
+      400,
+      403,
+      403,
+      403,
+      true
+    ],
+    [
+      "DELETE",
+      "/operator/v1/users/*",
+      "/operator/v1/users/user.absent",
+      400,
+      403,
+      403,
+      403,
+      false
+    ],
+    [
+      "DELETE",
+      "/operator/v1/local-connectors/*",
+      "/operator/v1/local-connectors/connector.absent",
+      400,
+      403,
+      403,
+      403,
+      false
+    ]
+  ],
+  "valid_mutations": {
+    "POST /operator/v1/login": {
+      "body": {
+        "username": "admin",
+        "password": "A private test passphrase!"
+      }
+    },
+    "POST /operator/v1/users": {
+      "body": {
+        "username": "matrix.created",
+        "display_name": "Matrix Created",
+        "role": "ordinary",
+        "status": "active",
+        "password": "Synthetic matrix password 2026!"
+      }
+    },
+    "POST /operator/v1/account/password": {
+      "body": {
+        "current_password": "A private test passphrase!",
+        "new_password": "Synthetic changed matrix password!"
+      }
+    },
+    "POST /operator/v1/users/*": {
+      "body": {
+        "username": "admin",
+        "display_name": "Matrix Administrator",
+        "role": "registry_admin",
+        "status": "active",
+        "expected_revision": 1
+      }
+    },
+    "POST /operator/v1/local-connectors": {
+      "body": {
+        "display_name": "Matrix connector",
+        "kind": "ollama",
+        "base_url": "http://127.0.0.1:11434"
+      }
+    },
+    "POST /operator/v1/local-connectors/*": {
+      "body": {
+        "display_name": "Matrix connector",
+        "kind": "ollama",
+        "base_url": "http://127.0.0.1:11434",
+        "expected_revision": 1
+      }
+    },
+    "POST /operator/v1/integration/*": {
+      "body": {
+        "dataset_id": "dataset.synthetic.matrix",
+        "platform_id": "platform.synthetic",
+        "environment_id": "env.synthetic",
+        "owner_id": "owner.local",
+        "ingest_principal_id": "svc.matrix.ingest",
+        "activated_at": "2026-11-20T00:00:00Z"
+      }
+    },
+    "POST /operator/v1/logout": {
+      "body": {}
+    },
+    "POST /operator/v1/registry": {
+      "body": {
+        "operation_id": "op.matrix.grant",
+        "action": "set_grant",
+        "subject": "svc.demo",
+        "expected_revision": 1,
+        "data": {
+          "configuration_ref": "cfg.demo",
+          "allowed": true
+        }
+      }
+    },
+    "POST /operator/v1/personal-campaign": {
+      "body": {
+        "action": "closed"
+      }
+    },
+    "POST /operator/v1/provider-credential": {
+      "body": {
+        "operation_id": "op.matrix.credential",
+        "connection_id": "conn.synthetic",
+        "expected_revision": 1,
+        "mode": "replace",
+        "secret": "Synthetic-matrix-provider-key-only"
+      }
+    },
+    "POST /operator/v1/provider-probe": {
+      "body": {
+        "operation_id": "op.matrix.probe",
+        "connection_id": "conn.synthetic",
+        "expected_revision": 1,
+        "operation": "inventory"
+      }
+    },
+    "POST /operator/v1/provider-validation": {
+      "body": {
+        "operation_id": "op.matrix.validation",
+        "connection_id": "conn.synthetic",
+        "connection_revision": 1,
+        "configuration_ref": "cfg.demo",
+        "configuration_revision": 1,
+        "max_output_tokens": 1,
+        "acknowledge_external_send": true
+      }
+    },
+    "POST /operator/v1/provision": {
+      "body": {
+        "operation_id": "op.matrix.provision",
+        "principal_id": "svc.demo",
+        "expected_revision": 1
+      }
+    },
+    "POST /operator/v1/demos/*": {
+      "body": {
+        "operation_id": "op.matrix.demo"
+      }
+    },
+    "DELETE /operator/v1/users/*": {
+      "body": {
+        "expected_revision": 1
+      }
+    },
+    "DELETE /operator/v1/local-connectors/*": {
+      "body": {
+        "expected_revision": 1
+      }
+    }
+  },
+  "integration_status_overrides": {
+    "GET /operator/v1/integration/identity": {
+      "admin": 200
+    }
+  }
 }

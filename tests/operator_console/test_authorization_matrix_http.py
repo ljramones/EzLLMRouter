@@ -2,6 +2,7 @@
 
 from http.client import HTTPConnection
 import threading
+import json
 
 from ezllmrouter_server.http_server import BoundedHTTPServer
 from tests.operator_console.test_authorization_matrix import AuthorizationMatrixTests
@@ -28,13 +29,13 @@ class LoopbackAuthorizationMatrixTests(AuthorizationMatrixTests):
         self.assertEqual(status, 200)
         self.assertEqual(headers["Cache-Control"], "no-store, max-age=0")
 
-    def exchange(self, method, path, *, host=None, origin=None, csrf=True):
+    def exchange(self, method, path, *, host=None, origin=None, csrf=True, body=None):
         headers = {"Host": host or "127.0.0.1:48761", "Origin": origin or "http://127.0.0.1:48761"}
         if self.cookie:
             headers["Cookie"] = self.cookie
         if csrf and self.csrf:
             headers["X-EzLLMRouter-CSRF"] = self.csrf
-        body = b"{}" if method != "GET" else None
+        body = json.dumps(body if body is not None else {}).encode() if method != "GET" else None
         if body is not None:
             headers["Content-Type"] = "application/json"
         connection = HTTPConnection("127.0.0.1", self.http.server_port, timeout=3)
