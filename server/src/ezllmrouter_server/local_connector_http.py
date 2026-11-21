@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import http.client
+from typing import NoReturn, cast
+from .records import Record
 
-def allowed_address(value):
+
+def allowed_address(value: str) -> bool:
     from ezllmrouter_server import local_connectors as _api
 
     try:
@@ -17,7 +21,7 @@ def allowed_address(value):
         return False
 
 
-def normalize_url(value, kind="openai_compatible"):
+def normalize_url(value: object, kind: str = "openai_compatible") -> str:
     from ezllmrouter_server import local_connectors as _api
 
     if type(value) is not str or not value.strip() or len(value) > 512:
@@ -61,7 +65,7 @@ def normalize_url(value, kind="openai_compatible"):
         raise _api.ConnectorError("INVALID_SERVER_URL") from exc
 
 
-def _pairs(items):
+def _pairs(items: list[tuple[str, object]]) -> Record:
     from ezllmrouter_server import local_connectors as _api
 
     try:
@@ -70,25 +74,27 @@ def _pairs(items):
         raise _api.ConnectorError("INVALID_SERVER_RESPONSE", 502) from exc
 
 
-def _reject_constant(_value):
+def _reject_constant(_value: str) -> NoReturn:
     from ezllmrouter_server import local_connectors as _api
 
     raise _api.ConnectorError("INVALID_SERVER_RESPONSE", 502)
 
 
-def _read_json(base_url, path, api_key, *, timeout=3):
+def _read_json(base_url: str, path: str, api_key: str, *, timeout: float = 3) -> object:
     """GET one fixed inventory path, with pinned local DNS and a bounded body."""
     from ezllmrouter_server import local_connectors as _api
 
     if path not in _api.ROUTES:
         raise _api.ConnectorError("INVALID_DISCOVERY_PATH")
     url = _api.urlsplit(_api.normalize_url(base_url))
-    host, port = url.hostname, url.port or (443 if url.scheme == "https" else 80)
+    host, port = cast(str, url.hostname), url.port or (443 if url.scheme == "https" else 80)
     deadline = _api.time.monotonic() + timeout
     raw = stream = None
     try:
         addresses = _api.socket.getaddrinfo(host, port, type=_api.socket.SOCK_STREAM)
-        if not addresses or any(not _api.allowed_address(item[4][0]) for item in addresses):
+        if not addresses or any(
+            not _api.allowed_address(cast(str, item[4][0])) for item in addresses
+        ):
             raise _api.ConnectorError("LOCAL_ADDRESS_REQUIRED")
         addresses = sorted(addresses, key=lambda item: item[0] != _api.socket.AF_INET)
         last_error = None
@@ -126,27 +132,7 @@ def _read_json(base_url, path, api_key, *, timeout=3):
         stream.sendall((request + "\r\n").encode("ascii"))
         response = _api.http.client.HTTPResponse(stream)
         response.begin()
-        if 300 <= response.status <= 399:
-            raise _api.ConnectorError("REDIRECT_NOT_ALLOWED", 502)
-        if response.status in (401, 403):
-            raise _api.ConnectorError("SERVER_AUTHENTICATION_REQUIRED", 502)
-        if response.status == 404:
-            raise _api.ConnectorError("DISCOVERY_ENDPOINT_NOT_FOUND", 502)
-        if response.status == 429:
-            raise _api.ConnectorError("SERVER_RATE_LIMITED", 502)
-        if response.status != 200:
-            raise _api.ConnectorError("SERVER_UNAVAILABLE", 502)
-        content_type = response.getheader("Content-Type", "").split(";", 1)[0].strip().lower()
-        if not (
-            content_type == "application/json"
-            or content_type.startswith("application/")
-            and content_type.endswith("+json")
-        ):
-            raise _api.ConnectorError("INVALID_SERVER_RESPONSE", 502)
-        if response.getheader("Content-Encoding", "identity").lower() != "identity":
-            raise _api.ConnectorError("COMPRESSED_RESPONSE_NOT_SUPPORTED", 502)
-        if response.length is not None and response.length > _api.MAX_RESPONSE:
-            raise _api.ConnectorError("SERVER_RESPONSE_TOO_LARGE", 502)
+        _validate_inventory_response(response)
         data = bytearray()
         while True:
             remaining = deadline - _api.time.monotonic()
@@ -181,3 +167,29 @@ def _read_json(base_url, path, api_key, *, timeout=3):
             stream.close()
         if raw is not None and raw is not stream:
             raw.close()
+
+
+def _validate_inventory_response(response: http.client.HTTPResponse) -> None:
+    from ezllmrouter_server import local_connectors as _api
+
+    if 300 <= response.status <= 399:
+        raise _api.ConnectorError("REDIRECT_NOT_ALLOWED", 502)
+    if response.status in (401, 403):
+        raise _api.ConnectorError("SERVER_AUTHENTICATION_REQUIRED", 502)
+    if response.status == 404:
+        raise _api.ConnectorError("DISCOVERY_ENDPOINT_NOT_FOUND", 502)
+    if response.status == 429:
+        raise _api.ConnectorError("SERVER_RATE_LIMITED", 502)
+    if response.status != 200:
+        raise _api.ConnectorError("SERVER_UNAVAILABLE", 502)
+    content_type = response.getheader("Content-Type", "").split(";", 1)[0].strip().lower()
+    if not (
+        content_type == "application/json"
+        or content_type.startswith("application/")
+        and content_type.endswith("+json")
+    ):
+        raise _api.ConnectorError("INVALID_SERVER_RESPONSE", 502)
+    if response.getheader("Content-Encoding", "identity").lower() != "identity":
+        raise _api.ConnectorError("COMPRESSED_RESPONSE_NOT_SUPPORTED", 502)
+    if response.length is not None and response.length > _api.MAX_RESPONSE:
+        raise _api.ConnectorError("SERVER_RESPONSE_TOO_LARGE", 502)

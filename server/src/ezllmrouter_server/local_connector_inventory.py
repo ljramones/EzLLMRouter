@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+from .records import Record
 
-def _text(value, secret, *, required=False, limit=240):
+if TYPE_CHECKING:
+    from .local_connectors import InventoryReader
+
+
+def _text(value: object, secret: str, *, required: bool = False, limit: int = 240) -> str | None:
     from ezllmrouter_server import local_connectors as _api
 
     if value is None and not required:
@@ -26,13 +32,15 @@ def _text(value, secret, *, required=False, limit=240):
     return value
 
 
-def _integer(value):
+def _integer(value: object) -> int | None:
     from ezllmrouter_server import local_connectors as _api
 
     return value if type(value) is int and 0 <= value <= _api.MAX_SAFE_INTEGER else None
 
 
-def discover(kind, base_url, api_key="", *, read=None):
+def discover(
+    kind: str, base_url: str, api_key: str = "", *, read: InventoryReader | None = None
+) -> Record:
     from ezllmrouter_server import local_connectors as _api
 
     read = read or _api._read_json
@@ -44,12 +52,12 @@ def discover(kind, base_url, api_key="", *, read=None):
     )
     if type(rows) is not list or any(type(row) is not dict for row in rows):
         raise _api.ConnectorError("INVALID_SERVER_RESPONSE", 502)
-    result = {
+    result: Record = {
         "state": "observed",
         "models": [],
         "checked_at": _api.timestamp(),
         "complete": len(rows) <= _api.MAX_MODELS
-        and not bool(value.get("has_more") or value.get("next_page")),
+        and not bool(cast(Record, value).get("has_more") or cast(Record, value).get("next_page")),
         "server_version": None,
         "loaded_inventory_available": False,
         "warnings": [],
@@ -65,7 +73,7 @@ def discover(kind, base_url, api_key="", *, read=None):
             raise _api.ConnectorError("DUPLICATE_MODEL_ID", 502)
         seen.add(model_id)
         details = row.get("details") if type(row.get("details")) is dict else {}
-        model = {"id": model_id, "loaded": None}
+        model: Record = {"id": model_id, "loaded": None}
         if spec["api"] == "ollama":
             model.update(
                 size_bytes=_api._integer(row.get("size")),

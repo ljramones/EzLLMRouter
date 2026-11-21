@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
+from collections.abc import Callable, Iterable
+from .database import Row
+
+if TYPE_CHECKING:
+    from .registry import Registry
 from .database import Database
 from .records import Record
 
@@ -51,23 +56,23 @@ USERNAME = re.compile(r"[a-z0-9][a-z0-9_.-]{2,63}\Z")
 
 
 class UserError(RequestError):
-    def __init__(self, code, status=400):
+    def __init__(self, code: str, status: int = 400) -> None:
         super().__init__(code, status)
 
 
-def username(value):
+def username(value: object) -> str:
     if type(value) is not str or not USERNAME.fullmatch(value.strip().lower()):
         raise UserError("INVALID_USERNAME")
     return value.strip().lower()
 
 
-def validate_password(value):
+def validate_password(value: object) -> str:
     if type(value) is not str or not 12 <= len(value) <= 256:
         raise UserError("PASSWORD_LENGTH_12_TO_256")
     return value
 
 
-def password_hash(value):
+def password_hash(value: object) -> str:
     salt = secrets.token_bytes(16)
     with PASSWORD_HASH_SLOTS:
         digest = hashlib.scrypt(
@@ -82,7 +87,7 @@ def password_hash(value):
     return "scrypt$" + base64.b64encode(salt).decode() + "$" + base64.b64encode(digest).decode()
 
 
-def password_matches(value, encoded):
+def password_matches(value: object, encoded: str) -> bool:
     if type(value) is not str or len(value) > 256:
         return False
     try:
@@ -107,15 +112,15 @@ def password_matches(value, encoded):
 class LoginThrottle:
     """Bound peer/account guesses without letting one peer lock out another."""
 
-    def __init__(self, clock=time.monotonic):
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self.clock, self.lock = clock, threading.Lock()
-        self.attempts = defaultdict(deque)
-        self.unknown_attempts = defaultdict(deque)
-        self.pending = {}
-        self._unknown_pending = set()
+        self.attempts: defaultdict[str, deque[float]] = defaultdict(deque)
+        self.unknown_attempts: defaultdict[str, deque[float]] = defaultdict(deque)
+        self.pending: dict[object, str] = {}
+        self._unknown_pending: set[object] = set()
         self._key = secrets.token_bytes(32)
 
-    def begin(self, peer, subject=None, *, known=True):
+    def begin(self, peer: str, subject: str | None = None, *, known: bool = True) -> object | None:
         identity = (
             ("peer\0" + peer + ("\0account\0" + subject if subject is not None else "\0credential"))
             if known
@@ -166,7 +171,7 @@ class LoginThrottle:
                 self._unknown_pending.add(ticket)
             return ticket
 
-    def finish(self, ticket, *, failed=False, success=False):
+    def finish(self, ticket: object, *, failed: bool = False, success: bool = False) -> None:
         with self.lock:
             key = self.pending.pop(ticket)
             bucket = self.unknown_attempts if ticket in self._unknown_pending else self.attempts
@@ -178,7 +183,13 @@ class LoginThrottle:
 
 
 class UserManager:
-    def __init__(self, registry, *, bootstrap_password_file=None, bootstrap_password=None):
+    def __init__(
+        self,
+        registry: Registry,
+        *,
+        bootstrap_password_file: str | Path | None = None,
+        bootstrap_password: str | None = None,
+    ) -> None:
         self.registry, self.store = registry, registry.store
         self.password_throttle = LoginThrottle()
         self.bootstrap_password_file = (
@@ -190,13 +201,13 @@ class UserManager:
         self._bootstrap(bootstrap_password)
         registry.users = self
 
-    def _bootstrap(self, bootstrap_password=None):
-        def action():
+    def _bootstrap(self, bootstrap_password: str | None = None) -> None:
+        def action() -> None:
             db = self.store.database
             if db.execute(_queries.ACTION_SELECT_CONSOLE_USERS).fetchone():
                 return
             principals = [
-                json.loads(row[0])
+                json.loads(cast(str, row[0]))
                 for row in db.execute(
                     _queries.ACTION_SELECT_REGISTRY_PRINCIPALS, (self.registry.identity.owner_id,)
                 )
@@ -232,14 +243,14 @@ class UserManager:
         with self.registry.send_authority.gate:
             self.store.database.transaction(action)
 
-    def _load(self, db, principal_id):
+    def _load(self, db: Database, principal_id: str) -> tuple[Row, Record]:
         row = db.execute(_queries.LOAD_SELECT_CONSOLE_USERS, (principal_id,)).fetchone()
         if not row:
             raise UserError("USER_NOT_FOUND", 404)
-        return row, json.loads(row[6])
+        return row, cast(Record, json.loads(cast(str, row[6])))
 
     @staticmethod
-    def _public(row, principal):
+    def _public(row: Row, principal: Record) -> Record:
         return {
             **{
                 key: principal[key]
@@ -260,7 +271,7 @@ class UserManager:
             "permissions": list(ROLE_PERMISSIONS.get(principal["role"], ())),
         }
 
-    def context(self, principal_id):
+    def context(self, principal_id: str) -> Record | None:
         with self.store.database.read():
             try:
                 row, principal = self._load(self.store.database, principal_id)
@@ -270,7 +281,7 @@ class UserManager:
                 return None
             return {**self._public(row, principal), "auth_version": row[3]}
 
-    def authenticate(self, name, password):
+    def authenticate(self, name: object, password: object) -> Record:
         try:
             name = username(name)
         except UserError:
@@ -279,13 +290,13 @@ class UserManager:
             row = self.store.database.execute(
                 _queries.AUTHENTICATE_SELECT_CONSOLE_USERS, (name,)
             ).fetchone()
-        matched = password_matches(password, row[1] if row else self._dummy_hash)
-        context = self.context(row[0]) if row and matched else None
-        if not context or context["auth_version"] != row[2]:
+        matched = password_matches(password, cast(str, row[1]) if row else self._dummy_hash)
+        context = self.context(cast(str, row[0])) if row and matched else None
+        if not context or context["auth_version"] != cast(Row, row)[2]:
             raise UserError("AUTH_FAILED", 401)
         return context
 
-    def has_username(self, name):
+    def has_username(self, name: str) -> bool:
         with self.store.database.read():
             return (
                 self.store.database.execute(
@@ -294,20 +305,21 @@ class UserManager:
                 is not None
             )
 
-    def _admin(self, db, actor):
+    def _admin(self, db: Database, actor: str) -> None:
         if not authority.authorized(db, actor):
             raise UserError("ADMIN_REQUIRED", 403)
 
-    def get(self, actor, principal_id):
+    def get(self, actor: str, principal_id: str) -> Record:
         with self.store.database.read():
             self._admin(self.store.database, actor)
             return self._public(*self._load(self.store.database, principal_id))
 
-    def list(self, actor):
+    def list(self, actor: str) -> Record:
         with self.store.database.read():
             self._admin(self.store.database, actor)
             ids = [
-                row[0] for row in self.store.database.execute(_queries.LIST_SELECT_CONSOLE_USERS)
+                cast(str, row[0])
+                for row in self.store.database.execute(_queries.LIST_SELECT_CONSOLE_USERS)
             ]
             users = [self._load(self.store.database, principal_id) for principal_id in ids]
             return {
@@ -342,7 +354,9 @@ class UserManager:
         if count <= 1:
             raise UserError("LAST_ACTIVE_ADMIN", 409)
 
-    def _save(self, db, actor, action, principal, old_revision):
+    def _save(
+        self, db: Database, actor: str, action: str, principal: Record, old_revision: int
+    ) -> int:
         principal["revision"] = old_revision + 1
         db.execute(
             _queries.SAVE_INSERT_REGISTRY_PRINCIPALS, (principal["principal_id"], encode(principal))
@@ -358,10 +372,17 @@ class UserManager:
         )
         return revision
 
-    def _write(self, actor, action, change, *, admin=True):
+    def _write(
+        self,
+        actor: str,
+        action: str,
+        change: Callable[[Database], tuple[Record, int]],
+        *,
+        admin: bool = True,
+    ) -> Record:
         with self.registry.send_authority.gate:
 
-            def transaction():
+            def transaction() -> tuple[Record, int]:
                 db = self.store.database
                 if admin:
                     self._admin(db, actor)
@@ -378,12 +399,12 @@ class UserManager:
             return result
 
     @staticmethod
-    def _fields(data, required):
+    def _fields(data: Record, required: Iterable[str]) -> None:
         if type(data) is not dict or set(data) != set(required):
             raise UserError("INVALID_USER_CHANGE")
 
     @staticmethod
-    def _profile(data):
+    def _profile(data: Record) -> tuple[str, str]:
         name = username(data["username"])
         display = data["display_name"]
         if type(display) is not str or not display.strip() or len(display) > 160:
@@ -397,7 +418,7 @@ class UserManager:
         return name, display.strip()
 
     @staticmethod
-    def _expected(data, principal):
+    def _expected(data: Record, principal: Record) -> None:
         if (
             type(data["expected_revision"]) is not int
             or data["expected_revision"] != principal["revision"]
@@ -406,12 +427,12 @@ class UserManager:
         if principal["status"] == "revoked":
             raise UserError("USER_DELETED", 409)
 
-    def create(self, actor, data):
+    def create(self, actor: str, data: Record) -> Record:
         self._fields(data, ("username", "display_name", "role", "status", "password"))
         name, display = self._profile(data)
         hashed = password_hash(data["password"])
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, int]:
             principal = {
                 "principal_id": "user." + uuid.uuid4().hex,
                 "display_name": display,
@@ -437,11 +458,11 @@ class UserManager:
 
         return self._write(actor, "create_console_user", change)
 
-    def update(self, actor, principal_id, data):
+    def update(self, actor: str, principal_id: str, data: Record) -> Record:
         self._fields(data, ("username", "display_name", "role", "status", "expected_revision"))
         name, display = self._profile(data)
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, int]:
             row, principal = self._load(db, principal_id)
             self._expected(data, principal)
             self.validate_principal_change(db, principal, data["role"], data["status"])
@@ -456,14 +477,14 @@ class UserManager:
                 _queries.CHANGE_UPDATE_CONSOLE_USERS,
                 (name, int(invalidate), timestamp(), principal_id),
             )
-            return principal, revision
+            return principal, cast(int, revision)
 
         return self._write(actor, "update_console_user", change)
 
-    def delete(self, actor, principal_id, data):
+    def delete(self, actor: str, principal_id: str, data: Record) -> Record:
         self._fields(data, ("expected_revision",))
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, int]:
             _, principal = self._load(db, principal_id)
             self._expected(data, principal)
             self.validate_principal_change(db, principal, principal["role"], "revoked")
@@ -474,22 +495,22 @@ class UserManager:
                 (self._dummy_hash, timestamp(), principal_id),
             )
             db.execute(_queries.CHANGE_DELETE_REGISTRY_CREDENTIALS, (principal_id,))
-            return principal, revision
+            return principal, cast(int, revision)
 
         return self._write(actor, "delete_console_user", change)
 
-    def reset_password(self, actor, principal_id, data):
+    def reset_password(self, actor: str, principal_id: str, data: Record) -> Record:
         self._fields(data, ("password", "expected_revision"))
         with self.store.database.read():
             self._admin(self.store.database, actor)
             row, principal = self._load(self.store.database, principal_id)
             self._expected(data, principal)
-            prior_hash, auth_version = row[1], row[3]
+            prior_hash, auth_version = cast(str, row[1]), row[3]
         if password_matches(data["password"], prior_hash):
             raise UserError("PASSWORD_MUST_DIFFER")
         hashed = password_hash(data["password"])
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, int]:
             row, principal = self._load(db, principal_id)
             self._expected(data, principal)
             if row[3] != auth_version:
@@ -497,11 +518,11 @@ class UserManager:
             db.execute(
                 _queries.RESET_PASSWORD_REQUIRING_CHANGE, (hashed, timestamp(), principal_id)
             )
-            return principal, principal["revision"]
+            return principal, cast(int, principal["revision"])
 
         return self._write(actor, "reset_console_password", change)
 
-    def change_password(self, principal_id, data, *, peer="local"):
+    def change_password(self, principal_id: str, data: Record, *, peer: str = "local") -> Record:
         self._fields(data, ("current_password", "new_password"))
         validate_password(data["new_password"])
         context = self.context(principal_id)
@@ -525,11 +546,11 @@ class UserManager:
             raise UserError("PASSWORD_MUST_DIFFER")
         hashed = password_hash(data["new_password"])
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, int]:
             row, principal = self._load(db, principal_id)
             if principal["status"] != "active" or row[3] != context["auth_version"]:
                 raise UserError("AUTH_REQUIRED", 401)
             db.execute(_queries.CHANGE_PASSWORD_COMPLETED, (hashed, timestamp(), principal_id))
-            return principal, principal["revision"]
+            return principal, cast(int, principal["revision"])
 
         return self._write(principal_id, "change_console_password", change, admin=False)

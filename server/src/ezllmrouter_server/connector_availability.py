@@ -1,3 +1,8 @@
+from __future__ import annotations
+from collections.abc import Callable
+from concurrent.futures import Future
+from .records import Record
+
 """Bounded, cached API availability observations; no persistent permission writes."""
 
 from .observability import log_failure
@@ -11,23 +16,24 @@ class AvailabilityMonitor:
     def __init__(
         self,
         *,
-        clock=time.monotonic,
-        refresh_seconds=10,
-        stale_seconds=45,
-        max_workers=4,
-        max_pending=64,
-    ):
+        clock: Callable[[], float] = time.monotonic,
+        refresh_seconds: float = 10,
+        stale_seconds: float = 45,
+        max_workers: int = 4,
+        max_pending: int = 64,
+    ) -> None:
         self.clock, self.refresh_seconds, self.stale_seconds = clock, refresh_seconds, stale_seconds
         self.max_pending = max_pending
         self._lock = threading.RLock()
-        self._entries, self._futures = {}, set()
+        self._entries: dict[str, Record] = {}
+        self._futures: set[Future[None]] = set()
         self._closed = False
         self._executor = ThreadPoolExecutor(
             max_workers=max_workers, thread_name_prefix="ezllmrouter-availability"
         )
 
     @staticmethod
-    def _unknown(configuration, reason="NOT_CHECKED"):
+    def _unknown(configuration: str, reason: str = "NOT_CHECKED") -> Record:
         return {
             "state": "unknown",
             "reason": reason,
@@ -38,7 +44,7 @@ class AvailabilityMonitor:
             "configuration": configuration,
         }
 
-    def get(self, identifier, configuration):
+    def get(self, identifier: str, configuration: str) -> Record:
         with self._lock:
             entry = self._entries.get(identifier)
             if not entry or entry["configuration"] != configuration:
@@ -53,7 +59,14 @@ class AvailabilityMonitor:
                 result.update(state="checking", reason="CHECK_IN_PROGRESS")
             return result
 
-    def request(self, identifier, configuration, check, *, force=False):
+    def request(
+        self,
+        identifier: str,
+        configuration: str,
+        check: Callable[[], Record],
+        *,
+        force: bool = False,
+    ) -> Record:
         with self._lock:
             if self._closed:
                 return self._unknown(configuration, "CHECK_STOPPED")
@@ -86,7 +99,7 @@ class AvailabilityMonitor:
             future.add_done_callback(self._finished)
             return self.get(identifier, configuration)
 
-    def _run(self, identifier, entry, check):
+    def _run(self, identifier: str, entry: Record, check: Callable[[], Record]) -> None:
         started = time.monotonic()
         try:
             observation = check()
@@ -114,11 +127,11 @@ class AvailabilityMonitor:
             if not self._closed and self._entries.get(identifier) is entry:
                 entry.update(result=result, finished=self.clock())
 
-    def _finished(self, future):
+    def _finished(self, future: Future[None]) -> None:
         with self._lock:
             self._futures.discard(future)
 
-    def close(self):
+    def close(self) -> None:
         with self._lock:
             self._closed = True
         self._executor.shutdown(wait=True, cancel_futures=True)

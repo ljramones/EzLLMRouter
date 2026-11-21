@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from .records import Record
+
 import hashlib
 import json
 from pathlib import Path
@@ -18,14 +21,14 @@ from .secret_box import (
 )
 
 
-def credential_context(connection_id, version):
+def credential_context(connection_id: str, version: int) -> bytes:
     return json.dumps(
         {"connection_id": connection_id, "version": version}, sort_keys=True, separators=(",", ":")
     ).encode()
 
 
 class ProviderVault:
-    def __init__(self, root, *, require_existing=False):
+    def __init__(self, root: str | Path, *, require_existing: bool = False) -> None:
         self.root = Path(root)
         private_directory(self.root)
         self.key_path = self.root / "provider.keys.json"
@@ -40,21 +43,23 @@ class ProviderVault:
         )
         self._gate = threading.RLock()
 
-    def _path(self, connection_id, version):
+    def _path(self, connection_id: str, version: int) -> Path:
         name = hashlib.sha256(connection_id.encode()).hexdigest() + f".{version}.sealed"
         return self.root / name
 
-    def request_digest(self, value):
+    def request_digest(self, value: bytes) -> str:
         return self.box.request_digest(value)
 
     @staticmethod
-    def _read(path):
+    def _read(path: Path) -> Record:
         try:
             return decode_envelope(read_private(path))
         except (OSError, ValueError, TypeError) as exc:
             raise SecretBoxError("PROVIDER_CREDENTIAL_UNAVAILABLE") from exc
 
-    def seal(self, connection_id, version, secret, *, committed_version=None):
+    def seal(
+        self, connection_id: str, version: int, secret: str, *, committed_version: int | None = None
+    ) -> Path:
         validate_secret(secret)
         if committed_version is not None and (
             type(committed_version) is not int
@@ -77,21 +82,21 @@ class ProviderVault:
             )
         return path
 
-    def resolve(self, connection_id, version):
+    def resolve(self, connection_id: str, version: int) -> str:
         with self._gate:
             envelope = self._read(self._path(connection_id, version))
             return self.box.open(envelope, credential_context(connection_id, version))
 
-    def remove(self, connection_id, version):
+    def remove(self, connection_id: str, version: int) -> None:
         if version:
             with self._gate:
                 self._path(connection_id, version).unlink(missing_ok=True)
 
-    def key_references(self):
+    def key_references(self) -> set[str]:
         with self._gate:
             return {self._read(path)["key_id"] for path in self.root.glob("*.sealed")}
 
-    def reencrypt_secrets(self, connection_ids, *, verify_only=False):
+    def reencrypt_secrets(self, connection_ids: Iterable[str], *, verify_only: bool = False) -> int:
         """Atomically replace each file; a partial run can resume with old keys retained."""
         names = {hashlib.sha256(value.encode()).hexdigest(): value for value in connection_ids}
         changed = 0
@@ -112,7 +117,7 @@ class ProviderVault:
                     changed += 1
         return changed
 
-    def rotate_encryption_key(self, connection_ids):
+    def rotate_encryption_key(self, connection_ids: Iterable[str]) -> Record:
         with self._gate:
             identifier = self.box.rotate()
             return {"key_id": identifier, "rewritten": self.reencrypt_secrets(connection_ids)}

@@ -2,6 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Protocol, cast
+from .database import Database
+from .records import Record
+from .store import Store
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
+
+class InventoryReader(Protocol):
+    def __call__(self, base_url: str, path: str, api_key: str, *, timeout: float = 3) -> object: ...
+
+
+class Discoverer(Protocol):
+    def __call__(self, kind: str, base_url: str, api_key: str = "") -> Record: ...
+
+
 import hashlib as hashlib
 import ipaddress as ipaddress
 import json as json
@@ -22,10 +40,11 @@ from .repositories import local_connectors as _connector_queries
 from .secret_box import SecretBox as SecretBox, validate_secret as validate_secret
 from .store import encode as encode
 
-import http.client
-import http as http
+import http.client as _http_client
+import http as _http_root
 
-http = http
+_http_client = _http_client
+http = _http_root
 timestamp = _connector_timestamp
 _queries = _connector_queries
 
@@ -67,7 +86,7 @@ COMMON_SERVERS = (
 
 
 class ConnectorError(RequestError):
-    def __init__(self, code, status=400):
+    def __init__(self, code: str, status: int = 400) -> None:
         super().__init__(code, status)
 
 
@@ -99,24 +118,24 @@ _integer = _local_connector_inventory._integer
 discover = _local_connector_inventory.discover
 
 
-def connector_key_path(database):
+def connector_key_path(database: str | Path) -> Path:
     if str(database) == ":memory:":
         raise ValueError("an explicit connector key path is required for an in-memory store")
     return Path(str(database) + ".secrets") / "local-connectors.keys.json"
 
 
-def connector_context(connector_id):
+def connector_context(connector_id: str) -> bytes:
     return encode({"connector_id": connector_id}).encode()
 
 
-def reencrypt_connectors(store, box, *, verify_only=False):
-    def rewrite():
+def reencrypt_connectors(store: Store, box: SecretBox, *, verify_only: bool = False) -> int:
+    def rewrite() -> int:
         changed = 0
         for identifier, raw in store.database.execute(
             _queries.REWRITE_SELECT_LOCAL_CONNECTORS
         ).fetchall():
-            envelope = json.loads(raw)
-            context = connector_context(identifier)
+            envelope = json.loads(cast(str, raw))
+            context = connector_context(cast(str, identifier))
             value = box.open(envelope, context)
             if not verify_only and envelope["key_id"] != box.active_id:
                 store.database.execute(
@@ -130,32 +149,39 @@ def reencrypt_connectors(store, box, *, verify_only=False):
 
 
 class LocalConnectors:
-    def __init__(self, registry, *, discover_fn=None, availability_read=None, key_path=None):
+    def __init__(
+        self,
+        registry: Registry,
+        *,
+        discover_fn: Discoverer | None = None,
+        availability_read: InventoryReader | None = None,
+        key_path: str | Path | None = None,
+    ) -> None:
         self.registry, self.store = registry, registry.store
         self.discover_fn = discover_fn or discover
         self.availability_read = availability_read
         self.monitor = AvailabilityMonitor()
         with self.store.database.read():
             rows = self.store.database.execute(_queries.INIT_SELECT_LOCAL_CONNECTORS).fetchall()
-        known = {json.loads(row[0])["key_id"] for row in rows}
+        known = {json.loads(cast(str, row[0]))["key_id"] for row in rows}
         self.key_path = Path(key_path) if key_path else connector_key_path(self.store.path)
         self.box = SecretBox(self.key_path, "local-connector-credentials", required_ids=known)
 
-    def _authorize(self, db, actor, *, write=False):
+    def _authorize(self, db: Database, actor: str, *, write: bool = False) -> None:
         roles = ("registry_admin",) if write else ("registry_admin", "read_only_operator")
         if not authority.authorized(db, actor, roles):
             raise ConnectorError("ADMIN_REQUIRED" if write else "OPERATOR_REQUIRED", 403)
 
-    def _load(self, db, connector_id):
+    def _load(self, db: Database, connector_id: str) -> tuple[Record, str | None]:
         row = db.execute(_queries.LOAD_SELECT_LOCAL_CONNECTORS, (connector_id,)).fetchone()
         if not row:
             raise ConnectorError("CONNECTOR_NOT_FOUND", 404)
-        record = json.loads(row[0])
+        record = json.loads(cast(str, row[0]))
         if record.get("deleted"):
             raise ConnectorError("CONNECTOR_NOT_FOUND", 404)
-        return record, row[1]
+        return cast(Record, record), cast(str | None, row[1])
 
-    def _seal(self, connector_id, value):
+    def _seal(self, connector_id: str, value: str) -> str | None:
         if value == "":
             return None
         try:
@@ -168,7 +194,7 @@ class LocalConnectors:
             log_failure("local_connectors.LocalConnectors._seal.failed")
             raise ConnectorError("CREDENTIAL_STORAGE_UNAVAILABLE", 503) from exc
 
-    def _resolve(self, connector_id, sealed):
+    def _resolve(self, connector_id: str, sealed: str | None) -> str:
         if not sealed:
             return ""
         try:
@@ -177,22 +203,22 @@ class LocalConnectors:
             log_failure("local_connectors.LocalConnectors._resolve.failed")
             raise ConnectorError("CREDENTIAL_UNAVAILABLE", 503) from exc
 
-    def reencrypt_secrets(self):
+    def reencrypt_secrets(self) -> int:
         return reencrypt_connectors(self.store, self.box)
 
-    def rotate_encryption_key(self):
+    def rotate_encryption_key(self) -> Record:
         identifier = self.box.rotate()
         return {"key_id": identifier, "rewritten": self.reencrypt_secrets()}
 
     @staticmethod
-    def _configuration(record):
+    def _configuration(record: Record) -> str:
         return hashlib.sha256(
             encode(
                 {key: record[key] for key in ("kind", "base_url", "credential_version")}
             ).encode()
         ).hexdigest()
 
-    def _public(self, record):
+    def _public(self, record: Record) -> Record:
         discovery = record["discovery"]
         current = discovery.get("configuration") == self._configuration(record)
         available = {model["id"] for model in discovery.get("models", [])}
@@ -221,7 +247,7 @@ class LocalConnectors:
         self.monitor.close()
 
     @staticmethod
-    def _availability_error(exc):
+    def _availability_error(exc: ConnectorError) -> Record:
         if exc.code in (
             "CONNECTOR_CHANGED",
             "CONNECTOR_NOT_FOUND",
@@ -246,7 +272,7 @@ class LocalConnectors:
         )
         return {"state": "attention", "reason": exc.code, "reachable": True if reached else None}
 
-    def _probe_availability(self, record, key):
+    def _probe_availability(self, record: Record, key: str) -> Record:
         read = self.availability_read or _read_json
         path = "/api/version" if record["kind"] == "ollama" else "/v1/models"
         try:
@@ -276,7 +302,7 @@ class LocalConnectors:
         except ConnectorError as exc:
             return self._availability_error(exc)
 
-    def _saved_check(self, actor, record):
+    def _saved_check(self, actor: str, record: Record) -> Record:
         try:
             with self.store.database.read():
                 self._authorize(self.store.database, actor)
@@ -287,7 +313,7 @@ class LocalConnectors:
         except ConnectorError as exc:
             return self._availability_error(exc)
 
-    def availability(self, actor, body=None):
+    def availability(self, actor: str, body: Record | None = None) -> Record:
         """Read cached status, or queue bounded checks without changing records."""
         with self.store.database.read():
             self._authorize(self.store.database, actor)
@@ -310,7 +336,11 @@ class LocalConnectors:
             rows = self.store.database.execute(
                 _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
             ).fetchall()
-            records = [record for row in rows if not (record := json.loads(row[0])).get("deleted")]
+            records = [
+                record
+                for row in rows
+                if not (record := json.loads(cast(str, row[0]))).get("deleted")
+            ]
             if ids is not None:
                 found = {record["connector_id"] for record in records}
                 if not set(ids) <= found:
@@ -328,17 +358,21 @@ class LocalConnectors:
             identifier, configuration = record["connector_id"], self._configuration(record)
             status = self.monitor.get(identifier, configuration)
             if body is not None:
+
+                def check(record: Record = record) -> Record:
+                    return self._saved_check(actor, record)
+
                 status = self.monitor.request(
                     identifier,
                     configuration,
-                    lambda record=record: self._saved_check(actor, record),
+                    check,
                     force=body.get("force", False),
                 )
             items.append({"connector_id": identifier, "availability": status})
         return {"items": items, "refresh_seconds": 15}
 
     @staticmethod
-    def _endpoint(record):
+    def _endpoint(record: Record) -> tuple[str, str, str | None, int]:
         url = urlsplit(record["base_url"])
         host = "localhost" if url.hostname in ("localhost", "127.0.0.1", "::1") else url.hostname
         return (
@@ -348,7 +382,7 @@ class LocalConnectors:
             url.port or (443 if url.scheme == "https" else 80),
         )
 
-    def nearby(self, actor, body=None):
+    def nearby(self, actor: str, body: Record | None = None) -> Record:
         """Check a fixed set of loopback APIs only after an administrator asks."""
         with self.store.database.read():
             self._authorize(self.store.database, actor, write=True)
@@ -357,7 +391,7 @@ class LocalConnectors:
                 if type(body.get("force", False)) is not bool:
                     raise ConnectorError("INVALID_AVAILABILITY_CHECK")
             rows = [
-                json.loads(row[0])
+                json.loads(cast(str, row[0]))
                 for row in self.store.database.execute(
                     _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
                 )
@@ -369,7 +403,7 @@ class LocalConnectors:
             }
         items = []
         for kind, port, name, hint in COMMON_SERVERS:
-            record = {
+            record: Record = {
                 "connector_id": "nearby." + str(port),
                 "kind": kind,
                 "base_url": "http://localhost:" + str(port),
@@ -379,7 +413,7 @@ class LocalConnectors:
             status = self.monitor.get(identifier, configuration)
             if body is not None:
 
-                def check(record=record):
+                def check(record: Record = record) -> Record:
                     try:
                         with self.store.database.read():
                             self._authorize(self.store.database, actor, write=True)
@@ -403,11 +437,11 @@ class LocalConnectors:
             )
         return {"items": items}
 
-    def list(self, actor):
+    def list(self, actor: str) -> Record:
         with self.store.database.read():
             self._authorize(self.store.database, actor)
             records = [
-                json.loads(row[0])
+                json.loads(cast(str, row[0]))
                 for row in self.store.database.execute(
                     _queries.AVAILABILITY_SELECT_LOCAL_CONNECTORS
                 )
@@ -417,13 +451,13 @@ class LocalConnectors:
                 "kinds": KINDS,
             }
 
-    def get(self, actor, connector_id):
+    def get(self, actor: str, connector_id: str) -> Record:
         with self.store.database.read():
             self._authorize(self.store.database, actor)
             return self._public(self._load(self.store.database, connector_id)[0])
 
     @staticmethod
-    def _fields(body, required, optional=()):
+    def _fields(body: Record, required: Iterable[str], optional: Iterable[str] = ()) -> None:
         if (
             type(body) is not dict
             or set(body) - set(required) - set(optional)
@@ -432,7 +466,7 @@ class LocalConnectors:
             raise ConnectorError("INVALID_CONNECTOR_CHANGE")
 
     @staticmethod
-    def _profile(body):
+    def _profile(body: Record) -> tuple[str, str, str]:
         name, kind = body["display_name"], body["kind"]
         if (
             type(name) is not str
@@ -450,17 +484,23 @@ class LocalConnectors:
         return name.strip(), kind, normalize_url(body["base_url"], kind)
 
     @staticmethod
-    def _expected(record, body):
+    def _expected(record: Record, body: Record) -> None:
         if (
             type(body["expected_revision"]) is not int
             or body["expected_revision"] != record["revision"]
         ):
             raise ConnectorError("CONNECTOR_CHANGED", 409)
 
-    def _write(self, actor, action, connector_id, change):
+    def _write(
+        self,
+        actor: str,
+        action: str,
+        connector_id: str,
+        change: Callable[[Database], tuple[Record, str | None]],
+    ) -> Record:
         with self.registry.send_authority.gate:
 
-            def transaction():
+            def transaction() -> tuple[Record, int]:
                 db = self.store.database
                 self._authorize(db, actor, write=True)
                 record, secret = change(db)
@@ -485,12 +525,12 @@ class LocalConnectors:
             self.registry.send_authority.epoch = revision
             return result
 
-    def create(self, actor, body):
+    def create(self, actor: str, body: Record) -> Record:
         self._fields(body, ("display_name", "kind", "base_url"), ("api_key",))
         name, kind, url = self._profile(body)
         connector_id = "connector.local." + uuid.uuid4().hex
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, str | None]:
             sealed = self._seal(connector_id, body.get("api_key", ""))
             return {
                 "connector_id": connector_id,
@@ -508,11 +548,11 @@ class LocalConnectors:
 
         return self._write(actor, "create_local_connector", connector_id, change)
 
-    def update(self, actor, connector_id, body):
+    def update(self, actor: str, connector_id: str, body: Record) -> Record:
         self._fields(body, ("display_name", "kind", "base_url", "expected_revision"), ("api_key",))
         name, kind, url = self._profile(body)
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, str | None]:
             record, sealed = self._load(db, connector_id)
             self._expected(record, body)
             changed = record["kind"] != kind or record["base_url"] != url or "api_key" in body
@@ -536,7 +576,7 @@ class LocalConnectors:
 
         return self._write(actor, "update_local_connector", connector_id, change)
 
-    def discover(self, actor, connector_id, body):
+    def discover(self, actor: str, connector_id: str, body: Record) -> Record:
         self._fields(body, ("expected_revision",))
         with self.store.database.read():
             self._authorize(self.store.database, actor, write=True)
@@ -556,7 +596,7 @@ class LocalConnectors:
             }
         result["configuration"] = self._configuration(record)
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, str | None]:
             current, current_secret = self._load(db, connector_id)
             self._expected(current, body)
             current["discovery"] = result
@@ -564,7 +604,7 @@ class LocalConnectors:
 
         return self._write(actor, "discover_local_models", connector_id, change)
 
-    def configure(self, actor, connector_id, body):
+    def configure(self, actor: str, connector_id: str, body: Record) -> Record:
         self._fields(body, ("expected_revision", "selected_models", "enabled"))
         models = body["selected_models"]
         if (
@@ -576,7 +616,7 @@ class LocalConnectors:
         ):
             raise ConnectorError("INVALID_MODEL_SELECTION")
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, str | None]:
             record, sealed = self._load(db, connector_id)
             self._expected(record, body)
             available = {model["id"] for model in record["discovery"].get("models", [])}
@@ -595,10 +635,10 @@ class LocalConnectors:
 
         return self._write(actor, "configure_local_models", connector_id, change)
 
-    def delete(self, actor, connector_id, body):
+    def delete(self, actor: str, connector_id: str, body: Record) -> Record:
         self._fields(body, ("expected_revision",))
 
-        def change(db):
+        def change(db: Database) -> tuple[Record, str | None]:
             record, _ = self._load(db, connector_id)
             self._expected(record, body)
             record.update(deleted=True, enabled=False, credential_present=False)

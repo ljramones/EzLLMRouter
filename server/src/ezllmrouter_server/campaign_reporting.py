@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+from .records import Record
+from .database import Row
 
-def reconcile_recorded_usage(self, actor):
+if TYPE_CHECKING:
+    from .personal_campaign import PersonalCampaign
+
+
+def reconcile_recorded_usage(self: PersonalCampaign, actor: str) -> int:
     """Owner-requested local reconciliation; never replays provider work."""
     from ezllmrouter_server import personal_campaign as _api
 
     if actor != self.registry.identity.owner_id:
         raise PermissionError("OWNER_REQUIRED")
 
-    def action():
+    def action() -> int:
         changed = 0
-        changed_campaigns = set()
+        changed_campaigns: set[str] = set()
         rows = self.store.database.execute(
             _api._queries.CAMPAIGN_ATTEMPTS_WITH_LATEST_USAGE
         ).fetchall()
@@ -21,12 +28,12 @@ def reconcile_recorded_usage(self, actor):
                 continue
             if raw_usage is None:
                 continue
-            usage = _api.json.loads(raw_usage)
+            usage = _api.json.loads(cast(str, raw_usage))
             revision = usage.get("revision")
             cost = usage.get("cost", {})
             if (
                 type(revision) is not int
-                or (prior_revision is not None and revision <= prior_revision)
+                or (prior_revision is not None and revision <= cast(int, prior_revision))
                 or cost.get("status") != "calculated"
                 or cost.get("currency") != "USD"
             ):
@@ -37,18 +44,24 @@ def reconcile_recorded_usage(self, actor):
                 continue
             if not amount.is_finite() or amount < 0:
                 continue
-            next_state = "over_bound" if amount > _api.Decimal(bound) else "settled"
+            next_state = "over_bound" if amount > _api.Decimal(cast(str, bound)) else "settled"
             self.store.database.execute(
                 _api._queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
                 (next_state, _api.money(amount), revision, attempt_id),
             )
             changed += 1
-            changed_campaigns.add(campaign_id)
+            changed_campaigns.add(cast(str, campaign_id))
             if next_state == "over_bound":
                 campaign = _api.json.loads(
-                    self.store.database.execute(
-                        _api._queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)
-                    ).fetchone()[0]
+                    cast(
+                        str,
+                        cast(
+                            Row,
+                            self.store.database.execute(
+                                _api._queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)
+                            ).fetchone(),
+                        )[0],
+                    )
                 )
                 if campaign["state"] != "closed":
                     campaign["state"] = "paused"
@@ -59,14 +72,17 @@ def reconcile_recorded_usage(self, actor):
                     )
         for campaign_id in sorted(changed_campaigns):
             self._audit(
-                self.store.database, "reconcile_recorded_usage", actor, campaign_id=campaign_id
+                self.store.database,
+                "reconcile_recorded_usage",
+                actor,
+                campaign_id=campaign_id,
             )
         return changed
 
     return self._authority_transaction(action)
 
 
-def summary(self):
+def summary(self: PersonalCampaign) -> Record:
     from ezllmrouter_server import personal_campaign as _api
 
     with self.store.database.read():
@@ -78,9 +94,10 @@ def summary(self):
             if campaign
             else []
         )
-        prior_count = self.store.database.execute(
-            _api._queries.SUMMARY_SELECT_PERSONAL_CAMPAIGNS
-        ).fetchone()[0]
+        prior_count = cast(
+            Row,
+            self.store.database.execute(_api._queries.SUMMARY_SELECT_PERSONAL_CAMPAIGNS).fetchone(),
+        )[0]
         prior_unresolved = (
             self.store.database.execute(
                 _api._queries.SUMMARY_SELECT_PRIOR_UNRESOLVED, (campaign["id"],)
@@ -92,7 +109,7 @@ def summary(self):
         return {"state": "not_configured", "effective_state": "not_configured", "attempts": []}
     incurred = sum(
         (
-            _api._exposure(bound, cost, state)
+            _api._exposure(cast(str, bound), cast(str | None, cost), cast(str, state))
             for _, _, bound, cost, state, _ in rows
             if state in ("settled", "over_bound", "acknowledged")
         ),
@@ -100,7 +117,7 @@ def summary(self):
     )
     outstanding = sum(
         (
-            _api.Decimal(bound)
+            _api.Decimal(cast(str, bound))
             for _, _, bound, _, state, _ in rows
             if state in ("reserved", "unknown")
         ),
@@ -118,7 +135,7 @@ def summary(self):
     return {
         **campaign,
         "effective_state": effective_state,
-        "previous_campaigns": max(0, prior_count - 1),
+        "previous_campaigns": max(0, cast(int, prior_count) - 1),
         "unresolved_prior_attempts": [
             {
                 "attempt_id": attempt,
@@ -126,7 +143,7 @@ def summary(self):
                 "cost_decimal": cost,
                 "state": state,
                 "campaign_id": campaign_id,
-                "campaign_revision": _api.json.loads(saved)["revision"],
+                "campaign_revision": _api.json.loads(cast(str, saved))["revision"],
             }
             for attempt, bound, cost, state, campaign_id, saved in prior_unresolved
         ],

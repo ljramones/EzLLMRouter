@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeVar, cast
+from .database import Database, Row
+from .store import Store, Record
+
+if TYPE_CHECKING:
+    from .registry import Registry
+
+_T = TypeVar("_T")
+
 import json as json
 from datetime import datetime as datetime, timezone as timezone
 from decimal import Decimal as Decimal, InvalidOperation as InvalidOperation
@@ -24,7 +34,7 @@ CENT_NANO = Decimal("0.000000001")
 from ezllmrouter_server import campaign_reporting as _campaign_reporting
 
 
-def _exposure(bound, cost, state):
+def _exposure(bound: str, cost: str | None, state: str) -> Decimal:
     if state == "released":
         return Decimal(0)
     if state == "settled":
@@ -34,19 +44,19 @@ def _exposure(bound, cost, state):
     return Decimal(bound)
 
 
-def _amount(value):
+def _amount(value: object) -> Decimal:
     if type(value) is not str or not value or len(value) > 32:
         raise ValueError("invalid allowance")
     try:
         number = Decimal(value)
     except InvalidOperation as exc:
         raise ValueError("invalid allowance") from exc
-    if not number.is_finite() or number <= 0 or number.as_tuple().exponent < -9:
+    if not number.is_finite() or number <= 0 or cast(int, number.as_tuple().exponent) < -9:
         raise ValueError("invalid allowance")
     return number
 
 
-def _time(value):
+def _time(value: object) -> str:
     if type(value) is not str or not value.endswith("Z"):
         raise ValueError("invalid expiry")
     try:
@@ -59,13 +69,13 @@ def _time(value):
 
 
 class PersonalCampaign:
-    def __init__(self, store, registry):
+    def __init__(self, store: Store, registry: Registry) -> None:
         self.store, self.registry = store, registry
 
         # A service restart loses the in-memory send position. A persisted
         # reservation may already have reached the provider, so keep its full
         # exposure and require explicit reconciliation before another send.
-        def recover():
+        def recover() -> None:
             rows = self.store.database.execute(
                 _queries.RECOVER_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS
             ).fetchall()
@@ -77,7 +87,7 @@ class PersonalCampaign:
                     _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)
                 ).fetchone()
                 if row:
-                    record = json.loads(row[0])
+                    record = json.loads(cast(str, row[0]))
                     if record["state"] != "closed":
                         record["state"] = "paused"
                         record["revision"] += 1
@@ -85,18 +95,21 @@ class PersonalCampaign:
                             _queries.ACTION_UPDATE_PERSONAL_CAMPAIGNS, (encode(record), campaign_id)
                         )
                     self._audit(
-                        self.store.database, "recover_unknown", "system", campaign_id=campaign_id
+                        self.store.database,
+                        "recover_unknown",
+                        "system",
+                        campaign_id=cast(str, campaign_id),
                     )
 
         self._authority_transaction(recover)
 
-    def _authority_transaction(self, action):
+    def _authority_transaction(self, action: Callable[[], _T]) -> _T:
         with self.registry.send_authority.gate:
 
-            def mutate():
+            def mutate() -> tuple[_T, int]:
                 result = action()
                 row = self.store.database.execute(authority_queries.REVISION).fetchone()
-                return result, int(row[0])
+                return result, int(cast(int, cast(Row, row)[0]))
 
             result, epoch = self.store.database.transaction(mutate)
             # Read inside the transaction, publish only after commit. A failed
@@ -104,13 +117,15 @@ class PersonalCampaign:
             self.registry.send_authority.epoch = epoch
             return result
 
-    def _record(self, db):
+    def _record(self, db: Database) -> Record | None:
         row = db.execute(_queries.RECORD_SELECT_PERSONAL_CAMPAIGNS).fetchone()
-        return json.loads(row[0]) if row else None
+        return cast(Record, json.loads(cast(str, row[0]))) if row else None
 
-    def _audit(self, db, action, actor, *, campaign_id=None):
+    def _audit(
+        self, db: Database, action: str, actor: str, *, campaign_id: str | None = None
+    ) -> None:
         if campaign_id is None:
-            campaign_id = self._record(db)["id"]
+            campaign_id = cast(Record, self._record(db))["id"]
         db.execute(
             _queries.AUDIT_INSERT_PERSONAL_CAMPAIGN_AUDIT,
             (campaign_id, action, actor, utc_timestamp(datetime.now(timezone.utc), precise=True)),
@@ -122,12 +137,20 @@ class PersonalCampaign:
             subject=campaign_id,
             old_revision=None,
             new_revision=json.loads(
-                db.execute(_queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)).fetchone()[0]
+                cast(
+                    str,
+                    cast(
+                        Row,
+                        db.execute(
+                            _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (campaign_id,)
+                        ).fetchone(),
+                    )[0],
+                )
             )["revision"],
             at=utc_timestamp(datetime.now(timezone.utc), precise=True),
         )
 
-    def configure(self, actor, data):
+    def configure(self, actor: str, data: Record) -> Record:
         if actor != self.registry.identity.owner_id or set(data) != {
             "connection_id",
             "configuration_ref",
@@ -183,7 +206,7 @@ class PersonalCampaign:
             "price_version": model.get("price_version"),
         }
 
-        def action():
+        def action() -> Record:
             old = self._record(self.store.database)
             if old and old["state"] not in ("draft", "paused", "closed"):
                 raise ValueError("existing campaign and exposure must be retained")
@@ -212,11 +235,11 @@ class PersonalCampaign:
 
         return self._authority_transaction(action)
 
-    def transition(self, actor, state):
+    def transition(self, actor: str, state: str) -> Record:
         if actor != self.registry.identity.owner_id or state not in ("active", "paused", "closed"):
             raise ValueError("invalid campaign action")
 
-        def action():
+        def action() -> Record:
             record = self._record(self.store.database)
             if not record or record["state"] == "closed":
                 raise ValueError("campaign unavailable")
@@ -238,12 +261,12 @@ class PersonalCampaign:
 
         return self._authority_transaction(action)
 
-    def revalidate(self, actor):
+    def revalidate(self, actor: str) -> Record:
         """Bind current key/model/rate revisions without resetting spent attempts."""
         if actor != self.registry.identity.owner_id:
             raise PermissionError("OWNER_REQUIRED")
 
-        def action():
+        def action() -> Record:
             record = self._record(self.store.database)
             if (
                 not record
@@ -293,7 +316,7 @@ class PersonalCampaign:
 
         return self._authority_transaction(action)
 
-    def acknowledge_exposure(self, actor, data):
+    def acknowledge_exposure(self, actor: str, data: Record) -> Record:
         """Charge unresolved exposure to its allowance without inventing provider usage."""
         if actor != self.registry.identity.owner_id:
             raise PermissionError("OWNER_REQUIRED")
@@ -314,7 +337,7 @@ class PersonalCampaign:
         except UnicodeError as exc:
             raise ValueError("invalid exposure acknowledgement reason") from exc
 
-        def action():
+        def action() -> Record:
             db = self.store.database
             row = db.execute(_queries.ACKNOWLEDGE_SELECT_ATTEMPT, (data["attempt_id"],)).fetchone()
             saved = db.execute(
@@ -322,7 +345,7 @@ class PersonalCampaign:
             ).fetchone()
             if not row or not saved or row[3] != data["campaign_id"]:
                 raise ValueError("campaign attempt unavailable")
-            campaign = json.loads(saved[0])
+            campaign = json.loads(cast(str, saved[0]))
             if campaign["owner"] != actor:
                 raise PermissionError("OWNER_REQUIRED")
             history = campaign.setdefault("exposure_acknowledgements", [])
@@ -336,7 +359,7 @@ class PersonalCampaign:
                     None,
                 )
                 if prior and prior["reason"] == data["reason"].strip():
-                    return prior
+                    return cast(Record, prior)
                 raise ValueError("exposure already acknowledged")
             if (
                 campaign["revision"] != data["expected_revision"]
@@ -350,7 +373,9 @@ class PersonalCampaign:
                 "reason": data["reason"].strip(),
                 "actor": actor,
                 "at": utc_timestamp(datetime.now(timezone.utc)),
-                "charged_decimal": money(_exposure(row[0], row[1], "acknowledged")),
+                "charged_decimal": money(
+                    _exposure(cast(str, row[0]), cast(str | None, row[1]), "acknowledged")
+                ),
                 "usage_revision": row[4],
             }
             history.append(acknowledgement)
@@ -364,7 +389,7 @@ class PersonalCampaign:
 
         return self._authority_transaction(action)
 
-    def _current(self, record):
+    def _current(self, record: Record) -> Record:
         connection = self.registry.connection(record["connection_id"])
         model = self.registry.model(record["configuration_ref"])
         schedule = self.registry.prices(record["configuration_ref"])
@@ -395,7 +420,9 @@ class PersonalCampaign:
         _time(record["expires_at"])
         return active
 
-    def reserve(self, db, record, messages_bytes, output_limit):
+    def reserve(
+        self, db: Database, record: Record, messages_bytes: int, output_limit: int
+    ) -> Record:
         campaign = self._record(db)
         if (
             not campaign
@@ -424,7 +451,10 @@ class PersonalCampaign:
             _queries.RESERVE_SELECT_PERSONAL_CAMPAIGN_ATTEMPTS, (campaign["id"],)
         ).fetchall()
         exposure = sum(
-            (_exposure(bound, cost, state) for bound, cost, state in rows),
+            (
+                _exposure(cast(str, bound), cast(str | None, cost), cast(str, state))
+                for bound, cost, state in rows
+            ),
             Decimal(0),
         )
         if (
@@ -456,7 +486,7 @@ class PersonalCampaign:
             "contract_version": rate["contract"]["version"],
         }
 
-    def check(self, attempt_id, revision):
+    def check(self, attempt_id: str, revision: int) -> None:
         with self.store.database.read():
             campaign = self._record(self.store.database)
             row = self.store.database.execute(
@@ -475,8 +505,10 @@ class PersonalCampaign:
         except ValueError as exc:
             raise ContractError("FINANCIAL_AUTH_REQUIRED", 403) from exc
 
-    def settle(self, attempt_id, usage=None, *, before_transmit=False):
-        def action():
+    def settle(
+        self, attempt_id: str, usage: Record | None = None, *, before_transmit: bool = False
+    ) -> None:
+        def action() -> None:
             row = self.store.database.execute(
                 _queries.CAMPAIGN_ATTEMPT_EXPOSURE, (attempt_id,)
             ).fetchone()
@@ -486,14 +518,16 @@ class PersonalCampaign:
                 or (row[1] == "unknown" and before_transmit)
             ):
                 return
-            state, cost, revision = "unknown", None, None
+            state = "unknown"
+            cost: str | None = None
+            revision: int | None = None
             if before_transmit:
                 state = "released"
             elif usage and usage.get("cost", {}).get("status") == "calculated":
                 cost = usage["cost"]["amount_decimal"]
                 revision = usage.get("revision")
                 state = "settled"
-            if cost is not None and Decimal(cost) > Decimal(row[0]):
+            if cost is not None and Decimal(cost) > Decimal(cast(str, row[0])):
                 state = "over_bound"
             self.store.database.execute(
                 _queries.ACTION_UPDATE_PERSONAL_CAMPAIGN_ATTEMPTS,
@@ -503,7 +537,7 @@ class PersonalCampaign:
                 campaign_row = self.store.database.execute(
                     _queries.RECOVER_SELECT_PERSONAL_CAMPAIGNS, (row[2],)
                 ).fetchone()
-                campaign = json.loads(campaign_row[0])
+                campaign = json.loads(cast(str, cast(Row, campaign_row)[0]))
                 if campaign["state"] != "closed":
                     campaign["state"] = "paused"
                     campaign["revision"] += 1

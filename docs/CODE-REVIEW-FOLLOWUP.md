@@ -1395,8 +1395,8 @@ request or dependency acquisition is part of this pass.
 
 | Workstream | Status | Finish line / current evidence |
 | --- | --- | --- |
-| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 1,303 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
-| R2 — remove size allowances | In progress | Eight of the 12 initial exceptions are resolved; four function allowances remain. Connector and historical Docker-input file splits retain public imports and every historical runner. |
+| R1 — complete library typing | In progress | Bring all server/Python-client modules into strict typing; remove the remaining diagnostic budget. Baseline: 1,631 diagnostics in 44 files. Lifecycle/connection/journal, gateway and validation boundaries now leave 833 diagnostics; strict coverage includes the entire gateway and successor contract/plan/descriptor modules. |
+| R2 — remove size allowances | In progress | Nine of the 12 initial exceptions are resolved; three operator function allowances remain. Connector and historical Docker-input file splits retain public imports and every historical runner. |
 | R3 — scale report aggregation | In progress | Avoid loading every full attempt record into Python for totals/cohorts. Preserve bounded read-only snapshot ownership, exact decimal arithmetic, visibility, revision cutoffs, complete cohort costs and existing response/export pagination. |
 
 The first R1 batch types coroutine/future ownership and bounded connection
@@ -1473,3 +1473,21 @@ Full `tools.check` passes 922 Python cases, strict typing on 123 files,
 lint/formatting, transferred size/type budgets and maintained script/console
 checks. Copied-body AST proofs cover all 33 moves. No historical runner, frozen
 input, contract fixture or deployed state is removed or modified.
+
+
+#### R1/R2: secret, account, connector and campaign boundaries
+
+Nine more library modules pass strict typing, including secret envelopes, provider
+vaults, availability callbacks, console users and campaign accounting/reporting.
+Database cells are narrowed at their existing validated query boundaries; no
+validation, authority/transaction gate, error routing or cleanup scope changes.
+A connector response-header helper resolves its remaining function allowance.
+A default-captured availability lambda becomes an equivalently captured typed
+local callback. Normalized executable-body proofs cover 146 other functions,
+including expansion of the new header helper.
+
+Focused campaign (14), connector (24), availability (12) and secret-rotation (20)
+regressions pass. Full `tools.check` passes 922 Python cases, strict typing on
+132 files, lint/formatting, size budgets and maintained script/console checks.
+Whole-library diagnostics fall from 1,303 to 833 in 24 files; three size
+exceptions remain. Live HTTP/provider/profile qualification is unchanged.

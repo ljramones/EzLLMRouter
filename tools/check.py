@@ -150,6 +150,15 @@ JAVASCRIPT_SCRIPTS = tuple(
 )
 QUALITY_PATHS = ("server", "clients", "deploy", "worker", "tools", "tests")
 TYPED_PATHS = (
+    "server/src/ezllmrouter_server/secret_box.py",
+    "server/src/ezllmrouter_server/provider_vault.py",
+    "server/src/ezllmrouter_server/connector_availability.py",
+    "server/src/ezllmrouter_server/local_connectors.py",
+    "server/src/ezllmrouter_server/local_connector_http.py",
+    "server/src/ezllmrouter_server/local_connector_inventory.py",
+    "server/src/ezllmrouter_server/personal_campaign.py",
+    "server/src/ezllmrouter_server/campaign_reporting.py",
+    "server/src/ezllmrouter_server/user_management.py",
     "server/src/ezllmrouter_server/execution_policy.py",
     "server/src/ezllmrouter_server/execution_resources.py",
     "server/src/ezllmrouter_server/runtime_resources.py",

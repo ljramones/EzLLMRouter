@@ -6,6 +6,10 @@ rotations readable; retirement requires offline reference and backup review.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
+from typing import cast
+from .records import Record
+
 import base64
 import fcntl
 import hashlib
@@ -38,13 +42,13 @@ def validate_secret(value: object) -> None:
         raise ValueError("invalid credential")
 
 
-def private_directory(path):
+def private_directory(path: Path) -> None:
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     if path.is_symlink() or path.stat().st_mode & 0o077 or path.stat().st_uid != os.geteuid():
         raise SecretBoxError("SECRET_DIRECTORY_PERMISSIONS")
 
 
-def _unique(pairs):
+def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
     value = {}
     for name, item in pairs:
         if name in value:
@@ -53,7 +57,7 @@ def _unique(pairs):
     return value
 
 
-def decode_envelope(raw):
+def decode_envelope(raw: str | bytes) -> Record:
     try:
         envelope = json.loads(raw, object_pairs_hook=_unique)
         if (
@@ -64,19 +68,26 @@ def decode_envelope(raw):
             or type(envelope["key_id"]) is not str
         ):
             raise ValueError()
-        return envelope
+        return cast(Record, envelope)
     except (ValueError, TypeError) as exc:
         raise SecretBoxError("SECRET_ENVELOPE_INVALID") from exc
 
 
 class SecretBox:
-    def __init__(self, path, purpose, *, required_ids=(), required=False):
+    def __init__(
+        self,
+        path: str | Path,
+        purpose: str,
+        *,
+        required_ids: Iterable[str] = (),
+        required: bool = False,
+    ) -> None:
         self.path, self.purpose = Path(path), purpose
         self._cache_lock = threading.RLock()
-        self._cached_fingerprint = None
-        self._cached_state = None
-        self._decoded_keys = {}
-        self._decoded_mac = None
+        self._cached_fingerprint: tuple[int, ...] | None = None
+        self._cached_state: Record | None = None
+        self._decoded_keys: dict[str, AESGCM] = {}
+        self._decoded_mac: bytes | None = None
         private_directory(self.path.parent)
         with self._locked():
             if not self.path.exists():
@@ -97,17 +108,17 @@ class SecretBox:
             if not set(required_ids) <= state["keys"].keys():
                 raise SecretBoxError("SECRET_KEY_UNAVAILABLE")
 
-    def _identifier(self, key):
+    def _identifier(self, key: bytes) -> str:
         return "key." + hashlib.sha256(self.purpose.encode() + b"\0" + key).hexdigest()[:32]
 
     @contextmanager
-    def _locked(self):
+    def _locked(self) -> Iterator[None]:
         with self._cache_lock:
             with self._file_locked():
                 yield
 
     @contextmanager
-    def _file_locked(self):
+    def _file_locked(self) -> Iterator[None]:
         descriptor = os.open(
             self.path.with_name(self.path.name + ".lock"),
             os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
@@ -126,7 +137,7 @@ class SecretBox:
         finally:
             os.close(descriptor)
 
-    def _fingerprint(self):
+    def _fingerprint(self) -> tuple[int, ...]:
         metadata = self.path.lstat()
         if (
             not stat.S_ISREG(metadata.st_mode)
@@ -144,7 +155,7 @@ class SecretBox:
             metadata.st_uid,
         )
 
-    def _read(self):
+    def _read(self) -> Record:
         try:
             fingerprint = self._fingerprint()
             if self._cached_state is not None and fingerprint == self._cached_fingerprint:
@@ -179,7 +190,7 @@ class SecretBox:
         except (OSError, ValueError, TypeError, KeyError) as exc:
             raise SecretBoxError("SECRET_KEYRING_UNAVAILABLE") from exc
 
-    def _write(self, state):
+    def _write(self, state: Record) -> None:
         self._cached_state, self._cached_fingerprint = None, None
         self._decoded_keys, self._decoded_mac = {}, None
         content = (json.dumps(state, sort_keys=True) + "\n").encode()
@@ -188,25 +199,25 @@ class SecretBox:
         write_private(self.path, content, replace=self.path.exists())
 
     @property
-    def active_id(self):
+    def active_id(self) -> str:
         with self._locked():
-            return self._read()["active_key_id"]
+            return cast(str, self._read()["active_key_id"])
 
     @property
-    def identity(self):
+    def identity(self) -> str:
         with self._locked():
             self._read()
-            key = self._decoded_mac
+            key = cast(bytes, self._decoded_mac)
         return "ring." + hashlib.sha256(self.purpose.encode() + b"\0" + key).hexdigest()[:32]
 
-    def request_digest(self, value):
+    def request_digest(self, value: bytes) -> str:
         """Idempotency has its own key; rotating encryption preserves request identity."""
         with self._locked():
             self._read()
-            key = self._decoded_mac
+            key = cast(bytes, self._decoded_mac)
         return hmac.new(key, self.purpose.encode() + b"\0" + value, hashlib.sha256).hexdigest()
 
-    def rotate(self):
+    def rotate(self) -> str:
         with self._locked():
             state = deepcopy(self._read())
             key = secrets.token_bytes(32)
@@ -216,7 +227,9 @@ class SecretBox:
             self._write(state)
             return identifier
 
-    def retire_key(self, identifier, *, referenced_ids, backup_acknowledged=False):
+    def retire_key(
+        self, identifier: str, *, referenced_ids: Iterable[str], backup_acknowledged: bool = False
+    ) -> None:
         """Offline owner operation after a complete reference scan and backup review."""
         if not backup_acknowledged:
             raise SecretBoxError("SECRET_BACKUP_REVIEW_REQUIRED")
@@ -229,7 +242,7 @@ class SecretBox:
             del state["keys"][identifier]
             self._write(state)
 
-    def _aad(self, context, identifier):
+    def _aad(self, context: bytes, identifier: str) -> bytes:
         return json.dumps(
             {
                 "version": 1,
@@ -241,7 +254,7 @@ class SecretBox:
             separators=(",", ":"),
         ).encode()
 
-    def seal_parts(self, value, context):
+    def seal_parts(self, value: str, context: bytes) -> tuple[str, bytes, bytes]:
         validate_secret(value)
         with self._locked():
             state = self._read()
@@ -254,7 +267,7 @@ class SecretBox:
             cipher.encrypt(nonce, value.encode(), self._aad(context, identifier)),
         )
 
-    def open_parts(self, identifier, nonce, ciphertext, context):
+    def open_parts(self, identifier: str, nonce: bytes, ciphertext: bytes, context: bytes) -> str:
         try:
             if (
                 type(identifier) is not str
@@ -273,7 +286,7 @@ class SecretBox:
         except Exception as exc:
             raise SecretBoxError("SECRET_DECRYPT_FAILED") from exc
 
-    def seal(self, value, context):
+    def seal(self, value: str, context: bytes) -> Record:
         identifier, nonce, ciphertext = self.seal_parts(value, context)
         return {
             "version": 1,
@@ -283,7 +296,7 @@ class SecretBox:
             "ciphertext": base64.b64encode(ciphertext).decode("ascii"),
         }
 
-    def open(self, envelope, context):
+    def open(self, envelope: Record, context: bytes) -> str:
         try:
             if (
                 type(envelope) is not dict
