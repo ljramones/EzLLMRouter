@@ -170,6 +170,21 @@ default keyring names, lock files and sealed credentials are ignored by the
 repository and excluded from runtime evidence capture. Keep custom keyring paths
 outside the source and evidence trees as well.
 
+The offline `integration_local --backup` command validates the source schema and
+copies committed SQLite/WAL data into a private staging file in the destination
+directory. It syncs the completed file before publishing a new destination and
+syncs that directory afterward; an existing destination is never overwritten.
+An interrupted copy can leave an owner-only `.partial` staging file, which is
+never used as a completed backup. A retry can create a new staging file without
+using that abandoned copy. A directory-sync error after publication reports
+`AtomicPublicationError.published=True`; preserve and inspect the complete target.
+
+Restore regressions move the original source path away before reopening the
+snapshot. An older keyring missing the backup's encryption key fails closed.
+A newer keyring remains compatible while it retains that key; retiring the
+required key makes the backup unreadable. Tests cover these combinations in all
+three scopes and verify that failed resolution rewrites neither rows nor keys.
+
 
 Instance identity metadata and the local profile ownership marker belong with
 consistent backups. Reopening preserves those identities; filesystem relocation

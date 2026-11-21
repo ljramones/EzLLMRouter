@@ -129,6 +129,16 @@ def main():
             return 73
         store.close()
         return 0
+    if phase.startswith("migration.") or phase in ("backup", "wal"):
+        from tests.fixtures import crash_maintenance
+
+        if phase.startswith("migration."):
+            crash_maintenance.migration_case(root, int(phase.split(".")[1]), point, checkpoint)
+        elif phase == "backup":
+            crash_maintenance.backup_case(root, point, checkpoint)
+        else:
+            crash_maintenance.wal_case(root, point, checkpoint)
+        return 0
     if phase in ("seal", "rotate"):
         vault_case(root, phase, point)
     else:

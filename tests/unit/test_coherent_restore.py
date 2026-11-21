@@ -4,11 +4,13 @@ from contextlib import redirect_stdout
 import io
 from pathlib import Path
 import shutil
+import tempfile
 import unittest
 
 from ezllmrouter_server.integration_credentials import DatabaseCredentialStore
+from ezllmrouter_server.integration_accounting import IntegrationError
 from ezllmrouter_server.integration_local import main as local_main
-from ezllmrouter_server.local_connectors import LocalConnectors
+from ezllmrouter_server.local_connectors import LocalConnectors, ConnectorError
 from ezllmrouter_server.private_files import write_private
 from ezllmrouter_server.provider_vault import ProviderVault
 from ezllmrouter_server.registry import Registry
@@ -16,6 +18,7 @@ from ezllmrouter_server.secret_box import SecretBoxError
 from ezllmrouter_server.store import SQLiteStore
 from tests.operator_console import test_integration_credentials as fixtures
 from tests.operator_console.accounting_support import EXAMPLES
+from tests.fixtures.schema_upgrades import table_manifest
 
 
 class CoherentRestoreTests(unittest.TestCase):
@@ -60,9 +63,19 @@ class CoherentRestoreTests(unittest.TestCase):
         for secret in (local_key, provider_key, "known-fixture-api-key-0001"):
             self.assertNotIn(secret, "\n".join(fixture.store.db.iterdump()))
 
+        old_rings = {
+            box.path.name: box.path.read_bytes()
+            for box in (fixture.credentials.box, connectors.box, vault.box)
+        }
+        fixture.credentials.rotate_encryption_key()
+        connectors.rotate_encryption_key()
+        vault.rotate_encryption_key(["conn.restore"])
+
         connectors.close()
         fixture.store.close()
-        snapshot = fixture.root / "snapshot"
+        archive = tempfile.TemporaryDirectory()
+        self.addCleanup(archive.cleanup)
+        snapshot = Path(archive.name) / "snapshot"
         snapshot.mkdir(mode=0o700)
         database = snapshot / "service.sqlite"
         with redirect_stdout(io.StringIO()):
@@ -73,6 +86,8 @@ class CoherentRestoreTests(unittest.TestCase):
             Path(str(database) + ".secrets"),
         )
         shutil.copytree(fixture.root / "provider", snapshot / "provider")
+        fixture.root.rename(Path(archive.name) / "unavailable-source")
+        self.assertFalse(fixture.root.exists(), "restore still has access to its original path")
 
         restored = SQLiteStore(database)
         self.addCleanup(restored.close)
@@ -105,6 +120,51 @@ class CoherentRestoreTests(unittest.TestCase):
         self.assertEqual(after["known_total_by_currency"], before["known_total_by_currency"])
         self.assertEqual(after["attempts"], before["attempts"])
         self.assertEqual(restored.db.execute("PRAGMA quick_check").fetchone()[0], "ok")
+
+        binding = credentials._binding(pending["account_id"])
+        for box, resolve, expected, error_type in (
+            (
+                credentials.box,
+                lambda: credentials._resolve(binding, binding["selected_version"]),
+                "known-fixture-api-key-0001",
+                IntegrationError,
+            ),
+            (
+                local.box,
+                lambda: local._resolve(connector["connector_id"], sealed),
+                local_key,
+                ConnectorError,
+            ),
+            (
+                provider.box,
+                lambda: provider.resolve("conn.restore", 1),
+                provider_key,
+                SecretBoxError,
+            ),
+        ):
+            with self.subTest(keyring_scope=box.path.name):
+                correct = box.path.read_bytes()
+                key_id = box.active_id
+                original_rows = table_manifest(restored.db)
+                try:
+                    write_private(box.path, old_rings[box.path.name], replace=True)
+                    with self.assertRaises(error_type):
+                        resolve()
+                    self.assertEqual(box.path.read_bytes(), old_rings[box.path.name])
+                    self.assertEqual(table_manifest(restored.db), original_rows)
+                    write_private(box.path, correct, replace=True)
+                    box.rotate()  # A newer ring retaining the backup's key is compatible.
+                    self.assertEqual(resolve(), expected)
+                    box.retire_key(key_id, referenced_ids=(), backup_acknowledged=True)
+                    before_ring, before_database = box.path.read_bytes(), database.read_bytes()
+                    with self.assertRaises(error_type):
+                        resolve()
+                    self.assertEqual(box.path.read_bytes(), before_ring)
+                    self.assertEqual(database.read_bytes(), before_database)
+                    self.assertEqual(table_manifest(restored.db), original_rows)
+                finally:
+                    write_private(box.path, correct, replace=True)
+                self.assertEqual(resolve(), expected)
 
         for path, reopen in (
             (credentials.key_path, lambda: DatabaseCredentialStore(registry, credentials.key_path)),

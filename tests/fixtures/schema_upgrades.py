@@ -6,7 +6,7 @@ Review the seed and every changed golden value before committing regenerated man
 
 import argparse
 import base64
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +21,7 @@ from ezllmrouter_server import schema
 from ezllmrouter_server.integration_accounting import ExternalAccounting
 from ezllmrouter_server.operator_projection import OperatorProjection
 from ezllmrouter_server.store import SQLiteStore
+from tests.fixtures.upgrade_seed import supplement
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests/fixtures/schema-upgrades"
@@ -29,14 +30,20 @@ PRINCIPAL = "svc.synthetic.upgrade"
 
 
 def encoded(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=lambda value: {"blob_hex": value.hex()},
+    )
 
 
 def digest(value):
     return hashlib.sha256(encoded(value).encode()).hexdigest()
 
 
-def seed_rows():
+def seed_rows(version=1):
     """Fixed public data, including historical corrections and erased content."""
     rows = {
         "registry_meta": [["authority_revision", "17"]],
@@ -171,6 +178,7 @@ def seed_rows():
         rows["registry_observations"].append(
             [observation["operation_id"], observation["connection_id"], observation]
         )
+    supplement(rows, version, AT, PRINCIPAL)
     return rows
 
 
@@ -249,16 +257,25 @@ def apply_sql(connection, source):
         raise ValueError("incomplete fixture SQL")
 
 
-def build(path, version):
+@contextmanager
+def release(path, version):
     """Use immutable SQL resources, not today's application constructors, for old releases."""
     with closing(sqlite3.connect(path, isolation_level=None)) as connection:
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA synchronous=FULL")
+        connection.execute("PRAGMA foreign_keys=ON")
         connection.execute("BEGIN IMMEDIATE")
         for number in range(1, version + 1):
             source, checksum = schema.migration(number)
             apply_sql(connection, source)
             connection.execute("INSERT INTO schema_revisions VALUES (?,?)", (number, checksum))
             if number == 1:
-                for table, rows in seed_rows().items():
+                connection.execute(f"PRAGMA application_id={schema.APPLICATION_ID}")
+                connection.execute("PRAGMA user_version=1")
+                connection.execute("COMMIT")
+                connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                connection.execute("BEGIN IMMEDIATE")
+                for table, rows in seed_rows(version).items():
                     for row in rows:
                         values = [
                             encoded(cell) if isinstance(cell, (dict, list)) else cell
@@ -271,6 +288,21 @@ def build(path, version):
         connection.execute(f"PRAGMA application_id={schema.APPLICATION_ID}")
         connection.execute(f"PRAGMA user_version={version}")
         connection.execute("COMMIT")
+        yield connection
+
+
+def build(path, version):
+    with release(path, version):
+        pass
+
+
+def assert_unaffected(source, target, start, finish):
+    # Reviewed migration effects, independent of regenerated golden values.
+    allowed = {2: {"registry_observations"}, 3: set()}
+    changed = set().union(*(allowed[number] for number in range(start + 1, finish + 1)))
+    assert source.keys() == target.keys(), "migration changed the table inventory"
+    for table in source.keys() - changed:
+        assert source[table] == target[table], f"unrelated table changed: {table}"
 
 
 def table_manifest(connection):
@@ -278,7 +310,10 @@ def table_manifest(connection):
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
     ).fetchall()
     return {
-        table: {"rows": len(rows), "sha256": digest(rows)}
+        table: {
+            "rows": len(rows),
+            "sha256": digest(rows),
+        }
         for (table,) in tables
         if table != "schema_revisions"
         for rows in [connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall()]
@@ -345,22 +380,23 @@ def main():
     with tempfile.TemporaryDirectory() as temporary:
         for version in range(1, schema.VERSION + 1):
             path = Path(temporary) / f"v{version}.sqlite"
-            build(path, version)
-            with closing(sqlite3.connect(path)) as connection:
+            with release(path, version) as connection:
                 source = table_manifest(connection)
-            with closing(SQLiteStore(path)) as store:
-                payload = {
-                    "format": "ezllmrouter-synthetic-upgrade-v1",
-                    "version": version,
-                    "seed_sha256": digest(seed_rows()),
-                    "migrations": {
-                        name: schema.migration(i)[1]
-                        for i, name in enumerate(schema.MIGRATIONS[:version], 1)
-                    },
-                    "source_tables": source,
-                    "head_tables": table_manifest(store.db),
-                    "head_report": report(store),
-                }
+                with closing(SQLiteStore(path)) as store:
+                    payload = {
+                        "format": "ezllmrouter-synthetic-upgrade-v1",
+                        "version": version,
+                        "journal_mode": connection.execute("PRAGMA journal_mode").fetchone()[0],
+                        "seed_sha256": digest(seed_rows(version)),
+                        "migrations": {
+                            name: schema.migration(i)[1]
+                            for i, name in enumerate(schema.MIGRATIONS[:version], 1)
+                        },
+                        "source_tables": source,
+                        "head_tables": table_manifest(store.db),
+                        "head_report": report(store),
+                    }
+                    assert_unaffected(source, payload["head_tables"], version, schema.VERSION)
             (FIXTURES / f"v{version:03}.json").write_text(
                 json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
             )

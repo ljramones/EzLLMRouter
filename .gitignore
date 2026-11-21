@@ -96,5 +96,8 @@ operator-password
 *.log
 *.bak
 *.backup
+# Incomplete private SQLite backup staging files and their SQLite sidecars
+.*.partial
+.*.partial-*
 *.orig
 *.rej

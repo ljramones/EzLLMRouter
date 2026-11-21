@@ -27,10 +27,24 @@ The offline upgrade gate rebuilds each supported schema version from immutable
 SQL resources and a public synthetic seed. Checked-in manifests under
 `tests/fixtures/schema-upgrades/` pin migration checksums, source/head table
 digests and complete controlled/external accounting reports. They include old
-prices and grants, audit history, corrected usage, unknown charges, erased
-snapshot content and retained inventory anchors. The same fixtures verify restart,
-future-version refusal and byte-for-byte rollback after failure in each pending
-migration. A public synthetic keyring/envelope vector verifies old ciphertext
+prices and grants, audit history, corrected usage, unknown charges, erased and
+retained snapshot content and inventory anchors. Every one of the 53 application
+tables is populated, with release-specific seeds and matching non-null rows for
+each JSON expression index, including partial-index predicates. Public opaque
+credential BLOBs exercise storage preservation; separate restore tests exercise
+real encryption in all three scopes.
+
+Fixture upgrades run in WAL mode with committed seed rows absent from the main
+file, requiring the WAL to recover them. An independent allowlist permits v002
+to prune only `registry_observations`; v003 may change no table data. Both fixture
+generation and tests reject unrelated changes even if goldens are regenerated.
+Failures preserve main-file bytes and committed WAL data and remain retryable.
+Real child kills interrupt selected migration statements and commit boundaries,
+SQLite backup progress and backup publication, plus WAL checkpoint boundaries.
+Migration and checkpoint fixtures reopen twice to check retained data and integrity;
+migration cases also check schema versions and accounting reports. These are
+process-crash checks; interruption inside kernel checkpoint I/O and physical
+power loss remain unqualified. A public synthetic keyring/envelope vector verifies old ciphertext
 through rotation and rejects unsupported formats. Generated databases stay in
 temporary storage; no installation database or private key is a source fixture.
 

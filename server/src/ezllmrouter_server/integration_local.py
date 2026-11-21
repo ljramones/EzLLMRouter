@@ -9,14 +9,13 @@ from .records import Record
 from .http_server import BoundedHTTPServer
 
 import argparse
-from contextlib import ExitStack, closing
+from contextlib import ExitStack
 from importlib.metadata import PackageNotFoundError, version
 import json
 from pathlib import Path
 import re
 import secrets
 import signal
-import sqlite3
 import threading
 
 from .formatting import utc_timestamp
@@ -33,6 +32,7 @@ from .external_identity import IdentityLookup
 from .registry import Registry
 from .store import SQLiteStore
 from .instance_lock import InstanceLease, InstanceBusy
+from .database_backup import backup_database
 from .web import serve as api_serve
 
 try:
@@ -313,12 +313,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             parser.error("new absolute backup destination required")
         try:
             with InstanceLease(args.db, exclusive=True):
-                write_private(args.backup, b"")
-                with (
-                    closing(sqlite3.connect(args.db)) as source,
-                    closing(sqlite3.connect(args.backup)) as target,
-                ):
-                    source.backup(target)
+                backup_database(args.db, args.backup)
         except InstanceBusy:
             parser.error("stop services and other maintenance before backing up")
         print("consistent backup:", args.backup)

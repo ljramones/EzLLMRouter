@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "dd5b7432a2690dad2e242aa382cab56f5ceab4006c8700430618591c91d02c93",
+      "source_sha256": "bc41ec185669f07ab1c05e9820dc2412d0121017755b9d22a382b2ce6c550586",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 216,
+          "line": 219,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 305,
+          "line": 308,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 449,
+          "line": 452,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "dd5b7432a2690dad2e242aa382cab56f5ceab4006c8700430618591c91d02c93",
+      "source_sha256": "bc41ec185669f07ab1c05e9820dc2412d0121017755b9d22a382b2ce6c550586",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 217,
+          "line": 220,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 306,
+          "line": 309,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 563,
+          "line": 566,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",

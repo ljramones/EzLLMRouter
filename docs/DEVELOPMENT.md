@@ -290,7 +290,14 @@ power-loss or physical-disk qualification. Storage tests exercise real SQLite
 page-limit/busy failures and an injected I/O failure after a work claim.
 `test_coherent_restore` uses the real offline database-backup command, copies the
 documented private keyring/vault set, restores credentials in all three scopes
-and compares retained accounting. All data and secrets are synthetic and
+and compares retained accounting after moving the original source path away.
+It checks missing/older keyrings, newer rings retaining the needed key, and newer
+rings after its retirement, in all three scopes. `test_maintenance_crashes`
+adds 12 real kills inside migration statements/commit boundaries, two during
+backup copy/publication and two at WAL checkpoint boundaries. Migration fixtures
+populate all 53 application tables and all JSON expression indexes in WAL mode;
+unaffected-table checks are independent of regenerated goldens. Kernel-I/O and
+power-loss qualification remain separate. All data and secrets are synthetic and
 temporary; the tests never open a running profile or contact a provider.
 
 `tools.security_sast` runs the locked Ruff 0.14.0 `S` rules over server,

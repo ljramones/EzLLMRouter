@@ -3,6 +3,7 @@
 from contextlib import closing
 from copy import deepcopy
 import json
+import re
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -16,6 +17,42 @@ from tests.fixtures import schema_upgrades as fixtures
 
 
 class SchemaUpgradeFixtures(unittest.TestCase):
+    def test_release_fixtures_use_wal_and_populate_every_table(self):
+        path = self.root / "populated.sqlite"
+        fixtures.build(path, 1)
+        with closing(sqlite3.connect(path)) as connection:
+            self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+            tables = fixtures.table_manifest(connection)
+            self.assertFalse([name for name, row in tables.items() if not row["rows"]])
+
+    def test_unrelated_table_guard_rejects_regenerated_destructive_goldens(self):
+        source = {
+            "submissions": {"rows": 3, "sha256": "before"},
+            "registry_observations": {"rows": 30, "sha256": "old"},
+        }
+        target = deepcopy(source)
+        target["submissions"] = {"rows": 0, "sha256": "after"}
+        with self.assertRaisesRegex(AssertionError, "submissions"):
+            fixtures.assert_unaffected(source, target, 1, 3)
+
+    def test_expression_indexes_include_non_null_matching_seed_rows(self):
+        path = self.root / "indexes.sqlite"
+        fixtures.build(path, schema.VERSION)
+        with closing(sqlite3.connect(path)) as connection:
+            indexes = connection.execute(
+                "SELECT name,tbl_name,sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL"
+            ).fetchall()
+            checked = 0
+            for name, table, sql in indexes:
+                predicate = re.search(r"\bWHERE\b(.+)", sql, re.S)
+                for expression in re.findall(r"json_extract\([^,]+,'[^']+'\)", sql):
+                    query = f'SELECT count(*) FROM "{table}" WHERE {expression} IS NOT NULL'
+                    if predicate:
+                        query += " AND (" + predicate[1].rstrip(";") + ")"
+                    self.assertGreater(connection.execute(query).fetchone()[0], 0, name)
+                    checked += 1
+            self.assertGreater(checked, 10)
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -31,7 +68,10 @@ class SchemaUpgradeFixtures(unittest.TestCase):
         resources = sorted((fixtures.ROOT / "server/src/ezllmrouter_server/schema").glob("v*.sql"))
         self.assertEqual([path.name for path in resources], list(schema.MIGRATIONS))
         for row in self.manifests:
-            self.assertEqual(row["seed_sha256"], fixtures.digest(fixtures.seed_rows()))
+            self.assertEqual(row["journal_mode"], "wal")
+            self.assertEqual(
+                row["seed_sha256"], fixtures.digest(fixtures.seed_rows(row["version"]))
+            )
             self.assertEqual(
                 row["migrations"],
                 {
@@ -44,13 +84,26 @@ class SchemaUpgradeFixtures(unittest.TestCase):
         for manifest in self.manifests:
             with self.subTest(version=manifest["version"]):
                 path = self.root / f"v{manifest['version']}.sqlite"
-                fixtures.build(path, manifest["version"])
-                with closing(sqlite3.connect(path)) as connection:
-                    self.assertEqual(fixtures.table_manifest(connection), manifest["source_tables"])
+                connection = self.enterContext(fixtures.release(path, manifest["version"]))
+                source = fixtures.table_manifest(connection)
+                self.assertEqual(source, manifest["source_tables"])
+                self.assertGreater(Path(str(path) + "-wal").stat().st_size, 32)
+                with closing(
+                    sqlite3.connect(path.as_uri() + "?immutable=1", uri=True)
+                ) as main_only:
+                    self.assertEqual(
+                        main_only.execute("SELECT count(*) FROM submissions").fetchone()[0], 0
+                    )
                 for _ in range(2):
                     with closing(SQLiteStore(path)) as store:
                         self.assertEqual(schema.validate(store.db), schema.VERSION)
                         self.assertEqual(fixtures.table_manifest(store.db), manifest["head_tables"])
+                        fixtures.assert_unaffected(
+                            source,
+                            fixtures.table_manifest(store.db),
+                            manifest["version"],
+                            schema.VERSION,
+                        )
                         actual = fixtures.report(store)
                         self.assertEqual(actual, manifest["head_report"])
                         self.assertEqual(
@@ -80,11 +133,14 @@ class SchemaUpgradeFixtures(unittest.TestCase):
                         self.assertEqual(
                             kept,
                             {"probe.00", "probe.01", "probe.02"}
-                            | {f"probe.{i:02}" for i in range(10, 30)},
+                            | {
+                                f"probe.{i:02}"
+                                for i in range(9 + manifest["version"], 29 + manifest["version"])
+                            },
                         )
                         self.assertEqual(
                             store.db.execute(
-                                "SELECT content,digest FROM integration_snapshots"
+                                "SELECT content,digest FROM integration_snapshots WHERE content IS NULL"
                             ).fetchall(),
                             [(None, "sha256:" + "b" * 64)],
                         )
@@ -95,8 +151,9 @@ class SchemaUpgradeFixtures(unittest.TestCase):
             for failed_version in range(manifest["version"] + 1, schema.VERSION + 1):
                 with self.subTest(source=manifest["version"], failed=failed_version):
                     path = self.root / f"failed-{manifest['version']}-{failed_version}.sqlite"
-                    fixtures.build(path, manifest["version"])
+                    connection = self.enterContext(fixtures.release(path, manifest["version"]))
                     before = path.read_bytes()
+                    source = fixtures.table_manifest(connection)
 
                     def broken(number, failed_version=failed_version):
                         source, checksum = original(number)
@@ -110,7 +167,8 @@ class SchemaUpgradeFixtures(unittest.TestCase):
                         with self.assertRaises(sqlite3.Error):
                             SQLiteStore(path)
                     self.assertEqual(path.read_bytes(), before)
-                    self.assertFalse(Path(str(path) + "-wal").exists())
+                    self.assertEqual(fixtures.table_manifest(connection), source)
+                    self.assertEqual(schema.validate(connection), manifest["version"])
                     with closing(SQLiteStore(path)) as store:
                         self.assertEqual(fixtures.table_manifest(store.db), manifest["head_tables"])
 

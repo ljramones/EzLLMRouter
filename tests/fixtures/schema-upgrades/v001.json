@@ -1,58 +1,59 @@
 {
   "format": "ezllmrouter-synthetic-upgrade-v1",
   "version": 1,
-  "seed_sha256": "9b6e791ae7e20eca63bc8aac2d61cc4d4a05a6a2c95cbec39a9b92b9de601e42",
+  "journal_mode": "wal",
+  "seed_sha256": "afce55a0914c5cee89e2562fe66599a7eba7da2d3bbe4518e7b4d70f74947e0f",
   "migrations": {
     "v001_initial.sql": "01bfc344bc2ac51a575648409fe05003274379ee5de672550ac9bd9adbf27b4e"
   },
   "source_tables": {
     "attribution_outcomes": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "7c09f254cf4200d309dd0b3e8a42f8741005614c5d8529e5a511f63287fe5dfa"
     },
     "attribution_runs": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 2,
+      "sha256": "378b2887a748880e08d52406a732c39159e1e38b7f226dbbceb9f9b07f8b2579"
     },
     "console_users": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "018cac69ec8ebc4494bf49ad31eef0c72546385564e409591dffd67e6fbb18fd"
     },
     "dev12_authority": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "d166855a61f94c8179328ccd0e28c292826532f344393e154e24a0751e769dd3"
     },
     "dev12_authority_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "a755f38fa40453e03b3445184e30057ee5baf4e7205fe0cc343033a49d01fc15"
     },
     "dev12_campaign_attempts": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "3fce6dee619841e78c6fa2430d38afca1b52e175183b0ce4d607f522b4004683"
     },
     "dev12_campaign_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "61128e4c943491496cde96cb5149b0d47675b3e1f239e2af0b720f7e63c53cf3"
     },
     "dev12_campaigns": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "7f5eac2db97c2e96f9dc69bb792a1d087880b5f0df9cdb16569fa8b35ae37b6b"
     },
     "dev12_evidence_events": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "a984ec3130df301bd5533a8f0d6af9283fd5c5392bf0f82f8088f3fd4d2a899e"
     },
     "dev12_send_ownership": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "de517b810d30221d167f8dd49c09bea60e7321f75c49068a027daa10f4395e35"
     },
     "dev12_submissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "fb9f0c62f8880620b70a575e1424cb9a0d33a701e812175bb6352bde177f6e60"
     },
     "dev12_usage_revisions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "e921781324504dbe4ffb5428b2bcbb1f079fe7fb79d766b012596652d413fc8b"
     },
     "guard_dispatches": {
       "rows": 3,
@@ -67,88 +68,88 @@
       "sha256": "3f42b2e56b8431348aab2c8dbee69bcd771f17fd71b578fabdc3612cab316b91"
     },
     "integration_attempts": {
-      "rows": 1,
-      "sha256": "4acb43f1ce9105643a326ba7f828e2f4615ac55c873c7ae29e17afa56dec1971"
+      "rows": 2,
+      "sha256": "8f22106c3723c4fd217b5fc7195cafbc05de80f36f44cf23b56ce3ad8dd297e5"
     },
     "integration_credential_bindings": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "0685637ea4e6f17fee3466d8d0611ea47316bdd051952e3c7fef260930947c9d"
     },
     "integration_credential_meta": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "c6fc84f3b81de927d43f284fe62b1689545901ad63161adb5915272c8c4c1bdb"
     },
     "integration_credential_operations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "0b0455f35222b064c7cc87b35ae36b233a411148fc7474231344c8a9e0a52a92"
     },
     "integration_credential_versions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "cfd28d8f68c10dbd9f2dfebe3d51f7353d4843d1150ed4339ef9d07c16905794"
     },
     "integration_dataset_retention": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "4c77a84a4f580ccf32141ac9bc63b27468659edf4c00ed3ff223fd2043dbfc03"
     },
     "integration_datasets": {
-      "rows": 1,
-      "sha256": "7ca9814bbf618559c346eac1077255fd8035f10c443d15081cd05e47ac6d45a0"
+      "rows": 2,
+      "sha256": "53f1690d3a93c642aafc1be8a92251561d2ffa0d06668787be59336039c57e02"
     },
     "integration_eligibility_reads": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "09cb439f4c439ba581e85c853e0650649d2315f4ee2a9b8907d6005a430a1d27"
     },
     "integration_events": {
-      "rows": 3,
-      "sha256": "89b55539c8644839042174438426c98f5a5ee2c8ed2d675243ab9f5414b9e9df"
+      "rows": 5,
+      "sha256": "6586004d31882973047cb01a17fc955768c284c2a746cb78519df10f4030033d"
     },
     "integration_expired_datasets": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "bc15a6e5445de9f4e5a61fb72ebb62867bb839af3e020e5de0db65306c07e968"
     },
     "integration_runs": {
       "rows": 1,
       "sha256": "613799b1110dbe4920e4b61ac3e67a6f60e9af222f9f232eec24ef8638fba8ff"
     },
     "integration_snapshots": {
-      "rows": 1,
-      "sha256": "20d377ba27ff4944d60cc444e3b879bc8c6717b8c7936b3e6fc3882da4114ba1"
+      "rows": 2,
+      "sha256": "cae537c89e4ccbe94a0cb4e2371f6b8021d6b6ea7b7aa8d2eaf95bf288e5d246"
     },
     "intents": {
       "rows": 3,
       "sha256": "9dd56f9d6d6c2e22a8b7b8bf7db731f92408f4d0637eec77e5b35cd6e12868a5"
     },
     "local_connectors": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "97061e9655fbd5af2d4f9a2b3dbbe3c80f0f91f395fbb9b42dbb64a6d38deb87"
     },
     "operator_launches": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "72fca0a8c3ce474fc60e76b218f4ca41bd1ffae68d95d980a602bad1fc7ae5bf"
     },
     "operator_provider_validations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "dbefeb522769f7899519a7f1052a7c37029c644af8ca4d8066e1b2ae0f56194b"
     },
     "personal_campaign_attempts": {
       "rows": 1,
       "sha256": "76fede519775af05a8a99c7da728d152e05c6c3b78c68604c96ea006d2043d55"
     },
     "personal_campaign_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "ae5b7efd7f922200d400bbdd4b9378ada30ef4c59ccb780e948d1c157723a644"
     },
     "personal_campaigns": {
       "rows": 1,
       "sha256": "f21fb6fd7d475322bc85d5ce161c157eda48c99babae5599507968d61c402194"
     },
     "registry_agent_permissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "4494fe7afdcb27645a113fdf5a6355899cb162156ed764696784bac95a17cf6e"
     },
     "registry_agents": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "5973959fd22590295262dac874054de777960ec8c19a27ce70cc9549dbe1587e"
     },
     "registry_audit": {
       "rows": 1,
@@ -159,16 +160,16 @@
       "sha256": "1a34e1b60b6c7c14546cfa5243ab80a12f0c399163ef7ea195376c6e5f468815"
     },
     "registry_connections": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "9951133607372f5393b5eb0aeebc2182a09612006017be069245e1ef3ca9c03b"
     },
     "registry_credentials": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "50090e0b3b73d80d0f23c21846e62e42192518def2dbec3788486b0e3a5464e8"
     },
     "registry_deployments": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "8907ea6937dd8d0b260c80327d3c432ab3d50c72c8e8dcc35056d59fdde92e81"
     },
     "registry_grants": {
       "rows": 1,
@@ -187,86 +188,86 @@
       "sha256": "d1720c724601be2ae65a71d384891cbb99425b418896b834aa516f36ecefcf50"
     },
     "registry_operations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "9269bd8c360e4b711eea49d2f93839b0938a08b15e50dc63938ab75c2f18b60d"
     },
     "registry_outcome_authorities": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "54fe60d7e0a22a76d4cff5155e8c5d7c8617a83c9af54aa7c9d97dc2e06d1d11"
     },
     "registry_prices": {
       "rows": 2,
       "sha256": "cd3b400758ff1a47c5854c507c713a9058ac3472f53ee24f7808a354ecd4fa16"
     },
     "registry_principals": {
-      "rows": 1,
-      "sha256": "d85ad7265e511db1234045844b0e9d04ca1af6daf0adac450a82f2000166b510"
+      "rows": 2,
+      "sha256": "1cc88384afb42276629910830f9cc1dc5d1cd2058d9b6b1a73405f1acea675eb"
     },
     "registry_source_permissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "8dde976855b6662ce234c935ade4e67ab261d8912b36c6e1be26e7e9973d55d7"
     },
     "submissions": {
-      "rows": 3,
-      "sha256": "3a63863ee002eb4f7706e632b2c0163523b14284c2b28e770286747d6c2be56e"
+      "rows": 4,
+      "sha256": "aab7a8893545e9bb2a2f28bfa1f698934ae243e006bd14fda83eb168d6602280"
     },
     "usage_revisions": {
       "rows": 3,
       "sha256": "ce4e72469f7b63561b0bd7e87f6496fd24d89bc78254753e26142d02f7b784bb"
     },
     "work_key_owners": {
-      "rows": 3,
-      "sha256": "7bb82d5d2c85e95831a463013e380ed75a42fee8379bedce5c8fb88cdbdab8a0"
+      "rows": 4,
+      "sha256": "eb52d00cebe7ac6db00a2d7ce2856c3ba2e60c245129dc8b43f543298eedc37d"
     }
   },
   "head_tables": {
     "attribution_outcomes": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "7c09f254cf4200d309dd0b3e8a42f8741005614c5d8529e5a511f63287fe5dfa"
     },
     "attribution_runs": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 2,
+      "sha256": "378b2887a748880e08d52406a732c39159e1e38b7f226dbbceb9f9b07f8b2579"
     },
     "console_users": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "018cac69ec8ebc4494bf49ad31eef0c72546385564e409591dffd67e6fbb18fd"
     },
     "dev12_authority": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "d166855a61f94c8179328ccd0e28c292826532f344393e154e24a0751e769dd3"
     },
     "dev12_authority_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "a755f38fa40453e03b3445184e30057ee5baf4e7205fe0cc343033a49d01fc15"
     },
     "dev12_campaign_attempts": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "3fce6dee619841e78c6fa2430d38afca1b52e175183b0ce4d607f522b4004683"
     },
     "dev12_campaign_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "61128e4c943491496cde96cb5149b0d47675b3e1f239e2af0b720f7e63c53cf3"
     },
     "dev12_campaigns": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "7f5eac2db97c2e96f9dc69bb792a1d087880b5f0df9cdb16569fa8b35ae37b6b"
     },
     "dev12_evidence_events": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "a984ec3130df301bd5533a8f0d6af9283fd5c5392bf0f82f8088f3fd4d2a899e"
     },
     "dev12_send_ownership": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "de517b810d30221d167f8dd49c09bea60e7321f75c49068a027daa10f4395e35"
     },
     "dev12_submissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "fb9f0c62f8880620b70a575e1424cb9a0d33a701e812175bb6352bde177f6e60"
     },
     "dev12_usage_revisions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "e921781324504dbe4ffb5428b2bcbb1f079fe7fb79d766b012596652d413fc8b"
     },
     "guard_dispatches": {
       "rows": 3,
@@ -281,88 +282,88 @@
       "sha256": "3f42b2e56b8431348aab2c8dbee69bcd771f17fd71b578fabdc3612cab316b91"
     },
     "integration_attempts": {
-      "rows": 1,
-      "sha256": "4acb43f1ce9105643a326ba7f828e2f4615ac55c873c7ae29e17afa56dec1971"
+      "rows": 2,
+      "sha256": "8f22106c3723c4fd217b5fc7195cafbc05de80f36f44cf23b56ce3ad8dd297e5"
     },
     "integration_credential_bindings": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "0685637ea4e6f17fee3466d8d0611ea47316bdd051952e3c7fef260930947c9d"
     },
     "integration_credential_meta": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "c6fc84f3b81de927d43f284fe62b1689545901ad63161adb5915272c8c4c1bdb"
     },
     "integration_credential_operations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "0b0455f35222b064c7cc87b35ae36b233a411148fc7474231344c8a9e0a52a92"
     },
     "integration_credential_versions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "cfd28d8f68c10dbd9f2dfebe3d51f7353d4843d1150ed4339ef9d07c16905794"
     },
     "integration_dataset_retention": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "4c77a84a4f580ccf32141ac9bc63b27468659edf4c00ed3ff223fd2043dbfc03"
     },
     "integration_datasets": {
-      "rows": 1,
-      "sha256": "7ca9814bbf618559c346eac1077255fd8035f10c443d15081cd05e47ac6d45a0"
+      "rows": 2,
+      "sha256": "53f1690d3a93c642aafc1be8a92251561d2ffa0d06668787be59336039c57e02"
     },
     "integration_eligibility_reads": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "09cb439f4c439ba581e85c853e0650649d2315f4ee2a9b8907d6005a430a1d27"
     },
     "integration_events": {
-      "rows": 3,
-      "sha256": "89b55539c8644839042174438426c98f5a5ee2c8ed2d675243ab9f5414b9e9df"
+      "rows": 5,
+      "sha256": "6586004d31882973047cb01a17fc955768c284c2a746cb78519df10f4030033d"
     },
     "integration_expired_datasets": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "bc15a6e5445de9f4e5a61fb72ebb62867bb839af3e020e5de0db65306c07e968"
     },
     "integration_runs": {
       "rows": 1,
       "sha256": "613799b1110dbe4920e4b61ac3e67a6f60e9af222f9f232eec24ef8638fba8ff"
     },
     "integration_snapshots": {
-      "rows": 1,
-      "sha256": "20d377ba27ff4944d60cc444e3b879bc8c6717b8c7936b3e6fc3882da4114ba1"
+      "rows": 2,
+      "sha256": "cae537c89e4ccbe94a0cb4e2371f6b8021d6b6ea7b7aa8d2eaf95bf288e5d246"
     },
     "intents": {
       "rows": 3,
       "sha256": "9dd56f9d6d6c2e22a8b7b8bf7db731f92408f4d0637eec77e5b35cd6e12868a5"
     },
     "local_connectors": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "97061e9655fbd5af2d4f9a2b3dbbe3c80f0f91f395fbb9b42dbb64a6d38deb87"
     },
     "operator_launches": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "72fca0a8c3ce474fc60e76b218f4ca41bd1ffae68d95d980a602bad1fc7ae5bf"
     },
     "operator_provider_validations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "dbefeb522769f7899519a7f1052a7c37029c644af8ca4d8066e1b2ae0f56194b"
     },
     "personal_campaign_attempts": {
       "rows": 1,
       "sha256": "76fede519775af05a8a99c7da728d152e05c6c3b78c68604c96ea006d2043d55"
     },
     "personal_campaign_audit": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "ae5b7efd7f922200d400bbdd4b9378ada30ef4c59ccb780e948d1c157723a644"
     },
     "personal_campaigns": {
       "rows": 1,
       "sha256": "f21fb6fd7d475322bc85d5ce161c157eda48c99babae5599507968d61c402194"
     },
     "registry_agent_permissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "4494fe7afdcb27645a113fdf5a6355899cb162156ed764696784bac95a17cf6e"
     },
     "registry_agents": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "5973959fd22590295262dac874054de777960ec8c19a27ce70cc9549dbe1587e"
     },
     "registry_audit": {
       "rows": 1,
@@ -373,16 +374,16 @@
       "sha256": "1a34e1b60b6c7c14546cfa5243ab80a12f0c399163ef7ea195376c6e5f468815"
     },
     "registry_connections": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "9951133607372f5393b5eb0aeebc2182a09612006017be069245e1ef3ca9c03b"
     },
     "registry_credentials": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "50090e0b3b73d80d0f23c21846e62e42192518def2dbec3788486b0e3a5464e8"
     },
     "registry_deployments": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "8907ea6937dd8d0b260c80327d3c432ab3d50c72c8e8dcc35056d59fdde92e81"
     },
     "registry_grants": {
       "rows": 1,
@@ -401,36 +402,36 @@
       "sha256": "5a4257c9d7fb46509caab0f7ca1808d9652319af124fcf6e0c62fe962337d07c"
     },
     "registry_operations": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "9269bd8c360e4b711eea49d2f93839b0938a08b15e50dc63938ab75c2f18b60d"
     },
     "registry_outcome_authorities": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "54fe60d7e0a22a76d4cff5155e8c5d7c8617a83c9af54aa7c9d97dc2e06d1d11"
     },
     "registry_prices": {
       "rows": 2,
       "sha256": "cd3b400758ff1a47c5854c507c713a9058ac3472f53ee24f7808a354ecd4fa16"
     },
     "registry_principals": {
-      "rows": 1,
-      "sha256": "d85ad7265e511db1234045844b0e9d04ca1af6daf0adac450a82f2000166b510"
+      "rows": 2,
+      "sha256": "1cc88384afb42276629910830f9cc1dc5d1cd2058d9b6b1a73405f1acea675eb"
     },
     "registry_source_permissions": {
-      "rows": 0,
-      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "rows": 1,
+      "sha256": "8dde976855b6662ce234c935ade4e67ab261d8912b36c6e1be26e7e9973d55d7"
     },
     "submissions": {
-      "rows": 3,
-      "sha256": "3a63863ee002eb4f7706e632b2c0163523b14284c2b28e770286747d6c2be56e"
+      "rows": 4,
+      "sha256": "aab7a8893545e9bb2a2f28bfa1f698934ae243e006bd14fda83eb168d6602280"
     },
     "usage_revisions": {
       "rows": 3,
       "sha256": "ce4e72469f7b63561b0bd7e87f6496fd24d89bc78254753e26142d02f7b784bb"
     },
     "work_key_owners": {
-      "rows": 3,
-      "sha256": "7bb82d5d2c85e95831a463013e380ed75a42fee8379bedce5c8fb88cdbdab8a0"
+      "rows": 4,
+      "sha256": "eb52d00cebe7ac6db00a2d7ce2856c3ba2e60c245129dc8b43f543298eedc37d"
     }
   },
   "head_report": {
