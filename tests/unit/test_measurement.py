@@ -159,14 +159,15 @@ class CoveragePolicyTests(unittest.TestCase):
         self.assertTrue(budget_errors({}, {"a.js": row}))
 
     def test_missing_sources_selectors_new_uncovered_files_and_increased_gaps_fail(self):
-        from tools.coverage_reports import gaps, regressions
+        from tools.coverage_reports import baseline_for, gaps, regressions
 
         row = {
+            "sha256": "synthetic",
             "missing_lines": [2],
-            "missing_branches": [{"function": "secure", "from": 1, "to": 2}],
+            "missing_branches": [{"id": "secure:1->2", "function": "secure", "from": 1, "to": 2}],
             "branch_functions": ["secure"],
         }
-        summary = {"files": {"source.py": row}}
+        summary = {"scope": "synthetic", "python": "3.12.15", "files": {"source.py": row}}
         self.assertEqual(
             len(gaps(summary, {"critical": [{"path": "source.py", "function": "secure"}]})), 1
         )
@@ -176,9 +177,7 @@ class CoveragePolicyTests(unittest.TestCase):
         )
         self.assertEqual(len(regressions(summary, {"files": {}})), 2)
         self.assertEqual(
-            regressions(
-                summary, {"files": {"source.py": {"missing_lines": 1, "missing_branches": 1}}}
-            ),
+            regressions(summary, baseline_for(summary)),
             [],
         )
         self.assertTrue(regressions({"files": {}}, {"files": {"source.py": {}}}))

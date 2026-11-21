@@ -6,10 +6,29 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def sdk_inventory(root: Path) -> dict[str, Any]:
+    sources = sorted([*root.glob("clients/js/*.cjs"), *root.glob("clients/js/*.mjs")])
+    if not sources:
+        return {}
+    process = subprocess.run(
+        ["node", str(ROOT / "tools/javascript_functions.cjs")],
+        input=json.dumps([str(source) for source in sources]),
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=30,
+    )
+    return {
+        Path(filename).relative_to(root).as_posix(): row
+        for filename, row in json.loads(process.stdout).items()
+    }
 
 
 def source_for(url: str, root: Path = ROOT) -> Path | None:
@@ -34,6 +53,7 @@ def source_for(url: str, root: Path = ROOT) -> Path | None:
 
 
 def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
+    root = root.resolve()
     functions: dict[str, dict[tuple[int, int], int]] = {}
     blocks: dict[str, dict[tuple[int, int], int]] = {}
     vm: dict[str, dict[str, Any]] = {}
@@ -47,6 +67,7 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
             ):
                 raise ValueError("installed SDK coverage identity changed")
             aliases[unquote(url)] = candidate
+    inventory = sdk_inventory(root)
     for artifact in directory.glob("vm-coverage-*.json"):
         for filename, entry in json.loads(artifact.read_text())["files"].items():
             source = source_for(filename, root)
@@ -65,13 +86,26 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
             if source is None:
                 continue
             key = source.relative_to(root).as_posix()
-            for function in script["functions"]:
+            for index, function in enumerate(script["functions"]):
                 ranges = function["ranges"]
                 if not ranges:
                     continue
                 span = (ranges[0]["startOffset"], ranges[0]["endOffset"])
                 entries = functions.setdefault(key, {})
-                entries[span] = max(entries.get(span, 0), ranges[0]["count"])
+                static = inventory.get(key)
+                # V8 includes a script wrapper, which may have the same span as
+                # an uncalled function occupying the entire source file.
+                wrapper = static and index == 0 and span == (0, static["utf16_length"])
+                if static is None:
+                    entries[span] = max(entries.get(span, 0), ranges[0]["count"])
+                elif not wrapper:
+                    for candidate in static["functions"]:
+                        if (
+                            candidate["end"] == span[1]
+                            and candidate["start"] <= span[0] <= candidate["body_start"]
+                        ):
+                            identity = candidate["start"], candidate["end"]
+                            entries[identity] = max(entries.get(identity, 0), ranges[0]["count"])
                 for row in ranges:
                     target = blocks.setdefault(key, {})
                     span = row["startOffset"], row["endOffset"]
@@ -83,6 +117,11 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
         key = source.relative_to(root).as_posix()
         observed = functions.get(key, {})
         ranges = blocks.get(key, {})
+        if key in inventory:
+            observed = {
+                (row["start"], row["end"]): observed.get((row["start"], row["end"]), 0)
+                for row in inventory[key]["functions"]
+            }
         files[key] = {
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             "measured": key in functions,
@@ -94,6 +133,8 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
                 list(span) for span, count in sorted(observed.items()) if count == 0
             ],
         }
+        if key in inventory:
+            files[key]["method"] = "TypeScript 5.9.3 static functions with V8 hit counts"
         if key in vm:
             rows = list(vm[key].values())
             files[key] = {
@@ -111,7 +152,7 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
                 "missing_counters": [row for row in rows if row["count"] == 0],
             }
     payload = {
-        "scope": "V8 SDK function/block ranges; AST console statement/function counters; unmeasured files explicit; no exhaustive JS branch denominator claim",
+        "scope": "Static TypeScript 5.9.3 SDK functions with V8 hits; diagnostic V8 block ranges; AST console counters; unmeasured files explicit; no exhaustive JS branch denominator claim",
         "files": files,
     }
     (directory / "summary.json").write_text(json.dumps(payload, indent=2) + "\n")
@@ -165,6 +206,10 @@ def budgets(payload: dict[str, Any], scope: str) -> dict[str, dict[str, Any]]:
             # V8's observed block ranges can change when an outer function runs.
             # Keep those diagnostic ranges out of a fixed-denominator ratchet.
             result[name].pop("missing_statements_or_observed_blocks")
+            result[name]["functions"] = row["functions"]
+            result[name]["missing_function_ids"] = [
+                f"{start}:{end}" for start, end in row["missing_function_offsets_utf16"]
+            ]
     return result
 
 
@@ -185,6 +230,20 @@ def budget_errors(current: dict[str, Any], baseline: dict[str, Any]) -> list[str
             for metric in ("missing_functions", "missing_statements_or_observed_blocks"):
                 if metric in row and row[metric] > old[metric]:
                     errors.append(f"{name}: {metric} exceeds reviewed budget")
+            if "missing_function_ids" in row:
+                if "missing_function_ids" not in old:
+                    errors.append("review static SDK function baseline: " + name)
+                elif row["sha256"] != old["sha256"]:
+                    errors.append("SDK source changed; review function identities: " + name)
+                else:
+                    if row["functions"] != old["functions"]:
+                        errors.append("static SDK function inventory changed: " + name)
+                    current_ids = set(row["missing_function_ids"])
+                    old_ids = set(old["missing_function_ids"])
+                    if current_ids - old_ids:
+                        errors.append("newly uncovered SDK functions: " + name)
+                    if old_ids - current_ids:
+                        errors.append("tighten covered SDK function budget: " + name)
     for name in baseline.keys() - current.keys():
         errors.append("missing JS source: " + name)
     return errors

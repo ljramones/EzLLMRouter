@@ -61,12 +61,32 @@ def gaps(summary: Mapping[str, Any], policy: Mapping[str, Any]) -> list[dict[str
 def regressions(summary: Mapping[str, Any], baseline: Mapping[str, Any]) -> list[str]:
     errors = []
     files = baseline.get("files", {})
+    if baseline.get("python", summary.get("python")) != summary.get("python"):
+        errors.append("coverage runtime differs from the reviewed baseline")
     for path, row in summary["files"].items():
-        permitted = files.get(path, {"missing_lines": 0, "missing_branches": 0})
-        for key in ("missing_lines", "missing_branches"):
-            if len(row[key]) > permitted[key]:
+        permitted = files.get(path)
+        if permitted is not None:
+            if permitted.get("source_sha256") != row.get("sha256"):
+                errors.append(f"{path}: source changed; review and update coverage identities")
+                continue
+            if not {"missing_line_ids", "missing_branch_ids"} <= permitted.keys():
+                errors.append(f"{path}: coverage budget requires exact missing-code identities")
+                continue
+        for key, identity_key in (
+            ("missing_lines", "missing_line_ids"),
+            ("missing_branches", "missing_branch_ids"),
+        ):
+            actual = (
+                set(row[key]) if key == "missing_lines" else {entry["id"] for entry in row[key]}
+            )
+            expected = set(permitted[identity_key]) if permitted is not None else set()
+            if permitted is not None and len(expected) != permitted[key]:
+                errors.append(f"{path}: inconsistent {key} budget and identities")
+            if actual - expected:
+                errors.append(f"{path}: {len(actual - expected)} newly {key}")
+            if expected - actual:
                 errors.append(
-                    f"{path}: {len(row[key])} {key} exceeds reviewed budget {permitted[key]}"
+                    f"{path}: tighten {key} budget; {len(expected - actual)} reviewed gaps are now covered"
                 )
     for path in files.keys() - summary["files"].keys():
         errors.append("missing measured library file: " + path)
@@ -128,6 +148,7 @@ def render(
 
 def baseline_for(summary: Mapping[str, Any]) -> dict[str, Any]:
     return {
+        "format_version": 2,
         "measurement": summary["scope"],
         "python": summary["python"],
         "files": {
@@ -135,10 +156,70 @@ def baseline_for(summary: Mapping[str, Any]) -> dict[str, Any]:
                 "source_sha256": row["sha256"],
                 "missing_lines": len(row["missing_lines"]),
                 "missing_branches": len(row["missing_branches"]),
+                "missing_line_ids": sorted(row["missing_lines"]),
+                "missing_branch_ids": sorted(branch["id"] for branch in row["missing_branches"]),
             }
             for path, row in sorted(summary["files"].items())
         },
     }
+
+
+def merge_summaries(left: Mapping[str, Any], right: Mapping[str, Any]) -> dict[str, Any]:
+    """Union measured hits only when both runs describe exactly the same sources."""
+    if any(left[key] != right[key] for key in ("python", "scope")):
+        raise ValueError("coverage runtime or measurement scope differs across tiers")
+    if left["files"].keys() != right["files"].keys():
+        raise ValueError("coverage source inventories differ across tiers")
+    files = {}
+    for path, first in left["files"].items():
+        second = right["files"][path]
+        for key in ("sha256", "executable", "branches", "branch_functions"):
+            if first[key] != second[key]:
+                raise ValueError(f"coverage identity/denominator differs across tiers: {path}")
+        lines = sorted(set(first["missing_lines"]) & set(second["missing_lines"]))
+        right_missing = {row["id"] for row in second["missing_branches"]}
+        branches = [row for row in first["missing_branches"] if row["id"] in right_missing]
+        files[path] = {
+            **first,
+            "missing_lines": lines,
+            "executed": first["executable"] - len(lines),
+            "missing_branches": branches,
+            "branches_executed": first["branches"] - len(branches),
+        }
+    executable = sum(row["executable"] for row in files.values())
+    executed = sum(row["executed"] for row in files.values())
+    return {
+        "scope": left["scope"],
+        "python": left["python"],
+        "tier": "combined",
+        "branches": sum(row["branches"] for row in files.values()),
+        "branches_executed": sum(row["branches_executed"] for row in files.values()),
+        "executed": executed,
+        "executable": executable,
+        "percent": round(100 * executed / executable, 2) if executable else 0,
+        "files": files,
+    }
+
+
+def merge_baselines(left: Mapping[str, Any], right: Mapping[str, Any]) -> dict[str, Any]:
+    """Derive combined allowances from the independently reviewed tier budgets."""
+    if left["python"] != right["python"] or left["files"].keys() != right["files"].keys():
+        raise ValueError("coverage baseline runtimes or source inventories differ")
+    files = {}
+    for path, first in left["files"].items():
+        second = right["files"][path]
+        if first["source_sha256"] != second["source_sha256"]:
+            raise ValueError("coverage baseline source identities differ: " + path)
+        lines = sorted(set(first["missing_line_ids"]) & set(second["missing_line_ids"]))
+        branches = sorted(set(first["missing_branch_ids"]) & set(second["missing_branch_ids"]))
+        files[path] = {
+            "source_sha256": first["source_sha256"],
+            "missing_lines": len(lines),
+            "missing_branches": len(branches),
+            "missing_line_ids": lines,
+            "missing_branch_ids": branches,
+        }
+    return {**left, "files": files}
 
 
 def main() -> int:

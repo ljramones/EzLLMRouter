@@ -82,26 +82,55 @@ npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
 uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30
 ```
 
+The PR gate measures and audits both tiers independently, then merges their
+Python hits into one combined report. Use fresh output directories for each run:
+
+```sh
+uv run --locked python -m tools.check --coverage --coverage-gate --lock-audit --health-budget 30 --coverage-dir .artifacts/coverage/offline
+uv run --locked python -m tools.check --http-only --coverage --coverage-gate --lock-audit --health-budget 30 --coverage-dir .artifacts/coverage/http --coverage-merge .artifacts/coverage/offline
+```
+
+The second command requires permission to bind localhost fixtures. The HTTP
+directory retains its own summary and a `combined/` report containing the union
+of offline and HTTP hits. Merge inputs must have identical Python versions,
+measurement scopes, source inventories, source hashes and static denominators.
+The PR artifact upload follows both tiers and runs even after a failure.
+
 Each run creates a fresh directory under `.artifacts/coverage/`. `summary.json`
 records Python source hashes, executable/missing lines, and both exits of each
 conditional bytecode instruction, including loops and worker threads. Exception
 dispatch edges and native code are outside this metric. `subsystems.json` and
 `index.html` show subsystem totals and the explicit critical-exit gap list.
-`tools/coverage_budget.json` caps missing lines/exits per source file; new files
+`tools/coverage_budget.json` and `tools/coverage_budget_http.json` retain the exact
+missing line and conditional-exit identities for their respective tiers. An
+unchanged source must match its reviewed sets: newly missing code fails even
+when another gap was covered, and improvements require tightening the baseline.
+Changed source hashes require reviewing and updating the identities. New files
 have zero allowance. Critical selectors in `coverage_policy.json` must exist and
-have no uncovered conditional exits. Baseline increases require explicit review;
+have no uncovered conditional exits in the offline or combined report. Standalone
+HTTP runs apply any `critical_http` selectors and their independent budget.
+Baseline increases require explicit review;
 `tools.coverage_reports --write-baseline` is a maintenance operation, never a CI
-step. Add `--loopback` for a separate HTTP-inclusive measurement.
+step. Select the HTTP budget with `--baseline tools/coverage_budget_http.json`
+when reviewing an HTTP baseline. `--loopback` measures both tiers together and
+checks against the intersection of the independently reviewed missing-code sets.
 
-Installed SDK coverage uses native V8 counters. Console VM coverage uses statement
+Installed SDK coverage maps native V8 function hits onto a static function
+inventory from TypeScript 5.9.3. Nested functions remain in the denominator even
+when their outer function is never called; never-loaded SDK files retain their
+uncovered functions. Script wrappers and generated implicit constructors are not
+source functions. Function offsets use UTF-16 units, including sources containing
+astral characters. The installed-SDK job installs the same locked parser used by
+console coverage and retains source hashes, static totals and missing-function
+identities in its reviewed budget. Console VM coverage uses statement
 and function counters inserted by the locked TypeScript 5.9.3 parser: Node
 24.22.1 precise coverage mis-resolves an early `typeof` after a later lexical
 binding. Instrumentation regressions preserve that binding, strict directives,
 arrow `this`, loops and exceptions. The JS summary labels the two methods and
 unmeasured files explicitly; it does not claim an exhaustive JS branch percentage.
 `tools/javascript_coverage_budget.json` ratchets missing console statements/functions
-and installed-SDK functions. V8 block ranges remain diagnostic because their
-denominator changes when outer functions execute. Installed source aliases are
+and exact installed-SDK function identities. V8 block ranges remain diagnostic
+because their denominator changes when outer functions execute. Installed source aliases are
 recorded before temporary packages are removed and must match canonical hashes.
 
 Every normal check also writes sanitized per-test outcomes and durations under

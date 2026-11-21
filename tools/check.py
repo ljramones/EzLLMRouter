@@ -50,6 +50,8 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_coverage_gates",
+    "tests.unit.test_operator_scheduler",
     "tests.unit.test_authorization_gate_sensitivity.AuthorizationGateSensitivityTests",
     "tests.unit.test_generated_http_framing.AuthenticatedFramingTests",
     "tests.unit.test_lock_audit_failures",
@@ -177,6 +179,7 @@ TYPED_PATHS = (
     "tools/test_health.py",
     "tools/branch_coverage.py",
     "tools/coverage_reports.py",
+    "tools/coverage_run.py",
     "tools/container_tests.py",
     "tools/javascript_coverage.py",
     "tools/security_sast.py",
@@ -415,6 +418,12 @@ def main() -> int:
         action="store_true",
         help="enforce reviewed coverage and critical-exit budgets (requires --coverage)",
     )
+    parser.add_argument("--coverage-dir", type=Path, help="fresh directory for tier measurements")
+    parser.add_argument(
+        "--coverage-merge",
+        type=Path,
+        help="offline measurement directory to merge with HTTP results",
+    )
     parser.add_argument("--health-dir", type=Path, help="test outcome/duration artifact directory")
     parser.add_argument(
         "--health-budget", type=float, help="maximum seconds per Python test module"
@@ -444,6 +453,10 @@ def main() -> int:
         parser.error("repeat must be between 1 and 200")
     if args.coverage_gate and not args.coverage:
         parser.error("coverage-gate requires coverage")
+    if args.coverage_dir is not None and not args.coverage:
+        parser.error("coverage-dir requires coverage")
+    if args.coverage_merge is not None and not (args.coverage and args.http_only):
+        parser.error("coverage-merge requires coverage and http-only")
     if args.health_budget is not None and not 0 < args.health_budget <= 180:
         parser.error("health-budget must be positive and at most 180 seconds")
     health_parent = ROOT / ".artifacts/test-health"
@@ -452,14 +465,14 @@ def main() -> int:
     health_directory.mkdir(parents=True, exist_ok=True)
     os.environ["EZLLMROUTER_TEST_HEALTH"] = str(health_directory.resolve())
     coverage_directory = None
+    coverage_tier = "http" if args.http_only else "combined" if args.loopback else "offline"
     if args.coverage:
-        parent = ROOT / ".artifacts/coverage"
-        parent.mkdir(parents=True, exist_ok=True)
-        coverage_directory = tempfile.mkdtemp(prefix="python-", dir=parent)
-        os.environ["EZLLMROUTER_TEST_COVERAGE"] = coverage_directory
-        javascript_directory = Path(coverage_directory) / "javascript"
-        javascript_directory.mkdir()
-        os.environ["EZLLMROUTER_JS_COVERAGE"] = str(javascript_directory)
+        from .coverage_run import prepare
+
+        try:
+            coverage_directory = prepare(args.coverage_dir, coverage_tier)
+        except ValueError as error:
+            parser.error(str(error))
     inventory_errors = test_inventory_errors() + javascript_inventory_errors()
     if inventory_errors:
         print("\n".join(inventory_errors), file=sys.stderr)
@@ -520,38 +533,17 @@ def main() -> int:
                 except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
                     failures.append(" ".join(command))
         if coverage_directory is not None:
-            from .test_coverage import report
+            from .coverage_run import finish
 
-            summary = report(coverage_directory)
-            from .coverage_reports import gaps, regressions, render
-            from .javascript_coverage import report as javascript_report
-
-            policy = json.loads((ROOT / "tools/coverage_policy.json").read_text())
-            render(summary, Path(coverage_directory), policy)
-            javascript_report(Path(coverage_directory) / "javascript")
-            if args.coverage_gate:
-                baseline = json.loads((ROOT / "tools/coverage_budget.json").read_text())
-                errors = regressions(summary, baseline)
-                from .javascript_coverage import budgets, budget_errors as js_budget_errors
-
-                js_summary = json.loads(
-                    (Path(coverage_directory) / "javascript/summary.json").read_text()
-                )
-                js_baseline = json.loads(
-                    (ROOT / "tools/javascript_coverage_budget.json").read_text()
-                )
-                errors.extend(
-                    js_budget_errors(budgets(js_summary, "console"), js_baseline["console"])
-                )
-                if gaps(summary, policy):
-                    errors.append("critical conditional exits remain uncovered")
-                if errors:
-                    print("\n".join(errors), file=sys.stderr)
-                    failures.append("coverage budgets")
-            print(
-                f"Python line coverage: {summary['percent']}% ({summary['executed']}/{summary['executable']}); {coverage_directory}/summary.json",
-                flush=True,
+            errors = finish(
+                coverage_directory,
+                coverage_tier,
+                enforce=args.coverage_gate,
+                merge=args.coverage_merge,
             )
+            if errors:
+                print("\n".join(errors), file=sys.stderr)
+                failures.append("coverage budgets")
         from .test_health import budget_errors, summarize
 
         summarize(health_directory)

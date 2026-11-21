@@ -95,27 +95,40 @@
     "clients/js/http.cjs": {
       "sha256": "b987722f7e26eecc0409e01ea6fa3b1f92ab6b532b38144738b713627858d609",
       "measured": true,
-      "missing_functions": 0
+      "missing_functions": 0,
+      "functions": 19,
+      "missing_function_ids": []
     },
     "clients/js/index.cjs": {
       "sha256": "433536a8d025adae19f7c47aa239a216adf163682966ea880afcbe302b3e68a7",
       "measured": true,
-      "missing_functions": 2
+      "missing_functions": 2,
+      "functions": 74,
+      "missing_function_ids": [
+        "22963:22983",
+        "28483:28507"
+      ]
     },
     "clients/js/index.mjs": {
       "sha256": "6ed0ee4040cc13d4d731237bfbef8d7cc7514ad7f96658ad4801846cc46f0a5e",
       "measured": false,
-      "missing_functions": 0
+      "missing_functions": 0,
+      "functions": 0,
+      "missing_function_ids": []
     },
     "clients/js/integration.cjs": {
       "sha256": "383b3bca2355e384a1fc9ecccb90edd8ce79be7bb6f3f6b0222d8c77b1124992",
       "measured": true,
-      "missing_functions": 0
+      "missing_functions": 0,
+      "functions": 38,
+      "missing_function_ids": []
     },
     "clients/js/successor.cjs": {
       "sha256": "6e93e6e2a5462b19cb4251330eb493c5c065cc17b93451d5fff308b0362b4d31",
       "measured": true,
-      "missing_functions": 0
+      "missing_functions": 0,
+      "functions": 27,
+      "missing_function_ids": []
     }
   }
 }
