@@ -50,6 +50,10 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_campaign_interleavings",
+    "tests.unit.test_coherent_restore",
+    "tests.unit.test_lock_audit",
+    "tests.unit.test_process_durability",
     "tests.unit.test_generated_properties.CampaignStateModel",
     "tests.unit.test_generated_properties.CanonicalProperties",
     "tests.unit.test_generated_properties.RegistryStateModel",
@@ -326,6 +330,10 @@ def run_script(name: str) -> int:
             from .test_coverage import LineCoverage
 
             stack.enter_context(LineCoverage(os.environ["EZLLMROUTER_TEST_COVERAGE"]))
+        if os.environ.get("EZLLMROUTER_LOCK_AUDIT"):
+            from .lock_audit import auditing
+
+            stack.enter_context(auditing())
         block_network(stack)
         try:
             runpy.run_path(str(ROOT / name), run_name="__main__")
@@ -342,6 +350,10 @@ def run_module(name: str, *, loopback: bool) -> bool:
             from .test_coverage import LineCoverage
 
             stack.enter_context(LineCoverage(os.environ["EZLLMROUTER_TEST_COVERAGE"]))
+        if os.environ.get("EZLLMROUTER_LOCK_AUDIT"):
+            from .lock_audit import auditing
+
+            stack.enter_context(auditing())
         block_network(stack, loopback=loopback)
         suite = unittest.defaultTestLoader.loadTestsFromName(name)
         from .test_health import TimedResult, write_result
@@ -398,11 +410,16 @@ def main() -> int:
         help="repeat Python module suites; retain every outcome (no retry pass)",
     )
     parser.add_argument("--tests-only", action="store_true", help="omit Ruff and mypy")
+    parser.add_argument(
+        "--lock-audit", action="store_true", help="reject blocking work under shared runtime locks"
+    )
     parser.add_argument("--loopback", action="store_true", help="also run local HTTP fixtures")
     parser.add_argument("--http-only", action="store_true", help="run only local HTTP fixtures")
     parser.add_argument("--test-module", help=argparse.SUPPRESS)
     parser.add_argument("--test-script", choices=SCRIPT_TESTS, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.lock_audit:
+        os.environ["EZLLMROUTER_LOCK_AUDIT"] = "1"
     if args.test_script:
         return run_script(args.test_script)
     if args.test_module:

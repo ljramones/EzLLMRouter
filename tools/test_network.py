@@ -63,6 +63,7 @@ def child_environment(
         "EZLLMROUTER_TEST_HEALTH",
         "NODE_V8_COVERAGE",
         "EZLLMROUTER_JS_COVERAGE",
+        "EZLLMROUTER_LOCK_AUDIT",
     ):
         if key in os.environ:
             result[key] = os.environ[key]

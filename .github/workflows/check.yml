@@ -21,7 +21,7 @@ jobs:
       - name: Install locked parser for console coverage
         run: npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
       - name: Offline regression and quality checks
-        run: uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30
+        run: uv run --locked python -m tools.check --coverage --coverage-gate --health-budget 30 --lock-audit
       - name: Retain coverage and test health
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

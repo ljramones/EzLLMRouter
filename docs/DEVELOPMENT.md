@@ -142,6 +142,40 @@ late recorded charges, checks exact incurred/held/available exposure, and refuse
 new reservations that exceed current authority. These generators do not yet
 provide Hypothesis-style shrinking or cover all native decoder implementations.
 
+`tools.check --lock-audit` wraps the shared store/authority gates and password
+hash semaphore in each module interpreter. It rejects socket connect/read/write,
+TLS handshake, `time.sleep`, password hashing and hash-slot waits while a shared
+gate is held. Explicit call-site exceptions preserve initial account hashing
+before the service binds, the sender's atomic nonblocking first write, and
+asyncio's nonblocking event-loop wake-up socket. Routine login and password
+changes have no exception. This is test instrumentation, not an OS sandbox or a
+detector for arbitrary CPU work/file I/O or nested isolated source-copy children.
+
+The forced-order race cases include sender revocation/cancellation,
+credential rotation/release, purge versus delayed writers, session revocation
+during lookups, and both orders of campaign close/admission. Run a short local
+stress pass, or omit the small round count and offline restriction for the
+nightly 200-round HTTP/TLS pass:
+
+```sh
+uv run --locked python -m tools.concurrency_stress --rounds 3 --offline-only
+```
+
+The runner shuffles suite order with a recorded seed; the individual races use
+events/barriers, rather than sleeps to hope for an ordering. A failure or timeout
+stops the run and remains failed in `summary.json`.
+
+`test_process_durability` kills real child processes after a handshake at named
+fixture-only checkpoints. It covers before-BEGIN, before-COMMIT and after-COMMIT
+for work creation, intent, guard receipt and usage, plus encrypted-file
+publication and provider-key rotation. These are process-crash tests, not a
+power-loss or physical-disk qualification. Storage tests exercise real SQLite
+page-limit/busy failures and an injected I/O failure after a work claim.
+`test_coherent_restore` uses the real offline database-backup command, copies the
+documented private keyring/vault set, restores credentials in all three scopes
+and compares retained accounting. All data and secrets are synthetic and
+temporary; the tests never open a running profile or contact a provider.
+
 JavaScript runtime checks install a fresh local npm package and exercise the
 installed consumer. The HTTP variant uses actual Node fetch against a disposable
 localhost fixture:

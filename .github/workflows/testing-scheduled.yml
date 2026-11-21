@@ -6,6 +6,25 @@ on:
 permissions:
   contents: read
 jobs:
+  concurrency-stress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: python3 -m pip install uv==0.13.9
+      - run: uv sync --locked --all-groups --python 3.12.15
+      - name: Repeat forced interleavings 200 times with a recorded suite-order seed
+        run: uv run --locked python -m tools.concurrency_stress --seed ${{ github.run_number }}
+      - name: Retain each run, including the first failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: concurrency-stress
+          path: .artifacts/concurrency-stress/
+          retention-days: 30
   repeat-regressions:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -20,7 +39,7 @@ jobs:
       - run: python3 -m pip install uv==0.13.9
       - run: uv sync --locked --all-groups --python 3.12.15
       - name: Repeat offline and loopback modules five times, retaining every failure
-        run: uv run --locked python -m tools.check --tests-only --loopback --repeat 5 --health-dir .artifacts/nightly-health
+        run: uv run --locked python -m tools.check --tests-only --loopback --repeat 5 --health-dir .artifacts/nightly-health --lock-audit
       - name: Retain every outcome and slowest tests
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
