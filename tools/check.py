@@ -95,6 +95,7 @@ MODULES = (
     "tests.unit.test_client_deadlines",
     "tests.unit.test_provision_recovery",
     "tests.unit.test_quality_gates",
+    "tests.unit.test_source_size",
     "tests.unit.test_persistence_recovery",
     "tests.unit.test_structural_cleanup",
 )
@@ -164,6 +165,7 @@ TYPED_PATHS = (
     "server/src/ezllmrouter_server/schema.py",
     "tools/check.py",
     "tools/type_audit.py",
+    "tools/source_size.py",
     "tools/gateway/paths.py",
     "tests/support.py",
     "deploy/local/command_support.py",

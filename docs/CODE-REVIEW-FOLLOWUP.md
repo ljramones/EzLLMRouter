@@ -658,7 +658,7 @@ No additional runtime refactoring is included in this reconciliation.
 | W4 — Coordinator pipeline | Partial | Submission, attempt start and response observation have named steps and keyword-only configuration. `core.py` remains 1,479 lines and `Coordinator` spans 1,194. Preserve outcome routing while completing the at-most-900-line facade target. |
 | W5 — medium runtime modules | Partial | Direct operator routes, CLI composition, public reporting helpers and the checked Store interface are implemented. Canonical validation, demo projection, report/probe/admin functions and Store decomposition remain. |
 | W6 — evidence and large tests | Partial | Historical Docker-input tooling moved under `tools/`; private input locations are configurable. Large retained runners, preflight/tool-cycle tests and deployment exercises still need decomposition. No evidence runners have been deleted. Obtain the owner's decision before deleting or archiving any `dev12_*` or `ct02b_*` runners. |
-| W7 — source-size ratchet | Open | Add the registered size test and explicit per-offender ceilings at the current source baseline. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
+| W7 — source-size ratchet | Implemented — local checks pass | Registered `tests.unit.test_source_size` measures tracked and new non-ignored source. The 98 existing allowances are capped at the `33f7a45` baseline; growth and new offenders fail, and reductions require tightening/removing entries. Runtime thresholds: 800-line files, 100-line functions and 600-line classes; tooling/test thresholds: 1,500-line files and 200-line functions. Remove allowances once below their thresholds. |
 
 | Server measure | Report baseline `c2712db` | Current `8c43850` | Work-order target |
 | --- | ---: | ---: | ---: |
@@ -681,3 +681,21 @@ Reconciliation validation: the full `tools.check` gate passes with 904 Python
 cases, lint/formatting, strict mypy on 66 files, the library typing-debt budget
 and the maintained script/console checks. Markdown links and `git diff --check`
 pass. This documentation-only update performs no additional target qualification.
+
+
+### Item 11 follow-up: W7 size ratchet
+
+`tools/source_size.py` measures source files and Python AST class/function spans,
+including nested and async definitions with qualified names. Runtime limits are
+800/100/600 lines for files/functions/classes; tooling/test limits are
+1,500/200/1,500. Non-Python source files receive the file-size gate; function and
+class spans are measured for Python. New non-ignored files participate before
+staging. Every existing oversized symbol has an explicit ceiling in
+`tools/source_size_budget.json`. Growth fails, reductions require lowering the
+ceiling, and resolved/deleted definitions require removal of their allowance.
+The five gate regressions cover new/growing offenders, shrinking/resolved debt,
+qualified nested/async definitions, class limits and non-Python file limits.
+
+W7 verification: full `tools.check` passes 909 Python cases, lint/formatting,
+strict mypy on 67 files, the library typing budget and script/console checks.
+The frozen inputs, schemas and runtime behavior are unchanged.

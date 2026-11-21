@@ -279,3 +279,12 @@ Passing local checks does not establish Docker deployment, provider execution
 or production readiness. The optional execution profile requires verified frozen
 inputs and its own deployment checks. Preparing documentation or building a
 package does not authorize a model call, spending or an instance restart.
+
+
+The registered `tests.unit.test_source_size` gate enforces source-size budgets in
+`tools/source_size_budget.json`. Runtime Python files/functions/classes have
+800/100/600-line limits; tools/tests have 1,500/200/1,500-line limits. Source files
+in other languages receive the file limit. Explicit existing allowances can
+only shrink: reduce their ceilings with the code, and remove resolved entries.
+Code relocations must transfer an existing allowance explicitly in review,
+without increasing its ceiling. New non-ignored source files are checked too.
