@@ -117,6 +117,15 @@ Changed source hashes require reviewing and updating the identities. New files
 have zero allowance. Critical selectors in `coverage_policy.json` must exist and
 have no uncovered conditional exits in the offline or combined report. Standalone
 HTTP runs apply any `critical_http` selectors and their independent budget.
+The plaintext and TLS first-write selectors are blocking. Their socket-pair
+regressions run in both tiers and reject missing authority, stale epochs,
+revocation, abandonment, expired plans and exhausted write timeouts without
+accepting request bytes. Real backpressure exercises finite and absent timeouts,
+then rechecks authority before retrying. TLS drain tests use a real MemoryBIO
+with opaque fixture bytes: handshake output does not count as request acceptance,
+and an already accepted request can finish its suffix after revocation. The
+separate loopback TLS fixture covers actual handshake, encryption and hostname
+verification.
 Baseline increases require explicit review;
 `tools.coverage_reports --write-baseline` is a maintenance operation, never a CI
 step. Select the HTTP budget with `--baseline tools/coverage_budget_http.json`

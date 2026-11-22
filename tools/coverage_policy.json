@@ -6,16 +6,16 @@
     {"path": "server/src/ezllmrouter_server/operator_http/transport.py", "function": "TransportRoutes._csrf_ok"},
     {"path": "server/src/ezllmrouter_server/operator_http/authentication.py", "function": "AuthenticationRoutes._session"},
     {"path": "server/src/ezllmrouter_server/repositories/authority.py", "function": "authorized"},
-    {"path": "server/src/ezllmrouter_server/personal_campaign.py", "function": "PersonalCampaign.settle.<locals>.action"}
-  ],
-  "followup_critical": [
-    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed"},
-    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed_reply"},
-    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_outcome_unknown"},
+    {"path": "server/src/ezllmrouter_server/personal_campaign.py", "function": "PersonalCampaign.settle.<locals>.action"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_sender_transport.py", "function": "OwnedSocketStream._write_once"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_sender_transport.py", "function": "OwnedSocketStream._write_once.<locals>.emit"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py", "function": "OwnedTLSStream._drain"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py", "function": "OwnedTLSStream._drain.<locals>.emit"}
   ],
-  "critical_target": "The initial critical selectors are blocking at 100% conditional exits. Follow-up selectors remain visible, ratcheted per file, and must reach 100% before T01 is complete. Exception dispatch edges are outside this metric."
+  "followup_critical": [
+    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed"},
+    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed_reply"},
+    {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_outcome_unknown"}
+  ],
+  "critical_target": "All critical selectors, including first-write transports, are blocking at 100% conditional exits. Coordinator follow-up selectors remain visible, ratcheted per file, and must reach 100% before T01 is complete. Exception dispatch edges are outside this metric."
 }

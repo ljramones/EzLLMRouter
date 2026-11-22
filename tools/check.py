@@ -43,7 +43,7 @@ GATEWAY_TESTS = (
     "python_actor_recovery completion_preflight completion_continuation completion_runtime completion_identity "
     "completion_supplement first_owner_supplement_followup first_owner_supplement "
     "retrieval_receiver_decode retrieval_tls_receiver_modes "
-    "model_identity owned_sender_transport"
+    "model_identity owned_sender_transport first_write_boundaries"
 ).split()
 SCRIPT_TESTS = (
     "tests/gateway_integration/test_retry_cause.py",
@@ -158,6 +158,7 @@ LOOPBACK_MODULES = (
     "tests.development_slice.test_retrieval_http",
     "tests.gateway_integration.test_synchronous_first_owner",
     "tests.gateway_integration.test_owned_tls_sender_transport",
+    "tests.gateway_integration.test_first_write_boundaries",
     "tests.gateway_integration.test_readiness",
     "tests.gateway_integration.test_worker_ready.WorkerReadyTests",
     "tests.operator_console.test_retrieval_operator_http",

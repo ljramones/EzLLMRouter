@@ -74,7 +74,7 @@ keeps those distinct from new work and from target verification.
 
 | ID | Recommendation | Status and evidence |
 | --- | --- | --- |
-| T01 | Python/Node coverage and critical-branch ratchets | Partial: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. Six initial critical selectors have zero gaps; first-byte/coordinator follow-up selectors remain explicitly listed and ratcheted. Nightly repeats retain all outcomes. See DEVELOPMENT.md for commands and metric scope. |
+| T01 | Python/Node coverage and critical-branch ratchets | Partial: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. Ten critical selectors, including the four first-write transport functions, require complete conditional-exit coverage. The 19 coordinator outcome exits remain explicitly listed and ratcheted. Nightly repeats retain all outcomes. See DEVELOPMENT.md for commands and metric scope. |
 | T02 | Generated authorization matrix | Partial: all 66 operator routes have independent checked-in policy rows, with anonymous/expired/ordinary/admin/read-only/password-change-required sessions, missing/wrong CSRF, Origin/Host and cross-user checks. Full-console and integration-only variants cover valid-body write denials, wrong methods and positive account/connector controls. Direct-handler, socket-pair and localhost versions pass; sensitivity regressions detect deliberately permitted read-only mutations. Wire API matrix and broader family-resource scenarios remain. |
 | T03 | Docker image builds and deployment checks | Partial: tools.container_tests inventories all tracked Dockerfiles and resolves supported unittest/discovery/pytest/script commands through actual preparation helpers, COPY, WORKDIR, stages and mount scope. Unsupported validation forms and unqualified staging contexts fail; negative regressions cover missing copies and preflights. Image build/structure/compose qualification still awaits the approved frozen bundle and a disposable target. |
 | T04 | Supply-chain, secret and static security scans | Partial: Ruff S rules cover server/Python-client, worker, deploy and tools sources with exact finding and source identities. A standard-library secret scanner checks current source and reachable full Git history using redacted output and blob-bound public-fixture exceptions. Input checks validate Python hashes/archive identities, npm integrity/manifest agreement, reviewed local projects and native manifest declarations. OSV pagination and retained page replay fail closed. Bootstrap uv wheel/hash and the remaining action commit are pinned. Native transitive graphs and actual-image scans still need their qualified inputs. |
@@ -194,3 +194,16 @@ package installation. Source/security checks pass, including 1,008 individually
 reviewed SAST findings. Logs and source-bound reports remain under ignored
 `.artifacts/testing-review-followup/` and `.artifacts/coverage/`. Broader T01
 critical selectors and deployment qualification retain their stated limits.
+
+T01 first-write validation closes the ten remaining transport exit gaps. Seven
+new socket-pair tests run in both tiers; all 86 logical exits across four
+transport selectors are covered and now block regressions. The offline budget
+removes five missing-line and 24 missing-exit allowances; HTTP removes 63 and 44,
+with unchanged application source hashes and no allowance increases. Both
+coverage/lock-audit tiers and their merged gate pass at 88.75%, 70.90% and 92.17%
+line coverage. The independent duration pass runs 1,230 Python cases across 176
+module invocations; the slowest takes 9.47 seconds, with no inconsistent outcomes.
+TLS drain units use opaque MemoryBIO fixtures, alongside the existing real
+localhost TLS checks. The 19 coordinator outcome exits remain the next T01 group.
+Source-bound reports and reviewed budget changes remain under ignored
+`.artifacts/testing-review-followup/` and `.artifacts/coverage/`.
