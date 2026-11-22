@@ -254,6 +254,7 @@ class ChoiceBComponentTests(unittest.TestCase):
                 ["authorization", "Bearer " + WORKER_KEY],
                 ["accept-encoding", "gzip, deflate"],
                 ["x-stainless-lang", "worker-controlled-value"],
+                ["x-stainless-raw-response", "true"],
             ],
             "body_b64": base64.b64encode(b"{}").decode("ascii"),
             "timeout": {"connect": 1, "read": 1, "write": 1, "pool": 1},
@@ -264,6 +265,7 @@ class ChoiceBComponentTests(unittest.TestCase):
         self.assertEqual(inspected[0].headers["authorization"], "Bearer " + adapter.provider_key)
         self.assertEqual(inspected[0].headers["accept-encoding"], "identity")
         self.assertNotIn("x-stainless-lang", inspected[0].headers)
+        self.assertNotIn("x-stainless-raw-response", inspected[0].headers)
         self.assertEqual(inspected[0].headers["user-agent"], "EzLLMRouter/trusted-sender")
         with self.assertRaisesRegex(ValueError, "replayed attempt authority"):
             adapter.process_relay(envelope)

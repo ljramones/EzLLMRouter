@@ -102,6 +102,7 @@ SDK_HEADERS = frozenset(
         "x-stainless-retry-count",
         "x-stainless-read-timeout",
         "x-stainless-async",
+        "x-stainless-raw-response",
     }
 )
 
