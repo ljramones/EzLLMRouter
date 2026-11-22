@@ -1,0 +1,33 @@
+name: Release input candidates
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-inputs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: '1.90.0'
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Validate declared inputs before resolving candidates
+        run: python3 -I -S tools/security_dependencies.py
+      - name: Install the existing qualification toolchain
+        run: rustup toolchain install 1.90.0 --profile minimal
+      - name: Capture resolved Rust candidates without compiling dependency code
+        run: |
+          mkdir -p .artifacts/release-inputs/rust
+          cargo --version > .artifacts/release-inputs/rust/toolchain.txt
+          cargo generate-lockfile --manifest-path clients/rust/Cargo.toml
+          cp clients/rust/Cargo.lock .artifacts/release-inputs/rust/Cargo.lock
+          cargo metadata --locked --format-version 1 --manifest-path clients/rust/Cargo.toml > .artifacts/release-inputs/rust/metadata.json
+          git rev-parse HEAD > .artifacts/release-inputs/rust/source-commit.txt
+          sha256sum clients/rust/Cargo.toml clients/rust/Cargo.lock clients/rust/rust-toolchain.toml > .artifacts/release-inputs/rust/input-sha256.txt
+      - name: Retain candidates for explicit artifact and advisory review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-release-candidates
+          path: .artifacts/release-inputs/
+          retention-days: 30
