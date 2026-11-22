@@ -21,7 +21,7 @@ def policy_routes():
     ] + POLICY["routes"]
 
 
-class AuthorizationMatrixTests(UserHTTPFixture):
+class AuthorizationFixture(UserHTTPFixture):
     def setUp(self):
         super().setUp()
         application = self.server.application
@@ -83,6 +83,8 @@ class AuthorizationMatrixTests(UserHTTPFixture):
         headers = BytesParser().parsebytes(head.split(b"\r\n", 1)[1])
         return int(head.split(b" ")[1]), headers, body
 
+
+class AuthorizationMatrixTests(AuthorizationFixture):
     def test_every_registered_route_has_an_independent_policy_row(self):
         expected = [(method, path) for method, path, *_ in policy_routes()]
         actual = [(route.method, route.path + ("*" if route.family else "")) for route in ROUTES]

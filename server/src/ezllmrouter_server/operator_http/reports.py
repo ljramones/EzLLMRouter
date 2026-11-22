@@ -393,7 +393,9 @@ class ReportsRoutes:
     ) -> None:
         if self.application.registry and session[1]["role"] != "registry_admin":
             return self._fail(403, "ADMIN_REQUIRED")
-        kind = self.path.rsplit("/", 1)[1]
+        kind = self.path[len("/operator/v1/demos/") :]
+        if "/" in kind:
+            return self._fail(404, "NOT_FOUND")
         if set(body) != {"operation_id"} or kind not in ("text", "tool", "no_store_text"):
             return self._fail(400, "INVALID_BODY")
         try:

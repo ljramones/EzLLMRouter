@@ -27,7 +27,9 @@ class RegistryRoutes:
     def get_registry_validation(
         self: OperatorContext, path: SplitResult, session: Session, body: None, scope: str | None
     ) -> None:
-        operation_id = path.path.rsplit("/", 1)[1]
+        operation_id = path.path[len("/operator/v1/provider-validations/") :]
+        if not operation_id or "/" in operation_id:
+            return self._fail(404, "NOT_FOUND")
         value = self.application.projection.provider_validation(operation_id)
         return self._send(200, value) if value else self._fail(404, "NOT_FOUND")
 

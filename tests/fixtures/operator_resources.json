@@ -1,0 +1,608 @@
+{
+  "scope": "Existing operator resources and valid family actions; explicit roles and dataset owners, no provider traffic",
+  "roles": [
+    "owner",
+    "ordinary",
+    "readonly",
+    "other_admin",
+    "pending"
+  ],
+  "cases": [
+    {
+      "case": "user_read",
+      "method": "GET",
+      "family": "/operator/v1/users/*",
+      "path": "/operator/v1/users/{target}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_read",
+      "method": "GET",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/{connector}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "scripted_report",
+      "method": "GET",
+      "family": "/operator/v1/scripted-demo/*",
+      "path": "/operator/v1/scripted-demo/report",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "scripted_workflow",
+      "method": "GET",
+      "family": "/operator/v1/scripted-demo/*",
+      "path": "/operator/v1/scripted-demo/workflow?workflow_id=demo.workflow",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "datasets",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/datasets",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "accounts",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/accounts?dataset_id={dataset}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "report",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/report?dataset_id={dataset}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "report_csv",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/report?dataset_id={dataset}&export=csv",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "export",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/export?dataset_id={dataset}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_list",
+      "method": "GET",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections?dataset_id={dataset}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 404,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "validation",
+      "method": "GET",
+      "family": "/operator/v1/provider-validations/*",
+      "path": "/operator/v1/provider-validations/op.resource.validation",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "connection_read",
+      "method": "GET",
+      "family": "/operator/v1/connections/*",
+      "path": "/operator/v1/connections/conn.resource",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "inventory",
+      "method": "GET",
+      "family": "/operator/v1/connections/*",
+      "path": "/operator/v1/connections/conn.resource/inventory",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "model_granted",
+      "method": "GET",
+      "family": "/operator/v1/models/*",
+      "path": "/operator/v1/models/cfg.demo",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 200,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "model_ungranted",
+      "method": "GET",
+      "family": "/operator/v1/models/*",
+      "path": "/operator/v1/models/cfg.resource.private",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "principal_self",
+      "method": "GET",
+      "family": "/operator/v1/principals/*",
+      "path": "/operator/v1/principals/{ordinary}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 200,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "principal_other",
+      "method": "GET",
+      "family": "/operator/v1/principals/*",
+      "path": "/operator/v1/principals/owner.local",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "activity_self",
+      "method": "GET",
+      "family": "/operator/v1/activity/*",
+      "path": "/operator/v1/activity/submission.resource.ordinary",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 200,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "activity_other",
+      "method": "GET",
+      "family": "/operator/v1/activity/*",
+      "path": "/operator/v1/activity/submission.resource.owner",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 404,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "launch",
+      "method": "GET",
+      "family": "/operator/v1/launch/*",
+      "path": "/operator/v1/launch/op.resource.launch",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "user_update",
+      "method": "POST",
+      "family": "/operator/v1/users/*",
+      "path": "/operator/v1/users/{target}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "user_reset",
+      "method": "POST",
+      "family": "/operator/v1/users/*",
+      "path": "/operator/v1/users/{target}/password",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_update",
+      "method": "POST",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/{connector}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_discover",
+      "method": "POST",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/{connector}/discover",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_models",
+      "method": "POST",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/{connector}/models",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_check",
+      "method": "POST",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/check",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 200,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_find",
+      "method": "POST",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/find",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "dataset_create",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/datasets",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 403,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "account_create",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/accounts",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "account_state",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/accounts/{account}/state",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "account_permissions",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/accounts/{account}/permissions",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_connect",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections",
+      "statuses": {
+        "owner": 201,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_save",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections/{binding}/save",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_refresh",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections/{binding}/refresh",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_replace",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections/{binding}/replace",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_disable",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections/{binding}/disable",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "credential_retire",
+      "method": "POST",
+      "family": "/operator/v1/integration/*",
+      "path": "/operator/v1/integration/connections/{binding}/retire",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 404,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "demo_text",
+      "method": "POST",
+      "family": "/operator/v1/demos/*",
+      "path": "/operator/v1/demos/text",
+      "statuses": {
+        "owner": 202,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 202,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "demo_tool",
+      "method": "POST",
+      "family": "/operator/v1/demos/*",
+      "path": "/operator/v1/demos/tool",
+      "statuses": {
+        "owner": 202,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 202,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "demo_no_store_text",
+      "method": "POST",
+      "family": "/operator/v1/demos/*",
+      "path": "/operator/v1/demos/no_store_text",
+      "statuses": {
+        "owner": 202,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 202,
+        "pending": 403
+      },
+      "integration_hidden": true
+    },
+    {
+      "case": "user_delete",
+      "method": "DELETE",
+      "family": "/operator/v1/users/*",
+      "path": "/operator/v1/users/{target}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    },
+    {
+      "case": "connector_delete",
+      "method": "DELETE",
+      "family": "/operator/v1/local-connectors/*",
+      "path": "/operator/v1/local-connectors/{connector}",
+      "statuses": {
+        "owner": 200,
+        "ordinary": 403,
+        "readonly": 403,
+        "other_admin": 200,
+        "pending": 403
+      },
+      "integration_hidden": false
+    }
+  ],
+  "source_sha256": {
+    "server/src/ezllmrouter_server/operator_http/handler.py": "97d775f6be017effa2eee5270f3359b3751fd0a46f710bc3b867b69143ceef53",
+    "server/src/ezllmrouter_server/operator_http/routing.py": "de0755c328822543358c14388a5d54b6790fbf9994821efdc19f3d0686ac5c07",
+    "server/src/ezllmrouter_server/operator_http/accounts.py": "57e297ec9ddc8fb32bf83794c46b0e8302585e5b736f868b91e9830babe3342b",
+    "server/src/ezllmrouter_server/operator_http/integration.py": "85bec5a30b5436e9f62172cdebb8e71fe1d3737fc14a75d3afb2056b5b840168",
+    "server/src/ezllmrouter_server/operator_http/registry_routes.py": "aec33edecf6ce198c87f9572804a62361cb721b6d981c265053b8488bf41fcb2",
+    "server/src/ezllmrouter_server/operator_http/reports.py": "eb0158f9aefc7ca0d7d23aa911d2be0bdb2c6b6307573197ebd662e76b1b301d"
+  }
+}

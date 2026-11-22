@@ -220,8 +220,23 @@ denials are separate; wrong-method requests must also fail. Positive controls
 exercise user/connector creation and login, logout and own-password changes.
 Sensitivity regressions verify that permitting a read-only user mutation, including
 one conditional on a valid body, fails the matrix. Cross-user and rejected-write
-cases additionally assert unchanged registry authority version. Broader operator
-resource-family scenarios remain follow-up work.
+cases additionally assert unchanged registry authority version.
+
+`tests/fixtures/operator_resources.json` adds 42 existing-resource/action cases
+across all 16 operator family bindings. Separate administrators own populated
+datasets; valid sessions exercise users, local connectors, models and grants,
+principals, activity, launches, provider validations and scripted reports. Real
+encrypted synthetic credentials cover connect, save, refresh, replacement,
+disable and acknowledged retirement. Expected roles and statuses are independent
+of route metadata; six dispatch source hashes require review when actions change.
+All cases run directly, over socket pairs and on localhost. Denials preserve
+SQLite changes, authority versions, controlled I/O, queued jobs and monitor
+entries. Positive writes must reach persistence, discovery or the controlled demo
+executor. Existing sessions recheck owner membership, current grants and account
+state. Sensitivity tests detect deliberate cross-dataset administrator reads and
+valid-body read-only connector mutations. Extra family path segments cannot
+alias a provider validation or start a demo job. These are current route/action
+samples; they do not establish exhaustive coverage of every resource state.
 
 The independent wire policy in `tests/fixtures/wire_authorization.json` covers
 42 route/version bindings across work 0.2/0.3 and accounting 1/2/3. Source hashes,
