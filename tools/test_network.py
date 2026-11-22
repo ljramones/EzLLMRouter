@@ -14,6 +14,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 CHILD = ROOT / "tools/test_child.py"
 NODE = ROOT / "tools/test_network.cjs"
+UNIX_FAMILY = getattr(socket, "AF_UNIX", -1)
 
 
 def denied(*_args, **_kwargs):
@@ -159,7 +160,7 @@ def process_command(command):
 def block_network(stack: ExitStack, *, loopback=False):
     def guarded(operation):
         def call(connection, address, *args, **kwargs):
-            if connection.family != socket.AF_UNIX and (
+            if connection.family != UNIX_FAMILY and (
                 not loopback or not isinstance(address, tuple) or not local(address[0])
             ):
                 denied()
@@ -191,7 +192,7 @@ def block_network(stack: ExitStack, *, loopback=False):
 
     def sendto(connection, data, *args):
         address = args[-1]
-        if connection.family != socket.AF_UNIX and (
+        if connection.family != UNIX_FAMILY and (
             not loopback or not isinstance(address, tuple) or not local(address[0])
         ):
             denied()
@@ -202,7 +203,7 @@ def block_network(stack: ExitStack, *, loopback=False):
         original_sendmsg = socket.socket.sendmsg
 
         def sendmsg(connection, buffers, ancdata=(), flags=0, address=None):
-            if connection.family != socket.AF_UNIX and (
+            if connection.family != UNIX_FAMILY and (
                 not loopback or not isinstance(address, tuple) or not local(address[0])
             ):
                 denied()

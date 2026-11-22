@@ -1,6 +1,6 @@
 """Exercise the blocking quality commands against disposable bad source files."""
 
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import ExitStack, redirect_stdout, redirect_stderr
 import io
 from pathlib import Path
 import subprocess
@@ -8,12 +8,54 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from tools import check
+from tools import test_network
 
 
 class ChecksComplete(Exception):
     pass
+
+
+class NetworkPlatformTests(unittest.TestCase):
+    def test_absent_unix_family_keeps_loopback_allowed_and_external_network_denied(self):
+        socket = test_network.socket
+        operations = ["bind", "connect", "connect_ex", "sendto"]
+        if hasattr(socket.socket, "sendmsg"):
+            operations.append("sendmsg")
+        with ExitStack() as patches:
+            patches.enter_context(patch.object(socket, "AF_UNIX", create=True))
+            del socket.AF_UNIX
+            mocks = {
+                name: patches.enter_context(patch.object(socket.socket, name, return_value=0))
+                for name in operations
+            }
+            connection = SimpleNamespace(family=socket.AF_INET)
+
+            def invoke(name, host):
+                address = (host, 12345)
+                args = (
+                    ([b"x"], [], 0, address)
+                    if name == "sendmsg"
+                    else (b"x", address)
+                    if name == "sendto"
+                    else (address,)
+                )
+                return getattr(socket.socket, name)(connection, *args)
+
+            with ExitStack() as guards:
+                test_network.block_network(guards, loopback=True)
+                for name in operations:
+                    self.assertEqual(invoke(name, "127.0.0.1"), 0)
+                    with self.assertRaisesRegex(AssertionError, "network/socket"):
+                        invoke(name, "203.0.113.10")
+                    self.assertEqual(mocks[name].call_count, 1)
+            with ExitStack() as guards:
+                test_network.block_network(guards, loopback=False)
+                for name in operations:
+                    with self.assertRaisesRegex(AssertionError, "network/socket"):
+                        invoke(name, "127.0.0.1")
 
 
 class QualityGateTests(unittest.TestCase):
