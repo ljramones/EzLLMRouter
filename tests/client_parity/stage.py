@@ -9,6 +9,11 @@ import shutil
 import sys
 import zipfile
 
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from tools.gateway.client_inputs import stage_fixture_inputs
+
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -73,47 +78,8 @@ def validate_corpus(root):
 def prepare(root, run):
     root, run = Path(root).resolve(), Path(run).resolve()
     case_count = validate_corpus(root)
-    previous = Path("/private/tmp/ezllmrouter-dev-01/run-20261018-04")
-    old_packet = root / "docs/development/dev-01/DEV-01-RUNTIME-run-20261018-04.zip"
-    regular(old_packet)
-    if sha(old_packet) != "344826381ed6a5a9dba2a13fac68eeda8ddc980b9a9f2741909478bfaf2d677e":
-        raise ValueError("run-04 packet changed")
     lock = json.loads((root / "tests/client_parity/wheelhouse.lock.json").read_text())
-    old_manifest = json.loads((previous / "wheel-manifest.json").read_text())
-    by_name = {x["filename"]: x for x in old_manifest}
-    if len(lock["wheels"]) != 7:
-        raise ValueError("unexpected wheel closure")
-    rows = []
-    for item in lock["wheels"]:
-        name = item["filename"]
-        if by_name.get(name) != {k: item[k] for k in ("filename", "bytes", "sha256")}:
-            raise ValueError(f"predecessor wheel manifest mismatch: {name}")
-        src = previous / "wheels" / name
-        if src.stat().st_size != item["bytes"]:
-            raise ValueError(f"wheel size mismatch: {name}")
-        rows.append(copy_checked(src, run / "build/python/wheels" / name, item["sha256"]))
-    for item in old_manifest:
-        src = previous / "wheels" / item["filename"]
-        if src.stat().st_size != item["bytes"]:
-            raise ValueError(f"service wheel size mismatch: {src.name}")
-        rows.append(copy_checked(src, run / "build/service/wheels" / src.name, item["sha256"]))
-    sums = run / "build/python/wheelhouse.sha256"
-    sums.write_text("".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows[:7]))
-    artifacts = json.loads(
-        (root / "docs/development/dev-02/ARTIFACTS-CONTINUATION.json").read_text()
-    )
-    versions = {x["filename"]: x for x in artifacts["artifacts"]}
-    for name in (
-        "cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl",
-        "cognitivedynamics-ezllmrouter-client-0.3.0.tgz",
-    ):
-        item = versions[name]
-        src = root / "docs/development/dev-02" / name
-        regular(src)
-        if src.stat().st_size != item["bytes"] or sha(src) != item["sha256"]:
-            raise ValueError(f"client artifact mismatch: {name}")
-        if name.endswith(".whl"):
-            rows.append(copy_checked(src, run / "build/python" / name, item["sha256"]))
+    rows = stage_fixture_inputs(root, run, copy_checked)
     common = {
         "scenarios.json": root / "tests/client_parity/scenarios.json",
         "request.json": root / "tests/development_slice/request.json",
@@ -149,7 +115,6 @@ def prepare(root, run):
         "service_main.py",
         "synthetic_routes.py",
         "native_adapter.py",
-        "recipe.py",
         "fixture.json",
         "request.json",
         "test_crypto.py",
@@ -164,7 +129,12 @@ def prepare(root, run):
         )
     rows.append(
         copy_checked(
-            root / "tests/development_slice/requirements.lock",
+            root / "tests/tool_cycle/scenarios.json", run / "build/service/tests/scenarios.json"
+        )
+    )
+    rows.append(
+        copy_checked(
+            root / "deploy/local/inputs/requirements.runtime.lock",
             run / "build/service/requirements.lock",
         )
     )

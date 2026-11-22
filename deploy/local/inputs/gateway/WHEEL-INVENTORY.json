@@ -201,13 +201,13 @@
       "version": "1.9.0"
     },
     {
-      "bytes": 354822,
-      "filename": "dnspython-2.9.0-py3-none-any.whl",
+      "bytes": 360455,
+      "filename": "dnspython-2.9.2-py3-none-any.whl",
       "license": null,
       "license_expression": "ISC",
       "name": "dnspython",
-      "sha256": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9",
-      "version": "2.9.0"
+      "sha256": "af15f7d385a6ae2fb35a796fde2138004c8c42c7389090e2addc83e3b3340fd8",
+      "version": "2.9.2"
     },
     {
       "bytes": 35604,
@@ -255,13 +255,13 @@
       "version": "0.14.0"
     },
     {
-      "bytes": 100157,
-      "filename": "filelock-3.32.7-py3-none-any.whl",
+      "bytes": 162455,
+      "filename": "filelock-4.2.1-py3-none-any.whl",
       "license": null,
       "license_expression": "MIT",
       "name": "filelock",
-      "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52",
-      "version": "3.32.7"
+      "sha256": "7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44",
+      "version": "4.2.1"
     },
     {
       "bytes": 243014,
@@ -579,13 +579,13 @@
       "version": "2.5.4"
     },
     {
-      "bytes": 159715,
-      "filename": "oauthlib-4.0.0-py3-none-any.whl",
+      "bytes": 161934,
+      "filename": "oauthlib-4.0.1-py3-none-any.whl",
       "license": "BSD-3-Clause",
       "license_expression": null,
       "name": "oauthlib",
-      "sha256": "624c28c13a0a59cabf9747dfa52af63be3e512a7f2714df16e91b5b3a145e6cd",
-      "version": "4.0.0"
+      "sha256": "498a298876e996301950a5b053d12c31628bb7b895db03666430c69ce182eb61",
+      "version": "4.0.1"
     },
     {
       "bytes": 1660351,

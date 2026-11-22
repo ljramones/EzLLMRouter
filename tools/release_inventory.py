@@ -34,6 +34,27 @@ def docker(image: str, *args: str) -> str:
     )
 
 
+def debian_packages(raw: str, ecosystem: str) -> list[dict]:
+    result = []
+    for line in raw.splitlines():
+        name, version, source, source_version, status = line.split("\t")
+        if status in {"not-installed", "config-files"}:
+            continue
+        if status != "installed" or not all((name, version, source, source_version)):
+            raise ValueError("incomplete OS package installation")
+        result.append(
+            {
+                "binary": name,
+                "binary_version": version,
+                "name": source,
+                "version": source_version,
+                "ecosystem": ecosystem,
+                "installation_status": status,
+            }
+        )
+    return result
+
+
 def image_packages(image: dict) -> dict:
     ref = image["id"]
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", ref):
@@ -47,45 +68,60 @@ def image_packages(image: dict) -> dict:
         raise ValueError("unreviewed OS inventory ecosystem")
     ecosystem = "Debian:" + release["VERSION_ID"].strip('"')
     dpkg = docker(
-        ref, "dpkg-query", "-W", "-f=${Package}\t${Version}\t${source:Package}\t${source:Version}\n"
+        ref,
+        "dpkg-query",
+        "-W",
+        "-f=${Package}\t${Version}\t${source:Package}\t${source:Version}\t${db:Status-Status}\n",
     )
-    os_rows = []
-    for line in dpkg.splitlines():
-        name, version, source, source_version = line.split("\t")
-        os_rows.append(
-            {
-                "binary": name,
-                "binary_version": version,
-                "name": source,
-                "version": source_version,
-                "ecosystem": ecosystem,
-            }
-        )
+    os_rows = debian_packages(dpkg, ecosystem)
     code = "import importlib.metadata,json; print(json.dumps(sorted([{'name':d.metadata['Name'],'version':d.version} for d in importlib.metadata.distributions(path=['/usr/local/lib/python3.12/site-packages'])],key=lambda d:d['name'])))"
-    # Node images have no Python installation; collect their installed npm trees.
+    # Read installed package metadata directly; runtime images contain no npm CLI.
     if "node@sha256:" in image["base"]:
-        applications = []
-        for directory, global_flag in (("/app/consumer", False), ("/usr/local", True)):
-            args = ["npm", "ls", "--all", "--json", "--offline", "--prefix", directory]
-            if global_flag:
-                args.append("--global")
-            tree = json.loads(docker(ref, *args))
-
-            def visit(node: dict) -> None:
-                if node.get("problems") or node.get("error"):
-                    raise ValueError("incomplete npm tree")
-                for name, child in node.get("dependencies", {}).items():
-                    applications.append(
-                        {"ecosystem": "npm", "name": name, "version": child["version"]}
-                    )
-                    visit(child)
-
-            visit(tree)
+        script = """
+const fs=require('node:fs'),path=require('node:path'),rows=[];
+function packages(dir) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+    if (entry.name.startsWith('.')) continue;
+    const location=path.join(dir,entry.name);
+    if (entry.isSymbolicLink()) throw Error('unqualified linked package');
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('@')) { packages(location); continue; }
+    const metadata=JSON.parse(fs.readFileSync(path.join(location,'package.json'),'utf8'));
+    if (typeof metadata.name!=='string'||typeof metadata.version!=='string') throw Error('package identity');
+    rows.push({ecosystem:'npm',name:metadata.name,version:metadata.version,location});
+    packages(path.join(location,'node_modules'));
+  }
+}
+packages('/usr/local/lib/node_modules');packages('/app/consumer/node_modules');
+console.log(JSON.stringify({packages:rows,runtime:process.versions}));
+"""
+        captured = json.loads(docker(ref, "node", "-e", script))
+        applications, runtime = captured["packages"], captured["runtime"]
+        if runtime.get("undici"):
+            applications.append(
+                {
+                    "ecosystem": "npm",
+                    "name": "undici",
+                    "version": runtime["undici"],
+                    "embedded_in": "node",
+                }
+            )
     else:
         applications = [
             dict(row, ecosystem="PyPI")
             for row in json.loads(docker(ref, "python", "-I", "-S", "-c", code))
         ]
+        runtime = json.loads(
+            docker(
+                ref,
+                "python",
+                "-I",
+                "-S",
+                "-c",
+                "import sys,ssl,sqlite3,zlib,json; print(json.dumps({'python':sys.version,'openssl':ssl.OPENSSL_VERSION,'sqlite':sqlite3.sqlite_version,'zlib':zlib.ZLIB_RUNTIME_VERSION}))",
+            )
+        )
     if any(
         row["name"].lower().replace("_", "-") == "litellm" and forbidden_release(row["version"])
         for row in applications
@@ -96,6 +132,41 @@ def image_packages(image: dict) -> dict:
         "os_release": release,
         "os_packages": os_rows,
         "application_packages": applications,
+        "runtime_versions": runtime,
+    }
+
+
+def attribution(issues: list[dict], images: dict) -> dict:
+    targets = {}
+    for kind, image in images.items():
+        source = "image:" + kind + ":" + image["image"]["id"]
+        matched = [row for row in issues if source in row["package"]["sources"]]
+        targets[kind] = {
+            "id": image["image"]["id"],
+            "matches": len(matched),
+            "blocking": sum(row["blocking"] for row in matched),
+            "findings": [
+                {
+                    "id": row["id"],
+                    "name": row["package"]["name"],
+                    "version": row["package"]["version"],
+                    "blocking": row["blocking"],
+                }
+                for row in matched
+            ],
+        }
+    declared = [
+        row
+        for row in issues
+        if not any(source.startswith("image:") for source in row["package"]["sources"])
+    ]
+    return {
+        "images": targets,
+        "declared_only": {
+            "matches": len(declared),
+            "blocking": sum(row["blocking"] for row in declared),
+            "findings": declared,
+        },
     }
 
 
@@ -167,6 +238,9 @@ def main() -> int:
         (args.output / "osv.json").write_text(json.dumps(snapshot, indent=2) + "\n")
         issues = findings(data, snapshot)
         (args.output / "findings.json").write_text(json.dumps(issues, indent=2) + "\n")
+        (args.output / "attribution.json").write_text(
+            json.dumps(attribution(issues, captured), indent=2) + "\n"
+        )
         print(
             json.dumps(
                 {

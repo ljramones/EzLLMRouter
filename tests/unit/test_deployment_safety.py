@@ -4,6 +4,7 @@ from html.parser import HTMLParser
 from contextlib import redirect_stdout
 import io
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ import tempfile
 import sys
 from copy import deepcopy
 import unittest
+import zipfile
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +25,133 @@ profile = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
 from deploy.local import initialize_credentials as initialize_credentials
 from deploy.local import prepare as prepare
+
+
+class FrozenInputTests(unittest.TestCase):
+    def fixture(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        source = root / "source"
+        wheels = source / "inputs/gateway-inputs/dev04/wheels"
+        wheels.mkdir(parents=True)
+        wheel = wheels / "example-1.0-py3-none-any.whl"
+        with zipfile.ZipFile(wheel, "w") as archive:
+            archive.writestr(
+                "example/__init__.py", "raise AssertionError('review must not import')"
+            )
+        row = {
+            "name": "example",
+            "version": "1.0",
+            "filename": wheel.name,
+            "bytes": wheel.stat().st_size,
+            "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+        }
+        inputs = root / "deploy/local/inputs/gateway"
+        inputs.mkdir(parents=True)
+        (inputs / "WHEEL-INVENTORY.json").write_text(json.dumps({"wheels": [row]}))
+        (inputs / "requirements.gateway.lock").write_text(
+            "example==1.0 --hash=sha256:" + row["sha256"] + "\n"
+        )
+        (source / "ARTIFACT-CUSTODY.json").write_text("{}")
+        replacements = root / "replacements"
+        replacements.mkdir()
+        return root, source, replacements
+
+    def test_frozen_custody_binds_bytes_complete_inventory_and_selected_sources(self):
+        from tools.gateway.frozen_inputs import assemble, verify_custody
+
+        root, source, replacements = self.fixture()
+        output = root / "candidate"
+        assemble(root, source, replacements, output)
+        verify_custody(root, output)
+        marker = output / "ARTIFACT-CUSTODY.json"
+        original = json.loads(marker.read_text())
+        for change in ("missing_item", "wrong_hash", "wrong_source"):
+            changed = deepcopy(original)
+            if change == "missing_item":
+                changed["items"] = []
+            elif change == "wrong_hash":
+                changed["items"][0]["sha256"] = "0" * 64
+            else:
+                changed["inventory_sha256"] = "0" * 64
+            marker.write_text(json.dumps(changed))
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                verify_custody(root, output)
+        marker.write_text(json.dumps(original))
+        wheel = output / "inputs" / original["items"][0]["path"]
+        wheel.write_bytes(b"tampered wheel")
+        with self.assertRaisesRegex(ValueError, "identity"):
+            verify_custody(root, output)
+
+    def test_unselected_replacements_cannot_enter_a_frozen_bundle(self):
+        from tools.gateway.frozen_inputs import assemble
+
+        root, source, replacements = self.fixture()
+        (replacements / "unreviewed-1.0-py3-none-any.whl").write_bytes(b"not selected")
+        with self.assertRaisesRegex(ValueError, "unselected"):
+            assemble(root, source, replacements, root / "candidate")
+        self.assertFalse((root / "candidate").exists())
+
+    def test_client_fixture_cannot_reintroduce_the_retired_certifi_wheel(self):
+        from tools.gateway import client_inputs
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in (
+                "deploy/local/inputs/gateway/WHEEL-INVENTORY.json",
+                "tests/client_parity/wheelhouse.lock.json",
+            ):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes((ROOT / name).read_bytes())
+            path = root / "tests/client_parity/wheelhouse.lock.json"
+            lock = json.loads(path.read_text())
+            index = next(
+                i for i, row in enumerate(lock["wheels"]) if row["filename"].startswith("certifi-")
+            )
+            lock["wheels"][index] = lock["derived_from"]["replaced_certifi"]
+            path.write_text(json.dumps(lock))
+            with (
+                patch.object(client_inputs, "verify_custody"),
+                patch.object(client_inputs, "build_clients") as build,
+                patch.dict(os.environ, {"EZLLMROUTER_ARTIFACT_ROOT": str(root)}),
+            ):
+                with self.assertRaisesRegex(ValueError, "closure differs"):
+                    client_inputs.stage_fixture_inputs(
+                        root, root / "run", lambda *args: self.fail("unreviewed wheel copied")
+                    )
+            build.assert_not_called()
+
+    def test_os_packages_and_advisories_keep_actual_target_attribution(self):
+        from tools.release_inventory import attribution, debian_packages
+
+        rows = debian_packages(
+            "bin\t1\tsrc\t1\tinstalled\nold\t1\told\t1\tconfig-files\n", "Debian:12"
+        )
+        self.assertEqual([row["name"] for row in rows], ["src"])
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            debian_packages("bin\t1\tsrc\t1\tunpacked\n", "Debian:12")
+        issues = [
+            {
+                "id": "fixture-only",
+                "blocking": True,
+                "package": {"name": "certifi", "version": "old", "sources": ["tests/fixture.lock"]},
+            },
+            {
+                "id": "runtime",
+                "blocking": True,
+                "package": {
+                    "name": "lib",
+                    "version": "1",
+                    "sources": ["image:worker:sha256:example"],
+                },
+            },
+        ]
+        report = attribution(issues, {"worker": {"image": {"id": "sha256:example"}}})
+        self.assertEqual(report["images"]["worker"]["blocking"], 1)
+        self.assertEqual(report["images"]["worker"]["findings"][0]["id"], "runtime")
+        self.assertEqual(report["declared_only"]["findings"][0]["id"], "fixture-only")
 
 
 class SecretCustodyTests(unittest.TestCase):

@@ -15,11 +15,10 @@ jobs:
         run: python3 -I -S tools/security_dependencies.py
       - name: Install the existing qualification toolchain
         run: rustup toolchain install 1.90.0 --profile minimal
-      - name: Capture resolved Rust candidates without compiling dependency code
+      - name: Capture the locked Rust closure without compiling dependency code
         run: |
           mkdir -p .artifacts/release-inputs/rust
           cargo --version > .artifacts/release-inputs/rust/toolchain.txt
-          cargo generate-lockfile --manifest-path clients/rust/Cargo.toml
           cp clients/rust/Cargo.lock .artifacts/release-inputs/rust/Cargo.lock
           cargo metadata --locked --format-version 1 --manifest-path clients/rust/Cargo.toml > .artifacts/release-inputs/rust/metadata.json
           git rev-parse HEAD > .artifacts/release-inputs/rust/source-commit.txt

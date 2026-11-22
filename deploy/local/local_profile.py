@@ -29,9 +29,9 @@ LOCAL = ROOT / "deploy/local"
 STATE = LOCAL / ".state"
 COMPOSE = LOCAL / "compose.yaml"
 PROJECT = "ezllmrouter-local"
-BASE = "docker.io/library/python@sha256:739ba32ae445e8d58f3d90feb85f83bebc8346f8dd280fa1eb5848f4ff1ed163"
+BASE = "docker.io/library/python@sha256:df540bfd30bd380e89a349611ce42aa67bcb542d58c047706616eb6ba2f86a1b"
 NODE = (
-    "docker.io/library/node@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c"
+    "docker.io/library/node@sha256:5f8fabfed57b75127de2f584593d67a9e8c90e6b0f65652871f9ef0f759c0299"
 )
 DOCKER_CONTEXT = os.environ.get("EZLLMROUTER_DOCKER_CONTEXT") or os.environ.get("DOCKER_CONTEXT")
 DOCKER = ["docker", *(["--context", DOCKER_CONTEXT] if DOCKER_CONTEXT else [])]
@@ -174,7 +174,7 @@ def environment(build):
     suffix = build["fingerprint"][:16]
     return dict(
         os.environ,
-        EZLLMROUTER_PYTHON_IMAGE=BASE,
+        EZLLMROUTER_PYTHON_IMAGE="ezllmrouter-runtime-python:" + suffix,
         EZLLMROUTER_INGRESS_SCRIPT=str(Path(build["build_dir"]) / "ingress/console_ingress.py"),
         EZLLMROUTER_INGRESS_RESOURCES=str(
             Path(build["build_dir"]) / "ingress/runtime_resources.py"
@@ -304,8 +304,12 @@ def backup_live_store(env):
 
 def build_images(build, env):
     source = Path(build["build_dir"])
-    for kind in ("receiver", "worker", "service"):
-        image = env["EZLLMROUTER_" + kind.upper() + "_IMAGE"]
+    for kind in ("runtime_python", "receiver", "worker", "service"):
+        image = env[
+            "EZLLMROUTER_PYTHON_IMAGE"
+            if kind == "runtime_python"
+            else "EZLLMROUTER_" + kind.upper() + "_IMAGE"
+        ]
         _, present = command(
             "inspect-" + kind, [*DOCKER, "image", "inspect", image], env, allowed=(0, 1)
         )

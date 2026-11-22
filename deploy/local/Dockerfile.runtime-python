@@ -1,0 +1,8 @@
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN rm -rf /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.12/ensurepip /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
+USER 10001:10001
+RUN python -I -S -c "import importlib.util; assert importlib.util.find_spec('ensurepip') is None"
+CMD ["python", "-c", "import time; time.sleep(3600)"]

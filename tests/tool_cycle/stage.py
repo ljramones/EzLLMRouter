@@ -6,6 +6,11 @@ import json
 import shutil
 import sys
 
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from tools.gateway.client_inputs import stage_fixture_inputs
+
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -25,33 +30,7 @@ def copy(src, dst, expected=None):
 
 def prepare(root, run):
     root, run = Path(root).resolve(), Path(run).resolve()
-    predecessor = Path("/private/tmp/ezllmrouter-dev-01/run-20261018-04")
-    manifest = json.loads((predecessor / "wheel-manifest.json").read_text())
-    py_lock = json.loads((root / "tests/client_parity/wheelhouse.lock.json").read_text())["wheels"]
-    by_name = {x["filename"]: x for x in manifest}
-    if len(py_lock) != 7 or len(by_name) != len(manifest):
-        raise ValueError("predecessor wheel set changed")
-    rows = []
-    for entry in py_lock:
-        if by_name.get(entry["filename"]) != {k: entry[k] for k in ("filename", "bytes", "sha256")}:
-            raise ValueError("Python wheel receipt mismatch")
-        src = predecessor / "wheels" / entry["filename"]
-        if src.stat().st_size != entry["bytes"]:
-            raise ValueError("Python wheel size mismatch")
-        rows.append(copy(src, run / "build/python/wheels" / src.name, entry["sha256"]))
-    (run / "build/python/wheelhouse.sha256").write_text(
-        "".join(f"{x['sha256']}  {Path(x['target']).name}\n" for x in rows)
-    )
-    for entry in manifest:
-        src = predecessor / "wheels" / entry["filename"]
-        if src.stat().st_size != entry["bytes"]:
-            raise ValueError("service wheel size mismatch")
-        rows.append(copy(src, run / "build/service/wheels" / src.name, entry["sha256"]))
-    for name, target in (
-        ("cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl", "python"),
-        ("cognitivedynamics-ezllmrouter-client-0.3.0.tgz", "js"),
-    ):
-        rows.append(copy(root / "docs/development/dev-03" / name, run / "build" / target / name))
+    rows = stage_fixture_inputs(root, run, copy)
     for name, target in (
         ("python_actor.py", "python"),
         ("js_actor.cjs", "js"),
@@ -87,7 +66,6 @@ def prepare(root, run):
         "service_main.py",
         "synthetic_routes.py",
         "native_adapter.py",
-        "recipe.py",
         "fixture.json",
         "request.json",
         "test_crypto.py",
@@ -100,20 +78,9 @@ def prepare(root, run):
     rows.append(
         copy(root / "tests/tool_cycle/scenarios.json", run / "build/service/tests/scenarios.json")
     )
-    for name in ("test_core.py", "scenarios.json"):
-        rows.append(
-            copy(root / "tests/tool_cycle" / name, run / "build/service/tests/tool_cycle" / name)
-        )
-    for name in ("fixture.json", "request.json", "recipe.py"):
-        rows.append(
-            copy(
-                root / "tests/development_slice" / name,
-                run / "build/service/tests/development_slice" / name,
-            )
-        )
     rows.append(
         copy(
-            root / "tests/development_slice/requirements.lock",
+            root / "deploy/local/inputs/requirements.runtime.lock",
             run / "build/service/requirements.lock",
         )
     )

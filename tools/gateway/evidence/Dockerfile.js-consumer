@@ -5,7 +5,8 @@ COPY client.tgz /opt/ezllmrouter/client.tgz
 RUN mkdir -p /app/consumer \
  && cd /app/consumer \
  && npm install /opt/ezllmrouter/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
- && rm -rf /opt/ezllmrouter/client.tgz /tmp/ezllmrouter-npm-cache
+ && rm -rf /opt/ezllmrouter/client.tgz /tmp/ezllmrouter-npm-cache /usr/local/lib/node_modules /opt/yarn-* \
+ && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY actors/ /app/consumer/
 RUN find /app/consumer -maxdepth 1 -type f -exec chmod 0444 {} + \
  && chmod 0555 /app /app/consumer

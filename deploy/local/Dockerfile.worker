@@ -9,7 +9,9 @@ RUN --mount=type=bind,source=wheels,target=/opt/ezllmrouter/wheels,readonly \
     cd /opt/ezllmrouter/wheels && sha256sum -c /opt/ezllmrouter/wheelhouse.sha256 \
  && python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --only-binary=:all: \
       --require-hashes -r /opt/ezllmrouter/requirements.gateway.lock \
- && python -m pip check
+ && python -m pip check \
+ && rm -rf /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.12/ensurepip /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 COPY --chmod=0555 ezllmrouter_worker /app/worker/ezllmrouter_worker
 RUN chmod 0555 /app && mkdir -p /link/worker /link/sender && chown -R 10001:10001 /link
 USER 10001:10001

@@ -3,14 +3,16 @@ FROM ${PYTHON_IMAGE}
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_CONFIG_FILE=/dev/null
 COPY wheels/ /opt/ezllmrouter/wheels/
 COPY wheelhouse.sha256 /opt/ezllmrouter/wheels/sha256sums
+COPY requirements.client.lock /opt/ezllmrouter/requirements.client.lock
 RUN cd /opt/ezllmrouter/wheels && sha256sum -c sha256sums \
  && python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --only-binary=:all: \
-      anyio==4.15.1 certifi==2026.7.22 h11==0.16.0 httpcore==1.0.9 \
-      httpx==0.28.1 idna==3.20 typing-extensions==4.16.0
+      --require-hashes -r /opt/ezllmrouter/requirements.client.lock
 COPY cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl /opt/ezllmrouter/client/
 RUN python -m pip install --no-index --no-deps /opt/ezllmrouter/client/cognitivedynamics_ezllmrouter_client-0.3.0-py3-none-any.whl \
  && python -m pip check \
- && rm -rf /opt/ezllmrouter/wheels /opt/ezllmrouter/client
+ && rm -rf /opt/ezllmrouter/wheels /opt/ezllmrouter/client \
+      /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.12/ensurepip /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 COPY tests/ /app/client_tests/
 USER 10001:10001
 WORKDIR /app/client_tests

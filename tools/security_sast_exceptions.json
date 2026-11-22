@@ -264,7 +264,7 @@
     {
       "path": "deploy/local/prepare.py",
       "code": "S603",
-      "source_sha256": "9cdca51620452fb065845c0ec7ae0ec3605824c823aef33f1b4a1ad2cfffbc70",
+      "source_sha256": "5fb5484d5af3b5c62d2d0cdad0f34b7ee37cf0bfcf7f545cb0b2124b5f7e97a6",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
@@ -282,28 +282,28 @@
           "context_sha256": "8abf223d924ad43265a10e1ce63270e256ee293ab2711813fcfd2dad03becb68"
         },
         {
-          "line": 234,
+          "line": 232,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "444c5a3d93804c7501584dfd7cf31d8f66acb565b636348e72ce5cc0699e3cf1",
           "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
         },
         {
-          "line": 257,
+          "line": 255,
           "column": 9,
           "symbol": "prepare_work",
           "statement_sha256": "9e9f40e07aa45099513aed5ac97e2243d761b1eb187fe9d28aafcf780ccb62c7",
           "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
         },
         {
-          "line": 275,
+          "line": 273,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "36dee8f55a90edbf596d0c2858a08d7f3cd08d40328a25b22a881aafa5727690",
           "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
         },
         {
-          "line": 352,
+          "line": 350,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "9ee6ce19e03d4233c11245e4fd9f25ca6ac0e2b704a8027c0c77c4ba3bd38b3d",
@@ -7757,7 +7757,7 @@
     {
       "path": "tools/gateway/stage.py",
       "code": "S603",
-      "source_sha256": "42109c5c2a9c47a7722ee9d5a729be2817c7a926cf342a3733bf8ebb85c8cd75",
+      "source_sha256": "c51f96227b3565a6e000f527a34d0975cf4fad79a09e32d6855513157610b6e1",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
@@ -7779,7 +7779,7 @@
     {
       "path": "tools/gateway/stage.py",
       "code": "S607",
-      "source_sha256": "42109c5c2a9c47a7722ee9d5a729be2817c7a926cf342a3733bf8ebb85c8cd75",
+      "source_sha256": "c51f96227b3565a6e000f527a34d0975cf4fad79a09e32d6855513157610b6e1",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "a0d69d146ea9cf746d4a30ad609a85feafca5bfc279460920df0dba68dd306ae",
+      "source_sha256": "7ecefd999d9e428dd4e8313b2b8b46b7002cc48a6d48c8bd2d0e50e1bee84837",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {

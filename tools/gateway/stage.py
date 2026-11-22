@@ -152,6 +152,7 @@ def source_mapping(
         ("tools/gateway/evidence/Dockerfile.service", "service/Dockerfile"),
         ("tools/gateway/evidence/Dockerfile.worker", "worker/Dockerfile"),
         ("tools/gateway/evidence/Dockerfile.receiver", "receiver/Dockerfile"),
+        ("deploy/local/Dockerfile.runtime-python", "runtime_python/Dockerfile"),
         ("tools/gateway/evidence/Dockerfile.python-consumer", "python/Dockerfile"),
         ("tools/gateway/evidence/Dockerfile.js-consumer", "js/Dockerfile"),
         ("tests/gateway_integration/test_guard.py", "service/gateway/test_guard.py"),

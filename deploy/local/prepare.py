@@ -183,11 +183,9 @@ def main():
     if not artifact:
         raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required; see deploy/local/README.md")
     artifact = Path(artifact).resolve()
-    if not (artifact / "ARTIFACT-CUSTODY.json").is_file():
-        raise SystemExit("declared artifact custody manifest missing")
-    custody = json.loads((artifact / "ARTIFACT-CUSTODY.json").read_text())
-    if len(custody.get("items", [])) != 177:
-        raise SystemExit("unexpected artifact custody inventory")
+    from tools.gateway.frozen_inputs import verify_custody
+
+    verify_custody(ROOT, artifact)
     STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(STATE, 0o700)
     source_hash = fingerprint()

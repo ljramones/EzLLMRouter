@@ -22,10 +22,18 @@ pub(crate) fn id(value: &Value) -> bool { value.is_string() && pattern(text(valu
 pub(crate) fn positive(value: &Value) -> bool { value.as_i64().is_some_and(|n| n > 0 && n <= MAX_INTEGER) }
 pub(crate) fn utc(value: &Value) -> bool {
     let s = text(value);
-    s.len() == 20 && !s.starts_with("0000") && pattern(s, r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
-        && s.get(17..19).and_then(|seconds| seconds.parse::<u8>().ok()).is_some_and(|seconds| seconds < 60)
-        && chrono::DateTime::parse_from_rfc3339(s).is_ok()
+    if s.len() != 20 || s.starts_with("0000") || !pattern(s, r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$") { return false; }
+    // The wire format is fixed-width ASCII UTC seconds. Validate its Gregorian
+    // calendar directly; no timezone database or general datetime parser is used.
+    let bytes = s.as_bytes();
+    let digits = |start: usize, end: usize| bytes[start..end].iter().fold(0u16, |value, digit| value * 10 + u16::from(digit - b'0'));
+    let year = digits(0, 4); let month = digits(5, 7); let day = digits(8, 10);
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = match month { 2 if leap => 29, 2 => 28, 4 | 6 | 9 | 11 => 30, 1 | 3 | 5 | 7 | 8 | 10 | 12 => 31, _ => return false };
+    day >= 1 && day <= days && digits(11, 13) < 24 && digits(14, 16) < 60 && digits(17, 19) < 60
 }
+
+
 pub(crate) fn keys(value: &Value, required: &[&str], optional: &[&str]) -> bool {
     value.as_object().is_some_and(|map| required.iter().all(|key| map.contains_key(*key)) && map.keys().all(|key| required.contains(&key.as_str()) || optional.contains(&key.as_str())))
 }
@@ -85,5 +93,18 @@ fn matches(value: &Value, shape: &Value, defs: &Value) -> bool {
         "string" => value.as_str().is_some_and(|s| scalar(s) && s.chars().count() as i64 >= bound(shape, "minLength", 0) && s.chars().count() as i64 <= bound(shape, "maxLength", MAX_INTEGER) && (!has(shape, "pattern") || pattern(s, text(at(shape, "pattern"))))),
         "integer" => value.as_i64().is_some_and(|n| n >= bound(shape, "minimum", -MAX_INTEGER) && n <= bound(shape, "maximum", MAX_INTEGER)),
         "boolean" => value.is_boolean(), "null" => value.is_null(), _ => true,
+    }
+}
+
+#[cfg(test)]
+mod calendar_tests {
+    use super::utc;
+    use serde_json::json;
+
+    #[test]
+    fn utc_seconds_preserve_calendar_and_wire_boundaries() {
+        for value in ["0001-01-01T00:00:00Z", "1600-02-29T23:59:59Z", "2000-02-29T00:00:00Z", "2024-02-29T12:30:00Z", "2400-02-29T00:00:00Z", "9999-12-31T23:59:59Z"] { assert!(utc(&json!(value)), "{value}"); }
+        for value in ["0000-01-01T00:00:00Z", "1700-02-29T00:00:00Z", "1800-02-29T00:00:00Z", "1900-02-29T00:00:00Z", "2100-02-29T00:00:00Z", "2023-02-29T00:00:00Z", "2024-04-31T00:00:00Z", "2024-00-01T00:00:00Z", "2024-13-01T00:00:00Z", "2024-01-00T00:00:00Z", "2024-01-01T24:00:00Z", "2024-01-01T00:60:00Z", "2024-01-01T00:00:60Z", "2024-01-01T00:00:00.0Z", "2024-01-01T00:00:00+00:00", "2024-01-01t00:00:00z", "２０２４-01-01T00:00:00Z", "2024-01-01T00:00:00Z\n"] { assert!(!utc(&json!(value)), "{value}"); }
+        assert!(!utc(&json!(null)));
     }
 }

@@ -13,7 +13,9 @@ RUN --mount=type=bind,source=wheels,target=/opt/ezllmrouter/wheels,readonly \
  && sha256sum -c /opt/ezllmrouter/client-wheel.sha256 \
  && python -m pip install --no-index --no-deps /opt/ezllmrouter/client/*.whl \
  && python -m pip check \
- && python -B -c "import importlib.metadata,importlib.util,json; p=json.load(open('/opt/ezllmrouter/client/metadata.json')); assert importlib.metadata.version(p['distribution']) == p['version']; assert importlib.util.find_spec('litellm') is None"
+ && python -B -c "import importlib.metadata,importlib.util,json; p=json.load(open('/opt/ezllmrouter/client/metadata.json')); assert importlib.metadata.version(p['distribution']) == p['version']; assert importlib.util.find_spec('litellm') is None" \
+ && rm -rf /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.12/ensurepip /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 
 FROM dependencies AS validation
 ENV PYTHONPATH=/app/server:/app/gateway:/app/dev_slice:/app/local:/app

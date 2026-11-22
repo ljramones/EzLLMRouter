@@ -59,11 +59,12 @@ def select(state: Path, project: str) -> None:
 
 def build_images(build: dict, env: dict[str, str], project: str) -> dict:
     result = {}
-    for kind in ("receiver", "worker", "service", "python", "js"):
+    for kind in ("runtime_python", "receiver", "worker", "service", "python", "js"):
         image = project + ":" + kind
         key = {
             "python": "EZLLMROUTER_DEV07_PYACTOR_IMAGE",
             "js": "EZLLMROUTER_DEV07_JSACTOR_IMAGE",
+            "runtime_python": "EZLLMROUTER_PYTHON_IMAGE",
         }.get(kind, "EZLLMROUTER_" + kind.upper() + "_IMAGE")
         env[key] = image
         argument, base = (
@@ -101,6 +102,35 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
             "architecture": row["Architecture"],
             "base": base,
         }
+        probe = (
+            [
+                "node",
+                "-e",
+                "const fs=require('node:fs');for(const p of ['/usr/local/lib/node_modules','/usr/local/bin/npm','/usr/local/bin/corepack','/usr/local/bin/yarn'])if(fs.existsSync(p))throw Error('package installer in runtime');",
+            ]
+            if kind == "js"
+            else [
+                "python",
+                "-I",
+                "-c",
+                "import importlib.util; assert all(importlib.util.find_spec(n) is None for n in ('pip','ensurepip'))",
+            ]
+        )
+        profile.command(
+            "runtime-installers-" + kind,
+            [
+                *profile.DOCKER,
+                "run",
+                "--rm",
+                "--network=none",
+                "--read-only",
+                "--cap-drop=ALL",
+                "--security-opt=no-new-privileges:true",
+                row["Id"],
+                *probe,
+            ],
+            env,
+        )
     return result
 
 

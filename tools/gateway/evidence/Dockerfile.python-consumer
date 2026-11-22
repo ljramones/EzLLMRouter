@@ -8,7 +8,9 @@ RUN cd /opt/ezllmrouter/wheels && sha256sum -c /opt/ezllmrouter/wheelhouse.sha25
  && python -m pip install --no-index --find-links=/opt/ezllmrouter/wheels --only-binary=:all: \
       --require-hashes -r /opt/ezllmrouter/requirements.client.lock \
  && python -m pip check \
- && rm -rf /opt/ezllmrouter/wheels
+ && rm -rf /opt/ezllmrouter/wheels \
+      /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.12/ensurepip /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 COPY actors/ /app/actors/
 RUN find /app/actors -type d -exec chmod 0555 {} + \
  && find /app/actors -type f -exec chmod 0444 {} + \
