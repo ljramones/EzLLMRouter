@@ -27,6 +27,8 @@ class PlatformReportingTests(unittest.TestCase):
         with (
             tempfile.TemporaryDirectory() as directory,
             patch.object(platform_check, "ROOT", Path(directory)),
+            patch.object(platform_check.platform, "platform", return_value="synthetic-platform"),
+            patch.object(platform_check.platform, "machine", return_value="synthetic-architecture"),
             patch.object(platform_check, "run", return_value="synthetic-source\n"),
             patch.object(
                 platform_check, "python_client", side_effect=RuntimeError("synthetic build failure")
