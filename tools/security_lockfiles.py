@@ -34,6 +34,7 @@ INPUTS = (
     "clients/go/go.mod",
     "clients/java/pom.xml",
     "clients/rust/Cargo.toml",
+    "clients/rust/Cargo.lock",
     "clients/dotnet/EzLLMRouter.Client/EzLLMRouter.Client.csproj",
     "clients/dotnet/EzLLMRouter.Client.Tests/EzLLMRouter.Client.Tests.csproj",
 )
@@ -239,6 +240,26 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
                     digest("sha256:" + wheel["sha256"]),
                     filename=wheel["filename"],
                 )
+        elif name.endswith("Cargo.lock"):
+            from tools.security_rust import rust_graph
+
+            for package in rust_graph(
+                tomllib.loads(text), tomllib.loads((path.parent / "Cargo.toml").read_text())
+            ):
+                add("crates.io", package["name"], package["version"], name)
+                artifact(
+                    name,
+                    package["name"],
+                    package["version"],
+                    digest("sha256:" + package["checksum"]),
+                )
+            manifests.append(
+                {
+                    "source": name,
+                    "ecosystem": "crates.io",
+                    "scope": "resolved registry closure with published archive checksums",
+                }
+            )
         elif name.endswith("bootstrap-inputs.json") or name.endswith("package.json"):
             pass  # Validated by security_bootstrap before producing the inventory.
         elif name.endswith("pyproject.toml"):
@@ -259,7 +280,7 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
         "local_sources": local,
         "native_manifests": manifests,
         "limits": limits,
-        "artifact_verification": "Digest syntax and source identities validated; unavailable archives and native transitive graphs are not byte-verified.",
+        "artifact_verification": "Digest syntax and source identities validated, including the resolved Rust lock; unavailable archives are not byte-verified and installed images require a target inventory.",
     }
 
 
@@ -290,12 +311,6 @@ def native_input(
                 "source": name,
                 "ecosystem": "crates.io",
                 "scope": "direct runtime and development declarations",
-            }
-        )
-        limits.append(
-            {
-                "source": name,
-                "status": "no reviewed transitive Cargo.lock; direct declarations only",
             }
         )
     elif name.endswith("go.mod"):

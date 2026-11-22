@@ -144,3 +144,43 @@ Diagnostic controls are `EZLLMROUTER_GATEWAY_GUARD_EVENTS` and
 with explicitly listed common helpers and no trusted server package. Rebuild and
 qualify the resulting image, mounts and stop behavior using the reviewed frozen
 inputs before accepting an updated deployment.
+
+### Disposable qualification
+
+With the pinned development environment, the existing approved artifact store
+configured in `EZLLMROUTER_ARTIFACT_ROOT`, and clean committed runtime sources,
+prepare a separate staging directory:
+
+```sh
+mkdir -p .artifacts/qualification-staging
+PATH="$PWD/.venv/bin:$PATH" .venv/bin/python -c 'from pathlib import Path; from deploy.local import prepare; prepare.STATE = Path(".artifacts/qualification-staging").resolve(); prepare.main()' > .artifacts/qualification-staging/prepare.log
+.venv/bin/python -m tools.deployment_qualification \
+  --build .artifacts/qualification-staging/current-build.json \
+  --output .artifacts/qualification-target
+```
+
+Use a fresh output directory for each run. Docker access and an unused loopback
+port 8780 are required. The runner uses fresh qualification projects, temporary
+private credentials and separate restore volumes, and removes its own resources
+afterward. It preserves the persistent profile. Only the four synthetic local
+receiver requests belong to this check; it does not contact a real provider.
+Its result binds staged source, harness hashes, image IDs, runtime checks,
+restart and restore readback. Passing runtime checks does not approve a release.
+
+Capture and audit actual installed packages with the reviewed Rust metadata
+artifact from the manual **Release input candidates** workflow:
+
+```sh
+.venv/bin/python -m tools.release_inventory \
+  --rust /absolute/path/to/native-release-candidates/rust \
+  --qualification .artifacts/qualification-target/qualification.json \
+  --output .artifacts/qualification-audit --query
+```
+
+The audit inventories immutable image IDs with networking disabled, then sends
+public package names/versions to OSV. It retains its inventory, CycloneDX SBOM,
+all advisory pages and findings. High, critical and unrated matches fail the
+gate; a failed gate requires review/remediation. Rust repository builds use the
+tracked Cargo.lock with `--locked`; published library consumers resolve their
+own dependency graph. See the [current qualification record](../../docs/TESTING-ROADMAP.md#deployment-qualification-and-package-audit-2026-11-22)
+for the observed results and open release blockers.

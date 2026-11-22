@@ -8215,13 +8215,50 @@
       ]
     },
     {
+      "path": "tools/qualification_storage.py",
+      "code": "S603",
+      "source_sha256": "8ffebc953b776254b2c0da0c06770ce23dede6e71337169eec0a658d8ca64024",
+      "reason": "Cold backup/restore uses argument vectors with shell disabled, pinned helper images, validated fresh Compose-owned volume names, stopped volume users and validated private archives. Binary backup bytes never enter command logs.",
+      "findings": [
+        {
+          "line": 94,
+          "column": 13,
+          "symbol": "cold_copy",
+          "statement_sha256": "713bb0ec58bb93de9d6da0f943b97ddf9623f571ff37f7aff4c16a7eb826acf2",
+          "context_sha256": "a36e7f0bbeef9e7e07cc0478ed59ef94ab9ca83ae1ef32168e7dd9159417b364"
+        },
+        {
+          "line": 122,
+          "column": 13,
+          "symbol": "cold_copy",
+          "statement_sha256": "afdd89a8fb7747260c4fbd888fa613524a9fcdde812af9b396cde38bda642bff",
+          "context_sha256": "a36e7f0bbeef9e7e07cc0478ed59ef94ab9ca83ae1ef32168e7dd9159417b364"
+        }
+      ]
+    },
+    {
+      "path": "tools/release_inventory.py",
+      "code": "S603",
+      "source_sha256": "a0d69d146ea9cf746d4a30ad609a85feafca5bfc279460920df0dba68dd306ae",
+      "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
+      "findings": [
+        {
+          "line": 20,
+          "column": 12,
+          "symbol": "docker",
+          "statement_sha256": "b2f8003b8762ae60f78d871b34f28eff6aada915f91ce1ffa1857fb2aaaa0317",
+          "context_sha256": "f23f8ee0e7a61b6854a4ae96a0bfdba3d99e928c71ffd7a6f13817ba0d6fc3c9"
+        }
+      ]
+    },
+    {
       "path": "tools/security_dependencies.py",
       "code": "S310",
-      "source_sha256": "8fe2c572c6cbdce9817761c045d505a73a9cc2eece809d7bf8c8fc78ead9be93",
+      "source_sha256": "0d2943cbde3134f3b6cebc602e617121914985bc1b6e572fc765eab61aa95c56",
       "reason": "Fixed HTTP(S) metadata/loopback fixture URL or the allowlisted OSV route builder; no caller-controlled URL schemes at this reviewed site.",
       "findings": [
         {
-          "line": 188,
+          "line": 196,
           "column": 15,
           "symbol": "fetch",
           "statement_sha256": "7a0a28ee2e7543b4f61e4e219c26d79ab2abb4beda453950e285029a59233e4c",
@@ -8232,22 +8269,22 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "78376f6099c24b5e4d13e8a05280f01009421d3e9f46091d55343f1b78d3ea9a",
+      "source_sha256": "d0256047139949941c381b05a6b699ca3c95f01b4edfd62676235e0b9647ed03",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 336,
+          "line": 351,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
-          "context_sha256": "e654b1cc0d851254b4467069a8f179d2c2d96e250333c94747df95d82efb48ed"
+          "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 354,
+          "line": 369,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
-          "context_sha256": "e654b1cc0d851254b4467069a8f179d2c2d96e250333c94747df95d82efb48ed"
+          "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         }
       ]
     },

@@ -6,9 +6,111 @@ import tempfile
 import subprocess
 import shutil
 import sys
+import hashlib
+import tarfile
+import zipfile
+from copy import deepcopy
 import unittest
 
 from tools.container_tests import resolve, staged_sources, test_commands as commands
+
+
+class QualificationSafetyTests(unittest.TestCase):
+    def test_cold_archives_reject_links_traversal_foreign_owners_and_writable_files(self):
+        from tools.qualification_storage import archive_members
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "backup.tar"
+            for name, kind, uid, mode in (
+                ("data", tarfile.REGTYPE, 10001, 0o600),
+                ("../escape", tarfile.REGTYPE, 10001, 0o600),
+                ("/absolute", tarfile.REGTYPE, 10001, 0o600),
+                ("link", tarfile.SYMTYPE, 10001, 0o600),
+                ("data", tarfile.REGTYPE, 10002, 0o600),
+                ("data", tarfile.REGTYPE, 10001, 0o666),
+            ):
+                member = tarfile.TarInfo(name)
+                member.type, member.uid, member.gid, member.mode = kind, uid, 10001, mode
+                with tarfile.open(path, "w") as archive:
+                    archive.addfile(member)
+                with self.subTest(name=name, kind=kind, uid=uid, mode=mode):
+                    if name == "data" and uid == 10001 and mode == 0o600:
+                        self.assertEqual(archive_members(path), 1)
+                    else:
+                        with self.assertRaises(ValueError):
+                            archive_members(path)
+
+    def test_staged_source_changes_cannot_inherit_the_clean_manifest(self):
+        from tools.deployment_qualification import validate_staging
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "runtime.py"
+            source.write_text("reviewed runtime")
+            packet = root / "source.zip"
+            with zipfile.ZipFile(packet, "w") as archive:
+                archive.writestr(
+                    "SOURCE-MANIFEST.json",
+                    json.dumps(
+                        {
+                            "source_files": [
+                                {
+                                    "target": "runtime.py",
+                                    "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                                }
+                            ]
+                        }
+                    ),
+                )
+            build = {"source_packet": str(packet), "build_dir": str(root), "overlays": []}
+            self.assertEqual(
+                validate_staging(build), hashlib.sha256(packet.read_bytes()).hexdigest()
+            )
+            source.write_text("unreviewed runtime")
+            with self.assertRaisesRegex(ValueError, "source identity"):
+                validate_staging(build)
+
+    def test_rust_graph_requires_the_declared_versions_checksums_and_complete_metadata(self):
+        from tools.security_rust import REGISTRY, rust_graph
+
+        manifest = {
+            "package": {"name": "sdk", "version": "1.0.0"},
+            "dependencies": {"dep": "=2.0.0"},
+        }
+        lock = {
+            "version": 4,
+            "package": [
+                {"name": "sdk", "version": "1.0.0", "dependencies": ["dep"]},
+                {"name": "dep", "version": "2.0.0", "source": REGISTRY, "checksum": "a" * 64},
+            ],
+        }
+        metadata = {
+            "packages": [
+                {"id": "sdk", "name": "sdk", "version": "1.0.0", "source": None},
+                {"id": "dep", "name": "dep", "version": "2.0.0", "source": REGISTRY},
+            ],
+            "resolve": {
+                "nodes": [{"id": "sdk", "deps": [{"pkg": "dep"}]}, {"id": "dep", "deps": []}]
+            },
+        }
+        self.assertEqual(len(rust_graph(lock, manifest, metadata)), 1)
+        for key, value in (
+            ("source", "git+https://example.invalid/repo"),
+            ("checksum", "bad"),
+            ("version", "3.0.0"),
+        ):
+            changed = deepcopy(lock)
+            changed["package"][1][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                rust_graph(changed, manifest, metadata)
+        changed = deepcopy(metadata)
+        changed["resolve"]["nodes"].pop()
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            rust_graph(lock, manifest, changed)
+        changed = deepcopy(metadata)
+        changed["resolve"]["nodes"][0]["deps"] = []
+        with self.assertRaisesRegex(ValueError, "edge mismatch"):
+            rust_graph(lock, manifest, changed)
 
 
 class ContainerValidationTests(unittest.TestCase):

@@ -292,11 +292,12 @@ def rust_client(consumer):
         (ROOT / "clients/rust/rust-toolchain.toml").read_text()
     )["toolchain"]["channel"]
     runtime = run(["cargo", "--version"], capture=True).strip()
-    run(["cargo", "test", "--manifest-path", manifest, "--all-targets"])
+    run(["cargo", "test", "--locked", "--manifest-path", manifest, "--all-targets"])
     run(
         [
             "cargo",
             "clippy",
+            "--locked",
             "--offline",
             "--manifest-path",
             manifest,
@@ -306,7 +307,7 @@ def rust_client(consumer):
             "clippy::correctness",
         ]
     )
-    run(["cargo", "package", "--offline", "--manifest-path", manifest, "--allow-dirty"])
+    run(["cargo", "package", "--locked", "--offline", "--manifest-path", manifest, "--allow-dirty"])
     archive = Path(os.environ["CARGO_TARGET_DIR"]) / "package/ezllmrouter-client-0.3.0.crate"
     with tarfile.open(archive) as package:
         package.extractall(consumer, filter="data")
@@ -325,7 +326,14 @@ def rust_client(consumer):
     )
     run(["cargo", "check", "--offline", "--manifest-path", consumer / "Cargo.toml"])
     http("rust")
-    return {"crate_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "runtime": runtime}
+    return {
+        "crate_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "repository_lock_sha256": hashlib.sha256(
+            manifest.with_name("Cargo.lock").read_bytes()
+        ).hexdigest(),
+        "consumer_lock_sha256": hashlib.sha256((consumer / "Cargo.lock").read_bytes()).hexdigest(),
+        "runtime": runtime,
+    }
 
 
 def http(language):

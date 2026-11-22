@@ -132,14 +132,18 @@ def inventory(root: Path = ROOT) -> dict[str, Any]:
 def sbom(data: dict[str, Any]) -> dict[str, Any]:
     components = []
     for row in data["packages"]:
-        kind = {
-            "PyPI": "pypi",
-            "npm": "npm",
-            "crates.io": "cargo",
-            "Go": "golang",
-            "Maven": "maven",
-            "NuGet": "nuget",
-        }[row["ecosystem"]]
+        kind = (
+            "deb"
+            if row["ecosystem"].startswith("Debian:")
+            else {
+                "PyPI": "pypi",
+                "npm": "npm",
+                "crates.io": "cargo",
+                "Go": "golang",
+                "Maven": "maven",
+                "NuGet": "nuget",
+            }[row["ecosystem"]]
+        )
         purl = (
             "pkg:"
             + kind
@@ -148,6 +152,8 @@ def sbom(data: dict[str, Any]) -> dict[str, Any]:
             + "@"
             + quote(row["version"], safe="")
         )
+        if kind == "deb":
+            purl += "?distro=debian-" + quote(row["ecosystem"].split(":", 1)[1], safe="")
         components.append(
             {
                 "type": "library",
@@ -168,7 +174,9 @@ def sbom(data: dict[str, Any]) -> dict[str, Any]:
             "properties": [
                 {
                     "name": "ezllmrouter:scope",
-                    "value": "Declared Python/npm/native candidates; not installed image contents or a complete native transitive graph",
+                    "value": "Declared locks plus resolved Rust and installed image OS/application packages; base runtime binary internals are outside this inventory"
+                    if "images" in data
+                    else "Declared Python/npm locks and resolved Rust closure; installed image contents require a target inventory",
                 },
                 {"name": "ezllmrouter:inventory-sha256", "value": data["sha256"]},
             ]
