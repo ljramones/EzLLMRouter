@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import socket
 import unittest
+from tests.support import gate_checkpoint
 import threading
 
 
@@ -93,7 +94,7 @@ class OwnedSenderTests(unittest.TestCase):
 
             def fresh():
                 entered.set()
-                if not release.wait(3):
+                if not gate_checkpoint(release, 3):
                     raise AssertionError("final check was not released")
 
             item.fresh_check = fresh

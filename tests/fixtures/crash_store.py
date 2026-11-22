@@ -139,6 +139,11 @@ def main():
         else:
             crash_maintenance.wal_case(root, point, checkpoint)
         return 0
+    if phase.startswith("db_rotation."):
+        from tests.fixtures.crash_rotation import rotation_case
+
+        rotation_case(root, phase.split(".")[1], point, checkpoint)
+        return 0
     if phase in ("seal", "rotate"):
         vault_case(root, phase, point)
     else:

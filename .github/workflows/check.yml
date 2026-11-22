@@ -43,6 +43,31 @@ jobs:
             .artifacts/test-health/
             .artifacts/security/
           retention-days: 14
+  mutation-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
+      - name: Validate locked inputs before installing dependencies
+        run: python3 -I -S tools/security_dependencies.py
+      - name: Install pinned environment manager
+        run: 'python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock'
+      - name: Install locked development environment
+        run: uv sync --locked --all-groups --python 3.12.15
+      - name: Reject surviving, invalid or timed-out critical decision mutations
+        run: uv run --locked python -m tools.mutation_check --output .artifacts/mutations/critical
+      - name: Retain every mutation outcome
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: critical-mutation-results
+          path: |
+            .artifacts/mutations/critical/summary.json
+            .artifacts/mutations/critical/*/baseline.json
+            .artifacts/mutations/critical/*/mutant.json
+            .artifacts/mutations/critical/*/baseline.log
+            .artifacts/mutations/critical/*/mutant.log
+          retention-days: 14
   credential-init:
     # The local profile pins an ARM64 image manifest; use its native architecture.
     runs-on: ubuntu-24.04-arm

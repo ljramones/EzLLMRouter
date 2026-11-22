@@ -36,3 +36,8 @@ async def async_wait_until(predicate: Callable[[], bool], *, timeout: float = 3)
     async with asyncio.timeout(timeout):
         while not predicate():
             await asyncio.sleep(0)
+
+
+def gate_checkpoint(event: threading.Event, timeout: float) -> bool:
+    """Explicit fixture barrier holding a gate to force a competing operation."""
+    return event.wait(timeout)

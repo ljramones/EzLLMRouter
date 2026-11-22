@@ -6,6 +6,7 @@ from pathlib import Path
 import uuid
 
 from tools import artifact_runs
+from tests.json_shrinking import minimize
 
 
 class Divergence(AssertionError):
@@ -19,21 +20,9 @@ def equal(rule, expected, actual):
         raise Divergence(rule, expected, actual)
 
 
-def reduce_trace(steps, fails, budget=48):
-    """Deterministic chunk deletion; retain only the same failing invariant."""
-    candidate, width, attempts = list(steps), max(1, len(steps) // 2), 0
-    while width and attempts < budget:
-        start, reduced = 0, False
-        while start < len(candidate) and attempts < budget:
-            trial = candidate[:start] + candidate[start + width :]
-            attempts += 1
-            if trial and fails(trial):
-                candidate, reduced = trial, True
-            else:
-                start += width
-        if not reduced:
-            width //= 2
-    return candidate
+def reduce_trace(steps, fails, budget=48, stats=None):
+    """Retain a nonempty trace with the same invariant, within one replay budget."""
+    return minimize(steps, lambda trial: bool(trial) and fails(trial), budget, stats)
 
 
 def run_trace(name, seed, steps, execute):
@@ -48,10 +37,15 @@ def run_trace(name, seed, steps, execute):
             execute(candidate)
         except Divergence as error:
             return error.rule == failure.rule
+        except Exception:
+            # Simplified commands can violate their schema or setup dependencies.
+            # Such candidates do not reproduce the original divergent invariant.
+            return False
         return False
 
     prefix = steps[: failure.index + 1]
-    minimized = reduce_trace(prefix, reproduces)
+    reduction = {}
+    minimized = reduce_trace(prefix, reproduces, stats=reduction)
     managed = None
     if os.environ.get("EZLLMROUTER_TEST_HEALTH"):
         root = Path(os.environ["EZLLMROUTER_TEST_HEALTH"]) / "generated-failures"
@@ -67,13 +61,14 @@ def run_trace(name, seed, steps, execute):
     path.write_text(
         json.dumps(
             {
-                "format_version": 1,
+                "format_version": 2,
                 "name": name,
                 "seed": seed,
                 "first_step": failure.index,
                 "rule": failure.rule,
                 "trace": prefix,
                 "minimized": minimized,
+                "reduction": reduction,
             },
             ensure_ascii=True,
             indent=2,

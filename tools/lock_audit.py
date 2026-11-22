@@ -112,11 +112,16 @@ class WatchedLock:
 
     def _release_save(self):
         tracked = self.auditor.held().pop(id(self))
-        return self.lock._release_save(), tracked
+        release = getattr(self.lock, "_release_save", None)
+        return (release() if release else self.lock.release()), tracked
 
     def _acquire_restore(self, state):
         native, tracked = state
-        self.lock._acquire_restore(native)
+        restore = getattr(self.lock, "_acquire_restore", None)
+        if restore:
+            restore(native)
+        else:
+            self.lock.acquire()
         self.auditor.held()[id(self)] = tracked
 
 
@@ -210,6 +215,7 @@ class LockAuditor:
             del frame
 
     def install(self, stack: ExitStack) -> None:
+        from .wait_audit import install_waits
         from ezllmrouter_server.store import SQLiteStore
         from ezllmrouter_server.registry import Registry
         from ezllmrouter_server import user_management
@@ -222,6 +228,7 @@ class LockAuditor:
         original_authority = LocalSendAuthority.__init__
         original_open = SQLiteStore.open_existing.__func__
         original_connect = sqlite3.connect
+        install_waits(stack, self)
 
         def connect(*args, **kwargs):
             _database_call("SQLite connect")

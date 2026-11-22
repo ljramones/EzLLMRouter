@@ -1,0 +1,62 @@
+{
+  "schema": "ezllmrouter.critical-mutations.v1",
+  "scope": "Finite synthetic decision mutations; survivors, invalid cases and timeouts all fail the gate; no mutation of the working checkout",
+  "mutations": [
+    {
+      "id": "removed-grant",
+      "path": "server/src/ezllmrouter_server/registry.py",
+      "source_sha256": "da7fc99829a4c835e6b88726dc0431f71b2eaa967ef949c0b4d2b58e5ab6c3bc",
+      "before": "if not grant or grant[\"status\"] != \"active\"",
+      "after": "if not grant",
+      "selector": "tests.unit.test_authority_properties.AuthorityPriceProperties"
+    },
+    {
+      "id": "replayed-operation-payload",
+      "path": "server/src/ezllmrouter_server/registry.py",
+      "source_sha256": "da7fc99829a4c835e6b88726dc0431f71b2eaa967ef949c0b4d2b58e5ab6c3bc",
+      "before": "if prior[0] != actor or prior[1] != request_hash:",
+      "after": "if prior[0] != actor:",
+      "selector": "tests.unit.test_authority_properties.AuthorityPriceProperties"
+    },
+    {
+      "id": "published-price-identity",
+      "path": "server/src/ezllmrouter_server/registry_mutations/prices.py",
+      "source_sha256": "7dba9aafbcdd6629bbab8353fd7c49d52ae894c655213d20586915ab47d39acd",
+      "before": "model[\"price_version\"] = version",
+      "after": "model[\"price_version\"] = \"synthetic.unpriced.v1\"",
+      "selector": "tests.unit.test_authority_properties.AuthorityPriceProperties"
+    },
+    {
+      "id": "early-backoff",
+      "path": "server/src/ezllmrouter_server/user_management.py",
+      "source_sha256": "9f9972ea0ff682d1d8d627eb3d153f962f940d8486fa0f4dfed98c1f0db716df",
+      "before": "or (failures and now < failures[-1] + backoff)",
+      "after": "or False",
+      "selector": "tests.unit.test_time_boundaries.AbsoluteTimeTests.test_login_backoff_opens_at_its_deadline_without_sleeping"
+    },
+    {
+      "id": "abandoned-first-write",
+      "path": "server/src/ezllmrouter_server/gateway/owned_sender_transport.py",
+      "source_sha256": "68845549398765d04ecd7e2adafe6d9fb67f7a8b2731ce7258442147d306bee0",
+      "before": "invocation.abandoned\n",
+      "after": "False\n",
+      "selector": "tests.gateway_integration.test_first_write_boundaries.FirstWriteBoundaryTests.test_current_first_write_authority_rejects_each_invalid_state"
+    },
+    {
+      "id": "queue-capacity",
+      "path": "server/src/ezllmrouter_server/execution_resources.py",
+      "source_sha256": "1b3bb083fd4d42154f1daa2b18bbf00ad07675137134ef2fb2464a467371fb0c",
+      "before": "if not self._slots.acquire(blocking=False):",
+      "after": "if False:",
+      "selector": "tests.unit.test_limit_contracts.LimitContractsTests.test_execution_and_check_queues_accept_the_limit_refuse_one_more_and_recover"
+    },
+    {
+      "id": "route-id-redaction",
+      "path": "server/src/ezllmrouter_server/observability.py",
+      "source_sha256": "e3ba9f81e440a6497e12e12f43ccb34c134915be28f08e85991989c1db212f3f",
+      "before": "result = [\":id\"] * len(parts)",
+      "after": "result = list(parts)",
+      "selector": "tests.unit.test_log_contracts.LogContractTests.test_dynamic_ids_are_redacted_even_when_they_equal_a_registered_route_word"
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import unittest
+from tests.support import gate_checkpoint
 from unittest.mock import patch
 
 from ezllmrouter_server.canonical import ContractError
@@ -62,7 +63,7 @@ class CampaignInterleavingTests(unittest.TestCase):
         def reserve():
             def at_reservation(db, item):
                 entered.set()
-                if not release.wait(3):
+                if not gate_checkpoint(release, 3):
                     raise AssertionError("reservation checkpoint was not released")
                 return self.campaign.reserve(db, item, 20, 16)
 
@@ -104,7 +105,7 @@ class CampaignInterleavingTests(unittest.TestCase):
         def audit(db, action, actor, **kwargs):
             if action == "closed":
                 entered.set()
-                if not release.wait(3):
+                if not gate_checkpoint(release, 3):
                     raise AssertionError("close checkpoint was not released")
             return original_audit(db, action, actor, **kwargs)
 

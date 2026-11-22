@@ -11,6 +11,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = (
+    ("tests.unit.test_authority_properties", False),
+    ("tests.gateway_integration.test_concurrent_transports", True),
     ("tests.unit.test_generated_properties.CampaignStateModel", False),
     ("tests.unit.test_campaign_interleavings", False),
     ("tests.unit.test_database_concurrency", False),

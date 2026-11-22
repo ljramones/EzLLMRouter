@@ -81,6 +81,13 @@ rewritten data and older backups remain decryptable. Rotation and resume never
 delete predecessors. Retirement is a separate, explicit operation; HMAC-key
 rotation is outside this command.
 
+Disposable integration/connector tests kill real maintenance processes after key
+publication, during database rewrite, before commit and after commit. Reopening
+checks all unaffected tables, original identities and credential decryption.
+Resume uses the published key and rewrites either the complete rolled-back set
+or zero rows after a committed rewrite. These tests qualify process interruption,
+not physical power loss or a production backup.
+
 ## Retire an old encryption key
 
 Before rotating, run `resume` and record its active key identifier if you intend

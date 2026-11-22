@@ -310,23 +310,26 @@ tokens in known UTF-16 order, then decode and shuffle insertion order; fixed
 SHA-256 known answers check digest formatting.
 
 Campaign and registry models stop at the first divergent invariant. A bounded
-48-replay command-deletion reducer preserves that invariant and saves the failing
-prefix plus minimized trace under the health directory's `generated-failures/`.
-Without an explicit health directory, managed outputs retain five failures under
-`.artifacts/test-health/`. These traces contain synthetic commands only; ordinary
-health summaries remain value-free. Replay a saved minimized campaign trace with
-`tests.generated_campaign.execute(trace["minimized"])`, or use
-`tests.generated_registry.execute` for registry traces, after loading its JSON.
-This is bounded command deletion, with no claim of globally minimal inputs or
-general scalar/JSON shrinking.
+48-replay reducer deletes commands and recursively simplifies JSON containers,
+keys, strings, booleans and numeric values. A strictly decreasing structural/value
+weight and typed JSON identities make reduction deterministic; invalid commands
+or another invariant cannot replace the original failure. Version-2 artifacts save
+the failing prefix, minimized trace, rule, seed, replay budget and attempt count
+under the health directory's `generated-failures/`. Without an explicit health
+directory, managed outputs retain five failures under `.artifacts/test-health/`.
+These are synthetic traces, with no claim of a globally minimal counterexample.
+Replay with `tests.generated_campaign.execute(trace["minimized"])`,
+`tests.generated_registry.execute`, or `tests.generated_authority.execute`.
 
-Campaign expectations use integer nanodollars, renew allowances by explicitly
-closing and configuring new synthetic campaigns, and include unknown and
-over-bound settlements, late corrections, duplicate settlement/reconciliation,
-and rejected admissions. Registry generation covers two models and two principals,
-edits and state changes, exact operation replay, conflicting operation-ID reuse,
-stale revisions, unchanged rejected-write versions and unaffected subjects.
-Grant/price models and the other native decoders remain follow-up work.
+Campaign expectations use integer nanodollars, explicit allowance renewal,
+unknown/over-bound settlements, late corrections, duplicate settlement and denied
+admissions. Registry models cover model/principal edits, exact operation replay,
+conflicting IDs, stale revisions and unaffected subjects. The grant/price model
+adds two principals and two configurations, active/removed scope intersections,
+model state, exact nanodollar rates, immutable historical schedules and costs,
+current price identity and admitted destination/price attribution. Tests include
+positive admissions and denials. The shared six-client decoder corpus is described
+above; generated-model coverage does not establish exhaustive state exploration.
 
 Both campaign close/admission orders observe an actual failed nonblocking
 authority-gate acquire by the competitor while the first transaction is held.
@@ -338,7 +341,11 @@ until after commit and verifies that this test fails.
 and token locks, credential/vault gates, availability lock and password hash
 semaphore in each module interpreter, including stores opened for maintenance.
 It rejects socket connect/read/write, TLS data I/O and handshake, `time.sleep`,
-password hashing and hash-slot waits while a shared gate is held. SQLite
+password hashing and hash-slot waits while a shared gate is held. It also rejects
+blocking `Event.wait`, `Condition.wait`, `Future.result`/`exception` and
+`Thread.join` calls. Completed futures/events/threads and zero-timeout probes stay
+valid. A condition may wait after atomically releasing its own watched gate;
+other held gates still reject the wait, including nested/reentrant gates. SQLite
 connections/cursors and store entry points additionally reject synchronous
 database work on a running asyncio loop, even without a held gate. Ordinary
 synchronous SQLite transactions remain supported; this is not a general SQLite
@@ -351,16 +358,23 @@ exception was caught or occurred on a worker/loop thread; module health artifact
 retain operation/lock labels and thread IDs without SQL text or arguments. Nested
 audit probes in the instrument's own tests use isolated scopes. This is test
 instrumentation, not an OS sandbox or a detector for arbitrary CPU work/file I/O,
-every synchronization wait, or nested isolated source-copy children.
+arbitrary native mutex acquisitions, or nested isolated source-copy children.
+Thread.start's internal startup handshake has an explicit infrastructure exception.
+Forced race fixtures use only `tests.support.gate_checkpoint` for deliberately
+held event barriers; ordinary event waits and bad-code probes remain checked.
+The password hash limiter alone is a capacity semaphore rather than a state gate.
 
 The forced-order race cases include sender revocation/cancellation,
 credential rotation/release, purge versus delayed writers, session revocation
 during lookups, and both orders of campaign close/admission. Run a short local
 stress pass, or omit the small round count and offline restriction for the
-nightly 200-round HTTP/TLS pass:
+nightly 200-round HTTP/TLS pass. The nine suites include twelve concurrent
+owned exchanges for each of plaintext HTTP and actual TLS: four succeed, four
+are revoked before first bytes, and four are cancelled. Exact receiver counts
+exclude replay and context mixing. For a short pass including both transports:
 
 ```sh
-uv run --locked python -m tools.concurrency_stress --rounds 3 --offline-only
+uv run --locked python -m tools.concurrency_stress --rounds 3
 ```
 
 The runner records the master seed and each round's seed, which controls both
@@ -368,8 +382,9 @@ suite order and the generated campaign-model inputs. Replaying those seeds does
 not replay OS thread scheduling: the individual races use explicit events and
 barriers. A failure or timeout stops the run and remains failed in `summary.json`
 and the health records. The scheduled run uses 200 rounds and 512 generated
-examples per round. Richer models and additional forced interleavings remain
-separate follow-up work.
+examples per round. The seed does not reproduce arbitrary OS scheduling or establish production
+capacity; broader native waits, load and deployment-specific qualification remain
+separate work.
 
 `test_process_durability` kills real child processes after a handshake at named
 fixture-only checkpoints. It covers before-BEGIN, before-COMMIT and after-COMMIT
@@ -388,6 +403,35 @@ populate all 53 application tables and all JSON expression indexes in WAL mode;
 unaffected-table checks are independent of regenerated goldens. Kernel-I/O and
 power-loss qualification remain separate. All data and secrets are synthetic and
 temporary; the tests never open a running profile or contact a provider.
+Seven additional execution kills traverse the real Coordinator and signing
+implementation, durable intent reference, owned first HTTP socket byte and wire
+reply publication. Parent socket observations distinguish no byte, the first
+request byte and a complete published reply. Reopen twice and resubmit preserve
+the original handle, attempt, intent, guard receipt and usage without replay.
+Plans are signed transient values; these checks do not invent a persisted plan
+store. Eight database-rotation kills cover integration and connector credentials
+after key publication, during rewrite, before commit and after commit. Every
+unaffected table and connector record stays identical; old keys can decrypt
+rolled-back rows, resume uses the existing active key and a second resume rewrites
+zero rows. Together with the existing checks there are 49 named process kills.
+
+The [critical mutation manifest](../tests/fixtures/mutations/critical.json) pins
+seven exact source hashes and edits. Each mutation gets a disposable source copy,
+a passing baseline, a separate test interpreter and a check that the modified
+module actually loaded from that copy. Syntax/import/empty/all-skipped cases are
+invalid; test failures kill a valid mutant; success means survived; a bounded
+process-group kill records timeout. All four outcomes remain separate, and any
+survivor, invalid case or timeout fails the dedicated `mutation-tests` CI job.
+Real subprocess controls verify all outcomes and that the working tree is never
+modified. Source copies and child runtime directories are removed, including on
+timeout; CI retains only the explicitly selected reports/logs. This POSIX runner
+is a finite decision gate, not an exhaustive mutation score. Use a fresh output
+path for each retained run:
+
+```sh
+uv run --locked python -m tools.mutation_check --output .artifacts/mutations/review-run
+```
+
 
 `tools.security_sast` runs the locked Ruff 0.14.0 `S` rules over server,
 Python-client, worker, deployment and tools Python sources, ignoring inline

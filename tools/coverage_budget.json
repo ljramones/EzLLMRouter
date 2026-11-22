@@ -3834,7 +3834,7 @@
     "server/src/ezllmrouter_server/local_connectors.py": {
       "source_sha256": "bcb8895dfe5ffa87ae7a9b95ff903509dd11fd06e4f49472b92965aa677f213c",
       "missing_lines": 18,
-      "missing_branches": 43,
+      "missing_branches": 42,
       "missing_line_ids": [
         12,
         123,
@@ -3897,8 +3897,7 @@
         "LocalConnectors.nearby@385:c51e89f50d51:540->584",
         "LocalConnectors.update.<locals>.change@555:f550fd921b12:136->138",
         "LocalConnectors.update.<locals>.change@555:f550fd921b12:98->128",
-        "connector_key_path@121:23a412838b36:28->30",
-        "reencrypt_connectors.<locals>.rewrite@132:c48b8a2fc0dc:326->328"
+        "connector_key_path@121:23a412838b36:28->30"
       ]
     },
     "server/src/ezllmrouter_server/observability.py": {
@@ -5165,8 +5164,8 @@
     },
     "server/src/ezllmrouter_server/registry.py": {
       "source_sha256": "da7fc99829a4c835e6b88726dc0431f71b2eaa967ef949c0b4d2b58e5ab6c3bc",
-      "missing_lines": 23,
-      "missing_branches": 34,
+      "missing_lines": 20,
+      "missing_branches": 30,
       "missing_line_ids": [
         32,
         33,
@@ -5185,18 +5184,14 @@
         259,
         261,
         264,
-        268,
-        270,
         300,
         340,
-        434,
         480
       ],
       "missing_branch_ids": [
         "<module>@1:d2b89e7a4792:224->226",
         "Registry.__init__@76:d7892f515ee3:450->452",
         "Registry._apply@395:33f6a1b24b05:704->714",
-        "Registry._apply@395:33f6a1b24b05:712->714",
         "Registry._bootstrap.<locals>.action@166:bbc822f7a258:156->158",
         "Registry._load_for_update@472:4e5a6bba6ffe:112->114",
         "Registry._require_admin@222:8736b67e4c9a:44->46",
@@ -5208,10 +5203,7 @@
         "Registry.explain@242:55fd4520c5ed:270->272",
         "Registry.explain@242:55fd4520c5ed:312->314",
         "Registry.explain@242:55fd4520c5ed:368->370",
-        "Registry.explain@242:55fd4520c5ed:410->426",
         "Registry.explain@242:55fd4520c5ed:424->426",
-        "Registry.explain@242:55fd4520c5ed:442->458",
-        "Registry.explain@242:55fd4520c5ed:456->458",
         "Registry.explain@242:55fd4520c5ed:478->490",
         "Registry.explain@242:55fd4520c5ed:494->506",
         "Registry.mutate.<locals>.action@328:b53ba234123d:196->214",
@@ -5484,27 +5476,24 @@
     },
     "server/src/ezllmrouter_server/registry_mutations/grants.py": {
       "source_sha256": "3a34cd950dac5128399078841f8714d88ae03312ad3a3d11469d7ed6e9f51846",
-      "missing_lines": 7,
-      "missing_branches": 15,
+      "missing_lines": 6,
+      "missing_branches": 13,
       "missing_line_ids": [
         11,
         25,
         32,
         47,
         60,
-        64,
         67
       ],
       "missing_branch_ids": [
         "<module>@1:3718c549d96d:68->70",
-        "_apply_grant@19:e415f01e24ef:1084->1086",
         "_apply_grant@19:e415f01e24ef:1156->1170",
         "_apply_grant@19:e415f01e24ef:1166->1170",
         "_apply_grant@19:e415f01e24ef:288->294",
         "_apply_grant@19:e415f01e24ef:292->294",
         "_apply_grant@19:e415f01e24ef:32->48",
         "_apply_grant@19:e415f01e24ef:46->48",
-        "_apply_grant@19:e415f01e24ef:480->482",
         "_apply_grant@19:e415f01e24ef:618->620",
         "_apply_grant@19:e415f01e24ef:810->840",
         "_apply_grant@19:e415f01e24ef:846->908",
@@ -6453,7 +6442,7 @@
     "server/src/ezllmrouter_server/secret_rotation.py": {
       "source_sha256": "d25bbd0d83bb514c47ec10f3e23a58ab421e848a93b6b7daaed127745bfd9b42",
       "missing_lines": 7,
-      "missing_branches": 16,
+      "missing_branches": 15,
       "missing_line_ids": [
         142,
         144,
@@ -6478,8 +6467,7 @@
         "_rotation_arguments@128:bcf5c480989d:728->730",
         "_rotation_arguments@128:bcf5c480989d:816->818",
         "_rotation_arguments@128:bcf5c480989d:904->906",
-        "main@31:182e72444030:1676->1742",
-        "main@31:182e72444030:974->1018"
+        "main@31:182e72444030:1676->1742"
       ]
     },
     "server/src/ezllmrouter_server/states.py": {

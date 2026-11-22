@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from tests.support import gate_checkpoint
 from unittest.mock import patch
 
 from ezllmrouter_server.provider_vault import ProviderVault
@@ -99,7 +100,7 @@ class PersistenceRecoveryTests(unittest.TestCase):
             value = principal(identifier)
             if identifier == TRUSTED["principal_id"] and not entered.is_set():
                 entered.set()
-                if not release.wait(3):
+                if not gate_checkpoint(release, 3):
                     raise AssertionError("admission not released")
             return value
 

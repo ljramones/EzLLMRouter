@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import threading
 import unittest
+from tests.support import gate_checkpoint
 from unittest.mock import patch
 
 from ezllmrouter_server.integration_accounting import IntegrationError
@@ -51,7 +52,7 @@ class CredentialConcurrencyTests(unittest.TestCase):
         def discover(*args, **kwargs):
             if key is None or args[2] == key:
                 entered.set()
-                if not release.wait(10):
+                if not gate_checkpoint(release, 10):
                     raise AssertionError("test did not release the controlled discovery")
             return original(*args, **kwargs)
 
@@ -478,7 +479,7 @@ class DatasetPurgeRaceTests(unittest.TestCase):
         def pause(action):
             if threading.get_ident() != main_thread:
                 entered.set()
-                if not release.wait(10):
+                if not gate_checkpoint(release, 10):
                     raise AssertionError("test did not release the pending transaction")
             return transaction(action)
 

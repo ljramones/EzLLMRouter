@@ -1,5 +1,7 @@
 """Session publication races through the real operator handlers, without sockets."""
 
+from tests.support import gate_checkpoint
+
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from email.message import Message
@@ -31,7 +33,7 @@ class OperatorSessionTests(UserHTTPFixture):
 
         def wait(*args, **kwargs):
             entered.set()
-            if not release.wait(10):
+            if not gate_checkpoint(release, 10):
                 raise AssertionError("test did not release the held operation")
             return original(*args, **kwargs)
 
@@ -229,7 +231,7 @@ class OperatorSessionTests(UserHTTPFixture):
         def read():
             if not entered.is_set():
                 entered.set()
-                if not release.wait(10):
+                if not gate_checkpoint(release, 10):
                     raise AssertionError("test did not release the database reader")
             with original() as db:
                 yield db
