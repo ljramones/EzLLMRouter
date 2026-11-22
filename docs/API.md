@@ -77,6 +77,10 @@ limits. The isolated worker prepares a request; the trusted service validates
 the final request and owns transmission. A client response does not itself prove
 task acceptance.
 
+Attribution runs and outcomes under `/v1/attribution-runs` and `/v1/outcomes`
+use contract version `0.2`. Requests selecting `0.3` receive HTTP 404 for both
+reads and writes on those routes.
+
 Text execution accepts `generation_settings.max_output_tokens` from 1 through
 32,768 and `generation_settings.total_timeout_ms` from 1 through 300,000
 milliseconds. A larger value is rejected with HTTP 422 and `LIMIT_EXCEEDED`

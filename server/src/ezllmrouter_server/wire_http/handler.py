@@ -24,8 +24,10 @@ class WireHandler(IntegrationRoutes):
                 raise ContractError("SCHEMA_INVALID", 400)
             if path == "/v1/capabilities":
                 self._reply(200, self.work_service.capabilities(trusted))
-            elif self.application.coordinator.registry and re.fullmatch(
-                "/v1/attribution-runs/[A-Za-z0-9._:-]+", path
+            elif (
+                self.selected_version == "0.2"
+                and self.application.coordinator.registry
+                and re.fullmatch("/v1/attribution-runs/[A-Za-z0-9._:-]+", path)
             ):
                 run = self.application.coordinator.registry.attribution.run(path.rsplit("/", 1)[1])
                 if not run or run["principal_id"] != trusted["principal_id"]:
@@ -33,8 +35,10 @@ class WireHandler(IntegrationRoutes):
                 self._reply(
                     200, {"contract_version": "0.2", "attribution_version": "1", "run": run}
                 )
-            elif self.application.coordinator.registry and re.fullmatch(
-                "/v1/outcomes/[A-Za-z0-9._:-]+", path
+            elif (
+                self.selected_version == "0.2"
+                and self.application.coordinator.registry
+                and re.fullmatch("/v1/outcomes/[A-Za-z0-9._:-]+", path)
             ):
                 receipt = self.application.coordinator.registry.attribution.outcome_receipt(
                     trusted, path.rsplit("/", 1)[1]

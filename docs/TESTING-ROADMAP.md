@@ -75,7 +75,7 @@ keeps those distinct from new work and from target verification.
 | ID | Recommendation | Status and evidence |
 | --- | --- | --- |
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
-| T02 | Generated authorization matrix | Partial: all 66 operator routes have independent checked-in policy rows, with anonymous/expired/ordinary/admin/read-only/password-change-required sessions, missing/wrong CSRF, Origin/Host and cross-user checks. Full-console and integration-only variants cover valid-body write denials, wrong methods and positive account/connector controls. Direct-handler, socket-pair and localhost versions pass; sensitivity regressions detect deliberately permitted read-only mutations. Wire API matrix and broader family-resource scenarios remain. |
+| T02 | Generated authorization matrix | Partial: all 66 operator routes have independent checked-in policy rows, with anonymous/expired/ordinary/admin/read-only/password-change-required sessions, missing/wrong CSRF, Origin/Host and cross-user checks. Full-console and integration-only variants cover valid-body write denials, wrong methods and positive account/connector controls. The wire policy covers 42 route/version bindings with real bearer credentials, eight active identities, scope denials and successful writes/replays. Both matrices run directly, over socket pairs and on localhost; sensitivity regressions detect deliberate permission bypasses. Broader operator family-resource scenarios remain. |
 | T03 | Docker image builds and deployment checks | Partial: tools.container_tests inventories all tracked Dockerfiles and resolves supported unittest/discovery/pytest/script commands through actual preparation helpers, COPY, WORKDIR, stages and mount scope. Unsupported validation forms and unqualified staging contexts fail; negative regressions cover missing copies and preflights. Image build/structure/compose qualification still awaits the approved frozen bundle and a disposable target. |
 | T04 | Supply-chain, secret and static security scans | Partial: Ruff S rules cover server/Python-client, worker, deploy and tools sources with exact finding and source identities. A standard-library secret scanner checks current source and reachable full Git history using redacted output and blob-bound public-fixture exceptions. Input checks validate Python hashes/archive identities, npm integrity/manifest agreement, reviewed local projects and native manifest declarations. OSV pagination and retained page replay fail closed. Bootstrap uv wheel/hash and the remaining action commit are pinned. Native transitive graphs and actual-image scans still need their qualified inputs. |
 | T05 | HTTP/JSON/IPC fuzzing | Partial: authenticated operator/wire framing generation now asserts parser entry for every case, rejection without dispatch or a following request, and successful controls with exact body dispatch. Early 401/404 closure tests remain separate. Fragmented/bounded IPC and Python/JS response-decoder differential cases run offline. Ingress, compression and the four other native decoders remain. |
@@ -220,3 +220,22 @@ Python test executions across 178 module invocations; the slowest takes 9.31
 seconds, with no inconsistent outcomes. Provider and deployment qualification,
 native/exception-edge coverage and the broader T02 authorization matrix remain
 separate work.
+
+T02 wire validation adds 47 test executions across direct handlers, socket pairs,
+localhost HTTP and two sensitivity regressions. The independent policy covers
+42 route/version bindings and eight active identities, with real registry
+credentials and temporary SQLite resources. A negative regression first exposed
+work 0.3 reading legacy attribution routes and returning a 0.2 response; both
+legacy GET routes now require 0.2, matching their POST boundary. Denials preserve
+database/authority/dispatch state, while fresh writes and replay controls pass.
+Offline and HTTP budgets remove 246/454 missing-line and 150/241 missing-exit
+allowances respectively. The changed handler's remaining identities map to
+reviewed prior gaps; all four new version-guard exits are covered. Coverage and
+lock-audit gates pass at 89.90%, 73.14% and 92.53% combined line coverage, with all
+13 critical selectors still complete. The separate duration run passes 1,301
+Python test executions across 182 module invocations; the slowest takes 8.83
+seconds, with no inconsistent outcomes. Source/security checks and documentation
+links pass. Source-bound reports and red/green evidence remain under ignored
+`.artifacts/testing-review-followup/` and `.artifacts/coverage/`. Broader operator
+resource-family scenarios remain under T02; no provider, profile or frozen-input
+operation was performed.

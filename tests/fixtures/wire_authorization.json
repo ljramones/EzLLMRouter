@@ -1,0 +1,303 @@
+{
+  "scope": "Controlled work 0.2/0.3 and external accounting 1/2/3; explicit bearer identities and owned resources; no provider traffic",
+  "permissions": {
+    "authenticated": {
+      "work_owner": 200,
+      "owner": 200,
+      "ingest": 200,
+      "reader": 200,
+      "other": 200,
+      "foreign": 200,
+      "consumer": 200,
+      "evaluator": 200
+    },
+    "own_work": {
+      "work_owner": 200
+    },
+    "execution_grant": {
+      "work_owner": 200
+    },
+    "own_run": {
+      "work_owner": 200
+    },
+    "human_run": {
+      "owner": 200,
+      "reader": 200,
+      "other": 200,
+      "foreign": 200
+    },
+    "own_outcome": {
+      "evaluator": 200
+    },
+    "outcome_authority": {
+      "evaluator": 201
+    },
+    "dataset_owner": {
+      "owner": 200
+    },
+    "ingest": {
+      "ingest": 200
+    },
+    "receipt": {
+      "ingest": 200,
+      "owner": 200
+    },
+    "eligibility": {
+      "ingest": 200,
+      "owner": 200
+    },
+    "snapshot": {
+      "ingest": 200,
+      "owner": 200,
+      "reader": 200
+    },
+    "report": {
+      "owner": 200,
+      "reader": 200
+    },
+    "consumer": {
+      "consumer": 200
+    }
+  },
+  "work": [
+    {
+      "versions": [
+        "0.2",
+        "0.3"
+      ],
+      "method": "GET",
+      "path": "/v1/capabilities",
+      "case": "capabilities",
+      "permission": "authenticated"
+    },
+    {
+      "versions": [
+        "0.2",
+        "0.3"
+      ],
+      "method": "GET",
+      "path": "/v1/submissions/{submission}",
+      "case": "status",
+      "permission": "own_work"
+    },
+    {
+      "versions": [
+        "0.2",
+        "0.3"
+      ],
+      "method": "GET",
+      "path": "/v1/submissions/by-work/{task}/{step}/{revision}/{generation}",
+      "case": "by_work",
+      "permission": "own_work"
+    },
+    {
+      "versions": [
+        "0.2",
+        "0.3"
+      ],
+      "method": "POST",
+      "path": "/v1/submissions",
+      "case": "submit",
+      "permission": "execution_grant",
+      "denied": 403,
+      "success_status": {
+        "0.2": 202,
+        "0.3": 200
+      }
+    },
+    {
+      "versions": [
+        "0.2"
+      ],
+      "method": "GET",
+      "path": "/v1/attribution-runs/{run}",
+      "case": "run_read",
+      "permission": "own_run"
+    },
+    {
+      "versions": [
+        "0.2"
+      ],
+      "method": "POST",
+      "path": "/v1/attribution-runs",
+      "case": "run_create",
+      "permission": "human_run",
+      "denied": 403
+    },
+    {
+      "versions": [
+        "0.2"
+      ],
+      "method": "GET",
+      "path": "/v1/outcomes/{outcome}",
+      "case": "outcome_read",
+      "permission": "own_outcome"
+    },
+    {
+      "versions": [
+        "0.2"
+      ],
+      "method": "POST",
+      "path": "/v1/outcomes",
+      "case": "outcome_create",
+      "permission": "outcome_authority",
+      "denied": 403
+    }
+  ],
+  "integration": [
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/datasets",
+      "case": "dataset_create",
+      "permission": "dataset_owner",
+      "denied": 403
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/accounts",
+      "case": "account_create",
+      "permission": "dataset_owner"
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/events",
+      "case": "event_create",
+      "permission": "ingest"
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/accounts/{account}/state",
+      "case": "account_state",
+      "permission": "dataset_owner"
+    },
+    {
+      "versions": [
+        "2",
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/snapshots",
+      "case": "snapshot_create",
+      "permission": "ingest"
+    },
+    {
+      "versions": [
+        "3"
+      ],
+      "method": "POST",
+      "path": "/integration/v{version}/accounts/{account}/permissions",
+      "case": "account_permissions",
+      "permission": "dataset_owner"
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/accounts/{account}/eligibility",
+      "case": "eligibility",
+      "permission": "eligibility"
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/events/{event}/receipt",
+      "case": "receipt",
+      "permission": "receipt"
+    },
+    {
+      "versions": [
+        "2",
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/snapshots/{snapshot}",
+      "case": "snapshot_read",
+      "permission": "snapshot"
+    },
+    {
+      "versions": [
+        "2",
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/reports/dataset",
+      "case": "dataset_report",
+      "permission": "report"
+    },
+    {
+      "versions": [
+        "1",
+        "2",
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/reports/usage",
+      "case": "usage_report",
+      "permission": "report"
+    },
+    {
+      "versions": [
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/credentials/bindings",
+      "case": "bindings",
+      "permission": "consumer"
+    },
+    {
+      "versions": [
+        "3"
+      ],
+      "method": "GET",
+      "path": "/integration/v{version}/credentials/{credential_account}/resolve",
+      "case": "resolve",
+      "permission": "consumer"
+    }
+  ],
+  "work_literals": {
+    "do_GET": [
+      "/v1/capabilities",
+      "/v1/attribution-runs/[A-Za-z0-9._:-]+",
+      "/v1/outcomes/[A-Za-z0-9._:-]+",
+      "/v1/submissions/by-work/",
+      "/v1/submissions/[A-Za-z0-9._:-]+"
+    ],
+    "do_POST": [
+      "/v1/submissions",
+      "/v1/attribution-runs",
+      "/v1/outcomes"
+    ]
+  },
+  "source_sha256": {
+    "server/src/ezllmrouter_server/wire_http/handler.py": "e16a07ada318c21e344fa8e501b55f6845290c2c6ed25ad5ee6975559552fa6f",
+    "server/src/ezllmrouter_server/wire_http/integration.py": "17b8c2e6269919041bbf3bc50628a1c2afb785d549a4c8fdec83933ea7638ca9",
+    "server/src/ezllmrouter_server/wire_http/transport.py": "5d1892925d29699b610584107f61a99901256d5d01301343ca8a01a300e178a7"
+  }
+}

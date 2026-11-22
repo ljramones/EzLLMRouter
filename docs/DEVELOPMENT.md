@@ -220,8 +220,24 @@ denials are separate; wrong-method requests must also fail. Positive controls
 exercise user/connector creation and login, logout and own-password changes.
 Sensitivity regressions verify that permitting a read-only user mutation, including
 one conditional on a valid body, fails the matrix. Cross-user and rejected-write
-cases additionally assert unchanged registry authority version. Broader resource
-family scenarios and the wire API matrix remain separate follow-up work.
+cases additionally assert unchanged registry authority version. Broader operator
+resource-family scenarios remain follow-up work.
+
+The independent wire policy in `tests/fixtures/wire_authorization.json` covers
+42 route/version bindings across work 0.2/0.3 and accounting 1/2/3. Source hashes,
+work-route literals and the accounting read-route inventory require explicit
+review when dispatch changes. The same matrix runs directly, over socket pairs
+and on localhost. It uses actual registry credentials, temporary SQLite records
+and controlled executors without provider traffic. Eight active identities cover
+execution grants, dataset ownership, ingest, report access and the designated
+credential consumer. Missing, invalid, duplicate, revoked, suspended and expired
+credentials, version headers, wrong methods, integration-only mode, task and
+dataset boundaries, and current historical-read grants have negative controls.
+Denied requests must leave database changes, registry versions and dispatch
+counts unchanged and disclose no result or credential canary. Fresh writes and
+idempotent replays provide positive controls. Sensitivity regressions require
+the matrix to fail after deliberate authentication and result-ownership bypasses.
+Work 0.3 cannot fall back to legacy attribution routes or reuse a 0.2 work identity.
 
 Generated parser/property tests use deterministic standard-library generators
 without another package install. The normal gate fixes the seed and keeps small
