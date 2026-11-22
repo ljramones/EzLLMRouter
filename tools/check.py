@@ -61,6 +61,7 @@ MODULES = (
     "tests.unit.test_schema_upgrade_fixtures",
     "tests.unit.test_database_backup",
     "tests.unit.test_maintenance_crashes",
+    "tests.unit.test_lineage_traversal",
     "tests.unit.test_security_scanning",
     "tests.unit.test_security_gate_followup",
     "tests.unit.test_secret_scanning",
@@ -138,6 +139,7 @@ MODULES = (
 LOOPBACK_MODULES = (
     "tests.unit.test_operator_scheduler",
     "tests.unit.test_database_backup.DatabaseBackupTests",
+    "tests.unit.test_lineage_traversal.LineageTraversalTests",
     "tests.unit.test_socket_budget.SocketBudgetTests",
     "tests.operator_console.test_authorization_matrix_http.LoopbackAuthorizationMatrixTests",
     "tests.development_slice.test_http",
