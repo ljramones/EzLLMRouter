@@ -3,6 +3,7 @@ use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::fmt;
+use std::borrow::Cow;
 
 pub(crate) const MAX_INTEGER: i64 = 9_007_199_254_740_991;
 pub(crate) fn scalar(value: &str) -> bool {
@@ -49,8 +50,29 @@ impl<'de> Deserialize<'de> for Strict {
     }
 }
 
+fn integer_zero(bytes: &[u8]) -> Cow<'_, [u8]> {
+    // serde_json classifies the integer token -0 as a float. Normalize only
+    // that complete token; -0.0/-0e0 must still reach the rejecting float visitor.
+    let mut quoted = false;
+    let mut escaped = false;
+    let mut normalized: Option<Vec<u8>> = None;
+    for (index, &byte) in bytes.iter().enumerate() {
+        if quoted {
+            if escaped { escaped = false; }
+            else if byte == b'\\' { escaped = true; }
+            else if byte == b'"' { quoted = false; }
+        } else if byte == b'"' { quoted = true; }
+        else if byte == b'-' && bytes.get(index + 1) == Some(&b'0')
+            && bytes.get(index + 2).is_none_or(|next| matches!(*next, b',' | b'}' | b']' | b' ' | b'\t' | b'\r' | b'\n')) {
+            normalized.get_or_insert_with(|| bytes.to_vec())[index] = b' ';
+        }
+    }
+    normalized.map_or(Cow::Borrowed(bytes), Cow::Owned)
+}
+
 pub fn parse_object(bytes: &[u8]) -> Result<Value> {
-    let mut parser = serde_json::Deserializer::from_slice(bytes);
+    let normalized = integer_zero(bytes);
+    let mut parser = serde_json::Deserializer::from_slice(&normalized);
     let Strict(value) = Strict::deserialize(&mut parser).map_err(|_| Error::invalid())?;
     parser.end().map_err(|_| Error::invalid())?;
     if !value.is_object() { return Err(Error::invalid()); }

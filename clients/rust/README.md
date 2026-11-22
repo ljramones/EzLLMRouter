@@ -58,6 +58,8 @@ Response bodies are bounded to 1 MiB for wire 0.2/attribution and 16 MiB for
 wire 0.3/accounting. Strict decoding rejects duplicate keys, unsafe integers,
 invalid UTF-8 and malformed Unicode. Response identity, result correspondence
 and accounting digests are checked against the original request.
+Integer `-0` canonicalizes to `0`; decimal and exponent spellings such as `-0.0`
+and `-0e0` remain invalid. Quoted text is preserved during decoding.
 
 Run contract, correctness and package verification with:
 

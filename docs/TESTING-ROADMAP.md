@@ -288,3 +288,8 @@ invocations. The slowest module took 11.88 seconds, within the 30-second budget;
 no unstable outcomes were recorded. The limit inventory also verifies the actual
 Coordinator, successor and sender-check pool configuration against its declared
 worker/capacity values.
+
+The first CI Rust corpus run also exposed Serde's classification of integer
+`-0` as floating point. Rust decoding now normalizes only that complete integer
+token outside strings; decimal/exponent forms and malformed adjacency remain
+invalid. Dedicated cases preserve quoted bytes and both accepted/refused forms.
