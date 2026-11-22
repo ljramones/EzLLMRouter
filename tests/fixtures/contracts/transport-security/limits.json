@@ -1,0 +1,210 @@
+{
+  "schema": "ezllmrouter.resource-limits.v1",
+  "scope": "Declared local limits and maintained boundary regressions; target container shutdown and production load qualification remain separate",
+  "resources": [
+    {
+      "resource": "Controlled execution",
+      "limits": {
+        "workers": 4,
+        "capacity": 64
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_execution_and_check_queues_accept_the_limit_refuse_one_more_and_recover"
+      ]
+    },
+    {
+      "resource": "Successor execution",
+      "limits": {
+        "workers": 2,
+        "capacity": 64
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_execution_and_check_queues_accept_the_limit_refuse_one_more_and_recover"
+      ]
+    },
+    {
+      "resource": "HTTP, sender IPC, worker IPC and console ingress",
+      "limits": {
+        "connections": 32
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_default_connection_limit_rejects_the_33rd_handler_without_starting_it"
+      ]
+    },
+    {
+      "resource": "HTTP input",
+      "limits": {
+        "seconds": 15
+      },
+      "tests": [
+        "tests.unit.test_time_boundaries.AbsoluteTimeTests.test_http_input_stops_at_the_absolute_deadline_before_another_raw_read"
+      ]
+    },
+    {
+      "resource": "IPC records",
+      "limits": {
+        "bytes": 262144,
+        "depth": 64,
+        "read_seconds": 5,
+        "write_seconds": 5
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_ipc_exact_byte_and_depth_limits_are_accepted_and_one_more_is_refused",
+        "tests.unit.test_socket_budget.SocketBudgetTests.test_partial_frame_and_blocked_reply_time_out_on_real_socket_pairs"
+      ]
+    },
+    {
+      "resource": "Worker exchange",
+      "limits": {
+        "total_budget": "caller attempt plus bounded protocol allowance"
+      },
+      "tests": [
+        "tests.unit.test_socket_budget.SocketBudgetTests.test_async_exchange_cancellation_closes_the_socket_without_a_background_thread"
+      ]
+    },
+    {
+      "resource": "Console ingress",
+      "limits": {
+        "connect_seconds": 3,
+        "write_seconds": 5,
+        "idle_seconds": 30,
+        "lifetime_seconds": 360
+      },
+      "tests": [
+        "tests.unit.test_resource_lifecycle.IngressResourceTests.test_blocked_ingress_write_has_a_timeout_and_closes_its_upstream"
+      ]
+    },
+    {
+      "resource": "Operator wire tokens",
+      "limits": {
+        "lifetime_seconds": 1800,
+        "capacity": 4096
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.StoredLimitContractsTests.test_operator_token_capacity_keeps_live_credentials_usable",
+        "tests.unit.test_time_boundaries.TokenExpiryTests.test_wire_token_lifetime_ends_at_1800_seconds_and_never_resurrects"
+      ]
+    },
+    {
+      "resource": "Report readers",
+      "limits": {
+        "readers": 4,
+        "sql_seconds": 10
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.StoredLimitContractsTests.test_four_independent_report_readers_refuse_a_fifth_and_release_capacity",
+        "tests.unit.test_limit_contracts.StoredLimitContractsTests.test_report_sql_budget_opens_before_ten_seconds_and_interrupts_at_the_deadline"
+      ]
+    },
+    {
+      "resource": "Trusted sender checks",
+      "limits": {
+        "workers": 2,
+        "capacity": 32
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_execution_and_check_queues_accept_the_limit_refuse_one_more_and_recover",
+        "tests.gateway_integration.test_first_write_boundaries.FirstWriteBoundaryTests.test_current_first_write_authority_rejects_each_invalid_state"
+      ]
+    },
+    {
+      "resource": "Gateway diagnostics",
+      "limits": {
+        "queue_rows": 1024,
+        "row_bytes": 65536,
+        "file_bytes": 4194304,
+        "backups": 2
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_diagnostic_queue_drops_only_the_1025th_row_without_blocking",
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_diagnostic_row_and_file_limits_preserve_exact_boundaries_and_two_backups"
+      ]
+    },
+    {
+      "resource": "Browser sessions",
+      "limits": {
+        "per_principal": 4,
+        "global": 64,
+        "ordinary": 56
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_session_caps_evict_only_as_documented_and_reserve_admin_capacity",
+        "tests.unit.test_time_boundaries.BrowserExpiryTests.test_session_expires_at_its_deadline_and_a_clock_rollback_cannot_revive_it"
+      ]
+    },
+    {
+      "resource": "Login attempts",
+      "limits": {
+        "known_per_minute": 20,
+        "unknown_per_minute": 10,
+        "per_identity_pending": 2,
+        "global_pending": 8,
+        "unknown_pending": 1,
+        "known_buckets": 512,
+        "unknown_buckets": 64,
+        "backoff_initial_seconds": 0.05,
+        "backoff_max_seconds": 2
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_failed_login_windows_allow_20_known_or_10_unknown_then_expire_exactly",
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_login_global_and_per_identity_pending_limits_do_not_leak_slots",
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_throttle_bucket_limits_evict_inactive_entries_and_store_no_account_names",
+        "tests.unit.test_time_boundaries.AbsoluteTimeTests.test_login_backoff_opens_at_its_deadline_without_sleeping"
+      ]
+    },
+    {
+      "resource": "Passwords",
+      "limits": {
+        "minimum_characters": 12,
+        "maximum_characters": 256,
+        "hash_concurrency": 2
+      },
+      "tests": [
+        "tests.unit.test_limit_contracts.LimitContractsTests.test_password_length_boundaries_reject_before_hashing",
+        "tests.unit.test_security_boundaries.HTTPBudgetTests.test_password_hash_work_is_bounded_separately_from_http_threads"
+      ]
+    },
+    {
+      "resource": "HTTP bodies",
+      "limits": {
+        "operator_bytes": 8192,
+        "wire_02_bytes": 65536,
+        "wire_03_bytes": 262144
+      },
+      "tests": [
+        "tests.unit.test_protocol_limits.RequestBodyLimitTests.test_declared_operator_wire_and_successor_body_ceilings_dispatch_only_at_the_limit"
+      ]
+    },
+    {
+      "resource": "Client responses",
+      "limits": {
+        "wire_bytes": 1048576,
+        "integration_bytes": 16777216
+      },
+      "tests": [
+        "tests.unit.test_protocol_limits.ResponseLimitTests.test_one_and_sixteen_megabyte_readers_accept_the_limit_and_close_on_one_more"
+      ]
+    },
+    {
+      "resource": "Provider responses",
+      "limits": {
+        "encoded_bytes": 65536,
+        "decoded_bytes": 65536
+      },
+      "tests": [
+        "tests.gateway_integration.test_compression_matrix.CompressionMatrixTests.test_valid_fragmented_members_preserve_exact_bytes_through_the_limit",
+        "tests.gateway_integration.test_compression_matrix.CompressionMatrixTests.test_decode_output_is_bounded_before_allocation_of_a_compression_bomb"
+      ]
+    },
+    {
+      "resource": "Attempt timeout",
+      "limits": {
+        "minimum_ms": 1,
+        "maximum_ms": 300000
+      },
+      "tests": [
+        "tests.unit.test_time_boundaries.AbsoluteTimeTests.test_plan_expiry_and_attempt_timeout_choose_the_earlier_bound"
+      ]
+    }
+  ]
+}

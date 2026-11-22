@@ -77,7 +77,7 @@ final class Connection implements AutoCloseable {
                 Transport.Response response = transport.send(request); received.set(response);
                 if (response == null) throw new IOException("missing response");
                 try (InputStream stream = response.body()) {
-                    if (stream == null || !List.of("", "identity").contains(response.header("Content-Encoding").trim().toLowerCase(java.util.Locale.ROOT))) throw new IOException("unsupported response encoding");
+                    if (stream == null || response.hasHeader("Content-Encoding") && !response.header("Content-Encoding").trim().equalsIgnoreCase("identity")) throw new IOException("unsupported response encoding");
                     String declared = response.header("Content-Length"); long length = -1;
                     if (!declared.isEmpty()) {
                         if (!declared.matches("[0-9]+")) throw new IOException("invalid response length");

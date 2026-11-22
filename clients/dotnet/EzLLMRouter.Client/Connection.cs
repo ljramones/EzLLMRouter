@@ -60,7 +60,7 @@ internal sealed class Connection : IDisposable
         {
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
             status = (int)response.StatusCode;
-            if (response.Content.Headers.ContentEncoding.Any(encoding => !encoding.Equals("identity", StringComparison.OrdinalIgnoreCase))) throw new IOException("Unsupported encoding");
+            if (response.Content.Headers.NonValidated.TryGetValues("Content-Encoding", out var encodings) && !string.Join(",", encodings).Trim().Equals("identity", StringComparison.OrdinalIgnoreCase)) throw new IOException("Unsupported encoding");
             long? declared = response.Content.Headers.ContentLength;
             if (response.Content.Headers.TryGetValues("Content-Length", out var lengths))
             {

@@ -100,6 +100,12 @@ follow redirects or replay an operation automatically. The Java guide describes
 the JDK's connection and idempotent transport retry behavior. See the client guides for
 supported execution profiles and response-recovery methods.
 
+Owned transports request identity encoding and reject an explicitly empty,
+compressed or multiple-valued Content-Encoding response. Version headers must
+have exactly one supported value. A shared 28-case HTTP/TLS matrix checks these
+boundaries in all six clients; the separate 536-case decoder corpus includes
+the maximum 32 nested levels below the root object.
+
 Both Python clients accept `total_timeout=` in seconds, defaulting to a 60-second
 budget for each HTTP exchange. It is independent of the connect/read/write/pool
 phase limits; deadline failures preserve query-first recovery and do not replay

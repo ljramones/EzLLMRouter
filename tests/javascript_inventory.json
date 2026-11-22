@@ -1,4 +1,8 @@
 {
+  "tests/client_languages/decoder_corpus.cjs": {
+    "runner": "client",
+    "argv": ["node", "{repo}/tests/client_languages/decoder_corpus.cjs"]
+  },
   "tests/unit/json_differential.cjs": {
     "runner": "helper",
     "reason": "Bounded stdin JSON differential worker executed by tests.unit.test_generated_parsers in the offline gate."

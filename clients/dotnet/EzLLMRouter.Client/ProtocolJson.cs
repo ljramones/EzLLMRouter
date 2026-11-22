@@ -15,7 +15,7 @@ public static class ProtocolJson
 
     public static JsonObject ParseObject(ReadOnlyMemory<byte> bytes)
     {
-        using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 32 });
+        using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 33 });
         Check(document.RootElement, 0);
         return JsonNode.Parse(bytes.Span) as JsonObject ?? throw new JsonException("JSON object required");
     }

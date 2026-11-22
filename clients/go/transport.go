@@ -151,8 +151,8 @@ func (c *connection) request(ctx context.Context, method, path, header, version 
 		return unknown()
 	}
 	defer response.Body.Close()
-	encoding := strings.TrimSpace(response.Header.Get("Content-Encoding"))
-	if encoding != "" && !strings.EqualFold(encoding, "identity") {
+	encodings := response.Header.Values("Content-Encoding")
+	if len(encodings) > 0 && (len(encodings) != 1 || !strings.EqualFold(strings.TrimSpace(encodings[0]), "identity")) {
 		return unknown()
 	}
 	declared := response.Header.Get("Content-Length")
@@ -182,7 +182,8 @@ func (c *connection) request(ctx context.Context, method, path, header, version 
 	if header == "EzLLMRouter-Integration-Version" {
 		bodyVersion = "integration_version"
 	}
-	if value == nil || value[bodyVersion] != version || response.Header.Get(header) != version {
+	versions := response.Header.Values(header)
+	if value == nil || value[bodyVersion] != version || len(versions) != 1 || versions[0] != version {
 		return nil, status, problem("UNSUPPORTED_VERSION", status, "never", selector)
 	}
 	return value, status, nil

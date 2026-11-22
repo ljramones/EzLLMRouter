@@ -32,9 +32,10 @@ class Handler(socketserver.BaseRequestHandler):
             upstream.settimeout(5)
             self.request.settimeout(5)
             expires = time.monotonic() + 360
-            streams = (self.request, upstream)
+            streams = [self.request, upstream]
+            closed_writes = set()
             try:
-                while True:
+                while streams:
                     remaining = expires - time.monotonic()
                     if remaining <= 0:
                         return
@@ -43,14 +44,27 @@ class Handler(socketserver.BaseRequestHandler):
                         return
                     for source in readable:
                         data = source.recv(65536)
-                        if not data:
-                            return
                         destination = upstream if source is self.request else self.request
+                        if not data:
+                            streams.remove(source)
+                            closed_writes.add(destination)
+                            try:
+                                destination.shutdown(socket.SHUT_WR)
+                            except OSError:
+                                pass
+                            continue
+                        if destination in closed_writes:
+                            continue
                         remaining = expires - time.monotonic()
                         if remaining <= 0:
                             return
                         destination.settimeout(min(5, remaining))
-                        destination.sendall(data)
+                        try:
+                            destination.sendall(data)
+                        except (BrokenPipeError, ConnectionResetError):
+                            if destination is self.request:
+                                return
+                            closed_writes.add(destination)
             except OSError:
                 return
 

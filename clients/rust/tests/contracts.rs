@@ -96,10 +96,18 @@ fn large_embedding_matches_the_request_profile() {
 #[test]
 fn native_http() {
     let Ok(origin) = std::env::var("EZLLMROUTER_TEST_ORIGIN") else { return; };
-    for mode in ["success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow"] {
-        let options = Options { timeout: Some(Duration::from_millis(if mode == "slow" { 150 } else { 35000 })), ..Options::default() };
-        let client = Client::with_options(&origin, &format!("synthetic-native-{mode}"), options).unwrap(); let result = client.get_capabilities();
-        if matches!(mode, "success" | "chunked") { assert_eq!(result.unwrap()["profile"], "initial_1a@1"); }
-        else { let error = result.unwrap_err(); assert_eq!(error.code, if mode == "redirect" { "PROTOCOL_INVALID" } else { "TRANSPORT_OUTCOME_UNKNOWN" }); assert!(error.requires_query()); }
+    let policy: Value = serde_json::from_slice(&std::fs::read(std::env::var("EZLLMROUTER_TEST_MATRIX").unwrap()).unwrap()).unwrap();
+    let cases = policy["cases"].as_array().unwrap(); assert_eq!(cases.len(), 28);
+    for row in cases {
+        let mode = row["id"].as_str().unwrap();
+        let endpoint = if mode == "untrusted_tls" { std::env::var("EZLLMROUTER_TEST_TLS_ORIGIN").unwrap() } else { origin.clone() };
+        let options = Options { timeout: Some(Duration::from_millis(row["timeout_ms"].as_u64().unwrap())), ..Options::default() };
+        let client = Client::with_options(&endpoint, &format!("synthetic-native-{mode}"), options).unwrap(); let result = client.get_capabilities();
+        if row["code"].is_null() { assert_eq!(result.unwrap()["profile"], "initial_1a@1"); }
+        else {
+            let error = result.unwrap_err(); assert_eq!(error.code, row["code"].as_str().unwrap(), "{mode}");
+            assert_eq!(error.retry_guidance, row["retry_guidance"].as_str().unwrap(), "{mode}");
+            assert!(row["http_status"].as_array().unwrap().iter().any(|value| value.as_u64() == Some(u64::from(error.http_status.unwrap_or(0)))), "{mode}: unexpected status");
+        }
     }
 }

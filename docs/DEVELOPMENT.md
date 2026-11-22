@@ -55,6 +55,32 @@ The current exclusions need the frozen gateway runtime or retained run evidence;
 development tests. In particular, the AnyIO counterexamples require the frozen
 4.15.1 wheels, while the development lock uses 4.16.0.
 
+The shared [transport security fixtures](../tests/fixtures/contracts/transport-security/)
+declare 536 independently evaluated decoder cases and 28 owned HTTP/TLS cases.
+All six language clients consume the same expectations. The decoder corpus uses
+seed 20261122, strict UTF-8, integer lexical rules, duplicate-key rejection,
+Unicode scalar validation, object roots and the depth-32 boundary. Its generator
+uses a separate standard-library oracle, and the offline gate checks exact
+reproduction. The HTTP cases use actual loopback transports, response framing,
+one-MiB boundaries, redirects, header ambiguity, malformed bodies, deadlines and
+an untrusted certificate; request counts reject retries or redirected dispatch.
+Python runs in the HTTP tier; the native and installed JavaScript CI jobs run
+their consumers. The existing 144 protocol/accounting cases continue to cover
+selectors, public errors, correspondence and recovery separately from the
+capabilities transport matrix. First-write authority remains covered by the
+critical transport tests, rather than a Cartesian product of these cases.
+
+Generated framing also traverses the actual console ingress through socket
+pairs. Provider compression cases use raw, fragmented gzip, wrapped/raw deflate
+and identity streams; they reject truncation, trailing members and oversized
+decoded output before an unbounded decompression allocation. The
+[limit inventory](../tests/fixtures/contracts/transport-security/limits.json)
+links all twelve runtime-resource rows and six additional security/API limit
+groups to registered regressions. Route logging checks cover all 108 current
+operator/wire bindings, nine statuses, literal action positions and canary
+redaction. Time tests exercise before/at/after expiry and absolute deadlines;
+locale, DST and deployment-clock qualification remain separate roadmap work.
+
 Loopback modules allow localhost and local IPC only. Per-module interpreters
 isolate loaded fixtures and environment changes. Ordinary tests import the
 installed development packages and package-qualified fixtures. Standalone

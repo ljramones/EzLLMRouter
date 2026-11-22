@@ -278,37 +278,7 @@ func TestHTTPTransport(t *testing.T) {
 	if origin == "" {
 		t.Skip("explicit loopback fixture required")
 	}
-	for _, mode := range []string{"success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow"} {
-		t.Run(mode, func(t *testing.T) {
-			options := []Option{}
-			if mode == "slow" {
-				options = append(options, WithTimeout(150*time.Millisecond))
-			}
-			c, err := NewClient(origin, "synthetic-native-"+mode, options...)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer c.Close()
-			result, err := c.GetCapabilities(context.Background())
-			if mode == "success" || mode == "chunked" {
-				if err != nil || result["profile"] != "initial_1a@1" {
-					t.Fatal(result, err)
-				}
-				return
-			}
-			var failure *Error
-			if !errors.As(err, &failure) || failure.RetryGuidance != "query_first" {
-				t.Fatal("response not rejected", err)
-			}
-			expected := "TRANSPORT_OUTCOME_UNKNOWN"
-			if mode == "redirect" {
-				expected = "PROTOCOL_INVALID"
-			}
-			if failure.Code != expected {
-				t.Fatal(failure)
-			}
-		})
-	}
+	runHTTPMatrix(t, origin)
 }
 
 func TestLargeEmbeddingUsesRequestProfileAndSuccessorLimit(t *testing.T) {

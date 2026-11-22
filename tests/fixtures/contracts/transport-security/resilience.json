@@ -1,0 +1,297 @@
+{
+  "schema": "ezllmrouter.transport-resilience.v1",
+  "operation": "GET /v1/capabilities",
+  "clients": [
+    "python",
+    "javascript",
+    "go",
+    "java",
+    "dotnet",
+    "rust"
+  ],
+  "scope": "Owned HTTP transports against loopback only; no redirect/retry or provider request; 0 means no observed HTTP status",
+  "cases": [
+    {
+      "id": "success",
+      "code": null,
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "identity",
+      "code": null,
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "chunked",
+      "code": null,
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "exact_limit",
+      "code": null,
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "redirect",
+      "code": "PROTOCOL_INVALID",
+      "retry_guidance": "query_first",
+      "http_status": [
+        307
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "wrong_shape",
+      "code": "PROTOCOL_INVALID",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "missing_version",
+      "code": "UNSUPPORTED_VERSION",
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "wrong_version",
+      "code": "UNSUPPORTED_VERSION",
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "duplicate_version",
+      "code": "UNSUPPORTED_VERSION",
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "wrong_body_version",
+      "code": "UNSUPPORTED_VERSION",
+      "retry_guidance": "never",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "gzip",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "deflate",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "empty_encoding",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "multiple_encoding",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "oversize",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "stream_oversize",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "truncated",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "broken_chunk",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "invalid_json",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "duplicate_key",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "invalid_utf8",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "unsafe_integer",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "fraction",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "surrogate",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "conflicting_lengths",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        0,
+        200
+      ],
+      "timeout_ms": 5000,
+      "requests": 1
+    },
+    {
+      "id": "slow_headers",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        0
+      ],
+      "timeout_ms": 150,
+      "requests": 1
+    },
+    {
+      "id": "slow_body",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        0,
+        200
+      ],
+      "timeout_ms": 150,
+      "requests": 1
+    },
+    {
+      "id": "untrusted_tls",
+      "code": "TRANSPORT_OUTCOME_UNKNOWN",
+      "retry_guidance": "query_first",
+      "http_status": [
+        0
+      ],
+      "timeout_ms": 2000,
+      "requests": 0
+    }
+  ]
+}

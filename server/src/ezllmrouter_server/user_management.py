@@ -149,7 +149,7 @@ class LoginThrottle:
                 or active.count(key) >= (2 if known else 1)
                 or (not known and self._unknown_pending)
                 or len(failures) + active.count(key) >= (20 if known else 10)
-                or (failures and now - failures[-1] < backoff)
+                or (failures and now < failures[-1] + backoff)
             ):
                 return None
             if (

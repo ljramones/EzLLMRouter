@@ -110,26 +110,14 @@ public final class ClientTest {
     }
     public static void main(String[] args) throws IOException {
         if (args[0].equals("--http")) { http(args[1]); return; }
+        DecoderCorpus.run(Path.of(args[0]).getParent().resolve("../fixtures/contracts/transport-security/decoder_cases.json"));
         List<?> cases = array(Json.parse(Files.readAllBytes(Path.of(args[0])))); int failures = 0;
         for (Object raw : cases) { Map<String, Object> test = object(raw); try { parity(test); } catch (AssertionError | RuntimeException error) { failures++; System.err.println(test.get("name") + ": " + error); } }
         safety();
         largeEmbedding(object(cases.stream().filter(row -> eq(object(row).get("name"), "embedding")).findFirst().orElseThrow()));
         check(failures == 0, failures + " parity failures"); System.out.println("Java: " + cases.size() + " contract cases and safety checks passed.");
     }
-    private static void http(String origin) {
-        for (String mode : List.of("success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow")) {
-            try (EzLLMRouterClient client = new EzLLMRouterClient(origin, "synthetic-native-" + mode, Duration.ofMillis(mode.equals("slow") ? 150 : 35000), null)) {
-                try {
-                    Map<String, Object> result = client.getCapabilities();
-                    check(List.of("success", "chunked").contains(mode) && eq(result.get("profile"), "initial_1a@1"), "HTTP response accepted: " + mode);
-                } catch (EzLLMRouterException error) {
-                    check(!List.of("success", "chunked").contains(mode), "valid HTTP response rejected: " + mode);
-                    check(error.getCode().equals(mode.equals("redirect") ? "PROTOCOL_INVALID" : "TRANSPORT_OUTCOME_UNKNOWN") && error.getRetryGuidance().equals("query_first"), "HTTP error: " + mode);
-                }
-            }
-        }
-        System.out.println("Java: native HTTP transport checks passed.");
-    }
+    private static void http(String origin) throws IOException { TransportMatrix.run(origin); }
     private static void largeEmbedding(Map<String, Object> fixture) {
         Map<String, Object> test = Json.snapshot(fixture), request = object(array(test.get("args")).get(0)), input = field(request, "input"), profile = field(input, "profile");
         profile.put("dimensions", 2048L); profile.put("profile_id", "profile.new"); profile.put("model_ref", "model.new"); request.put("requested_configuration_ref", "cfg.new");

@@ -50,6 +50,14 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_decoder_corpus",
+    "tests.gateway_integration.test_compression_matrix",
+    "tests.unit.test_ingress_framing",
+    "tests.unit.test_log_contracts",
+    "tests.unit.test_limit_contracts",
+    "tests.unit.test_time_boundaries",
+    "tests.unit.test_protocol_limits",
+    "tests.unit.test_transport_inventory",
     "tests.unit.test_container_validation",
     "tests.unit.test_health_failures",
     "tests.unit.test_artifact_retention",
@@ -144,6 +152,10 @@ MODULES = (
     "tests.unit.test_structural_cleanup",
 )
 LOOPBACK_MODULES = (
+    "tests.unit.test_transport_resilience",
+    "tests.gateway_integration.test_compression_matrix",
+    "tests.unit.test_log_contracts",
+    "tests.unit.test_time_boundaries",
     "tests.unit.test_operator_scheduler",
     "tests.unit.test_database_backup.DatabaseBackupTests",
     "tests.unit.test_lineage_traversal.LineageTraversalTests",

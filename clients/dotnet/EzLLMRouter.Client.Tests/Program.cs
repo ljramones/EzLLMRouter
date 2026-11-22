@@ -100,16 +100,7 @@ static class Program
             if (Text(fixture["name"]) is "oversize" or "compressed") Check(handler.Body.Reads == 0, "Rejected headers read body");
         }
     }
-    static async Task NativeHttp(string origin)
-    {
-        foreach (string mode in new[] { "success", "redirect", "compressed", "oversize", "chunked", "truncated", "slow" })
-        {
-            using var client = new EzLLMRouterClient(origin, "synthetic-native-" + mode, timeout: TimeSpan.FromMilliseconds(mode == "slow" ? 150 : 35000));
-            try { var response = await client.GetCapabilitiesAsync(); Check((mode is "success" or "chunked") && Text(response["profile"]) == "initial_1a@1", "Unexpected HTTP success: " + mode); }
-            catch (EzLLMRouterException error) { Check(mode is not ("success" or "chunked") && error.Code == (mode == "redirect" ? "PROTOCOL_INVALID" : "TRANSPORT_OUTCOME_UNKNOWN") && error.RetryGuidance == "query_first", "Native HTTP failure: " + mode); }
-        }
-        Console.WriteLine(".NET native HTTP checks passed.");
-    }
+    static async Task NativeHttp(string origin) => await TransportMatrix.Run(origin);
     static async Task LargeEmbedding(JsonArray fixtures)
     {
         var fixture = fixtures.First(row => Text(row?["name"]) == "embedding")!.DeepClone().AsObject();
@@ -131,6 +122,7 @@ static class Program
     static async Task<int> Main(string[] args)
     {
         if (args.Length > 0 && args[0] == "--http") { await NativeHttp(args[1]); return 0; }
+        DecoderCorpus.Run(Path.Combine(Path.GetDirectoryName(args[0])!, "../fixtures/contracts/transport-security/decoder_cases.json"));
         var fixtures = JsonNode.Parse(await File.ReadAllBytesAsync(args[0]))!.AsArray(); int failures = 0;
         foreach (var row in fixtures)
             try { await Parity(row!.AsObject()); } catch (Exception error) { failures++; Console.Error.WriteLine(row!["name"] + ": " + error.Message); }

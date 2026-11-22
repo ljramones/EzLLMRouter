@@ -78,21 +78,21 @@ keeps those distinct from new work and from target verification.
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Partial: tools.container_tests inventories all tracked Dockerfiles and resolves supported unittest/discovery/pytest/script commands through actual preparation helpers, COPY, WORKDIR, stages and mount scope. Unsupported validation forms and unqualified staging contexts fail; negative regressions cover missing copies and preflights. Image build/structure/compose qualification still awaits the approved frozen bundle and a disposable target. |
 | T04 | Supply-chain, secret and static security scans | Partial: Ruff S rules cover server/Python-client, worker, deploy and tools sources with exact finding and source identities. A standard-library secret scanner checks current source and reachable full Git history using redacted output and blob-bound public-fixture exceptions. Input checks validate Python hashes/archive identities, npm integrity/manifest agreement, reviewed local projects and native manifest declarations. OSV pagination and retained page replay fail closed. Bootstrap uv wheel/hash and the remaining action commit are pinned. Native transitive graphs and actual-image scans still need their qualified inputs. |
-| T05 | HTTP/JSON/IPC fuzzing | Partial: authenticated operator/wire framing generation now asserts parser entry for every case, rejection without dispatch or a following request, and successful controls with exact body dispatch. Early 401/404 closure tests remain separate. Fragmented/bounded IPC and Python/JS response-decoder differential cases run offline. Ingress, compression and the four other native decoders remain. |
+| T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Partial: literal canonical oracles, digest known answers, integer-based decimal conservation, identifier boundaries, model/principal edits and states, idempotency/conflicting IDs/stale writes, shuffled accounting and renewed campaign models pass. Models stop at first divergence and retain bounded command-deletion traces. Grant/price models and general scalar/JSON shrinking remain. |
 | T07 | Forced concurrency and lock-scope detection | Partial: the audit retains cross-thread/caught violations and fails the module, watches TLS data I/O and shared gates, and rejects raw/repository/store SQL on asyncio loops. Red/green probes cover these gaps. Explicit exceptions cover pre-listener bootstrap, the nonblocking atomic first write and asyncio wake-up. Stress records suite/model seeds; both campaign close/admission orders require observed failed authority-gate acquire attempts. Broader wait detection and full HTTP/TLS stress qualification remain follow-up work. |
 | T08 | Process crashes, storage faults and coherent restore | Partial: real kills cover 12 work/usage, six encrypted-publication, 12 migration, two backup and two WAL-boundary cases. Exclusion, full/busy/I/O faults and restore in all three credential scopes pass offline. Restore removes access to the original path and checks missing/older/newer/retired keys. First-provider-byte/plan/reply-publication kills, interrupted database-credential rotation and physical power-loss qualification remain. |
 | T09 | Per-schema upgrade fixtures | Implemented for v001–v003 and keyring format v1: WAL fixtures populate all 53 application tables and all JSON expression indexes. Independent migration allowlists protect unrelated data even after golden regeneration. Checksums, exact rows, accounting, content digests and inventory anchors survive upgrade/restart and failed-upgrade retry. Unsupported schemas/key formats and unqualified new resources fail closed. No private or binary databases are tracked. |
-| T10 | Provider/client resilience matrix | Open. Compression, TLS, byte-limit, first-write and deadline examples exist; combine the declared transport behaviours in a shared matrix. |
-| T11 | Abuse rates and resource limits | Open. Existing throttle/session/connection/diagnostic regressions need a documented limit/limit-plus-one inventory. |
-| T12 | Logs and canary-secret contracts | Open. Exception redaction and named-route checks exist; add a complete route/level/schema/canary matrix. |
+| T10 | Provider/client resilience matrix | Implemented for the declared matrix: all six owned HTTP/TLS clients consume the same 28 cases and assert public error/recovery/status policy, exact delivery counts, byte limits, deadlines, no redirect/replay and rejection of untrusted TLS before HTTP credentials arrive. Existing 144 protocol/accounting cases and critical first-write tests remain separate maintained dimensions. Live-provider and exhaustive cross-product qualification remain outside this scope. |
+| T11 | Abuse rates and resource limits | Implemented for the documented local limits: an executable inventory links all twelve runtime-resource rows and six additional security/API groups to registered regressions. Real boundaries cover execution/connection admission, login rates and pending work, hashed bucket bounds, session eviction/admin reservation, 4,096 tokens, report readers/SQL deadline, IPC/body/response sizes and diagnostic rollover. Production load and container timing qualification remain separate. |
+| T12 | Logs and canary-secret contracts | Implemented for the current logging contract: all 66 operator and 42 wire bindings have route/level/schema/canary checks across nine statuses; 42 family action cases verify literal positions. Dynamic IDs matching route words remain redacted. Tests distinguish INFO rejections from sanitized ERROR stacks and verify the copied worker logger without trusted server imports. Production log collection is outside this source contract. |
 | T13 | Front-end payload contracts | Open. Component fixtures need real server payload/schema checks. |
 | T14 | Released-client version skew | Awaiting inputs. Identify hash-pinned previous released packages and previous-server vectors; never substitute current packages and call that N-1 testing. |
 | T15 | Supported platform matrix | Open. Add macOS service and macOS/Windows packaged-client workflows with accurate supported-platform boundaries. |
 | T16 | Performance and soak | Partial. `test_reporting_stream` already asserts bounded Python input memory as ledger size grows; exact 1k/10k comparisons are recorded in the review follow-up. Add reproducible scheduled latency/resource/soak runners. |
 | T17 | Accessibility | Open. Keyboard/focus/viewport browser checks exist; add screen-complete automated accessibility, zoom and reduced-motion journeys. |
 | T18 | Mutation testing | Open. Add bounded, isolated mutations of critical decisions and report killed/survived/invalid/timeout outcomes separately. |
-| T19 | Time/locale/timezone boundaries | Open. Existing injected clocks and timestamp comparisons need a complete expiry/locale/DST matrix. |
+| T19 | Time/locale/timezone boundaries | Partial: before/at/after boundaries cover HTTP and client total deadlines, plan/attempt expiry, trusted-context offset equivalence, wire-token/browser-session expiry and clock rollback, and exact login backoff opening times. Locale, DST and broader scheduling/deployment-clock cases remain. |
 | T20 | Executable documentation | Open. Run extracted documented Python/JS examples against controlled service boundaries. |
 
 All-skipped/empty-suite rejection and maintained-test inventories already block
@@ -260,3 +260,31 @@ source identities and red/green evidence remain under ignored
 for these current route/action samples. Exhaustive resource-state combinations,
 provider and deployment qualification remain outside this scope; no frozen input
 or running profile changed.
+
+Transport-batch validation adds the shared decoder/HTTP matrices, ingress and
+compression generation, the resource-limit inventory, route logging contracts
+and expiry/deadline boundaries. Instrumented local runs passed 1,228 offline and
+183 HTTP Python test executions with no lock-audit violations. Offline line
+coverage is 90.26% (20,839/23,087), HTTP is 77.23% (17,831/23,087), and the combined
+report is 92.76% (21,416/23,087). The 12,000 logical conditional exits have 8,456
+offline, 6,381 HTTP and 8,913 combined hits; all 13 critical functions remain
+complete. Changed-source budgets preserve only mapped, reviewed old gaps; the
+new compression and route-label functions have no missing conditional exits in
+either tier. Other budgets only tighten.
+
+The corpus exposed and now covers empty/ambiguous encoding acceptance in Go,
+Java and .NET, duplicate version acceptance in Go, and the .NET depth-32
+boundary. Source regressions also cover bounded complete decompression, ingress
+half-close/early-rejection forwarding, positional route-ID redaction and exact
+login-backoff opening times. Installed JavaScript, Go race/vet, Java and packaged
+.NET checks passed locally. The owner's Rust executable cannot run on this ARM64
+host; native Rust validation belongs to the maintained CI job. Evidence remains
+under ignored `.artifacts/testing-review-followup/` and `.artifacts/coverage/`.
+T19 retains its locale/DST follow-up. These checks do not send provider requests,
+restart the persistent profile or change frozen inputs.
+
+The separate uninstrumented run passed all 1,411 executions across 198 module
+invocations. The slowest module took 11.88 seconds, within the 30-second budget;
+no unstable outcomes were recorded. The limit inventory also verifies the actual
+Coordinator, successor and sender-check pool configuration against its declared
+worker/capacity values.

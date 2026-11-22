@@ -17,6 +17,7 @@ public interface Transport {
     /** The client owns and closes each returned body, including on invalid responses. */
     record Response(int status, Map<String, String> headers, InputStream body) {
         public Response { headers = Map.copyOf(headers); }
+        boolean hasHeader(String name) { return headers.keySet().stream().anyMatch(key -> key.equalsIgnoreCase(name)); }
         String header(String name) {
             return headers.entrySet().stream().filter(entry -> entry.getKey().equalsIgnoreCase(name)).map(Map.Entry::getValue).findFirst().orElse("");
         }

@@ -17,6 +17,19 @@
 | Gateway diagnostics | Queue of 1,024 rows, four-MiB files with two backups, at most 64 KiB per row. Overview exposes written/dropped/write-error counters. Cached bounded tails are diagnostic only. |
 | Browser sessions | At most four per principal and 64 per application; ordinary sessions occupy at most 56 slots. New logins replace that principal's oldest session. Eviction and shutdown revoke attached wire credentials. |
 
+The maintained [limit inventory](../tests/fixtures/contracts/transport-security/limits.json)
+links every row to registered boundary or lifecycle regressions. Additional rows
+cover login/password limits, HTTP body ceilings, client/provider response sizes
+and attempt timeouts. Capacity tests accept the documented limit, refuse or
+evict the next entry as specified, and check recovery. Deadline tests use injected
+clocks or bounded socket fixtures; these checks do not qualify production load
+or container signal timing.
+
+Ingress preserves the response direction after the client half-closes its write
+side. If an upstream parser rejects a request before its body finishes arriving,
+the relay drains the remaining client input while forwarding the rejection,
+within the same connection deadline and fixed upstream target.
+
 Execution queue exhaustion records a definite failure before transmission, with a
 recoverable work handle and HTTP 503. It does not invoke the provider or leave a
 successor reservation inflight. A failed executor submission is also gated against

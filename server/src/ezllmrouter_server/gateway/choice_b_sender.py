@@ -26,6 +26,7 @@ import socketserver
 from contextlib import ExitStack
 import threading
 import time
+import zlib
 
 import httpx
 
@@ -55,18 +56,52 @@ RESPONSE_LIMIT = 65536
 
 
 async def read_response(response: httpx.Response) -> bytes:
-    """Stop at the response limit without buffering an unbounded provider body."""
+    """Bound encoded and decoded bytes and require complete compression members."""
     try:
         length = response.headers.get("content-length")
-        if length is not None and (not length.isdigit() or int(length) > RESPONSE_LIMIT):
+        if length is not None and (
+            not length.isascii() or not length.isdecimal() or int(length) > RESPONSE_LIMIT
+        ):
             raise ValueError("provider response size")
-        chunks, size = [], 0
-        async for chunk in response.aiter_bytes(chunk_size=8192):
-            size += len(chunk)
-            if size > RESPONSE_LIMIT:
+        encoding = response.headers.get("content-encoding", "identity").strip().lower()
+        if encoding not in ("identity", "gzip", "deflate"):
+            raise ValueError("provider response encoding")
+        if response.is_stream_consumed:
+            if encoding != "identity":
+                raise ValueError("provider compressed stream already consumed")
+            raw = response.content
+            if len(raw) > RESPONSE_LIMIT or (length is not None and len(raw) != int(length)):
                 raise ValueError("provider response size")
-            chunks.append(chunk)
-        return b"".join(chunks)
+            return raw
+        output, encoded_size, prefix, decoder = bytearray(), 0, b"", None
+        async for chunk in response.aiter_raw():
+            encoded_size += len(chunk)
+            if encoded_size > RESPONSE_LIMIT:
+                raise ValueError("provider response size")
+            if encoding != "identity":
+                if decoder is None:
+                    prefix += chunk
+                    if len(prefix) < 2:
+                        continue
+                    wrapped = prefix[0] & 15 == 8 and int.from_bytes(prefix[:2], "big") % 31 == 0
+                    decoder = zlib.decompressobj(
+                        31 if encoding == "gzip" else 15 if wrapped else -15
+                    )
+                    chunk, prefix = prefix, b""
+                try:
+                    chunk = decoder.decompress(chunk, RESPONSE_LIMIT - len(output) + 1)
+                except zlib.error as exc:
+                    raise ValueError("provider response encoding") from exc
+                if decoder.unused_data:
+                    raise ValueError("provider response has trailing compressed data")
+            output.extend(chunk)
+            if len(output) > RESPONSE_LIMIT:
+                raise ValueError("provider response size")
+        if length is not None and encoded_size != int(length):
+            raise ValueError("provider response length mismatch")
+        if encoding != "identity" and (decoder is None or not decoder.eof):
+            raise ValueError("provider compressed response incomplete")
+        return bytes(output)
     finally:
         await response.aclose()
 

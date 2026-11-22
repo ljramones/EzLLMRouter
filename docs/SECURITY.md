@@ -20,8 +20,16 @@ Treat model-server origins and service credentials as trusted configuration.
 Expected client API rejections log an INFO event with the public code and status;
 unexpected failures retain sanitized stack locations. Empty connections and idle
 keep-alive expiry emit no request/failure event. Partial request timeouts remain
-visible. Operator access labels derive their literal words from the route table;
-queries, credentials and dynamic IDs remain excluded.
+visible. Operator access labels use the matched route and literal action positions;
+queries, credentials and dynamic IDs remain excluded, including IDs that happen
+to equal route words such as `models` or `password`. The logging contract tests
+check the exact field schema and level across all current route bindings.
+
+Trusted provider replies have independent 65,536-byte encoded and decoded caps.
+Compressed streams must reach their end marker with no trailing member or data;
+gzip and wrapped/raw deflate are decoded with a bounded output allocation.
+Truncated or oversized replies remain uncertain outcomes and cannot trigger an
+automatic provider replay. Client-facing SDK transports require identity encoding.
 
 Provider metadata probes validate all resolved addresses before connecting to
 one approved IPv4 or IPv6 sockaddr. TLS still verifies the configured hostname.
