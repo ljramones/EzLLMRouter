@@ -2,6 +2,8 @@
 
 from contextlib import ExitStack, redirect_stdout, redirect_stderr
 import io
+import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +18,36 @@ from tools import test_network
 
 class ChecksComplete(Exception):
     pass
+
+
+class PlatformReportingTests(unittest.TestCase):
+    def test_one_failed_client_does_not_hide_later_results_or_make_the_job_pass(self):
+        from tests.client_languages import platform_check
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(platform_check, "ROOT", Path(directory)),
+            patch.object(platform_check, "run", return_value="synthetic-source\n"),
+            patch.object(
+                platform_check, "python_client", side_effect=RuntimeError("synthetic build failure")
+            ),
+            patch.object(
+                platform_check, "javascript_client", return_value={"archive": "synthetic"}
+            ) as later,
+            patch.object(
+                sys, "argv", ["platform_check.py", "--client", "python", "--client", "javascript"]
+            ),
+            patch.dict(os.environ),
+            redirect_stderr(io.StringIO()),
+        ):
+            with self.assertRaisesRegex(SystemExit, "checks failed: python"):
+                platform_check.main()
+            later.assert_called_once()
+            report = json.loads(
+                (Path(directory) / ".artifacts/platform-clients/summary.json").read_text()
+            )
+            self.assertFalse(report["results"]["python"]["passed"])
+            self.assertTrue(report["results"]["javascript"]["passed"])
 
 
 class NetworkPlatformTests(unittest.TestCase):

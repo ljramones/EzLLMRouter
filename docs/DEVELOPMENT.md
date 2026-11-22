@@ -599,7 +599,8 @@ uv run --locked python tests/client_languages/platform_check.py
 It requires the pinned Python 3.12.15, Node 24.22.1 and TypeScript 5.9.3,
 Go from `clients/go/.go-version`, Java 17, .NET 10 and Rust 1.90.0, plus OpenSSL
 for disposable TLS certificates. Use repeated `--client` arguments for focused
-local checks. Missing tools or failed builds fail the runner. The normal Rust
+local checks. Missing tools or failed builds fail the runner; other selected
+languages still run and every result is retained. The normal Rust
 build first resolves its declared dependencies; it does not claim a frozen
 transitive closure. No gateway dependency is acquired by these checks.
 
@@ -610,6 +611,9 @@ local NuGet package into an empty cache; Rust checks a consumer of its unpacked
 crate; Go builds a fresh module with an explicit local replacement. Consumer
 paths contain Unicode and spaces. Each language runs the shared contract and
 decoder cases plus the owned HTTP/TLS matrix, without model requests.
+Java 17 builds use UTF-8 argument files and explicit source encoding. The runtime
+consumer uses manifest file URLs for its Unicode JAR path, avoiding the Windows
+launcher's code-page conversion of native command-line arguments.
 Ignored `.artifacts/platform-clients/summary.json` records platform, source
 commit, package hashes where applicable and completed results. These are current
 source checks, not a claim that an unpublished package is a previous release.

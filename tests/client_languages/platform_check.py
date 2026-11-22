@@ -18,6 +18,7 @@ import tarfile
 import tempfile
 import time
 import tomllib
+import traceback
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -36,6 +37,26 @@ def run(argv, *, cwd=ROOT, env=None, capture=False):
         timeout=600,
     )
     return result.stdout
+
+
+def jdk(tool, arguments):
+    # JDK 17 Windows launchers can replace non-ACP command-line characters with '?'.
+    # A UTF-8 argument file carries the actual Unicode paths into the Java tool.
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        prefix="jdk-",
+        suffix=".args",
+        dir=ROOT / ".artifacts",
+        delete=False,
+    ) as stream:
+        path = Path(stream.name)
+        stream.write("\n".join(json.dumps(str(value), ensure_ascii=False) for value in arguments))
+    try:
+        option = "-Dfile.encoding=UTF-8" if tool == "java" else "-J-Dfile.encoding=UTF-8"
+        run([tool, option, "@" + str(path)])
+    finally:
+        path.unlink()
 
 
 def python_client(consumer):
@@ -150,9 +171,9 @@ def java_client(_consumer):
     classes, tests = _consumer / "classes", build / "test-classes"
     classes.mkdir(parents=True, exist_ok=True)
     tests.mkdir(parents=True, exist_ok=True)
-    run(
+    jdk(
+        "javac",
         [
-            "javac",
             "-encoding",
             "UTF-8",
             "--release",
@@ -162,14 +183,16 @@ def java_client(_consumer):
             "-d",
             classes,
             *sorted((client / "src/main/java").rglob("*.java")),
-        ]
+        ],
     )
     shutil.copytree(client / "src/main/resources", classes, dirs_exist_ok=True)
     archive = build / "ezllmrouter-client-0.3.0.jar"
-    run(["jar", "--create", "--file", archive, "-C", classes, "."])
-    run(
+    jdk("jar", ["--create", "--file", archive, "-C", classes, "."])
+    installed = _consumer / archive.name
+    shutil.copy2(archive, installed)
+    jdk(
+        "javac",
         [
-            "javac",
             "-encoding",
             "UTF-8",
             "--release",
@@ -177,22 +200,28 @@ def java_client(_consumer):
             "-Xlint:all",
             "-Werror",
             "-cp",
-            archive,
+            installed,
             "-d",
             tests,
             *sorted((client / "src/test/java").rglob("*.java")),
-        ]
+        ],
     )
-    run(
-        [
-            "java",
-            "-ea",
-            "-cp",
-            str(archive) + os.pathsep + str(tests),
-            "com.cognitivedynamics.ezllmrouter.ClientTest",
-            ROOT / "tests/client_languages/cases.json",
-        ]
-    )
+    # The Java 17 native launcher also uses the Windows code page. Manifest file
+    # URLs carry Unicode without requiring non-ASCII native command-line bytes.
+    with tempfile.TemporaryDirectory(prefix="jdk-launcher-", dir=ROOT / ".artifacts") as directory:
+        manifest = Path(directory) / "MANIFEST.MF"
+        manifest.write_text(
+            "Manifest-Version: 1.0\nMain-Class: com.cognitivedynamics.ezllmrouter.ClientTest\n"
+            + "Class-Path: "
+            + installed.as_uri()
+            + " "
+            + tests.as_uri()
+            + "/\n\n",
+            encoding="utf-8",
+        )
+        launcher = Path(directory) / "consumer.jar"
+        jdk("jar", ["--create", "--file", launcher, "--manifest", manifest])
+        jdk("java", ["-ea", "-jar", launcher, ROOT / "tests/client_languages/cases.json"])
     http("java")
     return {"jar_sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}
 
@@ -341,19 +370,25 @@ def main():
     try:
         for name in args.client or checks:
             started = time.monotonic()
-            with tempfile.TemporaryDirectory(prefix=name + "-客户端 ", dir=artifacts) as directory:
-                evidence = checks[name](Path(directory))
-            report["results"][name] = {
-                "passed": True,
-                "seconds": time.monotonic() - started,
-                **evidence,
-            }
+            try:
+                with tempfile.TemporaryDirectory(
+                    prefix=name + "-客户端 ", dir=artifacts
+                ) as directory:
+                    evidence = checks[name](Path(directory))
+                report["results"][name] = {"passed": True, **evidence}
+            except Exception as error:
+                traceback.print_exc()
+                report["results"][name] = {"passed": False, "error_type": type(error).__name__}
+            report["results"][name]["seconds"] = time.monotonic() - started
     finally:
         (artifacts / "summary.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )
     if len(report["results"]) != len(args.client or checks):
         raise AssertionError("missing client result")
+    failures = [name for name, result in report["results"].items() if not result["passed"]]
+    if failures:
+        raise SystemExit("Platform client checks failed: " + ", ".join(failures))
 
 
 if __name__ == "__main__":
