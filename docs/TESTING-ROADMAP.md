@@ -74,7 +74,7 @@ keeps those distinct from new work and from target verification.
 
 | ID | Recommendation | Status and evidence |
 | --- | --- | --- |
-| T01 | Python/Node coverage and critical-branch ratchets | Partial: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits. Six initial critical selectors have zero gaps; first-byte/coordinator follow-up selectors remain explicitly listed and ratcheted. Nightly repeats retain all outcomes. See DEVELOPMENT.md for commands and metric scope. |
+| T01 | Python/Node coverage and critical-branch ratchets | Partial: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. Six initial critical selectors have zero gaps; first-byte/coordinator follow-up selectors remain explicitly listed and ratcheted. Nightly repeats retain all outcomes. See DEVELOPMENT.md for commands and metric scope. |
 | T02 | Generated authorization matrix | Partial: all 66 operator routes have independent checked-in policy rows, with anonymous/expired/ordinary/admin/read-only/password-change-required sessions, missing/wrong CSRF, Origin/Host and cross-user checks. Full-console and integration-only variants cover valid-body write denials, wrong methods and positive account/connector controls. Direct-handler, socket-pair and localhost versions pass; sensitivity regressions detect deliberately permitted read-only mutations. Wire API matrix and broader family-resource scenarios remain. |
 | T03 | Docker image builds and deployment checks | Partial: tools.container_tests inventories all tracked Dockerfiles and resolves supported unittest/discovery/pytest/script commands through actual preparation helpers, COPY, WORKDIR, stages and mount scope. Unsupported validation forms and unqualified staging contexts fail; negative regressions cover missing copies and preflights. Image build/structure/compose qualification still awaits the approved frozen bundle and a disposable target. |
 | T04 | Supply-chain, secret and static security scans | Partial: Ruff S rules cover server/Python-client, worker, deploy and tools sources with exact finding and source identities. A standard-library secret scanner checks current source and reachable full Git history using redacted output and blob-bound public-fixture exceptions. Input checks validate Python hashes/archive identities, npm integrity/manifest agreement, reviewed local projects and native manifest declarations. OSV pagination and retained page replay fail closed. Bootstrap uv wheel/hash and the remaining action commit are pinned. Native transitive graphs and actual-image scans still need their qualified inputs. |
@@ -133,7 +133,7 @@ Then fix the gate, run the regression and full checks, and update this table.
 | L1: non-ASCII Content-Length digits | Fixed with H2; byte 0xB2 is rejected as an input error, with no dispatch, instead of wire returning 503. |
 | L2: artifact retention | Implemented: managed default health/coverage/type-audit/stress outputs retain five successful and five failed runs per kind. Leases protect active processes; abandoned runs retain failure evidence. Pins, explicit destinations, unmarked legacy runs and curated review evidence are preserved. Four focused regressions cover repeated invocations, failure/active/pinned evidence, symlinks and abrupt process exit. |
 | L3: bootstrap pins and advisory environment | Implemented: advisory lookup stays standard-library-only. All remaining uv bootstrap installs require the reviewed 0.13.9 Linux x86_64 wheel hash; its downloaded archive agrees with PyPI metadata and has no startup hooks. setup-dotnet uses the exact verified upstream commit formerly selected by v5. Provenance is recorded in .github/bootstrap-inputs.json; source regressions reject the old unhashed/mutable forms. Frozen inputs are unchanged. |
-| L4: smaller measurement/SAST/decoder gaps | SAST exception subitem fixed: source hashes plus rule/location/symbol/statement/context identities reject same-count replacements and disabled SQL guards even after a file rehash. JSON differential observations now preserve numeric types and signed zero; the exposed JS `-0` mismatch is normalized to integer zero. IPC nesting is bounded and recursion failures become input errors on both paths. Unmeasured console files, duplicate while exits, JS coverage filenames and the vacuous gettrace assertion remain open. |
+| L4: smaller measurement/SAST/decoder gaps | Implemented: SAST exceptions bind source and exact finding identities. JSON differential observations preserve numeric types and signed zero; JS `-0` is normalized to integer zero. IPC nesting is bounded on both paths. All 15 console scripts have static denominators, measured hits and exact missing-counter budgets. Compiler copies of Python `while` predicates share logical exit identities, including compound, async and large-jump cases. UUID VM artifacts preserve same-PID worker measurements. A live tracing-hook regression and its broken-collector probe replace the vacuous assertion. |
 
 M1–M3 local validation uses Python 3.12.15 and Node 24.22.1. The enforced offline
 gate passes 1,044 Python cases plus maintained script/JavaScript checks; all 95
@@ -173,3 +173,24 @@ no inconsistent outcomes. Final source-security refinements also pass the focuse
 and standalone gates. Red/green logs, archive inspection, source identities and
 validation records remain under ignored `.artifacts/testing-review-followup/`.
 No frozen input, dependency version, running profile or provider execution changed.
+
+L4 measurement validation passes 43 focused Python regressions, three VM
+instrumentation cases and all maintained console scripts. All 15 console sources
+now retain static denominators: 288 of 1,148 functions and 1,668 of 5,119
+statements are covered; the exact remaining counter identities are budgeted.
+The Python inventory removes 64 verified compiler-copy exits while preserving
+distinct cleanup paths. Offline and HTTP budgets remove 32 and 41 missing-exit
+allowances respectively, with no application source or missing-line changes.
+Both coverage/lock-audit tiers and their merged gate pass at 88.73%, 70.62% and
+92.15% line coverage. Validation also exposed and fixed concurrent collector
+initialization that could reset another thread's hits; its negative probe fails
+before serialization and passes afterward.
+
+The separate uninstrumented L4 pass runs 1,216 Python cases across 174 module
+invocations, with an 8.88-second slowest module and no inconsistent outcomes.
+Replaying the retained same-source SDK measurements through the updated reporter
+preserves its 156-of-158 function result; this is a reporter check, not a new
+package installation. Source/security checks pass, including 1,008 individually
+reviewed SAST findings. Logs and source-bound reports remain under ignored
+`.artifacts/testing-review-followup/` and `.artifacts/coverage/`. Broader T01
+critical selectors and deployment qualification retain their stated limits.

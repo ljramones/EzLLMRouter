@@ -1,7 +1,27 @@
 "use strict";
 const assert = require("node:assert/strict"), test = require("node:test");
 const vm = require("node:vm"), path = require("node:path");
+const fs = require("node:fs"), os = require("node:os"), {Worker} = require("node:worker_threads");
 const {runScript, files} = require("../../tools/javascript_vm_coverage.cjs");
+
+test("workers sharing a pid retain separate VM coverage artifacts", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ezllmrouter-vm-"));
+  try {
+    const workerSource = `
+      const {workerData}=require("node:worker_threads"),vm=require("node:vm");
+      const {runScript}=require(workerData.helper);
+      runScript("function sample(){return 1;} sample();",vm.createContext({}),{filename:workerData.filename});`;
+    await Promise.all(["first.js","second.js"].map(filename => new Promise((resolve,reject) => {
+      const worker = new Worker(workerSource, {eval:true,workerData:{helper:require.resolve("../../tools/javascript_vm_coverage.cjs"),filename:path.join(directory,filename)},
+        env:{...process.env,EZLLMROUTER_JS_COVERAGE:directory,NODE_V8_COVERAGE:""}});
+      worker.once("error",reject);worker.once("exit",code=>code?reject(Error("worker failed")):resolve());
+    })));
+    const artifacts=fs.readdirSync(directory).filter(name=>name.startsWith("vm-coverage-"));
+    assert.equal(artifacts.length,2);
+    const names=artifacts.flatMap(name=>Object.keys(JSON.parse(fs.readFileSync(path.join(directory,name),"utf8")).files));
+    assert.deepEqual(names.sort(),["first.js","second.js"].map(name=>path.join(directory,name)));
+  } finally {fs.rmSync(directory,{recursive:true,force:true});}
+});
 
 test("VM measurement preserves late lexical bindings, strict directives and arrow this", () => {
   const context = vm.createContext({});

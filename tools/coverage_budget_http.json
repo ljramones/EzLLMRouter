@@ -1,6 +1,6 @@
 {
   "format_version": 2,
-  "measurement": "Python lines and conditional-bytecode branch exits; exception edges/native/JavaScript excluded",
+  "measurement": "Python lines and logical conditional-bytecode exits; compiler while copies merged; exception edges/native/JavaScript excluded",
   "python": "3.12.15",
   "files": {
     "clients/python/src/ezllmrouter_client/__init__.py": {
@@ -2598,7 +2598,7 @@
     "server/src/ezllmrouter_server/accounting_lineage.py": {
       "source_sha256": "49b93119f72aa55a2bfd2c77beade5a77f02614daf5e76fd91f9ee607007689b",
       "missing_lines": 4,
-      "missing_branches": 15,
+      "missing_branches": 12,
       "missing_line_ids": [
         12,
         30,
@@ -2607,11 +2607,9 @@
       ],
       "missing_branch_ids": [
         "<module>@1:da585f3c3a68:88->90",
-        "_affected_attempts@155:9cb3dfe17546:246->406",
         "_bind_run@16:8c72d39fc0c1:262->264",
         "_bind_run@16:8c72d39fc0c1:448->466",
         "_bind_run@16:8c72d39fc0c1:464->466",
-        "_bind_run@16:8c72d39fc0c1:514->516",
         "_bind_run@16:8c72d39fc0c1:606->620",
         "_bind_run@16:8c72d39fc0c1:616->620",
         "_check_lineage@46:87f2e14b26c1:218->260",
@@ -2619,14 +2617,13 @@
         "_check_lineage@46:87f2e14b26c1:558->638",
         "_check_lineage@46:87f2e14b26c1:566->674",
         "_check_lineage@46:87f2e14b26c1:636->638",
-        "_check_lineage@46:87f2e14b26c1:872->1014",
         "_lineage_component@106:774edd4575f9:662->664"
       ]
     },
     "server/src/ezllmrouter_server/accounting_reports.py": {
       "source_sha256": "2e50b94921fa0d780cab325f417066f8c5934faf02f64d00b23308f3715dac04",
       "missing_lines": 11,
-      "missing_branches": 31,
+      "missing_branches": 29,
       "missing_line_ids": [
         13,
         14,
@@ -2668,9 +2665,7 @@
         "_validate_report_filters@310:7e54be09701c:308->310",
         "_validate_report_filters@310:7e54be09701c:308->346",
         "_validate_report_filters@310:7e54be09701c:46->48",
-        "report@22:274ea90ec699:1082->1084",
         "report@22:274ea90ec699:1092->1094",
-        "report@22:274ea90ec699:1230->1234",
         "report@22:274ea90ec699:802->804"
       ]
     },
@@ -4833,7 +4828,7 @@
     "server/src/ezllmrouter_server/diagnostic_journal.py": {
       "source_sha256": "e95f579da896e3079ba0a3d8efd3d46a1ebf520e05b7148ee273e58a33398c20",
       "missing_lines": 59,
-      "missing_branches": 28,
+      "missing_branches": 26,
       "missing_line_ids": [
         21,
         22,
@@ -4906,8 +4901,6 @@
         "append_event@18:0f4cfbe13b54:276->282",
         "read_events@42:6b7c1aacfd93:1088->1090",
         "read_events@42:6b7c1aacfd93:1088->1172",
-        "read_events@42:6b7c1aacfd93:1168->1170",
-        "read_events@42:6b7c1aacfd93:1168->1172",
         "read_events@42:6b7c1aacfd93:168->172",
         "read_events@42:6b7c1aacfd93:168->312",
         "read_events@42:6b7c1aacfd93:420->422",
@@ -5645,7 +5638,7 @@
     "server/src/ezllmrouter_server/gateway/choice_b_wire.py": {
       "source_sha256": "e0cacbd3e5123ea8146c36e067f7bba2b1fda67b2253dda86a05c0942878c831",
       "missing_lines": 22,
-      "missing_branches": 23,
+      "missing_branches": 20,
       "missing_line_ids": [
         18,
         23,
@@ -5673,12 +5666,9 @@
       "missing_branch_ids": [
         "<module>@1:22ee63d1e2a0:116->128",
         "<module>@1:22ee63d1e2a0:126->142",
-        "_decode_record@57:5c07fcda4716:116->392",
         "_frame@84:7e79945fa65b:112->152",
         "_frame@84:7e79945fa65b:128->130",
         "_read_exact@41:931bf8cdc87b:162->164",
-        "_read_exact@41:931bf8cdc87b:8->254",
-        "async_exchange.<locals>.read_exact@121:259f5813de72:14->162",
         "async_exchange.<locals>.read_exact@121:259f5813de72:70->72",
         "async_exchange@116:ece59882db67:490->530",
         "async_exchange@116:ece59882db67:506->508",
@@ -5954,7 +5944,7 @@
     "server/src/ezllmrouter_server/gateway/owned_sender_transport.py": {
       "source_sha256": "68845549398765d04ecd7e2adafe6d9fb67f7a8b2731ce7258442147d306bee0",
       "missing_lines": 115,
-      "missing_branches": 61,
+      "missing_branches": 59,
       "missing_line_ids": [
         43,
         44,
@@ -6123,8 +6113,6 @@
         "OwnedSocketStream._write_once@104:b3ec9c84667e:658->710",
         "OwnedSocketStream._write_once@104:b3ec9c84667e:668->670",
         "OwnedSocketStream._write_once@104:b3ec9c84667e:668->710",
-        "OwnedSocketStream._write_once@104:b3ec9c84667e:796->798",
-        "OwnedSocketStream._write_once@104:b3ec9c84667e:796->800",
         "OwnedSocketStream._write_once@104:b3ec9c84667e:86->112",
         "OwnedSocketStream._write_once@104:b3ec9c84667e:86->88",
         "OwnedSocketStream.get_extra_info@167:fb99c2626650:10->12",
@@ -6139,7 +6127,7 @@
     "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py": {
       "source_sha256": "b722674c3b756d89073f0bf1a263abc05ea88de64e729d4ced82ffe36a03e88a",
       "missing_lines": 27,
-      "missing_branches": 36,
+      "missing_branches": 33,
       "missing_line_ids": [
         62,
         75,
@@ -6182,8 +6170,6 @@
         "OwnedTLSStream._drain@94:58723f5429a4:610->612",
         "OwnedTLSStream._drain@94:58723f5429a4:656->708",
         "OwnedTLSStream._drain@94:58723f5429a4:666->668",
-        "OwnedTLSStream._drain@94:58723f5429a4:794->798",
-        "OwnedTLSStream._drain@94:58723f5429a4:888->890",
         "OwnedTLSStream._receive_cipher@84:1d8dd9410f56:104->106",
         "OwnedTLSStream._receive_cipher@84:1d8dd9410f56:262->264",
         "OwnedTLSStream.get_extra_info@200:1ca1c40b7ccf:10->36",
@@ -6204,8 +6190,7 @@
         "OwnedTLSStream.write@166:77bcfeed4d54:218->220",
         "OwnedTLSStream.write@166:77bcfeed4d54:258->260",
         "OwnedTLSStream.write@166:77bcfeed4d54:28->54",
-        "OwnedTLSStream.write@166:77bcfeed4d54:52->54",
-        "OwnedTLSStream.write@166:77bcfeed4d54:542->544"
+        "OwnedTLSStream.write@166:77bcfeed4d54:52->54"
       ]
     },
     "server/src/ezllmrouter_server/gateway/provider_reply.py": {
@@ -6711,7 +6696,7 @@
     "server/src/ezllmrouter_server/integration_accounting.py": {
       "source_sha256": "dc8b4404998a7ef51c36cd41b192d43937073beef1b7cb3ec006d8362bb33557",
       "missing_lines": 38,
-      "missing_branches": 77,
+      "missing_branches": 75,
       "missing_line_ids": [
         13,
         60,
@@ -6803,7 +6788,6 @@
         "_eligibility_assessment@142:5d5ed4b70124:974->976",
         "_eligibility_freshness@531:ef9ab91b7d66:220->222",
         "_lineage_projection@216:4d289bc33950:120->144",
-        "_lineage_projection@216:4d289bc33950:206->682",
         "_lineage_projection@216:4d289bc33950:214->216",
         "_lineage_projection@216:4d289bc33950:388->436",
         "_lineage_projection@216:4d289bc33950:434->436",
@@ -6813,7 +6797,6 @@
         "_lineage_projection@216:4d289bc33950:580->582",
         "_lineage_projection@216:4d289bc33950:580->628",
         "_lineage_projection@216:4d289bc33950:630->632",
-        "_lineage_projection@216:4d289bc33950:678->680",
         "_shape.<locals>.<genexpr>@103:f3db215597ef:34->78",
         "_shape@84:d1529b58be8a:1000->1044",
         "_shape@84:d1529b58be8a:1094->1162",
@@ -8491,7 +8474,7 @@
     "server/src/ezllmrouter_server/operator_demo.py": {
       "source_sha256": "8e1a529da3ddd748dd1b5984715922cd7badb136c57eafdd7688f99dece62918",
       "missing_lines": 97,
-      "missing_branches": 52,
+      "missing_branches": 50,
       "missing_line_ids": [
         38,
         39,
@@ -8604,8 +8587,6 @@
         "DemoRunner._candidate@48:23d6eb647f2a:318->362",
         "DemoRunner._candidate@48:23d6eb647f2a:376->378",
         "DemoRunner._candidate@48:23d6eb647f2a:376->400",
-        "DemoRunner._candidate@48:23d6eb647f2a:486->488",
-        "DemoRunner._candidate@48:23d6eb647f2a:486->490",
         "DemoRunner._candidate@48:23d6eb647f2a:88->132",
         "DemoRunner._candidate@48:23d6eb647f2a:88->90",
         "DemoRunner.run@72:6675b589901c:1220->1222",
@@ -8772,7 +8753,7 @@
     "server/src/ezllmrouter_server/operator_http/authentication.py": {
       "source_sha256": "a3ed56f46f371bd93c1f0e4c0db78f46b0a63f2406359dfda3e57c8d7046f961",
       "missing_lines": 38,
-      "missing_branches": 31,
+      "missing_branches": 29,
       "missing_line_ids": [
         40,
         43,
@@ -8829,8 +8810,6 @@
         "AuthenticationRoutes._login@174:e9fef2016856:878->896",
         "AuthenticationRoutes._login@174:e9fef2016856:894->896",
         "AuthenticationRoutes._make_session_room@30:0cedb88dc520:162->164",
-        "AuthenticationRoutes._make_session_room@30:0cedb88dc520:292->294",
-        "AuthenticationRoutes._make_session_room@30:0cedb88dc520:292->296",
         "AuthenticationRoutes._make_session_room@30:0cedb88dc520:432->434",
         "AuthenticationRoutes._make_session_room@30:0cedb88dc520:436->438",
         "AuthenticationRoutes._make_session_room@30:0cedb88dc520:436->536",
@@ -9765,7 +9744,7 @@
     "server/src/ezllmrouter_server/operator_web.py": {
       "source_sha256": "956e0b7591c2ec0afa1b6b43a8cf65b94afa6b55e004e2ef9702699e1d9e2752",
       "missing_lines": 20,
-      "missing_branches": 12,
+      "missing_branches": 10,
       "missing_line_ids": [
         47,
         48,
@@ -9792,8 +9771,6 @@
         "UnixOperatorServer.server_bind@39:3fe4f4c34b7d:184->282",
         "UnixOperatorServer.server_bind@39:3fe4f4c34b7d:214->282",
         "UnixOperatorServer.server_bind@39:3fe4f4c34b7d:280->282",
-        "_accounting_maintenance@56:a90e6aeb25fd:102->104",
-        "_accounting_maintenance@56:a90e6aeb25fd:102->106",
         "_accounting_maintenance@56:a90e6aeb25fd:34->36",
         "serve@64:4629e95d4877:36->38",
         "serve@64:4629e95d4877:612->614",
@@ -11202,7 +11179,7 @@
     "server/src/ezllmrouter_server/reporting.py": {
       "source_sha256": "2b1b214ef0ab411ddc9586292e09c7e9bbaac126db134748503357c29ec32189",
       "missing_lines": 133,
-      "missing_branches": 173,
+      "missing_branches": 172,
       "missing_line_ids": [
         10,
         35,
@@ -11510,7 +11487,6 @@
         "_workflow_summary@308:24daec4214cb:162->166",
         "descendant_attempts@114:339c3620344d:24->26",
         "descendant_attempts@114:339c3620344d:356->358",
-        "descendant_attempts@114:339c3620344d:554->558",
         "group_attempts@106:37f307c3f383:50->52"
       ]
     },
@@ -11548,7 +11524,7 @@
     "server/src/ezllmrouter_server/reporting_stream.py": {
       "source_sha256": "f3aef2a41497e19a7754777e3aab892d02bd6a720901cc5c7b07b736ce8d33ed",
       "missing_lines": 9,
-      "missing_branches": 37,
+      "missing_branches": 34,
       "missing_line_ids": [
         19,
         54,
@@ -11581,9 +11557,6 @@
         "_metadata@195:a873e8406ec7:294->308",
         "_metadata@195:a873e8406ec7:422->424",
         "ancestors@98:a98c06c38157:104->254",
-        "ancestors@98:a98c06c38157:242->244",
-        "ancestors@98:a98c06c38157:250->252",
-        "ancestors@98:a98c06c38157:250->254",
         "build_report@301:0e8f2e44bc14:158->162",
         "selected@82:2afa877604ff:10->12",
         "selected@82:2afa877604ff:106->108",
@@ -12035,7 +12008,7 @@
     "server/src/ezllmrouter_server/scripted_demo.py": {
       "source_sha256": "a6f5b694f77a07cdfaba1319a94fc2828bc9f84eb5c74352c5e21630b69f10af",
       "missing_lines": 304,
-      "missing_branches": 230,
+      "missing_branches": 224,
       "missing_line_ids": [
         32,
         36,
@@ -12559,16 +12532,10 @@
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:640->664",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:670->672",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:670->694",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:804->806",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:804->816",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:812->814",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:812->816",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:818->820",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:818->822",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:896->898",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:896->916",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:944->946",
-        "ScriptedDemo.workflow@338:e06a1c4c1d2e:944->948",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:956->1332",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:956->960",
         "ScriptedDemo.workflow@338:e06a1c4c1d2e:974->1042",
@@ -13940,7 +13907,7 @@
     "server/src/ezllmrouter_server/successor_reporting.py": {
       "source_sha256": "c3ea7e463261dbea93c5bd5d54b9800e1bfd9517ab4fbd7bb2e61871c8966109",
       "missing_lines": 108,
-      "missing_branches": 92,
+      "missing_branches": 88,
       "missing_line_ids": [
         31,
         32,
@@ -14119,10 +14086,6 @@
         "_report_workflows@245:9b5fa6ea6546:170->174",
         "_report_workflows@245:9b5fa6ea6546:180->182",
         "_report_workflows@245:9b5fa6ea6546:180->184",
-        "_report_workflows@245:9b5fa6ea6546:322->324",
-        "_report_workflows@245:9b5fa6ea6546:322->326",
-        "_report_workflows@245:9b5fa6ea6546:332->334",
-        "_report_workflows@245:9b5fa6ea6546:332->336",
         "_report_workflows@245:9b5fa6ea6546:40->42",
         "_report_workflows@245:9b5fa6ea6546:40->52",
         "_report_workflows@245:9b5fa6ea6546:400->404",
@@ -14149,7 +14112,7 @@
     "server/src/ezllmrouter_server/user_management.py": {
       "source_sha256": "55754621ad0b619550010b19deee53a9f8c086536720d9a449bb0030b0830289",
       "missing_lines": 111,
-      "missing_branches": 103,
+      "missing_branches": 99,
       "missing_line_ids": [
         10,
         65,
@@ -14286,10 +14249,6 @@
         "LoginThrottle.begin@123:d4a8fa39e86a:348->456",
         "LoginThrottle.begin@123:d4a8fa39e86a:376->378",
         "LoginThrottle.begin@123:d4a8fa39e86a:376->456",
-        "LoginThrottle.begin@123:d4a8fa39e86a:424->426",
-        "LoginThrottle.begin@123:d4a8fa39e86a:424->456",
-        "LoginThrottle.begin@123:d4a8fa39e86a:452->454",
-        "LoginThrottle.begin@123:d4a8fa39e86a:452->456",
         "LoginThrottle.begin@123:d4a8fa39e86a:464->466",
         "LoginThrottle.begin@123:d4a8fa39e86a:464->468",
         "LoginThrottle.begin@123:d4a8fa39e86a:484->510",

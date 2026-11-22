@@ -16,7 +16,9 @@ function typescript() {
 }
 function instrument(source, filename) {
   const ts = typescript(), key = path.resolve(filename), hash = crypto.createHash("sha256").update(source).digest("hex");
-  if (cache.has(key + hash)) return cache.get(key + hash);
+  if (cache.has(key + hash)) {
+    const previous=cache.get(key + hash);files.set(key,previous.entry);return previous.source;
+  }
   const parsed = ts.createSourceFile(key, source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.JS);
   if (parsed.parseDiagnostics.length) throw Error("VM coverage input is not valid JavaScript");
   const entry = { sha256: hash, counters: {} }; files.set(key, entry);
@@ -62,10 +64,20 @@ function instrument(source, filename) {
   }]);
   try {
     const result = ts.createPrinter().printFile(transformed.transformed[0]);
-    cache.set(key + hash, result); return result;
+    cache.set(key + hash, {source:result,entry}); return result;
   } finally { transformed.dispose(); }
 }
 const recorder = { hit(filename, id) { files.get(filename).counters[id].count++; } };
+function inventory(filename) {
+  const key=path.resolve(filename),previous=files.get(key);
+  try {
+    instrument(fs.readFileSync(key,"utf8"),key);
+    const entry=files.get(key);
+    return {sha256:entry.sha256,counters:Object.fromEntries(Object.entries(entry.counters).map(([id,row])=>[id,{...row,count:0}]))};
+  } finally {
+    if(previous)files.set(key,previous);else files.delete(key);
+  }
+}
 function runScript(source, context, options = {}) {
   if (!process.env.EZLLMROUTER_JS_COVERAGE) return vm.runInContext(source, context, options);
   if (process.env.NODE_V8_COVERAGE) throw Error("Native V8 coverage must be disabled for late-lexical VM components");
@@ -79,7 +91,12 @@ process.once("exit", () => {
   const directory = process.env.EZLLMROUTER_JS_COVERAGE;
   if (directory && files.size) {
     fs.mkdirSync(directory, { recursive: true });
-    fs.writeFileSync(path.join(directory, "vm-coverage-" + process.pid + ".json"), JSON.stringify({ scope: "TypeScript 5.9.3 AST statement/function counters; no branch percentage", files: Object.fromEntries(files) }));
+    fs.writeFileSync(path.join(directory, "vm-coverage-" + process.pid + "-" + crypto.randomUUID() + ".json"), JSON.stringify({ scope: "TypeScript 5.9.3 AST statement/function counters; no branch percentage", files: Object.fromEntries(files) }),{flag:"wx"});
   }
 });
-module.exports = { runScript, instrument, recorder, files };
+if(require.main===module){
+  const filenames=JSON.parse(fs.readFileSync(0,"utf8"));
+  if(!Array.isArray(filenames)||filenames.length>10000)throw Error("VM inventory budget");
+  process.stdout.write(JSON.stringify(Object.fromEntries(filenames.map(filename=>[filename,inventory(filename)]))));
+}
+module.exports = { runScript, instrument, recorder, files, inventory };

@@ -7801,7 +7801,7 @@
     {
       "path": "tools/javascript_coverage.py",
       "code": "S603",
-      "source_sha256": "e58e88cd153c6deb25da6ab8585a239b8b572e7eca9c898c45a2eb31eb8ed2d6",
+      "source_sha256": "8d5196bd0e09c275741516f8d4dc57159c08a9a7851a2afb0722fbb7fbd15a7b",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
@@ -7810,13 +7810,20 @@
           "symbol": "sdk_inventory",
           "statement_sha256": "4708a46000c58b179dbb760deea3bd353bab2c979623cd5f1c03e15d36746750",
           "context_sha256": "2cd6732e05b86b209dc301f71a5e30dc0a63020b122c32d140f88f4cdab00588"
+        },
+        {
+          "line": 38,
+          "column": 15,
+          "symbol": "console_inventory",
+          "statement_sha256": "9162b129d89b84fc9d4f8585fd9d01c739b90c9b4eae8018b39c2791d9acbb4c",
+          "context_sha256": "ed38fb2691fc268a9666b715f61135576b5299e5b67e1cd3f90637f544ca3749"
         }
       ]
     },
     {
       "path": "tools/javascript_coverage.py",
       "code": "S607",
-      "source_sha256": "e58e88cd153c6deb25da6ab8585a239b8b572e7eca9c898c45a2eb31eb8ed2d6",
+      "source_sha256": "8d5196bd0e09c275741516f8d4dc57159c08a9a7851a2afb0722fbb7fbd15a7b",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
@@ -7825,6 +7832,13 @@
           "symbol": "sdk_inventory",
           "statement_sha256": "4708a46000c58b179dbb760deea3bd353bab2c979623cd5f1c03e15d36746750",
           "context_sha256": "2cd6732e05b86b209dc301f71a5e30dc0a63020b122c32d140f88f4cdab00588"
+        },
+        {
+          "line": 39,
+          "column": 9,
+          "symbol": "console_inventory",
+          "statement_sha256": "9162b129d89b84fc9d4f8585fd9d01c739b90c9b4eae8018b39c2791d9acbb4c",
+          "context_sha256": "ed38fb2691fc268a9666b715f61135576b5299e5b67e1cd3f90637f544ca3749"
         }
       ]
     },

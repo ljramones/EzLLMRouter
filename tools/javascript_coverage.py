@@ -31,6 +31,24 @@ def sdk_inventory(root: Path) -> dict[str, Any]:
     }
 
 
+def console_inventory(root: Path) -> dict[str, Any]:
+    sources = sorted(root.glob("web/*.js"))
+    if not sources:
+        return {}
+    process = subprocess.run(
+        ["node", str(ROOT / "tools/javascript_vm_coverage.cjs")],
+        input=json.dumps([str(source) for source in sources]),
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=30,
+    )
+    return {
+        Path(filename).relative_to(root).as_posix(): row
+        for filename, row in json.loads(process.stdout).items()
+    }
+
+
 def source_for(url: str, root: Path = ROOT) -> Path | None:
     value = unquote(urlsplit(url).path) if url.startswith("file:") else url
     path = Path(value)
@@ -68,6 +86,7 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
                 raise ValueError("installed SDK coverage identity changed")
             aliases[unquote(url)] = candidate
     inventory = sdk_inventory(root)
+    console = console_inventory(root)
     for artifact in directory.glob("vm-coverage-*.json"):
         for filename, entry in json.loads(artifact.read_text())["files"].items():
             source = source_for(filename, root)
@@ -135,11 +154,18 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
         }
         if key in inventory:
             files[key]["method"] = "TypeScript 5.9.3 static functions with V8 hit counts"
-        if key in vm:
-            rows = list(vm[key].values())
+        if key in console:
+            definitions = console[key]["counters"]
+            observed_counters = vm.get(key, {})
+            if observed_counters.keys() - definitions.keys():
+                raise ValueError("unknown VM counter identity: " + key)
+            rows = [
+                dict(row, id=counter, count=observed_counters.get(counter, {}).get("count", 0))
+                for counter, row in definitions.items()
+            ]
             files[key] = {
                 "sha256": files[key]["sha256"],
-                "measured": True,
+                "measured": key in vm,
                 "method": "TypeScript 5.9.3 AST counters",
                 "functions": sum(row["kind"] == "function" for row in rows),
                 "functions_hit": sum(
@@ -150,6 +176,7 @@ def report(directory: Path, root: Path = ROOT) -> dict[str, Any]:
                     row["kind"] == "statement" and row["count"] > 0 for row in rows
                 ),
                 "missing_counters": [row for row in rows if row["count"] == 0],
+                "counters": len(rows),
             }
     payload = {
         "scope": "Static TypeScript 5.9.3 SDK functions with V8 hits; diagnostic V8 block ranges; AST console counters; unmeasured files explicit; no exhaustive JS branch denominator claim",
@@ -210,12 +237,20 @@ def budgets(payload: dict[str, Any], scope: str) -> dict[str, dict[str, Any]]:
             result[name]["missing_function_ids"] = [
                 f"{start}:{end}" for start, end in row["missing_function_offsets_utf16"]
             ]
+        elif "missing_counters" in row:
+            result[name]["functions"] = row["functions"]
+            result[name]["counters"] = row["counters"]
+            result[name]["missing_counter_ids"] = sorted(
+                counter["id"] for counter in row["missing_counters"]
+            )
     return result
 
 
 def budget_errors(current: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
     errors = []
     for name, row in current.items():
+        if name.startswith("web/") and not row["measured"]:
+            errors.append("console source needs measurement: " + name)
         old = baseline.get(name)
         if old is None:
             if (
@@ -225,6 +260,8 @@ def budget_errors(current: dict[str, Any], baseline: dict[str, Any]) -> list[str
             ):
                 errors.append("new JS source needs coverage: " + name)
         else:
+            if name.startswith("web/") and row.get("sha256") != old.get("sha256"):
+                errors.append("console source changed; review counter identities: " + name)
             if old["measured"] and not row["measured"]:
                 errors.append("lost JS source measurement: " + name)
             for metric in ("missing_functions", "missing_statements_or_observed_blocks"):
@@ -244,6 +281,20 @@ def budget_errors(current: dict[str, Any], baseline: dict[str, Any]) -> list[str
                         errors.append("newly uncovered SDK functions: " + name)
                     if old_ids - current_ids:
                         errors.append("tighten covered SDK function budget: " + name)
+            if "missing_counter_ids" in row:
+                if "missing_counter_ids" not in old:
+                    errors.append("review static console counter baseline: " + name)
+                else:
+                    if row["functions"] != old["functions"] or row["counters"] != old["counters"]:
+                        errors.append("static console counter inventory changed: " + name)
+                    current_ids, old_ids = (
+                        set(row["missing_counter_ids"]),
+                        set(old["missing_counter_ids"]),
+                    )
+                    if current_ids - old_ids:
+                        errors.append("newly uncovered console counters: " + name)
+                    if old_ids - current_ids:
+                        errors.append("tighten covered console counter budget: " + name)
     for name in baseline.keys() - current.keys():
         errors.append("missing JS source: " + name)
     return errors

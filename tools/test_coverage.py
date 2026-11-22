@@ -78,7 +78,10 @@ def report(
             observed[str(Path(name).resolve())].update(lines)
     branch_hits = defaultdict(set)
     for path in directory.glob("branches-*.json"):
-        for name, values in json.loads(path.read_text()).items():
+        artifact = json.loads(path.read_text())
+        if artifact.get("format") != "ezllmrouter-logical-branches-v2":
+            raise ValueError("fresh logical-branch measurements required: " + path.name)
+        for name, values in artifact["files"].items():
             branch_hits[str(Path(name).resolve())].update(values)
     files = {}
     for root in roots:
@@ -106,7 +109,7 @@ def report(
     total = sum(row["executable"] for row in files.values())
     hit = sum(row["executed"] for row in files.values())
     result = {
-        "scope": "Python lines and conditional-bytecode branch exits; exception edges/native/JavaScript excluded",
+        "scope": "Python lines and logical conditional-bytecode exits; compiler while copies merged; exception edges/native/JavaScript excluded",
         "python": sys.version.split()[0],
         "branches": sum(row["branches"] for row in files.values()),
         "branches_executed": sum(row["branches_executed"] for row in files.values()),

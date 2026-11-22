@@ -9,6 +9,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import threading
 import types
 import uuid
 
@@ -38,38 +39,141 @@ def identity(code: types.CodeType) -> str:
     )
 
 
+def position(instruction: dis.Instruction) -> tuple[object, ...]:
+    return tuple(
+        getattr(instruction.positions, field, None)
+        for field in ("lineno", "end_lineno", "col_offset", "end_col_offset")
+    )
+
+
+def conditional_targets(instructions: list[dis.Instruction]) -> dict[int, set[int]]:
+    result = {}
+    offsets = {item.offset: index for index, item in enumerate(instructions)}
+    for index, instruction in enumerate(instructions):
+        if instruction.opname not in CONDITIONALS:
+            continue
+        if index and instructions[index - 1].opname in {
+            "WITH_EXCEPT_START",
+            "CHECK_EXC_MATCH",
+            "CHECK_EG_MATCH",
+        }:
+            continue
+        target = int(instruction.argval)
+        if instruction.opname == "FOR_ITER" and instructions[offsets[target]].opname == "END_FOR":
+            target = instructions[offsets[target] + 1].offset
+        result[instruction.offset] = {target, instructions[index + 1].offset}
+    return result
+
+
+def branch_aliases(code: types.CodeType) -> dict[tuple[int, int], tuple[int, int]]:
+    """Map compiler copies of a while predicate to its original physical exits."""
+    instructions = list(dis.get_instructions(code))
+    by_offset = {item.offset: item for item in instructions}
+    following = {
+        left.offset: right.offset
+        for left, right in zip(instructions, instructions[1:], strict=False)
+    }
+    targets = conditional_targets(instructions)
+    backwards = [
+        item
+        for item in instructions
+        if item.opname in {"JUMP_BACKWARD", "JUMP_BACKWARD_NO_INTERRUPT"}
+        and by_offset[int(item.argval)].opname != "FOR_ITER"
+    ]
+
+    def reaches_body(source: int, body: int) -> bool:
+        pending, visited = [source], set()
+        while pending:
+            offset = pending.pop()
+            if offset == body:
+                return True
+            if offset in visited or offset > body:
+                continue
+            visited.add(offset)
+            instruction = by_offset[offset]
+            if instruction.opname in {"RETURN_VALUE", "RETURN_CONST", "RAISE_VARARGS", "RERAISE"}:
+                continue
+            if instruction.opname in {
+                "JUMP_FORWARD",
+                "JUMP_BACKWARD",
+                "JUMP_BACKWARD_NO_INTERRUPT",
+            }:
+                successors = [int(instruction.argval)]
+            else:
+                successors = [following[offset]] if offset in following else []
+                if instruction.opcode in dis.hasjrel or instruction.opcode in dis.hasjabs:
+                    successors.append(int(instruction.argval))
+            pending.extend(target for target in successors if offset < target <= body)
+        return False
+
+    def destination_token(offset: int) -> tuple[object, ...]:
+        seen = set()
+        while offset not in seen and by_offset[offset].opname in {
+            "EXTENDED_ARG",
+            "JUMP_FORWARD",
+            "JUMP_BACKWARD",
+            "JUMP_BACKWARD_NO_INTERRUPT",
+        }:
+            seen.add(offset)
+            offset = (
+                following[offset]
+                if by_offset[offset].opname == "EXTENDED_ARG"
+                else int(by_offset[offset].argval)
+            )
+        instruction = by_offset[offset]
+        return instruction.opname, position(instruction), instruction.argrepr
+
+    aliases = {
+        (source, destination): (source, destination)
+        for source, destinations in targets.items()
+        for destination in destinations
+    }
+    candidates: dict[tuple[object, ...], list[int]] = defaultdict(list)
+    for source, destinations in targets.items():
+        instruction = by_offset[source]
+        if instruction.opname == "FOR_ITER":
+            continue
+        family = {
+            "POP_JUMP_IF_TRUE": "truth",
+            "POP_JUMP_IF_FALSE": "truth",
+            "POP_JUMP_IF_NONE": "none",
+            "POP_JUMP_IF_NOT_NONE": "none",
+        }.get(instruction.opname, instruction.opname)
+        key = family, position(instruction)
+        current = {destination_token(target): target for target in destinations}
+        if position(instruction)[0] is not None and len(current) == len(destinations):
+            for earlier in candidates[key]:
+                # The first test is outside the loop body; its compiler copy is
+                # inside a backward edge. Distinct body decisions and for loops
+                # are never merged just because their locations look similar.
+                if not any(
+                    earlier < int(jump.argval) <= source < jump.offset
+                    and reaches_body(earlier, int(jump.argval))
+                    for jump in backwards
+                ):
+                    continue
+                original = {destination_token(target): target for target in targets[earlier]}
+                if current.keys() == original.keys():
+                    for token, destination in current.items():
+                        aliases[source, destination] = aliases[earlier, original[token]]
+                    break
+        candidates[key].append(source)
+    return aliases
+
+
 def branches(code: types.CodeType) -> dict[str, dict[str, object]]:
     result = {}
     for child in codes(code):
-        instructions = list(dis.get_instructions(child))
-        lines = {
-            instruction.offset: getattr(instruction.positions, "lineno", None)
-            for instruction in instructions
-        }
-        for index, instruction in enumerate(instructions):
-            if instruction.opname not in CONDITIONALS:
-                continue
-            if index and instructions[index - 1].opname in {
-                "WITH_EXCEPT_START",
-                "CHECK_EXC_MATCH",
-                "CHECK_EG_MATCH",
-            }:
-                # Compiler exception dispatch is outside the conditional-exit metric.
-                continue
-            target = int(instruction.argval)
-            if instruction.opname == "FOR_ITER":
-                end = next(i for i, item in enumerate(instructions) if item.offset == target)
-                # BRANCH reports the instruction after END_FOR, not END_FOR itself.
-                if instructions[end].opname == "END_FOR":
-                    target = instructions[end + 1].offset
-            for destination in {target, instructions[index + 1].offset}:
-                key = f"{identity(child)}:{instruction.offset}->{destination}"
-                result[key] = {
-                    "function": child.co_qualname,
-                    "from": getattr(instruction.positions, "lineno", None),
-                    "to": lines.get(destination),
-                    "opcode": instruction.opname,
-                }
+        instructions = {item.offset: item for item in dis.get_instructions(child)}
+        for source, destination in set(branch_aliases(child).values()):
+            instruction = instructions[source]
+            key = f"{identity(child)}:{source}->{destination}"
+            result[key] = {
+                "function": child.co_qualname,
+                "from": getattr(instruction.positions, "lineno", None),
+                "to": getattr(instructions[destination].positions, "lineno", None),
+                "opcode": instruction.opname,
+            }
     return result
 
 
@@ -81,36 +185,38 @@ class BranchCoverage:
         self.identities: dict[int, str] = {}
         self.targets: dict[int, dict[int, set[int]]] = {}
         self.destinations: dict[int, dict[int, set[int]]] = {}
+        self.aliases: dict[int, dict[tuple[int, int], tuple[int, int]]] = {}
         self.lines: dict[str, set[int]] = defaultdict(set)
+        self.initializing = threading.RLock()
         self.active = False
 
     def _start(self, code: types.CodeType, _offset: int) -> object:
-        if (
-            self.active
-            and code.co_filename.startswith(self.prefixes)
-            and id(code) not in self.identities
-        ):
-            self.enabled.append(code)
-            self.identities[id(code)] = identity(code)
-            self.observed[id(code)] = set()
-            expected: dict[int, set[int]] = {}
-            prefix = self.identities[id(code)] + ":"
-            for key in branches(code):
-                if key.startswith(prefix):
-                    source, target = key[len(prefix) :].split("->")
-                    expected.setdefault(int(source), set()).add(int(target))
-            self.targets[id(code)] = expected
-            self.destinations[id(code)] = {}
-            events = sys.monitoring.events
-            sys.monitoring.set_local_events(self.tool_id, code, events.BRANCH | events.LINE)
+        if self.active and code.co_filename.startswith(self.prefixes):
+            # Hashing/disassembly can release the GIL. A concurrent first call
+            # must wait for initialization and must never reset recorded hits.
+            with self.initializing:
+                if id(code) not in self.identities:
+                    self.enabled.append(code)
+                    self.identities[id(code)] = identity(code)
+                    self.observed[id(code)] = set()
+                    expected: dict[int, set[int]] = {}
+                    self.aliases[id(code)] = branch_aliases(code)
+                    for source, target in self.aliases[id(code)].values():
+                        expected.setdefault(source, set()).add(target)
+                    self.targets[id(code)] = expected
+                    self.destinations[id(code)] = {}
+                    events = sys.monitoring.events
+                    sys.monitoring.set_local_events(self.tool_id, code, events.BRANCH | events.LINE)
         # PY_START is global, so otherwise every call outside the source roots
         # also pays for this callback. Local LINE/BRANCH events remain enabled.
         return sys.monitoring.DISABLE
 
     def _branch(self, code: types.CodeType, source: int, destination: int) -> object | None:
-        if not self.active or source not in self.targets[id(code)]:
+        alias = self.aliases[id(code)].get((source, destination))
+        if not self.active or alias is None:
             return sys.monitoring.DISABLE
-        self.observed[id(code)].add((source, destination))
+        source, destination = alias
+        self.observed[id(code)].add(alias)
         seen = self.destinations[id(code)].setdefault(source, set())
         seen.add(destination)
         # DISABLE applies to the source instruction, not one of its exits.
@@ -158,4 +264,6 @@ class BranchCoverage:
                 for source, destination in self.observed[id(code)]
             )
         rows = {name: sorted(set(values)) for name, values in rows.items()}
-        (self.output / f"branches-{uuid.uuid4().hex}.json").write_text(json.dumps(rows))
+        (self.output / f"branches-{uuid.uuid4().hex}.json").write_text(
+            json.dumps({"format": "ezllmrouter-logical-branches-v2", "files": rows})
+        )

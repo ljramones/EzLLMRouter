@@ -61,6 +61,8 @@ def gaps(summary: Mapping[str, Any], policy: Mapping[str, Any]) -> list[dict[str
 def regressions(summary: Mapping[str, Any], baseline: Mapping[str, Any]) -> list[str]:
     errors = []
     files = baseline.get("files", {})
+    if baseline.get("measurement", summary.get("scope")) != summary.get("scope"):
+        errors.append("coverage measurement differs from the reviewed baseline")
     if baseline.get("python", summary.get("python")) != summary.get("python"):
         errors.append("coverage runtime differs from the reviewed baseline")
     for path, row in summary["files"].items():
@@ -203,7 +205,11 @@ def merge_summaries(left: Mapping[str, Any], right: Mapping[str, Any]) -> dict[s
 
 def merge_baselines(left: Mapping[str, Any], right: Mapping[str, Any]) -> dict[str, Any]:
     """Derive combined allowances from the independently reviewed tier budgets."""
-    if left["python"] != right["python"] or left["files"].keys() != right["files"].keys():
+    if (
+        left["python"] != right["python"]
+        or left.get("measurement") != right.get("measurement")
+        or left["files"].keys() != right["files"].keys()
+    ):
         raise ValueError("coverage baseline runtimes or source inventories differ")
     files = {}
     for path, first in left["files"].items():

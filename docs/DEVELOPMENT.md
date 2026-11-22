@@ -101,8 +101,12 @@ incidental background ticks or handler completion cannot change their reviewed
 coverage sets.
 
 Each run creates a fresh directory under `.artifacts/coverage/`. `summary.json`
-records Python source hashes, executable/missing lines, and both exits of each
-conditional bytecode instruction, including loops and worker threads. Exception
+records Python source hashes, executable/missing lines, and both logical exits of each
+conditional bytecode instruction, including loops and worker threads. Compiler
+copies of a `while` predicate share the original exit identities; compound
+conditions retain each decision. Raw branch files use
+`ezllmrouter-logical-branches-v2`; earlier physical-exit files must be replaced by
+fresh measurements before reporting or merging. Exception
 dispatch edges and native code are outside this metric. `subsystems.json` and
 `index.html` show subsystem totals and the explicit critical-exit gap list.
 `tools/coverage_budget.json` and `tools/coverage_budget_http.json` retain the exact
@@ -121,7 +125,9 @@ checks against the intersection of the independently reviewed missing-code sets.
 
 Python monitoring disables each code-entry and line callback after its first hit,
 and each conditional callback once both exits have been observed. A loop whose
-second exit has not yet run still incurs branch callbacks. Coverage and lock
+second exit has not yet run still incurs branch callbacks. Concurrent first calls
+share serialized initialization so hashing or disassembly cannot reset another
+thread's hits. Coverage and lock
 auditing therefore have separate timing observations from the uninstrumented
 duration gate; their timings are not application performance measurements.
 
@@ -138,8 +144,16 @@ and function counters inserted by the locked TypeScript 5.9.3 parser: Node
 binding. Instrumentation regressions preserve that binding, strict directives,
 arrow `this`, loops and exceptions. The JS summary labels the two methods and
 unmeasured files explicitly; it does not claim an exhaustive JS branch percentage.
-`tools/javascript_coverage_budget.json` ratchets missing console statements/functions
-and exact installed-SDK function identities. V8 block ranges remain diagnostic
+Every `web/*.js` file has a static counter inventory, including scripts that were
+never loaded; inventory generation parses source without executing it. All 15
+console scripts must be measured. The console harness loads the current HTML
+script list and separately exercises the older workspace script. VM artifacts
+use exclusive UUID filenames so workers sharing a process ID retain separate hits.
+`tools/javascript_coverage_budget.json` ratchets source hashes, static totals and
+exact missing console counter and installed-SDK function identities. A regression
+installs a real tracing hook and verifies events during and after a failed
+collection; a deliberately broken collector proves the assertion detects hook loss.
+V8 block ranges remain diagnostic
 because their denominator changes when outer functions execute. Installed source aliases are
 recorded before temporary packages are removed and must match canonical hashes.
 

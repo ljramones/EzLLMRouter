@@ -7,7 +7,7 @@ const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{reso
 const response=(value,status=200)=>({ok:status<400,status,json:async()=>value});
 async function settle(){for(let i=0;i<50;i++)await Promise.resolve();}
 
-function harness({pathname="/",hash="#/users"}={}){
+function harness({pathname="/",hash="#/users",complete=false}={}){
   let document,confirmResult=false,reader=async url=>{
     if(["/operator/v1/models","/operator/v1/principals","/operator/v1/users","/operator/v1/connections","/operator/v1/integration/datasets"].includes(url))return response({items:[]});
     throw Error("Unexpected request: "+url);
@@ -50,8 +50,12 @@ function harness({pathname="/",hash="#/users"}={}){
     window:{location,history,confirm:question=>{confirmations.push(question);return confirmResult;},addEventListener:(type,callback)=>(windowEvents[type]??=[]).push(callback)},
     navigator:{clipboard:{writeText:async()=>{}}},fetch:async(url,options={})=>{requests.push({url,options});return reader(url,options);},
     integrationView:async()=>{},integrationAccounting:async()=>{},providers:async()=>{},providerAccessStatus:()=>({label:"Not configured"})});
-  for(const file of ["app.js","catalogue_view.js","activity_usage_view.js","crud_view.js","source_pages.js","integration_console.js","local_connectors_view.js","users_view.js"])
+  const scripts=complete?[...fs.readFileSync(path.join(root,"web/index.html"),"utf8").matchAll(/src="\/([^"?]+\.js)"/g)].map(match=>match[1]):
+    ["app.js","catalogue_view.js","activity_usage_view.js","crud_view.js","source_pages.js","integration_console.js","local_connectors_view.js","users_view.js"];
+  for(let file of scripts){
+    if(complete==="classic"&&file==="demo_workspace_team_view.js")file="demo_workspace_view.js";
     runScript(fs.readFileSync(path.join(root,"web",file),"utf8"),context,{filename:file});
+  }
   const run=code=>vm.runInContext(code,context);
   run('state.csrf="review-session";state.role="ordinary";state.userManagement=true;state.username="Review user";state.view="users";localUi.auto=false;showWorkspace()');
   return {context,run,elements,document,requests,confirmations,location,windowEvents,documentEvents,
@@ -61,6 +65,28 @@ function harness({pathname="/",hash="#/users"}={}){
     openDraft(){run('crudOpen(crudForm("Edit review record",[{name:"name",label:"Name",value:"Before"}],"Save",()=>render(),async()=>{}))');
       const form=elements["view-content"].querySelector("form"),input=form.querySelector("input[name=name]");input.value="Unsaved edit";input.oninput();return form;}};
 }
+
+test("every console script has real counter hits and preserves exact costs and owner-only controls",async()=>{
+  for(const complete of [true,"classic"]){
+    const h=harness({complete});await settle();
+    h.run('state.role="ordinary";state.principal="user.review"');
+    const before=h.requests.length;
+    assert.equal(h.run('costExact("0.000000001")'),"0.000000001");
+    assert.equal(h.run('integrationAccountingDecimal(integrationAccountingAmount("0.000000001"))'),"0.000000001");
+    assert.match(h.run('integrationAccountingCost({cost_status:"unknown",usage_state:"known"})'),/Unknown cost/);
+    assert.match(h.run('costAmounts({known_subtotals:{USD:"0.000000001"},unknown_cost_attempts:2})'),/USD 0\.000000001.*2 unknown/);
+    assert.equal(h.run('scriptedSeconds(61)'),"01:01");
+    assert.equal(h.run('demoStamp(61)'),"01:01");
+    assert.match(h.run('demoName("__unknown__")'),/Autonomous/);
+    h.run('demoStop()');
+    assert.equal(h.run('providerAccessStatus({credential_state:"absent"}).label'),"Not set up");
+    assert.equal(h.run('providerAccessStatus({credential_state:"present",revision:1,credential_version:1},[{operation:"access",connection_revision:1,credential_version:1,expires_at:"2099-01-01T00:00:00Z",state:"observed",observed_at:"2026-11-21T00:00:00Z"}]).label'),"API access verified");
+    const denied=h.run('(()=>{const root=document.createElement("section");connectionRegistration(root,"dataset.synthetic",[],async()=>{});return root;})()');
+    assert.match(denied.textContent,/Only the local owner/);
+    assert.equal(denied.querySelector("form"),null);
+    assert.equal(h.requests.length,before,"read-only controls performed a provider operation");
+  }
+});
 
 test("Build & context renders current metadata without historical milestones",async()=>{
   for(const litellm of [null,"1.105.1"]){

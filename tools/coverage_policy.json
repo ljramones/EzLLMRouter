@@ -1,5 +1,5 @@
 {
-  "measurement": "Python 3.12 conditional-bytecode exits; exception edges have separate fault/crash tests",
+  "measurement": "Python 3.12 logical conditional-bytecode exits; compiler while copies merged; exception edges have separate fault/crash tests",
   "critical": [
     {"path": "server/src/ezllmrouter_server/gateway/choice_b_sender.py", "function": "ChoiceBSenderAdapter._reject_or_unknown"},
     {"path": "server/src/ezllmrouter_server/operator_http/transport.py", "function": "TransportRoutes._origin_ok"},
