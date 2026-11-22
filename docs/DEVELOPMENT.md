@@ -126,6 +126,15 @@ with opaque fixture bytes: handshake output does not count as request acceptance
 and an already accepted request can finish its suffix after revocation. The
 separate loopback TLS fixture covers actual handshake, encryption and hostname
 verification.
+Coordinator failure and uncertain-outcome selectors are also blocking. Their
+temporary SQLite fixtures verify that recovery retains reported usage once,
+preserves completed candidates, binds provider prices to the planned and reported
+model, and leaves missing evidence or unusable pricing unknown. Real campaign
+reservations settle once when cost is known and retain their exposure when it is
+unknown; unrelated attempts cannot settle a configured campaign. A post-send
+response-processing fault additionally checks query-first recovery without
+another send. All 13 current critical functions have complete conditional-exit
+coverage; exception dispatch and native code remain outside that denominator.
 Baseline increases require explicit review;
 `tools.coverage_reports --write-baseline` is a maintenance operation, never a CI
 step. Select the HTTP budget with `--baseline tools/coverage_budget_http.json`

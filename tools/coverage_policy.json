@@ -10,12 +10,11 @@
     {"path": "server/src/ezllmrouter_server/gateway/owned_sender_transport.py", "function": "OwnedSocketStream._write_once"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_sender_transport.py", "function": "OwnedSocketStream._write_once.<locals>.emit"},
     {"path": "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py", "function": "OwnedTLSStream._drain"},
-    {"path": "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py", "function": "OwnedTLSStream._drain.<locals>.emit"}
-  ],
-  "followup_critical": [
+    {"path": "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py", "function": "OwnedTLSStream._drain.<locals>.emit"},
     {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed"},
     {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_failed_reply"},
     {"path": "server/src/ezllmrouter_server/core_outcomes.py", "function": "_outcome_unknown"}
   ],
-  "critical_target": "All critical selectors, including first-write transports, are blocking at 100% conditional exits. Coordinator follow-up selectors remain visible, ratcheted per file, and must reach 100% before T01 is complete. Exception dispatch edges are outside this metric."
+  "followup_critical": [],
+  "critical_target": "All 13 selected critical functions, including first-write transports and coordinator outcomes, are blocking at 100% conditional exits. No current follow-up selectors remain. Exception dispatch edges are outside this metric; additional critical selectors require explicit review."
 }
