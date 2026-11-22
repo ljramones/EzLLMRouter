@@ -1,7 +1,10 @@
 {
   "tests/client_languages/decoder_corpus.cjs": {
     "runner": "client",
-    "argv": ["node", "{repo}/tests/client_languages/decoder_corpus.cjs"]
+    "argv": [
+      "node",
+      "{repo}/tests/client_languages/decoder_corpus.cjs"
+    ]
   },
   "tests/unit/json_differential.cjs": {
     "runner": "helper",
@@ -9,7 +12,11 @@
   },
   "tests/unit/test_javascript_measurement.cjs": {
     "runner": "offline",
-    "argv": ["node", "--test", "tests/unit/test_javascript_measurement.cjs"]
+    "argv": [
+      "node",
+      "--test",
+      "tests/unit/test_javascript_measurement.cjs"
+    ]
   },
   "tests/client_languages/javascript_contracts.cjs": {
     "runner": "client",
@@ -250,5 +257,21 @@
       "{installed}/index.cjs",
       "{request}"
     ]
+  },
+  "tests/playwright/console-contracts.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/accessibility.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/payloads.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
+  },
+  "tests/playwright/specs/time-locale.spec.ts": {
+    "runner": "target",
+    "reason": "Playwright browser runner: npm --prefix tests/playwright test; requires browser binaries and localhost listeners."
   }
 }

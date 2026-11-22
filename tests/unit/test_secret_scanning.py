@@ -114,6 +114,17 @@ class SecretScanningTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 process_command(["git", *arguments])
 
+    def test_windows_executable_names_keep_the_same_child_network_policy(self):
+        from tools.test_network import process_command
+
+        self.assertEqual(process_command(["node.exe", "fixture.cjs"]), ["node.exe", "fixture.cjs"])
+        with self.assertRaisesRegex(AssertionError, "unapproved"):
+            process_command(["npm.cmd", "install", "unreviewed"])
+        command = ["npm.cmd", "pack", "--offline", "--ignore-scripts"]
+        self.assertEqual(process_command(command), command)
+        with self.assertRaisesRegex(AssertionError, "unapproved"):
+            process_command(["curl.exe", "https://example.invalid"])
+
     def test_hex_credentials_are_detected_while_public_digests_are_distinguished(self):
         from tools.security_secrets import detect
 

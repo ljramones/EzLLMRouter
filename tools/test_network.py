@@ -53,7 +53,7 @@ def child_environment(
 ) -> dict[str, str]:
     result = dict(os.environ if environment is None else environment)
     result["EZLLMROUTER_TEST_NETWORK"] = "loopback" if loopback else "offline"
-    require = "--require=" + str(NODE)
+    require = "--require=" + NODE.as_posix()
     options = shlex.split(result.get("NODE_OPTIONS", ""))
     if require not in options:
         options.insert(0, require)
@@ -75,6 +75,8 @@ def process_command(command):
         raise AssertionError("regression subprocesses require an argument list")
     command = [os.fsdecode(value) for value in command]
     program = Path(command[0]).name
+    if Path(program).suffix.lower() in {".exe", ".cmd"}:
+        program = Path(program).stem
     if program.startswith("python") or Path(command[0]) == Path(sys.executable):
         return python_command(command)
     if program in {"node", "nodejs"}:

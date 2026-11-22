@@ -86,14 +86,14 @@ keeps those distinct from new work and from target verification.
 | T10 | Provider/client resilience matrix | Implemented for the declared matrix: all six owned HTTP/TLS clients consume the same 28 cases and assert public error/recovery/status policy, exact delivery counts, byte limits, deadlines, no redirect/replay and rejection of untrusted TLS before HTTP credentials arrive. Existing 144 protocol/accounting cases and critical first-write tests remain separate maintained dimensions. Live-provider and exhaustive cross-product qualification remain outside this scope. |
 | T11 | Abuse rates and resource limits | Implemented for the documented local limits: an executable inventory links all twelve runtime-resource rows and six additional security/API groups to registered regressions. Real boundaries cover execution/connection admission, login rates and pending work, hashed bucket bounds, session eviction/admin reservation, 4,096 tokens, report readers/SQL deadline, IPC/body/response sizes and diagnostic rollover. Production load and container timing qualification remain separate. |
 | T12 | Logs and canary-secret contracts | Implemented for the current logging contract: all 66 operator and 42 wire bindings have route/level/schema/canary checks across nine statuses; 42 family action cases verify literal positions. Dynamic IDs matching route words remain redacted. Tests distinguish INFO rejections from sanitized ERROR stacks and verify the copied worker logger without trusted server imports. Production log collection is outside this source contract. |
-| T13 | Front-end payload contracts | Open. Component fixtures need real server payload/schema checks. |
+| T13 | Front-end payload contracts | Implemented for the declared main-screen consumer fields: a navigation census covers all 13 administrative screens and 15 real response families. Independently stated nested field/type contracts preserve nullable destinations, explicit unknown costs and decimal strings. Required-field removal, type changes and decimal coercion have negative controls; unknown response families fail the census. Additional resource states and every optional field remain outside this finite contract. |
 | T14 | Released-client version skew | Awaiting inputs. Identify hash-pinned previous released packages and previous-server vectors; never substitute current packages and call that N-1 testing. |
-| T15 | Supported platform matrix | Open. Add macOS service and macOS/Windows packaged-client workflows with accurate supported-platform boundaries. |
+| T15 | Supported platform matrix | Implemented in CI: macOS service regressions and macOS/Windows current-client consumers join existing Linux jobs. The portable runner builds wheels, npm/JAR/NuGet/crate packages and a fresh Go module, checks Unicode/space paths, shared contracts/decoders and owned HTTP/TLS behavior. Python dependencies come from the locked development environment; Go uses an explicit local module replacement. Windows service support, released-package skew and deployment qualification are not claimed. |
 | T16 | Performance and soak | Partial. `test_reporting_stream` already asserts bounded Python input memory as ledger size grows; exact 1k/10k comparisons are recorded in the review follow-up. Add reproducible scheduled latency/resource/soak runners. |
-| T17 | Accessibility | Open. Keyboard/focus/viewport browser checks exist; add screen-complete automated accessibility, zoom and reduced-motion journeys. |
+| T17 | Accessibility | Implemented for the declared browser journeys: pinned axe 4.11.0 audits all 13 main screens, six accounting sections, sign-in/password/error states, ordinary/read-only navigation and the user form. A 200% CSS-zoom/reduced-motion keyboard journey checks form entry and cancellation; an unlabeled-input canary proves the auditor detects defects. Automated checks do not establish full WCAG conformance or replace assistive-technology review. |
 | T18 | Mutation testing | Implemented for seven declared critical decisions: source-pinned isolated mutations target grant removal, operation replay payloads, published price identity, login backoff, abandoned first writes, queue capacity and route-ID redaction. Passing baselines and imported-copy identities are required. Killed, survived, invalid and timeout outcomes are recorded separately; survivors/invalid/timeouts fail a dedicated CI job. Real subprocess controls verify all four outcomes and cleanup. This finite gate is not an exhaustive mutation score. |
-| T19 | Time/locale/timezone boundaries | Partial: before/at/after boundaries cover HTTP and client total deadlines, plan/attempt expiry, trusted-context offset equivalence, wire-token/browser-session expiry and clock rollback, and exact login backoff opening times. Locale, DST and broader scheduling/deployment-clock cases remain. |
-| T20 | Executable documentation | Open. Run extracted documented Python/JS examples against controlled service boundaries. |
+| T19 | Time/locale/timezone boundaries | Implemented for the declared source boundaries: existing expiry/deadline/backoff cases now join six browser locale/timezone cases, UTC date filters across DST, exact cost display, local expiry conversion and rejection of nonexistent/ambiguous times (including half-hour changes and a skipped day). Scheduler ticks reject wall-clock dependencies and missed-interval replay after suspension. Deployment clock behavior remains a target qualification task. |
+| T20 | Executable documentation | Implemented for the two marked Python/JS accounting-v2 README examples. CI extracts their actual code fences verbatim, supplies synthetic inputs and exercises real authenticated HTTP handlers, SQLite event/receipt recovery and snapshots. Missing, duplicate, empty or retagged examples fail; one observation remains one unknown-cost attempt with no controlled execution. Other documentation examples and deployment/install commands retain their own checks. |
 
 All-skipped/empty-suite rejection and maintained-test inventories already block
 `tools.check`. Existing startup-hook checks use archive inspection without
@@ -316,3 +316,31 @@ reviewed budget changes remain under ignored `.artifacts/testing-review-followup
 `.artifacts/coverage/`, `.artifacts/concurrency-stress/` and `.artifacts/mutations/`.
 These local checks use disposable synthetic data and do not qualify physical
 power loss, arbitrary native waits or production throughput.
+
+Browser/platform batch validation runs 1,433 Python executions across 207 module
+invocations with no failures or unstable outcomes. The slowest uninstrumented
+module takes 11.76 seconds, within the 30-second budget. Measurements contain
+1,245 offline and 188 HTTP executions with no lock-audit violations. Offline
+coverage remains 90.28% (20,843/23,087); HTTP rises to 78.37%
+(18,094/23,087), covering 6,550 of 12,000 conditional exits. Combined coverage
+remains 92.78% (21,420/23,087) and 8,921 conditional exits, with all thirteen
+critical functions complete. HTTP budgets only tighten: 234 lines and 158 exits.
+
+Local browser validation combines all 381 existing journeys in the broad run
+with all 120 added cases in the final three-browser run. CI runs the complete
+501-case suite. The payload census waits for the final build response and checks
+the selected heading; the keyboard journey accepts and counts the single discard
+dialog. The expiry helper's twelve new statement/function counters are all hit;
+399 existing missing identities map exactly through the insertion and reviewed
+call replacement, without increasing coverage debt.
+
+Five available local client toolchains pass the portable package/consumer,
+contract, decoder and 28-case HTTP/TLS checks. The local Rust executable cannot
+run on this ARM64 host; the macOS/Windows matrix supplies separate Rust and
+Windows qualification. Platform reports identify current source/package inputs,
+not released N-1 packages. The two axe archives were inspected and their bytes
+match registry SHA-512 integrity; npm lifecycle scripts remain disabled. Source,
+hashes, focused corrections and raw results remain under ignored
+`.artifacts/testing-review-followup/`, `.artifacts/platform-clients/` and
+`.artifacts/coverage/`. Frozen deployment inputs, released-package skew and
+performance/soak qualification remain separate work.

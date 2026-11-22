@@ -93,9 +93,14 @@ Node's built-in `fetch` can decode a response before application code sees it,
 so this header alone is not a defense against an untrusted server. Keep the
 selected runtime at or above the fixed Node 24.22.1 patch level.
 
+Provide your trusted service `origin`, ingest credential, dataset/account/model
+IDs, complete `event` and `featureSnapshot` records. CI extracts and executes
+this example against a disposable service with synthetic records.
+
+<!-- executable-example: javascript-accounting-v2 -->
 ```js
 const {IntegrationClient} = require("@cognitivedynamics/ezllmrouter-client");
-const client = new IntegrationClient("http://127.0.0.1:48760", ingestToken, {version:"2"});
+const client = new IntegrationClient(origin, ingestToken, {version:"2"});
 const eligibility = await client.eligibility(datasetId, accountId, modelId);
 const receipt = await client.submitObservation(event); // one HTTP delivery, no model call
 const recovered = await client.recoverReceipt(datasetId, event.event_id);

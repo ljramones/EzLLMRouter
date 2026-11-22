@@ -14,6 +14,19 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def npm_command():
+    """Use Node directly so Windows does not need a command-shell/npm.cmd hop."""
+    executable = shutil.which("npm")
+    if executable is None:
+        raise RuntimeError("npm is required")
+    cli = Path(executable).resolve()
+    if cli.suffix.lower() == ".cmd":
+        cli = cli.parent / "node_modules/npm/bin/npm-cli.js"
+    if cli.name != "npm-cli.js" or not cli.is_file():
+        raise RuntimeError("Cannot locate the installed npm CLI")
+    return [shutil.which("node") or "node", str(cli)]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--http", action="store_true")
@@ -40,7 +53,7 @@ def run_checks(args):
         consumer = Path(directory)
         packed = subprocess.check_output(
             [
-                "npm",
+                *npm_command(),
                 "pack",
                 str(ROOT / "clients/js"),
                 "--offline",
@@ -57,7 +70,7 @@ def run_checks(args):
         (consumer / "package.json").write_text('{"private":true}')
         subprocess.run(
             [
-                "npm",
+                *npm_command(),
                 "install",
                 "--prefix",
                 directory,

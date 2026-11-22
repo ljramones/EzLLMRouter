@@ -244,6 +244,18 @@ async function sourceApiSetup(detail){
   }
   return box;
 }
+function sourceExpiry(value){
+  const date=new Date(value),local=instant=>[instant.getFullYear(),instant.getMonth()+1,instant.getDate(),
+    instant.getHours(),instant.getMinutes()].map((part,index)=>String(part).padStart(index===0?4:2,"0")).join(":");
+  const wanted=value.replace("T",":").replaceAll("-",":");
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)||local(date)!==wanted)
+    throw Error("Expiry is not a valid local time. Choose a time outside a daylight-saving gap.");
+  for(let minutes=-1440;minutes<=1440;minutes++){
+    if(minutes!==0&&local(new Date(date.getTime()+minutes*60000))===wanted)
+      throw Error("Expiry is ambiguous in your time zone. Choose a time outside the repeated clock hour.");
+  }
+  return date.toISOString();
+}
 function sourceCampaignForm(connection,deployments){
   const choices=deployments.filter(d=>d.configuration_ref).map(d=>[d.configuration_ref,
     d.serving_id+" · "+d.configuration_ref]);
@@ -262,7 +274,7 @@ function sourceCampaignForm(connection,deployments){
         connection_id:connection.connection_id,configuration_ref:v.configuration_ref,principal_id:"owner.local",
         currency:v.currency,allowance_decimal:v.allowance_decimal,per_request_decimal:v.per_request_decimal,
         max_requests:Number(v.max_requests),max_input_bytes:Number(v.max_input_bytes),
-        max_output_tokens:Number(v.max_output_tokens),expires_at:new Date(v.expires_at).toISOString()}}});
+        max_output_tokens:Number(v.max_output_tokens),expires_at:sourceExpiry(v.expires_at)}}});
     });
   form.box.insertBefore(node("p","This saves a draft only. Select the exact approved deployment, caller grant, currency and limits before activating. No provider call runs on save or activation.","scope-note"),form.box.firstChild);
   crudOpen(form);

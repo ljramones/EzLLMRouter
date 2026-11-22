@@ -113,3 +113,17 @@ class OperatorSchedulerTests(unittest.TestCase):
         self.assertEqual(
             logged.call_args_list, [call("operator_http.scheduler.probe_connection.failed")] * 2
         )
+
+    def test_wall_clock_changes_cannot_advance_delay_or_replay_scheduled_checks(self):
+        # DST, NTP correction and manual wall-clock changes must not be scheduling inputs.
+        with patch("time.time", side_effect=AssertionError("wall clock used for scheduling")):
+            registry, logged = self.run_schedule(
+                [[connection()]] * 6, [100, 109.999, 110, 110, 119.999, 120]
+            )
+        self.assertEqual(registry.probe_connection.call_count, 2)
+        logged.assert_not_called()
+
+    def test_long_suspend_probes_once_without_replaying_missed_intervals(self):
+        registry, logged = self.run_schedule([[connection()]] * 4, [0, 86400, 86400, 86410])
+        self.assertEqual(registry.probe_connection.call_count, 2)
+        logged.assert_not_called()

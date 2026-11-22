@@ -12,7 +12,7 @@ resolved = pathlib.Path(ezllmrouter_client.__file__).resolve(strict=True)
 assert resolved.is_relative_to(consumer / "lib"), resolved
 assert ezllmrouter_client.__version__ == "0.3.0"
 dist = importlib.metadata.distribution("cognitivedynamics-ezllmrouter-client")
-assert dist.requires == ["httpx==0.28.1"], dist.requires
+assert sorted(dist.requires) == ["httpcore==1.0.9", "httpx==0.28.1"], dist.requires
 print(
     json.dumps(
         {

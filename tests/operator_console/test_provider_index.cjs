@@ -20,6 +20,17 @@ const context=vm.createContext({state:{role:"registry_admin",view:"source_provid
     throw Error(route);}});
 runScript(fs.readFileSync(path.join(root,"web/source_pages.js"),"utf8"),context,{filename:path.join(root,"web/source_pages.js")});
 (async()=>{
+  const previousZone=process.env.TZ;
+  try{
+    process.env.TZ="UTC";
+    assert.equal(context.sourceExpiry("2030-01-02T03:04"),"2030-01-02T03:04:00.000Z");
+    for(const value of ["bad","2030-02-30T03:04"])
+      assert.throws(()=>context.sourceExpiry(value),/not a valid local time/);
+    process.env.TZ="America/Toronto";
+    assert.throws(()=>context.sourceExpiry("2030-03-10T02:30"),/daylight-saving gap/);
+    assert.throws(()=>context.sourceExpiry("2030-11-03T01:30"),/ambiguous/);
+    assert.equal(context.sourceExpiry("2030-11-03T03:30"),"2030-11-03T08:30:00.000Z");
+  }finally{if(previousZone===undefined)delete process.env.TZ;else process.env.TZ=previousZone;}
   await context.sourceIndex();
   assert.equal(title.textContent,"External Providers");
   assert.equal(view.children[1].children[0].value,"Add provider");

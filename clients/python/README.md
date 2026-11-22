@@ -13,10 +13,15 @@ its frozen HTTPX dependencies. HTTPX 0.28.1 and HTTPcore 1.0.9 are pinned becaus
 the total-deadline transport depends on their synchronous network-stream behavior;
 other dependency/Python versions are not qualified by this package.
 
+Provide your trusted service `origin`, ingest credential, dataset/account/model
+IDs, complete `event` and `feature_snapshot` records. CI extracts and executes
+this example against a disposable service with synthetic records.
+
+<!-- executable-example: python-accounting-v2 -->
 ```python
 from ezllmrouter_client import IntegrationClient, IntegrationClientError
 
-with IntegrationClient("http://127.0.0.1:48760", ingest_token, version="2") as client:
+with IntegrationClient(origin, ingest_token, version="2") as client:
     eligibility = client.eligibility(dataset_id, account_id, model_id)
     receipt = client.submit_observation(event)  # one HTTP delivery, no model call
     recovered = client.recover_receipt(dataset_id, event["event_id"])

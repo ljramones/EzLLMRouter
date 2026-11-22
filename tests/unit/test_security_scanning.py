@@ -132,9 +132,17 @@ class DependencyAuditTests(unittest.TestCase):
             for block in re.split(r"(?m)^  (?=[a-zA-Z0-9_-]+:\s*$)", source):
                 if "uv sync" in block:
                     with self.subTest(workflow=workflow, job=block.splitlines()[0]):
-                        self.assertIn("python3 -I -S tools/security_dependencies.py", block)
+                        interpreter = "python3"
+                        if "${{ matrix.python }} -I -S" in block:
+                            interpreter = "${{ matrix.python }}"
+                            self.assertEqual(
+                                set(re.findall(r"(?m)^\s+python: (\w+)\s*$", block)),
+                                {"python", "python3"},
+                            )
+                        preflight = interpreter + " -I -S tools/security_dependencies.py"
+                        self.assertIn(preflight, block)
                         self.assertLess(
-                            block.index("python3 -I -S tools/security_dependencies.py"),
+                            block.index(preflight),
                             block.index("uv sync"),
                         )
 

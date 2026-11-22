@@ -582,6 +582,43 @@ base is ARM64, and the fixture explicitly requests `linux/arm64`. The
 platforms. Setting `--platform` alone does not enable emulation on AMD64. A
 source/configuration unit check is not a passing Docker capability check.
 
+## Supported platform checks
+
+The service regression platforms are Linux and macOS. Windows is a client
+platform; the service depends on POSIX filesystem, locking and process behavior.
+The Docker profile retains its separately pinned Linux/ARM64 inputs and target
+qualification requirements.
+
+CI runs the six current client languages on Linux, macOS 15 and Windows 2025.
+The macOS/Windows consumer command is:
+
+```sh
+uv run --locked python tests/client_languages/platform_check.py
+```
+
+It requires the pinned Python 3.12.15, Node 24.22.1 and TypeScript 5.9.3,
+Go from `clients/go/.go-version`, Java 17, .NET 10 and Rust 1.90.0, plus OpenSSL
+for disposable TLS certificates. Use repeated `--client` arguments for focused
+local checks. Missing tools or failed builds fail the runner. The normal Rust
+build first resolves its declared dependencies; it does not claim a frozen
+transitive closure. No gateway dependency is acquired by these checks.
+
+Python installs the built wheel into a fresh client directory and uses HTTPX/
+HTTPcore from the locked development environment. JavaScript/TypeScript use a
+locally packed npm consumer; Java tests load the built JAR; .NET restores the
+local NuGet package into an empty cache; Rust checks a consumer of its unpacked
+crate; Go builds a fresh module with an explicit local replacement. Consumer
+paths contain Unicode and spaces. Each language runs the shared contract and
+decoder cases plus the owned HTTP/TLS matrix, without model requests.
+Ignored `.artifacts/platform-clients/summary.json` records platform, source
+commit, package hashes where applicable and completed results. These are current
+source checks, not a claim that an unpublished package is a previous release.
+
+The separate `macos-service` job runs offline and loopback source regressions
+with lock auditing. Existing Linux jobs retain coverage, timing and security
+gates. Platform CI does not qualify a persistent installation or authorize a
+profile restart.
+
 ## Browser journeys
 
 The Playwright suite exercises the real operator HTTP application, browser assets
@@ -620,6 +657,29 @@ traces, a JSON result file and an HTML report under ignored
 `.artifacts/playwright/`. Fixtures use synthetic credentials because traces can
 include entered values and HTTP bodies.
 Run `npm run report` to inspect the local HTML report.
+
+`console-contracts.ts` independently states the fields consumed by the 13 main
+screens. The payload test checks real responses, a navigation/response census
+and destructive field/type controls. Additional producer fields are allowed;
+nullable destinations and decimal strings retain their meanings.
+
+The pinned axe Playwright adapter/core 4.11.0 run WCAG A/AA rule tags through
+2.2 across every main screen and the declared accounting/authentication states.
+The suite also checks keyboard form entry/cancellation at 200% CSS zoom with
+reduced motion, and includes an unlabeled-control negative check. These checks
+do not replace screen-reader testing or establish full WCAG conformance.
+Six locale/timezone configurations cover UTC report dates and exact decimal
+display, DST gaps/folds, half-hour changes and Apia's skipped day. A personal
+allowance expiry entered in a nonexistent or repeated local minute is rejected
+before saving; select an unambiguous local time.
+
+The Python/JavaScript README accounting-v2 examples carry explicit
+`executable-example` markers. `test_documented_examples` extracts the actual
+code fences and supplies a trusted loopback origin, synthetic ingest credential,
+dataset/account/model IDs, event and feature snapshot. Both examples traverse
+real authenticated handlers and SQLite, with receipt/snapshot assertions and no
+model execution. The offline tier checks extraction; the HTTP tier executes the
+examples. Other code fences are not implicitly covered by this gate.
 
 ## Fixture and evidence organization
 
