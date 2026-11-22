@@ -1,0 +1,2 @@
+# Keep signed resources, frozen locks and source identities byte-identical on Windows.
+* text=auto eol=lf

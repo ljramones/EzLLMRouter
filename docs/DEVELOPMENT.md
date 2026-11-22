@@ -619,6 +619,12 @@ with lock auditing. Existing Linux jobs retain coverage, timing and security
 gates. Platform CI does not qualify a persistent installation or authorize a
 profile restart.
 
+The CI bootstrap lock includes separately inspected uv 0.13.9 wheels for Linux
+x86_64, macOS ARM64 and Windows x86_64. Exact filenames, hashes, metadata and hook
+inspection are recorded in `.github/bootstrap-inputs.json`. Platform jobs invoke
+the installed uv module through their bootstrap Python. Git attributes keep text
+at LF on Windows, preserving frozen lock continuations and source/resource hashes.
+
 ## Browser journeys
 
 The Playwright suite exercises the real operator HTTP application, browser assets

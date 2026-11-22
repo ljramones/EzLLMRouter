@@ -12,17 +12,26 @@ def errors(root: Path) -> list[str]:
     policy: dict[str, Any] = json.loads((root / ".github/bootstrap-inputs.json").read_text())
     failures = []
     uv = policy["uv"]
-    expected = f"uv=={uv['version']} --hash=sha256:{uv['sha256']}"
+    artifacts = [uv, *uv.get("platform_artifacts", [])]
+    expected = f"uv=={uv['version']} " + " ".join(
+        "--hash=sha256:" + artifact["sha256"] for artifact in artifacts
+    )
     lock = (root / ".github/requirements-bootstrap.lock").read_text()
     records = [
         line for line in lock.splitlines() if line.strip() and not line.lstrip().startswith("#")
     ]
     if records != [expected]:
         failures.append("bootstrap lock differs from reviewed wheel identity")
-    if (
-        not re.fullmatch("[0-9a-f]{64}", uv["sha256"])
-        or uv["startup_hooks"] != []
-        or uv["yanked"] is not False
+    if len({artifact["filename"] for artifact in artifacts}) != len(artifacts):
+        failures.append("duplicate bootstrap artifact")
+    if any(
+        not re.fullmatch("[0-9a-f]{64}", artifact["sha256"])
+        or artifact["startup_hooks"] != []
+        or artifact["yanked"] is not False
+        or not artifact["filename"].startswith(f"uv-{uv['version']}-py3-none-")
+        or not artifact["url"].startswith("https://files.pythonhosted.org/packages/")
+        or not artifact["url"].endswith("/" + artifact["filename"])
+        for artifact in artifacts
     ):
         failures.append("invalid/unreviewed bootstrap artifact")
     for path in sorted(

@@ -44,3 +44,20 @@ class BootstrapPinTests(unittest.TestCase):
         path = root / ".github/workflows/check.yml"
         path.write_text(path.read_text().replace("--force-reinstall ", "", 1))
         self.assertTrue(errors(root), "an existing installation must not bypass wheel verification")
+
+    def test_every_platform_wheel_requires_matching_hash_and_clean_review(self):
+        import json
+
+        for change in (
+            {"startup_hooks": ["unexpected.pth"]},
+            {"yanked": True},
+            {"filename": "uv-0.0.0-py3-none-win_amd64.whl"},
+            {"sha256": "0" * 64},
+        ):
+            for index in range(2):
+                root = self.copy()
+                path = root / ".github/bootstrap-inputs.json"
+                data = json.loads(path.read_text())
+                data["uv"]["platform_artifacts"][index].update(change)
+                path.write_text(json.dumps(data))
+                self.assertTrue(errors(root), (index, change))

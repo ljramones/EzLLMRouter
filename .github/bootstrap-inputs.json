@@ -1,5 +1,5 @@
 {
-  "reviewed_on": "2026-11-21",
+  "reviewed_on": "2026-11-22",
   "uv": {
     "version": "0.13.9",
     "filename": "uv-0.13.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -10,7 +10,33 @@
     "metadata_sha256": "3d7a16584f536474489b8632f1c00f42d6edb2c4620e382c0087e2a202bc18e7",
     "startup_hooks": [],
     "archive_members": 12,
-    "scope": "Linux x86_64 CI bootstrap only; no local installation performed"
+    "scope": "Linux x86_64 bootstrap artifact; additional reviewed platform_artifacts select macOS ARM64 and Windows x86_64.",
+    "platform_artifacts": [
+      {
+        "filename": "uv-0.13.9-py3-none-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/f3/a7/a8d7b074798c7fb3b26b37584b8fe2e29df2ccdc24ce7902caab2a53edbf/uv-0.13.9-py3-none-macosx_11_0_arm64.whl",
+        "sha256": "66c512266d633bef48384a1f53003f41f2a8e7b36fe6e7fbfd3e0fd52d96fa63",
+        "yanked": false,
+        "metadata_source": "https://pypi.org/pypi/uv/0.13.9/json",
+        "metadata_sha256": "3d7a16584f536474489b8632f1c00f42d6edb2c4620e382c0087e2a202bc18e7",
+        "startup_hooks": [],
+        "archive_members": 12,
+        "reviewed_on": "2026-11-22",
+        "scope": "macOS ARM64 CI bootstrap"
+      },
+      {
+        "filename": "uv-0.13.9-py3-none-win_amd64.whl",
+        "url": "https://files.pythonhosted.org/packages/dd/ef/ceeabf3631117f7354787d9fb1ffe943899e59ed4b887a696ed547e47e76/uv-0.13.9-py3-none-win_amd64.whl",
+        "sha256": "6a44b2ed8111d2f60d2b92627c5dccda3f7ed7570b18ce115e569cd68c28246b",
+        "yanked": false,
+        "metadata_source": "https://pypi.org/pypi/uv/0.13.9/json",
+        "metadata_sha256": "3d7a16584f536474489b8632f1c00f42d6edb2c4620e382c0087e2a202bc18e7",
+        "startup_hooks": [],
+        "archive_members": 13,
+        "reviewed_on": "2026-11-22",
+        "scope": "Windows x86_64 CI bootstrap"
+      }
+    ]
   },
   "setup_dotnet": {
     "commit": "26b0ec14cb23fa6904739307f278c14f94c95bf1",
