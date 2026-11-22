@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import tempfile
 import subprocess
+import shutil
+import sys
 import unittest
 
 from tools.container_tests import resolve, staged_sources, test_commands as commands
@@ -109,6 +111,34 @@ class ContainerValidationTests(unittest.TestCase):
             if not key.endswith("dev07_target_preflight.py")
         }
         self.assertTrue(resolve(recipe, "service", staged))
+
+    def test_staged_preflight_can_import_its_shared_source_layout_helper(self):
+        gateway = self.root / "gateway"
+        for target, source in staged_sources().items():
+            if target.startswith("service/gateway/tools/"):
+                destination = gateway / target.removeprefix("service/gateway/")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        script = (
+            "import sys,pathlib; sys.path.insert(0,sys.argv[1]); "
+            "import tools.gateway.paths as helper; "
+            "assert pathlib.Path(helper.__file__).resolve()==pathlib.Path(sys.argv[1],'tools/gateway/paths.py').resolve()"
+        )
+        result = subprocess.run(
+            [sys.executable, "-I", "-B", "-c", script, str(gateway)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        (gateway / "tools/gateway/paths.py").unlink()
+        result = subprocess.run(
+            [sys.executable, "-I", "-B", "-c", script, str(gateway)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0, "missing staged helper inherited a host package")
 
     def test_removing_the_image_files_invalidates_a_later_validation(self):
         recipe = "FROM scratch\nCOPY tests/ /app/tests/\nWORKDIR /app\nRUN rm -rf /app\nRUN python -m unittest tests.test_sample\n"

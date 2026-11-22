@@ -65,7 +65,15 @@ def build_clients(root, destination):
         stdout=subprocess.DEVNULL,
     )
     subprocess.run(
-        ["npm", "pack", "--offline", "--pack-destination", str(destination), "./clients/js"],
+        [
+            "npm",
+            "pack",
+            "--offline",
+            "--ignore-scripts",
+            "--pack-destination",
+            str(destination),
+            "./clients/js",
+        ],
         check=True,
         cwd=root,
         stdout=subprocess.DEVNULL,
@@ -155,6 +163,7 @@ def source_mapping(
         ("tools/gateway/service_main.py", "service/gateway/service_main.py"),
         ("tools/__init__.py", "service/gateway/tools/__init__.py"),
         ("tools/gateway/__init__.py", "service/gateway/tools/gateway/__init__.py"),
+        ("tools/gateway/paths.py", "service/gateway/tools/gateway/paths.py"),
         ("tools/gateway/asgi_adapter.py", "service/gateway/tools/gateway/asgi_adapter.py"),
         ("tools/gateway/receiver.py", "receiver/receiver.py"),
         ("tools/gateway/evidence/python_text.py", "python/actors/python_text.py"),

@@ -464,7 +464,7 @@ def topology(env):
             "worker",
             "python",
             "-c",
-            "import os,socket,json,base64; from choice_b_wire import send,receive; "
+            "import os,socket,json,base64; from ezllmrouter_worker.ipc import send,receive; "
             "s=socket.socket(socket.AF_UNIX); s.connect(os.environ['EZLLMROUTER_SENDER_SOCKET']); "
             "send(s,{'kind':'final_request','attempt_id':'attempt.'+'0'*32,'method':'POST',"
             "'url':'http://127.0.0.1:8766/v1/chat/completions','headers':[],"

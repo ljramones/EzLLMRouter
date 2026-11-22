@@ -7757,7 +7757,7 @@
     {
       "path": "tools/gateway/stage.py",
       "code": "S603",
-      "source_sha256": "1742080b355b84c78dbdc4d6dfb6ef891c133696d71fd3603a6d0bbb5a38df69",
+      "source_sha256": "42109c5c2a9c47a7722ee9d5a729be2817c7a926cf342a3733bf8ebb85c8cd75",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
@@ -7765,21 +7765,21 @@
           "column": 5,
           "symbol": "build_clients",
           "statement_sha256": "307151c531f5b559d72e67f5e7e970ac4731715805101d47697ff40a76777d94",
-          "context_sha256": "eec5822c198c2115eb71afe643db5772189e501241d11713512c139e3d5156cf"
+          "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         },
         {
           "line": 67,
           "column": 5,
           "symbol": "build_clients",
-          "statement_sha256": "55d126a65021a96a60a9d1fc9a2d56213b8064a0aa1acc2abed208e8539e6546",
-          "context_sha256": "eec5822c198c2115eb71afe643db5772189e501241d11713512c139e3d5156cf"
+          "statement_sha256": "3a5b02ebb67ecfed37a0d0fed1acfc8a9bbc6aad002a9c065b18c24655b84968",
+          "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         }
       ]
     },
     {
       "path": "tools/gateway/stage.py",
       "code": "S607",
-      "source_sha256": "1742080b355b84c78dbdc4d6dfb6ef891c133696d71fd3603a6d0bbb5a38df69",
+      "source_sha256": "42109c5c2a9c47a7722ee9d5a729be2817c7a926cf342a3733bf8ebb85c8cd75",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
@@ -7787,14 +7787,14 @@
           "column": 9,
           "symbol": "build_clients",
           "statement_sha256": "307151c531f5b559d72e67f5e7e970ac4731715805101d47697ff40a76777d94",
-          "context_sha256": "eec5822c198c2115eb71afe643db5772189e501241d11713512c139e3d5156cf"
+          "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         },
         {
           "line": 68,
           "column": 9,
           "symbol": "build_clients",
-          "statement_sha256": "55d126a65021a96a60a9d1fc9a2d56213b8064a0aa1acc2abed208e8539e6546",
-          "context_sha256": "eec5822c198c2115eb71afe643db5772189e501241d11713512c139e3d5156cf"
+          "statement_sha256": "3a5b02ebb67ecfed37a0d0fed1acfc8a9bbc6aad002a9c065b18c24655b84968",
+          "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         }
       ]
     },

@@ -12,6 +12,7 @@ import sys
 import sysconfig
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 from tools.gateway.stage import inspect_wheel, source_mapping
@@ -107,6 +108,32 @@ MODULES = (
 
 
 class GatewayPackagingTests(unittest.TestCase):
+    def test_topology_probe_imports_from_the_actual_isolated_worker(self):
+        from deploy.local import local_profile
+        from tools.gateway.worker_package import stage_worker
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            with (
+                patch.object(local_profile, "command") as command,
+                patch.object(local_profile, "receiver_count", return_value=0),
+                patch.object(local_profile, "STATE", directory),
+            ):
+                local_profile.topology({})
+            probe = next(
+                call.args[1][-1]
+                for call in command.call_args_list
+                if call.args[0] == "forged-attempt"
+            )
+            imports = [
+                node
+                for node in ast.parse(probe).body
+                if isinstance(node, (ast.Import, ast.ImportFrom))
+            ]
+            script = ast.unparse(ast.Module(body=imports, type_ignores=[]))
+            stage_worker(ROOT, directory / "ezllmrouter_worker")
+            self.child(script, [directory], directory)
+
     def test_python_distributions_have_one_implementation_namespace(self):
         import tomllib
         from ezllmrouter_client import EzLLMRouterClient
