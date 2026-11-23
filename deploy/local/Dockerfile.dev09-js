@@ -1,5 +1,7 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
+RUN --network=none --mount=type=bind,source=os-inputs,target=/opt/ezllmrouter/os-inputs,readonly \
+    sh /opt/ezllmrouter/os-inputs/install.sh
 ENV npm_config_cache=/tmp/ezllmrouter-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 COPY client-metadata.json client.tgz.sha256 /opt/ezllmrouter/
 RUN --mount=type=bind,source=client.tgz,target=/opt/ezllmrouter/client.tgz,readonly \
@@ -7,7 +9,8 @@ RUN --mount=type=bind,source=client.tgz,target=/opt/ezllmrouter/client.tgz,reado
  && mkdir -p /app/consumer \
  && cd /app/consumer \
  && npm install /opt/ezllmrouter/client.tgz --offline --ignore-scripts --no-audit --no-fund --no-package-lock \
- && rm -rf /tmp/ezllmrouter-npm-cache \
+ && rm -rf /tmp/ezllmrouter-npm-cache /usr/local/lib/node_modules /opt/yarn-* \
+ && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx /usr/local/bin/yarn /usr/local/bin/yarnpkg \
  && chmod 0555 /app /app/consumer
 COPY --chmod=0444 dev09_js_actor.cjs dev10_js_actor.cjs /app/consumer/
 RUN node -e "const m=require('/opt/ezllmrouter/client-metadata.json'); const p=require('/app/consumer/node_modules/'+m.name+'/package.json'); if(p.version!==m.version)process.exit(1)"

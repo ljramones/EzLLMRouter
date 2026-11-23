@@ -12,8 +12,15 @@ import tomllib
 from typing import Any, Callable
 from urllib.parse import urlsplit, unquote
 import xml.etree.ElementTree as ET
+from tools.gateway.os_inputs import (
+    LOCK as OS_LOCK,
+    INSTALLER as OS_INSTALLER,
+    load_lock as load_os_lock,
+)
 
 INPUTS = (
+    OS_LOCK,
+    OS_INSTALLER,
     ".github/bootstrap-inputs.json",
     "uv.lock",
     "clients/python/uv.lock",
@@ -113,7 +120,22 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
         raw = path.read_bytes()
         text = raw.decode()
         hashes[name] = hashlib.sha256(raw).hexdigest()
-        if name.endswith("uv.lock"):
+        if name == OS_LOCK:
+            data = load_os_lock(root)
+            for row in data["packages"]:
+                add("Debian:" + data["version_id"], row["source"], row["source_version"], name)
+                artifact(
+                    name,
+                    row["package"],
+                    row["version"],
+                    digest("sha256:" + row["sha256"]),
+                    url=row["url"],
+                    architecture=row["architecture"],
+                    filename=row["filename"],
+                )
+        elif name == OS_INSTALLER:
+            pass  # Exact bytes are bound by the reviewed OS lock above.
+        elif name.endswith("uv.lock"):
             for package in tomllib.loads(text)["package"]:
                 package_name, version = package["name"], exact(package["version"])
                 source = package.get("source", {})

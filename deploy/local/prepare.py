@@ -184,8 +184,10 @@ def main():
         raise SystemExit("EZLLMROUTER_ARTIFACT_ROOT is required; see deploy/local/README.md")
     artifact = Path(artifact).resolve()
     from tools.gateway.frozen_inputs import verify_custody
+    from tools.gateway.os_inputs import verify_archives
 
     verify_custody(ROOT, artifact)
+    verify_archives(ROOT, artifact)
     STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(STATE, 0o700)
     source_hash = fingerprint()
@@ -369,6 +371,11 @@ def prepare_work(work, run, source_hash, artifact):
         f"{js_digest}  /opt/ezllmrouter/client.tgz\n"
         + f"{hashlib.sha256(js_metadata.read_bytes()).hexdigest()}  /opt/ezllmrouter/client-metadata.json\n"
     )
+    from tools.gateway.os_inputs import stage_archives
+
+    os_inputs = json.loads((work / "source-build-manifest.json").read_text())["os_inputs"]
+    extra_os = stage_archives(ROOT, artifact, build, contexts=("dev09_js",))
+    os_inputs["files"].extend(extra_os["files"])
     identity = {
         "commit": git("rev-parse", "HEAD"),
         "tree": git("rev-parse", "HEAD^{tree}"),
@@ -408,6 +415,7 @@ def prepare_work(work, run, source_hash, artifact):
         "dirty": identity["dirty"],
         "build_dir": str(run / "build"),
         "artifact_root": str(artifact),
+        "os_inputs": os_inputs,
         "dev09_client_reuse": reused_client,
         "source_packet": str(run / source_packet),
         "dev09_client_wheel_sha256": client_digest,

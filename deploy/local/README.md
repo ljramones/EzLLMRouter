@@ -7,7 +7,8 @@ accounting console is documented in the [project README](../../README.md).
 ## Inputs
 
 Use a verified artifact store containing `ARTIFACT-CUSTODY.json` and `inputs/`,
-the frozen 117-wheel set and pinned base images. Python and JavaScript clients
+the frozen 117-wheel set, [reviewed offline Debian archives](inputs/os/README.md)
+and pinned base images. Python and JavaScript clients
 are built offline from the current repository sources and recorded by hash.
 Build metadata is in [inputs/](inputs/README.md). Preparation verifies hashes
 locally; it does not download replacement dependencies or pull images.
@@ -75,6 +76,16 @@ helpers. Build it before those roles start; the profile and qualification wrappe
 do this automatically. All final Python images remove pip/ensurepip, and the final
 JavaScript consumer removes global npm/corepack/yarn. Pinned upstream build images
 retain vendor tooling and require separate security review.
+
+The current OS selection uses Debian 13 (Trixie) while retaining Python 3.12.16
+and Node 24.22.3. The separate seven-archive OS lock supplies the reviewed glibc,
+OpenSSL, zlib and base-files updates without network access during builds.
+Preserve the original artifact store and add the selected archives to a fresh
+store as described in the [OS input guide](inputs/os/README.md). Staging binds
+archive bytes and the build-only installer to the source packet. Final images
+also remove APT; package consistency and an exact removal census protect the
+remaining installed packages. Cached older images can still be reused; rebuilding
+requires fresh preparation with these inputs.
 
 The source-only `python -m tools.container_tests` check invokes the same pure
 validation staging helpers, including profile preflights, and follows Docker

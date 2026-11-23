@@ -1,12 +1,12 @@
 """Qualify Compose's credential permissions and persistent volume in an isolated project."""
 
 import argparse
-import ast
 import errno
 import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import uuid
@@ -72,14 +72,9 @@ def inside(phase=1, *, reader=False):
 
 
 def base_image(root):
-    tree = ast.parse((root / "deploy/local/local_profile.py").read_text())
-    image = next(
-        node.value.value
-        for node in tree.body
-        if isinstance(node, ast.Assign)
-        and any(isinstance(name, ast.Name) and name.id == "BASE" for name in node.targets)
-    )
-    if "@sha256:" not in image:
+    data = json.loads((root / "deploy/local/inputs/os/debian13-arm64.lock.json").read_text())
+    image = data["bases"]["python"]["reference"]
+    if not re.fullmatch(r"docker.io/library/python@sha256:[0-9a-f]{64}", image):
         raise ValueError("immutable fixture base image required")
     return image
 

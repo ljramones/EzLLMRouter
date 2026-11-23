@@ -113,6 +113,7 @@ MODULES = (
     "tests.unit.test_coordinator_outcomes",
     "tests.unit.test_security_boundaries",
     "tests.unit.test_deployment_safety",
+    "tests.unit.test_os_inputs",
     "tests.unit.test_deployment_cleanup",
     "tests.unit.test_startup_recovery",
     "tests.unit.test_accounting_recovery",

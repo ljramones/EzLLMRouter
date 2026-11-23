@@ -264,7 +264,7 @@
     {
       "path": "deploy/local/prepare.py",
       "code": "S603",
-      "source_sha256": "5fb5484d5af3b5c62d2d0cdad0f34b7ee37cf0bfcf7f545cb0b2124b5f7e97a6",
+      "source_sha256": "d73bfb5fad67e9e7dcf58619011b846d2b4afffa54ef0228512a1631a7db8237",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
@@ -282,32 +282,32 @@
           "context_sha256": "8abf223d924ad43265a10e1ce63270e256ee293ab2711813fcfd2dad03becb68"
         },
         {
-          "line": 232,
+          "line": 234,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "444c5a3d93804c7501584dfd7cf31d8f66acb565b636348e72ce5cc0699e3cf1",
-          "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
+          "context_sha256": "236ef9da7152472a771db42b336e9b62bc31accd2a2181d721a5ba9566eebda9"
         },
         {
-          "line": 255,
+          "line": 257,
           "column": 9,
           "symbol": "prepare_work",
           "statement_sha256": "9e9f40e07aa45099513aed5ac97e2243d761b1eb187fe9d28aafcf780ccb62c7",
-          "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
+          "context_sha256": "236ef9da7152472a771db42b336e9b62bc31accd2a2181d721a5ba9566eebda9"
         },
         {
-          "line": 273,
+          "line": 275,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "36dee8f55a90edbf596d0c2858a08d7f3cd08d40328a25b22a881aafa5727690",
-          "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
+          "context_sha256": "236ef9da7152472a771db42b336e9b62bc31accd2a2181d721a5ba9566eebda9"
         },
         {
-          "line": 350,
+          "line": 352,
           "column": 5,
           "symbol": "prepare_work",
           "statement_sha256": "9ee6ce19e03d4233c11245e4fd9f25ca6ac0e2b704a8027c0c77c4ba3bd38b3d",
-          "context_sha256": "be01783fcf7509bb4a75b08ca3298370bb00c420580f85c9694b4a01dda049fc"
+          "context_sha256": "236ef9da7152472a771db42b336e9b62bc31accd2a2181d721a5ba9566eebda9"
         }
       ]
     },
@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "c63ca5e64a60d4507784320e64ddf1f3a1eb892ccc17e1c29565b93924cb9b8b",
+      "source_sha256": "432b10419f1b19627f032f620946944ca7f1512a31b69338d1eae18d9f0c1b3f",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 253,
+          "line": 254,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 342,
+          "line": 343,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 486,
+          "line": 487,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "c63ca5e64a60d4507784320e64ddf1f3a1eb892ccc17e1c29565b93924cb9b8b",
+      "source_sha256": "432b10419f1b19627f032f620946944ca7f1512a31b69338d1eae18d9f0c1b3f",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 254,
+          "line": 255,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 343,
+          "line": 344,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 600,
+          "line": 601,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -7757,18 +7757,18 @@
     {
       "path": "tools/gateway/stage.py",
       "code": "S603",
-      "source_sha256": "c51f96227b3565a6e000f527a34d0975cf4fad79a09e32d6855513157610b6e1",
+      "source_sha256": "c024d5bee2fde26023f8eadcb1de6db04e004b886bf934cbef9d900ac7a8a1ed",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 53,
+          "line": 55,
           "column": 5,
           "symbol": "build_clients",
           "statement_sha256": "307151c531f5b559d72e67f5e7e970ac4731715805101d47697ff40a76777d94",
           "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         },
         {
-          "line": 67,
+          "line": 69,
           "column": 5,
           "symbol": "build_clients",
           "statement_sha256": "3a5b02ebb67ecfed37a0d0fed1acfc8a9bbc6aad002a9c065b18c24655b84968",
@@ -7779,18 +7779,18 @@
     {
       "path": "tools/gateway/stage.py",
       "code": "S607",
-      "source_sha256": "c51f96227b3565a6e000f527a34d0975cf4fad79a09e32d6855513157610b6e1",
+      "source_sha256": "c024d5bee2fde26023f8eadcb1de6db04e004b886bf934cbef9d900ac7a8a1ed",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 54,
+          "line": 56,
           "column": 9,
           "symbol": "build_clients",
           "statement_sha256": "307151c531f5b559d72e67f5e7e970ac4731715805101d47697ff40a76777d94",
           "context_sha256": "cfff8bbe29e91ca7ea5f4f7e212b639f576ecaa60ac043a5b26e562b29e0c4b5"
         },
         {
-          "line": 68,
+          "line": 70,
           "column": 9,
           "symbol": "build_clients",
           "statement_sha256": "3a5b02ebb67ecfed37a0d0fed1acfc8a9bbc6aad002a9c065b18c24655b84968",
@@ -8269,18 +8269,18 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "d0256047139949941c381b05a6b699ca3c95f01b4edfd62676235e0b9647ed03",
+      "source_sha256": "feef6fac17b5dbfc84064f908036b269e76f8dd138cf23f82600830396dfc62a",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 351,
+          "line": 373,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
           "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 369,
+          "line": 391,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",

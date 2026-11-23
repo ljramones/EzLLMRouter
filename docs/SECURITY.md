@@ -159,6 +159,13 @@ checked in the actual images, including the derived Python image used by ingress
 and namespace helpers. Upstream build images retain their own tooling and remain
 separately inventoried. Removing installers does not clear OS advisories.
 
+The [Debian OS lock](../deploy/local/inputs/os/README.md) adds a separately
+reviewed set of signed-index/hash-checked archives. Its role closures and installer
+identity enter source staging and dependency inventories. Actual image checks
+verify installed versions and removal of APT tooling. The 117 frozen wheels are
+unchanged by this OS transition. Release acceptance still requires review of all
+remaining advisory findings and the qualified target's evidence.
+
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery
 material outside documentation and evidence exports.

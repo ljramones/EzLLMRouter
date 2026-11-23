@@ -13,9 +13,11 @@ import zipfile
 
 if __package__:
     from .worker_package import source_mapping as worker_sources
+    from .os_inputs import stage_archives, verify_archives
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from worker_package import source_mapping as worker_sources
+    from os_inputs import stage_archives, verify_archives
 
 
 CLIENT_DEPS = {"anyio", "certifi", "h11", "httpcore", "httpx", "idna", "typing-extensions"}
@@ -289,6 +291,9 @@ def main():
     if build.exists():
         raise ValueError("build context collision")
     artifact_root = os.environ.get("EZLLMROUTER_ARTIFACT_ROOT")
+    if not artifact_root:
+        raise ValueError("EZLLMROUTER_ARTIFACT_ROOT is required for reviewed OS inputs")
+    verify_archives(root, Path(artifact_root))
     wheel_dir = (
         (Path(artifact_root) / "inputs/gateway-inputs/dev04/wheels")
         if artifact_root
@@ -363,6 +368,7 @@ def main():
             f"{row['name']}=={row['version']} --hash=sha256:{row['sha256']}\n" for row in all_client
         )
     )
+    os_inputs = stage_archives(root, Path(artifact_root), build)
     manifest = {
         "source_files": rows,
         "gateway_wheels": len(wheels),
@@ -371,6 +377,7 @@ def main():
             client_source.name: sha(client_source),
             js_source.name: sha(js_source),
         },
+        "os_inputs": os_inputs,
     }
     (run / "source-build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     source_output.mkdir(parents=True, exist_ok=True, mode=0o700)

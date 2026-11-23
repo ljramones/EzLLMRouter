@@ -1,0 +1,143 @@
+{
+  "format": "ezllmrouter-debian-inputs-v1",
+  "suite": "trixie",
+  "version_id": "13",
+  "architecture": "arm64",
+  "reviewed_at": "2026-11-23T01:15:24Z",
+  "bases": {
+    "python": {
+      "reference": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
+      "config_sha256": "sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
+      "runtime_version": "3.12.16",
+      "dockerfile": {
+        "url": "https://raw.githubusercontent.com/docker-library/python/3d7e95597e56a415d9e4abc0f15877e005d2cb2e/3.12/slim-trixie/Dockerfile",
+        "sha256": "2a40fb4db33a3b136ced0600587c66493d27a449d218e1643033bd586982fec4"
+      }
+    },
+    "node": {
+      "reference": "docker.io/library/node@sha256:510b934906506f9bdc870448de519d4a403af85cc5cd7cc37521ad598782e8f4",
+      "config_sha256": "sha256:510b934906506f9bdc870448de519d4a403af85cc5cd7cc37521ad598782e8f4",
+      "runtime_version": "24.22.3",
+      "dockerfile": {
+        "url": "https://raw.githubusercontent.com/nodejs/docker-node/1274f3ee37d4d0e59d308ea25b83d9e21e4db862/24/trixie-slim/Dockerfile",
+        "sha256": "861e0b554c40aa4d3e089ca13c08716ddf9e60dd1d945bd62934173a246d7c59"
+      }
+    }
+  },
+  "authentication": {
+    "method": "APT verified signed InRelease and package-index SHA-256; no insecure or unauthenticated options",
+    "keyring_sha256": "506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017",
+    "inrelease_sha256": {
+      "deb.debian.org_debian_dists_trixie-updates_InRelease": "076b8950d0c42ed99c37e0c689487eab8d4fc918bbe17a92995568ad2d357469",
+      "deb.debian.org_debian_dists_trixie_InRelease": "bfacad4ca61899ce20d4a0d439f29339f66541561b67506364efb88e27dee870",
+      "security.debian.org_debian-security_dists_trixie-security_InRelease": "6594343424d41a49919534585b630ece98cdacf3ce0eb9a9000b77a215401399"
+    }
+  },
+  "packages": [
+    {
+      "package": "base-files",
+      "version": "13.8+deb13u8",
+      "source": "base-files",
+      "source_version": "13.8+deb13u8",
+      "architecture": "arm64",
+      "filename": "base-files_13.8+deb13u8_arm64.deb",
+      "bytes": 88320,
+      "sha256": "893616b7ce203a05a0528652f7d754cc5e3de7e8eff3b396f95383a5b8b1c668",
+      "url": "https://deb.debian.org/debian/pool/main/b/base-files/base-files_13.8+deb13u8_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    },
+    {
+      "package": "libc-bin",
+      "version": "2.41-12+deb13u5",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "architecture": "arm64",
+      "filename": "libc-bin_2.41-12+deb13u5_arm64.deb",
+      "bytes": 552664,
+      "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1",
+      "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    },
+    {
+      "package": "libc6",
+      "version": "2.41-12+deb13u5",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "architecture": "arm64",
+      "filename": "libc6_2.41-12+deb13u5_arm64.deb",
+      "bytes": 2488872,
+      "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5",
+      "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6_2.41-12+deb13u5_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    },
+    {
+      "package": "libssl3t64",
+      "version": "3.5.9-1~deb13u1",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1",
+      "architecture": "arm64",
+      "filename": "libssl3t64_3.5.9-1~deb13u1_arm64.deb",
+      "bytes": 2775368,
+      "sha256": "18edc2b123e8e81efcc14ea5502454b4505285aa9d3325c22315e9304acb25ca",
+      "url": "https://deb.debian.org/debian/pool/main/o/openssl/libssl3t64_3.5.9-1~deb13u1_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    },
+    {
+      "package": "openssl-provider-legacy",
+      "version": "3.5.9-1~deb13u1",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1",
+      "architecture": "arm64",
+      "filename": "openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb",
+      "bytes": 319708,
+      "sha256": "007165f42b5cecf71674a047480f96035e290c2f0c5102030cb186481bb8dc84",
+      "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    },
+    {
+      "package": "openssl",
+      "version": "3.5.9-1~deb13u1",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1",
+      "architecture": "arm64",
+      "filename": "openssl_3.5.9-1~deb13u1_arm64.deb",
+      "bytes": 1484280,
+      "sha256": "fe9c979716871f260fa50a920298036896677dd0a74a34c5589c18635cdef4b5",
+      "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1_arm64.deb",
+      "roles": [
+        "python"
+      ]
+    },
+    {
+      "package": "zlib1g",
+      "version": "1:1.3.dfsg+really1.3.1-1+deb13u1",
+      "source": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1+deb13u1",
+      "architecture": "arm64",
+      "filename": "zlib1g_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb",
+      "bytes": 85028,
+      "sha256": "0e41b3d7ad8ad7fcd36dd4d61ca91a70018478fc4af652e044f4be770784ddff",
+      "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ]
+    }
+  ],
+  "installer_sha256": "e0d250e6deb9578abf63dac578d2bfcdb77b3a490f9c30118ea9d7ca95344b43"
+}

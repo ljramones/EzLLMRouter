@@ -15,6 +15,7 @@ from pathlib import Path
 
 from deploy.local import local_profile as profile
 from tools.qualification_storage import cold_copy, owned_volume
+from tools.gateway.os_inputs import verify_staging as verify_os_staging
 
 
 def write(path: Path, value: object) -> None:
@@ -22,6 +23,7 @@ def write(path: Path, value: object) -> None:
 
 
 def validate_staging(build: dict) -> str:
+    verify_os_staging(build)
     root = Path(build["build_dir"])
     overlays = {row["path"]: row for row in build["overlays"]}
     with zipfile.ZipFile(build["source_packet"]) as packet:
@@ -59,6 +61,8 @@ def select(state: Path, project: str) -> None:
 
 def build_images(build: dict, env: dict[str, str], project: str) -> dict:
     result = {}
+    bases = verify_os_staging(build)["bases"]
+    os_lock = build["os_inputs"]["lock"]
     for kind in ("runtime_python", "receiver", "worker", "service", "python", "js"):
         image = project + ":" + kind
         key = {
@@ -68,7 +72,9 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
         }.get(kind, "EZLLMROUTER_" + kind.upper() + "_IMAGE")
         env[key] = image
         argument, base = (
-            ("NODE_IMAGE", profile.NODE) if kind == "js" else ("PYTHON_IMAGE", profile.BASE)
+            ("NODE_IMAGE", bases["node"]["reference"])
+            if kind == "js"
+            else ("PYTHON_IMAGE", bases["python"]["reference"])
         )
         profile.command(
             "build-" + kind,
@@ -102,6 +108,35 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
             "architecture": row["Architecture"],
             "base": base,
         }
+        raw, _ = profile.command(
+            "runtime-os-" + kind,
+            [
+                *profile.DOCKER,
+                "run",
+                "--rm",
+                "--network=none",
+                "--read-only",
+                "--cap-drop=ALL",
+                "--security-opt=no-new-privileges:true",
+                row["Id"],
+                "dpkg-query",
+                "-W",
+                "-f=${binary:Package}\t${Version}\t${db:Status-Status}\n",
+            ],
+            env,
+        )
+        installed = {}
+        for line in raw.splitlines():
+            name, version, status = line.split("\t")
+            if status == "installed":
+                installed[name.split(":", 1)[0]] = version
+        role = "node" if kind == "js" else "python"
+        selected = [item for item in os_lock["packages"] if role in item["roles"]]
+        if any(installed.get(item["package"]) != item["version"] for item in selected):
+            raise ValueError("runtime OS differs from reviewed package inputs")
+        if {"apt", "libapt-pkg7.0", "sqv"} & set(installed):
+            raise ValueError("APT tooling remains in runtime")
+        result[kind]["os_lock_sha256"] = build["os_inputs"]["lock_sha256"]
         probe = (
             [
                 "node",
@@ -323,6 +358,9 @@ def run(build: dict, output: Path) -> dict:
                 "tools/qualification_storage.py",
                 "deploy/local/local_profile.py",
                 "deploy/local/check.py",
+                "tools/gateway/os_inputs.py",
+                "deploy/local/install_os.sh",
+                "deploy/local/inputs/os/debian13-arm64.lock.json",
             )
         },
     }

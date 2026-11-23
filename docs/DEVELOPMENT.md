@@ -495,6 +495,13 @@ Legacy parity/tool-cycle staging now uses the same verified offline client wheel
 and freshly built SDKs. Their historical complete runner wrappers are separate
 from the currently qualified disposable profile.
 
+The source preflight also validates the reviewed Debian OS lock and its installer
+hash using only the standard library. The input inventory records binary archive
+hashes and source-package versions for Debian advisory queries. Private archive
+bytes are verified separately during preparation; the PR source gate does not
+claim to have installed them. Builders compare staged OS inputs with their source
+packet before Docker executes. See the [OS input guide](../deploy/local/inputs/os/README.md).
+
 CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.
 Reinstallation prevents an existing same-version package from bypassing archive

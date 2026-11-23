@@ -22,6 +22,7 @@ if not __package__:
     sys.path.insert(0, str(ROOT / "server/src"))
 from deploy.local.command_support import capture, record
 from deploy.local.check import exercise, readback, wait_health
+from tools.gateway.os_inputs import load_lock, verify_staging as verify_os_staging
 
 from ezllmrouter_server.private_files import read_private, write_private
 
@@ -29,10 +30,9 @@ LOCAL = ROOT / "deploy/local"
 STATE = LOCAL / ".state"
 COMPOSE = LOCAL / "compose.yaml"
 PROJECT = "ezllmrouter-local"
-BASE = "docker.io/library/python@sha256:df540bfd30bd380e89a349611ce42aa67bcb542d58c047706616eb6ba2f86a1b"
-NODE = (
-    "docker.io/library/node@sha256:5f8fabfed57b75127de2f584593d67a9e8c90e6b0f65652871f9ef0f759c0299"
-)
+BASES = load_lock(ROOT)["bases"]
+BASE = BASES["python"]["reference"]
+NODE = BASES["node"]["reference"]
 DOCKER_CONTEXT = os.environ.get("EZLLMROUTER_DOCKER_CONTEXT") or os.environ.get("DOCKER_CONTEXT")
 DOCKER = ["docker", *(["--context", DOCKER_CONTEXT] if DOCKER_CONTEXT else [])]
 
@@ -303,6 +303,7 @@ def backup_live_store(env):
 
 
 def build_images(build, env):
+    bases = verify_os_staging(build)["bases"] if "os_inputs" in build else None
     source = Path(build["build_dir"])
     for kind in ("runtime_python", "receiver", "worker", "service"):
         image = env[
@@ -315,6 +316,8 @@ def build_images(build, env):
         )
         if present == 0:
             continue
+        if bases is None:
+            raise ValueError("prepare reviewed OS inputs before rebuilding this staging context")
         command(
             "build-" + kind,
             [
@@ -323,7 +326,7 @@ def build_images(build, env):
                 "--pull=false",
                 "--network=none",
                 "--build-arg",
-                "PYTHON_IMAGE=" + BASE,
+                "PYTHON_IMAGE=" + bases["python"]["reference"],
                 "-t",
                 image,
                 "-f",
@@ -335,10 +338,11 @@ def build_images(build, env):
 
 
 def build_dev07_actors(build, env):
+    bases = verify_os_staging(build)["bases"] if "os_inputs" in build else None
     source = Path(build["build_dir"])
     for kind, image_key, base, argument in (
-        ("python", "EZLLMROUTER_DEV07_PYACTOR_IMAGE", BASE, "PYTHON_IMAGE"),
-        ("js", "EZLLMROUTER_DEV07_JSACTOR_IMAGE", NODE, "NODE_IMAGE"),
+        ("python", "EZLLMROUTER_DEV07_PYACTOR_IMAGE", "python", "PYTHON_IMAGE"),
+        ("js", "EZLLMROUTER_DEV07_JSACTOR_IMAGE", "node", "NODE_IMAGE"),
     ):
         image = env[image_key]
         _, present = command(
@@ -346,6 +350,9 @@ def build_dev07_actors(build, env):
         )
         if present == 0:
             continue
+        if bases is None:
+            raise ValueError("prepare reviewed OS inputs before rebuilding this staging context")
+        base = bases[base]["reference"]
         command(
             "build-dev07-" + kind,
             [

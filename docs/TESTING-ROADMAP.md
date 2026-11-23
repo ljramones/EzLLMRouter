@@ -243,6 +243,20 @@ external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
 
+## Debian OS remediation, 2026-11-22
+
+The current source selects digest-pinned Debian 13 bases with the existing
+Python 3.12.16 and Node 24.22.3 runtimes. Seven authenticated, hash-pinned Debian
+archives update base-files, glibc, OpenSSL and zlib; no worker wheel changes are
+part of this transition. The source-packet/staging checks bind every selected
+archive and the installer. Offline candidate builds passed exact installed-version,
+package-integrity and three-package APT-removal checks. Their preliminary OS audit
+retains 88 unrated matches, compared with 163 in the previous Bookworm snapshot;
+this difference includes distribution/package scope changes and is not a count
+of independently proven fixed exploits. Full deployment and native-library
+qualification remains pending for this source selection. Private review evidence
+is under ignored `.artifacts/debian-remediation/`.
+
 ## Testing follow-up review, 2026-11-21
 
 The owner's `EzLLMRouter-testing-review-followup-2026-11-21.md` reviewed
