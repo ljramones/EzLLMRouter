@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "e93478157285d0f2f22591f4350af0a53f36eaa4ca183f28b7ec4064f82143b4",
+      "source_sha256": "66e3f896ae50f412479fa21ce2e20ece708e8a9cda02d162fade609147fdab8a",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 260,
+          "line": 261,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 349,
+          "line": 350,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 493,
+          "line": 494,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "e93478157285d0f2f22591f4350af0a53f36eaa4ca183f28b7ec4064f82143b4",
+      "source_sha256": "66e3f896ae50f412479fa21ce2e20ece708e8a9cda02d162fade609147fdab8a",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 261,
+          "line": 262,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 350,
+          "line": 351,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 607,
+          "line": 608,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "aa74eb895bc2752c23cd73062e8dcaf1a1a2d9f6ad7b955cd82e1906d65db769",
+      "source_sha256": "06a986f17e389d54ce42b9ee94ce61355e4eebed4297faccf14d3a67ec00a51e",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8471,6 +8471,28 @@
           "symbol": "Workload._seed",
           "statement_sha256": "530af0816b9d3f57d7433bc3087c0977f01d00fbb73c4bb930b1b1b9382f0642",
           "context_sha256": "3a364309ca083eb939bcd7c4b16e42bdbddb7820aa6fbc7f4ad0e9c143ce6790"
+        }
+      ]
+    },
+    {
+      "path": "tools/security_resolutions.py",
+      "code": "S603",
+      "source_sha256": "993e62ed985cfa102e9e66c10c7fb4c0b6689eb4c980632c0ce57a267fe44d53",
+      "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted.",
+      "findings": [
+        {
+          "line": 92,
+          "column": 11,
+          "symbol": "capture",
+          "statement_sha256": "d28fa2bb725182ccc1ad4f9aaf140aff4eb6bd0f5acaa44a22fa815fab5ea600",
+          "context_sha256": "b8aacdc8266be69b9c02f720fb481ddec77f0161a10e7dfc267eb2063ed6d414"
+        },
+        {
+          "line": 123,
+          "column": 22,
+          "symbol": "capture",
+          "statement_sha256": "80df2e650bec632a416040e1eb359d7a4b1182d9e12efa18b92c76a6268427e3",
+          "context_sha256": "b8aacdc8266be69b9c02f720fb481ddec77f0161a10e7dfc267eb2063ed6d414"
         }
       ]
     }

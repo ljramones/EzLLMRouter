@@ -532,6 +532,18 @@ a CVSS score. Withdrawn entries must have a valid withdrawal time. Metadata outa
 incomplete batches, repeated/unconsumed page tokens and identity mismatches fail;
 saved page evidence must reproduce the retained aggregate. These failures never establish a clean
 audit. No scan automatically upgrades dependencies or changes frozen inputs.
+
+For an actual-image release audit, an explicitly selected reviewed component
+catalog can resolve source-package matches whose affected binary component is
+absent. Add `--component-reviews tools/security_component_reviews.json` to
+`python -m tools.release_inventory --query` with the existing `--rust`,
+`--qualification` and fresh `--output` arguments. The tool repeats immutable-image
+file and code checks, retains the raw report and writes `dispositions.json`.
+The exit status uses the effective blocker count; the default command still
+uses raw findings. The seven-day catalog must be reviewed again when advisory,
+artifact, source attribution or component evidence changes. An expired review
+fails rather than silently extending an exemption.
+
 `--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
 than seven days fail. Network advisory qualification remains separate from the
 offline scanner regressions, which use explicitly synthetic advisory responses.

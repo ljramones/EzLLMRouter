@@ -87,6 +87,7 @@ MODULES = (
     "tests.unit.test_maintenance_crashes",
     "tests.unit.test_lineage_traversal",
     "tests.unit.test_security_scanning",
+    "tests.unit.test_security_resolutions",
     "tests.unit.test_security_gate_followup",
     "tests.unit.test_secret_scanning",
     "tests.unit.test_bootstrap_pins",

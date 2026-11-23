@@ -1,0 +1,389 @@
+{
+  "format": "ezllmrouter-component-reviews-v1",
+  "reviewed_at": "2026-11-23T18:57:11.389259+00:00",
+  "expires_at": "2026-11-30T18:57:11.389259+00:00",
+  "packages": {
+    "libacl1": {
+      "binary_version": "2.3.2-2+b1",
+      "source": "acl",
+      "source_version": "2.3.2-2",
+      "architecture": "arm64",
+      "archive_sha256": "10b2399169e42e6d8db55944116cb2ed61caab997cf700acb83de0b0668e5721",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libacl.so.1",
+        "/usr/lib/aarch64-linux-gnu/libacl.so.1.1.2302"
+      ],
+      "code_set_sha256": "bcf60f0b7986d95cd85ad1bae76a06ddff16c340875d813e47203b5c0547da82",
+      "payload_manifest_sha256": "3a5ff36ad1b17fa68c4f93c295ffb248d0f08242bd4d901451052cbce5537ef5"
+    },
+    "libattr1": {
+      "binary_version": "1:2.5.2-3",
+      "source": "attr",
+      "source_version": "1:2.5.2-3",
+      "architecture": "arm64",
+      "archive_sha256": "25057d7bfba969a76cdf18ae88ce7ff6e664520726ddf02cdde97c03d5e9a43c",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libattr.so.1",
+        "/usr/lib/aarch64-linux-gnu/libattr.so.1.1.2502"
+      ],
+      "code_set_sha256": "e6b447ea9ae770d30059dfa8d3376f3017f2b439bb81060f3713c02d6af95b6d",
+      "payload_manifest_sha256": "4308dbc7623637b4c8035bd774c4fe09a3771ac825156576db0f346253e240fa"
+    },
+    "libncursesw6": {
+      "binary_version": "6.5+20250216-2",
+      "source": "ncurses",
+      "source_version": "6.5+20250216-2",
+      "architecture": "arm64",
+      "archive_sha256": "72121aeb08be2d915da321ddfae74f62a0764286f336279b2c2609ba07496d6d",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libformw.so.6",
+        "/usr/lib/aarch64-linux-gnu/libformw.so.6.5",
+        "/usr/lib/aarch64-linux-gnu/libmenuw.so.6",
+        "/usr/lib/aarch64-linux-gnu/libmenuw.so.6.5",
+        "/usr/lib/aarch64-linux-gnu/libncursesw.so.6",
+        "/usr/lib/aarch64-linux-gnu/libncursesw.so.6.5",
+        "/usr/lib/aarch64-linux-gnu/libpanelw.so.6",
+        "/usr/lib/aarch64-linux-gnu/libpanelw.so.6.5"
+      ],
+      "code_set_sha256": "b61aa181d497829ce646328e475c0f9fccf5182b6314a2be6a676208ab032a9c",
+      "payload_manifest_sha256": "47a3393d1ea070fe8dd00cea6f06746a19bbdf2abf1238b9bead12a6a24a9674"
+    },
+    "libtinfo6": {
+      "binary_version": "6.5+20250216-2",
+      "source": "ncurses",
+      "source_version": "6.5+20250216-2",
+      "architecture": "arm64",
+      "archive_sha256": "2a747f7fff3c2347c357387a7133df997410f07ba1b1df1a1461a97bd7fbc2fc",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libtic.so.6",
+        "/usr/lib/aarch64-linux-gnu/libtic.so.6.5",
+        "/usr/lib/aarch64-linux-gnu/libtinfo.so.6",
+        "/usr/lib/aarch64-linux-gnu/libtinfo.so.6.5"
+      ],
+      "code_set_sha256": "2e4f84dbf871b7e0c135e6c9de3ffd6b225e46c75447841ceac890e7e4046dbb",
+      "payload_manifest_sha256": "bce1734ead72a406c309f7192de904aaf188d361af684849db3c2426a85e4e64"
+    },
+    "libuuid1": {
+      "binary_version": "2.41.5-0+deb13u1",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "architecture": "arm64",
+      "archive_sha256": "448ad6b190184dbff24508ef2eda88bd737a5ffc0f9750eb779fcf9885292bea",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libuuid.so.1",
+        "/usr/lib/aarch64-linux-gnu/libuuid.so.1.3.0"
+      ],
+      "code_set_sha256": "0ec1efcb1b64730732ea862c25c9420abed69753dd7488ab6810c86f0bbbb5bb",
+      "payload_manifest_sha256": "d657cef9e97ecd5e2fc0284c4fe02f062dea2e0e8e7e843a57246f7c41ed6de5"
+    },
+    "ncurses-base": {
+      "binary_version": "6.5+20250216-2",
+      "source": "ncurses",
+      "source_version": "6.5+20250216-2",
+      "architecture": "all",
+      "archive_sha256": "190e775260a38973c415a36ae99f33ad1b37ea6ca99929d7c5d53843fc23e914",
+      "code_files": [],
+      "code_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "payload_manifest_sha256": "5cbe3e6ec1e1dac39a4e778def58ec5160ba1a4b4adcdd00cb7bc817dc54d326"
+    },
+    "perl-base": {
+      "binary_version": "5.40.1-6+deb13u1",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "architecture": "arm64",
+      "archive_sha256": "4cee6f6b5b4b501d82118c56aa31bbefc2491415bc03a00e21bdacff2406b288",
+      "code_files": [
+        "/usr/bin/perl",
+        "/usr/bin/perl5.40.1",
+        "/usr/lib/aarch64-linux-gnu/perl-base/AutoLoader.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Carp.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Carp/Heavy.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Config.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Cwd.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/DynaLoader.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Errno.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Exporter.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Exporter/Heavy.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Fcntl.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Basename.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Glob.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Path.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Spec.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Spec/Unix.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/File/Temp.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/FileHandle.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Getopt/Long.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Getopt/Long/Parser.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Hash/Util.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/File.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Handle.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Pipe.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Seekable.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Select.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Socket.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Socket/INET.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Socket/IP.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IO/Socket/UNIX.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IPC/Open2.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/IPC/Open3.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/List/Util.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/POSIX.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Scalar/Util.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/SelectSaver.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Socket.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Symbol.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Text/ParseWords.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Text/Tabs.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Text/Wrap.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/Tie/Hash.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/XSLoader.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/attributes.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/Cwd/Cwd.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/Fcntl/Fcntl.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/File/Glob/Glob.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/Hash/Util/Util.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/IO/IO.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/List/Util/Util.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/POSIX/POSIX.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/Socket/Socket.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/attributes/attributes.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/auto/re/re.so",
+        "/usr/lib/aarch64-linux-gnu/perl-base/base.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/builtin.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/bytes.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/constant.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/feature.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/fields.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/integer.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/lib.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/locale.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/overload.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/overloading.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/parent.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/re.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/strict.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/utf8.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/vars.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/warnings.pm",
+        "/usr/lib/aarch64-linux-gnu/perl-base/warnings/register.pm"
+      ],
+      "code_set_sha256": "98cdc339790c069826fa28f5a4a3a9d9d92db1545a888b570e3dc5204a7450b3",
+      "payload_manifest_sha256": "66d8d9c1f36d891eec018077b9a29ef4b50a5ab113b463405adf6bd42f1d9f54"
+    }
+  },
+  "reviews": [
+    {
+      "id": "DEBIAN-CVE-2026-76642",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "3b70080988c8bd4e550dfa50ce16565fb3c70dfc47a3fa0335dd0f214800f785",
+      "cna_sha256": "aa82394bad099f4719310a62a36f5b26a3d457f35159968e6d5cab4359d2eb2e",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "mount",
+        "umount"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected libmount mount-helper/hook code is outside the retained libuuid1 archive; mount/libmount packages and executable copies are absent.",
+      "upstream_references": [
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-m25x-3hj9-m26f",
+        "https://github.com/util-linux/util-linux/commit/f57cea130839c0af8dc0525274267ae4cfd66bbf",
+        "https://github.com/util-linux/util-linux/commit/1d14676ea70003e9f5b2a6a76af0cadb1190411a",
+        "https://github.com/util-linux/util-linux/commit/a15c00a9e545aa8b9cf6ec0f888ff6c7b3eaeedc",
+        "https://github.com/util-linux/util-linux/blob/v2.42.2/libmount/src/context_mount.c#L476",
+        "https://github.com/util-linux/util-linux/blob/v2.42.2/libmount/src/context_mount.c#L892",
+        "https://github.com/util-linux/util-linux",
+        "https://www.vulncheck.com/advisories/util-linux-libmount-privilege-escalation-via-failed-mount-helper"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-78408",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "b4d7c79cb6d85fbcb3103d8e8ff24c0998533a09477d17ce9e111926773ff736",
+      "cna_sha256": "758b9f2f52558899b5632cde3a80eb882cf8f4b295f3fe503a8f2f425e4c42ee",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "nsenter"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected nsenter executable is absent; retained libuuid1 code matches its signed Debian archive.",
+      "upstream_references": [
+        "https://access.redhat.com/errata/RHSA-2026:63162",
+        "https://access.redhat.com/errata/RHSA-2026:93461",
+        "https://access.redhat.com/errata/RHSA-2026:95365",
+        "https://access.redhat.com/security/cve/CVE-2026-78408",
+        "https://bugzilla.redhat.com/show_bug.cgi?id=2522497",
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-55fx-f4gg-cfhj"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-78409",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "51a0291dc04b872b364e0e08d449beeed5c7a53dda2b2cbc2fe56063ea43b1a9",
+      "cna_sha256": "0421881715f8df619b1ea7aa3060784bae2db9db3952a77f7eb01f8ea15e8d6c",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "mount"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected libmount subdirectory mounting code is absent from the retained libuuid1 archive and the inspected image.",
+      "upstream_references": [
+        "https://access.redhat.com/errata/RHSA-2026:63162",
+        "https://access.redhat.com/security/cve/CVE-2026-78409",
+        "https://bugzilla.redhat.com/show_bug.cgi?id=2522607",
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-8f2p-47x3-43mv"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-78410",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "6a64229359fafc9c25c7b1cb2a8a78ba1738d1771cc5f830659b87fa8c653e8b",
+      "cna_sha256": "0ae20866a7949e29fee48dd88290279017dd9a36ae0697730430345135af13ab",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "mount"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected privileged mount/fstab code is absent from the retained libuuid1 archive and the inspected image.",
+      "upstream_references": [
+        "https://access.redhat.com/errata/RHSA-2026:63162",
+        "https://access.redhat.com/errata/RHSA-2026:93461",
+        "https://access.redhat.com/errata/RHSA-2026:95365",
+        "https://access.redhat.com/security/cve/CVE-2026-78410",
+        "https://bugzilla.redhat.com/show_bug.cgi?id=2522684",
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-rh77-686x-2f2m"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-54370",
+      "ecosystem": "Debian:13",
+      "source": "acl",
+      "source_version": "2.3.2-2",
+      "advisory_sha256": "e537fbaeb71d6ed2b61c88828d0f42baef9206c47010a1a719684c8c57dfdd0e",
+      "cna_sha256": "b78415030fff89c0de32be1802a560e11c2fcc4702f56f01170caf37d52dfafa",
+      "allowed_binaries": [
+        "libacl1"
+      ],
+      "absent_executables": [
+        "getfacl",
+        "setfacl",
+        "chacl"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected ACL utility traversal paths are absent; the retained libacl1 bytes are verified separately. This does not resolve the distinct libacl pathname API finding CVE-2026-54369.",
+      "upstream_references": [
+        "https://cgit.git.savannah.nongnu.org/cgit/acl.git/commit/?id=3589787cd589b34bdd9265936e17190b6d3f17d1",
+        "https://cgit.git.savannah.nongnu.org/cgit/acl.git/commit/?id=24a227d0ab8576612194f8a56c2314389adc74a5",
+        "https://www.vulncheck.com/advisories/acl-toctou-symlink-traversal-via-getfacl-setfacl-chacl"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-54371",
+      "ecosystem": "Debian:13",
+      "source": "attr",
+      "source_version": "1:2.5.2-3",
+      "advisory_sha256": "6e7ce85a65138927be43e571bb212fef78d7034471bd48d1d108104ece52f6b4",
+      "cna_sha256": "40e37200c9bedbfd8116e1bc1d03e67dc8af97f93367636af1f7a54797a2bed3",
+      "allowed_binaries": [
+        "libattr1"
+      ],
+      "absent_executables": [
+        "getfattr",
+        "setfattr"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected attribute utilities are absent; only the exact reviewed libattr1 library artifact is retained.",
+      "upstream_references": [
+        "https://cgit.git.savannah.nongnu.org/cgit/attr.git/commit/?id=c440855d6b33446edf4b5eb1a2d892281f15a99b",
+        "https://cgit.git.savannah.nongnu.org/cgit/attr.git/commit/?id=49f79e947270f06940b9100fa638f85dddc4aa7f",
+        "https://www.vulncheck.com/advisories/attr-symlink-traversal-privilege-escalation-via-getfattr-setfattr"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2025-69720",
+      "ecosystem": "Debian:13",
+      "source": "ncurses",
+      "source_version": "6.5+20250216-2",
+      "advisory_sha256": "aef053cbfd4c1c150b11cd20a063c459fb57317e0ff9a357da43985651769052",
+      "cna_sha256": "d9b704db9e739d5c3f3266acd4bfaa730a410dd4d4f63d60c60ec3a6c0f026e1",
+      "allowed_binaries": [
+        "libncursesw6",
+        "libtinfo6",
+        "ncurses-base"
+      ],
+      "absent_executables": [
+        "infocmp"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected progs/infocmp.c utility is absent; retained ncurses libraries/data match their reviewed binary package split.",
+      "upstream_references": [
+        "https://marc.info/?l=ncurses-bug&m=176539968328570&w=2",
+        "https://marc.info/?l=ncurses-bug&m=176540731801330&w=2",
+        "https://marc.info/?l=ncurses-bug&m=176545557728083&w=2",
+        "https://github.com/Cao-Wuhui/CVE-2025-69720",
+        "https://invisible-island.net/archives/ncurses/6.5/",
+        "https://invisible-island.net/ncurses/"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-82560",
+      "ecosystem": "Debian:13",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "advisory_sha256": "c915ca87d8cd5b3cf3e638bf7d47cb81a0ac4c37b3a12adc6180a81811fc00c0",
+      "cna_sha256": "824239e9579a64c46cc4414a4c22d032c81b79dcdc24f18731a67c4cb5ee6fdc",
+      "allowed_binaries": [
+        "perl-base"
+      ],
+      "absent_executables": [],
+      "absent_perl_modules": [
+        "Pod/Text.pm",
+        "Pod/Text.pmc"
+      ],
+      "reason": "The affected Pod::Text module is not part of the retained perl-base archive and no unpacked module or module-directory alias is present in the image.",
+      "upstream_references": [
+        "https://metacpan.org/release/RRA/podlators-v6.1.0/source/lib/Pod/Text.pm#L245-261",
+        "https://github.com/rra/podlators/commit/70510174f69eb54aa6d617bde4e1402cd9b7c61f.patch",
+        "https://metacpan.org/release/RRA/podlators-v6.1.1/changes"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-9538",
+      "ecosystem": "Debian:13",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "advisory_sha256": "25a5c33aee92d7f7c7e508db892edb76c3485010943da568c4ca2e361f84cefe",
+      "cna_sha256": "db79967e7eb5596eac6824d4c77c739f49413f1147571ea38ac9dceca458a654",
+      "allowed_binaries": [
+        "perl-base"
+      ],
+      "absent_executables": [],
+      "absent_perl_modules": [
+        "Archive/Tar.pm",
+        "Archive/Tar.pmc"
+      ],
+      "reason": "The affected Archive::Tar module is not part of the retained perl-base archive and no unpacked module or module-directory alias is present in the image.",
+      "upstream_references": [
+        "https://github.com/jib/archive-tar-new/commit/f9af01426038e29d9578825a0cd3626946ab08c7.patch",
+        "https://metacpan.org/release/BINGOS/Archive-Tar-3.10/changes"
+      ]
+    }
+  ],
+  "scope": "Exact matched Debian binary package artifacts only; no exemption for other bundled copies or retained-library interfaces"
+}

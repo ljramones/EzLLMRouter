@@ -183,7 +183,14 @@ def main() -> int:
     parser.add_argument("--qualification", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--query", action="store_true")
+    parser.add_argument(
+        "--component-reviews",
+        type=Path,
+        help="apply reviewed artifact-bound component dispositions while retaining raw findings",
+    )
     args = parser.parse_args()
+    if args.component_reviews and not args.query:
+        parser.error("--component-reviews requires --query")
     args.output.mkdir(parents=True, exist_ok=False)
     data = inventory()
     source_hashes = {}
@@ -247,16 +254,40 @@ def main() -> int:
         (args.output / "attribution.json").write_text(
             json.dumps(attribution(issues, captured), indent=2) + "\n"
         )
+        dispositions = None
+        if args.component_reviews:
+            from tools.security_resolutions import capture, evaluate, load_policy
+
+            policy = load_policy(args.component_reviews)
+            proofs = {name: capture(image, policy) for name, image in captured.items()}
+            dispositions = evaluate(issues, snapshot, captured, proofs, policy)
+            (args.output / "dispositions.json").write_text(
+                json.dumps(dispositions, indent=2) + "\n"
+            )
         print(
             json.dumps(
                 {
                     "packages": len(rows),
                     "findings": len(issues),
                     "blocking": sum(row["blocking"] for row in issues),
+                    **(
+                        {
+                            "resolved_component_matches": dispositions[
+                                "resolved_component_matches"
+                            ],
+                            "effective_blocking": dispositions["effective_blocking"],
+                        }
+                        if dispositions
+                        else {}
+                    ),
                 }
             )
         )
-        return int(any(row["blocking"] for row in issues))
+        return (
+            int(dispositions["effective_blocking"] > 0)
+            if dispositions
+            else int(any(row["blocking"] for row in issues))
+        )
     return 0
 
 

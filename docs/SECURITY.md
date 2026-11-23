@@ -184,6 +184,20 @@ records a canonical metadata hash; it does not prove absence of renamed, archive
 or statically embedded code, or waive source-package advisories for retained
 libraries.
 
+An explicit component review can resolve a source-package match for a binary
+package that does not contain the affected component. The
+[review catalog](../tools/security_component_reviews.json) binds each case to
+the complete advisory hash, exact binary/source versions, signed-index archive
+hash and reviewed library/module code hashes, including executable aliases.
+`tools.release_inventory --query --component-reviews PATH` checks those bytes
+and the complete file census again in each immutable image. All attributed
+sources must pass; an added binary, changed code/advisory, missing component
+check or expired review leaves the match blocked. Reviews last at most seven
+days. Raw findings and severity remain unchanged in `findings.json`; the
+separate `dispositions.json` records the effective gate and per-image reasons.
+This review covers the matched Debian artifacts only and grants no exemption
+to other bundled copies or unreviewed native interfaces.
+
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery
 material outside documentation and evidence exports.
