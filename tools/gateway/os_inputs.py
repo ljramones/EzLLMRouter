@@ -8,8 +8,15 @@ import json
 from pathlib import Path
 import re
 import shutil
+import sys
 import zipfile
 from urllib.parse import urlsplit
+
+if __package__:
+    from . import native_inputs
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import native_inputs
 
 LOCK = "deploy/local/inputs/os/debian13-arm64.lock.json"
 INSTALLER = "deploy/local/install_os.sh"
@@ -82,9 +89,7 @@ def validate_lock(data: dict) -> None:
             raise ValueError("missing authenticated Debian package origin")
         origins["forky"] = "14"
     if data["format"] == "ezllmrouter-debian-inputs-v4":
-        from tools.gateway.native_inputs import validate
-
-        validate(data)
+        native_inputs.validate(data)
     elif "native_build" in data or any("native_build" in row for row in data["packages"]):
         raise ValueError("native builds require the v4 lock")
     removals = data.get("runtime_removals")
@@ -177,18 +182,14 @@ def load_lock(root: Path) -> dict:
     ):
         raise ValueError("reviewed Debian installer identity mismatch")
     if "native_build" in data:
-        from tools.gateway.native_inputs import verify_recipes
-
-        verify_recipes(root, data["native_build"])
+        native_inputs.verify_recipes(root, data["native_build"])
     return data
 
 
 def verify_archives(root: Path, store: Path) -> dict:
     data = load_lock(root)
     if "native_build" in data:
-        from tools.gateway.native_inputs import verify_outputs
-
-        verify_outputs(store, data["native_build"])
+        native_inputs.verify_outputs(store, data["native_build"])
     directory = store / STORE
     if directory.is_symlink() or not directory.resolve().is_relative_to(store.resolve()):
         raise ValueError("linked Debian artifact directory")
@@ -222,10 +223,8 @@ def stage_archives(root: Path, store: Path, build: Path, contexts=CONTEXTS) -> d
             shutil.copy2(store / STORE / row["filename"], directory / row["filename"])
         native = data.get("native_build") if role == "node" else None
         if native:
-            from tools.gateway.native_inputs import directory as native_directory
-
             shutil.copy2(
-                native_directory(store, native) / native["node"]["filename"],
+                native_inputs.directory(store, native) / native["node"]["filename"],
                 directory / "NODE_RUNTIME",
             )
         removals = "".join(name + "\n" for name in data["runtime_removals"])
