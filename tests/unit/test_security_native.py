@@ -58,6 +58,9 @@ class NativeReviewTests(unittest.TestCase):
                     for name in self.native["packages"]
                     if role != "node" or name != "openssl"
                 ],
+                "application_packages": []
+                if role == "node"
+                else [{"name": "cryptography", "version": self.native["cryptography"]["version"]}],
             }
             for role, digit in (("service", "1"), ("node", "2"))
         }
@@ -169,12 +172,35 @@ class NativeReviewTests(unittest.TestCase):
             "openssl": "OpenSSL 3.5.9+ezllmrouter1 reviewed",
             "crypto_openssl": "OpenSSL 4.0.3 old bundled copy",
             "cryptography": self.native["cryptography"]["version"],
+            "crypto_object_exists": True,
         }
         with patch(
             "tools.security_native.subprocess.check_output",
             side_effect=[hashes, json.dumps(versions)],
         ):
             self.assertFalse(capture(self.images["service"], self.native)["valid"])
+
+    def test_runtime_without_crypto_requires_absence_of_both_module_and_native_object(self):
+        image = self.images["service"]
+        image["application_packages"] = []
+        for present in (False, True):
+            for installed in (False, True):
+                versions = {
+                    "openssl": "OpenSSL 3.5.9+ezllmrouter1 reviewed",
+                    "cryptography": self.native["cryptography"]["version"] if installed else None,
+                    "crypto_openssl": "OpenSSL 4.0.3 old" if installed else None,
+                    "crypto_object_exists": present,
+                }
+                with (
+                    self.subTest(object_present=present, module_present=installed),
+                    patch(
+                        "tools.security_native.subprocess.check_output",
+                        side_effect=["c" * 64 + "  /reviewed/library.so\0", json.dumps(versions)],
+                    ),
+                ):
+                    self.assertEqual(
+                        capture(image, self.native)["valid"], not present and not installed
+                    )
 
     def test_added_openssl_binary_keeps_runtime_unreviewed(self):
         self.images["node"]["os_packages"].append(

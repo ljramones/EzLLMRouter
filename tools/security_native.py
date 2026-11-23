@@ -10,14 +10,28 @@ from deploy.local.local_profile import DOCKER
 from tools.gateway.os_inputs import LOCK
 from tools.security_resolutions import canonical
 
+CRYPTO_OBJECT = "/usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so"
+PYTHON_VERSIONS = """import ssl,json,importlib.util,os
+data={'openssl':ssl.OPENSSL_VERSION,'cryptography':None,'crypto_openssl':None,
+      'crypto_object_exists':os.path.lexists('/usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so')}
+if importlib.util.find_spec('cryptography') is not None:
+    import importlib.metadata
+    from cryptography.hazmat.backends.openssl.backend import backend
+    data.update(cryptography=importlib.metadata.version('cryptography'),crypto_openssl=backend.openssl_version_text())
+print(json.dumps(data))
+"""
+
 
 def capture(image: dict, native: dict) -> dict:
     identity = image["image"]["id"]
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", identity):
         raise ValueError("immutable image required for native review")
     role = "node" if "node@sha256:" in image["image"]["base"] else "python"
+    has_crypto = any(row["name"] == "cryptography" for row in image.get("application_packages", []))
     expected = {
-        row["path"]: row["sha256"] for row in native["code"] if row["role"] in {"all", role}
+        row["path"]: row["sha256"]
+        for row in native["code"]
+        if row["role"] in {"all", role} and (row["path"] != CRYPTO_OBJECT or has_crypto)
     }
     prefix = [
         *DOCKER,
@@ -63,7 +77,7 @@ def capture(image: dict, native: dict) -> dict:
             "python",
             "-I",
             "-c",
-            "import ssl,json,importlib.metadata; from cryptography.hazmat.backends.openssl.backend import backend; print(json.dumps({'openssl':ssl.OPENSSL_VERSION,'crypto_openssl':backend.openssl_version_text(),'cryptography':importlib.metadata.version('cryptography')}))",
+            PYTHON_VERSIONS,
         ]
     versions = json.loads(subprocess.check_output([*prefix, *command], text=True, timeout=60))
     if role == "node":
@@ -74,12 +88,21 @@ def capture(image: dict, native: dict) -> dict:
         }
     else:
         version_prefix = "OpenSSL " + native["openssl_version"] + " "
-        valid = (
-            valid
-            and versions["openssl"].startswith(version_prefix)
-            and versions["crypto_openssl"].startswith(version_prefix)
-            and versions["cryptography"] == native["cryptography"]["version"]
-        )
+        valid = valid and versions["openssl"].startswith(version_prefix)
+        if has_crypto:
+            valid = (
+                valid
+                and versions["crypto_object_exists"]
+                and versions["crypto_openssl"].startswith(version_prefix)
+                and versions["cryptography"] == native["cryptography"]["version"]
+            )
+        else:
+            valid = (
+                valid
+                and not versions["crypto_object_exists"]
+                and versions["cryptography"] is None
+                and versions["crypto_openssl"] is None
+            )
     return {
         "image": identity,
         "native_build": native["id"],

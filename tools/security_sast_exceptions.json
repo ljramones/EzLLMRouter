@@ -8499,22 +8499,22 @@
     {
       "path": "tools/security_native.py",
       "code": "S603",
-      "source_sha256": "878a147cece5c78ff0551e81540759ff5686da0030fcc0dc52b34f5b6c5b2b6b",
-      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell.",
+      "source_sha256": "f9a2ce636c48a15108b2cfd04415ef9838af96bf462f3958f950757b40872659",
+      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions.",
       "findings": [
         {
-          "line": 32,
+          "line": 46,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "381dfa7cabb67be51af4f5f1eecf7ea7135534267775904c74afc6de221a730d",
-          "context_sha256": "55efe09ba0ef639bce6ff02428e3097241fbbc1ad028c8e823229ff97a0c0fbc"
+          "context_sha256": "400e7479493f388d645b09b0496c608c4c2cf717517bbc5fb86badd464fdb25e"
         },
         {
-          "line": 68,
+          "line": 82,
           "column": 27,
           "symbol": "capture",
           "statement_sha256": "f852af1fd225f33348b766ea2707981c3503dcaa7d407b7a44a86aa629b02622",
-          "context_sha256": "55efe09ba0ef639bce6ff02428e3097241fbbc1ad028c8e823229ff97a0c0fbc"
+          "context_sha256": "400e7479493f388d645b09b0496c608c4c2cf717517bbc5fb86badd464fdb25e"
         }
       ]
     },
