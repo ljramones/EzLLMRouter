@@ -245,13 +245,16 @@ def runtime_components(raw: str) -> dict:
         "chacl",
         "getfattr",
         "setfattr",
+        "sqlite3",
     )
     perl_paths = ("Pod/Text.pm", "Pod/Text.pmc", "Archive/Tar.pm", "Archive/Tar.pmc")
+    sqlite_extensions = ("zipfile.so", "sqlite3_zipfile.so")
     for kind, mode, path in entries:
         if (
             (PurePosixPath(path).name in names and (kind == "l" or mode & 0o111))
             or any(path.endswith("/" + module) for module in perl_paths)
             or (kind == "l" and PurePosixPath(path).name in {"Pod", "Archive"})
+            or PurePosixPath(path).name in sqlite_extensions
         ):
             raise ValueError("forbidden runtime component remains in image")
     return {
@@ -259,6 +262,7 @@ def runtime_components(raw: str) -> dict:
         "sha256": hashlib.sha256("\0".join(sorted(raw[:-1].split("\0"))).encode()).hexdigest(),
         "checked_basenames": sorted(names),
         "checked_perl_paths": list(perl_paths),
+        "checked_sqlite_extensions": list(sqlite_extensions),
         "forbidden_components": [],
     }
 

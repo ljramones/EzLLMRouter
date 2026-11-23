@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "8776c8363328f2ec5aaa82ae50bd2f60df545d6ca18309aa7d5d12e6e570256d",
+      "source_sha256": "284bb301b201d55fd1e6a0630be234a4ac23d225c35fcef9cb61b0b88cc48683",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8477,18 +8477,18 @@
     {
       "path": "tools/security_resolutions.py",
       "code": "S603",
-      "source_sha256": "949bbb88959d4ff815eb5d85ebc17299d5e6b0afdad20dd11f611dc3ec60b508",
+      "source_sha256": "24d57799c39034eb19dcaf7a49c70394a4b171573a9a9a3dd8e6f57fdb683ca5",
       "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted. Version/source mismatches now omit old code proofs; command statements and immutable-image/path validation are unchanged.",
       "findings": [
         {
-          "line": 92,
+          "line": 96,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d28fa2bb725182ccc1ad4f9aaf140aff4eb6bd0f5acaa44a22fa815fab5ea600",
           "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
         },
         {
-          "line": 124,
+          "line": 128,
           "column": 22,
           "symbol": "capture",
           "statement_sha256": "80df2e650bec632a416040e1eb359d7a4b1182d9e12efa18b92c76a6268427e3",

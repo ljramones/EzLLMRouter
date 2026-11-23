@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Seven signed-index/hash-checked Debian archives and the exact 22-package runtime removal closure bind to staged source packets. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The November 23 combined inventory has 341 entries and 86 matches: 30 high, one critical, two unrated, 46 moderate and seven low. There are 33 blockers across ten source packages. Artifact-bound reviews now resolve nine absent-component matches across seven images, leaving 24 effective blockers; raw findings and severity remain unchanged. See the dependency-resolution record below. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Thirteen signed-index/hash-checked Debian archives and the exact 22-package removal closure bind to staged source packets. Six clean offline images pass disposable qualification; the seventh passes its auxiliary installed-SDK/policy smoke. The current combined inventory has 342 entries and 71 raw matches: 23 high, one critical, two unrated, 38 moderate and seven low. Published archive fixes remove seven original blockers; ten exact component dispositions leave 16 effective blockers, down from 33. OpenSSL (9), glibc (6) and tar (1) remain open. Raw severity and findings are retained. See the current library-upgrade record below; historical counts remain recorded separately. The persistent profile and production acceptance remain unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -290,6 +290,79 @@ runs. Malformed requests still reject and cannot dispatch a following request.
 The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
+
+## Library upgrades and component closure, 2026-11-23
+
+The current audit has **16 effective blockers, down from 33**. The complete
+342-entry inventory produces 71 raw matches: 23 high, one critical, two unrated,
+38 moderate and seven low. Of the 26 raw blockers, ten have exact component
+dispositions. The raw report, rating vectors and severity classifications remain
+unchanged by those dispositions. Release acceptance remains blocked.
+
+| Resolution | Original blockers resolved |
+| --- | ---: |
+| Published SQLite, ACL and GCC archive fixes | 7 |
+| Verified absent components in exact retained archives/images | 10 |
+| Still open: OpenSSL (9), glibc (6), tar (1) | 16 |
+
+The v3 OS lock retains the pinned Debian 13 bases and seven stable archives,
+adding six authenticated Forky ARM64 archives. SQLite 3.54.1-2 fixes the three
+FTS5/session cases; ACL 2.4.0-1 fixes both library and utility cases; GCC 14 base
+14.4.0-4 and the GCC 16 base/libgcc/libstdc++ closure at 16.2.0-4 fix the two GCC
+source-package cases. Dependencies fit the retained glibc 2.41. Exact reviewed
+Forky binary/source versions use Debian:14 advisory attribution; all other
+installed packages retain Debian:13. Source mismatches, unknown suites and
+missing authenticated origin metadata fail. One earlier ACL component
+disposition is now covered by an archive fix and is counted only once.
+
+Ten active component dispositions cover four util-linux paths, attr utilities,
+infocmp, two Perl modules, the SQLite shell and its ZIP extension. The review
+catalog retains the historical ACL case for exact older images. SQLite's
+`.recover` command and ZIP virtual-table implementation are outside the retained
+libsqlite3-0 archive. All seven images pass exact library/alias code checks and
+the stronger file census. Non-executable ZIP shared objects and aliases are
+checked as code. Declared OS-lock sources additionally require the complete
+archive set, verified against the audited inventory and lock hash with
+`--os-store`; image proofs alone leave those sources blocked. Other bundled
+copies and unreviewed native interfaces receive no exemption.
+
+Runtime source `e234d982efab23e5e3b7a7705e6509a99c2766d4`, fingerprint
+`713414a94de45362f0a406f4721c8ba1777b6444720da9bdd19c81e274a38eab`,
+passes clean, offline, disposable qualification across six images: startup,
+worker isolation, synthetic final requests, installed clients, restart,
+backup/restore and cleanup. A seventh auxiliary JavaScript image passes its
+installed-SDK and runtime-policy smoke checks. The final service image also
+passes all 99 selected database/recovery/encryption/TLS tests, with no skips,
+using a test archive from that exact source commit.
+
+ELF inspection preserves every old libacl, libgcc and libstdc++ export and symbol
+version. SQLite preserves its public `sqlite3_` API; seven removed internal
+implementation symbols remain recorded as an explicit limit. A bounded GCC
+allocation smoke passes on both old and new libraries and is not used as proof
+of patch sensitivity. Three harmless disposable image canaries reintroduce the
+SQLite shell, a non-executable ZIP module or a module symlink: the previous gate
+accepts all three, and the new gate rejects all three. Only those fresh labelled
+canary images are removed.
+
+The maintained local quality runner passes 1,312 Python executions across 177
+modules with no skips, alongside its JavaScript/contract and source checks.
+Regressions cover declared-archive inventory binding, changed hashes,
+unreviewed extra binaries, incomplete image/extension coverage and component
+reintroduction. Source-security checks retain 1,019 exact reviewed SAST
+identities. A secret-scan exception binds only the unchanged public artifact
+directory token in the updated OS guide. Complete raw/reviewed audits, signed
+indexes, archive inspection, source packets, native/ABI/canary results,
+test-health data and CI results belong under ignored
+`.artifacts/dependency-resolution/`; `VALIDATION.json` binds the final evidence.
+The 117 frozen wheels, persistent profile and production acceptance are
+unchanged. No custom SQLite build or OpenSSL backport is adopted.
+
+OpenSSL still needs maintained-branch fixes or reviewed published replacements,
+including a separate assessment of cryptography's embedded OpenSSL 4.0.3.
+Eight system-OpenSSL fixes are available on maintained upstream branches; the
+DANE fix is still under review. The six glibc cases and tar case remain visible;
+current stable/backports metadata provides no replacement that clears them.
+No no-DSA label, disputed CVE status or locale setting is treated as a waiver.
 
 ## Dependency-resolution review, 2026-11-23
 

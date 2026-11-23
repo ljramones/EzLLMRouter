@@ -32,6 +32,9 @@ class QualificationSafetyTests(unittest.TestCase):
             "/vendor/bin/getfattr",
             "/vendor/bin/setfattr",
             "/vendor/bin/infocmp",
+            "/vendor/bin/sqlite3",
+            "/opt/extensions/zipfile.so",
+            "/opt/extensions/sqlite3_zipfile.so",
             "/vendor/perl/Pod/Text.pm",
             "/vendor/perl/Pod/Text.pmc",
             "/vendor/perl/Archive/Tar.pm",
@@ -47,9 +50,23 @@ class QualificationSafetyTests(unittest.TestCase):
         self.assertEqual(result["entries"], 3)
         self.assertEqual(result["forbidden_components"], [])
         self.assertIn("Pod/Text.pm", result["checked_perl_paths"])
+        self.assertIn("zipfile.so", result["checked_sqlite_extensions"])
         self.assertEqual(
             result, runtime_components("\0".join(reversed(control[:-1].split("\0"))) + "\0")
         )
+
+    def test_sqlite_extension_is_code_without_executable_mode(self):
+        from tools.deployment_qualification import runtime_components
+
+        control = "f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0"
+        for name in ("zipfile.so", "sqlite3_zipfile.so"):
+            with (
+                self.subTest(name=name),
+                self.assertRaisesRegex(ValueError, "forbidden runtime component"),
+            ):
+                runtime_components(control + "f\t644\t/opt/extensions/" + name + "\0")
+        result = runtime_components(control + "f\t644\t/usr/local/lib/python3.12/zipfile.py\0")
+        self.assertEqual(result["entries"], 3)
 
     def test_component_inventory_rejects_incomplete_or_ambiguous_censuses(self):
         from tools.deployment_qualification import runtime_components

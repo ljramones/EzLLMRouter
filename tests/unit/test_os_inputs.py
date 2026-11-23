@@ -127,6 +127,20 @@ class OSInputTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             os_inputs.validate_lock(lock)
 
+    def test_declared_archive_proof_binds_the_audited_inventory_lock(self):
+        from tools.security_resolutions import capture_archives
+
+        root, store, lock = self.fixture()
+        digest = os_inputs.digest(root / os_inputs.LOCK)
+        inventory = {"source_sha256": {os_inputs.LOCK: digest}, "sha256": "a" * 64}
+        proof = capture_archives(root, store, inventory)
+        self.assertEqual(proof["lock_sha256"], digest)
+        self.assertEqual(proof["inventory_sha256"], inventory["sha256"])
+        self.assertEqual(len(proof["packages"]), 2)
+        inventory["source_sha256"][os_inputs.LOCK] = "b" * 64
+        with self.assertRaisesRegex(ValueError, "differs from audited inventory"):
+            capture_archives(root, store, inventory)
+
     def test_archive_set_bytes_and_links_are_checked_before_staging(self):
         for change in ("missing", "extra", "changed", "linked"):
             with self.subTest(change=change):

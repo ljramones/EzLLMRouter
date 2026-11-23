@@ -170,6 +170,19 @@
       ],
       "code_set_sha256": "98cdc339790c069826fa28f5a4a3a9d9d92db1545a888b570e3dc5204a7450b3",
       "payload_manifest_sha256": "66d8d9c1f36d891eec018077b9a29ef4b50a5ab113b463405adf6bd42f1d9f54"
+    },
+    "libsqlite3-0": {
+      "source": "sqlite3",
+      "architecture": "arm64",
+      "binary_version": "3.54.1-2",
+      "source_version": "3.54.1-2",
+      "archive_sha256": "27416ae5fd9a8a491cacc2316cb08ebf31ac0d3d628da5576e04eeba365605a4",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libsqlite3.so.0",
+        "/usr/lib/aarch64-linux-gnu/libsqlite3.so.3.54.1"
+      ],
+      "code_set_sha256": "9caae3be49e4a663e883aaa0dd3d9de7f16f5331155533c638596f95de8b6912",
+      "payload_manifest_sha256": "de7e16a779b7514e5d674db37f84961c248597de1fedfc9b664a1326c3cdc71b"
     }
   },
   "reviews": [
@@ -382,6 +395,55 @@
       "upstream_references": [
         "https://github.com/jib/archive-tar-new/commit/f9af01426038e29d9578825a0cd3626946ab08c7.patch",
         "https://metacpan.org/release/BINGOS/Archive-Tar-3.10/changes"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2025-70873",
+      "ecosystem": "Debian:14",
+      "source": "sqlite3",
+      "source_version": "3.54.1-2",
+      "advisory_sha256": "ec7c6621c2ec9f7dfeb1200ae9145f4cc2ddc57500675a10e58daf880263facc",
+      "cna_sha256": "c4cf210df0d4e6b82e6605eefe5a285a9e0b5c211cb6e77b2800a5830d85f767",
+      "allowed_binaries": [
+        "libsqlite3-0"
+      ],
+      "absent_executables": [
+        "sqlite3"
+      ],
+      "absent_perl_modules": [],
+      "absent_sqlite_extensions": [
+        "zipfile.so",
+        "sqlite3_zipfile.so"
+      ],
+      "reason": "The vulnerable ZIP virtual-table extension is outside the retained libsqlite3-0 archive. Exact reviewed library bytes contain the core SQLite implementation; no ZIP extension module or sqlite3 shell is present. Other bundled SQLite copies receive no exemption.",
+      "upstream_references": [
+        "https://sqlite.org/forum/forumpost/761eac3c82",
+        "https://sqlite.org/src/info/3d459f1fb1bd1b5e",
+        "https://gist.github.com/cnwangjihe/f496393f30f5ecec5b18c8f5ab072054"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-119586",
+      "ecosystem": "Debian:14",
+      "source": "sqlite3",
+      "source_version": "3.54.1-2",
+      "advisory_sha256": "7c559c51358b21d7cdfbdf2fa1efb8c28802a9c4e74d7d1c8cc186e4b98ba857",
+      "cna_sha256": "6406940cbb36ad41786cf259635f4bdfd0b260b901149c6ba51a4c8874dbda9b",
+      "allowed_binaries": [
+        "libsqlite3-0"
+      ],
+      "absent_executables": [
+        "sqlite3"
+      ],
+      "absent_perl_modules": [],
+      "absent_sqlite_extensions": [],
+      "reason": "The vulnerable .recover shell command is not part of the retained libsqlite3-0 library. The sqlite3 command-line shell is absent and the retained library bytes match the reviewed signed-index archive.",
+      "upstream_references": [
+        "https://github.com/sqlite/sqlite/blob/version-3.54.1/ext/recover/sqlite3recover.c#L1221-L1223",
+        "https://github.com/sqlite/sqlite/blob/version-3.54.1/src/shell.c.in#L7877-L7891",
+        "https://abraxaslabs.tech/research/sqlite-cli-recover",
+        "https://github.com/sqlite/sqlite",
+        "https://www.vulncheck.com/advisories/sqlite-cli-through-3.54.1-command-injection-via-recover-output"
       ]
     }
   ],

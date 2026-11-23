@@ -68,8 +68,10 @@ class ComponentResolutionTests(unittest.TestCase):
             }
         ]
 
-    def result(self):
-        return evaluate(self.issues, self.snapshot, self.images, self.captures, self.policy)
+    def result(self, archives=None):
+        return evaluate(
+            self.issues, self.snapshot, self.images, self.captures, self.policy, archives
+        )
 
     def test_complete_review_clears_only_effective_gate_and_preserves_raw_findings(self):
         before = deepcopy(self.issues)
@@ -102,6 +104,80 @@ class ComponentResolutionTests(unittest.TestCase):
         self.assertEqual(
             result["decisions"][0]["targets"]["worker"]["state"], "under_investigation"
         )
+
+    def test_sqlite_review_requires_extension_coverage_in_every_image(self):
+        review = next(row for row in self.policy["reviews"] if row["id"] == "DEBIAN-CVE-2025-70873")
+        advisory = {"id": review["id"], "synthetic": True}
+        review["advisory_sha256"] = canonical(advisory)
+        self.snapshot["vulnerabilities"][review["id"]] = advisory
+        issue = self.issues[0]
+        issue["id"] = review["id"]
+        issue["package"].update(
+            ecosystem=review["ecosystem"], name=review["source"], version=review["source_version"]
+        )
+        package = self.policy["packages"]["libsqlite3-0"]
+        for role in self.images:
+            self.images[role]["os_packages"] = [
+                {
+                    "binary": "libsqlite3-0",
+                    "binary_version": package["binary_version"],
+                    "name": package["source"],
+                    "version": package["source_version"],
+                }
+            ]
+            self.captures[role]["packages"] = {
+                "libsqlite3-0": {
+                    key: package[key]
+                    for key in ("binary_version", "source", "source_version", "code_set_sha256")
+                }
+            }
+            census = self.captures[role]["component_inventory"]
+            census["checked_basenames"] = ["sqlite3"]
+            census["checked_sqlite_extensions"] = ["zipfile.so", "sqlite3_zipfile.so"]
+        self.assertEqual(self.result()["effective_blocking"], 0)
+        self.captures["worker"]["component_inventory"].pop("checked_sqlite_extensions")
+        self.assertEqual(self.result()["effective_blocking"], 1)
+        self.captures["worker"]["component_inventory"]["checked_sqlite_extensions"] = [
+            "zipfile.so",
+            "sqlite3_zipfile.so",
+        ]
+        from tools.gateway.os_inputs import LOCK
+
+        issue["package"]["sources"].append(LOCK)
+        self.snapshot["inventory_sha256"] = "a" * 64
+        archived = {
+            "source": LOCK,
+            "lock_sha256": "b" * 64,
+            "inventory_sha256": "a" * 64,
+            "packages": [
+                {
+                    "binary": "libsqlite3-0",
+                    "ecosystem": "Debian:14",
+                    **{
+                        key: package[key]
+                        for key in (
+                            "binary_version",
+                            "source",
+                            "source_version",
+                            "architecture",
+                            "archive_sha256",
+                        )
+                    },
+                }
+            ],
+        }
+        self.assertEqual(self.result()["effective_blocking"], 1)
+        self.assertEqual(self.result(archived)["effective_blocking"], 0)
+        for change in ("inventory", "hash", "extra_binary"):
+            proof = deepcopy(archived)
+            with self.subTest(change=change):
+                if change == "inventory":
+                    proof["inventory_sha256"] = "c" * 64
+                elif change == "hash":
+                    proof["packages"][0]["archive_sha256"] = "c" * 64
+                else:
+                    proof["packages"].append(dict(proof["packages"][0], binary="sqlite3"))
+                self.assertEqual(self.result(proof)["effective_blocking"], 1)
 
     def test_extra_binary_declared_source_and_reintroduced_components_reopen(self):
         original = (deepcopy(self.images), deepcopy(self.captures), deepcopy(self.issues))

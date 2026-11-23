@@ -549,6 +549,10 @@ The exit status uses the effective blocker count; the default command still
 uses raw findings. The seven-day catalog must be reviewed again when advisory,
 artifact, source attribution or component evidence changes. An expired review
 fails rather than silently extending an exemption.
+Add `--os-store /absolute/path/to/fresh-artifact-store` to verify declared OS
+archives against the same audited inventory and lock. This is required to
+resolve a match also attributed to the OS lock; image proofs alone cannot
+resolve an unverified declared source. No archive is acquired by this option.
 
 `--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
 than seven days fail. Network advisory qualification remains separate from the

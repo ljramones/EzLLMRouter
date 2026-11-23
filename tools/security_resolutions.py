@@ -11,6 +11,7 @@ import subprocess
 
 from deploy.local.local_profile import DOCKER
 from tools.deployment_qualification import runtime_components
+from tools.gateway.os_inputs import LOCK, advisory_ecosystem, verify_archives
 
 
 def canonical(value):
@@ -68,7 +69,10 @@ def load_policy(path: Path):
             or not set(review["allowed_binaries"]) <= policy["packages"].keys()
         ):
             raise ValueError("unbound component review binaries")
-        if not review["absent_executables"] and not review["absent_perl_modules"]:
+        if not any(
+            review.get(key, [])
+            for key in ("absent_executables", "absent_perl_modules", "absent_sqlite_extensions")
+        ):
             raise ValueError("empty reviewed component requirement")
     return policy
 
@@ -145,7 +149,31 @@ def capture(image, policy):
     return {"image": immutable, "component_inventory": census, "packages": packages}
 
 
-def evaluate(issues, snapshot, images, captures, policy):
+def capture_archives(root: Path, store: Path, inventory):
+    data = verify_archives(root, store)
+    observed = hashlib.sha256((root / LOCK).read_bytes()).hexdigest()
+    if observed != inventory["source_sha256"][LOCK]:
+        raise ValueError("archive lock differs from audited inventory")
+    return {
+        "source": LOCK,
+        "lock_sha256": observed,
+        "inventory_sha256": inventory["sha256"],
+        "packages": [
+            {
+                "binary": row["package"],
+                "binary_version": row["version"],
+                "source": row["source"],
+                "source_version": row["source_version"],
+                "ecosystem": advisory_ecosystem(data, row),
+                "architecture": row["architecture"],
+                "archive_sha256": row["sha256"],
+            }
+            for row in data["packages"]
+        ],
+    }
+
+
+def evaluate(issues, snapshot, images, captures, policy, archives=None):
     reviews = {
         (row["ecosystem"], row["source"], row["source_version"], row["id"]): row
         for row in policy["reviews"]
@@ -164,6 +192,38 @@ def evaluate(issues, snapshot, images, captures, policy):
         )
         for source in package["sources"]:
             role = sources.get(source)
+            if source == LOCK and archives is not None and archives["source"] == LOCK:
+                owned = [
+                    row
+                    for row in archives["packages"]
+                    if (row["ecosystem"], row["source"], row["source_version"])
+                    == (package["ecosystem"], package["name"], package["version"])
+                ]
+                valid = (
+                    matches
+                    and archives["inventory_sha256"] == snapshot["inventory_sha256"]
+                    and bool(owned)
+                    and {row["binary"] for row in owned} <= set(review["allowed_binaries"])
+                )
+                if valid:
+                    for row in owned:
+                        approved = policy["packages"][row["binary"]]
+                        valid = valid and all(
+                            row[key] == approved[key]
+                            for key in (
+                                "binary_version",
+                                "source",
+                                "source_version",
+                                "architecture",
+                                "archive_sha256",
+                            )
+                        )
+                targets[source] = {
+                    "state": "not_affected" if valid else "under_investigation",
+                    "lock_sha256": archives["lock_sha256"],
+                    "reason": review["reason"] if valid else "no matching complete archive review",
+                }
+                continue
             if role is None:
                 targets[source] = {
                     "state": "under_investigation",
@@ -187,6 +247,8 @@ def evaluate(issues, snapshot, images, captures, policy):
                     not selectors["forbidden_components"]
                     and set(review["absent_executables"]) <= set(selectors["checked_basenames"])
                     and set(review["absent_perl_modules"]) <= set(selectors["checked_perl_paths"])
+                    and set(review.get("absent_sqlite_extensions", []))
+                    <= set(selectors.get("checked_sqlite_extensions", []))
                 )
             if valid:
                 for row in owned:
@@ -237,6 +299,7 @@ def evaluate(issues, snapshot, images, captures, policy):
         "effective_blocking": sum(row["effective_blocking"] for row in decisions),
         "decisions": decisions,
         "captures": captures,
+        "archive_proof": archives,
         "limits": [
             "Component dispositions cover the matched Debian package artifacts only",
             "Other bundled copies and unreviewed interfaces receive no exemption",

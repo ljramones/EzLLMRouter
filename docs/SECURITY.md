@@ -197,6 +197,11 @@ days. Raw findings and severity remain unchanged in `findings.json`; the
 separate `dispositions.json` records the effective gate and per-image reasons.
 This review covers the matched Debian artifacts only and grants no exemption
 to other bundled copies or unreviewed native interfaces.
+When the declared OS lock is also an attributed source, `--os-store PATH`
+verifies its complete archive set and binds the proof to the audited inventory
+and lock hash. An exact reviewed archive can resolve that declared source;
+image inspection is still required for every attributed image. Without archive
+proof, a declared-source match remains blocked even if all images pass.
 
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery

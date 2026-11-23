@@ -199,9 +199,14 @@ def main() -> int:
         type=Path,
         help="apply reviewed artifact-bound component dispositions while retaining raw findings",
     )
+    parser.add_argument(
+        "--os-store", type=Path, help="verify declared Debian archives as well as images"
+    )
     args = parser.parse_args()
     if args.component_reviews and not args.query:
         parser.error("--component-reviews requires --query")
+    if args.os_store and not args.component_reviews:
+        parser.error("--os-store requires --component-reviews and --query")
     args.output.mkdir(parents=True, exist_ok=False)
     data = inventory()
     source_hashes = {}
@@ -267,11 +272,16 @@ def main() -> int:
         )
         dispositions = None
         if args.component_reviews:
-            from tools.security_resolutions import capture, evaluate, load_policy
+            from tools.security_resolutions import capture, capture_archives, evaluate, load_policy
 
             policy = load_policy(args.component_reviews)
             proofs = {name: capture(image, policy) for name, image in captured.items()}
-            dispositions = evaluate(issues, snapshot, captured, proofs, policy)
+            archives = (
+                capture_archives(Path(__file__).resolve().parents[1], args.os_store, data)
+                if args.os_store
+                else None
+            )
+            dispositions = evaluate(issues, snapshot, captured, proofs, policy, archives)
             (args.output / "dispositions.json").write_text(
                 json.dumps(dispositions, indent=2) + "\n"
             )
