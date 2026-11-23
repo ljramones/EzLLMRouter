@@ -243,6 +243,77 @@ external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
 
+## CVSS v4 and SQLite capability hardening, 2026-11-22
+
+Runtime source `19528481bbdcffe7bb5dade155f07b9358f0e55e` adds defensive SQLite
+connections and CVSS v4 base-score support. Its qualified fingerprint is
+`b3674b754c53da9312f2229f609fa8fabe6d5a4a912d987df983a168b3b74e53`;
+the source packet SHA-256 is
+`ef3ecb3c1493a261be20b344a95ca5ac0ce9bf2320d25aca3ef8575a6368aca1`.
+The worker's 117 frozen wheels and Debian OS inputs are unchanged.
+
+The v4 scorer adapts FIRST's BSD-licensed reference implementation at commit
+`c5b0d409ae9f57c44264c6ce5f27d89298e1d32a`. Reviewed normative tables retain their
+source hashes and have an enforced byte hash. All 104,976 base-metric combinations
+match FIRST's reference calculator, alongside published example goldens. The first
+comparison retained 522 rounding differences from exact-rational arithmetic;
+the corrected implementation preserves FIRST's floating operation order and
+rounding. Full vectors enforce metric order, values, completeness and type/version
+agreement. Optional metrics cannot reduce the base-score gate; malformed vectors,
+unsupported versions and changed tables fail closed. Advisory lookup still uses
+only the standard library, without new development or runtime dependencies.
+
+The actual SQLite 3.46.1 image originally left defensive mode off and native
+extension loading enabled. All five service-owned connection sites now enable
+defensive mode and disable extension loading before SQL: normal/open-existing
+stores, independent report snapshots and both backup connections. Failed settings
+close connections and release ownership. The old implementation first failed
+three negative assertions, including writable-schema tampering. A target gate
+now rejects images with weakened settings; the actual service reports defensive
+mode enabled and extension loading disabled. The installed helper hash matches
+the committed source. The fresh schema has 53 application tables and no virtual
+tables, plus SQLite/schema metadata entries.
+
+Full local validation passes 1,476 Python executions in 212 modules with no skips
+or unstable results and an 11.97-second slowest module against the 30-second limit.
+Ruff, strict typing, zero whole-library typing debt, 1,014 reviewed SAST findings,
+secret scanning and dependency preflight pass. Offline/HTTP/combined coverage is
+90.32%/78.54%/92.81%, with all selected critical exits covered. Reviewed budgets
+tighten by 42 line and 12 branch allowances across the two tiers; the new helper
+has no missing lines. Existing SAST statements retain their reviewed identities.
+
+Disposable Linux ARM64 qualification passes all six offline builds, installed
+SQLite capability checks, isolation, installed-client reads, four exact synthetic
+arrivals, restart and encrypted restore into separate volumes. Both owned projects
+and volumes were removed. The actual service image additionally passes 99 TLS,
+schema, WAL, SIGKILL, backup, key-rotation, coherent-restore and SQLite capability
+cases with no skips, using read-only public source fixtures and disposable data.
+
+The fresh exact-image audit at `2026-11-23T03:48:07.889337+00:00` retains all 89
+matches: 31 high, one critical, three unrated, 46 moderate and eight low. There are
+35 blocking Debian matches across 12 source packages. Each image has 88 OS matches
+and 35 blockers; the worker also has the moderate application finding. Declared-only
+inputs have no matches. Nine previously unrated matches become nonblocking with
+v4 scoring; no advisory is waived and no library version changed. The gate fails.
+
+All eight OpenSSL and five SQLite blocking cases retain individual prerequisite
+notes. The service lacks the SQLite CLI and zipfile function/module, while FTS5
+and session support are compiled in. Python's missing session API does not prove
+native callers absent. Selected source uses ordinary TLS/HTTP and AESGCM, but the
+cryptography wheel also exposes AESGCMSIV. OpenSSL's November 10/17 notices report
+source fixes and schedule containing releases for December 1; no unpublished
+replacement artifact is selected. These observations support further review,
+without approving other providers or arbitrary externally supplied databases.
+
+Private evidence is under ignored `.artifacts/cvss4-review/`: retained old-gate
+and initial rounding failures, `comparison-final.json`,
+`coverage-identity-review.json`, `health-final/summary.json`,
+`target/qualification.json`, `runtime-validation-manifest-final.json`,
+`native-libraries.log`, `runtime-interface-facts.json`, `interface-review.json`
+and `image-audit/{images,inventory,sbom.cdx,osv,findings,attribution}.json`.
+The persistent profile, production acceptance, physical-power-loss qualification,
+released-client N-1 availability and T16 scope are unchanged.
+
 ## Advisory classification and disposable restore, 2026-11-22
 
 Review found that the advisory gate retained CVSS vectors but ignored them when
