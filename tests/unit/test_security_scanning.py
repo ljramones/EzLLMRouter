@@ -76,6 +76,9 @@ class DependencyAuditTests(unittest.TestCase):
         root = self.input_copy()
         lock = root / "deploy/local/inputs/gateway/requirements.gateway.lock"
         original = lock.read_text()
+        selected_pin = next(
+            line.split()[0] for line in original.splitlines() if line.startswith("litellm==")
+        )
         for version in (
             "1.107",
             "1.107.0.0",
@@ -86,7 +89,7 @@ class DependencyAuditTests(unittest.TestCase):
             "1.107.0rc1",
         ):
             with self.subTest(version=version):
-                lock.write_text(original.replace("litellm==1.105.1", "litellm==" + version))
+                lock.write_text(original.replace(selected_pin, "litellm==" + version, 1))
                 with self.assertRaisesRegex(ValueError, "forbidden LiteLLM"):
                     inventory(root)
         lock.write_text(original)
@@ -185,7 +188,10 @@ class DependencyAuditTests(unittest.TestCase):
                 shutil.copy2(ROOT / name, root / name)
             lock = root / "deploy/local/inputs/gateway/requirements.gateway.lock"
             original = lock.read_text()
-            lock.write_text(original.replace("litellm==1.105.1", "litellm==1.107.0"))
+            selected_pin = next(
+                line.split()[0] for line in original.splitlines() if line.startswith("litellm==")
+            )
+            lock.write_text(original.replace(selected_pin, "litellm==1.107.0", 1))
             with self.assertRaisesRegex(ValueError, "forbidden LiteLLM"):
                 inventory(root)
             lock.write_text(original + "unresolved-package>=1\n")

@@ -6025,7 +6025,7 @@
     {
       "path": "tools/gateway/evidence/receipts.py",
       "code": "S310",
-      "source_sha256": "928f27756bdf58d5973524620a11a4f5c31ee2e7385c3fd60a989213f8709bf3",
+      "source_sha256": "67094f13e8627de1e3cdaf73d83bb2dcae9cc4739a7b537b7aea0f69ab25a382",
       "reason": "Fixed HTTP(S) metadata/loopback fixture URL or the allowlisted OSV route builder; no caller-controlled URL schemes at this reviewed site.",
       "findings": [
         {

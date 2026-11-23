@@ -29,8 +29,8 @@ from urllib.request import urlopen
 import zipfile
 
 
-ROOT_WHEEL = "litellm-1.105.1-cp310-abi3-manylinux_2_28_aarch64.whl"
-ROOT_SHA256 = "beb5044645144308b39560049c0f68875ad7de07e681ad0b73e2bc6c3705ba61"
+ROOT_WHEEL = "litellm-1.106.12-cp310-abi3-manylinux_2_28_aarch64.whl"
+ROOT_SHA256 = "3baf90eecb4bd63a23eecc474c3ebb7dbcbe4243d459480d96d47805a46cdbda"
 
 
 def inventory(directory: Path) -> list[dict]:
@@ -113,7 +113,7 @@ def main():
         target = output_dir / "WHEEL-INVENTORY.json"
         value = {
             "target": "CPython 3.12 Linux ARM64, manylinux_2_28/manylinux2014",
-            "root_extra": "litellm[proxy]==1.105.1",
+            "root_extra": "litellm[proxy]==1.106.12",
             "wheels": rows,
         }
     else:

@@ -40,6 +40,7 @@ class FrozenInputTests(unittest.TestCase):
             archive.writestr(
                 "example/__init__.py", "raise AssertionError('review must not import')"
             )
+            archive.writestr("example-1.0.dist-info/METADATA", "Name: example\nVersion: 1.0\n")
         row = {
             "name": "example",
             "version": "1.0",
@@ -92,6 +93,31 @@ class FrozenInputTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unselected"):
             assemble(root, source, replacements, root / "candidate")
         self.assertFalse((root / "candidate").exists())
+
+    def test_hash_valid_bundle_still_rejects_incompatible_dependency_constraints(self):
+        from tools.gateway.frozen_inputs import assemble
+
+        root, source, replacements = self.fixture()
+        path = next((source / "inputs/gateway-inputs/dev04/wheels").glob("*.whl"))
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr(
+                "example-1.0.dist-info/METADATA",
+                "Name: example\nVersion: 1.0\nRequires-Dist: example<1.0\n",
+            )
+        inputs = root / "deploy/local/inputs/gateway"
+        row = {
+            "name": "example",
+            "version": "1.0",
+            "filename": path.name,
+            "bytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        (inputs / "WHEEL-INVENTORY.json").write_text(json.dumps({"wheels": [row]}))
+        (inputs / "requirements.gateway.lock").write_text(
+            "example==1.0 --hash=sha256:" + row["sha256"] + "\n"
+        )
+        with self.assertRaisesRegex(ValueError, "dependency constraint"):
+            assemble(root, source, replacements, root / "candidate")
 
     def test_client_fixture_cannot_reintroduce_the_retired_certifi_wheel(self):
         from tools.gateway import client_inputs

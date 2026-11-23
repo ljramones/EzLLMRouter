@@ -1,5 +1,5 @@
 {
-  "root_extra": "litellm[proxy]==1.105.1",
+  "root_extra": "litellm[proxy]==1.106.12",
   "target": "CPython 3.12 Linux ARM64, manylinux_2_28/manylinux2014",
   "wheels": [
     {
@@ -120,22 +120,22 @@
       "version": "2.2.1"
     },
     {
-      "bytes": 140044,
-      "filename": "boto3-1.43.115-py3-none-any.whl",
+      "bytes": 140043,
+      "filename": "boto3-1.43.117-py3-none-any.whl",
       "license": "Apache-2.0",
       "license_expression": null,
       "name": "boto3",
-      "sha256": "6667a0c21d48dc125dbba88444bc8a601ce881a99341a0e6169f9333898e620d",
-      "version": "1.43.115"
+      "sha256": "a5b6cd7e67653987fcf0e212187c16f7b58af2ae192e368f7212ddab7c05b25d",
+      "version": "1.43.117"
     },
     {
-      "bytes": 16085101,
-      "filename": "botocore-1.43.115-py3-none-any.whl",
+      "bytes": 16061765,
+      "filename": "botocore-1.43.117-py3-none-any.whl",
       "license": "Apache-2.0",
       "license_expression": null,
       "name": "botocore",
-      "sha256": "9ceda640c868bc15f5399129e8cfdef8cbb4b350e8a99547c9b5f477cfb9619a",
-      "version": "1.43.115"
+      "sha256": "5920ef9b3002e1361846549078549d9154a6e0004c22853c01ce7b279d05d495",
+      "version": "1.43.117"
     },
     {
       "bytes": 136464,
@@ -471,31 +471,31 @@
       "version": "2025.9.1"
     },
     {
-      "bytes": 37752535,
-      "filename": "litellm-1.105.1-cp310-abi3-manylinux_2_28_aarch64.whl",
+      "bytes": 36502154,
+      "filename": "litellm-1.106.12-cp310-abi3-manylinux_2_28_aarch64.whl",
       "license": null,
       "license_expression": "MIT",
       "name": "litellm",
-      "sha256": "beb5044645144308b39560049c0f68875ad7de07e681ad0b73e2bc6c3705ba61",
-      "version": "1.105.1"
+      "sha256": "3baf90eecb4bd63a23eecc474c3ebb7dbcbe4243d459480d96d47805a46cdbda",
+      "version": "1.106.12"
     },
     {
-      "bytes": 159618,
-      "filename": "litellm_enterprise-0.1.73-py3-none-any.whl",
+      "bytes": 168907,
+      "filename": "litellm_enterprise-0.1.76.post1-py3-none-any.whl",
       "license": null,
       "license_expression": "LicenseRef-Proprietary",
       "name": "litellm-enterprise",
-      "sha256": "8af439ddf65fb2dba5a90e72125303fa17caba1e6e98ee60c931a6b339ccf247",
-      "version": "0.1.73"
+      "sha256": "eee9bfe5c885dc533ac650fd08f915216e92697549475c321c37776985b4d791",
+      "version": "0.1.76.post1"
     },
     {
-      "bytes": 201581,
-      "filename": "litellm_proxy_extras-0.4.105-py3-none-any.whl",
+      "bytes": 215906,
+      "filename": "litellm_proxy_extras-0.4.108-py3-none-any.whl",
       "license": null,
       "license_expression": "MIT",
       "name": "litellm-proxy-extras",
-      "sha256": "84644bd5bcc4d8fcc638c3225c9bcc1a5df28950325e28e6801662f3f13b6e48",
-      "version": "0.4.105"
+      "sha256": "e0e62cebf6ac3789236319f46a326e80904951baac28c8b58dadcf088643d3e7",
+      "version": "0.4.108"
     },
     {
       "bytes": 91687,
@@ -1055,5 +1055,6 @@
       "sha256": "8979f52d874162f485ff2981e3891f3a3317b7a3dd43ff1e1775b9304f307a9c",
       "version": "4.1.1"
     }
-  ]
+  ],
+  "python_full_version": "3.12.16"
 }

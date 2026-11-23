@@ -141,6 +141,7 @@ class ProfileRunnerTests(unittest.TestCase):
                 patch.object(prepare, "ROOT", root),
                 patch.object(prepare, "STATE", state),
                 patch.object(prepare, "fingerprint", return_value="a" * 64),
+                patch("tools.gateway.frozen_inputs.verify_custody"),
                 patch.object(
                     prepare, "prepare_work", side_effect=RuntimeError("offline build failed")
                 ),

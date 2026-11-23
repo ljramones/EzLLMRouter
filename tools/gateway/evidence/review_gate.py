@@ -55,7 +55,7 @@ def main():
         raise ValueError("PyPI advisory query unavailable or new notice")
     if advisory_shape(current) != advisory_shape(reviewed):
         raise ValueError("publisher advisory set changed; review before execution")
-    if not any(row["name"] == "litellm" and row["version"] == "1.105.1" for row in wheels):
+    if not any(row["name"] == "litellm" and row["version"] == "1.106.12" for row in wheels):
         raise ValueError("selected release absent")
     missing = {
         row["name"] for row in wheels if not row["license_expression"] and not row["license"]

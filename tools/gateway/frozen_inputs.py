@@ -69,6 +69,12 @@ def verify_custody(root: Path, store: Path) -> None:
         ):
             raise ValueError("frozen wheel identity mismatch: " + wheel.name)
         inspect_wheel(wheel)
+    from tools.gateway.wheel_dependencies import validate_dependencies
+
+    validate_dependencies(
+        json.loads((root / "deploy/local/inputs/gateway/WHEEL-INVENTORY.json").read_text()),
+        wheel_dir,
+    )
 
 
 def assemble(root: Path, source: Path, replacements: Path, output: Path) -> None:
