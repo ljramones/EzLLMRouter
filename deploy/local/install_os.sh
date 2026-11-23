@@ -7,9 +7,19 @@ test "$ID" = debian
 test "$VERSION_ID" = 13
 test "$(dpkg --print-architecture)" = arm64
 cd /opt/ezllmrouter/os-inputs
+input_record_dir=$(mktemp -d)
+test -z "$(find . -mindepth 1 -maxdepth 1 ! -type f -print -quit)"
+awk '{print $2}' SHA256SUMS > "$input_record_dir/expected"
+printf '%s\n' SHA256SUMS install.sh >> "$input_record_dir/expected"
+sort "$input_record_dir/expected" > "$input_record_dir/expected.sorted"
+find . -mindepth 1 -maxdepth 1 -printf '%f\n' | sort > "$input_record_dir/actual"
+cmp "$input_record_dir/expected.sorted" "$input_record_dir/actual"
 sha256sum --strict -c SHA256SUMS
 export DEBIAN_FRONTEND=noninteractive
 dpkg --install ./*.deb
+if test -f NODE_RUNTIME; then
+    install -m 755 NODE_RUNTIME /usr/local/bin/node
+fi
 test -z "$(dpkg --audit)"
 # The sealed manifest names the complete reviewed removal closure. Debian marks
 # some tools essential; allow only this exact image-only package change.
@@ -35,7 +45,7 @@ comm -23 "$record_dir/before" "$record_dir/after" > "$record_dir/removed"
 cmp REMOVE-PACKAGES "$record_dir/removed"
 comm -13 "$record_dir/before" "$record_dir/after" > "$record_dir/added"
 test ! -s "$record_dir/added"
-rm -rf "$record_dir"
+rm -rf "$record_dir" "$input_record_dir"
 test -z "$(dpkg --audit)"
 test ! -e /usr/bin/apt-get
 test ! -e /usr/bin/apt

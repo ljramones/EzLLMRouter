@@ -19,9 +19,17 @@ from tools.gateway.os_inputs import (
     load_lock as load_os_lock,
 )
 
+NATIVE_RECIPES = tuple(
+    "deploy/local/inputs/native/" + filename
+    for filename in ("openssl.sh", "node.sh", "node-completion.sh", "cryptography.sh", "package.py")
+)
+WHEEL_INVENTORY = "deploy/local/inputs/gateway/WHEEL-INVENTORY.json"
+
 INPUTS = (
     OS_LOCK,
     OS_INSTALLER,
+    *NATIVE_RECIPES,
+    WHEEL_INVENTORY,
     ".github/bootstrap-inputs.json",
     "uv.lock",
     "clients/python/uv.lock",
@@ -108,6 +116,7 @@ def python_artifact(url: str, name: str, version: str) -> str:
 
 def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict[str, Any]:
     hashes, artifacts, local, manifests, limits = {}, [], [], [], []
+    advisory_versions = []
 
     def artifact(source: str, package: str, version: str, value: str, **fields: Any) -> None:
         artifacts.append(
@@ -134,7 +143,49 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
                     architecture=row["architecture"],
                     filename=row["filename"],
                 )
-        elif name == OS_INSTALLER:
+            if "native_build" in data:
+                native = data["native_build"]
+                advisory_versions.extend(
+                    [
+                        {
+                            "ecosystem": "Debian:13",
+                            "name": "openssl",
+                            "version": native["openssl_source_version"],
+                            "upstream_version": native["openssl_upstream_source_version"],
+                            "native_build": native["id"],
+                        },
+                        {
+                            "ecosystem": "PyPI",
+                            "name": "cryptography",
+                            "version": native["cryptography"]["version"],
+                            "upstream_version": native["cryptography"]["upstream_version"],
+                            "native_build": native["id"],
+                        },
+                    ]
+                )
+                for key in ("node", "cryptography"):
+                    selected = native[key]
+                    output = native["outputs"][selected["filename"]]
+                    artifact(
+                        name,
+                        key,
+                        selected["version"],
+                        digest("sha256:" + output["sha256"]),
+                        url="urn:ezllmrouter:native-build:"
+                        + native["id"]
+                        + ":"
+                        + selected["filename"],
+                        architecture=data["architecture"],
+                        filename=selected["filename"],
+                        native_build=native["id"],
+                    )
+                limits.append(
+                    {
+                        "source": name,
+                        "status": "Native build inputs are pinned in the OS lock; advisory database ranges do not establish local backport status. Exact runtime and archive proof requires --native-reviews.",
+                    }
+                )
+        elif name in (OS_INSTALLER, WHEEL_INVENTORY, *NATIVE_RECIPES):
             pass  # Exact bytes are bound by the reviewed OS lock above.
         elif name.endswith("uv.lock"):
             for package in tomllib.loads(text)["package"]:
@@ -299,6 +350,7 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
             limits.extend(details["limits"])
     return {
         "source_sha256": hashes,
+        "advisory_versions": advisory_versions,
         "artifacts": artifacts,
         "local_sources": local,
         "native_manifests": manifests,

@@ -210,8 +210,29 @@ def fetch(route: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
     return result
 
 
+def query_versions(data: dict[str, Any]) -> list[str]:
+    """A local rebuild label must not hide advisories for its upstream version."""
+    overrides = {}
+    for row in data.get("advisory_versions", []):
+        key = row["ecosystem"], row["name"], row["version"]
+        upstream = row["upstream_version"]
+        if (
+            key[:2] not in {("Debian:13", "openssl"), ("PyPI", "cryptography")}
+            or key in overrides
+            or not re.fullmatch(re.escape(upstream) + r"\+ezllmrouter[1-9][0-9]*", row["version"])
+            or not re.fullmatch(r"[0-9a-f]{64}", row["native_build"])
+        ):
+            raise ValueError("unreviewed native advisory version mapping")
+        overrides[key] = upstream
+    return [
+        overrides.get((row["ecosystem"], row["name"], row["version"]), row["version"])
+        for row in data["packages"]
+    ]
+
+
 def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) -> dict[str, Any]:
     results = []
+    versions = query_versions(data)
     for offset in range(0, len(data["packages"]), 100):
         rows = data["packages"][offset : offset + 100]
         response = fetcher(
@@ -220,16 +241,20 @@ def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) 
                 "queries": [
                     {
                         "package": {"ecosystem": row["ecosystem"], "name": row["name"]},
-                        "version": row["version"],
+                        "version": version,
                     }
-                    for row in rows
+                    for row, version in zip(
+                        rows, versions[offset : offset + len(rows)], strict=True
+                    )
                 ]
             },
         )
         batch = response.get("results")
         if not isinstance(batch, list) or len(batch) != len(rows):
             raise ValueError("incomplete advisory batch")
-        for package, first in zip(rows, batch, strict=True):
+        for package, first, version in zip(
+            rows, batch, versions[offset : offset + len(rows)], strict=True
+        ):
             pages, seen, result = [], set(), first
             vulnerabilities = []
             for _page in range(100):
@@ -251,7 +276,7 @@ def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) 
                     "query",
                     {
                         "package": {"ecosystem": package["ecosystem"], "name": package["name"]},
-                        "version": package["version"],
+                        "version": version,
                         "page_token": token,
                     },
                 )
@@ -279,6 +304,7 @@ def query(data: dict[str, Any], fetcher: Callable[..., dict[str, Any]] = fetch) 
         "inventory_sha256": data["sha256"],
         "queried_at": datetime.now(timezone.utc).isoformat(),
         "complete": True,
+        "queried_versions": versions,
         "results": results,
         "vulnerabilities": details,
     }
@@ -321,6 +347,8 @@ def findings(
         raise ValueError("stale, incomplete or mismatched advisory snapshot")
     if len(snapshot["results"]) != len(data["packages"]):
         raise ValueError("missing package advisory result")
+    if data.get("advisory_versions") and snapshot.get("queried_versions") != query_versions(data):
+        raise ValueError("native advisory query versions differ from reviewed upstream versions")
     issues = []
     for package, result in zip(data["packages"], snapshot["results"], strict=True):
         if (

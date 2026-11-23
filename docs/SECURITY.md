@@ -162,8 +162,15 @@ separately inventoried. Removing installers does not clear OS advisories.
 The [Debian OS lock](../deploy/local/inputs/os/README.md) adds a separately
 reviewed set of signed-index/hash-checked archives. Its role closures and installer
 identity enter source staging and dependency inventories. Actual image checks
-verify installed versions and removal of APT tooling. The 117 frozen wheels are
-unchanged by this OS transition. Release acceptance still requires review of all
+verify installed versions and removal of APT tooling. That initial OS transition
+preserved all 117 frozen wheels. The subsequent
+[native backport inputs](../deploy/local/inputs/native/README.md) replace only
+cryptography with a locally built, shared-OpenSSL wheel and rebuild Node against
+the same patched library. The v4 lock records source provenance, recipes,
+patches and output hashes. Local version labels still query advisories using
+their original upstream versions. An explicit fixed disposition requires exact
+archive and runtime-copy verification; ordinary source preflight cannot establish
+that an installed image contains the fix. Release acceptance still requires review of all
 remaining advisory findings and the qualified target's evidence.
 
 The runtime OS policy removes 19 additional unused login, PAM, mount/namespace and

@@ -1,5 +1,6 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
+ENV NODE_OPTIONS=--use-bundled-ca
 ENV npm_config_cache=/tmp/ezllmrouter-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 COPY cognitivedynamics-ezllmrouter-client-0.3.0.tgz /opt/ezllmrouter/client.tgz
 RUN mkdir -p /app/consumer \

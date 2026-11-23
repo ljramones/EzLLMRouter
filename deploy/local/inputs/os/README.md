@@ -5,7 +5,7 @@
 update base-files, glibc, OpenSSL, zlib, SQLite, ACL and GCC runtime libraries; the Node closure uses twelve because it
 does not install the Python base's OpenSSL command-line package.
 
-The v3 lock records binary/source versions, archive sizes and SHA-256 values,
+The v4 lock records binary/source versions, archive sizes and SHA-256 values,
 publisher URLs, role membership, upstream image/config identities and the
 build-only installer's hash, plus the exact runtime package-removal closure.
 Acquisition used APT's authenticated InRelease and
@@ -23,6 +23,12 @@ Inventories use Debian:14 advisory records only for the exact reviewed Forky
 binary/source versions; other installed packages retain Debian:13 attribution.
 An unknown suite, mismatched source or unauthenticated origin is rejected.
 This prevents an OS-wide ecosystem change from concealing retained findings.
+The three OpenSSL archives now use the
+[reviewed local native backport](../native/README.md). The v4 lock also binds
+the shared-SSL Node binary and cryptography wheel, all build recipes, source
+artifacts and exact output hashes. Local build origins remain explicit; original
+upstream versions are used for advisory queries. All copies require runtime proof
+before the native review can mark the nine exact advisories fixed.
 Signed indexes, archive inspection and trial results are retained under ignored
 `.artifacts/dependency-resolution/`. No custom-built SQLite archive is selected.
 

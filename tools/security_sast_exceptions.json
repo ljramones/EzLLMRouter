@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "66e3f896ae50f412479fa21ce2e20ece708e8a9cda02d162fade609147fdab8a",
+      "source_sha256": "83518058e8561fb2c707f2437ecdf400e25c3741d76c318f9de3e7784ba3ef1d",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 261,
+          "line": 263,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 350,
+          "line": 352,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 494,
+          "line": 496,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "66e3f896ae50f412479fa21ce2e20ece708e8a9cda02d162fade609147fdab8a",
+      "source_sha256": "83518058e8561fb2c707f2437ecdf400e25c3741d76c318f9de3e7784ba3ef1d",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 262,
+          "line": 264,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 351,
+          "line": 353,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 608,
+          "line": 610,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "284bb301b201d55fd1e6a0630be234a4ac23d225c35fcef9cb61b0b88cc48683",
+      "source_sha256": "ab2f8be7a23aee6ddd92c3b22bcff8f802561c26d9d46b35492ef0dfeb65be27",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8254,7 +8254,7 @@
     {
       "path": "tools/security_dependencies.py",
       "code": "S310",
-      "source_sha256": "e1ea04cf00260b082785dde28315fbc838f30f6e17b09b2d29980d8371d3c828",
+      "source_sha256": "2f894b0b4960782f01a36a1b0a74a93c271b0619b5705ca358635c619b5949eb",
       "reason": "Fixed HTTP(S) metadata/loopback fixture URL or the allowlisted OSV route builder; no caller-controlled URL schemes at this reviewed site.",
       "findings": [
         {
@@ -8269,18 +8269,18 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "0099eb582a364ebc156506cfde9eb63e3f65b3745e66cfbb39fc54e9c08b8ff2",
+      "source_sha256": "54bc0a462e24eadb8c1320b641b2fbe44c66f72f45ae8352b593026d9dbae22e",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 374,
+          "line": 426,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
           "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 392,
+          "line": 444,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
@@ -8493,6 +8493,72 @@
           "symbol": "capture",
           "statement_sha256": "80df2e650bec632a416040e1eb359d7a4b1182d9e12efa18b92c76a6268427e3",
           "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
+        }
+      ]
+    },
+    {
+      "path": "tools/security_native.py",
+      "code": "S603",
+      "source_sha256": "878a147cece5c78ff0551e81540759ff5686da0030fcc0dc52b34f5b6c5b2b6b",
+      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell.",
+      "findings": [
+        {
+          "line": 32,
+          "column": 11,
+          "symbol": "capture",
+          "statement_sha256": "381dfa7cabb67be51af4f5f1eecf7ea7135534267775904c74afc6de221a730d",
+          "context_sha256": "55efe09ba0ef639bce6ff02428e3097241fbbc1ad028c8e823229ff97a0c0fbc"
+        },
+        {
+          "line": 68,
+          "column": 27,
+          "symbol": "capture",
+          "statement_sha256": "f852af1fd225f33348b766ea2707981c3503dcaa7d407b7a44a86aa629b02622",
+          "context_sha256": "55efe09ba0ef639bce6ff02428e3097241fbbc1ad028c8e823229ff97a0c0fbc"
+        }
+      ]
+    },
+    {
+      "path": "deploy/local/inputs/native/package.py",
+      "code": "S603",
+      "source_sha256": "601ed4710a09f9bc372144895c18a3dc72bb62acf5d8b7d1fdad99b0eb9d8bf0",
+      "reason": "Offline packaging recipe uses argument lists for dpkg-deb extraction/build in the pinned disposable builder. Parent archives and output selection are bound by the native input manifest; no shell or host execution.",
+      "findings": [
+        {
+          "line": 34,
+          "column": 5,
+          "symbol": "<module>",
+          "statement_sha256": "e69c84bee23f56b1f1c1ac6a12b7e310e4d8d56249fbe5e86296d2ce6200d535",
+          "context_sha256": "90246aa40bfbc69dd3062c4d128c3329c3edd987475e7fbd83a065dd9081d6b3"
+        },
+        {
+          "line": 63,
+          "column": 5,
+          "symbol": "<module>",
+          "statement_sha256": "df6505af968bce55f15da344c67361addca4c3b1eedac9f7913eee295c828dc0",
+          "context_sha256": "90246aa40bfbc69dd3062c4d128c3329c3edd987475e7fbd83a065dd9081d6b3"
+        }
+      ]
+    },
+    {
+      "path": "deploy/local/inputs/native/package.py",
+      "code": "S607",
+      "source_sha256": "601ed4710a09f9bc372144895c18a3dc72bb62acf5d8b7d1fdad99b0eb9d8bf0",
+      "reason": "dpkg-deb resolves only in the reviewed pinned Debian builder PATH, with no user-supplied executable or shell. This recipe runs in a disposable offline container.",
+      "findings": [
+        {
+          "line": 35,
+          "column": 9,
+          "symbol": "<module>",
+          "statement_sha256": "e69c84bee23f56b1f1c1ac6a12b7e310e4d8d56249fbe5e86296d2ce6200d535",
+          "context_sha256": "90246aa40bfbc69dd3062c4d128c3329c3edd987475e7fbd83a065dd9081d6b3"
+        },
+        {
+          "line": 64,
+          "column": 9,
+          "symbol": "<module>",
+          "statement_sha256": "df6505af968bce55f15da344c67361addca4c3b1eedac9f7913eee295c828dc0",
+          "context_sha256": "90246aa40bfbc69dd3062c4d128c3329c3edd987475e7fbd83a065dd9081d6b3"
         }
       ]
     }

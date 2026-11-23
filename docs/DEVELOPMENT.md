@@ -506,10 +506,22 @@ binary/source versions. Unmatched installed versions retain the base OS's
 ecosystem; unknown origins and conflicting source metadata fail. Historical v2
 packets retain their original single-suite meaning.
 Builders compare staged OS inputs with their source
-packet before Docker executes. Both lock formats seal the exact package-removal list;
+packet before Docker executes. All supported lock formats seal the exact package-removal list;
 protected libraries, duplicates and option-like package arguments fail validation.
 Qualified images also enforce the fixed UTF-8/C-language locale and absence of
 setuid and removed tool files. See the [OS input guide](../deploy/local/inputs/os/README.md).
+
+The v4 lock additionally binds reviewed local OpenSSL backports, the shared-SSL
+Node binary and cryptography wheel to their source artifacts and build recipes.
+Source preflight verifies recipe and frozen-wheel identities. Offline preparation
+checks all five native outputs and stages the Node binary only for Node roles.
+Closed staging inventories reject unrecorded archives and runtime files. The
+release inventory's `--native-reviews` requires `--query`, component reviews and
+`--os-store`; it hashes each selected native object in every image and checks both
+Python OpenSSL consumers and Node's actual shared-SSL configuration. Custom local
+versions query their original upstream versions, retaining raw findings until
+exact, advisory-bound proof establishes a fixed disposition. See the
+[native build guide](../deploy/local/inputs/native/README.md).
 
 CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.

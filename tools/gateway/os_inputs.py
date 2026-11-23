@@ -53,7 +53,12 @@ def digest(path: Path) -> str:
 
 def validate_lock(data: dict) -> None:
     if (
-        data.get("format") not in {"ezllmrouter-debian-inputs-v2", "ezllmrouter-debian-inputs-v3"}
+        data.get("format")
+        not in {
+            "ezllmrouter-debian-inputs-v2",
+            "ezllmrouter-debian-inputs-v3",
+            "ezllmrouter-debian-inputs-v4",
+        }
         or data.get("suite") != "trixie"
         or data.get("version_id") != "13"
         or data.get("architecture") != "arm64"
@@ -63,7 +68,7 @@ def validate_lock(data: dict) -> None:
     ):
         raise ValueError("unreviewed Debian target")
     origins = {"trixie": "13"}
-    if data["format"] == "ezllmrouter-debian-inputs-v3":
+    if data["format"] in {"ezllmrouter-debian-inputs-v3", "ezllmrouter-debian-inputs-v4"}:
         reviews = data.get("additional_origins", {})
         if set(reviews) != {"forky"}:
             raise ValueError("unreviewed Debian package origin")
@@ -76,6 +81,12 @@ def validate_lock(data: dict) -> None:
         ):
             raise ValueError("missing authenticated Debian package origin")
         origins["forky"] = "14"
+    if data["format"] == "ezllmrouter-debian-inputs-v4":
+        from tools.gateway.native_inputs import validate
+
+        validate(data)
+    elif "native_build" in data or any("native_build" in row for row in data["packages"]):
+        raise ValueError("native builds require the v4 lock")
     removals = data.get("runtime_removals")
     if (
         not isinstance(removals, list)
@@ -97,7 +108,7 @@ def validate_lock(data: dict) -> None:
     seen = set()
     roles = set()
     for row in data["packages"]:
-        if data["format"] == "ezllmrouter-debian-inputs-v3":
+        if data["format"] in {"ezllmrouter-debian-inputs-v3", "ezllmrouter-debian-inputs-v4"}:
             if row.get("origin_suite") not in origins or row.get(
                 "origin_version_id"
             ) != origins.get(row.get("origin_suite")):
@@ -120,12 +131,17 @@ def validate_lock(data: dict) -> None:
             or not row["roles"]
             or len(set(row["roles"])) != len(row["roles"])
             or not set(row["roles"]) <= {"python", "node"}
-            or url.scheme != "https"
-            or url.netloc != "deb.debian.org"
-            or not url.path.startswith("/debian/pool/main/")
-            or not url.path.endswith(".deb")
-            or url.query
-            or url.fragment
+            or (
+                "native_build" not in row
+                and (
+                    url.scheme != "https"
+                    or url.netloc != "deb.debian.org"
+                    or not url.path.startswith("/debian/pool/main/")
+                    or not url.path.endswith(".deb")
+                    or url.query
+                    or url.fragment
+                )
+            )
             or row["package"] in seen
         ):
             raise ValueError("invalid or duplicate reviewed Debian archive")
@@ -141,7 +157,7 @@ def advisory_ecosystem(data: dict, row: dict) -> str:
     """Use the reviewed binary's source suite, independently of the base OS."""
     version = (
         row["origin_version_id"]
-        if data["format"] == "ezllmrouter-debian-inputs-v3"
+        if data["format"] in {"ezllmrouter-debian-inputs-v3", "ezllmrouter-debian-inputs-v4"}
         else data["version_id"]
     )
     return "Debian:" + version
@@ -160,11 +176,19 @@ def load_lock(root: Path) -> dict:
         or digest(installer) != data["installer_sha256"]
     ):
         raise ValueError("reviewed Debian installer identity mismatch")
+    if "native_build" in data:
+        from tools.gateway.native_inputs import verify_recipes
+
+        verify_recipes(root, data["native_build"])
     return data
 
 
 def verify_archives(root: Path, store: Path) -> dict:
     data = load_lock(root)
+    if "native_build" in data:
+        from tools.gateway.native_inputs import verify_outputs
+
+        verify_outputs(store, data["native_build"])
     directory = store / STORE
     if directory.is_symlink() or not directory.resolve().is_relative_to(store.resolve()):
         raise ValueError("linked Debian artifact directory")
@@ -196,12 +220,25 @@ def stage_archives(root: Path, store: Path, build: Path, contexts=CONTEXTS) -> d
         shutil.copy2(root / INSTALLER, directory / "install.sh")
         for row in selected:
             shutil.copy2(store / STORE / row["filename"], directory / row["filename"])
+        native = data.get("native_build") if role == "node" else None
+        if native:
+            from tools.gateway.native_inputs import directory as native_directory
+
+            shutil.copy2(
+                native_directory(store, native) / native["node"]["filename"],
+                directory / "NODE_RUNTIME",
+            )
         removals = "".join(name + "\n" for name in data["runtime_removals"])
         (directory / "REMOVE-PACKAGES").write_bytes(removals.encode())
         (directory / "SHA256SUMS").write_text(
             "".join(row["sha256"] + "  " + row["filename"] + "\n" for row in selected)
             + hashlib.sha256(removals.encode()).hexdigest()
             + "  REMOVE-PACKAGES\n"
+            + (
+                native["outputs"][native["node"]["filename"]]["sha256"] + "  NODE_RUNTIME\n"
+                if native
+                else ""
+            )
         )
         for path in sorted(directory.iterdir()):
             rows.append(
@@ -247,6 +284,14 @@ def verify_staging(build: dict) -> dict:
         if actual.get(prefix + "install.sh") != data["installer_sha256"]:
             raise ValueError("staged Debian installer differs from reviewed lock")
         expected.update(prefix + name for name in ("install.sh", "SHA256SUMS", "REMOVE-PACKAGES"))
+        native = data.get("native_build") if role == "node" else None
+        if native:
+            expected.add(prefix + "NODE_RUNTIME")
+            if (
+                actual.get(prefix + "NODE_RUNTIME")
+                != native["outputs"][native["node"]["filename"]]["sha256"]
+            ):
+                raise ValueError("staged native Node differs from reviewed output")
         for row in selected:
             name = prefix + row["filename"]
             expected.add(name)
@@ -257,8 +302,14 @@ def verify_staging(build: dict) -> dict:
         if (root / prefix / "REMOVE-PACKAGES").read_bytes() != removals.encode():
             raise ValueError("staged runtime removals differ from reviewed lock")
         checksum += hashlib.sha256(removals.encode()).hexdigest() + "  REMOVE-PACKAGES\n"
+        if native:
+            checksum += native["outputs"][native["node"]["filename"]]["sha256"] + "  NODE_RUNTIME\n"
         if (root / prefix / "SHA256SUMS").read_text() != checksum:
             raise ValueError("staged Debian checksum manifest mismatch")
+        if {path.name for path in (root / kind / "os-inputs").iterdir()} != {
+            Path(name).name for name in expected if name.startswith(prefix)
+        }:
+            raise ValueError("unexpected staged OS input file")
     if expected != set(actual):
         raise ValueError("unexpected staged Debian input")
     with zipfile.ZipFile(build["source_packet"]) as packet:

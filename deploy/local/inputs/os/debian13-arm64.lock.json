@@ -1,9 +1,9 @@
 {
-  "format": "ezllmrouter-debian-inputs-v3",
+  "format": "ezllmrouter-debian-inputs-v4",
   "suite": "trixie",
   "version_id": "13",
   "architecture": "arm64",
-  "reviewed_at": "2026-11-23T19:33:31.092123+00:00",
+  "reviewed_at": "2026-11-23",
   "bases": {
     "python": {
       "reference": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
@@ -87,53 +87,62 @@
     },
     {
       "package": "libssl3t64",
-      "version": "3.5.9-1~deb13u1",
+      "version": "3.5.9-1~deb13u1+ezllmrouter1",
       "source": "openssl",
-      "source_version": "3.5.9-1~deb13u1",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
       "architecture": "arm64",
-      "filename": "libssl3t64_3.5.9-1~deb13u1_arm64.deb",
-      "bytes": 2775368,
-      "sha256": "18edc2b123e8e81efcc14ea5502454b4505285aa9d3325c22315e9304acb25ca",
-      "url": "https://deb.debian.org/debian/pool/main/o/openssl/libssl3t64_3.5.9-1~deb13u1_arm64.deb",
+      "filename": "libssl3t64_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb",
+      "bytes": 2956536,
+      "sha256": "78a797cb1614ff29b9740146fcca263f7838b04a2c4eca43668ce7458a422e52",
       "roles": [
         "python",
         "node"
       ],
       "origin_suite": "trixie",
-      "origin_version_id": "13"
+      "origin_version_id": "13",
+      "parent_url": "https://deb.debian.org/debian/pool/main/o/openssl/libssl3t64_3.5.9-1~deb13u1_arm64.deb",
+      "parent_sha256": "18edc2b123e8e81efcc14ea5502454b4505285aa9d3325c22315e9304acb25ca",
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "url": "urn:ezllmrouter:native-build:f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0:libssl3t64_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb"
     },
     {
       "package": "openssl-provider-legacy",
-      "version": "3.5.9-1~deb13u1",
+      "version": "3.5.9-1~deb13u1+ezllmrouter1",
       "source": "openssl",
-      "source_version": "3.5.9-1~deb13u1",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
       "architecture": "arm64",
-      "filename": "openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb",
-      "bytes": 319708,
-      "sha256": "007165f42b5cecf71674a047480f96035e290c2f0c5102030cb186481bb8dc84",
-      "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb",
+      "filename": "openssl-provider-legacy_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb",
+      "bytes": 326500,
+      "sha256": "ff78e717395c2025a8e3852dfae7148d9a671be23e2178417e20965573d0afb5",
       "roles": [
         "python",
         "node"
       ],
       "origin_suite": "trixie",
-      "origin_version_id": "13"
+      "origin_version_id": "13",
+      "parent_url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb",
+      "parent_sha256": "007165f42b5cecf71674a047480f96035e290c2f0c5102030cb186481bb8dc84",
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "url": "urn:ezllmrouter:native-build:f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0:openssl-provider-legacy_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb"
     },
     {
       "package": "openssl",
-      "version": "3.5.9-1~deb13u1",
+      "version": "3.5.9-1~deb13u1+ezllmrouter1",
       "source": "openssl",
-      "source_version": "3.5.9-1~deb13u1",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
       "architecture": "arm64",
-      "filename": "openssl_3.5.9-1~deb13u1_arm64.deb",
-      "bytes": 1484280,
-      "sha256": "fe9c979716871f260fa50a920298036896677dd0a74a34c5589c18635cdef4b5",
-      "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1_arm64.deb",
+      "filename": "openssl_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb",
+      "bytes": 1506648,
+      "sha256": "5aff0dc38c85c0e96cb86f89d7b610afc4fdbcd8dc1b395b636c0cdc514101cb",
       "roles": [
         "python"
       ],
       "origin_suite": "trixie",
-      "origin_version_id": "13"
+      "origin_version_id": "13",
+      "parent_url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1_arm64.deb",
+      "parent_sha256": "fe9c979716871f260fa50a920298036896677dd0a74a34c5589c18635cdef4b5",
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "url": "urn:ezllmrouter:native-build:f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0:openssl_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb"
     },
     {
       "package": "zlib1g",
@@ -255,7 +264,7 @@
       "origin_version_id": "14"
     }
   ],
-  "installer_sha256": "f1bbe4e3f3944da3a269f044c41e161f38ae802513c0e81b2d25c21f59582435",
+  "installer_sha256": "69678bfcf69552662e93140b846617d38584fe5fa465d8b7c6888d5b395ad3bc",
   "runtime_removals": [
     "adduser",
     "apt",
@@ -288,6 +297,1221 @@
       "keyring_sha256": "506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017",
       "inrelease_sha256": "f14103c6a97e64780554095ea36f89f128c66cf1beb2829836b3a9913ad8018d",
       "review": "Six compatible ARM64 binary archives only; base OS remains Debian 13. Complete offline image qualification is required."
+    }
+  },
+  "native_build": {
+    "format": "ezllmrouter-native-build-v1",
+    "id": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+    "reviewed_at": "2026-11-23",
+    "inputs": {
+      "builder": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
+      "recipes": {
+        "deploy/local/inputs/native/cryptography.sh": "9e5d1c6d20fe63b415ed8e2ba873aee9bbf74a7c2d9044cc6a6dc87a57cb0027",
+        "deploy/local/inputs/native/node-completion.sh": "c696d34cf1a18b6af587e0c69878cdb22a114b0e920976bd60b08687ff92e96d",
+        "deploy/local/inputs/native/node.sh": "332596cc7a4ee0b27a02ebe6f3703870ed47ef43802ffe3b9e9c38c84e1ddfe9",
+        "deploy/local/inputs/native/openssl.sh": "b5deed52851fa3e1df60bf3cbd9be4eeaba46e473b16f571d7f5e2bfb6a0f90e",
+        "deploy/local/inputs/native/package.py": "601ed4710a09f9bc372144895c18a3dc72bb62acf5d8b7d1fdad99b0eb9d8bf0"
+      },
+      "artifacts": {
+        "sources/dane-complete.diff": {
+          "bytes": 4659,
+          "sha256": "eb91c49d55cfd80143d80c33317a05e2b72368a44bd99cee2522af6ab5d7f0d3",
+          "url": "https://github.com/openssl/openssl/compare/159cdbc6006afe7676c5e699f624991ce40d911e...d54155a80a4fa8d2ebc2a5a850e7ea8270818217.diff"
+        },
+        "sources/cryptography-50.0.2.tar.gz": {
+          "bytes": 880623,
+          "sha256": "7b46165bb56eb4704e2eaaf86f3c940d19154535d9b0ca7d6d590b04060e00d5",
+          "url": "https://files.pythonhosted.org/packages/9d/af/182eb91b0df3fe75c4d9f26fe70684569566745f6ba7e5c9c73a862c5252/cryptography-50.0.2.tar.gz"
+        },
+        "sources/node-SHASUMS256.txt": {
+          "bytes": 3171,
+          "sha256": "06d17307d84ec057dd2783863f12cb228c9273f9424b330532e4e3699f5d47c9",
+          "url": "https://nodejs.org/dist/v24.22.3/SHASUMS256.txt"
+        },
+        "sources/node-v24.22.3.tar.xz": {
+          "bytes": 56764640,
+          "sha256": "48ca3aa8a9b02133356922ef4fc80200e00598c80a4ef446f7c39a459222593d",
+          "url": "https://nodejs.org/dist/v24.22.3/node-v24.22.3.tar.xz"
+        },
+        "openssl/openssl_3.5.9.orig.tar.gz": {
+          "bytes": 53279637,
+          "sha256": "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9.orig.tar.gz"
+        },
+        "openssl/openssl_3.5.9-1~deb13u1.debian.tar.xz": {
+          "bytes": 54612,
+          "sha256": "7d5158a87cd24641316b050de419be4ebddb1f180afd7ebaa3bc990036c38ec6",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1.debian.tar.xz"
+        },
+        "openssl/upstream/CVE-2026-107493.patch": {
+          "bytes": 7204,
+          "sha256": "6176d694ac38251bfa4e11198d002d8720f9efb05deffb35703adb93be6173e1",
+          "url": "https://github.com/openssl/openssl/commit/c8f6d04f8e6d40b1bf83334e4a2ec9daf5943a3d.patch"
+        },
+        "openssl/upstream/CVE-2026-107494.patch": {
+          "bytes": 3597,
+          "sha256": "c1726a50d589b2dc289727865c184382c2bd846733ddb139427062713ebeb5bd",
+          "url": "https://github.com/openssl/openssl/commit/734c6cd7444bdbf589bfec917e47598c1b21ddd3.patch"
+        },
+        "openssl/upstream/CVE-2026-107496.patch": {
+          "bytes": 3375,
+          "sha256": "77d3759d279c71af59629c4a0fa82d8272a099762f2fa9e3f66d7ca5ed544157",
+          "url": "https://github.com/openssl/openssl/commit/a0051cfe699bf5a047bc1c4faef65f80f7987366.patch"
+        },
+        "openssl/upstream/CVE-2026-121482.patch": {
+          "bytes": 15456,
+          "sha256": "6bdbb111a7ce640e42c558aaf912fe19b3770aa9afc7c8c5a0d36d20dcb2d5e9",
+          "url": "https://github.com/openssl/openssl/commit/468c287cf451a834b370b69ab321b8ffdfac23aa.patch"
+        },
+        "openssl/upstream/CVE-2026-124709.patch": {
+          "bytes": 3280,
+          "sha256": "d52a6af23bc966daaa9eded816a392d429a67bb76faafd922f4c4cf35a9349f4",
+          "url": "https://github.com/openssl/openssl/commit/f3acb0a3328046741479482c51cec815839e1b05.patch"
+        },
+        "openssl/upstream/CVE-2026-88823.patch": {
+          "bytes": 3483,
+          "sha256": "a945077c0a978dbfe5af5e4f7174a2151466547f8fb94562f395baa7b6b7c147",
+          "url": "https://github.com/openssl/openssl/commit/159e1de0c448d7b9f09ad768c8e141def4aa1eb4.patch"
+        },
+        "openssl/upstream/CVE-2026-95691.patch": {
+          "bytes": 7377,
+          "sha256": "93d8e82fdc995172a6d5cc6952491658106191bd5ac221d34596adbddfcd1afe",
+          "url": "https://github.com/openssl/openssl/commit/f6244675833e097c2429a40d1b206d95385bd42f.patch"
+        },
+        "openssl/upstream/CVE-2026-95692.patch": {
+          "bytes": 2100,
+          "sha256": "0e328604c0038de6629a29322ae5f02d2f5f5128c2625b57ca64262efab99e05",
+          "url": "https://github.com/openssl/openssl/commit/257a3427aa0ef8d9dd2ef5b3e2d1c021a221b116.patch"
+        },
+        "openssl/upstream/CVE-2026-84786.diff": {
+          "bytes": 4659,
+          "sha256": "eb91c49d55cfd80143d80c33317a05e2b72368a44bd99cee2522af6ab5d7f0d3",
+          "url": "https://github.com/openssl/openssl/compare/159cdbc6006afe7676c5e699f624991ce40d911e...d54155a80a4fa8d2ebc2a5a850e7ea8270818217.diff"
+        },
+        "openssl/upstream/CVE-2026-107494-test.patch": {
+          "bytes": 5931,
+          "sha256": "ca74f8bd3f7d6337fae3fe5038604f013c76590b89d6f44593adcb5661f9a0ba",
+          "url": "https://github.com/openssl/openssl/commit/42919a7f4e00aa217fce1532fbeb49f21be2ee7b.patch"
+        },
+        "openssl/upstream/CVE-2026-121482-test.patch": {
+          "bytes": 30019,
+          "sha256": "a9897de897e3cf34206ba9a4ccb461927bd04c310e9354682ceca317c1537502",
+          "url": "https://github.com/openssl/openssl/commit/1c65edebefa0dd11aa41cb1a31078ecd9c79d472.patch"
+        },
+        "openssl/upstream/CVE-2026-88823-test.patch": {
+          "bytes": 19085,
+          "sha256": "c7885d44f2659d97c0fc71fcdc8a6ef04cbe2ccdd36a72c28e7dfd1452033f2d",
+          "url": "https://github.com/openssl/openssl/commit/9d0d29bcf98ae5c1fb91653ba635e993260176d8.patch"
+        },
+        "openssl/upstream/CVE-2026-95692-test.patch": {
+          "bytes": 8016,
+          "sha256": "94ee9be7e136f081f49315d1afa2c2650b0cd32c20d00a456056c7bcb143fd54",
+          "url": "https://github.com/openssl/openssl/commit/86abaf90eb55a8f29caf19725c7dc37cfebf7de7.patch"
+        },
+        "openssl/upstream/CVE-2026-95691-test.patch": {
+          "bytes": 4216,
+          "sha256": "551d3d8cc734846b68b8f43c2773875d8fed64ab1d089bd962490fc6391fee79",
+          "url": "https://github.com/openssl/openssl/commit/bada6a2dd781ec875d4ae6d3b200fed1ef664988.patch"
+        },
+        "openssl/PATCHES": {
+          "bytes": 451,
+          "sha256": "4c2fc00e888b478219a5a4bf473bd76d2cb29ba005b7aab4a32c45579351f930"
+        },
+        "openssl/build-debs/binutils-aarch64-linux-gnu_2.44-3_arm64.deb": {
+          "bytes": 820124,
+          "sha256": "79cbf1459118bce3535133ffbf1fd2adbd57af65271f95c829af5cfa7f474168",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-aarch64-linux-gnu_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/binutils-common_2.44-3_arm64.deb": {
+          "bytes": 2508772,
+          "sha256": "f2d6b7d0b5521c4c90fc105e32819cd5268c1aa69104173b3fb856595f898249",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-common_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/binutils_2.44-3_arm64.deb": {
+          "bytes": 261580,
+          "sha256": "7228716cad15e78d1571f1cd4ec7141f64608790d0fbcba23a07f2eda6298272",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 9168888,
+          "sha256": "8e588ac3efe06f7784b08feac584c70e6965b74c045bae7e4e80bb42938f7dbe",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/cpp-14_14.2.0-19_arm64.deb": {
+          "bytes": 1276,
+          "sha256": "0b440241f7c3e2e87f2d0f1dd36792c4e2705d38a699ed331818799f21ef9437",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/cpp-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 4832,
+          "sha256": "bd9c9f4536a0aea285c4735d2dfedff624f8457b8f1bb3d15ab924e029cd7aff",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/cpp_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1568,
+          "sha256": "88b702b0fa5942a4ee52c27f1ccf6316b831357e86693b709d216ba43348172e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/g++-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 10059100,
+          "sha256": "411dac8f1c1d0293e58deddeb170c641ad82c56d51a95f056ee12ba02c24288b",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/g++-14_14.2.0-19_arm64.deb": {
+          "bytes": 22540,
+          "sha256": "f4813643994aa96c527e687c9c7d01855aa5fdd86e63cc8bd05c63ecc9373796",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/g++-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1200,
+          "sha256": "655d9a7cb70b0342f5f1bf4f2a7b0241df15d49ab9a2567445c785b7592122f9",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/g++_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1332,
+          "sha256": "e4b8f8fae7c838c40b9db29251b152c9af03a4d4463388d69efdda66c4e97e79",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 17686496,
+          "sha256": "5ff736a332ba5d60ad463355ed25c8c39da1281acf9155cc2f8a55fc1d478be8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/gcc-14_14.2.0-19_arm64.deb": {
+          "bytes": 529264,
+          "sha256": "f4ba77903d7efc3c64c69a8a98c7efa8ea1ae4331521bb74abd76bcc43f1b576",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/gcc-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1440,
+          "sha256": "c8390408ed90cc96d4fead68e313ed5ce147f1654807c23235818d535d2d7d7e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/gcc_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 5136,
+          "sha256": "f543b52e29a6780a78c73cf08e551e8e524d623c1092c477cfd8beb5285a86f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc_14.2.0-1_arm64.deb"
+        },
+        "openssl/build-debs/libasan8_14.2.0-19_arm64.deb": {
+          "bytes": 2577836,
+          "sha256": "5621bd583a3390b45726a8eebe23601f7fad86a25193e5349976cbf17e2bc9ad",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libasan8_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libatomic1_14.2.0-19_arm64.deb": {
+          "bytes": 10128,
+          "sha256": "7ccff90234484bf21ae5ecb79d25b6a84b2f4038f65dd139085b2e3a937cd8dc",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libatomic1_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libbinutils_2.44-3_arm64.deb": {
+          "bytes": 660392,
+          "sha256": "c51c0cc0272202d00fc3e6da8b96bfed2a428c239b689363abddd3bac6bd7a02",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libbinutils_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/libc-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 552664,
+          "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "openssl/build-debs/libc-dev-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 59704,
+          "sha256": "44c20e31afd22ddbd40983c908377627b2f95c12b01f2989db8ead23f7f8aaeb",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-dev-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "openssl/build-debs/libc6-dev_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 1626676,
+          "sha256": "ff13ef61799ef4a9526a9e9568a8b91311f25f4211ea2ab1dd63028c000b0451",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6-dev_2.41-12+deb13u5_arm64.deb"
+        },
+        "openssl/build-debs/libc6_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 2488872,
+          "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6_2.41-12+deb13u5_arm64.deb"
+        },
+        "openssl/build-debs/libcc1-0_14.2.0-19_arm64.deb": {
+          "bytes": 42164,
+          "sha256": "f5e390b5fd65432b820afa403a61ab4d6286948fc07ca3aacb4d230a81f5c9a5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libcc1-0_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libcrypt-dev_1%3a4.4.38-1_arm64.deb": {
+          "bytes": 123160,
+          "sha256": "eec6d4658495cdb8ce505cad91e0918edb8086677f280f3851c07ccd70543054",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxcrypt/libcrypt-dev_4.4.38-1_arm64.deb"
+        },
+        "openssl/build-debs/libctf-nobfd0_2.44-3_arm64.deb": {
+          "bytes": 152088,
+          "sha256": "7b1894cbd09bd59507af259ba680a1f5d3b68c6ba9e5d69508ea2d75b3f01be6",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf-nobfd0_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/libctf0_2.44-3_arm64.deb": {
+          "bytes": 84232,
+          "sha256": "12cb7df9eafd965c00c38a8720c5b78e7b0106390f69fe180a3b3589f407d550",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf0_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/libgcc-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2358568,
+          "sha256": "64b8ebc7182a69aa9525df6eab5e7eb849b947e350d821549f8a8a3e9b19e5ba",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgcc-14-dev_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libgdbm-compat4t64_1.24-2_arm64.deb": {
+          "bytes": 50320,
+          "sha256": "266b9a9e8d1ecc4393ebd29bec7e7c0fe1505b1d8755033af9e15df161316627",
+          "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm-compat4t64_1.24-2_arm64.deb"
+        },
+        "openssl/build-debs/libgomp1_14.2.0-19_arm64.deb": {
+          "bytes": 123520,
+          "sha256": "43e84cb7971d8a4d8870cab6204e998ea4f23ee1339bb0ff556dd881bac82d25",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgomp1_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libgprofng0_2.44-3_arm64.deb": {
+          "bytes": 667648,
+          "sha256": "4642014c84f3d070d889725900fbd23165189597d45deddc7bdcf9928de9e32e",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libgprofng0_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/libhwasan0_14.2.0-19_arm64.deb": {
+          "bytes": 1442000,
+          "sha256": "5a758db399fafd354b6488c4f250b7670fb1f61c31b4e4f329d0fbb750a17084",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libhwasan0_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libisl23_0.27-1_arm64.deb": {
+          "bytes": 600836,
+          "sha256": "21c490db3fa5f0a517c55090a199334da6164589772ebd922dff1e569c78515d",
+          "url": "https://deb.debian.org/debian/pool/main/i/isl/libisl23_0.27-1_arm64.deb"
+        },
+        "openssl/build-debs/libitm1_14.2.0-19_arm64.deb": {
+          "bytes": 24192,
+          "sha256": "d6f0255b498af876ab7bf4420672e43cbe58dcd577f0711131cbfbcbee283cdb",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libitm1_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libjansson4_2.14-2+b3_arm64.deb": {
+          "bytes": 39228,
+          "sha256": "7938472b1ddfa8b0c8f58d5f44406ae7a77a342dbb502a02f6bf292b4f853ab0",
+          "url": "https://deb.debian.org/debian/pool/main/j/jansson/libjansson4_2.14-2+b3_arm64.deb"
+        },
+        "openssl/build-debs/liblsan0_14.2.0-19_arm64.deb": {
+          "bytes": 1161132,
+          "sha256": "488a54a5fe01a926ae16d73dc7ea9f530f1bf63fae73640f741695eec2541a38",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/liblsan0_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libmpc3_1.3.1-1+b3_arm64.deb": {
+          "bytes": 50480,
+          "sha256": "d4cfe026a624e51641c80ef2af77387185714f62f3b5c87035e62d9ed8d9eec1",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpclib3/libmpc3_1.3.1-1+b3_arm64.deb"
+        },
+        "openssl/build-debs/libmpfr6_4.2.2-1_arm64.deb": {
+          "bytes": 685000,
+          "sha256": "628a4ef58cc6815880f72e9d3953984a379a017e4042bc575f1fcbf3954d79ac",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpfr4/libmpfr6_4.2.2-1_arm64.deb"
+        },
+        "openssl/build-debs/libperl5.40_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 4137968,
+          "sha256": "b3cf688efb6096b2f3d95e96ad5b216602146ad11f792c1f3b2f66b5556241d9",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/libperl5.40_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "openssl/build-debs/libsframe1_2.44-3_arm64.deb": {
+          "bytes": 77772,
+          "sha256": "d4a90764fa79858347aaa3197bc4489404f005d9cdbea9b2ec75a607ea5ff518",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libsframe1_2.44-3_arm64.deb"
+        },
+        "openssl/build-debs/libstdc++-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2294728,
+          "sha256": "8760122d044cd8eb8c69426311d6b5ce7bb8f0f76e9cda1944d153ae878138f8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libstdc++-14-dev_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libtsan2_14.2.0-19_arm64.deb": {
+          "bytes": 2383440,
+          "sha256": "c767c05f3dade13b5780478366029f2ff32e44bea852c6a4d7a1f93f1363d3e3",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libtsan2_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libubsan1_14.2.0-19_arm64.deb": {
+          "bytes": 1038924,
+          "sha256": "b5539003465ea1e60f66b9e3a1019da182e826c82d480944f3656b12351c74c8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libubsan1_14.2.0-19_arm64.deb"
+        },
+        "openssl/build-debs/libzstd-dev_1.5.7+dfsg-1_arm64.deb": {
+          "bytes": 335104,
+          "sha256": "05cf42de5c9fdf17f49f663b47bfe736f10fbc7080fcc3a86ac43d5d670de149",
+          "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/libzstd-dev_1.5.7+dfsg-1_arm64.deb"
+        },
+        "openssl/build-debs/linux-libc-dev_6.12.118-1_all.deb": {
+          "bytes": 3101880,
+          "sha256": "e3616a753c42c5591778df05c98a22db3b8731e7e8611aaeed4b89e14cb5271b",
+          "url": "https://deb.debian.org/debian/pool/updates/main/l/linux/linux-libc-dev_6.12.118-1_all.deb"
+        },
+        "openssl/build-debs/make_4.4.1-2_arm64.deb": {
+          "bytes": 452396,
+          "sha256": "043219839669c431def9bb410c4a827f115ee5bf377469d55c4ed905f81f73be",
+          "url": "https://deb.debian.org/debian/pool/main/m/make-dfsg/make_4.4.1-2_arm64.deb"
+        },
+        "openssl/build-debs/patch_2.8-2+deb13u1_arm64.deb": {
+          "bytes": 128496,
+          "sha256": "ee524dcd15b062ff762cdc1db1724d7850358d97b94b1db38ed7fdcce8e8adaa",
+          "url": "https://deb.debian.org/debian/pool/main/p/patch/patch_2.8-2+deb13u1_arm64.deb"
+        },
+        "openssl/build-debs/perl-modules-5.40_5.40.1-6+deb13u1_all.deb": {
+          "bytes": 3013728,
+          "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-modules-5.40_5.40.1-6+deb13u1_all.deb"
+        },
+        "openssl/build-debs/perl_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 267732,
+          "sha256": "7f15c34267346a0da41b9fe36d509d70dfb8d39561d275c4f4c53d429290f6d2",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "openssl/build-debs/rpcsvc-proto_1.4.3-1+b1_arm64.deb": {
+          "bytes": 60468,
+          "sha256": "6ae3c216e6c7d8e042ad3f122b8aa89aff56b2b5174b1c5780a7841b3becd61c",
+          "url": "https://deb.debian.org/debian/pool/main/r/rpcsvc-proto/rpcsvc-proto_1.4.3-1+b1_arm64.deb"
+        },
+        "openssl/build-debs/xz-utils_5.8.1-1+deb13u2_arm64.deb": {
+          "bytes": 657952,
+          "sha256": "d2151cc127dfc9948255ed40c271ff0683d9cf9553933a8b94cb29068ab5e715",
+          "url": "https://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1-1+deb13u2_arm64.deb"
+        },
+        "openssl/build-debs/zlib1g-dev_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 916416,
+          "sha256": "b8f6740af90accda9a571ae7f3e5b0a40a83c2e9d095f4cab56b92b8ae744757",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g-dev_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "openssl/build-debs/zlib1g_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 85028,
+          "sha256": "0e41b3d7ad8ad7fcd36dd4d61ca91a70018478fc4af652e044f4be770784ddff",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/binutils-aarch64-linux-gnu_2.44-3_arm64.deb": {
+          "bytes": 820124,
+          "sha256": "79cbf1459118bce3535133ffbf1fd2adbd57af65271f95c829af5cfa7f474168",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-aarch64-linux-gnu_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/binutils-common_2.44-3_arm64.deb": {
+          "bytes": 2508772,
+          "sha256": "f2d6b7d0b5521c4c90fc105e32819cd5268c1aa69104173b3fb856595f898249",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-common_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/binutils_2.44-3_arm64.deb": {
+          "bytes": 261580,
+          "sha256": "7228716cad15e78d1571f1cd4ec7141f64608790d0fbcba23a07f2eda6298272",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/cargo_1.85.1+dfsg1-1+deb13u1_arm64.deb": {
+          "bytes": 5599756,
+          "sha256": "4d30794490c7db799216f35e09fcf84cc05a198efd0c013f498bc4674dac6c4a",
+          "url": "https://deb.debian.org/debian/pool/main/r/rustc/cargo_1.85.1+dfsg1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 9168888,
+          "sha256": "8e588ac3efe06f7784b08feac584c70e6965b74c045bae7e4e80bb42938f7dbe",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/cpp-14_14.2.0-19_arm64.deb": {
+          "bytes": 1276,
+          "sha256": "0b440241f7c3e2e87f2d0f1dd36792c4e2705d38a699ed331818799f21ef9437",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/cpp-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 4832,
+          "sha256": "bd9c9f4536a0aea285c4735d2dfedff624f8457b8f1bb3d15ab924e029cd7aff",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "rust-inputs/debs/cpp_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1568,
+          "sha256": "88b702b0fa5942a4ee52c27f1ccf6316b831357e86693b709d216ba43348172e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp_14.2.0-1_arm64.deb"
+        },
+        "rust-inputs/debs/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 17686496,
+          "sha256": "5ff736a332ba5d60ad463355ed25c8c39da1281acf9155cc2f8a55fc1d478be8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/gcc-14_14.2.0-19_arm64.deb": {
+          "bytes": 529264,
+          "sha256": "f4ba77903d7efc3c64c69a8a98c7efa8ea1ae4331521bb74abd76bcc43f1b576",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/gcc-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1440,
+          "sha256": "c8390408ed90cc96d4fead68e313ed5ce147f1654807c23235818d535d2d7d7e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "rust-inputs/debs/gcc_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 5136,
+          "sha256": "f543b52e29a6780a78c73cf08e551e8e524d623c1092c477cfd8beb5285a86f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc_14.2.0-1_arm64.deb"
+        },
+        "rust-inputs/debs/libasan8_14.2.0-19_arm64.deb": {
+          "bytes": 2577836,
+          "sha256": "5621bd583a3390b45726a8eebe23601f7fad86a25193e5349976cbf17e2bc9ad",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libasan8_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libatomic1_14.2.0-19_arm64.deb": {
+          "bytes": 10128,
+          "sha256": "7ccff90234484bf21ae5ecb79d25b6a84b2f4038f65dd139085b2e3a937cd8dc",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libatomic1_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libbinutils_2.44-3_arm64.deb": {
+          "bytes": 660392,
+          "sha256": "c51c0cc0272202d00fc3e6da8b96bfed2a428c239b689363abddd3bac6bd7a02",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libbinutils_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/libbrotli1_1.1.0-2+deb13u1_arm64.deb": {
+          "bytes": 293896,
+          "sha256": "a8caceeddd3a407888234ef488e0a773299e05fac703c8695166a0a9bc86587f",
+          "url": "https://deb.debian.org/debian/pool/main/b/brotli/libbrotli1_1.1.0-2+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libc-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 552664,
+          "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "rust-inputs/debs/libc-dev-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 59704,
+          "sha256": "44c20e31afd22ddbd40983c908377627b2f95c12b01f2989db8ead23f7f8aaeb",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-dev-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "rust-inputs/debs/libc6-dev_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 1626676,
+          "sha256": "ff13ef61799ef4a9526a9e9568a8b91311f25f4211ea2ab1dd63028c000b0451",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6-dev_2.41-12+deb13u5_arm64.deb"
+        },
+        "rust-inputs/debs/libc6_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 2488872,
+          "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6_2.41-12+deb13u5_arm64.deb"
+        },
+        "rust-inputs/debs/libcc1-0_14.2.0-19_arm64.deb": {
+          "bytes": 42164,
+          "sha256": "f5e390b5fd65432b820afa403a61ab4d6286948fc07ca3aacb4d230a81f5c9a5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libcc1-0_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libcom-err2_1.47.2-3+b12_arm64.deb": {
+          "bytes": 24932,
+          "sha256": "1acba7e14a17a3f4b8008454e1a75840a5cdff4259d3c1d369092d82089ea0d8",
+          "url": "https://deb.debian.org/debian/pool/main/e/e2fsprogs/libcom-err2_1.47.2-3+b12_arm64.deb"
+        },
+        "rust-inputs/debs/libcrypt-dev_1%3a4.4.38-1_arm64.deb": {
+          "bytes": 123160,
+          "sha256": "eec6d4658495cdb8ce505cad91e0918edb8086677f280f3851c07ccd70543054",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxcrypt/libcrypt-dev_4.4.38-1_arm64.deb"
+        },
+        "rust-inputs/debs/libctf-nobfd0_2.44-3_arm64.deb": {
+          "bytes": 152088,
+          "sha256": "7b1894cbd09bd59507af259ba680a1f5d3b68c6ba9e5d69508ea2d75b3f01be6",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf-nobfd0_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/libctf0_2.44-3_arm64.deb": {
+          "bytes": 84232,
+          "sha256": "12cb7df9eafd965c00c38a8720c5b78e7b0106390f69fe180a3b3589f407d550",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf0_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/libcurl4t64_8.14.1-2+deb13u7_arm64.deb": {
+          "bytes": 361184,
+          "sha256": "264718feb6d2466fff82da4dd783a1f221ae73031fbda7a9e398cc5861fd2303",
+          "url": "https://deb.debian.org/debian/pool/main/c/curl/libcurl4t64_8.14.1-2+deb13u7_arm64.deb"
+        },
+        "rust-inputs/debs/libedit2_3.1-20250104-1_arm64.deb": {
+          "bytes": 89296,
+          "sha256": "496c31df89fac9cb7e98102fcc21daf887376dcd9914f6322c86dd5bd4360ff1",
+          "url": "https://deb.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20250104-1_arm64.deb"
+        },
+        "rust-inputs/debs/libffi-dev_3.4.8-2_arm64.deb": {
+          "bytes": 57192,
+          "sha256": "55f6d389cc954407cdba6e4ba5e7039dd2042d2ca8929d6f5eb49d6b97ba92de",
+          "url": "https://deb.debian.org/debian/pool/main/libf/libffi/libffi-dev_3.4.8-2_arm64.deb"
+        },
+        "rust-inputs/debs/libgcc-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2358568,
+          "sha256": "64b8ebc7182a69aa9525df6eab5e7eb849b947e350d821549f8a8a3e9b19e5ba",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgcc-14-dev_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libgdbm-compat4t64_1.24-2_arm64.deb": {
+          "bytes": 50320,
+          "sha256": "266b9a9e8d1ecc4393ebd29bec7e7c0fe1505b1d8755033af9e15df161316627",
+          "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm-compat4t64_1.24-2_arm64.deb"
+        },
+        "rust-inputs/debs/libgit2-1.9_1.9.0+ds-2+deb13u1_arm64.deb": {
+          "bytes": 517584,
+          "sha256": "067cf8d040b279c244ce9c9e4b5aa112e628b643dbccb60caa595d91414c4bdf",
+          "url": "https://deb.debian.org/debian/pool/main/libg/libgit2/libgit2-1.9_1.9.0+ds-2+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libgnutls30t64_3.8.9-3+deb13u4_arm64.deb": {
+          "bytes": 1378804,
+          "sha256": "337ef41ab360015d051d6a07f85f8aa6706b35712e3dea23157eba9c902196e2",
+          "url": "https://deb.debian.org/debian/pool/main/g/gnutls28/libgnutls30t64_3.8.9-3+deb13u4_arm64.deb"
+        },
+        "rust-inputs/debs/libgomp1_14.2.0-19_arm64.deb": {
+          "bytes": 123520,
+          "sha256": "43e84cb7971d8a4d8870cab6204e998ea4f23ee1339bb0ff556dd881bac82d25",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgomp1_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libgprofng0_2.44-3_arm64.deb": {
+          "bytes": 667648,
+          "sha256": "4642014c84f3d070d889725900fbd23165189597d45deddc7bdcf9928de9e32e",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libgprofng0_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/libgssapi-krb5-2_1.21.3-5+deb13u2_arm64.deb": {
+          "bytes": 127872,
+          "sha256": "10eed2ae453ec56135bf23fbf8b2b19cc6536017a3fe7702814c2bc6e185bf8c",
+          "url": "https://deb.debian.org/debian/pool/updates/main/k/krb5/libgssapi-krb5-2_1.21.3-5+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libhttp-parser2.9_2.9.4-6+b2_arm64.deb": {
+          "bytes": 20212,
+          "sha256": "b83c393474812e969b6eb8847e2d8a6210f0f5708c21f5e9b94971127f0bdae4",
+          "url": "https://deb.debian.org/debian/pool/main/h/http-parser/libhttp-parser2.9_2.9.4-6+b2_arm64.deb"
+        },
+        "rust-inputs/debs/libhwasan0_14.2.0-19_arm64.deb": {
+          "bytes": 1442000,
+          "sha256": "5a758db399fafd354b6488c4f250b7670fb1f61c31b4e4f329d0fbb750a17084",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libhwasan0_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libidn2-0_2.3.8-2_arm64.deb": {
+          "bytes": 107232,
+          "sha256": "d2e5cef812f15db1eeb35f0a193158ee102a9e94284036c0e293521f2761d2d7",
+          "url": "https://deb.debian.org/debian/pool/main/libi/libidn2/libidn2-0_2.3.8-2_arm64.deb"
+        },
+        "rust-inputs/debs/libisl23_0.27-1_arm64.deb": {
+          "bytes": 600836,
+          "sha256": "21c490db3fa5f0a517c55090a199334da6164589772ebd922dff1e569c78515d",
+          "url": "https://deb.debian.org/debian/pool/main/i/isl/libisl23_0.27-1_arm64.deb"
+        },
+        "rust-inputs/debs/libitm1_14.2.0-19_arm64.deb": {
+          "bytes": 24192,
+          "sha256": "d6f0255b498af876ab7bf4420672e43cbe58dcd577f0711131cbfbcbee283cdb",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libitm1_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libjansson4_2.14-2+b3_arm64.deb": {
+          "bytes": 39228,
+          "sha256": "7938472b1ddfa8b0c8f58d5f44406ae7a77a342dbb502a02f6bf292b4f853ab0",
+          "url": "https://deb.debian.org/debian/pool/main/j/jansson/libjansson4_2.14-2+b3_arm64.deb"
+        },
+        "rust-inputs/debs/libk5crypto3_1.21.3-5+deb13u2_arm64.deb": {
+          "bytes": 82180,
+          "sha256": "1982449c930a9b52de8f976cb53af9e8aafb4382e63d7f619659a1e408a2cc5c",
+          "url": "https://deb.debian.org/debian/pool/updates/main/k/krb5/libk5crypto3_1.21.3-5+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libkeyutils1_1.6.3-6_arm64.deb": {
+          "bytes": 9716,
+          "sha256": "5e680f317a6613161986417fb3ed63007c9228343f5ac2348551b103cc7fd7b4",
+          "url": "https://deb.debian.org/debian/pool/main/k/keyutils/libkeyutils1_1.6.3-6_arm64.deb"
+        },
+        "rust-inputs/debs/libkrb5-3_1.21.3-5+deb13u2_arm64.deb": {
+          "bytes": 309152,
+          "sha256": "613608b23bf38abc0ddbf167e6498e443e3cfb3d48e397f01a1af4d3497779f7",
+          "url": "https://deb.debian.org/debian/pool/updates/main/k/krb5/libkrb5-3_1.21.3-5+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libkrb5support0_1.21.3-5+deb13u2_arm64.deb": {
+          "bytes": 33236,
+          "sha256": "637bc4633e83c7d46c08aa00e1680440bd63a1329e5e552955dab59579ddf1d4",
+          "url": "https://deb.debian.org/debian/pool/updates/main/k/krb5/libkrb5support0_1.21.3-5+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libldap2_2.6.10+dfsg-1_arm64.deb": {
+          "bytes": 179312,
+          "sha256": "38fae6af20d41e4b0a8ea1b96d0b81a7a5551a61595bc866c9af870eadfdf1bd",
+          "url": "https://deb.debian.org/debian/pool/main/o/openldap/libldap2_2.6.10+dfsg-1_arm64.deb"
+        },
+        "rust-inputs/debs/libllvm19_1%3a19.1.7-3+b1_arm64.deb": {
+          "bytes": 23285344,
+          "sha256": "8a48e1a49f7fcc3be74e697767d72902f4b03041401d1529bcfad1849df39148",
+          "url": "https://deb.debian.org/debian/pool/main/l/llvm-toolchain-19/libllvm19_19.1.7-3+b1_arm64.deb"
+        },
+        "rust-inputs/debs/liblsan0_14.2.0-19_arm64.deb": {
+          "bytes": 1161132,
+          "sha256": "488a54a5fe01a926ae16d73dc7ea9f530f1bf63fae73640f741695eec2541a38",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/liblsan0_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libmbedcrypto16_3.6.6-0.1~deb13u1_arm64.deb": {
+          "bytes": 351428,
+          "sha256": "5b30446d96fac946849bfc74c67c85b0d30c1f760eea0bd08a2ee14956f304c7",
+          "url": "https://deb.debian.org/debian/pool/main/m/mbedtls/libmbedcrypto16_3.6.6-0.1~deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libmbedtls21_3.6.6-0.1~deb13u1_arm64.deb": {
+          "bytes": 232280,
+          "sha256": "8a7d2124f53a7162f309f5fe7a882b885884e0dd0fb95ba3da7170e4a72005e8",
+          "url": "https://deb.debian.org/debian/pool/main/m/mbedtls/libmbedtls21_3.6.6-0.1~deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libmbedx509-7_3.6.6-0.1~deb13u1_arm64.deb": {
+          "bytes": 153712,
+          "sha256": "e3650fb2652a32e415d2518811b76b57056c07680eef868ba84313997c5b03cf",
+          "url": "https://deb.debian.org/debian/pool/main/m/mbedtls/libmbedx509-7_3.6.6-0.1~deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libmpc3_1.3.1-1+b3_arm64.deb": {
+          "bytes": 50480,
+          "sha256": "d4cfe026a624e51641c80ef2af77387185714f62f3b5c87035e62d9ed8d9eec1",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpclib3/libmpc3_1.3.1-1+b3_arm64.deb"
+        },
+        "rust-inputs/debs/libmpfr6_4.2.2-1_arm64.deb": {
+          "bytes": 685000,
+          "sha256": "628a4ef58cc6815880f72e9d3953984a379a017e4042bc575f1fcbf3954d79ac",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpfr4/libmpfr6_4.2.2-1_arm64.deb"
+        },
+        "rust-inputs/debs/libnghttp2-14_1.64.0-1.1+deb13u2_arm64.deb": {
+          "bytes": 71608,
+          "sha256": "968f022ccb34f89c7ac4df0567b4d916f05f9235ad39fe2cf1ab6a12bacf5d80",
+          "url": "https://deb.debian.org/debian/pool/main/n/nghttp2/libnghttp2-14_1.64.0-1.1+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libnghttp3-9_1.8.0-1_arm64.deb": {
+          "bytes": 63232,
+          "sha256": "26bfb8d1bead043f57d95663bab02f7611e7078fb7cf71383fa480c4b4c24d81",
+          "url": "https://deb.debian.org/debian/pool/main/n/nghttp3/libnghttp3-9_1.8.0-1_arm64.deb"
+        },
+        "rust-inputs/debs/libp11-kit0_0.25.5-3_arm64.deb": {
+          "bytes": 409108,
+          "sha256": "78bfc746e68a5217e845f488f69100ed89d10c8886fbd3ffce937acb6a7d88fb",
+          "url": "https://deb.debian.org/debian/pool/main/p/p11-kit/libp11-kit0_0.25.5-3_arm64.deb"
+        },
+        "rust-inputs/debs/libperl5.40_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 4137968,
+          "sha256": "b3cf688efb6096b2f3d95e96ad5b216602146ad11f792c1f3b2f66b5556241d9",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/libperl5.40_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libpkgconf3_1.8.1-4_arm64.deb": {
+          "bytes": 35324,
+          "sha256": "8a9477ed7af47d7ddefa1fe02bf9f87d6778e8cc59062064f1b076880a7a14a5",
+          "url": "https://deb.debian.org/debian/pool/main/p/pkgconf/libpkgconf3_1.8.1-4_arm64.deb"
+        },
+        "rust-inputs/debs/libpsl5t64_0.21.2-1.1+b1_arm64.deb": {
+          "bytes": 57076,
+          "sha256": "7ea03d8a7d16edce7b1b1e94980c058c0f1fb3c595eb9154b0e8590d0e7f75af",
+          "url": "https://deb.debian.org/debian/pool/main/libp/libpsl/libpsl5t64_0.21.2-1.1+b1_arm64.deb"
+        },
+        "rust-inputs/debs/librtmp1_2.4+20151223.gitfa8646d.1-2+b5_arm64.deb": {
+          "bytes": 56840,
+          "sha256": "20d52d20c4834158e956ae8e1d42a61d22330062052116d5422daa2d3b1d433b",
+          "url": "https://deb.debian.org/debian/pool/main/r/rtmpdump/librtmp1_2.4+20151223.gitfa8646d.1-2+b5_arm64.deb"
+        },
+        "rust-inputs/debs/libsasl2-2_2.1.28+dfsg1-9_arm64.deb": {
+          "bytes": 55628,
+          "sha256": "6431628c62524c8397255c1c4a7c7ef63661b801f3be9a59ad41e7a2e46e6210",
+          "url": "https://deb.debian.org/debian/pool/main/c/cyrus-sasl2/libsasl2-2_2.1.28+dfsg1-9_arm64.deb"
+        },
+        "rust-inputs/debs/libsasl2-modules-db_2.1.28+dfsg1-9_arm64.deb": {
+          "bytes": 20144,
+          "sha256": "ed6eb05f8ded71ab16a0369845805b373fc8a71c0e7d33f73fa2fb11e83a1977",
+          "url": "https://deb.debian.org/debian/pool/main/c/cyrus-sasl2/libsasl2-modules-db_2.1.28+dfsg1-9_arm64.deb"
+        },
+        "rust-inputs/debs/libsframe1_2.44-3_arm64.deb": {
+          "bytes": 77772,
+          "sha256": "d4a90764fa79858347aaa3197bc4489404f005d9cdbea9b2ec75a607ea5ff518",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libsframe1_2.44-3_arm64.deb"
+        },
+        "rust-inputs/debs/libssh2-1t64_1.11.1-1+deb13u2_arm64.deb": {
+          "bytes": 236268,
+          "sha256": "245565f4ce5493d67a3c54e26bc3d9cf28b1b70eeb912de7cda61af52268017d",
+          "url": "https://deb.debian.org/debian/pool/main/libs/libssh2/libssh2-1t64_1.11.1-1+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/libstd-rust-1.85_1.85.1+dfsg1-1+deb13u1_arm64.deb": {
+          "bytes": 16981260,
+          "sha256": "e3edb07a8e8f6e428f07bf366f1006f00223d204a5ff9938675ff192e9dde3a7",
+          "url": "https://deb.debian.org/debian/pool/main/r/rustc/libstd-rust-1.85_1.85.1+dfsg1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libstd-rust-dev_1.85.1+dfsg1-1+deb13u1_arm64.deb": {
+          "bytes": 37696188,
+          "sha256": "176facb3ae2ee70d8f7e3a7c2f6c2b0fca16211ae2edadad9e6ce133dedd2ad1",
+          "url": "https://deb.debian.org/debian/pool/main/r/rustc/libstd-rust-dev_1.85.1+dfsg1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libtasn1-6_4.20.0-2+deb13u1_arm64.deb": {
+          "bytes": 47304,
+          "sha256": "e421da949cd26245f24c594265d6a01900b5e060e80793f68b977f7bfaa009ef",
+          "url": "https://deb.debian.org/debian/pool/main/libt/libtasn1-6/libtasn1-6_4.20.0-2+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/libtsan2_14.2.0-19_arm64.deb": {
+          "bytes": 2383440,
+          "sha256": "c767c05f3dade13b5780478366029f2ff32e44bea852c6a4d7a1f93f1363d3e3",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libtsan2_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libubsan1_14.2.0-19_arm64.deb": {
+          "bytes": 1038924,
+          "sha256": "b5539003465ea1e60f66b9e3a1019da182e826c82d480944f3656b12351c74c8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libubsan1_14.2.0-19_arm64.deb"
+        },
+        "rust-inputs/debs/libunistring5_1.3-2_arm64.deb": {
+          "bytes": 452856,
+          "sha256": "4847467a0e47039837895e88f5a99a4a86a3d8266be40c3c896fc7c10d552dc7",
+          "url": "https://deb.debian.org/debian/pool/main/libu/libunistring/libunistring5_1.3-2_arm64.deb"
+        },
+        "rust-inputs/debs/libxml2_2.12.7+dfsg+really2.9.14-2.1+deb13u3_arm64.deb": {
+          "bytes": 631428,
+          "sha256": "a66b9c960acef8ed9653223cbd00b155a92ebb758ea13a788c41609246c23bc7",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxml2/libxml2_2.12.7+dfsg+really2.9.14-2.1+deb13u3_arm64.deb"
+        },
+        "rust-inputs/debs/libz3-4_4.13.3-1_arm64.deb": {
+          "bytes": 7506868,
+          "sha256": "29a7b924a5a38c9ac4e2a64aa11586a9c54f26b579b18e4f75adf8f7c1106e45",
+          "url": "https://deb.debian.org/debian/pool/main/z/z3/libz3-4_4.13.3-1_arm64.deb"
+        },
+        "rust-inputs/debs/libzstd-dev_1.5.7+dfsg-1_arm64.deb": {
+          "bytes": 335104,
+          "sha256": "05cf42de5c9fdf17f49f663b47bfe736f10fbc7080fcc3a86ac43d5d670de149",
+          "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/libzstd-dev_1.5.7+dfsg-1_arm64.deb"
+        },
+        "rust-inputs/debs/linux-libc-dev_6.12.118-1_all.deb": {
+          "bytes": 3101880,
+          "sha256": "e3616a753c42c5591778df05c98a22db3b8731e7e8611aaeed4b89e14cb5271b",
+          "url": "https://deb.debian.org/debian/pool/updates/main/l/linux/linux-libc-dev_6.12.118-1_all.deb"
+        },
+        "rust-inputs/debs/make_4.4.1-2_arm64.deb": {
+          "bytes": 452396,
+          "sha256": "043219839669c431def9bb410c4a827f115ee5bf377469d55c4ed905f81f73be",
+          "url": "https://deb.debian.org/debian/pool/main/m/make-dfsg/make_4.4.1-2_arm64.deb"
+        },
+        "rust-inputs/debs/patch_2.8-2+deb13u1_arm64.deb": {
+          "bytes": 128496,
+          "sha256": "ee524dcd15b062ff762cdc1db1724d7850358d97b94b1db38ed7fdcce8e8adaa",
+          "url": "https://deb.debian.org/debian/pool/main/p/patch/patch_2.8-2+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/perl-modules-5.40_5.40.1-6+deb13u1_all.deb": {
+          "bytes": 3013728,
+          "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-modules-5.40_5.40.1-6+deb13u1_all.deb"
+        },
+        "rust-inputs/debs/perl_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 267732,
+          "sha256": "7f15c34267346a0da41b9fe36d509d70dfb8d39561d275c4f4c53d429290f6d2",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/pkg-config_1.8.1-4_arm64.deb": {
+          "bytes": 13968,
+          "sha256": "fef9662964fa4ff2ebbeefe076adffad79374f744274085c8ce931d5feb462a1",
+          "url": "https://deb.debian.org/debian/pool/main/p/pkgconf/pkg-config_1.8.1-4_arm64.deb"
+        },
+        "rust-inputs/debs/pkgconf-bin_1.8.1-4_arm64.deb": {
+          "bytes": 29636,
+          "sha256": "bce0638102650b61224901da320c2f867a91cfc133532a5fb526d2ce05465fe6",
+          "url": "https://deb.debian.org/debian/pool/main/p/pkgconf/pkgconf-bin_1.8.1-4_arm64.deb"
+        },
+        "rust-inputs/debs/pkgconf_1.8.1-4_arm64.deb": {
+          "bytes": 26148,
+          "sha256": "aaf89947e9a5a6d980d14f43dfde8d0ad4e869b5cd33567321ca8baeb7ee7740",
+          "url": "https://deb.debian.org/debian/pool/main/p/pkgconf/pkgconf_1.8.1-4_arm64.deb"
+        },
+        "rust-inputs/debs/rpcsvc-proto_1.4.3-1+b1_arm64.deb": {
+          "bytes": 60468,
+          "sha256": "6ae3c216e6c7d8e042ad3f122b8aa89aff56b2b5174b1c5780a7841b3becd61c",
+          "url": "https://deb.debian.org/debian/pool/main/r/rpcsvc-proto/rpcsvc-proto_1.4.3-1+b1_arm64.deb"
+        },
+        "rust-inputs/debs/rustc_1.85.1+dfsg1-1+deb13u1_arm64.deb": {
+          "bytes": 3441312,
+          "sha256": "0c718093e5fc52ab45d1f76ae87906e4640983c6b226951beb4b961d2414bd40",
+          "url": "https://deb.debian.org/debian/pool/main/r/rustc/rustc_1.85.1+dfsg1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/xz-utils_5.8.1-1+deb13u2_arm64.deb": {
+          "bytes": 657952,
+          "sha256": "d2151cc127dfc9948255ed40c271ff0683d9cf9553933a8b94cb29068ab5e715",
+          "url": "https://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1-1+deb13u2_arm64.deb"
+        },
+        "rust-inputs/debs/zlib1g-dev_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 916416,
+          "sha256": "b8f6740af90accda9a571ae7f3e5b0a40a83c2e9d095f4cab56b92b8ae744757",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g-dev_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "rust-inputs/debs/zlib1g_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 85028,
+          "sha256": "0e41b3d7ad8ad7fcd36dd4d61ca91a70018478fc4af652e044f4be770784ddff",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "crypto-inputs/wheelhouse/maturin-1.14.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl": {
+          "bytes": 10085181,
+          "sha256": "a131d912b5267e640bc96d70f4914e10590aed64082ec9abacba7cea52004224",
+          "url": "https://files.pythonhosted.org/packages/e5/33/b096412bd6a7cb399652b260666f901adf88a687181a6dbd6a3f89f0a94e/maturin-1.14.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl"
+        },
+        "crypto-inputs/wheelhouse/setuptools-80.9.0-py3-none-any.whl": {
+          "bytes": 1201486,
+          "sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+          "url": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl"
+        },
+        "crypto-inputs/wheelhouse/cffi-2.1.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl": {
+          "bytes": 222389,
+          "sha256": "68e62fe11f30d5ca8289242866f0a5291402d8529ca2178ab8afc5c9694ae890"
+        },
+        "crypto-inputs/wheelhouse/pycparser-3.11-py3-none-any.whl": {
+          "bytes": 51178,
+          "sha256": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80"
+        },
+        "crypto-inputs/crates/asn1-0.24.1.crate": {
+          "bytes": 50502,
+          "sha256": "c9795210620c0cb3f9a7ce4f882808c38e1ef7b347c90591dceae0886e031fb1",
+          "url": "https://static.crates.io/crates/asn1/asn1-0.24.1.crate"
+        },
+        "crypto-inputs/crates/asn1_derive-0.24.1.crate": {
+          "bytes": 9534,
+          "sha256": "909e307f1cc32bb8bccbd98f446e6d1bf03fa30f7b53a4337da7181ad30fa11a",
+          "url": "https://static.crates.io/crates/asn1_derive/asn1_derive-0.24.1.crate"
+        },
+        "crypto-inputs/crates/base64-0.23.0.crate": {
+          "bytes": 93578,
+          "sha256": "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9",
+          "url": "https://static.crates.io/crates/base64/base64-0.23.0.crate"
+        },
+        "crypto-inputs/crates/bitflags-2.13.1.crate": {
+          "bytes": 51395,
+          "sha256": "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da",
+          "url": "https://static.crates.io/crates/bitflags/bitflags-2.13.1.crate"
+        },
+        "crypto-inputs/crates/cc-1.4.0.crate": {
+          "bytes": 97878,
+          "sha256": "5add81bb678e6cb321aff7fa0dc7689ad82b112dbc032cea19f91d6b8e3582b9",
+          "url": "https://static.crates.io/crates/cc/cc-1.4.0.crate"
+        },
+        "crypto-inputs/crates/cfg-if-1.0.4.crate": {
+          "bytes": 9360,
+          "sha256": "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801",
+          "url": "https://static.crates.io/crates/cfg-if/cfg-if-1.0.4.crate"
+        },
+        "crypto-inputs/crates/find-msvc-tools-0.1.9.crate": {
+          "bytes": 31493,
+          "sha256": "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582",
+          "url": "https://static.crates.io/crates/find-msvc-tools/find-msvc-tools-0.1.9.crate"
+        },
+        "crypto-inputs/crates/foreign-types-0.3.2.crate": {
+          "bytes": 7504,
+          "sha256": "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1",
+          "url": "https://static.crates.io/crates/foreign-types/foreign-types-0.3.2.crate"
+        },
+        "crypto-inputs/crates/foreign-types-shared-0.1.1.crate": {
+          "bytes": 5672,
+          "sha256": "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b",
+          "url": "https://static.crates.io/crates/foreign-types-shared/foreign-types-shared-0.1.1.crate"
+        },
+        "crypto-inputs/crates/heck-0.5.0.crate": {
+          "bytes": 11517,
+          "sha256": "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea",
+          "url": "https://static.crates.io/crates/heck/heck-0.5.0.crate"
+        },
+        "crypto-inputs/crates/itoa-1.0.18.crate": {
+          "bytes": 15935,
+          "sha256": "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682",
+          "url": "https://static.crates.io/crates/itoa/itoa-1.0.18.crate"
+        },
+        "crypto-inputs/crates/libc-0.2.189.crate": {
+          "bytes": 851502,
+          "sha256": "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2",
+          "url": "https://static.crates.io/crates/libc/libc-0.2.189.crate"
+        },
+        "crypto-inputs/crates/once_cell-1.21.4.crate": {
+          "bytes": 35010,
+          "sha256": "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50",
+          "url": "https://static.crates.io/crates/once_cell/once_cell-1.21.4.crate"
+        },
+        "crypto-inputs/crates/openssl-0.10.81.crate": {
+          "bytes": 311187,
+          "sha256": "77823a27f0babb03091cb9ed9ef80af3b39dbc82f97e8fa530374b7dafd87a45",
+          "url": "https://static.crates.io/crates/openssl/openssl-0.10.81.crate"
+        },
+        "crypto-inputs/crates/openssl-macros-0.1.1.crate": {
+          "bytes": 5601,
+          "sha256": "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c",
+          "url": "https://static.crates.io/crates/openssl-macros/openssl-macros-0.1.1.crate"
+        },
+        "crypto-inputs/crates/openssl-sys-0.9.117.crate": {
+          "bytes": 76045,
+          "sha256": "b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695",
+          "url": "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.117.crate"
+        },
+        "crypto-inputs/crates/pem-4.0.0.crate": {
+          "bytes": 18770,
+          "sha256": "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120",
+          "url": "https://static.crates.io/crates/pem/pem-4.0.0.crate"
+        },
+        "crypto-inputs/crates/pkg-config-0.3.33.crate": {
+          "bytes": 21590,
+          "sha256": "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e",
+          "url": "https://static.crates.io/crates/pkg-config/pkg-config-0.3.33.crate"
+        },
+        "crypto-inputs/crates/portable-atomic-1.14.0.crate": {
+          "bytes": 200703,
+          "sha256": "3d20d5497ef88037a52ff98267d066e7f11fcc5e99bbfbd58a42336193aacec3",
+          "url": "https://static.crates.io/crates/portable-atomic/portable-atomic-1.14.0.crate"
+        },
+        "crypto-inputs/crates/proc-macro2-1.0.107.crate": {
+          "bytes": 59588,
+          "sha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+          "url": "https://static.crates.io/crates/proc-macro2/proc-macro2-1.0.107.crate"
+        },
+        "crypto-inputs/crates/pyo3-0.29.2.crate": {
+          "bytes": 1255741,
+          "sha256": "4688ddedf473e32662b9b067670129a8afb8c18e351482c70d62ba4a88171e8b",
+          "url": "https://static.crates.io/crates/pyo3/pyo3-0.29.2.crate"
+        },
+        "crypto-inputs/crates/pyo3-build-config-0.29.2.crate": {
+          "bytes": 41104,
+          "sha256": "f41027e41b4bd03f6e60f9f417fe24a6341a6bb744edd62b6f709f2a52ea30e9",
+          "url": "https://static.crates.io/crates/pyo3-build-config/pyo3-build-config-0.29.2.crate"
+        },
+        "crypto-inputs/crates/pyo3-ffi-0.29.2.crate": {
+          "bytes": 90029,
+          "sha256": "e591a95526fead067432c3b3a33fc74770b87b1e04e73671090d9c2055a2b327",
+          "url": "https://static.crates.io/crates/pyo3-ffi/pyo3-ffi-0.29.2.crate"
+        },
+        "crypto-inputs/crates/pyo3-macros-0.29.2.crate": {
+          "bytes": 9044,
+          "sha256": "73225868fc1cd84eef2c3c230ddb91273bf1de46aeb8a4248da76d32a0924a1c",
+          "url": "https://static.crates.io/crates/pyo3-macros/pyo3-macros-0.29.2.crate"
+        },
+        "crypto-inputs/crates/pyo3-macros-backend-0.29.2.crate": {
+          "bytes": 93749,
+          "sha256": "571575aa3749fa6216757dd47d2a3e7ef360f329a40f0666a9fbd14889024952",
+          "url": "https://static.crates.io/crates/pyo3-macros-backend/pyo3-macros-backend-0.29.2.crate"
+        },
+        "crypto-inputs/crates/quote-1.0.47.crate": {
+          "bytes": 31622,
+          "sha256": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+          "url": "https://static.crates.io/crates/quote/quote-1.0.47.crate"
+        },
+        "crypto-inputs/crates/self_cell-1.3.0.crate": {
+          "bytes": 23869,
+          "sha256": "2ab42ca02749e120097e328d91d415325bdf43b1c72c4c8badf37375fe40a813",
+          "url": "https://static.crates.io/crates/self_cell/self_cell-1.3.0.crate"
+        },
+        "crypto-inputs/crates/shlex-2.0.1.crate": {
+          "bytes": 19332,
+          "sha256": "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba",
+          "url": "https://static.crates.io/crates/shlex/shlex-2.0.1.crate"
+        },
+        "crypto-inputs/crates/syn-2.0.119.crate": {
+          "bytes": 307407,
+          "sha256": "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297",
+          "url": "https://static.crates.io/crates/syn/syn-2.0.119.crate"
+        },
+        "crypto-inputs/crates/target-lexicon-0.13.5.crate": {
+          "bytes": 26928,
+          "sha256": "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca",
+          "url": "https://static.crates.io/crates/target-lexicon/target-lexicon-0.13.5.crate"
+        },
+        "crypto-inputs/crates/unicode-ident-1.0.24.crate": {
+          "bytes": 49298,
+          "sha256": "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75",
+          "url": "https://static.crates.io/crates/unicode-ident/unicode-ident-1.0.24.crate"
+        },
+        "crypto-inputs/crates/vcpkg-0.2.15.crate": {
+          "bytes": 228735,
+          "sha256": "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426",
+          "url": "https://static.crates.io/crates/vcpkg/vcpkg-0.2.15.crate"
+        },
+        "crypto-inputs/Cargo.lock": {
+          "bytes": 8528,
+          "sha256": "98778208027ce05bfff0db88c290f28355eb20e685f0c728775359fb91a1a4c4"
+        },
+        "crypto-inputs/requirements.build.lock": {
+          "bytes": 379,
+          "sha256": "04532e7e4740da135810ea8d9a3b222629e8df088d7ccbdc646f0c21011daa16"
+        },
+        "crypto-inputs/vendor-files.json": {
+          "bytes": 414316,
+          "sha256": "9c6e5a205a1b85fcc4cef617a4e8e240f58262b230e6048fe3787ea3504947f2"
+        },
+        "review/notice-provenance.json": {
+          "bytes": 1565,
+          "sha256": "687ee859def4dec8291d1eec8f4472e42e235db8efd10cf5ce34ea3f30bd54e9"
+        },
+        "review/node-SHASUMS256.txt.asc": {
+          "bytes": 3449,
+          "sha256": "aaaff9ec5c8c5f0997786c06088134ddb4b21a41f74e872b30ed1acca309e2b5"
+        },
+        "review/node-signature-review.json": {
+          "bytes": 340,
+          "sha256": "b955953e1076a385c87f2e4a77abe8170718d65d3e99edcbde092c5069c9657c"
+        },
+        "review/5BE8A3F6C8A5C01D106C0AD820B1A390B168D356.asc": {
+          "bytes": 1410,
+          "sha256": "3adca70e0239a43803df385987be8303ed9abb3c2fb203feeda31dc6a5256731"
+        },
+        "review/openssl-parent-packages.json": {
+          "bytes": 1635,
+          "sha256": "47dbe9464f5e89b493b70b09c86ca6ee5aa0703cc90363beb075a933b1126c8d"
+        },
+        "review/patch-provenance.json": {
+          "bytes": 3267,
+          "sha256": "3f7784dfe2e6dd59e5c8c3164241aa18fcd1d503c7944ba6c23be2dcf5dbdc12"
+        },
+        "review/test-provenance.json": {
+          "bytes": 1607,
+          "sha256": "edd9233d7b6e33da3e793e877d9c4226ea8d8317627433115f00e2d22a790323"
+        },
+        "parents/libssl3t64_3.5.9-1~deb13u1_arm64.deb": {
+          "bytes": 2775368,
+          "sha256": "18edc2b123e8e81efcc14ea5502454b4505285aa9d3325c22315e9304acb25ca",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/libssl3t64_3.5.9-1~deb13u1_arm64.deb"
+        },
+        "parents/openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb": {
+          "bytes": 319708,
+          "sha256": "007165f42b5cecf71674a047480f96035e290c2f0c5102030cb186481bb8dc84",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl-provider-legacy_3.5.9-1~deb13u1_arm64.deb"
+        },
+        "parents/openssl_3.5.9-1~deb13u1_arm64.deb": {
+          "bytes": 1484280,
+          "sha256": "fe9c979716871f260fa50a920298036896677dd0a74a34c5589c18635cdef4b5",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1_arm64.deb"
+        }
+      },
+      "security_patches": {
+        "DEBIAN-CVE-2026-107493": {
+          "path": "openssl/upstream/CVE-2026-107493.patch",
+          "sha256": "6176d694ac38251bfa4e11198d002d8720f9efb05deffb35703adb93be6173e1",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-107494": {
+          "path": "openssl/upstream/CVE-2026-107494.patch",
+          "sha256": "c1726a50d589b2dc289727865c184382c2bd846733ddb139427062713ebeb5bd",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-107496": {
+          "path": "openssl/upstream/CVE-2026-107496.patch",
+          "sha256": "77d3759d279c71af59629c4a0fa82d8272a099762f2fa9e3f66d7ca5ed544157",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-121482": {
+          "path": "openssl/upstream/CVE-2026-121482.patch",
+          "sha256": "6bdbb111a7ce640e42c558aaf912fe19b3770aa9afc7c8c5a0d36d20dcb2d5e9",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-124709": {
+          "path": "openssl/upstream/CVE-2026-124709.patch",
+          "sha256": "d52a6af23bc966daaa9eded816a392d429a67bb76faafd922f4c4cf35a9349f4",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-88823": {
+          "path": "openssl/upstream/CVE-2026-88823.patch",
+          "sha256": "a945077c0a978dbfe5af5e4f7174a2151466547f8fb94562f395baa7b6b7c147",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-95691": {
+          "path": "openssl/upstream/CVE-2026-95691.patch",
+          "sha256": "93d8e82fdc995172a6d5cc6952491658106191bd5ac221d34596adbddfcd1afe",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-95692": {
+          "path": "openssl/upstream/CVE-2026-95692.patch",
+          "sha256": "0e328604c0038de6629a29322ae5f02d2f5f5128c2625b57ca64262efab99e05",
+          "upstream_merged": true
+        },
+        "DEBIAN-CVE-2026-84786": {
+          "path": "sources/dane-complete.diff",
+          "sha256": "eb91c49d55cfd80143d80c33317a05e2b72368a44bd99cee2522af6ab5d7f0d3",
+          "upstream_merged": false
+        }
+      },
+      "source_date_epoch": 1795392000,
+      "target": "linux/aarch64; Debian 13; CPython 3.12 ABI3",
+      "node_ca_policy": "NODE_OPTIONS=--use-bundled-ca preserves pinned Node CA defaults",
+      "network": "none during all builds",
+      "cryptography_linkage": "dynamic OpenSSL; no vendored SSL libraries",
+      "node_linkage": "dynamic OpenSSL; original Node 24.22.3 signed source"
+    },
+    "outputs": {
+      "libssl3t64_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb": {
+        "bytes": 2956536,
+        "sha256": "78a797cb1614ff29b9740146fcca263f7838b04a2c4eca43668ce7458a422e52"
+      },
+      "openssl-provider-legacy_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb": {
+        "bytes": 326500,
+        "sha256": "ff78e717395c2025a8e3852dfae7148d9a671be23e2178417e20965573d0afb5"
+      },
+      "openssl_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb": {
+        "bytes": 1506648,
+        "sha256": "5aff0dc38c85c0e96cb86f89d7b610afc4fdbcd8dc1b395b636c0cdc514101cb"
+      },
+      "node-v24.22.3-ezllmrouter1-linux-arm64": {
+        "bytes": 99523872,
+        "sha256": "905999d14981553af0510f7e035aaece5fc0ad8b03b7e5fa98e17dd4d9b669b3"
+      },
+      "cryptography-50.0.2+ezllmrouter1-cp312-abi3-linux_aarch64.whl": {
+        "bytes": 2232528,
+        "sha256": "a43526276ec5b5d07ea272dcbbbf90b7cc31ace31276481169482628c29911aa"
+      }
+    },
+    "packages": {
+      "libssl3t64": "libssl3t64_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb",
+      "openssl-provider-legacy": "openssl-provider-legacy_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb",
+      "openssl": "openssl_3.5.9-1~deb13u1+ezllmrouter1_arm64.deb"
+    },
+    "openssl_version": "3.5.9+ezllmrouter1",
+    "openssl_source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+    "openssl_upstream_source_version": "3.5.9-1~deb13u1",
+    "node": {
+      "version": "24.22.3",
+      "filename": "node-v24.22.3-ezllmrouter1-linux-arm64"
+    },
+    "cryptography": {
+      "version": "50.0.2+ezllmrouter1",
+      "upstream_version": "50.0.2",
+      "filename": "cryptography-50.0.2+ezllmrouter1-cp312-abi3-linux_aarch64.whl"
+    },
+    "code": [
+      {
+        "path": "/usr/lib/aarch64-linux-gnu/libssl.so.3",
+        "role": "all",
+        "sha256": "7209629d4b4cf6ade911d0c2551292b513028c58fc4c52df4f0b246a9d604da3"
+      },
+      {
+        "path": "/usr/lib/aarch64-linux-gnu/libcrypto.so.3",
+        "role": "all",
+        "sha256": "27bc9c84e3b633140b663b09a86e846fbf21d5226dfeea64500284fe5bc20dc0"
+      },
+      {
+        "path": "/usr/lib/aarch64-linux-gnu/ossl-modules/legacy.so",
+        "role": "all",
+        "sha256": "3ffb26bbfaf361ecf04fa6baffa583ccc11262d55e92b4db535509cb51e37c54"
+      },
+      {
+        "path": "/usr/bin/openssl",
+        "role": "python",
+        "sha256": "f998ed5f657ed75d2c26f41cecc3631a27a1b4297790d99b4d18729d89a2a6a7"
+      },
+      {
+        "path": "/usr/local/bin/node",
+        "role": "node",
+        "sha256": "905999d14981553af0510f7e035aaece5fc0ad8b03b7e5fa98e17dd4d9b669b3"
+      },
+      {
+        "path": "/usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so",
+        "role": "python",
+        "sha256": "e9ec7fa49e85cdf3da1fb1ee6b4b085754b88b4323c8ba375b8c907c78e773a0"
+      }
+    ],
+    "fixed_advisories": {
+      "DEBIAN-CVE-2026-107493": {
+        "advisory_sha256": "e2fbd6b497418d52fcecf93afa6b832c0ff3f3e23b4ef3b10f6994eb2f0a6323",
+        "patch_sha256": "6176d694ac38251bfa4e11198d002d8720f9efb05deffb35703adb93be6173e1",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-107494": {
+        "advisory_sha256": "156cda4b801cd4e0a5b365770fcbf07f078a0ab5b30d938158ea93f2b1b85330",
+        "patch_sha256": "c1726a50d589b2dc289727865c184382c2bd846733ddb139427062713ebeb5bd",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-107496": {
+        "advisory_sha256": "9db4f3736def9736df9e7e30ed91a80249b1bde09260cc1d1a10fe104d513a20",
+        "patch_sha256": "77d3759d279c71af59629c4a0fa82d8272a099762f2fa9e3f66d7ca5ed544157",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-121482": {
+        "advisory_sha256": "52b6dbc6873666f23be54d658e213a97368b8512bcb163d3c1c23729715d22e7",
+        "patch_sha256": "6bdbb111a7ce640e42c558aaf912fe19b3770aa9afc7c8c5a0d36d20dcb2d5e9",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-124709": {
+        "advisory_sha256": "70b2c2b8bf478d4d160657b12e868083d7deec5213ccfa9356059939aed04488",
+        "patch_sha256": "d52a6af23bc966daaa9eded816a392d429a67bb76faafd922f4c4cf35a9349f4",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-88823": {
+        "advisory_sha256": "d5b0e516335bbe906f987820dfbe654e2b4572c0cd83b710539a110f627123a0",
+        "patch_sha256": "a945077c0a978dbfe5af5e4f7174a2151466547f8fb94562f395baa7b6b7c147",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-95691": {
+        "advisory_sha256": "2194cc400f192df13439a7f66f8060f32faad93019fe7b2556369432fca728f3",
+        "patch_sha256": "93d8e82fdc995172a6d5cc6952491658106191bd5ac221d34596adbddfcd1afe",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-95692": {
+        "advisory_sha256": "bd5ec30a3ee22ad7e91be3f0189969df6bd0c92f4bc19769fff27e61400f217e",
+        "patch_sha256": "0e328604c0038de6629a29322ae5f02d2f5f5128c2625b57ca64262efab99e05",
+        "reason": "The exact upstream 3.5 security fix is backported to the reviewed Debian source. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      },
+      "DEBIAN-CVE-2026-84786": {
+        "advisory_sha256": "9c9d3bfc9c09383f5f6f4f19d1ff6ddb26d549d189cb5cafc885fdd5b4746f19",
+        "patch_sha256": "eb91c49d55cfd80143d80c33317a05e2b72368a44bd99cee2522af6ab5d7f0d3",
+        "reason": "The complete DANE fix and regression test from open upstream PR 33634 are locally reviewed and backported; this is not an upstream-merged release. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
+      }
     }
   }
 }

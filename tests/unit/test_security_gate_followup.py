@@ -35,7 +35,9 @@ class SecurityGateFollowupTests(unittest.TestCase):
         )
 
     def test_rehashing_cannot_approve_a_different_sql_finding_at_the_same_count(self):
-        root = self.root()
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
         path = root / "server/src/query.py"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('def checked(table):\n return f"SELECT record FROM {table}"\n')

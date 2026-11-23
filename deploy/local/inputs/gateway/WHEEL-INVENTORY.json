@@ -1,6 +1,7 @@
 {
+  "python_full_version": "3.12.16",
   "root_extra": "litellm[proxy]==1.106.12",
-  "target": "CPython 3.12 Linux ARM64, manylinux_2_28/manylinux2014",
+  "target": "CPython 3.12 Linux ARM64; published manylinux wheels plus reviewed shared-OpenSSL linux_aarch64 cryptography",
   "wheels": [
     {
       "bytes": 67677,
@@ -183,13 +184,13 @@
       "version": "6.2.4"
     },
     {
-      "bytes": 4738340,
-      "filename": "cryptography-50.0.2-cp311-abi3-manylinux_2_28_aarch64.whl",
+      "bytes": 2232528,
+      "filename": "cryptography-50.0.2+ezllmrouter1-cp312-abi3-linux_aarch64.whl",
       "license": null,
       "license_expression": "Apache-2.0 OR BSD-3-Clause",
       "name": "cryptography",
-      "sha256": "f9f6143a8c75945eb960d9eb98905a441394abfa24afaae239d514ffb2586480",
-      "version": "50.0.2"
+      "sha256": "a43526276ec5b5d07ea272dcbbbf90b7cc31ace31276481169482628c29911aa",
+      "version": "50.0.2+ezllmrouter1"
     },
     {
       "bytes": 20277,
@@ -1055,6 +1056,5 @@
       "sha256": "8979f52d874162f485ff2981e3891f3a3317b7a3dd43ff1e1775b9304f307a9c",
       "version": "4.1.1"
     }
-  ],
-  "python_full_version": "3.12.16"
+  ]
 }

@@ -43,6 +43,8 @@ class OSInputTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
         lock = deepcopy(os_inputs.load_lock(ROOT))
+        lock.pop("native_build", None)
+        lock["format"] = "ezllmrouter-debian-inputs-v3"
         source = root / os_inputs.LOCK
         source.parent.mkdir(parents=True)
         installer = root / os_inputs.INSTALLER
@@ -115,8 +117,9 @@ class OSInputTests(unittest.TestCase):
             debian_packages(raw.replace("\tsqlite3\t", "\tforeign-source\t"), "Debian:13", lock)
 
     def test_historical_v2_staging_has_no_origin_override(self):
-        lock = deepcopy(os_inputs.load_lock(ROOT))
+        _, _, lock = self.fixture()
         lock["format"] = "ezllmrouter-debian-inputs-v2"
+        lock.pop("native_build", None)
         lock.pop("additional_origins")
         for row in lock["packages"]:
             row.pop("origin_suite")
@@ -140,6 +143,15 @@ class OSInputTests(unittest.TestCase):
         inventory["source_sha256"][os_inputs.LOCK] = "b" * 64
         with self.assertRaisesRegex(ValueError, "differs from audited inventory"):
             capture_archives(root, store, inventory)
+
+    def test_unrecorded_staged_archives_and_native_files_fail_before_build(self):
+        for name in ("unreviewed.deb", "NODE_RUNTIME"):
+            with self.subTest(name=name):
+                root, store, lock = self.fixture()
+                manifest = self.staged_build(root, store)
+                (Path(manifest["build_dir"]) / "js/os-inputs" / name).write_text("unsealed")
+                with self.assertRaisesRegex(ValueError, "unexpected staged OS input"):
+                    os_inputs.verify_staging(manifest)
 
     def test_archive_set_bytes_and_links_are_checked_before_staging(self):
         for change in ("missing", "extra", "changed", "linked"):
