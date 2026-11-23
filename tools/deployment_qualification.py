@@ -166,7 +166,44 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
             ],
             env,
         )
+    result["service"]["sqlite_security"] = database_capabilities(result["service"]["id"], env)
     return result
+
+
+def database_capabilities(image: str, env: dict[str, str]) -> dict:
+    code = """import json,sqlite3,sys
+sys.path.extend(['/app/server','/usr/local/lib/python3.12/site-packages'])
+from ezllmrouter_server.store import SQLiteStore
+store=SQLiteStore(':memory:')
+try:
+    print(json.dumps({'defensive':store.db.getconfig(sqlite3.SQLITE_DBCONFIG_DEFENSIVE),
+                      'extension_loading':store.db.getconfig(sqlite3.SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION)}))
+finally:
+    store.close()
+"""
+    output, _ = profile.command(
+        "service-sqlite-capabilities",
+        [
+            *profile.DOCKER,
+            "run",
+            "--rm",
+            "--network=none",
+            "--read-only",
+            "--cap-drop=ALL",
+            "--security-opt=no-new-privileges:true",
+            image,
+            "python",
+            "-I",
+            "-S",
+            "-c",
+            code,
+        ],
+        env,
+    )
+    observed = json.loads(output)
+    if observed != {"defensive": True, "extension_loading": False}:
+        raise ValueError("service SQLite capabilities differ from required policy")
+    return observed
 
 
 def structure(env: dict[str, str]) -> dict:

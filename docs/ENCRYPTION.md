@@ -191,7 +191,9 @@ is scoped to disposable qualification rather than general instance backups.
 
 The offline `integration_local --backup` command validates the source schema and
 copies committed SQLite/WAL data into a private staging file in the destination
-directory. It syncs the completed file before publishing a new destination and
+directory. Source and destination connections enable defensive mode and disable
+native extension loading before validation or copying. It syncs the completed
+file before publishing a new destination and
 syncs that directory afterward; an existing destination is never overwritten.
 An interrupted copy can leave an owner-only `.partial` staging file, which is
 never used as a completed backup. A retry can create a new staging file without

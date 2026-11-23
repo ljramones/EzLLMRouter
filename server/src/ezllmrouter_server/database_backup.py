@@ -8,6 +8,7 @@ import tempfile
 
 from .private_files import AtomicPublicationError
 from .schema import validate
+from .database_security import configure
 
 
 def backup_database(source_path: Path, destination: Path) -> None:
@@ -20,8 +21,10 @@ def backup_database(source_path: Path, destination: Path) -> None:
     try:
         os.close(descriptor)
         with closing(sqlite3.connect(source_path.as_uri() + "?mode=ro", uri=True)) as source:
+            configure(source)
             validate(source)
             with closing(sqlite3.connect(temporary)) as target:
+                configure(target)
                 source.backup(target, pages=64)
         with temporary.open("rb") as complete:
             os.fsync(complete.fileno())

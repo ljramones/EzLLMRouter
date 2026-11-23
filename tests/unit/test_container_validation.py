@@ -17,6 +17,29 @@ from tools.container_tests import resolve, staged_sources, test_commands as comm
 
 
 class QualificationSafetyTests(unittest.TestCase):
+    def test_service_sqlite_probe_rejects_weakened_or_missing_capabilities(self):
+        from tools.deployment_qualification import database_capabilities
+
+        for observed in (
+            {"defensive": False, "extension_loading": False},
+            {"defensive": True, "extension_loading": True},
+            {},
+        ):
+            with (
+                self.subTest(observed=observed),
+                patch(
+                    "tools.deployment_qualification.profile.command",
+                    return_value=(json.dumps(observed), 0),
+                ),
+                self.assertRaises(ValueError),
+            ):
+                database_capabilities("sha256:" + "a" * 64, {})
+        expected = {"defensive": True, "extension_loading": False}
+        with patch(
+            "tools.deployment_qualification.profile.command", return_value=(json.dumps(expected), 0)
+        ):
+            self.assertEqual(database_capabilities("sha256:" + "a" * 64, {}), expected)
+
     def test_cold_archives_reject_links_traversal_foreign_owners_and_writable_files(self):
         from tools.qualification_storage import archive_members
 

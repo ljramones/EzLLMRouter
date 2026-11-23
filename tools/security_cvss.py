@@ -1,4 +1,4 @@
-"""CVSS v3 base scores, using the FIRST v3.0/v3.1 equations and exact arithmetic.
+"""CVSS v3/v4 base scores, using FIRST's equations and normative reference tables.
 
 Specification: https://www.first.org/cvss/v3.1/specification-document
 Temporal/environmental metrics are validated but never reduce this base-score gate.
@@ -7,6 +7,8 @@ Other CVSS versions deliberately remain unsupported and fail closed in the calle
 
 from fractions import Fraction
 from typing import Any
+
+from tools.security_cvss4 import base_score as v4_base_score
 
 VALUES = {
     "AV": "NALP",
@@ -37,6 +39,8 @@ VALUES = {
 def base_score(vector: str) -> float:
     if not isinstance(vector, str) or len(vector) > 1024:
         raise ValueError("invalid CVSS vector")
+    if vector.startswith("CVSS:4.0/"):
+        return v4_base_score(vector)
     prefix, *entries = vector.split("/")
     if prefix not in {"CVSS:3.0", "CVSS:3.1"}:
         raise ValueError("unsupported CVSS version")
@@ -97,11 +101,14 @@ def classification(detail: dict[str, Any]) -> dict[str, Any]:
         ratings, invalid = [], True
     for rating in ratings:
         try:
-            if not isinstance(rating, dict) or rating.get("type") != "CVSS_V3":
+            kind = rating.get("type") if isinstance(rating, dict) else None
+            if not isinstance(kind, str) or kind not in {"CVSS_V3", "CVSS_V4"}:
                 raise ValueError("unsupported severity type")
             vector = rating.get("score")
             if not isinstance(vector, str):
                 raise ValueError("invalid CVSS vector")
+            if (kind == "CVSS_V4") != vector.startswith("CVSS:4.0/"):
+                raise ValueError("severity type and CVSS version differ")
             score = base_score(vector)
             severity = (
                 "CRITICAL"
@@ -114,7 +121,7 @@ def classification(detail: dict[str, Any]) -> dict[str, Any]:
                 if score > 0
                 else "NONE"
             )
-            scores.append({"type": "CVSS_V3", "base_score": score, "severity": severity})
+            scores.append({"type": kind, "base_score": score, "severity": severity})
             if effective == "UNRATED" or levels[severity] > levels[effective]:
                 effective = severity
         except ValueError:

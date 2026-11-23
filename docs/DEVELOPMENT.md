@@ -516,9 +516,14 @@ API, follows and retains every advisory page, records the response snapshot and 
 fails on high, critical or unrated active advisories. Low/moderate findings stay
 visible. The report preserves the original rating vectors and database severity,
 and adds an effective severity. Valid CVSS v3.0/v3.1 vectors use FIRST's base-score
-equations with exact arithmetic; temporal/environmental metrics are validated but
-cannot reduce the base-score gate. The highest database or calculated severity
-wins. Unsupported versions (including CVSS v4), malformed ratings and advisories
+equations with exact arithmetic. CVSS v4.0 uses FIRST's normative tables and
+reference arithmetic/rounding; full vectors must follow the specified metric
+order. The reviewed tables, source commit/hashes and
+[BSD license](../tools/security_cvss4_LICENSE.txt) accompany the standard-library
+implementation. A table hash mismatch fails closed. Temporal/threat,
+environmental and supplemental metrics are validated but cannot reduce the
+base-score gate. The highest database or calculated severity
+wins. Unsupported versions, malformed ratings and advisories
 without a usable rating remain blocking. No Debian urgency label substitutes for
 a CVSS score. Withdrawn entries must have a valid withdrawal time. Metadata outages,
 incomplete batches, repeated/unconsumed page tokens and identity mismatches fail;

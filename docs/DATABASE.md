@@ -99,6 +99,15 @@ is closed before a result is returned. Connection setup, commit/rollback and
 maintenance opening remain in `SQLiteStore`. Offline maintenance validates an
 existing schema and never creates a database or initializes its tables.
 
+Every service-owned connection enables SQLite defensive mode and disables native
+extension loading before schema or application SQL runs. This includes the writer,
+independent report snapshots, offline maintenance and both sides of a backup.
+Unsupported settings fail opening; connections and ownership leases are released.
+Defensive mode prevents writable-schema changes to SQLite's internal tables while
+preserving ordinary migrations, transactions, WAL and backup operations. These
+capability restrictions do not repair vulnerabilities in the SQLite library or
+qualify arbitrary externally supplied database files.
+
 Writable stores hold an exclusive instance lease until close. A second service
 cannot open the same database or recover another process's in-flight state.
 Read-only offline tools share a lease with one another after the writer stops.

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, NoReturn, Protocol, TypeAlias, TypeVar, cast
 from collections.abc import Callable, Iterator
 from .database import Database
+from .database_security import configure
 from .records import Record as Record
 from .instance_lock import InstanceLease
 
@@ -138,6 +139,7 @@ class SQLiteStore:
         connection = None
         try:
             connection = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
+            configure(connection)
             self.db = connection
             self._lease.verify()
         except BaseException:
@@ -182,6 +184,7 @@ class SQLiteStore:
                 check_same_thread=False,
                 isolation_level=None,
             )
+            configure(connection)
             result.db = connection
             result._lease.verify()
         except BaseException:
@@ -224,6 +227,11 @@ class SQLiteStore:
                 isolation_level=None,
                 timeout=1,
             )
+            try:
+                configure(connection)
+            except BaseException:
+                connection.close()
+                raise
             self._readers.add(connection)
         deadline = time.monotonic() + 10
         connection.set_progress_handler(lambda: time.monotonic() >= deadline, 1000)
