@@ -243,6 +243,88 @@ external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
 
+## Runtime tool removal and locale policy, 2026-11-23
+
+Runtime source `cbbc5a9afa04c451c2ed5105bfcdda1ab2185074` passed disposable Linux
+ARM64 qualification with fingerprint
+`d0e9df949f473ff1bdb1f501cae30c8809145b211809d43d474b56c1368a6b0a`;
+its source packet SHA-256 is
+`0847aef9ad6793b1be5ac66c62bd80f1d43b6ad0333f53c6c38516b796a66201`.
+The immutable bases, seven Debian archive identities and 117 frozen worker wheels
+are unchanged. The OS lock becomes v2 to seal the package-removal policy and the
+updated installer; its SHA-256 is
+`b751cf4c68add8b37a046f0eff4da09c0229375fd00e9db938bcac004e8a3552`.
+
+The runtime removes 19 additional unused login/password, PAM, mount/namespace and
+terminal packages. The complete removal closure is 22 packages including the
+previous APT tools. Dependency simulation first rejected removing tar because
+dpkg requires it; both remain. The reviewed closure preserves every other installed
+package, with before/after checks rejecting extra removals or added packages.
+Python images now contain 65 installed OS packages; JavaScript images contain 57,
+down from 84/76. The staged `REMOVE-PACKAGES` bytes and checksum are bound to the
+lock and source packet. Protected libraries, duplicate/unsafe package arguments
+and rehashed manifest tampering fail before Docker executes. The original
+validator first failed five new policy-negative assertions.
+
+Existing service/JavaScript images each contained 11 setuid/setgid files. All six
+new qualified images and the separately built auxiliary JavaScript image have
+none, and no selected removed command remains. Read-only inspection helpers use
+directory-read authority solely in their disposable containers; application roles
+retain their non-root, zero-capability and no-new-privileges configuration.
+All image defaults and five live profile services enforce `LANG=LC_ALL=C.UTF-8`
+and `LANGUAGE=C`. This constrains gettext's locale inputs for the declared profile;
+it does not patch glibc or qualify arbitrary operator overrides.
+
+ELF metadata inspection confirms Node requires libstdc++ and libgcc. Aligned-new
+exports remain present in libstdc++; glob, regex and gettext symbols remain in
+libc. Node, libstdc++ and libc bytes exactly match the previous qualified objects.
+The inspection never executes the inspected ELF files or ldd, and removes its
+temporary containers. Current Debian tracker evidence still records the selected
+Trixie glibc/GCC findings as vulnerable; testing/unstable GCC fixes do not approve
+replacement stable inputs. All eight reviewed glibc/GCC cases remain blocking.
+Absence of compiler headers does not establish safety of prebuilt native callers
+or inlined templates.
+
+Default certificate bytes and all 148 trust anchors are unchanged. Native Python
+imports and the Toronto timezone pass in the final service image. The reviewed
+Pod::Text/Archive::Tar files are absent from perl-base's owned-file list; this
+limited observation does not waive the retained Perl findings.
+
+Local regression/security/duration gates pass 1,478 Python executions in 212 modules,
+with no skips or unstable outcomes and an 11.68-second slowest module against the
+30-second limit. Strict typing and the whole-library audit report zero debt;
+1,014 source/finding-pinned SAST findings remain reviewed. Secret scanning required
+one exact source-blob/finding exception for the public OS artifact-directory path
+in the updated guide; detector rules are unchanged. Source validation resolves
+all 18 Dockerfiles. Application source and coverage allowances are unchanged.
+Six images pass offline builds, startup/isolation, installed-client readback,
+four exact synthetic arrivals, restart and separate-volume encrypted restore.
+Cleanup removes both owned projects/volumes. The auxiliary JavaScript actor passes
+its offline build, installed-SDK identity and runtime-policy checks; its broader
+actor flows remain separate. The actual service image passes 99 TLS, schema, WAL,
+SIGKILL, backup, key-rotation, coherent-restore and SQLite-capability cases without
+skips.
+
+The seven-image audit at `2026-11-23T15:52:51.454906+00:00` retains 341 combined
+package/version entries and 86 matches: 30 high, one critical, two unrated,
+46 moderate and seven low. There are 33 blockers across ten source packages.
+Each non-worker image has 85 OS matches and 33 blockers; the worker adds the
+moderate application finding. Declared-only inputs have no matches. Four previous
+PAM/shadow matches disappear, including three blockers. The fresh OSV snapshot
+also adds high OpenSSL QUIC finding CVE-2026-107494, published by its CNA on
+November 18. It remains blocking. No advisory was waived and no library version
+changed; the package gate still fails.
+
+Private evidence under ignored `.artifacts/runtime-tooling-review/` includes
+the original/corrected dependency simulations, `trial-policy-validation.json`,
+`baseline-setid.json`, retained policy failures, `health-final-fixed/summary.json`,
+`target/qualification.json`, `auxiliary-js.json`, `native-libraries.log`,
+`elf-metadata-qualified.json`, `retained-runtime-facts.json`,
+`library-interface-review.json`, `advisory-difference.json`,
+`remaining-review-queue.json` and `image-audit/`. The persistent profile, production
+acceptance, physical-power-loss qualification, released-client N-1 availability
+and T16 scope are unchanged.
+
 ## CVSS v4 and SQLite capability hardening, 2026-11-22
 
 Runtime source `19528481bbdcffe7bb5dade155f07b9358f0e55e` adds defensive SQLite
