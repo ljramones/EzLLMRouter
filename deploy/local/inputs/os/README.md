@@ -1,17 +1,30 @@
 # Reviewed Debian runtime inputs
 
 `debian13-arm64.lock.json` selects immutable official Python 3.12.16 and Node
-24.22.3 ARM64 images based on Debian 13 (Trixie). Seven reviewed Debian archives
-update base-files, glibc, OpenSSL and zlib; the Node closure uses six because it
+24.22.3 ARM64 images based on Debian 13 (Trixie). Thirteen reviewed Debian archives
+update base-files, glibc, OpenSSL, zlib, SQLite, ACL and GCC runtime libraries; the Node closure uses twelve because it
 does not install the Python base's OpenSSL command-line package.
 
-The v2 lock records binary/source versions, archive sizes and SHA-256 values,
+The v3 lock records binary/source versions, archive sizes and SHA-256 values,
 publisher URLs, role membership, upstream image/config identities and the
 build-only installer's hash, plus the exact runtime package-removal closure.
 Acquisition used APT's authenticated InRelease and
 package-index checks with Debian's archive keyring. The review retains the signed
 indexes, keyring identity, exact package metadata and inspected maintainer scripts
 under ignored `.artifacts/debian-remediation/`.
+
+Six additional archives come from authenticated Debian testing (Forky) indexes:
+SQLite 3.54.1-2, libacl 2.4.0-1, GCC 14 base 14.4.0-4, and the GCC 16 base,
+libgcc and libstdc++ closure at 16.2.0-4. Their declared libc dependencies fit
+the retained glibc 2.41; offline native and installed-client checks still apply.
+The base OS remains Trixie. Each archive records its exact source suite/version,
+and the extra origin binds the signed InRelease and archive-keyring hashes.
+Inventories use Debian:14 advisory records only for the exact reviewed Forky
+binary/source versions; other installed packages retain Debian:13 attribution.
+An unknown suite, mismatched source or unauthenticated origin is rejected.
+This prevents an OS-wide ecosystem change from concealing retained findings.
+Signed indexes, archive inspection and trial results are retained under ignored
+`.artifacts/dependency-resolution/`. No custom-built SQLite archive is selected.
 
 Use a fresh artifact store preserving the existing 117-wheel custody manifest.
 Place exactly the selected `.deb` archives in
@@ -52,7 +65,8 @@ locales must be `LANG=LC_ALL=C.UTF-8` and `LANGUAGE=C`, constraining gettext's
 locale inputs while preserving UTF-8 behavior. These restrictions do not waive
 glibc, GCC or other remaining package findings.
 
-Existing cached images from older staging can still be reused; rebuilding an old
-v1 context requires preparing the v2 inputs. Source staging does not restart
+Existing cached images from older staging can still be reused. Exact historical
+v2 packets remain verifiable; origin overrides require v3 metadata. Rebuilding
+a v1 context requires preparing current inputs. Source staging does not restart
 the persistent profile or approve production acceptance. See the
 [validation record](../../../../docs/TESTING-ROADMAP.md#debian-os-remediation-2026-11-22).

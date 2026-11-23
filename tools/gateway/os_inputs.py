@@ -53,7 +53,7 @@ def digest(path: Path) -> str:
 
 def validate_lock(data: dict) -> None:
     if (
-        data.get("format") != "ezllmrouter-debian-inputs-v2"
+        data.get("format") not in {"ezllmrouter-debian-inputs-v2", "ezllmrouter-debian-inputs-v3"}
         or data.get("suite") != "trixie"
         or data.get("version_id") != "13"
         or data.get("architecture") != "arm64"
@@ -62,6 +62,20 @@ def validate_lock(data: dict) -> None:
         or not re.fullmatch(r"[0-9a-f]{64}", data.get("installer_sha256", ""))
     ):
         raise ValueError("unreviewed Debian target")
+    origins = {"trixie": "13"}
+    if data["format"] == "ezllmrouter-debian-inputs-v3":
+        reviews = data.get("additional_origins", {})
+        if set(reviews) != {"forky"}:
+            raise ValueError("unreviewed Debian package origin")
+        review = reviews["forky"]
+        if (
+            review.get("version_id") != "14"
+            or review.get("url") != "https://deb.debian.org/debian/dists/forky/InRelease"
+            or not re.fullmatch(r"[0-9a-f]{64}", review.get("keyring_sha256", ""))
+            or not re.fullmatch(r"[0-9a-f]{64}", review.get("inrelease_sha256", ""))
+        ):
+            raise ValueError("missing authenticated Debian package origin")
+        origins["forky"] = "14"
     removals = data.get("runtime_removals")
     if (
         not isinstance(removals, list)
@@ -83,6 +97,13 @@ def validate_lock(data: dict) -> None:
     seen = set()
     roles = set()
     for row in data["packages"]:
+        if data["format"] == "ezllmrouter-debian-inputs-v3":
+            if row.get("origin_suite") not in origins or row.get(
+                "origin_version_id"
+            ) != origins.get(row.get("origin_suite")):
+                raise ValueError("unreviewed Debian advisory ecosystem")
+        elif "origin_suite" in row or "origin_version_id" in row:
+            raise ValueError("package origins require the v3 lock")
         url = urlsplit(row["url"])
         if (
             not re.fullmatch(r"[a-z0-9][a-z0-9+.-]*", row["package"])
@@ -114,6 +135,16 @@ def validate_lock(data: dict) -> None:
         raise ValueError("reviewed runtime updates cannot be removed")
     if roles != {"python", "node"}:
         raise ValueError("incomplete Debian role coverage")
+
+
+def advisory_ecosystem(data: dict, row: dict) -> str:
+    """Use the reviewed binary's source suite, independently of the base OS."""
+    version = (
+        row["origin_version_id"]
+        if data["format"] == "ezllmrouter-debian-inputs-v3"
+        else data["version_id"]
+    )
+    return "Debian:" + version
 
 
 def load_lock(root: Path) -> dict:

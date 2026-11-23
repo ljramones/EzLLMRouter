@@ -63,6 +63,8 @@ class OSInputTests(unittest.TestCase):
                     "source_version": "1",
                     "architecture": "arm64",
                     "roles": roles,
+                    "origin_suite": "trixie",
+                    "origin_version_id": "13",
                     "filename": filename,
                     "bytes": len(payload),
                     "sha256": hashlib.sha256(payload).hexdigest(),
@@ -71,6 +73,59 @@ class OSInputTests(unittest.TestCase):
             )
         source.write_text(json.dumps(lock))
         return root, store, lock
+
+    def test_advisory_origins_require_reviewed_suite_version_and_authentication(self):
+        original = os_inputs.load_lock(ROOT)
+        for change in ("suite", "version", "signature", "url"):
+            lock = deepcopy(original)
+            with self.subTest(change=change):
+                if change == "suite":
+                    lock["packages"][0]["origin_suite"] = "unreviewed"
+                elif change == "version":
+                    lock["packages"][0]["origin_version_id"] = "14"
+                elif change == "signature":
+                    lock["additional_origins"]["forky"]["inrelease_sha256"] = ""
+                else:
+                    lock["additional_origins"]["forky"]["url"] = "https://example.invalid/index"
+                with self.assertRaises(ValueError):
+                    os_inputs.validate_lock(lock)
+
+    def test_installed_origins_bind_exact_binary_and_source_versions(self):
+        from tools.release_inventory import debian_packages
+
+        lock = os_inputs.load_lock(ROOT)
+        selected = next(row for row in lock["packages"] if row["package"] == "libsqlite3-0")
+        raw = (
+            "\t".join(
+                (
+                    selected["package"],
+                    selected["version"],
+                    selected["source"],
+                    selected["source_version"],
+                    "installed",
+                )
+            )
+            + "\n"
+        )
+        old = "libsqlite3-0\t3.46.1-7+deb13u2\tsqlite3\t3.46.1-7+deb13u2\tinstalled\n"
+        rows = debian_packages(raw + old, "Debian:13", lock)
+        self.assertEqual([row["ecosystem"] for row in rows], ["Debian:14", "Debian:13"])
+        self.assertEqual(rows[0]["origin_suite"], "forky")
+        with self.assertRaises(ValueError):
+            debian_packages(raw.replace("\tsqlite3\t", "\tforeign-source\t"), "Debian:13", lock)
+
+    def test_historical_v2_staging_has_no_origin_override(self):
+        lock = deepcopy(os_inputs.load_lock(ROOT))
+        lock["format"] = "ezllmrouter-debian-inputs-v2"
+        lock.pop("additional_origins")
+        for row in lock["packages"]:
+            row.pop("origin_suite")
+            row.pop("origin_version_id")
+        os_inputs.validate_lock(lock)
+        self.assertEqual(os_inputs.advisory_ecosystem(lock, lock["packages"][0]), "Debian:13")
+        lock["packages"][0]["origin_version_id"] = "14"
+        with self.assertRaises(ValueError):
+            os_inputs.validate_lock(lock)
 
     def test_archive_set_bytes_and_links_are_checked_before_staging(self):
         for change in ("missing", "extra", "changed", "linked"):

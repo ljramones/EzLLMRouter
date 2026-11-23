@@ -13,6 +13,7 @@ from typing import Any, Callable
 from urllib.parse import urlsplit, unquote
 import xml.etree.ElementTree as ET
 from tools.gateway.os_inputs import (
+    advisory_ecosystem,
     LOCK as OS_LOCK,
     INSTALLER as OS_INSTALLER,
     load_lock as load_os_lock,
@@ -123,7 +124,7 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
         if name == OS_LOCK:
             data = load_os_lock(root)
             for row in data["packages"]:
-                add("Debian:" + data["version_id"], row["source"], row["source_version"], name)
+                add(advisory_ecosystem(data, row), row["source"], row["source_version"], name)
                 artifact(
                     name,
                     row["package"],

@@ -6,8 +6,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from tools.security_resolutions import canonical, evaluate, load_policy
+from tools.security_resolutions import canonical, capture, evaluate, load_policy
 
 
 class ComponentResolutionTests(unittest.TestCase):
@@ -81,6 +82,17 @@ class ComponentResolutionTests(unittest.TestCase):
     def test_changed_advisory_reopens_match(self):
         self.advisory["new_affected_interface"] = "uuid"
         self.assertEqual(self.result()["effective_blocking"], 1)
+
+    def test_changed_package_version_gets_no_old_code_proof(self):
+        image = self.images["worker"]
+        image["os_packages"][0]["binary_version"] += "+changed"
+        with patch(
+            "tools.security_resolutions.subprocess.check_output",
+            return_value="f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0",
+        ) as command:
+            proof = capture(image, self.policy)
+        self.assertEqual(proof["packages"], {})
+        self.assertEqual(command.call_count, 1)
 
     def test_partial_image_review_never_clears_global_match(self):
         self.captures["worker"]["packages"]["libuuid1"]["code_set_sha256"] = "0" * 64

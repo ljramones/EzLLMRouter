@@ -110,14 +110,15 @@ def capture(image, policy):
     )
     census = runtime_components(raw)
     installed = {row["binary"]: row for row in image["os_packages"]}
-    paths = sorted(
-        {
-            path
-            for name, package in policy["packages"].items()
-            if name in installed
-            for path in package["code_files"]
-        }
-    )
+    selected = {
+        name: package
+        for name, package in policy["packages"].items()
+        if name in installed
+        and installed[name]["binary_version"] == package["binary_version"]
+        and installed[name]["name"] == package["source"]
+        and installed[name]["version"] == package["source_version"]
+    }
+    paths = sorted({path for package in selected.values() for path in package["code_files"]})
     hashes = {}
     if paths:
         raw_hashes = subprocess.check_output(
@@ -133,9 +134,7 @@ def capture(image, policy):
         if set(hashes) != set(paths):
             raise ValueError("incomplete image code file set")
     packages = {}
-    for name, reviewed in policy["packages"].items():
-        if name not in installed:
-            continue
+    for name, reviewed in selected.items():
         code = [{"path": path, "sha256": hashes[path]} for path in reviewed["code_files"]]
         packages[name] = {
             "binary_version": installed[name]["binary_version"],

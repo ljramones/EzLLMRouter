@@ -1,9 +1,9 @@
 {
-  "format": "ezllmrouter-debian-inputs-v2",
+  "format": "ezllmrouter-debian-inputs-v3",
   "suite": "trixie",
   "version_id": "13",
   "architecture": "arm64",
-  "reviewed_at": "2026-11-23T01:15:24Z",
+  "reviewed_at": "2026-11-23T19:33:31.092123+00:00",
   "bases": {
     "python": {
       "reference": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
@@ -47,7 +47,9 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "libc-bin",
@@ -62,7 +64,9 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "libc6",
@@ -77,7 +81,9 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "libssl3t64",
@@ -92,7 +98,9 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "openssl-provider-legacy",
@@ -107,7 +115,9 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "openssl",
@@ -121,7 +131,9 @@
       "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.9-1~deb13u1_arm64.deb",
       "roles": [
         "python"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
     },
     {
       "package": "zlib1g",
@@ -136,7 +148,111 @@
       "roles": [
         "python",
         "node"
-      ]
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13"
+    },
+    {
+      "package": "gcc-14-base",
+      "version": "14.4.0-4",
+      "source": "gcc-14",
+      "source_version": "14.4.0-4",
+      "architecture": "arm64",
+      "filename": "gcc-14-base_14.4.0-4_arm64.deb",
+      "bytes": 35772,
+      "sha256": "773d42e24b2b7da2dbbf2bf332f32059930a0660595c067b6ded1d0f891e0e61",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-base_14.4.0-4_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
+    },
+    {
+      "package": "gcc-16-base",
+      "version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "filename": "gcc-16-base_16.2.0-4_arm64.deb",
+      "bytes": 39336,
+      "sha256": "4e4a72005f1fb7eaec947f98890cde9d02247ef33454aa6e90e29a31bcc680a4",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-16/gcc-16-base_16.2.0-4_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
+    },
+    {
+      "package": "libacl1",
+      "version": "2.4.0-1",
+      "source": "acl",
+      "source_version": "2.4.0-1",
+      "architecture": "arm64",
+      "filename": "libacl1_2.4.0-1_arm64.deb",
+      "bytes": 36000,
+      "sha256": "cb7ad26438a5429d93742107c8bef6efcbf3aa05bdd723c17913658ae4d2be26",
+      "url": "https://deb.debian.org/debian/pool/main/a/acl/libacl1_2.4.0-1_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
+    },
+    {
+      "package": "libgcc-s1",
+      "version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "filename": "libgcc-s1_16.2.0-4_arm64.deb",
+      "bytes": 53204,
+      "sha256": "385ea4394ef27e610dfa033ea422dd79b154d88255a9d945de86ece751578b9f",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-16/libgcc-s1_16.2.0-4_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
+    },
+    {
+      "package": "libsqlite3-0",
+      "version": "3.54.1-2",
+      "source": "sqlite3",
+      "source_version": "3.54.1-2",
+      "architecture": "arm64",
+      "filename": "libsqlite3-0_3.54.1-2_arm64.deb",
+      "bytes": 911484,
+      "sha256": "27416ae5fd9a8a491cacc2316cb08ebf31ac0d3d628da5576e04eeba365605a4",
+      "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/libsqlite3-0_3.54.1-2_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
+    },
+    {
+      "package": "libstdc++6",
+      "version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "filename": "libstdc++6_16.2.0-4_arm64.deb",
+      "bytes": 700032,
+      "sha256": "d7d0387468ffed2bc8aa32e16cd05bd9e4b9ea120863d69ee557d2d6dd663c39",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-16/libstdc++6_16.2.0-4_arm64.deb",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "forky",
+      "origin_version_id": "14"
     }
   ],
   "installer_sha256": "f1bbe4e3f3944da3a269f044c41e161f38ae802513c0e81b2d25c21f59582435",
@@ -164,5 +280,14 @@
     "sqv",
     "util-linux"
   ],
-  "runtime_policy_reviewed_at": "2026-11-23T15:14:58.107844+00:00"
+  "runtime_policy_reviewed_at": "2026-11-23T15:14:58.107844+00:00",
+  "additional_origins": {
+    "forky": {
+      "version_id": "14",
+      "url": "https://deb.debian.org/debian/dists/forky/InRelease",
+      "keyring_sha256": "506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017",
+      "inrelease_sha256": "f14103c6a97e64780554095ea36f89f128c66cf1beb2829836b3a9913ad8018d",
+      "review": "Six compatible ARM64 binary archives only; base OS remains Debian 13. Complete offline image qualification is required."
+    }
+  }
 }

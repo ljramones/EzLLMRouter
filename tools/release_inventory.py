@@ -14,6 +14,7 @@ from deploy.local.local_profile import DOCKER
 from tools.security_dependencies import findings, forbidden_release, inventory, query, sbom
 
 from tools.security_rust import rust_graph
+from tools.gateway.os_inputs import advisory_ecosystem, load_lock, validate_lock
 
 
 def package_key(row: dict) -> tuple[str, str, str]:
@@ -41,7 +42,10 @@ def docker(image: str, *args: str) -> str:
     )
 
 
-def debian_packages(raw: str, ecosystem: str) -> list[dict]:
+def debian_packages(raw: str, ecosystem: str, lock: dict | None = None) -> list[dict]:
+    if lock is not None:
+        validate_lock(lock)
+    reviewed = {(row["package"], row["version"]): row for row in lock["packages"]} if lock else {}
     result = []
     for line in raw.splitlines():
         name, version, source, source_version, status = line.split("\t")
@@ -59,6 +63,13 @@ def debian_packages(raw: str, ecosystem: str) -> list[dict]:
                 "installation_status": status,
             }
         )
+        selected = reviewed.get((name, version))
+        if selected:
+            if (source, source_version) != (selected["source"], selected["source_version"]):
+                raise ValueError("installed Debian source differs from reviewed archive")
+            result[-1]["ecosystem"] = advisory_ecosystem(lock, selected)
+            if "origin_suite" in selected:
+                result[-1]["origin_suite"] = selected["origin_suite"]
     return result
 
 
@@ -80,7 +91,7 @@ def image_packages(image: dict) -> dict:
         "-W",
         "-f=${Package}\t${Version}\t${source:Package}\t${source:Version}\t${db:Status-Status}\n",
     )
-    os_rows = debian_packages(dpkg, ecosystem)
+    os_rows = debian_packages(dpkg, ecosystem, load_lock(Path(__file__).resolve().parents[1]))
     code = "import importlib.metadata,json; print(json.dumps(sorted([{'name':d.metadata['Name'],'version':d.version} for d in importlib.metadata.distributions(path=['/usr/local/lib/python3.12/site-packages'])],key=lambda d:d['name'])))"
     # Read installed package metadata directly; runtime images contain no npm CLI.
     if "node@sha256:" in image["base"]:

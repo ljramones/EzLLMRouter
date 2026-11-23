@@ -8239,11 +8239,11 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "06a986f17e389d54ce42b9ee94ce61355e4eebed4297faccf14d3a67ec00a51e",
+      "source_sha256": "8776c8363328f2ec5aaa82ae50bd2f60df545d6ca18309aa7d5d12e6e570256d",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
-          "line": 27,
+          "line": 28,
           "column": 12,
           "symbol": "docker",
           "statement_sha256": "b2f8003b8762ae60f78d871b34f28eff6aada915f91ce1ffa1857fb2aaaa0317",
@@ -8269,18 +8269,18 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "feef6fac17b5dbfc84064f908036b269e76f8dd138cf23f82600830396dfc62a",
+      "source_sha256": "0099eb582a364ebc156506cfde9eb63e3f65b3745e66cfbb39fc54e9c08b8ff2",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 373,
+          "line": 374,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
           "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 391,
+          "line": 392,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
@@ -8477,22 +8477,22 @@
     {
       "path": "tools/security_resolutions.py",
       "code": "S603",
-      "source_sha256": "993e62ed985cfa102e9e66c10c7fb4c0b6689eb4c980632c0ce57a267fe44d53",
-      "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted.",
+      "source_sha256": "949bbb88959d4ff815eb5d85ebc17299d5e6b0afdad20dd11f611dc3ec60b508",
+      "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted. Version/source mismatches now omit old code proofs; command statements and immutable-image/path validation are unchanged.",
       "findings": [
         {
           "line": 92,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d28fa2bb725182ccc1ad4f9aaf140aff4eb6bd0f5acaa44a22fa815fab5ea600",
-          "context_sha256": "b8aacdc8266be69b9c02f720fb481ddec77f0161a10e7dfc267eb2063ed6d414"
+          "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
         },
         {
-          "line": 123,
+          "line": 124,
           "column": 22,
           "symbol": "capture",
           "statement_sha256": "80df2e650bec632a416040e1eb359d7a4b1182d9e12efa18b92c76a6268427e3",
-          "context_sha256": "b8aacdc8266be69b9c02f720fb481ddec77f0161a10e7dfc267eb2063ed6d414"
+          "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
         }
       ]
     }
