@@ -8269,18 +8269,18 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "54bc0a462e24eadb8c1320b641b2fbe44c66f72f45ae8352b593026d9dbae22e",
+      "source_sha256": "d1c89d6cd8f0cc12b3ea3e3b753f0c80fecf54f724e6b163862d6f7c111b60a9",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 426,
+          "line": 437,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
           "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 444,
+          "line": 455,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",

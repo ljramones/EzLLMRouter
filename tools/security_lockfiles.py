@@ -114,6 +114,62 @@ def python_artifact(url: str, name: str, version: str) -> str:
     return url
 
 
+def native_artifacts(
+    data: dict[str, Any], source: str, artifact: Callable[..., None]
+) -> list[dict[str, str]]:
+    native = data["native_build"]
+    versions = [
+        {
+            "ecosystem": "Debian:13",
+            "name": "openssl",
+            "version": native["openssl_source_version"],
+            "upstream_version": native["openssl_upstream_source_version"],
+            "native_build": native["id"],
+        },
+        {
+            "ecosystem": "PyPI",
+            "name": "cryptography",
+            "version": native["cryptography"]["version"],
+            "upstream_version": native["cryptography"]["upstream_version"],
+            "native_build": native["id"],
+        },
+    ]
+    for key in ("node", "cryptography"):
+        selected = native[key]
+        output = native["outputs"][selected["filename"]]
+        artifact(
+            source,
+            key,
+            selected["version"],
+            digest("sha256:" + output["sha256"]),
+            url="urn:ezllmrouter:native-build:" + native["id"] + ":" + selected["filename"],
+            architecture=data["architecture"],
+            filename=selected["filename"],
+            native_build=native["id"],
+        )
+    return versions
+
+
+def os_artifacts(
+    data: dict[str, Any],
+    source: str,
+    add: Callable[[str, str, str, str], None],
+    artifact: Callable[..., None],
+) -> list[dict[str, str]]:
+    for row in data["packages"]:
+        add(advisory_ecosystem(data, row), row["source"], row["source_version"], source)
+        artifact(
+            source,
+            row["package"],
+            row["version"],
+            digest("sha256:" + row["sha256"]),
+            url=row["url"],
+            architecture=row["architecture"],
+            filename=row["filename"],
+        )
+    return native_artifacts(data, source, artifact) if "native_build" in data else []
+
+
 def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict[str, Any]:
     hashes, artifacts, local, manifests, limits = {}, [], [], [], []
     advisory_versions = []
@@ -132,53 +188,8 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
         hashes[name] = hashlib.sha256(raw).hexdigest()
         if name == OS_LOCK:
             data = load_os_lock(root)
-            for row in data["packages"]:
-                add(advisory_ecosystem(data, row), row["source"], row["source_version"], name)
-                artifact(
-                    name,
-                    row["package"],
-                    row["version"],
-                    digest("sha256:" + row["sha256"]),
-                    url=row["url"],
-                    architecture=row["architecture"],
-                    filename=row["filename"],
-                )
+            advisory_versions.extend(os_artifacts(data, name, add, artifact))
             if "native_build" in data:
-                native = data["native_build"]
-                advisory_versions.extend(
-                    [
-                        {
-                            "ecosystem": "Debian:13",
-                            "name": "openssl",
-                            "version": native["openssl_source_version"],
-                            "upstream_version": native["openssl_upstream_source_version"],
-                            "native_build": native["id"],
-                        },
-                        {
-                            "ecosystem": "PyPI",
-                            "name": "cryptography",
-                            "version": native["cryptography"]["version"],
-                            "upstream_version": native["cryptography"]["upstream_version"],
-                            "native_build": native["id"],
-                        },
-                    ]
-                )
-                for key in ("node", "cryptography"):
-                    selected = native[key]
-                    output = native["outputs"][selected["filename"]]
-                    artifact(
-                        name,
-                        key,
-                        selected["version"],
-                        digest("sha256:" + output["sha256"]),
-                        url="urn:ezllmrouter:native-build:"
-                        + native["id"]
-                        + ":"
-                        + selected["filename"],
-                        architecture=data["architecture"],
-                        filename=selected["filename"],
-                        native_build=native["id"],
-                    )
                 limits.append(
                     {
                         "source": name,
