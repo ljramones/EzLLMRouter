@@ -1,0 +1,29 @@
+name: Synthetic performance and soak
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  operator-performance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - name: Validate declared inputs before installing dependencies
+        run: python3 -I -S tools/security_dependencies.py
+      - name: Install pinned environment manager
+        run: 'python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock'
+      - run: uv sync --locked --all-groups --python 3.12.15
+      - name: Measure fixed ledger sizes and a five-minute synthetic operator soak
+        run: uv run --locked python -m tools.performance_suite --sizes 1000 10000 --samples 7 --soak-seconds 300 --concurrency 2 --seed 20261123 --output .artifacts/performance-ci
+      - name: Retain measurements and the first failed phase
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: synthetic-performance
+          path: .artifacts/performance-ci/
+          retention-days: 30

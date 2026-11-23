@@ -1,7 +1,7 @@
 {
   "tool": "Ruff 0.14.0 S rules, ignored noqa directives",
   "format_version": 2,
-  "reviewed_on": "2026-11-22",
+  "reviewed_on": "2026-11-23",
   "exceptions": [
     {
       "path": "deploy/local/browser_cdp.py",
@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "dfab1c767ca0f028c9d96239385a31a1959195f81f5fb88e3cfd4cf244e5d79e",
+      "source_sha256": "e93478157285d0f2f22591f4350af0a53f36eaa4ca183f28b7ec4064f82143b4",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 258,
+          "line": 260,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 347,
+          "line": 349,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 491,
+          "line": 493,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "dfab1c767ca0f028c9d96239385a31a1959195f81f5fb88e3cfd4cf244e5d79e",
+      "source_sha256": "e93478157285d0f2f22591f4350af0a53f36eaa4ca183f28b7ec4064f82143b4",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 259,
+          "line": 261,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 348,
+          "line": 350,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 605,
+          "line": 607,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8434,6 +8434,43 @@
           "symbol": "_main",
           "statement_sha256": "23044ac7a7d24d3302d14d26ad81f5475fafcc474205d1940f6966d47c77d48f",
           "context_sha256": "786a4ce03427c6da376921da27161c3515cbe00e46d359780223b202ca30ef79"
+        }
+      ]
+    },
+    {
+      "path": "tools/performance_suite.py",
+      "code": "S603",
+      "source_sha256": "094029351886881c4658e08cc69568fad6a08d8eca1f564d9cd0e92ca87d3d4a",
+      "reason": "Resolved absolute Git executable with fixed read-only rev-parse/status argument vectors, shell disabled, and 15-second timeouts; records benchmark source identity only.",
+      "findings": [
+        {
+          "line": 70,
+          "column": 26,
+          "symbol": "provenance",
+          "statement_sha256": "05103e295f0ef8003cc939fbb78b5ab7ede600a2f7bbcfc6868dae9c15dcd3f0",
+          "context_sha256": "b4be5c8d851a5ee99540242859bb4f2753391f3ea5d73434f507d2a4cbfa48da"
+        },
+        {
+          "line": 74,
+          "column": 13,
+          "symbol": "provenance",
+          "statement_sha256": "05103e295f0ef8003cc939fbb78b5ab7ede600a2f7bbcfc6868dae9c15dcd3f0",
+          "context_sha256": "b4be5c8d851a5ee99540242859bb4f2753391f3ea5d73434f507d2a4cbfa48da"
+        }
+      ]
+    },
+    {
+      "path": "tools/performance_workload.py",
+      "code": "S311",
+      "source_sha256": "94b7a79cca82228ccd49f7f4044997d69f343702a665074a7c82d3ac50a57b99",
+      "reason": "Fixed owner-selected seed generates public synthetic ledger amounts and model groups only; credentials use secrets.token_urlsafe and this RNG grants no authority.",
+      "findings": [
+        {
+          "line": 48,
+          "column": 15,
+          "symbol": "Workload._seed",
+          "statement_sha256": "530af0816b9d3f57d7433bc3087c0977f01d00fbb73c4bb930b1b1b9382f0642",
+          "context_sha256": "3a364309ca083eb939bcd7c4b16e42bdbddb7820aa6fbc7f4ad0e9c143ce6790"
         }
       ]
     }

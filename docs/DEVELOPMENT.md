@@ -616,6 +616,47 @@ base is ARM64, and the fixture explicitly requests `linux/arm64`. The
 platforms. Setting `--platform` alone does not enable emulation on AMD64. A
 source/configuration unit check is not a passing Docker capability check.
 
+## Synthetic performance and soak
+
+Use the pinned Python 3.12.15 development environment on Linux or macOS:
+
+```sh
+uv run --locked python -m tools.performance_suite --sizes 1000 10000 --samples 5 --soak-seconds 300 --concurrency 2 --seed 20261123
+```
+
+This requires loopback permission. Each scale and soak phase runs in a separate
+bounded subprocess with a disposable synthetic ledger, real authenticated
+operator HTTP handlers and its own metadata-only connector endpoint. The supplied
+sizes are additional attempts beyond the ten-case accounting fixture. The runner
+measures direct reporting, HTTP reporting, JSON/CSV page exports, navigation API
+reads, connector polling and concurrent WAL-writer transaction latency. Each HTTP
+request uses a fresh loopback connection; browser rendering, TLS/WAN latency and
+model inference are outside this profile.
+
+Uninstrumented scale timings and a separately traced report-memory call are
+distinct observations. Soak timings explicitly include tracemalloc overhead.
+Reports include CPU time, process RSS high-water marks, sampled Python heap,
+threads, descriptors and throughput. Nearest-rank percentiles retain at most the
+last 2,048 observations per operation. Initial timing and heap/RSS growth results
+are observations, without approved production SLOs or long-term growth budgets.
+CPU and RSS cover the worker process, including its synthetic clients and upstream.
+Exact decimal totals, export parity, writer progress, probe coalescing, zero model
+work and zero leaked threads/descriptors remain blocking correctness checks.
+
+The supervisor rejects externally instrumented baselines, source changes during a
+run, mismatched child evidence and phase timeouts. Parent-owned temporary storage
+is cleaned even after a worker timeout. Generated credentials, keys and SQLite
+contents are excluded from exported evidence. Default reports use managed,
+bounded retention under ignored `.artifacts/performance/`; `--output` requires a
+fresh explicit directory and leaves previous evidence intact.
+
+The separate **Synthetic performance and soak** workflow runs nightly and by
+manual dispatch with seven samples, 1,000/10,000 added rows and a five-minute,
+two-client soak. It retains the first failed phase and all observations. Run
+performance measurements separately from other local test/coverage workloads;
+source hashes, host/runtime identity and fixed input hashes support comparisons,
+but seeds do not reproduce OS scheduling or shared-runner load.
+
 ## Supported platform checks
 
 The service regression platforms are Linux and macOS. Windows is a client

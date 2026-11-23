@@ -89,7 +89,7 @@ keeps those distinct from new work and from target verification.
 | T13 | Front-end payload contracts | Implemented for the declared main-screen consumer fields: a navigation census covers all 13 administrative screens and 15 real response families. Independently stated nested field/type contracts preserve nullable destinations, explicit unknown costs and decimal strings. Required-field removal, type changes and decimal coercion have negative controls; unknown response families fail the census. Additional resource states and every optional field remain outside this finite contract. |
 | T14 | Released-client version skew | Awaiting inputs. Identify hash-pinned previous released packages and previous-server vectors; never substitute current packages and call that N-1 testing. |
 | T15 | Supported platform matrix | Implemented in CI: macOS service regressions and macOS/Windows current-client consumers join existing Linux jobs. The portable runner builds wheels, npm/JAR/NuGet/crate packages and a fresh Go module, checks Unicode/space paths, shared contracts/decoders and owned HTTP/TLS behavior. Python dependencies come from the locked development environment; Go uses an explicit local module replacement. Windows service support, released-package skew and deployment qualification are not claimed. |
-| T16 | Performance and soak | Partial. `test_reporting_stream` already asserts bounded Python input memory as ledger size grows; exact 1k/10k comparisons are recorded in the review follow-up. Add reproducible scheduled latency/resource/soak runners. |
+| T16 | Performance and soak | Implemented for the synthetic operator baseline/soak scope. The manual/nightly runner measures fixed 1k/10k additional-attempt ledgers and a five-minute, two-client HTTP soak with report/export parity, exact decimal totals, concurrent WAL writes and metadata-only connector polling. Fresh subprocesses retain source/input hashes, nearest-rank latency percentiles, CPU, RSS high-water marks, sampled heap, threads/descriptors and writer progress. Correctness, timeout and cleanup failures block; initial timing and resource-growth results are observational. Existing bounded report-memory regressions remain. Production SLOs, calibrated long-term growth budgets and deployed/provider load qualification remain separate. |
 | T17 | Accessibility | Implemented for the declared browser journeys: pinned axe 4.11.0 audits all 13 main screens, six accounting sections, sign-in/password/error states, ordinary/read-only navigation and the user form. A 200% CSS-zoom/reduced-motion keyboard journey checks form entry and cancellation; an unlabeled-input canary proves the auditor detects defects. Automated checks do not establish full WCAG conformance or replace assistive-technology review. |
 | T18 | Mutation testing | Implemented for seven declared critical decisions: source-pinned isolated mutations target grant removal, operation replay payloads, published price identity, login backoff, abandoned first writes, queue capacity and route-ID redaction. Passing baselines and imported-copy identities are required. Killed, survived, invalid and timeout outcomes are recorded separately; survivors/invalid/timeouts fail a dedicated CI job. Real subprocess controls verify all four outcomes and cleanup. This finite gate is not an exhaustive mutation score. |
 | T19 | Time/locale/timezone boundaries | Implemented for the declared source boundaries: existing expiry/deadline/backoff cases now join six browser locale/timezone cases, UTC date filters across DST, exact cost display, local expiry conversion and rejection of nonexistent/ambiguous times (including half-hour changes and a skipped day). Scheduler ticks reject wall-clock dependencies and missed-interval replay after suspension. Deployment clock behavior remains a target qualification task. |
@@ -242,6 +242,42 @@ wire timestamp rules with explicit Gregorian boundary checks and leaves 148
 external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
+
+## Synthetic operator performance runner, 2026-11-23
+
+`tools.performance_suite` adds separate scale and soak subprocesses around real
+reporting and authenticated operator HTTP paths. Fixed seeds generate public
+synthetic attempt/model/cost distributions; an independent integer-cent oracle
+checks exact decimal conservation against the ten-case accounting fixture.
+HTTP JSON/CSV exports preserve the selected page, repeated navigation makes no
+model work, and a real loopback metadata endpoint observes only availability
+GETs. A bounded writer appends usage revisions without changing known costs.
+Final table counts must account for every acknowledged write and retain attempt,
+intent and guard-dispatch counts.
+
+Scale latency samples run without coverage, lock auditing or tracemalloc; report
+allocation peak is measured in a separate call. Soak latency explicitly includes
+tracemalloc overhead, with periodic heap/thread/descriptor/CPU/RSS samples and
+bounded percentile buffers. RSS is a process high-water mark, not current memory.
+Zero leaked threads/descriptors, export/accounting mismatches, duplicate probes,
+unexpected requests, stopped writers, failed children and timeouts fail the run.
+Initial timing and long-term heap/RSS growth budgets remain observational.
+
+The parent owns temporary SQLite/key/credential storage and removes it even when
+a worker times out. Evidence exports counters, measurements and public source
+identities; no database or generated secret is exported. Source hashes and
+commit/dirty state must remain unchanged between phases. An early supervised
+attempt failed at the network-guard adapter; a regression now exercises that
+adapter. Another preliminary run changed source while executing and is explicitly
+invalidated, with its original output preserved. Default output retention bounds
+successful and failed runs; explicit output paths must be fresh.
+
+The separate scheduled/manual workflow uses existing reviewed action/bootstrap
+pins, Python 3.12.15, 1,000/10,000 added attempts, seven samples, two clients and a
+300-second soak. These are synthetic local HTTP observations, with fresh
+connections per request, rather than browser-rendering, live-provider, production
+capacity or physical-storage qualification. Application code, frozen runtime
+inputs, the persistent profile and production acceptance are unchanged.
 
 ## Runtime component inventory, 2026-11-23
 

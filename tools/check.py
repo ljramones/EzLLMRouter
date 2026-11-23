@@ -50,6 +50,7 @@ SCRIPT_TESTS = (
     "tests/gateway_integration/test_work_identity.py",
 )
 MODULES = (
+    "tests.unit.test_performance_suite.PerformanceUnitTests",
     "tests.operator_console.test_documented_examples.ExampleExtractionTests",
     "tests.unit.test_json_shrinking",
     "tests.unit.test_authority_properties",
@@ -163,6 +164,7 @@ MODULES = (
     "tests.unit.test_structural_cleanup",
 )
 LOOPBACK_MODULES = (
+    "tests.unit.test_performance_suite.PerformanceHTTPTests",
     "tests.operator_console.test_documented_examples.DocumentedExamplesHTTPTests",
     "tests.gateway_integration.test_concurrent_transports",
     "tests.unit.test_transport_resilience",
