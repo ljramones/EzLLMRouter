@@ -76,8 +76,8 @@ keeps those distinct from new work and from target verification.
 | --- | --- | --- |
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
-| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Inputs now include eight reviewed worker-wheel replacements, updated immutable base images and runtime installer removal. Removing chrono reduces the Rust registry closure to 148 packages. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The current 359-entry combined inventory has 164 matches: 163 unrated Debian matches block the gate; one moderate application match remains visible. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
+| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 95 TLS/database/recovery cases run in the actual service image. The auxiliary JavaScript actor also builds offline. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. The Debian 13 transition adds seven signed-index/hash-checked archives, binds OS staging to source packets and removes APT tooling from runtime images. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The current 345-entry combined inventory has 89 matches: 88 unrated Debian matches across 18 source packages block the gate; one moderate application match remains visible. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -172,8 +172,8 @@ implementation batch after the release-input findings are addressed.
 
 Runtime source `4933eea5b59d33a858930725be462b7198330ff0` passed actual offline
 Linux ARM64 qualification with Python 3.12.16 and Node 24.22.3, both pinned by
-immutable image digest. All six images built, including the new installer-free
-Python helper base. The runtime fingerprint is
+immutable image digest. All six images built, including the Python helper base
+without pip/ensurepip. The runtime fingerprint is
 `a1aca10adf937e124d723d91c13db80266b794feb8739ab7c64ceb23fc519139`.
 The same startup, isolation, credential-mode, installed-client, four-arrival,
 restart and separate-volume encrypted-restore checks described above passed.
@@ -245,17 +245,85 @@ profile, original artifact store and production acceptance were not changed.
 
 ## Debian OS remediation, 2026-11-22
 
-The current source selects digest-pinned Debian 13 bases with the existing
-Python 3.12.16 and Node 24.22.3 runtimes. Seven authenticated, hash-pinned Debian
-archives update base-files, glibc, OpenSSL and zlib; no worker wheel changes are
-part of this transition. The source-packet/staging checks bind every selected
-archive and the installer. Offline candidate builds passed exact installed-version,
-package-integrity and three-package APT-removal checks. Their preliminary OS audit
-retains 88 unrated matches, compared with 163 in the previous Bookworm snapshot;
-this difference includes distribution/package scope changes and is not a count
-of independently proven fixed exploits. Full deployment and native-library
-qualification remains pending for this source selection. Private review evidence
-is under ignored `.artifacts/debian-remediation/`.
+Runtime source `64dd620f361e6f0d2993b30bf9209ce0566bcf8a` passed disposable Linux
+ARM64 qualification with digest-pinned Debian 13 (Trixie) bases and the existing
+Python 3.12.16 and Node 24.22.3 runtimes. Its fingerprint is
+`5bc89e3495ac43c83cc7a02526c49db048df22e25cc658296b5b16bedeec4e7e`;
+the source packet SHA-256 is
+`9b5fc455e1b841177007e586bd0ba1f5b76570cb37b7f78e2dfe84f813fe9b3f`.
+All six images built offline and passed exact installed-OS-version and
+APT/pip/npm-tooling checks, startup, isolation, credential permissions,
+installed-client readback, four exact synthetic arrivals, restart and
+separate-volume encrypted restore. Cleanup removed the disposable projects and
+volumes. The auxiliary JavaScript actor independently built offline and passed
+installed-client/version and tooling-absence checks.
+
+The current Debian tracker showed the old Bookworm packages already at their
+published versions, with no recorded fix for the matched entries. Review therefore
+selected immutable official Trixie images, checked their published source
+Dockerfiles, inspected stopped-container filesystems and audited their packages.
+Those images still needed current glibc, OpenSSL and zlib updates. APT verified
+Debian's signed InRelease and package indexes before downloading seven exact
+archives; sizes, SHA-256 values, binary/source metadata, startup-hook names and
+maintainer scripts were inspected before installation. The
+[OS lock](../deploy/local/inputs/os/README.md) records this provenance and selects
+base-files 13.8+deb13u8, glibc 2.41-12+deb13u5, OpenSSL 3.5.9-1~deb13u1 and
+zlib 1:1.3.dfsg+really1.3.1-1+deb13u1. The Python closure uses seven archives;
+Node uses six. The 117 worker wheels, their bytes and selected LiteLLM 1.106.12
+input are unchanged by this transition.
+
+Preparation verifies complete archive sets, sizes, hashes, links and installer
+identity. Each build context records only its role's selected archives; builders
+compare those bytes and metadata with the source packet before building an image.
+The build-only script verifies the OS/architecture and archive hashes, installs
+offline, checks package consistency and removes exactly apt, libapt-pkg7.0 and
+sqv. Debian's essential-package protection first rejected that removal; the
+retained corrected build explicitly permits the three named packages and uses a
+before/after installed-package census to reject any additional removal. Dpkg
+remains available for inventories. Existing cached older images can still be
+reused; rebuilding requires preparing the reviewed OS inputs.
+
+The actual service image also passed 95 TLS, compression, schema-upgrade, WAL,
+SIGKILL recovery, backup, key-rotation and coherent-restore cases, with no skips.
+They used read-only public source fixtures from the qualified commit and disposable
+data. The first validation bundle omitted a deployment source file needed by one
+source-inventory assertion; both that failed run and the complete corrected run
+are retained. Observed libraries are system OpenSSL 3.5.9, SQLite 3.46.1 and the
+frozen cryptography wheel's separate OpenSSL 4.0.3. Host quality gates passed
+1,451 Python test executions across 208 modules, with no skips/unstable results
+and an 11.78-second slowest module against the 30-second budget. Offline/HTTP/
+combined coverage remains 90.28%/78.37%/92.78%, without increasing budgets.
+The sparse source-identity unit fixture correction in `2cb0750` changes tests
+only; the qualified runtime files remain those in `64dd620`.
+
+The exact-image audit at `2026-11-23T01:46:52.923221+00:00` retained 345 combined
+package/version entries and 89 matches. All 88 unrated Debian matches remain
+blocking across 18 source packages; opentelemetry-api 1.45.1 retains one moderate
+application finding. Each non-worker image has the same 88 OS matches; the worker
+has those plus the moderate finding. Overlapping image counts must not be summed.
+Declared-only inputs have no matches in this snapshot. The earlier Bookworm
+snapshot had 163 OS matches, but the difference includes distribution/package
+scope changes and is not a count of independently proven fixed exploits.
+
+Current tracker reconciliation retains 85 open, two undetermined and one
+source-disputed Debian match. For CVE-2026-39113, Debian marks the selected SQLite
+release not affected (`fixed_version: 0`) while OSV still returns the match; the
+actual runtime exposes no `sqlar_uncompress` function. Selected source uses
+ordinary TLS/HTTP and AESGCM, without QUIC, DTLS, DANE, Suite-B flag or
+AES-GCM-SIV interfaces. These observations narrow subsequent interface review;
+they are not blanket advisory waivers or approval of other providers/configurations.
+The raw gate remains failed. Upstream build images retain separate OS/tooling
+findings, and bundled binary internals are not exhaustively audited. Physical
+power loss, other deployment architectures and production acceptance remain open.
+
+Private evidence is under ignored `.artifacts/debian-remediation/`:
+`target-64dd620/qualification.json`, the signed metadata/archive review,
+`image-audit/{images,inventory,sbom.cdx,osv,findings,attribution}.json`,
+`native-libraries-final.log`, `runtime-validation-manifest-final.json`,
+`auxiliary-js.json` and `interface-review.json`. Original failures remain beside
+the corrected runs. `debian-review-queue-current.json` groups all 88 remaining
+matches for the next review. The persistent profile, original input stores,
+production acceptance, released-client N-1 availability and T16 scope are unchanged.
 
 ## Testing follow-up review, 2026-11-21
 
