@@ -1,5 +1,5 @@
 {
-  "format": "ezllmrouter-debian-inputs-v1",
+  "format": "ezllmrouter-debian-inputs-v2",
   "suite": "trixie",
   "version_id": "13",
   "architecture": "arm64",
@@ -139,5 +139,30 @@
       ]
     }
   ],
-  "installer_sha256": "e0d250e6deb9578abf63dac578d2bfcdb77b3a490f9c30118ea9d7ca95344b43"
+  "installer_sha256": "f1bbe4e3f3944da3a269f044c41e161f38ae802513c0e81b2d25c21f59582435",
+  "runtime_removals": [
+    "adduser",
+    "apt",
+    "bsdutils",
+    "libapt-pkg7.0",
+    "libaudit-common",
+    "libaudit1",
+    "libblkid1",
+    "liblastlog2-2",
+    "libmount1",
+    "libpam-modules",
+    "libpam-modules-bin",
+    "libpam-runtime",
+    "libpam0g",
+    "libsemanage2",
+    "libsmartcols1",
+    "login",
+    "login.defs",
+    "mount",
+    "ncurses-bin",
+    "passwd",
+    "sqv",
+    "util-linux"
+  ],
+  "runtime_policy_reviewed_at": "2026-11-23T15:14:58.107844+00:00"
 }

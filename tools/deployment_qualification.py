@@ -134,8 +134,9 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
         selected = [item for item in os_lock["packages"] if role in item["roles"]]
         if any(installed.get(item["package"]) != item["version"] for item in selected):
             raise ValueError("runtime OS differs from reviewed package inputs")
-        if {"apt", "libapt-pkg7.0", "sqv"} & set(installed):
-            raise ValueError("APT tooling remains in runtime")
+        result[kind]["runtime_policy"] = runtime_footprint(
+            row, set(installed), os_lock["runtime_removals"], env
+        )
         result[kind]["os_lock_sha256"] = build["os_inputs"]["lock_sha256"]
         probe = (
             [
@@ -168,6 +169,92 @@ def build_images(build: dict, env: dict[str, str], project: str) -> dict:
         )
     result["service"]["sqlite_security"] = database_capabilities(result["service"]["id"], env)
     return result
+
+
+def runtime_locale(configuration: dict) -> dict:
+    expected = {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "LANGUAGE": "C"}
+    locale = {}
+    for entry in configuration.get("Env", []):
+        key, separator, value = entry.partition("=")
+        if key in expected:
+            if not separator or key in locale:
+                raise ValueError("ambiguous runtime locale")
+            locale[key] = value
+    if locale != expected:
+        raise ValueError("runtime locale differs from required policy")
+    return locale
+
+
+def runtime_footprint(
+    image: dict, installed: set[str], removals: list[str], env: dict[str, str]
+) -> dict:
+    if set(removals) & installed:
+        raise ValueError("removed system tooling remains installed")
+    locale = runtime_locale(image["Config"])
+    # The one-off inspector may traverse private image directories. Application
+    # containers retain their separately checked non-root, zero-capability policy.
+    prefix = [
+        *profile.DOCKER,
+        "run",
+        "--rm",
+        "--network=none",
+        "--read-only",
+        "--user=0:0",
+        "--cap-drop=ALL",
+        "--cap-add=DAC_OVERRIDE",
+        "--security-opt=no-new-privileges:true",
+        image["Id"],
+    ]
+    setid, _ = profile.command(
+        "runtime-setid-files",
+        [*prefix, "find", "/", "-xdev", "-type", "f", "-perm", "/6000", "-print"],
+        env,
+    )
+    if setid.strip():
+        raise ValueError("setuid or setgid executable remains in runtime")
+    names = (
+        "su",
+        "mount",
+        "umount",
+        "nsenter",
+        "unshare",
+        "setpriv",
+        "login",
+        "passwd",
+        "useradd",
+        "groupadd",
+        "adduser",
+        "deluser",
+        "chsh",
+        "chfn",
+        "gpasswd",
+        "newgrp",
+        "chage",
+        "expiry",
+        "wall",
+        "write",
+        "infocmp",
+        "tic",
+        "toe",
+        "tput",
+    )
+    paths = " ".join(
+        directory + "/" + name for directory in ("/usr/bin", "/usr/sbin") for name in names
+    )
+    code = (
+        "for path in "
+        + paths
+        + '; do if test -e "$path" || test -L "$path"; then printf "%s\\n" "$path"; fi; done'
+    )
+    present, _ = profile.command("runtime-forbidden-tools", [*prefix, "sh", "-c", code], env)
+    if present.strip():
+        raise ValueError("removed tool executable remains in runtime")
+    return {
+        "removed_packages": sorted(removals),
+        "locale": locale,
+        "setid_files": [],
+        "forbidden_executables": [],
+    }
 
 
 def database_capabilities(image: str, env: dict[str, str]) -> dict:
@@ -242,6 +329,7 @@ def structure(env: dict[str, str]) -> dict:
             raise ValueError("service credentials mount is writable")
         result[kind] = {
             "readonly_root": True,
+            "locale": runtime_locale(row["Config"]),
             "uid_gid": row["Config"]["User"],
             "network_mode": host["NetworkMode"],
             "mounts": sorted(mounts),

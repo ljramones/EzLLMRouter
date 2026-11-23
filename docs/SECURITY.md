@@ -166,6 +166,14 @@ verify installed versions and removal of APT tooling. The 117 frozen wheels are
 unchanged by this OS transition. Release acceptance still requires review of all
 remaining advisory findings and the qualified target's evidence.
 
+The runtime OS policy removes 19 additional unused login, PAM, mount/namespace and
+terminal packages with an exact sealed removal list. libc, GCC runtime libraries,
+certificates, dpkg/tar and timezone support remain. Qualification rejects removed
+tools, setuid/setgid files or locale overrides: images and live profile processes
+use `LANG=LC_ALL=C.UTF-8` and `LANGUAGE=C`. Package findings for retained libraries
+remain visible; removing compiler or command-line components does not qualify
+their native callers.
+
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery
 material outside documentation and evidence exports.

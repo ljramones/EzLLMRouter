@@ -15,6 +15,21 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class OSInputTests(unittest.TestCase):
+    def test_runtime_removals_reject_protected_duplicate_or_option_like_packages(self):
+        original = os_inputs.load_lock(ROOT)
+        for names in (
+            sorted(original["runtime_removals"] + ["libc6"]),
+            sorted(original["runtime_removals"] + ["libstdc++6"]),
+            sorted(original["runtime_removals"] + ["apt"]),
+            sorted(original["runtime_removals"] + ["--allow-unauthenticated"]),
+            sorted(original["runtime_removals"] + ["apt\nlibc6"]),
+            list(reversed(original["runtime_removals"])),
+        ):
+            changed = deepcopy(original)
+            changed["runtime_removals"] = names
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                os_inputs.validate_lock(changed)
+
     def staged_build(self, root, store):
         directory = root / "build"
         record = os_inputs.stage_archives(root, store, directory)
@@ -104,7 +119,7 @@ class OSInputTests(unittest.TestCase):
         self.assertEqual(os_inputs.verify_staging(manifest), lock)
         self.assertTrue((build / "worker/os-inputs/python-only_1_arm64.deb").exists())
         self.assertFalse((build / "js/os-inputs/python-only_1_arm64.deb").exists())
-        for filename in ("common_1_arm64.deb", "install.sh", "SHA256SUMS"):
+        for filename in ("common_1_arm64.deb", "install.sh", "SHA256SUMS", "REMOVE-PACKAGES"):
             with self.subTest(filename=filename):
                 changed = deepcopy(record)
                 path = build / "worker/os-inputs" / filename

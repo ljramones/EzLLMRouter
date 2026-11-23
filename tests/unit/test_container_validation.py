@@ -17,6 +17,36 @@ from tools.container_tests import resolve, staged_sources, test_commands as comm
 
 
 class QualificationSafetyTests(unittest.TestCase):
+    def test_runtime_policy_rejects_installed_tools_setid_files_and_unsafe_locales(self):
+        from tools.deployment_qualification import runtime_footprint
+
+        image = {
+            "Id": "sha256:" + "a" * 64,
+            "Config": {"Env": ["LANG=C.UTF-8", "LC_ALL=C.UTF-8", "LANGUAGE=C"]},
+        }
+        for changed in (
+            {"Env": ["LANG=C.UTF-8", "LANGUAGE=C"]},
+            {"Env": ["LANG=C.UTF-8", "LC_ALL=C.UTF-8", "LANGUAGE=../../untrusted"]},
+            {"Env": image["Config"]["Env"] + ["LANGUAGE=C"]},
+        ):
+            with self.subTest(config=changed), self.assertRaises(ValueError):
+                runtime_footprint(dict(image, Config=changed), set(), ["login"], {})
+        with self.assertRaises(ValueError):
+            runtime_footprint(image, {"login"}, ["login"], {})
+        for outputs in ((("/usr/bin/suid-canary", 0),), (("", 0), ("/usr/bin/nsenter", 0))):
+            with (
+                self.subTest(outputs=outputs),
+                patch("tools.deployment_qualification.profile.command", side_effect=outputs),
+                self.assertRaises(ValueError),
+            ):
+                runtime_footprint(image, set(), ["login"], {})
+        with patch(
+            "tools.deployment_qualification.profile.command", side_effect=[("", 0), ("", 0)]
+        ):
+            result = runtime_footprint(image, set(), ["login"], {})
+        self.assertEqual(result["removed_packages"], ["login"])
+        self.assertEqual(result["setid_files"], [])
+
     def test_service_sqlite_probe_rejects_weakened_or_missing_capabilities(self):
         from tools.deployment_qualification import database_capabilities
 

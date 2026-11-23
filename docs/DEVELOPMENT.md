@@ -500,7 +500,10 @@ hash using only the standard library. The input inventory records binary archive
 hashes and source-package versions for Debian advisory queries. Private archive
 bytes are verified separately during preparation; the PR source gate does not
 claim to have installed them. Builders compare staged OS inputs with their source
-packet before Docker executes. See the [OS input guide](../deploy/local/inputs/os/README.md).
+packet before Docker executes. The v2 lock seals the exact package-removal list;
+protected libraries, duplicates and option-like package arguments fail validation.
+Qualified images also enforce the fixed UTF-8/C-language locale and absence of
+setuid and removed tool files. See the [OS input guide](../deploy/local/inputs/os/README.md).
 
 CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.

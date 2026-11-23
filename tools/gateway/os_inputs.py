@@ -15,6 +15,36 @@ LOCK = "deploy/local/inputs/os/debian13-arm64.lock.json"
 INSTALLER = "deploy/local/install_os.sh"
 CONTEXTS = ("runtime_python", "receiver", "worker", "service", "python", "js")
 STORE = "inputs/os/debian13-arm64"
+PROTECTED = {
+    "base-files",
+    "base-passwd",
+    "bash",
+    "ca-certificates",
+    "coreutils",
+    "dash",
+    "debconf",
+    "dpkg",
+    "findutils",
+    "gcc-14-base",
+    "grep",
+    "gzip",
+    "libc-bin",
+    "libc6",
+    "libdb5.3t64",
+    "libgcc-s1",
+    "libncursesw6",
+    "libssl3t64",
+    "libstdc++6",
+    "libtinfo6",
+    "libuuid1",
+    "openssl",
+    "openssl-provider-legacy",
+    "perl-base",
+    "sed",
+    "tar",
+    "tzdata",
+    "zlib1g",
+}
 
 
 def digest(path: Path) -> str:
@@ -23,7 +53,7 @@ def digest(path: Path) -> str:
 
 def validate_lock(data: dict) -> None:
     if (
-        data.get("format") != "ezllmrouter-debian-inputs-v1"
+        data.get("format") != "ezllmrouter-debian-inputs-v2"
         or data.get("suite") != "trixie"
         or data.get("version_id") != "13"
         or data.get("architecture") != "arm64"
@@ -32,6 +62,19 @@ def validate_lock(data: dict) -> None:
         or not re.fullmatch(r"[0-9a-f]{64}", data.get("installer_sha256", ""))
     ):
         raise ValueError("unreviewed Debian target")
+    removals = data.get("runtime_removals")
+    if (
+        not isinstance(removals, list)
+        or not 3 <= len(removals) <= 64
+        or any(
+            not isinstance(name, str) or not re.fullmatch(r"[a-z0-9][a-z0-9+.-]*", name)
+            for name in removals
+        )
+        or removals != sorted(set(removals))
+        or not {"apt", "libapt-pkg7.0", "sqv"} <= set(removals)
+        or PROTECTED & set(removals)
+    ):
+        raise ValueError("unsafe or unreviewed runtime package removals")
     for role, base in data["bases"].items():
         if not re.fullmatch(
             r"docker.io/library/" + role + r"@sha256:[0-9a-f]{64}", base["reference"]
@@ -67,6 +110,8 @@ def validate_lock(data: dict) -> None:
             raise ValueError("invalid or duplicate reviewed Debian archive")
         seen.add(row["package"])
         roles.update(row["roles"])
+    if seen & set(removals):
+        raise ValueError("reviewed runtime updates cannot be removed")
     if roles != {"python", "node"}:
         raise ValueError("incomplete Debian role coverage")
 
@@ -120,8 +165,12 @@ def stage_archives(root: Path, store: Path, build: Path, contexts=CONTEXTS) -> d
         shutil.copy2(root / INSTALLER, directory / "install.sh")
         for row in selected:
             shutil.copy2(store / STORE / row["filename"], directory / row["filename"])
+        removals = "".join(name + "\n" for name in data["runtime_removals"])
+        (directory / "REMOVE-PACKAGES").write_bytes(removals.encode())
         (directory / "SHA256SUMS").write_text(
             "".join(row["sha256"] + "  " + row["filename"] + "\n" for row in selected)
+            + hashlib.sha256(removals.encode()).hexdigest()
+            + "  REMOVE-PACKAGES\n"
         )
         for path in sorted(directory.iterdir()):
             rows.append(
@@ -166,13 +215,17 @@ def verify_staging(build: dict) -> dict:
         prefix = kind + "/os-inputs/"
         if actual.get(prefix + "install.sh") != data["installer_sha256"]:
             raise ValueError("staged Debian installer differs from reviewed lock")
-        expected.update(prefix + name for name in ("install.sh", "SHA256SUMS"))
+        expected.update(prefix + name for name in ("install.sh", "SHA256SUMS", "REMOVE-PACKAGES"))
         for row in selected:
             name = prefix + row["filename"]
             expected.add(name)
             if actual.get(name) != row["sha256"]:
                 raise ValueError("staged Debian archive differs from reviewed lock")
         checksum = "".join(row["sha256"] + "  " + row["filename"] + "\n" for row in selected)
+        removals = "".join(name + "\n" for name in data["runtime_removals"])
+        if (root / prefix / "REMOVE-PACKAGES").read_bytes() != removals.encode():
+            raise ValueError("staged runtime removals differ from reviewed lock")
+        checksum += hashlib.sha256(removals.encode()).hexdigest() + "  REMOVE-PACKAGES\n"
         if (root / prefix / "SHA256SUMS").read_text() != checksum:
             raise ValueError("staged Debian checksum manifest mismatch")
     if expected != set(actual):

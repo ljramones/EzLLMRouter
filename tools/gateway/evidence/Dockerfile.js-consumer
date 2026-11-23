@@ -1,5 +1,6 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 LANGUAGE=C
 RUN --network=none --mount=type=bind,source=os-inputs,target=/opt/ezllmrouter/os-inputs,readonly \
     sh /opt/ezllmrouter/os-inputs/install.sh
 ENV npm_config_cache=/tmp/ezllmrouter-npm-cache npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
