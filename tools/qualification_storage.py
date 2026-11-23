@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path, PurePosixPath
+import json
+from pathlib import Path
+import re
 import subprocess
-import tarfile
 
 from deploy.local import local_profile as profile
+from tools.volume_archive import archive_members as archive_members
 
 DURABLE = ("service_data", "credential_data", "receiver_data")
 
@@ -37,29 +39,7 @@ def owned_volume(project: str, kind: str, env: dict[str, str]) -> str:
     return name
 
 
-def archive_members(path: Path) -> int:
-    """Accept only regular files/directories from the two known container owners."""
-    names = set()
-    with tarfile.open(path, "r:") as archive:
-        for member in archive:
-            name = PurePosixPath(member.name)
-            if (
-                name.is_absolute()
-                or ".." in name.parts
-                or str(name) in names
-                or not (member.isfile() or member.isdir())
-                or member.uid not in (0, 10001)
-                or member.gid not in (0, 10001)
-                or member.mode & 0o7022
-            ):
-                raise ValueError("unsafe disposable volume archive")
-            names.add(str(name))
-    if not names:
-        raise ValueError("empty disposable volume archive")
-    return len(names)
-
-
-def helper(volume: str, *, readonly: bool) -> list[str]:
+def helper(volume: str, image: str, *, readonly: bool) -> list[str]:
     return [
         *profile.DOCKER,
         "run",
@@ -73,9 +53,18 @@ def helper(volume: str, *, readonly: bool) -> list[str]:
         "--cap-add=DAC_OVERRIDE",
         "--cap-add=FOWNER",
         "--security-opt=no-new-privileges:true",
+        "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=144m,mode=0700",
+        "--mount",
+        "type=bind,src="
+        + str(profile.ROOT / "tools/volume_archive.py")
+        + ",dst=/archive.py,readonly",
         "--mount",
         "type=volume,src=" + volume + ",dst=/volume" + (",readonly" if readonly else ""),
-        profile.BASE,
+        image,
+        "python",
+        "-I",
+        "-S",
+        "/archive.py",
     ]
 
 
@@ -83,6 +72,15 @@ def cold_copy(source: str, target: str, directory: Path, env: dict[str, str]) ->
     """Caller has stopped source and created empty, separate target volumes."""
     if source == target:
         raise ValueError("restore must use separate project volumes")
+    output, _ = profile.command(
+        "cold-copy-runtime-image",
+        [*profile.DOCKER, "image", "inspect", env["EZLLMROUTER_PYTHON_IMAGE"]],
+        env,
+    )
+    images = json.loads(output)
+    if len(images) != 1 or re.fullmatch("sha256:[0-9a-f]{64}", images[0].get("Id", "")) is None:
+        raise ValueError("immutable patched runtime image required")
+    image = images[0]["Id"]
     results = []
     for kind in DURABLE:
         original = owned_volume(source, kind, env)
@@ -92,7 +90,7 @@ def cold_copy(source: str, target: str, directory: Path, env: dict[str, str]) ->
         with path.open("xb") as stream:
             path.chmod(0o600)
             subprocess.run(
-                [*helper(original, readonly=True), "tar", "-cpf", "-", "-C", "/volume", "."],
+                [*helper(original, image, readonly=True), "create"],
                 stdout=stream,
                 stderr=subprocess.PIPE,
                 check=True,
@@ -102,32 +100,13 @@ def cold_copy(source: str, target: str, directory: Path, env: dict[str, str]) ->
         count = archive_members(path)
         with path.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
-        # Refuse to overwrite any destination, including files hidden by ls.
-        profile.command(
-            "empty-restore-" + kind,
-            [
-                *helper(restored, readonly=True),
-                "python",
-                "-I",
-                "-S",
-                "-c",
-                "from pathlib import Path; assert not any(Path('/volume').iterdir())",
-            ],
-            env,
-        )
         with path.open("rb") as stream:
-            if hashlib.file_digest(stream, "sha256").hexdigest() != digest:
-                raise ValueError("backup changed before restore")
-            stream.seek(0)
-            subprocess.run(
+            completed = subprocess.run(
                 [
-                    *helper(restored, readonly=False),
-                    "tar",
-                    "-xpf",
-                    "-",
-                    "--numeric-owner",
-                    "-C",
-                    "/volume",
+                    *helper(restored, image, readonly=False),
+                    "restore",
+                    "--sha256",
+                    digest,
                 ],
                 stdin=stream,
                 stdout=subprocess.PIPE,
@@ -136,7 +115,8 @@ def cold_copy(source: str, target: str, directory: Path, env: dict[str, str]) ->
                 timeout=120,
                 env=env,
             )
-        results.append(
-            {"volume": kind, "sha256": digest, "members": count, "bytes": path.stat().st_size}
-        )
+        receipt = {"sha256": digest, "members": count, "bytes": path.stat().st_size}
+        if json.loads(completed.stdout) != receipt:
+            raise ValueError("restore receipt differs from validated archive")
+        results.append({"volume": kind, **receipt})
     return results

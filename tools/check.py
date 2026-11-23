@@ -66,6 +66,8 @@ MODULES = (
     "tests.unit.test_protocol_limits",
     "tests.unit.test_transport_inventory",
     "tests.unit.test_container_validation",
+    "tests.unit.test_volume_archive",
+    "tests.unit.test_security_cvss",
     "tests.unit.test_health_failures",
     "tests.unit.test_artifact_retention",
     "tests.unit.test_coverage_gates",

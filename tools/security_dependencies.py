@@ -19,6 +19,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(ROOT))
 from tools.security_lockfiles import INPUTS as INPUTS, locked_inputs
 from tools.security_bootstrap import errors as bootstrap_errors
+from tools.security_cvss import classification
 
 API = "https://api.osv.dev/v1/"
 MAX_RESPONSE = 10 * 1024 * 1024
@@ -339,16 +340,12 @@ def findings(
                 if withdrawn.tzinfo is None or withdrawn > now:
                     raise ValueError("invalid advisory withdrawal time")
             if not detail.get("withdrawn"):
-                severity = detail.get("database_specific", {}).get("severity", "UNRATED")
-                if severity not in {"LOW", "MODERATE", "MEDIUM", "HIGH", "CRITICAL"}:
-                    severity = "UNRATED"
                 issues.append(
                     {
                         "package": package,
                         "id": item["id"],
                         "severity": detail.get("severity", []),
-                        "database_severity": severity,
-                        "blocking": severity in {"HIGH", "CRITICAL", "UNRATED"},
+                        **classification(detail),
                     }
                 )
     return issues

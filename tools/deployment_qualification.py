@@ -356,6 +356,7 @@ def run(build: dict, output: Path) -> dict:
             for name in (
                 "tools/deployment_qualification.py",
                 "tools/qualification_storage.py",
+                "tools/volume_archive.py",
                 "deploy/local/local_profile.py",
                 "deploy/local/check.py",
                 "tools/gateway/os_inputs.py",

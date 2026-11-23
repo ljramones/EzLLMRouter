@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "432b10419f1b19627f032f620946944ca7f1512a31b69338d1eae18d9f0c1b3f",
+      "source_sha256": "f909f5e1b9bab9c8d5d26b6395721dfbf18b4a6e77daf793215e203e613a712a",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 254,
+          "line": 256,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 343,
+          "line": 345,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 487,
+          "line": 489,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "432b10419f1b19627f032f620946944ca7f1512a31b69338d1eae18d9f0c1b3f",
+      "source_sha256": "f909f5e1b9bab9c8d5d26b6395721dfbf18b4a6e77daf793215e203e613a712a",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 255,
+          "line": 257,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 344,
+          "line": 346,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 601,
+          "line": 603,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8217,22 +8217,22 @@
     {
       "path": "tools/qualification_storage.py",
       "code": "S603",
-      "source_sha256": "8ffebc953b776254b2c0da0c06770ce23dede6e71337169eec0a658d8ca64024",
-      "reason": "Cold backup/restore uses argument vectors with shell disabled, pinned helper images, validated fresh Compose-owned volume names, stopped volume users and validated private archives. Binary backup bytes never enter command logs.",
+      "source_sha256": "dd2ef28d781c662bfb0bef548d2fd814f999f69d21f8f60571b0aa37db0b24ea",
+      "reason": "Qualification-only argv subprocesses, shell disabled: owned stopped volumes, digest-resolved patched runtime image, fixed mounted archive script and bounded private streams; no model or HTTP caller controls commands.",
       "findings": [
         {
-          "line": 94,
+          "line": 92,
           "column": 13,
           "symbol": "cold_copy",
-          "statement_sha256": "713bb0ec58bb93de9d6da0f943b97ddf9623f571ff37f7aff4c16a7eb826acf2",
-          "context_sha256": "a36e7f0bbeef9e7e07cc0478ed59ef94ab9ca83ae1ef32168e7dd9159417b364"
+          "statement_sha256": "8881a777ef86f0f103b4b74a12f539ce2d5410f51966816199f232947e533f70",
+          "context_sha256": "cfafd792a041fac7425b1d19fed4e81105375577e61eacd105aabcf5689b40d6"
         },
         {
-          "line": 122,
-          "column": 13,
+          "line": 104,
+          "column": 25,
           "symbol": "cold_copy",
-          "statement_sha256": "afdd89a8fb7747260c4fbd888fa613524a9fcdde812af9b396cde38bda642bff",
-          "context_sha256": "a36e7f0bbeef9e7e07cc0478ed59ef94ab9ca83ae1ef32168e7dd9159417b364"
+          "statement_sha256": "c384cad43a962e291669a20b0bb7f153e74ecb5c0e6386879c1dba447a832c2e",
+          "context_sha256": "cfafd792a041fac7425b1d19fed4e81105375577e61eacd105aabcf5689b40d6"
         }
       ]
     },
@@ -8254,11 +8254,11 @@
     {
       "path": "tools/security_dependencies.py",
       "code": "S310",
-      "source_sha256": "0d2943cbde3134f3b6cebc602e617121914985bc1b6e572fc765eab61aa95c56",
+      "source_sha256": "e1ea04cf00260b082785dde28315fbc838f30f6e17b09b2d29980d8371d3c828",
       "reason": "Fixed HTTP(S) metadata/loopback fixture URL or the allowlisted OSV route builder; no caller-controlled URL schemes at this reviewed site.",
       "findings": [
         {
-          "line": 196,
+          "line": 197,
           "column": 15,
           "symbol": "fetch",
           "statement_sha256": "7a0a28ee2e7543b4f61e4e219c26d79ab2abb4beda453950e285029a59233e4c",

@@ -243,6 +243,59 @@ external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
 
+## Advisory classification and disposable restore, 2026-11-22
+
+Review found that the advisory gate retained CVSS vectors but ignored them when
+the database supplied no named severity. The corrected standard-library scorer
+validates CVSS v3.0/v3.1 metrics and computes the base score with exact arithmetic.
+It retains raw vectors and database severity, adds effective severity and score
+provenance, and chooses the highest usable rating. Temporal/environmental metrics
+cannot lower the base score. Unsupported versions, malformed ratings and absent
+ratings remain blocking. No dependency or frozen input changed.
+
+Replaying the unchanged exact-image snapshot from `2026-11-23T01:46:52.923221+00:00`
+keeps all 89 matches visible: 21 unrated, 22 high, one critical, 38 moderate and
+seven low. All 44 blocking matches are Debian entries across 14 source packages.
+The 21 unrated entries include 18 CVSS v4 ratings and three without a usable rating.
+Of the 45 nonblocking entries, 44 are Debian and one is the previously recorded
+moderate opentelemetry-api finding. Each image still has 88 OS matches; the worker
+also has the application match. This corrects classification, without closing or
+waiving any advisory or changing the selected package versions. The gate fails.
+CVSS v4 support and the remaining package/interface reviews are subsequent work.
+
+The qualification's cold-copy path also validated with Python and extracted with
+GNU tar. It now uses one physical USTAR parser for validation and restore, with
+bounded private spooling, complete hash verification before writes, explicit
+directory ancestry and exclusive no-follow file creation. Links, special files,
+PAX/GNU extensions, altered/truncated/trailing payloads and nonempty destinations
+fail. Source traversal rejects links, special files and mutation during copying.
+The helper resolves the already patched runtime image to its immutable ID; it no
+longer uses the raw build base. Scope is the three disposable qualification volumes,
+with a 128 MiB/16,384-member limit. Runtime application sources remain `64dd620`.
+
+The old archive gate first failed two new negative assertions; the old advisory
+gate separately failed the vector-classification regression. All 46 focused cases
+pass after correction. All 2,592 CVSS v3 base-metric combinations agree with FIRST's
+published v3.1 reference calculator, alongside published example goldens. The full
+local offline gate passes 1,274 Python executions in 174 modules, no skips or
+unstable outcomes, and an 11.40-second slowest module against the 30-second limit.
+Ruff, mypy, type audit, 1,014 reviewed SAST findings, secret scanning, dependency
+preflight and maintained JavaScript/script checks pass. Existing SAST statements
+retain their identities except the two reviewed archive subprocess replacements.
+
+Disposable Linux ARM64 qualification passes with the sealed `64dd620` source
+packet and the updated, hash-recorded host harness. All six images pass offline
+build/runtime checks; four exact synthetic requests, restart and separate-volume
+encrypted restore/readback pass. Three restored archives contain 14, three and two
+members respectively; no private archive is exported. Cleanup removes both owned
+projects and volumes. The persistent profile and production acceptance are unchanged.
+Private evidence under ignored `.artifacts/advisory-review/` includes
+`classification-summary.json`, `findings.json`, `attribution.json`,
+`cvss-exhaustive.json`, the retained old-gate failures, `full-check-fixed.log`,
+`test-health-fixed/summary.json` and `target/qualification.json`. The earlier
+[Debian record](#debian-os-remediation-2026-11-22) preserves the original audit's
+unrated classification and the independent native-library qualification.
+
 ## Debian OS remediation, 2026-11-22
 
 Runtime source `64dd620f361e6f0d2993b30bf9209ce0566bcf8a` passed disposable Linux

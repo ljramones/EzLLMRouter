@@ -514,7 +514,13 @@ does not change or reacquire the frozen worker inputs.
 The nightly `--audit` mode sends only package names/versions to the public OSV
 API, follows and retains every advisory page, records the response snapshot and its inventory identity, and
 fails on high, critical or unrated active advisories. Low/moderate findings stay
-visible. Withdrawn entries must have a valid withdrawal time. Metadata outages,
+visible. The report preserves the original rating vectors and database severity,
+and adds an effective severity. Valid CVSS v3.0/v3.1 vectors use FIRST's base-score
+equations with exact arithmetic; temporal/environmental metrics are validated but
+cannot reduce the base-score gate. The highest database or calculated severity
+wins. Unsupported versions (including CVSS v4), malformed ratings and advisories
+without a usable rating remain blocking. No Debian urgency label substitutes for
+a CVSS score. Withdrawn entries must have a valid withdrawal time. Metadata outages,
 incomplete batches, repeated/unconsumed page tokens and identity mismatches fail;
 saved page evidence must reproduce the retained aggregate. These failures never establish a clean
 audit. No scan automatically upgrades dependencies or changes frozen inputs.

@@ -177,6 +177,18 @@ default keyring names, lock files and sealed credentials are ignored by the
 repository and excluded from runtime evidence capture. Keep custom keyring paths
 outside the source and evidence trees as well.
 
+The disposable deployment qualification copies its three stopped, owned volumes
+with a separate restricted USTAR format. One parser validates and restores the
+archive; GNU tar extraction is not used. The helper runs the digest-resolved,
+patched Python runtime without a network and verifies the complete SHA-256 before
+writing an empty destination. It rejects links, special files, PAX/GNU extensions,
+unsafe paths, duplicate names, missing parent directories and unexpected owners or
+permissions. Limits are 128 MiB and 16,384 members for these synthetic volumes.
+Restore preserves numeric ownership, private modes and timestamps using directory
+file descriptors and exclusive, no-follow file creation. Private archives stay in
+the qualification's temporary directory, outside exported evidence. This format
+is scoped to disposable qualification rather than general instance backups.
+
 The offline `integration_local --backup` command validates the source schema and
 copies committed SQLite/WAL data into a private staging file in the destination
 directory. It syncs the completed file before publishing a new destination and
