@@ -76,8 +76,8 @@ keeps those distinct from new work and from target verification.
 | --- | --- | --- |
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
-| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 profile: all five receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the deployment qualification record below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked by advisory findings. Ruff S rules and full-history secret checks retain exact source/finding identities. Hash-checked Python/npm inputs join a reviewed 149-package Rust registry closure, tracked Cargo.lock and locked repository qualification builds. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The 2026-11-22 audit retained 226 matches across the combined 521-entry inventory, with 194 gate-blocking matches requiring review/remediation. These include unrated OS advisories and are not 194 independently confirmed exploitable defects. Frozen inputs and production acceptance remain unchanged. |
+| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Inputs now include eight reviewed worker-wheel replacements, updated immutable base images and runtime installer removal. Removing chrono reduces the Rust registry closure to 148 packages. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The current 359-entry combined inventory has 164 matches: 163 unrated Debian matches block the gate; one moderate application match remains visible. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -113,7 +113,7 @@ spending, a persistent-profile restart or reacquisition of frozen gateway inputs
 Runtime source `cafe28971f6d5472488b1d2ee3f9ae83d21de2d2` passed on Docker
 29.9.2 / Linux ARM64, using the existing digest-pinned Python 3.12.15 and Node
 24.22.1 images. All 117 frozen worker wheels matched their recorded bytes and
-SHA-256 values and passed archive startup-hook inspection. LiteLLM remains
+SHA-256 values and passed archive startup-hook inspection. That run used LiteLLM
 1.105.1 with its existing reviewed hash; no frozen dependency was reacquired or
 updated. The runtime fingerprint is
 `7bd382b57bad85e8dd14d380d015bf37dcf0a934fc1af5dc1b69bc63a2094118`.
@@ -149,12 +149,15 @@ vulnerability detection. Go, Java and .NET runtime manifests declare no external
 package closure; their existing installed-consumer checks remain separate.
 
 The advisory check at `2026-11-22T22:55:14.209032+00:00` failed its release gate.
-Named application findings include certifi `2026.7.22`
+Named findings in that combined inventory include certifi `2026.7.22`
 (`GHSA-6q48-6c7w-9gw2`, compromised intermediate CA trust), dnspython `2.9.0`
 (`GHSA-vvf4-9x63-8xvv`), filelock `3.32.7` (`GHSA-v4x8-3wr5-3wq8`), oauthlib
 `4.0.0` (`GHSA-3jp2-3mrg-2vxc`), and unmaintained chrono `0.4.42`
-(`RUSTSEC-2026-0543`). Installed OS packages and build/package tooling add other
-matches. The synthetic profile uses a local HTTP receiver and its worker has no
+(`RUSTSEC-2026-0543`). Correction: certifi `2026.7.22` was confined to the older
+client-parity lock/consumer recipes; the qualified images already contained fixed
+`2026.10.19`. The original 226 matches/194 blockers describe the combined declared
+and installed inventory, not runtime-only findings. Installed OS packages and
+build/package tooling add other matches. The synthetic profile uses a local HTTP receiver and its worker has no
 network; that does not waive these findings for release or other deployments.
 Review affected interfaces and distribution backports, then prepare reviewed
 replacement inputs under the repository's release authorization rule. No
@@ -164,6 +167,81 @@ T14 still needs genuine hash-pinned previous releases and previous-server
 vectors. GitHub has no tags or releases, and retained development SDK archives
 are not released-version evidence. T16 performance/soak remains the next separate
 implementation batch after the release-input findings are addressed.
+
+## Release-input remediation, 2026-11-22
+
+Runtime source `4933eea5b59d33a858930725be462b7198330ff0` passed actual offline
+Linux ARM64 qualification with Python 3.12.16 and Node 24.22.3, both pinned by
+immutable image digest. All six images built, including the new installer-free
+Python helper base. The runtime fingerprint is
+`a1aca10adf937e124d723d91c13db80266b794feb8739ab7c64ceb23fc519139`.
+The same startup, isolation, credential-mode, installed-client, four-arrival,
+restart and separate-volume encrypted-restore checks described above passed.
+Every Python runtime lacks pip/ensurepip; the JavaScript consumer lacks global
+npm/corepack/yarn. The disposable projects and volumes were cleaned up.
+
+The 117-wheel closure now selects eight reviewed replacements: dnspython 2.9.2,
+filelock 4.2.1, oauthlib 4.0.1, LiteLLM 1.106.12, boto3/botocore 1.43.117,
+litellm-enterprise 0.1.76.post1 and litellm-proxy-extras 0.4.108. The selected
+`litellm-1.106.12-cp310-abi3-manylinux_2_28_aarch64.whl` SHA-256 is
+`3baf90eecb4bd63a23eecc474c3ebb7dbcbe4243d459480d96d47805a46cdbda`.
+A separate custody-verified store preserves the old inputs. The first candidate
+failed actual installation because LiteLLM 1.105.1 requires filelock `<4`; its
+failure remains retained. Complete METADATA dependency/extras/Python checks now
+reject that incompatible closure before building. No requirement was overridden.
+
+Review on 2026-11-22 (America/Toronto) covered the publisher's
+[current incident notice](https://docs.litellm.ai/blog/security-incident-oct-21-2026),
+[canonical investigation](https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain),
+[1.106.12 release notes](https://github.com/BerriAI/litellm/releases/tag/v1.106.12),
+[GitHub advisories](https://github.com/BerriAI/litellm/security/advisories), PyPI
+metadata/yanked status and exact published artifacts. The selected maintenance
+branch includes the backports for GHSA-2rwg-2wh4-7c4f (1.106.9),
+GHSA-w4c7-34wj-hqm8 (1.106.5) and GHSA-4xm2-x5g5-wc8q (1.106.12).
+These concern Azure credential overrides, an enterprise file route and key-info
+metadata respectively; the synthetic OpenAI receiver profile does not expose
+those interfaces. Broader production/provider qualification is not established.
+The forbidden 1.107.0 artifact was never acquired, installed or executed.
+
+The selected LiteLLM PyPI attestation subject matches its filename/hash and the
+expected `BerriAI/project-releaser` publisher workflow. Independent Sigstore
+transparency-log verification was not performed. The four necessary companion
+updates have no published PyPI attestations; their exact PyPI archive hashes,
+metadata, dependency relationships and contents were inspected. All 117 selected
+wheels passed byte/hash and startup-hook inspection before installation; absence
+of startup hooks alone does not establish that an artifact is clean. These
+provenance limits remain open, with no production approval implied.
+
+The exact-image audit at `2026-11-23T00:33:55.495382+00:00` retains 359 combined
+package/version entries, 164 advisory matches and 163 blockers. All blockers are
+unrated Debian advisories; the remaining application match is moderate
+`GHSA-mf5v-w3w3-f6cg` in opentelemetry-api 1.45.1. Per-image attribution retains
+110 matches for JavaScript, 163 each for the Python consumer, receiver, helper
+base and service, and 164 for the worker. Those overlapping counts must not be
+summed. Declared-only inputs have no matches in this snapshot. Node's embedded
+undici 7.30.2 is included. Other bundled binary internals are not exhaustively
+audited. Upstream build/helper base images retain installer findings in their
+separate pre-stripping inventory. Advisory counts changed with inventory scope
+and package removal; the difference is not a count of proven fixed exploits.
+Debian urgency is not a severity waiver. Distribution backport/applicability
+review and any required patches remain release-blocking.
+
+Private evidence is under ignored `.artifacts/release-remediation/`:
+`target-compatible/qualification.json`, `image-audit/{images,inventory,sbom.cdx,osv,findings,attribution}.json`,
+the upstream review snapshots and `frozen-store-final/ARTIFACT-CUSTODY.json`.
+Runtime source CI run `45088613239` passed all 14 jobs, including Linux, macOS and
+Windows packaged consumers. The uninstrumented local pass ran 1,446 Python test
+executions across 207 modules, with no skips or unstable results and an
+11.79-second slowest module against the 30-second budget. Both legacy Python
+consumer images also built offline and passed their installed-client regressions
+with certifi 2026.10.19 and no pip/ensurepip; their complete historical runner
+wrappers were not qualified. Offline and HTTP quality/coverage gates passed:
+90.28% offline, 78.37% HTTP, 92.78% combined, with no coverage-budget increase.
+The source Docker inventory covers 18 Dockerfiles. Removing chrono preserves the
+wire timestamp rules with explicit Gregorian boundary checks and leaves 148
+external Rust packages in the tracked locked graph. T14 still needs genuine
+previous releases and vectors; T16 remains a separate batch. The persistent
+profile, original artifact store and production acceptance were not changed.
 
 ## Testing follow-up review, 2026-11-21
 

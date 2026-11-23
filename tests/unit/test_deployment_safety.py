@@ -150,7 +150,12 @@ class FrozenInputTests(unittest.TestCase):
             build.assert_not_called()
 
     def test_os_packages_and_advisories_keep_actual_target_attribution(self):
-        from tools.release_inventory import attribution, debian_packages
+        from tools.release_inventory import attribution, debian_packages, package_key
+
+        self.assertEqual(
+            package_key({"ecosystem": "PyPI", "name": "Typing_Extensions", "version": "1"}),
+            ("PyPI", "typing-extensions", "1"),
+        )
 
         rows = debian_packages(
             "bin\t1\tsrc\t1\tinstalled\nold\t1\told\t1\tconfig-files\n", "Debian:12"

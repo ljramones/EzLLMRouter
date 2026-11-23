@@ -482,6 +482,19 @@ and source identities can be checked offline; unavailable archives are not
 claimed byte-verified. Package managers still enforce archive hashes/integrity
 during the corresponding qualified installations.
 
+The separately frozen worker bundle is verified before staging with pinned
+`packaging==26.3`. The verifier reads wheel METADATA without importing wheel code,
+evaluates Linux ARM64/CPython target markers and selected extras, propagates
+transitive extras, and checks the complete dependency and Python-version bounds.
+A hash-valid bundle can still be incompatible: the initial filelock 4 candidate
+was rejected by LiteLLM 1.105.1's `<4` bound, prompting review of the compatible
+maintenance backport. See the
+[bundle assembly instructions](../deploy/local/README.md#inputs) and
+[current evidence](TESTING-ROADMAP.md#release-input-remediation-2026-11-22).
+Legacy parity/tool-cycle staging now uses the same verified offline client wheels
+and freshly built SDKs. Their historical complete runner wrappers are separate
+from the currently qualified disposable profile.
+
 CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.
 Reinstallation prevents an existing same-version package from bypassing archive

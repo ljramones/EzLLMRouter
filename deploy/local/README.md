@@ -40,6 +40,9 @@ installation. The trusted service installs an 11-package subset of the reviewed
 worker lock plus the current client wheel. LiteLLM is absent from its dependency,
 validation and runtime stages, and both build and startup check that absence.
 Preparation scans every wheel archive for startup hooks before installation.
+It also verifies active dependency bounds, Python constraints and selected extras
+against the Linux ARM64 target with the pinned development `packaging` parser.
+No wheel code is imported during these checks.
 Service regressions run in a validation stage; the final service
 image contains the server, console, local entry points and required fixture data,
 without test/evidence Python sources. The worker's target check is also a temporary
@@ -48,8 +51,30 @@ in the worker build, with their temporary validation mount. The service validate
 the frozen HTTP interface counterexamples with a read-only wheel mount.
 Isolated owner proof commands mount their separately staged fixtures
 read-only; ordinary profile startup has no fixture-code mounts. These Dockerfile
-changes need qualification in the target Docker environment with the existing
-reviewed lock and pinned images.
+changes passed disposable Linux ARM64 qualification at the runtime source in the
+[validation record](../../docs/TESTING-ROADMAP.md#release-input-remediation-2026-11-22).
+Other targets need their own qualification.
+
+After reviewing replacement artifacts, assemble a separate immutable store:
+
+```sh
+.venv/bin/python -m tools.gateway.frozen_inputs \
+  --source-store /absolute/path/to/existing-reviewed-store \
+  --replacements /absolute/path/to/reviewed-wheels \
+  --output /absolute/path/to/fresh-private-store
+```
+
+The command preserves the original store, copies the selected 117 wheels, and
+records exact bytes, hashes and source-manifest identities in
+`ezllmrouter-frozen-inputs-v1` custody. Unexpected, missing or incompatible wheels
+fail. Select the new store explicitly with `EZLLMROUTER_ARTIFACT_ROOT`, then commit
+runtime inputs before preparing fresh staging. Assembly does not restart a profile.
+
+The six images include a derived `runtime_python` image for ingress and namespace
+helpers. Build it before those roles start; the profile and qualification wrappers
+do this automatically. All final Python images remove pip/ensurepip, and the final
+JavaScript consumer removes global npm/corepack/yarn. Pinned upstream build images
+retain vendor tooling and require separate security review.
 
 The source-only `python -m tools.container_tests` check invokes the same pure
 validation staging helpers, including profile preflights, and follows Docker
@@ -179,7 +204,10 @@ artifact from the manual **Release input candidates** workflow:
 
 The audit inventories immutable image IDs with networking disabled, then sends
 public package names/versions to OSV. It retains its inventory, CycloneDX SBOM,
-all advisory pages and findings. High, critical and unrated matches fail the
+all advisory pages and findings. `images.json` preserves actual installed package
+metadata and embedded runtime versions; `attribution.json` separates each image's
+matches from findings confined to declared inputs. PyPI aliases are normalized
+when combining sources. High, critical and unrated matches fail the
 gate; a failed gate requires review/remediation. Rust repository builds use the
 tracked Cargo.lock with `--locked`; published library consumers resolve their
 own dependency graph. See the [current qualification record](../../docs/TESTING-ROADMAP.md#deployment-qualification-and-package-audit-2026-11-22)

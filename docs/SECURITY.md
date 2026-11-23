@@ -140,14 +140,24 @@ Changing documentation or a file location does not approve replacement inputs.
 
 Do not install or run `litellm==1.107.0` or its corresponding image. The
 [publisher's incident report](https://docs.litellm.ai/blog/security-incident-oct-21-2026)
-identifies that release as compromised. The reviewed worker remains pinned to
-`litellm==1.105.1`; this is a statement about the selected profile, not an approval
-of other releases or environments.
+identifies that release as compromised. The reviewed worker is pinned to the
+maintained `litellm==1.106.12` backport and its exact published ARM64 wheel hash.
+The [current validation record](TESTING-ROADMAP.md#release-input-remediation-2026-11-22)
+records incident/advisory review, publisher evidence, dependency compatibility,
+actual offline builds and remaining provenance limits. This selection does not
+approve other releases, other environments or production acceptance.
 
 Use explicit reviewed wheel hashes and image digests. Before proposing updates,
 review current advisories, published artifact provenance, affected interfaces
 and startup hooks, then repeat the relevant isolation and installed-package
 checks. Never substitute a mutable image tag or reacquire frozen inputs silently.
+
+Custody verification checks the complete wheel dependency closure, target Python
+constraints and selected extras before building. Runtime Python images omit
+pip/ensurepip; the JavaScript consumer omits global npm/corepack/yarn. These are
+checked in the actual images, including the derived Python image used by ingress
+and namespace helpers. Upstream build images retain their own tooling and remain
+separately inventoried. Removing installers does not clear OS advisories.
 
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery

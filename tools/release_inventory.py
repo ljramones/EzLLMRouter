@@ -16,6 +16,13 @@ from tools.security_dependencies import findings, forbidden_release, inventory, 
 from tools.security_rust import rust_graph
 
 
+def package_key(row: dict) -> tuple[str, str, str]:
+    name = (
+        re.sub(r"[-_.]+", "-", row["name"]).lower() if row["ecosystem"] == "PyPI" else row["name"]
+    )
+    return row["ecosystem"], name, row["version"]
+
+
 def docker(image: str, *args: str) -> str:
     return subprocess.check_output(
         [
@@ -207,17 +214,16 @@ def main() -> int:
     images = json.loads(args.qualification.read_text())
     captured = {kind: image_packages(image) for kind, image in images["images"].items()}
     (args.output / "images.json").write_text(json.dumps(captured, indent=2) + "\n")
-    rows = {
-        (row["ecosystem"], row["name"], row["version"]): set(row["sources"])
-        for row in data["packages"]
-    }
+    rows = {}
+    for row in data["packages"]:
+        rows.setdefault(package_key(row), set()).update(row["sources"])
     for package in packages:
         rows.setdefault(("crates.io", package["name"], package["version"]), set()).add(
             "resolved-rust/Cargo.lock"
         )
     for kind, image in captured.items():
         for row in (*image["os_packages"], *image["application_packages"]):
-            rows.setdefault((row["ecosystem"], row["name"], row["version"]), set()).add(
+            rows.setdefault(package_key(row), set()).add(
                 "image:" + kind + ":" + image["image"]["id"]
             )
     data.update(

@@ -8239,11 +8239,11 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "7ecefd999d9e428dd4e8313b2b8b46b7002cc48a6d48c8bd2d0e50e1bee84837",
+      "source_sha256": "aa74eb895bc2752c23cd73062e8dcaf1a1a2d9f6ad7b955cd82e1906d65db769",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
-          "line": 20,
+          "line": 27,
           "column": 12,
           "symbol": "docker",
           "statement_sha256": "b2f8003b8762ae60f78d871b34f28eff6aada915f91ce1ffa1857fb2aaaa0317",
