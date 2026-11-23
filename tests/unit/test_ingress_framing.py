@@ -28,6 +28,37 @@ class UpstreamSocket:
 
 
 class IngressFramingTests(framing.AuthenticatedFramingTests):
+    def test_backend_uses_server_shutdown_before_closing_unread_request_bytes(self):
+        targets, capability = self.targets()
+        _, server, path, _, dispatch, reader = targets[1]
+        pairs = [socket.socketpair(), socket.socketpair()]
+        backend = pairs[1][1]
+        shutdown = socket.socket.shutdown
+        finished = []
+
+        def observed(endpoint, mode):
+            if endpoint is backend and mode == socket.SHUT_WR:
+                finished.append(True)
+            return shutdown(endpoint, mode)
+
+        with (
+            patch.object(socket, "socketpair", side_effect=pairs),
+            patch.object(socket.socket, "shutdown", observed),
+        ):
+            reply = self.exchange(
+                server,
+                self.request_bytes(
+                    path, b"Content-Length: 2\r\nTransfer-Encoding:\r\n", b"{}", poison=True
+                ),
+            )
+        self.assertEqual(finished, [True])
+        self.assertEqual(reply.count(b"HTTP/1.1 "), 1)
+        self.assertEqual(int(reply.split(b" ", 2)[1]), 413)
+        self.assertIn(b"Connection: close\r\n", reply)
+        self.assertEqual(reader.call_count, 1)
+        dispatch.assert_not_called()
+        capability.assert_not_called()
+
     def exchange(self, server, raw):
         client, relay = socket.socketpair()
         upstream, backend = socket.socketpair()
@@ -41,6 +72,10 @@ class IngressFramingTests(framing.AuthenticatedFramingTests):
             except BaseException as error:
                 failures.append(type(error).__name__)
             finally:
+                # Match TCPServer.shutdown_request: preserve the response FIN
+                # before close when a rejected request has unread body bytes.
+                with suppress(OSError):
+                    backend.shutdown(socket.SHUT_WR)
                 backend.close()
 
         def handle_relay():
@@ -49,6 +84,8 @@ class IngressFramingTests(framing.AuthenticatedFramingTests):
             except BaseException as error:
                 failures.append(type(error).__name__)
             finally:
+                with suppress(OSError):
+                    relay.shutdown(socket.SHUT_WR)
                 relay.close()
 
         threads = [threading.Thread(target=handle_backend), threading.Thread(target=handle_relay)]

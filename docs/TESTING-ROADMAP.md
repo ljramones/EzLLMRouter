@@ -279,6 +279,18 @@ connections per request, rather than browser-rendering, live-provider, productio
 capacity or physical-storage qualification. Application code, frozen runtime
 inputs, the persistent profile and production acceptance are unchanged.
 
+The real HTTP smoke additionally covers 72 previously allowed lines and 41
+conditional exits across five unchanged application modules. Only the HTTP
+allowances shrink; its measured coverage is 78.85%, with 92.81% combined coverage.
+The first CI pass also exposed a socket-pair ingress fixture that closed unread
+request data without the server's normal write shutdown. The fixture now mirrors
+`TCPServer.shutdown_request` before closing both peers. The old fixture fails the
+new shutdown assertion; the corrected four-case suite passes 20 fresh-process
+runs. Malformed requests still reject and cannot dispatch a following request.
+The performance measurements remain bound to `b3888fc`; this follow-up changes
+fixture teardown and coverage metadata, with performance source/input hashes
+unchanged.
+
 ## Runtime component inventory, 2026-11-23
 
 The qualification footprint check previously searched only `/usr/bin` and
