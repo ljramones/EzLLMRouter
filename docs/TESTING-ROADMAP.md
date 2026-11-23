@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Thirteen signed-index/hash-checked Debian archives and the exact 22-package removal closure bind to staged source packets. Six clean offline images pass disposable qualification; the seventh passes its auxiliary installed-SDK/policy smoke. The current combined inventory has 342 entries and 71 raw matches: 23 high, one critical, two unrated, 38 moderate and seven low. Published archive fixes remove seven original blockers; ten exact component dispositions leave 16 effective blockers, down from 33. OpenSSL (9), glibc (6) and tar (1) remain open. Raw severity and findings are retained. See the current library-upgrade record below; historical counts remain recorded separately. The persistent profile and production acceptance remain unchanged. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Thirteen signed-index/hash-checked Debian archives and the exact 22-package removal closure bind to staged source packets. Six clean offline images pass disposable qualification; the seventh passes its auxiliary installed-SDK/policy smoke. The current combined inventory has 343 entries and 71 raw matches: 23 high, one critical, two unrated, 38 moderate and seven low. Published archive fixes remove seven original blockers; ten exact component dispositions and nine verified OpenSSL native fixes leave 7 effective blockers, down from 33. Glibc (6) and tar (1) remain open. Raw severity and findings are retained. See the current native-backport record below; historical counts remain recorded separately. The persistent profile and production acceptance remain unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -291,9 +291,59 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## OpenSSL native backports, 2026-11-23
+
+The current audit has **7 effective blockers, down from the original 33**.
+This batch fixes all nine retained OpenSSL cases across the system library,
+Node and cryptography copies. The earlier seven published archive fixes and
+ten verified component dispositions remain in effect. The six glibc cases and
+one tar case still block release acceptance; the persistent profile and
+production acceptance are unchanged.
+
+The [native input guide](../deploy/local/inputs/native/README.md) describes the
+v4 source/output custody record. OpenSSL 3.5.9-1~deb13u1+ezllmrouter1 backports
+eight merged maintenance fixes and the complete locally reviewed DANE fix/test
+from still-open upstream PR 33634. Node remains 24.22.3, rebuilt from its
+signature-verified source with shared SSL. Cryptography 50.0.2+ezllmrouter1 also
+links the patched shared library. Its honest Linux ARM64 wheel replaces one of
+117 frozen inputs; the other 116 wheel files, including LiteLLM 1.106.12, retain
+their exact hashes. Neither local version labels nor the Node rebuild conceal
+the upstream advisory ranges.
+
+The complete raw advisory report retains 26 blockers. Ten exact component
+dispositions and nine artifact-bound native fixes leave seven effective blockers.
+The native review validates all seven images, the thirteen selected archives,
+every applicable code hash and actual runtime versions. Standard-library Python
+images additionally prove that both the cryptography module and its native object
+are absent. Changed advisories, copies, source identities or incomplete proof
+retain blocking status. An initial audit stopped at that absence distinction;
+completion reused its complete fresh advisory response only after verifying that
+all source input hashes remained identical.
+
+The qualified runtime source is
+`780538e296a1b5014990f226de0cecd5567cff15`, fingerprint
+`1c969776d3da71047df0c6caaea9ef5d85954dc1c5765213a3513b97f78cfd23`.
+Its source packet SHA-256 is
+`65f1f2edabacdf6151ff56f8b6a5243e6a8e2259e1aecb5ab4a0440378d36dc3`.
+Later inventory/review tooling commits preserve those runtime source bytes.
+
+Validation includes 13 OpenSSL regression recipes/601 tests; all six offline
+image builds and disposable startup/isolation/installed-client/restart/restore
+checks; the seventh JavaScript image's SDK/policy smoke; and 99 native
+TLS/database/recovery tests in the exact new service image, without skips.
+Both shared libraries retain all 6,477 public exports and symbol versions.
+Node and cryptography declare shared SSL/crypto dependencies without builder
+search paths. Both Node images preserve the exact prior bundled CA trust set
+and pass authenticated-encryption and signature smoke checks. Before/after SIV
+controls reproduce invalid-nonce acceptance and empty-AAD loss in the previous
+library and reject those behaviors in the patched build. The source gate passed
+1,324 cases across 179 modules with no skips; the subsequent image-absence case
+and its related regression suite also pass. Evidence, initial failed attempts and
+the final validation manifest remain under ignored `.artifacts/openssl-remediation/`.
+
 ## Library upgrades and component closure, 2026-11-23
 
-The current audit has **16 effective blockers, down from 33**. The complete
+Before the native backport batch, the audit had **16 effective blockers, down from 33**. The complete
 342-entry inventory produces 71 raw matches: 23 high, one critical, two unrated,
 38 moderate and seven low. Of the 26 raw blockers, ten have exact component
 dispositions. The raw report, rating vectors and severity classifications remain
