@@ -174,6 +174,16 @@ use `LANG=LC_ALL=C.UTF-8` and `LANGUAGE=C`. Package findings for retained librar
 remain visible; removing compiler or command-line components does not qualify
 their native callers.
 
+Qualification inventories regular files and symbolic links across the image
+filesystem, including unmanaged copies outside standard executable directories.
+It rejects the removed executable names, ACL/attribute command-line utilities,
+infocmp, and unpacked Pod::Text/Archive::Tar modules. File type, mode and Perl
+module paths distinguish executable tools from account data and unrelated
+Debconf modules. Incomplete, duplicate or malformed inventories fail. The result
+records a canonical metadata hash; it does not prove absence of renamed, archived
+or statically embedded code, or waive source-package advisories for retained
+libraries.
+
 Use the Node version pinned in `.nvmrc`. Keep dependencies, package and image
 identities separate from runtime acceptance claims. Store private recovery
 material outside documentation and evidence exports.

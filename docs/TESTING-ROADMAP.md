@@ -76,8 +76,8 @@ keeps those distinct from new work and from target verification.
 | --- | --- | --- |
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
-| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 95 TLS/database/recovery cases run in the actual service image. The auxiliary JavaScript actor also builds offline. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. The Debian 13 transition adds seven signed-index/hash-checked archives, binds OS staging to source packets and removes APT tooling from runtime images. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The current 345-entry combined inventory has 89 matches: 88 unrated Debian matches across 18 source packages block the gate; one moderate application match remains visible. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
+| T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Seven signed-index/hash-checked Debian archives and the exact 22-package runtime removal closure bind to staged source packets. Exact-image OS/application inventories and a CycloneDX SBOM feed retained, paginated OSV queries. The November 23 combined inventory has 341 entries and 86 matches: 30 high, one critical, two unrated, 46 moderate and seven low. There are 33 blockers across ten source packages. Named-component observations for nine advisories across seven images do not waive any findings. These are package/advisory matches, not independently confirmed exploitable defects. Earlier counts and attribution corrections remain recorded below. The persistent profile and production acceptance remain unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -242,6 +242,60 @@ wire timestamp rules with explicit Gregorian boundary checks and leaves 148
 external Rust packages in the tracked locked graph. T14 still needs genuine
 previous releases and vectors; T16 remains a separate batch. The persistent
 profile, original artifact store and production acceptance were not changed.
+
+## Runtime component inventory, 2026-11-23
+
+The qualification footprint check previously searched only `/usr/bin` and
+`/usr/sbin`. It now inventories every regular file and symbolic link on the image
+filesystem, including copied tools outside those directories. NUL-delimited
+records include type, octal mode and absolute path. Empty, missing-control,
+unterminated, duplicate, malformed, noncanonical and oversized censuses fail.
+The report binds a canonical metadata hash and the exact executable/module
+selectors to each immutable image identity.
+
+The guard rejects the removed executable names plus getfacl/setfacl/chacl,
+getfattr/setfattr and unpacked Pod::Text/Archive::Tar source or compiled modules.
+It also rejects symlink aliases for the reviewed Perl module directories.
+An initial basename-only scan rejected account data and unrelated Debconf
+Text.pm files; mode and module-path checks preserve those legitimate files.
+Regressions cover alternate directories, file and symlink canaries, non-executable
+modules, malformed metadata and stable order-independent evidence hashes.
+Three new regression cases failed against the original gate.
+
+Three actual disposable images separately add a harmless copied nsenter, a
+symlink to an existing harmless executable, or an unpacked Pod::Text module.
+The previous committed gate accepts all three; the new gate rejects all three.
+Canary contents are never executed, and the check removes only its freshly
+created, owner-labelled images. All seven existing audited runtime images pass
+the stronger gate, covering 3,400 to 25,732 regular files/links per image.
+Their runtime source remains `cbbc5a9`; no image, base, OS archive, frozen wheel,
+application source or runtime configuration changes in this batch.
+
+Review replays the complete, image/inventory-bound OSV snapshot from
+`2026-11-23T15:52:51.454906+00:00`; it does not claim a new feed query.
+Nine cases have absent named components across all seven images: four util-linux
+mount/nsenter cases, the ACL command-line case, the attr command-line case,
+infocmp and the two Perl modules. These 63 observations do not establish absence
+of renamed, archived or statically embedded code. Retained libacl pathname APIs
+still require separate investigation; removing getfacl/setfacl/chacl does not
+resolve CVE-2026-54369. All nine reviewed cases retain their blocking status.
+The raw gate remains failed with 86 matches and 33 blockers across ten source
+packages. No advisory waiver or library version change is added.
+
+Local regression, source-security, typing and duration checks pass 1,481 Python
+executions across 212 modules with no skips or unstable outcomes. The slowest
+module takes 11.81 seconds against the 30-second budget. SAST retains the existing
+1,014 reviewed identities, secret scanning needs no new exceptions, and all 22
+local links in the three edited guides resolve.
+
+Ignored `.artifacts/component-review/` retains the original negative run,
+the initial/refined scan results, per-image file metadata and command exits,
+`component-scan.json`, actual canary build/check logs, `canary-results.json`,
+`component-interface-review.json` and the validation manifest. The earlier
+startup/isolation, synthetic-request, restart/restore and native-library results
+remain bound to their original runtime source and image IDs; those suites were
+not repeated for this qualification-tool change. The persistent profile,
+production acceptance and other deployment limits are unchanged.
 
 ## Runtime tool removal and locale policy, 2026-11-23
 

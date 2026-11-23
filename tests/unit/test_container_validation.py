@@ -17,6 +17,75 @@ from tools.container_tests import resolve, staged_sources, test_commands as comm
 
 
 class QualificationSafetyTests(unittest.TestCase):
+    def test_component_inventory_finds_copied_tools_modules_and_symlinks(self):
+        from tools.deployment_qualification import runtime_components
+
+        control = (
+            "f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0f\t755\t/usr/local/bin/python\0"
+        )
+        for location in (
+            "/opt/alternate-bin/nsenter",
+            "/usr/local/bin/mount",
+            "/vendor/bin/getfacl",
+            "/vendor/bin/setfacl",
+            "/vendor/bin/chacl",
+            "/vendor/bin/getfattr",
+            "/vendor/bin/setfattr",
+            "/vendor/bin/infocmp",
+            "/vendor/perl/Pod/Text.pm",
+            "/vendor/perl/Pod/Text.pmc",
+            "/vendor/perl/Archive/Tar.pm",
+            "/vendor/perl/Archive/Tar.pmc",
+        ):
+            for kind in ("f\t755\t", "l\t777\t"):
+                with (
+                    self.subTest(location=location, kind=kind),
+                    self.assertRaisesRegex(ValueError, "forbidden runtime component"),
+                ):
+                    runtime_components(control + kind + location + "\0")
+        result = runtime_components(control)
+        self.assertEqual(result["entries"], 3)
+        self.assertEqual(result["forbidden_components"], [])
+        self.assertIn("Pod/Text.pm", result["checked_perl_paths"])
+        self.assertEqual(
+            result, runtime_components("\0".join(reversed(control[:-1].split("\0"))) + "\0")
+        )
+
+    def test_component_inventory_rejects_incomplete_or_ambiguous_censuses(self):
+        from tools.deployment_qualification import runtime_components
+
+        control = "f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0"
+        for raw in (
+            "",
+            control[:-1],
+            "f\t755\t/usr/bin/find\0",
+            control + "f\t755\t/usr/bin/find\0",
+            control + "f\t755\trelative/path\0",
+            control + "f\t755\t/opt/../bin/tool\0",
+            control + "f\t755\t/opt//bin/tool\0",
+            control + "f\t755\t/opt/unreadable\nname\0",
+            control + "d\t755\t/opt/tool\0",
+            control + "f\txyz\t/opt/tool\0",
+            control + "f\t755\t/opt/tab\tname\0",
+            control + "f\t755\t/opt/" + "x" * (10 * 1024 * 1024) + "\0",
+            control + "f\t644\t/opt/control\0" * 100_001,
+        ):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                runtime_components(raw)
+
+    def test_component_inventory_preserves_data_files_and_unrelated_perl_modules(self):
+        from tools.deployment_qualification import runtime_components
+
+        control = "f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0"
+        data = "f\t644\t/etc/passwd\0f\t644\t/usr/share/perl5/Debconf/FrontEnd/Text.pm\0"
+        self.assertEqual(runtime_components(control + data)["entries"], 4)
+        for link in ("/vendor/perl/Pod", "/vendor/perl/Archive"):
+            with self.subTest(link=link), self.assertRaisesRegex(ValueError, "forbidden"):
+                runtime_components(control + "l\t777\t" + link + "\0")
+        for module in ("/vendor/Pod/Text.pm", "/vendor/Archive/Tar.pmc"):
+            with self.subTest(module=module), self.assertRaisesRegex(ValueError, "forbidden"):
+                runtime_components(control + "f\t644\t" + module + "\0")
+
     def test_runtime_policy_rejects_installed_tools_setid_files_and_unsafe_locales(self):
         from tools.deployment_qualification import runtime_footprint
 
@@ -41,11 +110,30 @@ class QualificationSafetyTests(unittest.TestCase):
             ):
                 runtime_footprint(image, set(), ["login"], {})
         with patch(
-            "tools.deployment_qualification.profile.command", side_effect=[("", 0), ("", 0)]
-        ):
+            "tools.deployment_qualification.profile.command",
+            side_effect=[("", 0), ("f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0", 0)],
+        ) as command:
             result = runtime_footprint(image, set(), ["login"], {})
         self.assertEqual(result["removed_packages"], ["login"])
         self.assertEqual(result["setid_files"], [])
+        self.assertEqual(result["component_inventory"]["entries"], 2)
+        self.assertEqual(
+            command.call_args.args[1][-12:],
+            [
+                "find",
+                "/",
+                "-xdev",
+                "(",
+                "-type",
+                "f",
+                "-o",
+                "-type",
+                "l",
+                ")",
+                "-printf",
+                "%y\\t%m\\t%p\\0",
+            ],
+        )
 
     def test_service_sqlite_probe_rejects_weakened_or_missing_capabilities(self):
         from tools.deployment_qualification import database_capabilities

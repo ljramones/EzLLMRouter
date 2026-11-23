@@ -11,7 +11,7 @@ import shutil
 import socket
 import tempfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from deploy.local import local_profile as profile
 from tools.qualification_storage import cold_copy, owned_volume
@@ -185,6 +185,84 @@ def runtime_locale(configuration: dict) -> dict:
     return locale
 
 
+def runtime_components(raw: str) -> dict:
+    # Inspect names of every regular file and link, including unmanaged copies.
+    # This is an image-footprint guard, not proof about renamed or bundled code.
+    if not raw.endswith("\0") or len(raw) > 10 * 1024 * 1024:
+        raise ValueError("incomplete or oversized runtime component inventory")
+    entries = []
+    for record in raw[:-1].split("\0"):
+        fields = record.split("\t")
+        if (
+            len(fields) != 3
+            or fields[0] not in {"f", "l"}
+            or not re.fullmatch(r"[0-7]{3,4}", fields[1])
+        ):
+            raise ValueError("invalid runtime component inventory metadata")
+        entries.append((fields[0], int(fields[1], 8), fields[2]))
+    paths = [path for _, _, path in entries]
+    if len(paths) > 100_000 or len(paths) != len(set(paths)):
+        raise ValueError("ambiguous runtime component inventory")
+    if not {"/usr/bin/find", "/usr/bin/dpkg-query"}.issubset(paths):
+        raise ValueError("missing runtime component inventory controls")
+    for path in paths:
+        parsed = PurePosixPath(path)
+        if (
+            not path.startswith("/")
+            or path.startswith("//")
+            or str(parsed) != path
+            or ".." in parsed.parts
+            or any(character in path for character in "\r\n")
+        ):
+            raise ValueError("invalid runtime component inventory path")
+    names = (
+        "su",
+        "mount",
+        "umount",
+        "nsenter",
+        "unshare",
+        "setpriv",
+        "login",
+        "passwd",
+        "useradd",
+        "groupadd",
+        "adduser",
+        "deluser",
+        "chsh",
+        "chfn",
+        "gpasswd",
+        "newgrp",
+        "chage",
+        "expiry",
+        "wall",
+        "write",
+        "infocmp",
+        "tic",
+        "toe",
+        "tput",
+        "getfacl",
+        "setfacl",
+        "chacl",
+        "getfattr",
+        "setfattr",
+    )
+    perl_paths = ("Pod/Text.pm", "Pod/Text.pmc", "Archive/Tar.pm", "Archive/Tar.pmc")
+    for kind, mode, path in entries:
+        if (
+            (PurePosixPath(path).name in names and (kind == "l" or mode & 0o111))
+            or any(path.endswith("/" + module) for module in perl_paths)
+            or (kind == "l" and PurePosixPath(path).name in {"Pod", "Archive"})
+        ):
+            raise ValueError("forbidden runtime component remains in image")
+    return {
+        "entries": len(paths),
+        "sha256": hashlib.sha256("\0".join(sorted(raw[:-1].split("\0"))).encode()).hexdigest(),
+        "checked_basenames": sorted(names),
+        "checked_perl_paths": list(perl_paths),
+        "forbidden_components": [],
+    }
+
+
 def runtime_footprint(
     image: dict, installed: set[str], removals: list[str], env: dict[str, str]
 ) -> dict:
@@ -212,48 +290,32 @@ def runtime_footprint(
     )
     if setid.strip():
         raise ValueError("setuid or setgid executable remains in runtime")
-    names = (
-        "su",
-        "mount",
-        "umount",
-        "nsenter",
-        "unshare",
-        "setpriv",
-        "login",
-        "passwd",
-        "useradd",
-        "groupadd",
-        "adduser",
-        "deluser",
-        "chsh",
-        "chfn",
-        "gpasswd",
-        "newgrp",
-        "chage",
-        "expiry",
-        "wall",
-        "write",
-        "infocmp",
-        "tic",
-        "toe",
-        "tput",
+    present, _ = profile.command(
+        "runtime-component-files",
+        [
+            *prefix,
+            "find",
+            "/",
+            "-xdev",
+            "(",
+            "-type",
+            "f",
+            "-o",
+            "-type",
+            "l",
+            ")",
+            "-printf",
+            "%y\\t%m\\t%p\\0",
+        ],
+        env,
     )
-    paths = " ".join(
-        directory + "/" + name for directory in ("/usr/bin", "/usr/sbin") for name in names
-    )
-    code = (
-        "for path in "
-        + paths
-        + '; do if test -e "$path" || test -L "$path"; then printf "%s\\n" "$path"; fi; done'
-    )
-    present, _ = profile.command("runtime-forbidden-tools", [*prefix, "sh", "-c", code], env)
-    if present.strip():
-        raise ValueError("removed tool executable remains in runtime")
+    components = runtime_components(present)
     return {
         "removed_packages": sorted(removals),
         "locale": locale,
         "setid_files": [],
         "forbidden_executables": [],
+        "component_inventory": components,
     }
 
 

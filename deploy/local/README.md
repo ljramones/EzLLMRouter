@@ -203,6 +203,13 @@ receiver requests belong to this check; it does not contact a real provider.
 Its result binds staged source, harness hashes, image IDs, runtime checks,
 restart and restore readback. Passing runtime checks does not approve a release.
 
+The runtime footprint check inventories regular files and symbolic links across
+the image filesystem, including copied tools in nonstandard directories. It
+checks file modes and reviewed Perl module paths, rejects incomplete inventories,
+and records a canonical metadata hash. Its absence observations cover the named,
+unpacked components; renamed, archived or statically embedded code and retained
+library advisories require separate review.
+
 Capture and audit actual installed packages with the reviewed Rust metadata
 artifact from the manual **Release input candidates** workflow:
 
