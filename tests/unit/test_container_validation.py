@@ -11,6 +11,7 @@ import tarfile
 import zipfile
 from copy import deepcopy
 import unittest
+from unittest.mock import patch
 
 from tools.container_tests import resolve, staged_sources, test_commands as commands
 
@@ -63,12 +64,15 @@ class QualificationSafetyTests(unittest.TestCase):
                     ),
                 )
             build = {"source_packet": str(packet), "build_dir": str(root), "overlays": []}
-            self.assertEqual(
-                validate_staging(build), hashlib.sha256(packet.read_bytes()).hexdigest()
-            )
-            source.write_text("unreviewed runtime")
-            with self.assertRaisesRegex(ValueError, "source identity"):
-                validate_staging(build)
+            # OS custody has independent positive/negative coverage in test_os_inputs;
+            # this sparse fixture isolates the runtime-source identity boundary.
+            with patch("tools.deployment_qualification.verify_os_staging"):
+                self.assertEqual(
+                    validate_staging(build), hashlib.sha256(packet.read_bytes()).hexdigest()
+                )
+                source.write_text("unreviewed runtime")
+                with self.assertRaisesRegex(ValueError, "source identity"):
+                    validate_staging(build)
 
     def test_rust_graph_requires_the_declared_versions_checksums_and_complete_metadata(self):
         from tools.security_rust import REGISTRY, rust_graph
