@@ -262,6 +262,24 @@
       ],
       "origin_suite": "forky",
       "origin_version_id": "14"
+    },
+    {
+      "package": "libzstd1",
+      "source": "libzstd",
+      "version": "1.6.0-0+ezllmrouter1",
+      "source_version": "1.6.0-0+ezllmrouter1",
+      "architecture": "arm64",
+      "roles": [
+        "python",
+        "node"
+      ],
+      "origin_suite": "trixie",
+      "origin_version_id": "13",
+      "filename": "libzstd1_1.6.0-0+ezllmrouter1_arm64.deb",
+      "bytes": 243228,
+      "sha256": "122448698d1f686db655d323f2c01ce91e605e6bc754e4f8596e7fb40890166e",
+      "native_codec": "0b39846a75defb8da0a0fefd09d6d24d751eb4374d787e9dc9ed560cc8576570",
+      "url": "urn:ezllmrouter:native-codec:0b39846a75defb8da0a0fefd09d6d24d751eb4374d787e9dc9ed560cc8576570:libzstd1_1.6.0-0+ezllmrouter1_arm64.deb"
     }
   ],
   "installer_sha256": "69678bfcf69552662e93140b846617d38584fe5fa465d8b7c6888d5b395ad3bc",
@@ -1798,6 +1816,338 @@
       "psycopg_binary/_psycopg.cpython-312-aarch64-linux-gnu.so": "10cfa89981f865604b2d35e7b56b541c2775d2ece3adda7e68065c05d186edd3",
       "psycopg_binary/pq.cpython-312-aarch64-linux-gnu.so": "1b51834ff84e8652218086fc427e9a6170103568d70417f9b8ada16beb242549",
       "psycopg_binary.libs/libpq-ezllmrouter1.so.5": "25dcc8cf32cbc2d691c5c3550c2c1d03bd38fe1574384bc6f2ce632ba0ba4bd0"
+    }
+  },
+  "native_codec": {
+    "format": "ezllmrouter-native-codec-v1",
+    "id": "0b39846a75defb8da0a0fefd09d6d24d751eb4374d787e9dc9ed560cc8576570",
+    "inputs": {
+      "builder": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "node_sha256": "905999d14981553af0510f7e035aaece5fc0ad8b03b7e5fa98e17dd4d9b669b3",
+      "recipes": {
+        "deploy/local/inputs/native/zstd.sh": "8e4869303edc293c3d5197891aacce121ec84bb264dcf84880e8e54de1642923",
+        "deploy/local/inputs/native/zstd-package.py": "86a4e6e26e90fcd4124f00ac40a484588c6fc25560bab329a886547cd729e2da",
+        "deploy/local/inputs/native/zstd-regression.c": "d03f20b8d122983497065f8b2fbba46a573d234de2c1d6ba4cfd916460c3840d"
+      },
+      "artifacts": {
+        "build-debs/binutils-aarch64-linux-gnu_2.44-3_arm64.deb": {
+          "bytes": 820124,
+          "sha256": "79cbf1459118bce3535133ffbf1fd2adbd57af65271f95c829af5cfa7f474168",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-aarch64-linux-gnu_2.44-3_arm64.deb"
+        },
+        "build-debs/binutils-common_2.44-3_arm64.deb": {
+          "bytes": 2508772,
+          "sha256": "f2d6b7d0b5521c4c90fc105e32819cd5268c1aa69104173b3fb856595f898249",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-common_2.44-3_arm64.deb"
+        },
+        "build-debs/binutils_2.44-3_arm64.deb": {
+          "bytes": 261580,
+          "sha256": "7228716cad15e78d1571f1cd4ec7141f64608790d0fbcba23a07f2eda6298272",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils_2.44-3_arm64.deb"
+        },
+        "build-debs/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 9168888,
+          "sha256": "8e588ac3efe06f7784b08feac584c70e6965b74c045bae7e4e80bb42938f7dbe",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "build-debs/cpp-14_14.2.0-19_arm64.deb": {
+          "bytes": 1276,
+          "sha256": "0b440241f7c3e2e87f2d0f1dd36792c4e2705d38a699ed331818799f21ef9437",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14_14.2.0-19_arm64.deb"
+        },
+        "build-debs/cpp-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 4832,
+          "sha256": "bd9c9f4536a0aea285c4735d2dfedff624f8457b8f1bb3d15ab924e029cd7aff",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "build-debs/cpp_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1568,
+          "sha256": "88b702b0fa5942a4ee52c27f1ccf6316b831357e86693b709d216ba43348172e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp_14.2.0-1_arm64.deb"
+        },
+        "build-debs/g++-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 10059100,
+          "sha256": "411dac8f1c1d0293e58deddeb170c641ad82c56d51a95f056ee12ba02c24288b",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "build-debs/g++-14_14.2.0-19_arm64.deb": {
+          "bytes": 22540,
+          "sha256": "f4813643994aa96c527e687c9c7d01855aa5fdd86e63cc8bd05c63ecc9373796",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14_14.2.0-19_arm64.deb"
+        },
+        "build-debs/g++-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1200,
+          "sha256": "655d9a7cb70b0342f5f1bf4f2a7b0241df15d49ab9a2567445c785b7592122f9",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "build-debs/g++_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1332,
+          "sha256": "e4b8f8fae7c838c40b9db29251b152c9af03a4d4463388d69efdda66c4e97e79",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++_14.2.0-1_arm64.deb"
+        },
+        "build-debs/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 17686496,
+          "sha256": "5ff736a332ba5d60ad463355ed25c8c39da1281acf9155cc2f8a55fc1d478be8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb"
+        },
+        "build-debs/gcc-14_14.2.0-19_arm64.deb": {
+          "bytes": 529264,
+          "sha256": "f4ba77903d7efc3c64c69a8a98c7efa8ea1ae4331521bb74abd76bcc43f1b576",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14_14.2.0-19_arm64.deb"
+        },
+        "build-debs/gcc-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1440,
+          "sha256": "c8390408ed90cc96d4fead68e313ed5ce147f1654807c23235818d535d2d7d7e",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc-aarch64-linux-gnu_14.2.0-1_arm64.deb"
+        },
+        "build-debs/gcc_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 5136,
+          "sha256": "f543b52e29a6780a78c73cf08e551e8e524d623c1092c477cfd8beb5285a86f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc_14.2.0-1_arm64.deb"
+        },
+        "build-debs/libasan8_14.2.0-19_arm64.deb": {
+          "bytes": 2577836,
+          "sha256": "5621bd583a3390b45726a8eebe23601f7fad86a25193e5349976cbf17e2bc9ad",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libasan8_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libatomic1_14.2.0-19_arm64.deb": {
+          "bytes": 10128,
+          "sha256": "7ccff90234484bf21ae5ecb79d25b6a84b2f4038f65dd139085b2e3a937cd8dc",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libatomic1_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libbinutils_2.44-3_arm64.deb": {
+          "bytes": 660392,
+          "sha256": "c51c0cc0272202d00fc3e6da8b96bfed2a428c239b689363abddd3bac6bd7a02",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libbinutils_2.44-3_arm64.deb"
+        },
+        "build-debs/libc-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 552664,
+          "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "build-debs/libc-dev-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 59704,
+          "sha256": "44c20e31afd22ddbd40983c908377627b2f95c12b01f2989db8ead23f7f8aaeb",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-dev-bin_2.41-12+deb13u5_arm64.deb"
+        },
+        "build-debs/libc6-dev_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 1626676,
+          "sha256": "ff13ef61799ef4a9526a9e9568a8b91311f25f4211ea2ab1dd63028c000b0451",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6-dev_2.41-12+deb13u5_arm64.deb"
+        },
+        "build-debs/libc6_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 2488872,
+          "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5",
+          "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6_2.41-12+deb13u5_arm64.deb"
+        },
+        "build-debs/libcc1-0_14.2.0-19_arm64.deb": {
+          "bytes": 42164,
+          "sha256": "f5e390b5fd65432b820afa403a61ab4d6286948fc07ca3aacb4d230a81f5c9a5",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libcc1-0_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libcrypt-dev_1%3a4.4.38-1_arm64.deb": {
+          "bytes": 123160,
+          "sha256": "eec6d4658495cdb8ce505cad91e0918edb8086677f280f3851c07ccd70543054",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxcrypt/libcrypt-dev_4.4.38-1_arm64.deb"
+        },
+        "build-debs/libctf-nobfd0_2.44-3_arm64.deb": {
+          "bytes": 152088,
+          "sha256": "7b1894cbd09bd59507af259ba680a1f5d3b68c6ba9e5d69508ea2d75b3f01be6",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf-nobfd0_2.44-3_arm64.deb"
+        },
+        "build-debs/libctf0_2.44-3_arm64.deb": {
+          "bytes": 84232,
+          "sha256": "12cb7df9eafd965c00c38a8720c5b78e7b0106390f69fe180a3b3589f407d550",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf0_2.44-3_arm64.deb"
+        },
+        "build-debs/libgcc-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2358568,
+          "sha256": "64b8ebc7182a69aa9525df6eab5e7eb849b947e350d821549f8a8a3e9b19e5ba",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgcc-14-dev_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libgdbm-compat4t64_1.24-2_arm64.deb": {
+          "bytes": 50320,
+          "sha256": "266b9a9e8d1ecc4393ebd29bec7e7c0fe1505b1d8755033af9e15df161316627",
+          "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm-compat4t64_1.24-2_arm64.deb"
+        },
+        "build-debs/libgomp1_14.2.0-19_arm64.deb": {
+          "bytes": 123520,
+          "sha256": "43e84cb7971d8a4d8870cab6204e998ea4f23ee1339bb0ff556dd881bac82d25",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgomp1_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libgprofng0_2.44-3_arm64.deb": {
+          "bytes": 667648,
+          "sha256": "4642014c84f3d070d889725900fbd23165189597d45deddc7bdcf9928de9e32e",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libgprofng0_2.44-3_arm64.deb"
+        },
+        "build-debs/libhwasan0_14.2.0-19_arm64.deb": {
+          "bytes": 1442000,
+          "sha256": "5a758db399fafd354b6488c4f250b7670fb1f61c31b4e4f329d0fbb750a17084",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libhwasan0_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libisl23_0.27-1_arm64.deb": {
+          "bytes": 600836,
+          "sha256": "21c490db3fa5f0a517c55090a199334da6164589772ebd922dff1e569c78515d",
+          "url": "https://deb.debian.org/debian/pool/main/i/isl/libisl23_0.27-1_arm64.deb"
+        },
+        "build-debs/libitm1_14.2.0-19_arm64.deb": {
+          "bytes": 24192,
+          "sha256": "d6f0255b498af876ab7bf4420672e43cbe58dcd577f0711131cbfbcbee283cdb",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libitm1_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libjansson4_2.14-2+b3_arm64.deb": {
+          "bytes": 39228,
+          "sha256": "7938472b1ddfa8b0c8f58d5f44406ae7a77a342dbb502a02f6bf292b4f853ab0",
+          "url": "https://deb.debian.org/debian/pool/main/j/jansson/libjansson4_2.14-2+b3_arm64.deb"
+        },
+        "build-debs/liblsan0_14.2.0-19_arm64.deb": {
+          "bytes": 1161132,
+          "sha256": "488a54a5fe01a926ae16d73dc7ea9f530f1bf63fae73640f741695eec2541a38",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/liblsan0_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libmpc3_1.3.1-1+b3_arm64.deb": {
+          "bytes": 50480,
+          "sha256": "d4cfe026a624e51641c80ef2af77387185714f62f3b5c87035e62d9ed8d9eec1",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpclib3/libmpc3_1.3.1-1+b3_arm64.deb"
+        },
+        "build-debs/libmpfr6_4.2.2-1_arm64.deb": {
+          "bytes": 685000,
+          "sha256": "628a4ef58cc6815880f72e9d3953984a379a017e4042bc575f1fcbf3954d79ac",
+          "url": "https://deb.debian.org/debian/pool/main/m/mpfr4/libmpfr6_4.2.2-1_arm64.deb"
+        },
+        "build-debs/libperl5.40_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 4137968,
+          "sha256": "b3cf688efb6096b2f3d95e96ad5b216602146ad11f792c1f3b2f66b5556241d9",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/libperl5.40_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "build-debs/libsframe1_2.44-3_arm64.deb": {
+          "bytes": 77772,
+          "sha256": "d4a90764fa79858347aaa3197bc4489404f005d9cdbea9b2ec75a607ea5ff518",
+          "url": "https://deb.debian.org/debian/pool/main/b/binutils/libsframe1_2.44-3_arm64.deb"
+        },
+        "build-debs/libstdc++-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2294728,
+          "sha256": "8760122d044cd8eb8c69426311d6b5ce7bb8f0f76e9cda1944d153ae878138f8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libstdc++-14-dev_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libtsan2_14.2.0-19_arm64.deb": {
+          "bytes": 2383440,
+          "sha256": "c767c05f3dade13b5780478366029f2ff32e44bea852c6a4d7a1f93f1363d3e3",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libtsan2_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libubsan1_14.2.0-19_arm64.deb": {
+          "bytes": 1038924,
+          "sha256": "b5539003465ea1e60f66b9e3a1019da182e826c82d480944f3656b12351c74c8",
+          "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libubsan1_14.2.0-19_arm64.deb"
+        },
+        "build-debs/libzstd-dev_1.5.7+dfsg-1_arm64.deb": {
+          "bytes": 335104,
+          "sha256": "05cf42de5c9fdf17f49f663b47bfe736f10fbc7080fcc3a86ac43d5d670de149",
+          "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/libzstd-dev_1.5.7+dfsg-1_arm64.deb"
+        },
+        "build-debs/linux-libc-dev_6.12.118-1_all.deb": {
+          "bytes": 3101880,
+          "sha256": "e3616a753c42c5591778df05c98a22db3b8731e7e8611aaeed4b89e14cb5271b",
+          "url": "https://deb.debian.org/debian/pool/updates/main/l/linux/linux-libc-dev_6.12.118-1_all.deb"
+        },
+        "build-debs/make_4.4.1-2_arm64.deb": {
+          "bytes": 452396,
+          "sha256": "043219839669c431def9bb410c4a827f115ee5bf377469d55c4ed905f81f73be",
+          "url": "https://deb.debian.org/debian/pool/main/m/make-dfsg/make_4.4.1-2_arm64.deb"
+        },
+        "build-debs/patch_2.8-2+deb13u1_arm64.deb": {
+          "bytes": 128496,
+          "sha256": "ee524dcd15b062ff762cdc1db1724d7850358d97b94b1db38ed7fdcce8e8adaa",
+          "url": "https://deb.debian.org/debian/pool/main/p/patch/patch_2.8-2+deb13u1_arm64.deb"
+        },
+        "build-debs/perl-modules-5.40_5.40.1-6+deb13u1_all.deb": {
+          "bytes": 3013728,
+          "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-modules-5.40_5.40.1-6+deb13u1_all.deb"
+        },
+        "build-debs/perl_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 267732,
+          "sha256": "7f15c34267346a0da41b9fe36d509d70dfb8d39561d275c4f4c53d429290f6d2",
+          "url": "https://deb.debian.org/debian/pool/main/p/perl/perl_5.40.1-6+deb13u1_arm64.deb"
+        },
+        "build-debs/rpcsvc-proto_1.4.3-1+b1_arm64.deb": {
+          "bytes": 60468,
+          "sha256": "6ae3c216e6c7d8e042ad3f122b8aa89aff56b2b5174b1c5780a7841b3becd61c",
+          "url": "https://deb.debian.org/debian/pool/main/r/rpcsvc-proto/rpcsvc-proto_1.4.3-1+b1_arm64.deb"
+        },
+        "build-debs/xz-utils_5.8.1-1+deb13u2_arm64.deb": {
+          "bytes": 657952,
+          "sha256": "d2151cc127dfc9948255ed40c271ff0683d9cf9553933a8b94cb29068ab5e715",
+          "url": "https://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1-1+deb13u2_arm64.deb"
+        },
+        "build-debs/zlib1g-dev_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 916416,
+          "sha256": "b8f6740af90accda9a571ae7f3e5b0a40a83c2e9d095f4cab56b92b8ae744757",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g-dev_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "build-debs/zlib1g_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 85028,
+          "sha256": "0e41b3d7ad8ad7fcd36dd4d61ca91a70018478fc4af652e044f4be770784ddff",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb"
+        },
+        "zstd-1.6.0.tar.gz": {
+          "bytes": 2564432,
+          "sha256": "2ba599ae2a257976278e7e71e998433a387bfd18aa7b78678229fd5d84f5e9b8",
+          "url": "https://github.com/meta/zstd/releases/download/v1.6.0/zstd-1.6.0.tar.gz"
+        },
+        "zstd-1.6.0.tar.gz.sig": {
+          "bytes": 858,
+          "sha256": "cb0c87a42a3d256ea20790e21233807e51b806d18f2b43d92e43220555b50585",
+          "url": "https://github.com/meta/zstd/releases/download/v1.6.0/zstd-1.6.0.tar.gz.sig"
+        },
+        "fix-5023.patch": {
+          "bytes": 4807,
+          "sha256": "aaecf9ede0d81eb34cf629a6a40feb0da29a5fb3625be03022e7bd9780c5fe88",
+          "url": "https://github.com/meta/zstd/pull/5023.patch"
+        },
+        "libzstd1_1.5.7+dfsg-1_arm64.deb": {
+          "bytes": 266052,
+          "sha256": "924540bd59fdbfa77a0604360efdaca54411a43daf11c7e002a3c64791b67448",
+          "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/libzstd1_1.5.7+dfsg-1_arm64.deb"
+        },
+        "zstd-release-key.asc": {
+          "bytes": 3243,
+          "sha256": "f4b18ba6b4fe81a412fdcc2b5fc0558f5162149006763c11ff2ba2229b7bcdd3"
+        },
+        "retained-node-cache.json": {
+          "bytes": 587606,
+          "sha256": "a5fa1e84f1df7c052269033d4ad4d28f785ef476156d4c6236c99a92ec4dca62"
+        }
+      },
+      "cache_provenance": "Incremental reuse of the preceding reviewed offline Node build; manifest records unchanged object/archive members predating this build. Parent executable identity checked separately."
+    },
+    "version": "1.6.0",
+    "source_version": "1.6.0-0+ezllmrouter1",
+    "outputs": {
+      "node-v24.22.3-ezllmrouter2-linux-arm64": {
+        "bytes": 99523872,
+        "sha256": "29dda8ab641c10b0fa7c80074e0e2f6c9fc7369eac627ccc9834d173399574f2"
+      },
+      "libzstd1_1.6.0-0+ezllmrouter1_arm64.deb": {
+        "bytes": 243228,
+        "sha256": "122448698d1f686db655d323f2c01ce91e605e6bc754e4f8596e7fb40890166e"
+      }
+    },
+    "code": {
+      "/usr/lib/aarch64-linux-gnu/libzstd.so.1.6.0": "f30ba735bb6ef8a1f4e13a90c23c0a557f2c9e34d560d04c194113a88d1e2f9e",
+      "/usr/local/bin/node": "29dda8ab641c10b0fa7c80074e0e2f6c9fc7369eac627ccc9834d173399574f2"
+    },
+    "fixed_advisory": {
+      "id": "DEBIAN-CVE-2026-124851",
+      "advisory_sha256": "f7d8c4f99e26886952f1e4ba9055ec37f4a4655b083c253857ef28b6af3a841d",
+      "patch_sha256": "aaecf9ede0d81eb34cf629a6a40feb0da29a5fb3625be03022e7bd9780c5fe88",
+      "reviewed_at": "2026-11-24",
+      "reason": "Reviewed Zstandard 1.6.0 source includes upstream PR 5023 history-window bounds and literal-padding initialization. The bounded regression fails on 1.5.7 and passes on 1.6.0; upstream unit tests and 1,000 fuzz iterations pass. Exact system library and Node embedded 1.6.0 are required in every image; removed experimental API callers are rejected.",
+      "references": [
+        "https://github.com/meta/zstd/releases/tag/v1.6.0",
+        "https://github.com/meta/zstd/pull/5023"
+      ]
     }
   }
 }

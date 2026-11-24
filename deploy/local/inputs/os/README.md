@@ -1,8 +1,8 @@
 # Reviewed Debian runtime inputs
 
 `debian13-arm64.lock.json` selects immutable official Python 3.12.16 and Node
-24.22.3 ARM64 images based on Debian 13 (Trixie). Thirteen reviewed Debian archives
-update base-files, glibc, OpenSSL, zlib, SQLite, ACL and GCC runtime libraries; the Node closure uses twelve because it
+24.22.3 ARM64 images based on Debian 13 (Trixie). Fourteen reviewed Debian archives
+update base-files, glibc, OpenSSL, Zstandard, zlib, SQLite, ACL and GCC runtime libraries; the Node closure uses thirteen because it
 does not install the Python base's OpenSSL command-line package.
 
 The v4 lock records binary/source versions, archive sizes and SHA-256 values,
@@ -33,6 +33,13 @@ The separate `native_driver` record binds the minimal libpq/psycopg wheel,
 replacing its unneeded bundled Kerberos, LDAP and extra OpenSSL libraries while
 retaining the qualified worker's proxy interface. Both local wheels preserve
 their original upstream versions for advisory queries.
+The `native_codec` record replaces both the system Zstandard library and Node's
+embedded copy with reviewed 1.6.0 builds. It binds the previous native build as
+its parent, the exact source archive, recipes and both output hashes. The system
+package retains Debian:13 attribution and queries upstream version `1.6.0-0`.
+All seven images require exact code and compatibility checks before the specific
+Zstandard advisory can be marked fixed. See the native guide for the removed
+experimental APIs and retained source/signature evidence.
 Signed indexes, archive inspection and trial results are retained under ignored
 `.artifacts/dependency-resolution/`. No custom-built SQLite archive is selected.
 

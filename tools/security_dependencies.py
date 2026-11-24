@@ -218,7 +218,12 @@ def query_versions(data: dict[str, Any]) -> list[str]:
         upstream = row["upstream_version"]
         if (
             key[:2]
-            not in {("Debian:13", "openssl"), ("PyPI", "cryptography"), ("PyPI", "psycopg-binary")}
+            not in {
+                ("Debian:13", "openssl"),
+                ("PyPI", "cryptography"),
+                ("PyPI", "psycopg-binary"),
+                ("Debian:13", "libzstd"),
+            }
             or key in overrides
             or not re.fullmatch(re.escape(upstream) + r"\+ezllmrouter[1-9][0-9]*", row["version"])
             or not re.fullmatch(r"[0-9a-f]{64}", row["native_build"])

@@ -30,6 +30,9 @@ NATIVE_RECIPES = tuple(
         "postgresql.sh",
         "driver-relink.sh",
         "driver.py",
+        "zstd.sh",
+        "zstd-package.py",
+        "zstd-regression.c",
     )
 )
 WHEEL_INVENTORY = "deploy/local/inputs/gateway/WHEEL-INVENTORY.json"
@@ -144,6 +147,8 @@ def native_artifacts(
         },
     ]
     for key in ("node", "cryptography"):
+        if key == "node" and "native_codec" in data:
+            continue
         selected = native[key]
         output = native["outputs"][selected["filename"]]
         artifact(
@@ -175,6 +180,29 @@ def native_artifacts(
             url="urn:ezllmrouter:native-driver:" + driver["id"] + ":" + driver["filename"],
             filename=driver["filename"],
             native_build=driver["id"],
+        )
+    if "native_codec" in data:
+        from tools.gateway.codec_inputs import NODE
+
+        codec = data["native_codec"]
+        versions.append(
+            {
+                "ecosystem": "Debian:13",
+                "name": "libzstd",
+                "version": codec["source_version"],
+                "upstream_version": "1.6.0-0",
+                "native_build": codec["id"],
+            }
+        )
+        artifact(
+            source,
+            "node",
+            native["node"]["version"],
+            digest("sha256:" + codec["outputs"][NODE]["sha256"]),
+            url="urn:ezllmrouter:native-codec:" + codec["id"] + ":" + NODE,
+            architecture=data["architecture"],
+            filename=NODE,
+            native_build=codec["id"],
         )
     return versions
 

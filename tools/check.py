@@ -123,6 +123,8 @@ MODULES = (
     "tests.unit.test_deployment_safety",
     "tests.unit.test_os_inputs",
     "tests.unit.test_native_inputs",
+    "tests.unit.test_codec_inputs",
+    "tests.unit.test_security_codec",
     "tests.unit.test_deployment_cleanup",
     "tests.unit.test_startup_recovery",
     "tests.unit.test_accounting_recovery",

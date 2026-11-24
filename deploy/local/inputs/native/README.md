@@ -1,4 +1,4 @@
-# Reviewed native OpenSSL backports
+# Reviewed native dependency builds
 
 The v4 [OS lock](../os/debian13-arm64.lock.json) selects a local OpenSSL
 3.5.9 backport, Node 24.22.3 linked to that shared library, and cryptography
@@ -35,7 +35,7 @@ formatted tracked recipe reproduced all three selected archive hashes.
 Build inputs and outputs stay in the private artifact store. The canonical hash
 of `native_build.inputs` identifies the build; `native_build.outputs` pins its
 three `.deb` files, Node binary and cryptography wheel. Put the five exact files
-in `inputs/native/<build-id>/outputs/` and the selected thirteen archives in
+in `inputs/native/<build-id>/outputs/` and the selected fourteen archives in
 `inputs/os/debian13-arm64/`. Preserve the source caches and build/test logs under
 ignored `.artifacts/openssl-remediation/`. Normal preparation verifies custody
 and copies already reviewed outputs; it never downloads or compiles dependencies.
@@ -76,3 +76,37 @@ The formatted tracked repackager reproduced the selected wheel hash. Preserve
 the source caches and logs under ignored `.artifacts/final-seven/`; place the
 selected wheel alone in `inputs/native-driver/<build-id>/`. Normal preparation
 verifies this output as well as frozen wheel custody before building images.
+
+## System and embedded Zstandard
+
+The separate `native_codec` record selects Zstandard 1.6.0 for both the system
+`libzstd1` package and Node 24.22.3's embedded copy. The
+[upstream release](https://github.com/meta/zstd/releases/tag/v1.6.0) identifies
+[PR 5023](https://github.com/meta/zstd/pull/5023) as the fix for
+CVE-2026-124851. The exact gzip source archive matches the release asset digest
+and its detached signature verifies with fingerprint
+`4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD`; this signature check does not establish
+an independently certified key identity. Publisher HTTPS release metadata is
+also retained. The source archive and all build inputs have explicit hashes.
+
+`zstd.sh` builds offline, runs upstream tests and a bounded history-window
+regression against both versions, then rebuilds Node from the prior reviewed
+source/object cache with the new vendored library. Node's shared OpenSSL and
+bundled CA defaults remain selected. `zstd-package.py` preserves the authenticated
+Debian parent's package scripts and metadata, replaces the old library and alias,
+and records the 1.6.0 source attribution. The original native build remains an
+explicit parent, rather than being relabelled as the new output.
+
+Version 1.6.0 removes the deprecated experimental `ZSTD_copyCCtx` and
+`ZSTD_copyDCtx` APIs. Full installed ELF inspection must find no caller of either
+before the codec fix can clear the exact advisory. The other 185 old exported
+symbols remain available. System code hashes, the absence of an old system copy,
+Node's code hash and embedded version, selected archive hashes and all seven
+image identities must match. Advisory queries use upstream version `1.6.0-0`,
+retaining the raw advisory independently of the local package suffix.
+
+Place the two selected outputs alone in `inputs/native-codec/<build-id>/` and
+the selected package also in `inputs/os/debian13-arm64/`. Source, signature,
+build, compatibility and regression evidence stays under ignored
+`.artifacts/zstd-remediation/`. Preparation only verifies and stages these
+reviewed outputs; it does not download or rebuild them.

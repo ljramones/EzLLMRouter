@@ -27,7 +27,9 @@ print(json.dumps(data))
 """
 
 
-def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
+def capture(
+    image: dict, native: dict, driver: dict | None = None, codec: dict | None = None
+) -> dict:
     identity = image["image"]["id"]
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", identity):
         raise ValueError("immutable image required for native review")
@@ -41,6 +43,10 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
         for row in native["code"]
         if row["role"] in {"all", role} and (row["path"] != CRYPTO_OBJECT or has_crypto)
     }
+    if codec:
+        from tools.security_codec import expected_code
+
+        expected.update(expected_code(codec, role))
     if has_driver and driver:
         expected.update(
             {
@@ -86,7 +92,9 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
         command = [
             "node",
             "-e",
-            "console.log(JSON.stringify({openssl:process.versions.openssl,shared:process.config.variables.node_shared_openssl,node:process.versions.node}))",
+            "console.log(JSON.stringify({openssl:process.versions.openssl,shared:process.config.variables.node_shared_openssl,node:process.versions.node"
+            + (",zstd:process.versions.zstd" if codec else "")
+            + "}))",
         ]
     else:
         command = [
@@ -97,11 +105,14 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
         ]
     versions = json.loads(subprocess.check_output([*prefix, *command], text=True, timeout=60))
     if role == "node":
-        valid = valid and versions == {
+        required_versions = {
             "openssl": native["openssl_version"],
             "shared": True,
             "node": native["node"]["version"],
         }
+        if codec:
+            required_versions["zstd"] = codec["version"]
+        valid = valid and versions == required_versions
     else:
         version_prefix = "OpenSSL " + native["openssl_version"] + " "
         valid = valid and versions["openssl"].startswith(version_prefix)
@@ -129,6 +140,10 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
             valid = (
                 valid and versions.get("psycopg_binary") is None and versions.get("libpq") is None
             )
+    if codec:
+        from tools.security_codec import verify_runtime
+
+        valid = valid and verify_runtime(prefix, codec, image, role, versions)
     return {
         "image": identity,
         "native_build": native["id"],
@@ -136,6 +151,7 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
         "code": observed,
         "versions": versions,
         "native_driver": driver["id"] if has_driver and driver else None,
+        "native_codec": codec["id"] if codec else None,
     }
 
 

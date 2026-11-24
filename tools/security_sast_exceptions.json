@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "166f8820312a642f3eb47df305cda2bc4a54efa41098575c1463ea3af4eefb4f",
+      "source_sha256": "5e67d8f9ccc3a30c610f54404dfa0d5988e203945b0d5e81f2de04f23ded90b6",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 266,
+          "line": 268,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 355,
+          "line": 357,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 499,
+          "line": 501,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "166f8820312a642f3eb47df305cda2bc4a54efa41098575c1463ea3af4eefb4f",
+      "source_sha256": "5e67d8f9ccc3a30c610f54404dfa0d5988e203945b0d5e81f2de04f23ded90b6",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 267,
+          "line": 269,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 356,
+          "line": 358,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 613,
+          "line": 615,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "705c03a889ae7a877f9148f68fa8bede27ce33a96abb474e149dcdc605edb17b",
+      "source_sha256": "4cea1e1cb00bb241071eb1ea81d1c9d3f65f0b23ee4fba0506e777ee295edd74",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8254,7 +8254,7 @@
     {
       "path": "tools/security_dependencies.py",
       "code": "S310",
-      "source_sha256": "08e00a38b04bdd28641df50dec8e3c6100f4d11e56ff00e2e1fed075d2f903b3",
+      "source_sha256": "1675c3ac36c177e9111267d1834a61656b99f8313f2b35b99190e20c7a6b696f",
       "reason": "Fixed HTTP(S) metadata/loopback fixture URL or the allowlisted OSV route builder; no caller-controlled URL schemes at this reviewed site.",
       "findings": [
         {
@@ -8269,18 +8269,18 @@
     {
       "path": "tools/security_lockfiles.py",
       "code": "S314",
-      "source_sha256": "639b9ff77d2286674329a71a91791f7302723965eecff43d4a53469c888031ad",
+      "source_sha256": "9da3477491bd545333d349566b141ac12d96269a07f3f0b109929ce17aee2b5e",
       "reason": "Checked-in dependency manifest parsing rejects DOCTYPE and ENTITY declarations before ElementTree; no remote XML or entity expansion.",
       "findings": [
         {
-          "line": 466,
+          "line": 494,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
           "context_sha256": "ee9a6bf04ec765d3e9c281bbf9d28c61f8899da16965b16f8cf8950ce4c61dbf"
         },
         {
-          "line": 484,
+          "line": 512,
           "column": 16,
           "symbol": "native_input",
           "statement_sha256": "c5a8f6192ad07ce204a4663eaacd350c60c2fce1df037d27e8f76cf269c86b6c",
@@ -8499,22 +8499,22 @@
     {
       "path": "tools/security_native.py",
       "code": "S603",
-      "source_sha256": "7276a6745611d7f8cf9cd89e194625ffeb0171ffe46273955e606bf9ef7908c5",
-      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions. PostgreSQL objects are now included in the exact native hash closure; unreviewed binary bundles block and the fixed version probe requires reviewed driver/libpq versions.",
+      "source_sha256": "2ecac0a3ac0c6f16fa9bd6f97d3b80a51d97f8b8c017052bf19fd915f49e302a",
+      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions. PostgreSQL objects are now included in the exact native hash closure; unreviewed binary bundles block and the fixed version probe requires reviewed driver/libpq versions. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical.",
       "findings": [
         {
-          "line": 61,
+          "line": 67,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "381dfa7cabb67be51af4f5f1eecf7ea7135534267775904c74afc6de221a730d",
-          "context_sha256": "d6d9d7794f50d14abd9cf0d5334034223f788692c893ee0c3c76ddd6849e56d2"
+          "context_sha256": "1385dd53592b4e5b5ade76d58ac2d70d8aefdcd3053a38d37eb4581287edc2f0"
         },
         {
-          "line": 98,
+          "line": 106,
           "column": 27,
           "symbol": "capture",
           "statement_sha256": "f852af1fd225f33348b766ea2707981c3503dcaa7d407b7a44a86aa629b02622",
-          "context_sha256": "d6d9d7794f50d14abd9cf0d5334034223f788692c893ee0c3c76ddd6849e56d2"
+          "context_sha256": "1385dd53592b4e5b5ade76d58ac2d70d8aefdcd3053a38d37eb4581287edc2f0"
         }
       ]
     },
@@ -8673,8 +8673,8 @@
     {
       "path": "tools/security_profile_capture.py",
       "code": "S603",
-      "source_sha256": "97a9a5737678618175ef5c1fc17d972e99a0c833e5da2b4919c1696290097322",
-      "reason": "Immutable image and owned random container IDs are validated before argument-list Docker inspection/export/cleanup. Exported files are parsed without extraction or execution; a bounded native diagnostic has an exact reviewed hash and runs read-only, non-root, without network/capabilities and with no-new-privileges. Child processes have explicit timeouts or an owned export timer. Image configuration is inspected by immutable ID; the diagnostic user is restricted to reviewed non-root image users, with the exact qualified override for the runtime-Python builder.",
+      "source_sha256": "b3150770892de62bc6f49a28a8c9f93d8954cde396332166cc4b22b2e8e02dd2",
+      "reason": "Immutable image and owned random container IDs are validated before argument-list Docker inspection/export/cleanup. Exported files are parsed without extraction or execution; a bounded native diagnostic has an exact reviewed hash and runs read-only, non-root, without network/capabilities and with no-new-privileges. Child processes have explicit timeouts or an owned export timer. Image configuration is inspected by immutable ID; the diagnostic user is restricted to reviewed non-root image users, with the exact qualified override for the runtime-Python builder. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical.",
       "findings": [
         {
           "line": 24,
@@ -8702,14 +8702,87 @@
           "column": 9,
           "symbol": "capture",
           "statement_sha256": "c3f917a53b759325b348c700c84503bd551d487cc0104a9b9a44466780f7c181",
-          "context_sha256": "2e23a5c7b4c9d33fa5bb4eb6f2be378684e2dd46b2eae7e6afceb47632ee6011"
+          "context_sha256": "b1da5e06a5a8eac5dc0ed4db4c599327eeee0d1bfe986f3f0192b4ac45691eb1"
         },
         {
           "line": 94,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d771d88a0f930885f679e046d73faa4c382b1ba3f407dcf43e2288405b914734",
-          "context_sha256": "2e23a5c7b4c9d33fa5bb4eb6f2be378684e2dd46b2eae7e6afceb47632ee6011"
+          "context_sha256": "b1da5e06a5a8eac5dc0ed4db4c599327eeee0d1bfe986f3f0192b4ac45691eb1"
+        }
+      ]
+    },
+    {
+      "path": "tools/security_codec.py",
+      "code": "S603",
+      "source_sha256": "9f1c95c033e0837ee409bbe71538ae586a05ea615363ca12973d2942f2b3b7fd",
+      "reason": "Fixed argument-list find command within the immutable-image, read-only, network-none Docker prefix validated and constructed by security_native.capture. It enumerates only fixed system libzstd names; no shell, network, payload execution or profile mutation.",
+      "findings": [
+        {
+          "line": 20,
+          "column": 13,
+          "symbol": "verify_runtime",
+          "statement_sha256": "427c943848c286e80278f07c19c27a7ee36ab044c28855585edb6db7cb80a788",
+          "context_sha256": "6fd9342ddc2e40e14ff702b81f0c112d87cda95e689ebf35308b6ccd1d1a43b8"
+        }
+      ]
+    },
+    {
+      "path": "deploy/local/inputs/native/zstd-package.py",
+      "code": "S603",
+      "source_sha256": "86a4e6e26e90fcd4124f00ac40a484588c6fc25560bab329a886547cd729e2da",
+      "reason": "Build-only fixed argument-list dpkg-deb extraction/repackaging and strip operate on the exact authenticated parent archive and reviewed compiled library inside a pinned offline disposable builder. No untrusted command or shell interpolation.",
+      "findings": [
+        {
+          "line": 14,
+          "column": 1,
+          "symbol": "<module>",
+          "statement_sha256": "8f5b23603b3ba01d98c9f866e66b5c41a8b646895560ed7aa25d0d85f792c720",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        },
+        {
+          "line": 22,
+          "column": 1,
+          "symbol": "<module>",
+          "statement_sha256": "c02f3991d8045bd747e87be1db18a8c5a8e35b7b2a8e4a60184f4b0722acdf41",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        },
+        {
+          "line": 59,
+          "column": 1,
+          "symbol": "<module>",
+          "statement_sha256": "d8efbfd74838a4bbfe279613ab77c5c440ab0ad726551b16f477cd71b1f057a4",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        }
+      ]
+    },
+    {
+      "path": "deploy/local/inputs/native/zstd-package.py",
+      "code": "S607",
+      "source_sha256": "86a4e6e26e90fcd4124f00ac40a484588c6fc25560bab329a886547cd729e2da",
+      "reason": "dpkg-deb and strip resolve from the pinned builder and hash-verified Debian toolchain. These build-only fixed command arrays do not resolve programs from source archives or runtime inputs.",
+      "findings": [
+        {
+          "line": 15,
+          "column": 5,
+          "symbol": "<module>",
+          "statement_sha256": "8f5b23603b3ba01d98c9f866e66b5c41a8b646895560ed7aa25d0d85f792c720",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        },
+        {
+          "line": 22,
+          "column": 16,
+          "symbol": "<module>",
+          "statement_sha256": "c02f3991d8045bd747e87be1db18a8c5a8e35b7b2a8e4a60184f4b0722acdf41",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        },
+        {
+          "line": 60,
+          "column": 5,
+          "symbol": "<module>",
+          "statement_sha256": "d8efbfd74838a4bbfe279613ab77c5c440ab0ad726551b16f477cd71b1f057a4",
+          "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
         }
       ]
     }

@@ -119,6 +119,11 @@ def capture(image: dict, probe: Path, policy: dict, role: str) -> dict:
         "elf_sha256": canonical(objects),
         "closure_sha256": canonical(closure),
         "closure": closure,
+        "zstd_removed_callers": {
+            path: sorted(set(row["imports"]) & {"ZSTD_copyCCtx", "ZSTD_copyDCtx"})
+            for path, row in sorted(objects.items())
+            if set(row["imports"]) & {"ZSTD_copyCCtx", "ZSTD_copyDCtx"}
+        },
         "unordered_load_objects": sorted(
             path
             for path, row in objects.items()

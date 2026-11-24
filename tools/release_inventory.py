@@ -314,7 +314,9 @@ def main() -> int:
                 selected = load_lock(Path(__file__).resolve().parents[1])
                 native = selected["native_build"]
                 native_proofs = {
-                    name: capture_native(image, native, selected.get("native_driver"))
+                    name: capture_native(
+                        image, native, selected.get("native_driver"), selected.get("native_codec")
+                    )
                     for name, image in captured.items()
                 }
                 dispositions = apply_reviews(
@@ -335,6 +337,12 @@ def main() -> int:
                 }
                 dispositions = apply_profile(
                     dispositions, snapshot, captured, profile_proofs, profile_policy
+                )
+            if args.native_reviews and "native_codec" in selected:
+                from tools.security_codec import apply_reviews as apply_codec
+
+                dispositions = apply_codec(
+                    dispositions, snapshot, captured, native_proofs, selected["native_codec"]
                 )
             (args.output / "dispositions.json").write_text(
                 json.dumps(dispositions, indent=2) + "\n"
