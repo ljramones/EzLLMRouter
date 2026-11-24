@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from tools.gateway.os_inputs import LOCK
-from tools.security_native import apply_reviews, capture
+from tools.security_native import apply_reviews, capture, reviewed_advisory
 from tools.security_resolutions import canonical
 from tools.security_dependencies import query, findings, query_versions
 
@@ -238,6 +238,47 @@ class NativeReviewTests(unittest.TestCase):
             ],
         ):
             self.assertFalse(capture(self.images["node"], self.native)["valid"])
+
+
+class NativeAdvisoryRevalidationTests(unittest.TestCase):
+    def test_only_an_exact_unchanged_target_can_accept_reviewed_other_suite_updates(self):
+        previous = {
+            "id": "synthetic-patched-case",
+            "details": "unchanged defect and patch",
+            "modified": "previous",
+            "affected": [
+                {"package": {"ecosystem": "Debian:13"}, "ranges": ["unchanged target"]},
+                {"package": {"ecosystem": "Debian:14"}, "ranges": ["previous other suite"]},
+            ],
+        }
+        current = deepcopy(previous)
+        current["modified"] = "current"
+        current["affected"][1]["ranges"] = ["new other-suite publication"]
+        review = {"advisory_sha256": canonical(previous), "patch_sha256": "a" * 64}
+        update = {
+            "native_build": "b" * 64,
+            "patch_sha256": "a" * 64,
+            "previous_advisory": previous,
+            "advisory_sha256": canonical(current),
+            "reason": "Explicit target-unchanged review",
+        }
+        self.assertFalse(reviewed_advisory(current, review, "b" * 64, None))
+        self.assertTrue(reviewed_advisory(current, review, "b" * 64, update))
+        for change in ("target", "details", "patch", "build", "previous"):
+            actual, refreshed = deepcopy(current), deepcopy(update)
+            if change == "target":
+                actual["affected"][0]["ranges"] = ["new target exposure"]
+            elif change == "details":
+                actual["details"] = "different vulnerability mechanism"
+            elif change == "patch":
+                refreshed["patch_sha256"] = "0" * 64
+            elif change == "build":
+                refreshed["native_build"] = "0" * 64
+            else:
+                refreshed["previous_advisory"]["details"] = "unbound old record"
+            refreshed["advisory_sha256"] = canonical(actual)
+            with self.subTest(change=change):
+                self.assertFalse(reviewed_advisory(actual, review, "b" * 64, refreshed))
 
 
 class NativeAdvisoryVersionTests(unittest.TestCase):

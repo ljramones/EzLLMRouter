@@ -20,6 +20,7 @@ CASES = {
     "DEBIAN-CVE-2019-1010023": ("glibc", "trusted_native_inputs"),
     "DEBIAN-CVE-2026-84243": ("glibc", "fixed_locale"),
     "DEBIAN-CVE-2005-2541": ("tar", "unprivileged_archive_path"),
+    "DEBIAN-CVE-2026-84785": ("openssl", "no_incoming_quic"),
 }
 SOURCE_ROOTS = ("server/src", "worker/ezllmrouter_worker")
 CONTROLS = (
@@ -29,6 +30,16 @@ CONTROLS = (
     "tools/qualification_storage.py",
     "tools/deployment_qualification.py",
     "tools/gateway/worker_package.py",
+)
+HARNESSES = (
+    "tools/deployment_qualification.py",
+    "tools/qualification_storage.py",
+    "tools/volume_archive.py",
+    "deploy/local/local_profile.py",
+    "deploy/local/check.py",
+    "tools/gateway/os_inputs.py",
+    "deploy/local/install_os.sh",
+    LOCK,
 )
 
 
@@ -87,6 +98,8 @@ def load_policy(path: Path, root: Path, qualification: dict) -> dict:
         or qualification["source_packet_sha256"] != policy["source_packet_sha256"]
         or set(qualification["images"]) != set(policy["images"])
         or len(policy["images"]) != 7
+        or set(qualification["structure"]) != {"ingress", "netns", "receiver", "service", "worker"}
+        or set(qualification["harness_sha256"]) != set(HARNESSES)
         or any(
             row["uid_gid"] != "10001:10001"
             or not row["readonly_root"]
@@ -120,6 +133,7 @@ def proof_valid(proof: dict, expected: dict) -> bool:
     return (
         all(proof[key] == expected[key] for key in ("image", "elf_sha256", "closure_sha256"))
         and not proof["closure"]["restricted_callers"]
+        and not proof["closure"]["quic_callers"]
         and not proof["unordered_load_objects"]
         and runtime == expected["runtime"]
         and runtime["uid"] in {1000, 10001}

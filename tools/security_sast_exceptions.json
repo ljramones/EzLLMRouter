@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "c99420c7c6f6b6c8ab6122feca2c4aa8bd53c7ecea27c52a8c985a82396c4fa1",
+      "source_sha256": "705c03a889ae7a877f9148f68fa8bede27ce33a96abb474e149dcdc605edb17b",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8499,7 +8499,7 @@
     {
       "path": "tools/security_native.py",
       "code": "S603",
-      "source_sha256": "05f333ecbac3621b72ada9d8939b38851320dba103853a76120991a563202cd3",
+      "source_sha256": "7276a6745611d7f8cf9cd89e194625ffeb0171ffe46273955e606bf9ef7908c5",
       "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions. PostgreSQL objects are now included in the exact native hash closure; unreviewed binary bundles block and the fixed version probe requires reviewed driver/libpq versions.",
       "findings": [
         {

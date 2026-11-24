@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and target capture implemented; release acceptance remains blocked. Reviewed worker inputs retain 117 wheels and the Rust closure retains 148 packages. Thirteen signed-index/hash-checked Debian archives and the exact 22-package removal closure bind to staged source packets. Six clean offline images pass disposable qualification; the seventh passes its auxiliary installed-SDK/policy smoke. The current combined inventory has 343 entries and 71 raw matches: 23 high, one critical, two unrated, 38 moderate and seven low. Published archive fixes remove seven original blockers; ten exact component dispositions and nine verified OpenSSL native fixes leave 7 effective blockers, down from 33. Glibc (6) and tar (1) remain open. Raw severity and findings are retained. See the current native-backport record below; historical counts remain recorded separately. The persistent profile and production acceptance remain unchanged. |
+| T04 | Supply-chain, secret and static security scans | Audit tooling and exact target capture implemented; current release acceptance remains blocked by one newly published Zstandard finding. All 33 original blockers are resolved for the qualified Linux ARM64 profile. The fresh 343-entry inventory has 73 raw matches and 28 raw blockers: ten component dispositions, nine native backport fixes and eight expiring profile decisions leave CVE-2026-124851 open. The minimal PostgreSQL bundle removes unused Kerberos/LDAP and extra OpenSSL copies while retaining the worker proxy interface and all 117 hash-pinned wheels. All seven images pass native dependency inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings and rating vectors remain visible. Profile-specific decisions do not claim upstream fixes or qualify other deployments. See the November 24 record below. Persistent profile and production acceptance are unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -291,9 +291,73 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## Final seven profile findings and fresh advisories, 2026-11-24
+
+All **33 original blockers are resolved for the exact qualified Linux ARM64
+profile**. The remaining seven glibc/tar cases have expiring, executable
+`not_affected` decisions tied to that profile; their upstream packages are not
+claimed fixed. The fresh November 24 scan also adds two findings. The new QUIC
+case, CVE-2026-84785, requires acceptance of incoming QUIC streams, absent from
+the reviewed application dependency closure and interfaces. The new Zstandard
+case, **CVE-2026-124851, remains blocking**. Release acceptance therefore still
+has **one effective blocker**. The persistent profile and production acceptance
+remain unchanged.
+
+The current 343-entry inventory has 73 raw matches and 28 raw blockers. Ten exact
+component dispositions, nine native backport fixes and eight qualified-profile
+decisions leave that one blocker. Raw severity and source attribution remain in
+the complete advisory report. Three util-linux advisory timestamps changed;
+their complete content excluding `modified` was identical. Two OpenSSL records
+changed only modification time and other Debian suites: their full Debian:13
+records and all other fields were identical. Explicit, patch-bound revalidation
+accepts those exact updates without changing native artifacts or weakening
+checks for changed target exposure. The new findings remain separately recorded.
+
+The native inspection found bundled Kerberos glob/regex callers and additional
+OpenSSL libraries inside psycopg-binary, missed by the prior three-copy review.
+The [minimal driver bundle](../deploy/local/inputs/native/README.md#minimal-postgresql-native-bundle)
+relinks the published extension objects to exact-version libpq 18.6 without
+GSSAPI/LDAP, using the already patched shared OpenSSL. All 210 libpq exports
+remain. Sixteen old bundled libraries are removed and one minimal libpq is
+provided. The worker retains its LiteLLM proxy ASGI interface; all 117 frozen
+wheel selections remain dependency-compatible, with 116 exact wheel files
+unchanged from the preceding batch, including LiteLLM 1.106.12.
+
+Across all seven new images, **3,800 ELF objects** are parsed without execution.
+Application dependency closures have no affected glob/regex or incoming-QUIC
+callers; optional tkinter extensions with unavailable Tcl/Tk dependencies remain
+explicitly recorded as unloadable. Ambiguous dependencies and malformed or
+unordered load segments fail. Native diagnostics verify the AArch64 global
+read-only guard outside thread stacks, C.UTF-8 and non-root/no-new-privileges
+execution. Complete owned-source and qualification identities bind these checks;
+changed callers, code, images, advisories, runtime controls or expired reviews
+retain blocking status. A bounded setuid diagnostic elevates only in its isolated
+unprotected control; the required kernel flag prevents elevation. The canary
+image is removed. The archive helper separately rejects privileged modes and
+links before restoration.
+
+All six offline builds and disposable isolation/client/restart/restore checks
+pass, plus the auxiliary JavaScript SDK/policy smoke. The source gate passes
+1,337 cases across 182 modules without skips; subsequent native/advisory gate
+regressions also pass. All 99 native TLS/database/recovery cases pass in the
+exact new service image. Private source caches, complete fresh advisory response,
+initial failed attempts, current decisions and validation records remain under
+ignored `.artifacts/final-seven/`.
+
+The qualified runtime source is `fc522afe280fc2df5c64709fffc71ecb65765abf`,
+fingerprint `97ad943182638a62f848d0131d00fa46b60f293fbe255c5e9bd9b2cf3a1962b4`.
+The source packet SHA-256 is
+`1d18eb8853e60c285999a0c02a6a70a07d82ed5a5ff7b48b2c77713deb8c0185`.
+Subsequent advisory/tooling records preserve those runtime source/input bytes.
+
+The next dependency work is the new Zstandard disclosure, including both the
+retained system library and Node's embedded copy. No reviewed replacement or
+backport is selected by this record. This open case prevents a claim of zero
+current blockers.
+
 ## OpenSSL native backports, 2026-11-23
 
-The current audit has **7 effective blockers, down from the original 33**.
+Before the final-seven review, the audit had **7 effective blockers, down from the original 33**.
 This batch fixes all nine retained OpenSSL cases across the system library,
 Node and cryptography copies. The earlier seven published archive fixes and
 ten verified component dispositions remain in effect. The six glibc cases and

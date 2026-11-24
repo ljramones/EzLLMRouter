@@ -141,9 +141,22 @@ def application_closure(objects: dict[str, dict]) -> dict:
         for path in sorted(closure)
         if set(objects[path]["imports"]) & restricted
     }
+    quic_symbols = {
+        "SSL_set_incoming_stream_policy",
+        "SSL_accept_stream",
+        "SSL_new_stream",
+        "OSSL_QUIC_client_method",
+        "OSSL_QUIC_client_thread_method",
+    }
+    quic_callers = {
+        path: sorted(set(objects[path]["imports"]) & quic_symbols)
+        for path in sorted(closure)
+        if set(objects[path]["imports"]) & quic_symbols
+    }
     return {
         "roots": sorted(roots),
         "objects": sorted(closure),
         "unloadable_roots": unloadable,
         "restricted_callers": callers,
+        "quic_callers": quic_callers,
     }

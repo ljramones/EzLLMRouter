@@ -8,7 +8,15 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from tools.security_profile import CASES, CONTROLS, apply_reviews, load_policy, proof_valid, sources
+from tools.security_profile import (
+    CASES,
+    CONTROLS,
+    HARNESSES,
+    apply_reviews,
+    load_policy,
+    proof_valid,
+    sources,
+)
 from tools.security_resolutions import canonical
 
 
@@ -18,7 +26,7 @@ class ProfileReviewTests(unittest.TestCase):
             "image": "sha256:" + "a" * 64,
             "elf_sha256": "b" * 64,
             "closure_sha256": "c" * 64,
-            "closure": {"restricted_callers": {}},
+            "closure": {"restricted_callers": {}, "quic_callers": {}},
             "unordered_load_objects": [],
             "runtime": {
                 "uid": 10001,
@@ -36,6 +44,7 @@ class ProfileReviewTests(unittest.TestCase):
         self.assertTrue(proof_valid(expected, expected))
         for change in (
             "caller",
+            "quic",
             "segments",
             "locale",
             "uid",
@@ -47,6 +56,8 @@ class ProfileReviewTests(unittest.TestCase):
             proof = self.proof()
             if change == "caller":
                 proof["closure"]["restricted_callers"] = {"/unexpected/lib.so": ["regexec"]}
+            elif change == "quic":
+                proof["closure"]["quic_callers"] = {"/unexpected/lib.so": ["SSL_accept_stream"]}
             elif change == "segments":
                 proof["unordered_load_objects"] = ["/unexpected/lib.so"]
             elif change == "locale":
@@ -131,6 +142,7 @@ class ProfileReviewTests(unittest.TestCase):
         root = Path(temporary.name)
         for name in (
             *CONTROLS,
+            *HARNESSES,
             "server/src/application.py",
             "worker/ezllmrouter_worker/main.py",
             "tools/security_profile_probe.c",
@@ -152,6 +164,13 @@ class ProfileReviewTests(unittest.TestCase):
                 }
             },
             "harness_sha256": {},
+        }
+        q["structure"] = {
+            name: deepcopy(q["structure"]["service"])
+            for name in ("ingress", "netns", "receiver", "service", "worker")
+        }
+        q["harness_sha256"] = {
+            name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in HARNESSES
         }
         policy = {
             "format": "ezllmrouter-profile-reviews-v1",
@@ -177,7 +196,7 @@ class ProfileReviewTests(unittest.TestCase):
         return root, q, policy
 
     def test_expiry_changed_source_added_native_interface_and_qualification_changes_reject(self):
-        for change in (None, "expiry", "source", "interface", "qualification"):
+        for change in (None, "expiry", "source", "interface", "qualification", "incomplete"):
             root, q, policy = self.fixture()
             if change == "expiry":
                 policy["expires_at"] = (
@@ -190,6 +209,9 @@ class ProfileReviewTests(unittest.TestCase):
                 policy["source_sha256"] = sources(root)
             elif change == "qualification":
                 q["structure"]["service"]["uid_gid"] = "0:0"
+                policy["qualification_sha256"] = canonical(q)
+            elif change == "incomplete":
+                q["structure"].clear()
                 policy["qualification_sha256"] = canonical(q)
             path = root / "policy.json"
             path.write_text(json.dumps(policy))

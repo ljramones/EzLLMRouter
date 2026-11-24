@@ -87,3 +87,9 @@ class ELFReviewTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "ambiguous"):
             application_closure(objects)
+
+    def test_quic_stream_policy_and_acceptance_imports_are_not_hidden(self):
+        app = inspect(fixture("SSL_accept_stream", "libssl.so.3"))
+        library = dict(inspect(fixture("malloc")), needed=[])
+        result = application_closure({"/usr/local/bin/client": app, "/lib/libssl.so.3": library})
+        self.assertEqual(result["quic_callers"], {"/usr/local/bin/client": ["SSL_accept_stream"]})

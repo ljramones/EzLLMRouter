@@ -1,0 +1,896 @@
+{
+  "format": "ezllmrouter-profile-reviews-v1",
+  "reviewed_at": "2026-11-24T19:35:00.209473+00:00",
+  "expires_at": "2026-12-01T19:35:00.209473+00:00",
+  "qualification_sha256": "3fb38a675f086505bd08eb9604127d367f86607e9e0dd7e082e2c6751068daab",
+  "source_packet_sha256": "1d18eb8853e60c285999a0c02a6a70a07d82ed5a5ff7b48b2c77713deb8c0185",
+  "source_sha256": {
+    "deploy/local/compose.yaml": "1fac78a5e17c71ce355bdc7d97b6fdf73034051609a26ff4ba495536a3fe2e8f",
+    "server/src/ezllmrouter_server/__init__.py": "def99af69a4215eea726e1b61570a74dbb19579a0b27b1ab84f5fdec2e8d04b3",
+    "server/src/ezllmrouter_server/__main__.py": "e2715cdcf92f97fd0f3dfc9e33ce24cdf683588169b702c4e207414c3fcedb60",
+    "server/src/ezllmrouter_server/_metadata.py": "c2db5d7ad09d226752d69fa01016837d46a07960c2089ba6ecba284bff9f7d85",
+    "server/src/ezllmrouter_server/accounting_datasets.py": "256f87b6713fd713230ded3d73e2a23c0f3d5b9342de98e99c5a85515ddf92c5",
+    "server/src/ezllmrouter_server/accounting_events.py": "e720a65762ad47497e78c16145155dfb7f4759c4ce8552fd79006883b4dd07dc",
+    "server/src/ezllmrouter_server/accounting_exports.py": "d484cce34fb0d03f0decfee99ea3a859619c2019273b901914773a721853629e",
+    "server/src/ezllmrouter_server/accounting_lineage.py": "49b93119f72aa55a2bfd2c77beade5a77f02614daf5e76fd91f9ee607007689b",
+    "server/src/ezllmrouter_server/accounting_reports.py": "2e50b94921fa0d780cab325f417066f8c5934faf02f64d00b23308f3715dac04",
+    "server/src/ezllmrouter_server/accounting_snapshots.py": "da172b8c1088fd97ac8870f38ac644f4a1c6821c5fce554afac169734989c7f2",
+    "server/src/ezllmrouter_server/accounting_types.py": "ba90351ddfb795af8f56386118cafcadca0915db44e5d7618cee74af89ea9f48",
+    "server/src/ezllmrouter_server/attribution.py": "5676aa949f1c902be97a324c434651b38b54748c9a4523949afdb35507d4748f",
+    "server/src/ezllmrouter_server/cache_accounting.py": "cf4febd098a6769247753fa1135ee3481c786c82b7f7cdcb26322f5226a9944f",
+    "server/src/ezllmrouter_server/campaign_reporting.py": "b9309f79d097b99e3c3e1eb431e9f05e78664b8ff8a2ca45e394b474bc0d255c",
+    "server/src/ezllmrouter_server/canonical.py": "fe04f2c0c41797c94a5ed14c98a8cc64fce4dd51c3a7324ca016705f88ec8b61",
+    "server/src/ezllmrouter_server/catalogue.py": "768afc07317ab0706932e2f8d037547a88bf02ee9eef36d480d6ff7de4f83f03",
+    "server/src/ezllmrouter_server/connection_resources.py": "5e31a2d75f6a5cbb2c19fbbae16ae2d3d385ee8c162b60b9e4e7b387f57af78f",
+    "server/src/ezllmrouter_server/connector_availability.py": "db1b500a3c9020451b25130e8c6b69e893c8ca4e42136b06ee90691b6bb061c4",
+    "server/src/ezllmrouter_server/core.py": "95f005c6254d44827ba6821095bde6ee80e8e54c4f3be2d707375b41cbfd9054",
+    "server/src/ezllmrouter_server/core_admission.py": "420491d24f25c7d3e6dc3754d73b584b4e6c44fa821666c46256f883bbdc16e3",
+    "server/src/ezllmrouter_server/core_attempt.py": "a93ed6871676166d7a00b95107f557630337764c62cb65744b2c3492f9602794",
+    "server/src/ezllmrouter_server/core_outcomes.py": "ef8cf9eb6daef3158719cad0568116b6e18ec69ae2e2034eb3c9b2a443f08d43",
+    "server/src/ezllmrouter_server/core_policy.py": "68793dfb06f5483aef0f3dd46cf73190245b1d054bf5bd031b287e897944bbf5",
+    "server/src/ezllmrouter_server/core_status.py": "9817eb6acf1b1544a4147bc02aa5f91050555607c029ab651e4607df356580e8",
+    "server/src/ezllmrouter_server/core_types.py": "3015dab30916d45818e8bb43a48656ef6d79a94036a0fdce065121e2215c0c37",
+    "server/src/ezllmrouter_server/csv_export.py": "6f9e5090b2935f05dc8e1d7a4fd18b392ddd7f5d61ac84fb409c14e77517c9df",
+    "server/src/ezllmrouter_server/database.py": "5a9b2a364102e80a26bcf6e945fe32565ffbbe604d6d0d762a41cb6d55672ee0",
+    "server/src/ezllmrouter_server/database_audit.py": "2ac720ee04b790a0b0157950e4276e7daef90cd0738ace6414a8e1c56cd2477d",
+    "server/src/ezllmrouter_server/database_backup.py": "86b598afeb33fd9870d0c8a32921a213bbf619bd303faacec339f4b45926d854",
+    "server/src/ezllmrouter_server/database_security.py": "a6383d502f90cd5c718e522322971d218400ecb3fc1b028c27a3403c65231107",
+    "server/src/ezllmrouter_server/demo_common.py": "e5567ee153db04a50ce8e43e930a2ae93a5672f8ce1fd55c542b68f881e085d3",
+    "server/src/ezllmrouter_server/demo_workspace.py": "3fa678c1418a1aeb63deee814d75478ec949678e9c4c83463f5fdf68d3b14dfa",
+    "server/src/ezllmrouter_server/demo_workspace_team.py": "4fbb804086e1e6fff45b23028543cb5351aeeb9db755e27a1cc43ea734615a82",
+    "server/src/ezllmrouter_server/diagnostic_journal.py": "e95f579da896e3079ba0a3d8efd3d46a1ebf520e05b7148ee273e58a33398c20",
+    "server/src/ezllmrouter_server/errors.py": "7d26a5baeb1b9d18606a37c2803c089671dc417dfd73ccddebfc25f32333fd90",
+    "server/src/ezllmrouter_server/execution_policy.py": "b84803521230ad61db06db55c0d3095c825dce4b8e8b17885713d2abad60a4cf",
+    "server/src/ezllmrouter_server/execution_resources.py": "1b3bb083fd4d42154f1daa2b18bbf00ad07675137134ef2fb2464a467371fb0c",
+    "server/src/ezllmrouter_server/external_identity.py": "2eccc18cfe1532c21a4ea04ec6a283233e15da13e9975a955a37492c29b307f8",
+    "server/src/ezllmrouter_server/formatting.py": "428b451371beb92d5253979d4f4c5d8276288bcf9efccaa3b79b12c27816cdc6",
+    "server/src/ezllmrouter_server/gateway/__init__.py": "fa204e401c36f10780d6cad28829d9840318416487726ea57ac22c943407ade7",
+    "server/src/ezllmrouter_server/gateway/capabilities.py": "29c6f1706948f06e95fced12369f4c9456bf06d2ff6258eb57a36306c57e1548",
+    "server/src/ezllmrouter_server/gateway/choice_b_sender.py": "82137bee93cb9c624838670cd48ef37241d37587f1d8538fcabbf69495fca97d",
+    "server/src/ezllmrouter_server/gateway/choice_b_wire.py": "e0cacbd3e5123ea8146c36e067f7bba2b1fda67b2253dda86a05c0942878c831",
+    "server/src/ezllmrouter_server/gateway/guard.py": "3f0ddd4d3ade17ddfab731a0068ff7b0b87e7cc9d59e02f689ac36a72dd0bfe4",
+    "server/src/ezllmrouter_server/gateway/owned_sender_transport.py": "68845549398765d04ecd7e2adafe6d9fb67f7a8b2731ce7258442147d306bee0",
+    "server/src/ezllmrouter_server/gateway/owned_tls_sender_transport.py": "b722674c3b756d89073f0bf1a263abc05ea88de64e729d4ced82ffe36a03e88a",
+    "server/src/ezllmrouter_server/gateway/provider_reply.py": "3d5a0536b778a0958f0154edda2223f753564f90cac43b5040e926ad74a6d778",
+    "server/src/ezllmrouter_server/gateway/proxy_recipe.py": "3acb5f207ddc84008294f60e74137b7fcf7a444e254928d9a617898d7f4696c8",
+    "server/src/ezllmrouter_server/gateway/retrieval_guard.py": "b75d95b0062c332ea7aedd6ace11a970dfcd5ee5a4d852b94e4280f90864ce67",
+    "server/src/ezllmrouter_server/gateway/synthetic_recipe.py": "69859bed8cebaf31a5a0d91a9200cfcd28d7cf3b6ce31e00237a6e077f1a8483",
+    "server/src/ezllmrouter_server/gateway/worker_ready.py": "7ce2d8963dc324c7bd0a8a17d6fe954c0480d5f45afc32efc4ca7a4a2f211690",
+    "server/src/ezllmrouter_server/http_server.py": "717488bcb1f5befd6ef20f4da5af21b13d838a0bfbd9874462faa6665d87daeb",
+    "server/src/ezllmrouter_server/identifiers.py": "08dbdc0fdf79579b7ff678df85d95723b6a61a1dfc7a7c5481d4bab4234ea9bf",
+    "server/src/ezllmrouter_server/identity.py": "5ac81d7baeb81f253e24c3187779e0e877b0c9f43f9cf6c80ea7a46cf2690425",
+    "server/src/ezllmrouter_server/instance_lock.py": "ee6402600c428c477b84c62cedfbfabf56a671b2df3031f5650a5417a76ad213",
+    "server/src/ezllmrouter_server/integration_accounting.py": "dc8b4404998a7ef51c36cd41b192d43937073beef1b7cb3ec006d8362bb33557",
+    "server/src/ezllmrouter_server/integration_bootstrap.py": "c99de8deec3743874ef04970d0b02e720df58c435cfb2c5850c307d750d65c41",
+    "server/src/ezllmrouter_server/integration_credential_records.py": "31d85e46e7c76474bf932eab3334463b9cd0d27190afe0d701f577fae3fea432",
+    "server/src/ezllmrouter_server/integration_credentials.py": "f94835503cfc314b405d9472fe926de41600614bb3a459074d8b9660acca1a81",
+    "server/src/ezllmrouter_server/integration_local.py": "ba4e03528d83b091da8f41165402ca17b6b378f8af363b267b06410cfcb6cff9",
+    "server/src/ezllmrouter_server/json_validation.py": "70b4579c8935df91ee7a6288fbb7ab24ac389845f840aa2dcb562677c84eb928",
+    "server/src/ezllmrouter_server/local_connector_http.py": "f959b09aba44ff12e7451aec9e4d8795106cdfa177516a2902af023163730257",
+    "server/src/ezllmrouter_server/local_connector_inventory.py": "3f8d1069dec0b246c9828b615d2054007ff74037fe23c850c6d609dd746e8ba3",
+    "server/src/ezllmrouter_server/local_connectors.py": "bcb8895dfe5ffa87ae7a9b95ff903509dd11fd06e4f49472b92965aa677f213c",
+    "server/src/ezllmrouter_server/observability.py": "e3ba9f81e440a6497e12e12f43ccb34c134915be28f08e85991989c1db212f3f",
+    "server/src/ezllmrouter_server/operator_demo.py": "8e1a529da3ddd748dd1b5984715922cd7badb136c57eafdd7688f99dece62918",
+    "server/src/ezllmrouter_server/operator_http/__init__.py": "ffddebd3ff715e5baf0d81ae6f4424a1f6adcec508247e3000d8e95e0fa9f0a5",
+    "server/src/ezllmrouter_server/operator_http/accounts.py": "57e297ec9ddc8fb32bf83794c46b0e8302585e5b736f868b91e9830babe3342b",
+    "server/src/ezllmrouter_server/operator_http/application.py": "258bac371397cdf5d3ef11dda586667916af5201f2b7fe0f874985aec4ccd45f",
+    "server/src/ezllmrouter_server/operator_http/assets.py": "72c3b8d73c51266b8c0e81a3f1b7cb3cf06c6cc99ec18348c251ca5d6f8eed2b",
+    "server/src/ezllmrouter_server/operator_http/authentication.py": "a3ed56f46f371bd93c1f0e4c0db78f46b0a63f2406359dfda3e57c8d7046f961",
+    "server/src/ezllmrouter_server/operator_http/common.py": "bfaeb61d73c441e255da10eab043a6b072fb316953ad127ea3d08496c5cf759a",
+    "server/src/ezllmrouter_server/operator_http/context.py": "c85a27d475631f51c0a6be0d4dc5e769fbb0156ca3a1c5905cf2945201124af6",
+    "server/src/ezllmrouter_server/operator_http/handler.py": "97d775f6be017effa2eee5270f3359b3751fd0a46f710bc3b867b69143ceef53",
+    "server/src/ezllmrouter_server/operator_http/integration.py": "85bec5a30b5436e9f62172cdebb8e71fe1d3737fc14a75d3afb2056b5b840168",
+    "server/src/ezllmrouter_server/operator_http/policy.py": "969a20469740f224c0ca0572ada73af91412d469b1fb2e70b116920e54cda49d",
+    "server/src/ezllmrouter_server/operator_http/registry_routes.py": "aec33edecf6ce198c87f9572804a62361cb721b6d981c265053b8488bf41fcb2",
+    "server/src/ezllmrouter_server/operator_http/reports.py": "eb0158f9aefc7ca0d7d23aa911d2be0bdb2c6b6307573197ebd662e76b1b301d",
+    "server/src/ezllmrouter_server/operator_http/routing.py": "de0755c328822543358c14388a5d54b6790fbf9994821efdc19f3d0686ac5c07",
+    "server/src/ezllmrouter_server/operator_http/transport.py": "d3d2d5e9b0b61a4affb57b259920dad5a1191379f64d1baba29c093b935ff458",
+    "server/src/ezllmrouter_server/operator_projection.py": "9632f5949c779f8362d8d0ce5de0478512296fa7538cb33d9afab0381c1505c1",
+    "server/src/ezllmrouter_server/operator_web.py": "956e0b7591c2ec0afa1b6b43a8cf65b94afa6b55e004e2ef9702699e1d9e2752",
+    "server/src/ezllmrouter_server/personal_campaign.py": "96babbfb9cf75995fd3737ed01ead565213166960462c1c7d5448d296574627a",
+    "server/src/ezllmrouter_server/plans.py": "bd1e7055a4a0c2d47de772946142b5e0403e076887fc183db2aa7854cb8ad660",
+    "server/src/ezllmrouter_server/private_files.py": "0d1b2514257737b2e24c6e9ea1c009cf3d582d1828e2c91cdd7424d6c9e711b5",
+    "server/src/ezllmrouter_server/provider_adapters.py": "3e7a4ac3a8bf053f40f35f19f4232892b263cee41047dc36c15687bdde8c0c38",
+    "server/src/ezllmrouter_server/provider_vault.py": "176951fc3d014514e90ade041d412e5433367d2b4d38a19cc4558a910a21c138",
+    "server/src/ezllmrouter_server/records.py": "0e57fc5c9103f16035c7be476354087f625d3007395a4358a5e9ec52a143b3a1",
+    "server/src/ezllmrouter_server/registry.py": "da7fc99829a4c835e6b88726dc0431f71b2eaa967ef949c0b4d2b58e5ab6c3bc",
+    "server/src/ezllmrouter_server/registry_bootstrap.py": "54ec62b99b7eef545a46b5e5b220ac4fa09c1d58c873e49b1a2ce20ce0314b61",
+    "server/src/ezllmrouter_server/registry_context.py": "63055435027a6fd344e750fde840df815852a0694c29962e700d9242e61a6b0c",
+    "server/src/ezllmrouter_server/registry_credentials.py": "34cebf9fcda54fee395c075ba825e8c08c211cc640ed27f9a0ecb62e0207d0f7",
+    "server/src/ezllmrouter_server/registry_mutations/__init__.py": "0a3db02deeb30ad83e7b005582df8eba8e8a73e93d63db21aa229b88c0d490d5",
+    "server/src/ezllmrouter_server/registry_mutations/catalogue.py": "275138bd946b35159124b3c9a9a83ca0f03958821ae00a0788bbe420b47775f7",
+    "server/src/ezllmrouter_server/registry_mutations/connections.py": "60de1138f9091adb0566f811f094cf531ef2402805e658924b86145b4acf4dbe",
+    "server/src/ezllmrouter_server/registry_mutations/grants.py": "3a34cd950dac5128399078841f8714d88ae03312ad3a3d11469d7ed6e9f51846",
+    "server/src/ezllmrouter_server/registry_mutations/models.py": "5b81a5692eb6edc7a122f0b2a4097d566bfeecc5b3c11566b14e47ef0074e250",
+    "server/src/ezllmrouter_server/registry_mutations/prices.py": "7dba9aafbcdd6629bbab8353fd7c49d52ae894c655213d20586915ab47d39acd",
+    "server/src/ezllmrouter_server/registry_mutations/principals.py": "ac49c8362f6ba1d7ebb82e3e81aadf2d41d184876c2a8416fc14c54495dd83a1",
+    "server/src/ezllmrouter_server/registry_reads.py": "ab0bab609df66791c2dca3275ffd5ddc59425c0c02c5d3b271e37c0202c55be5",
+    "server/src/ezllmrouter_server/registry_sources.py": "22581e423192628051b2f8676b4bc9fd3a4ba4722093e8ea05dd3d7d5071913b",
+    "server/src/ezllmrouter_server/registry_tokens.py": "487062c52783e54bf943304ecbdfa57facf2008c24ed4f361086a6260fab8372",
+    "server/src/ezllmrouter_server/registry_values.py": "e19895929b2bde57fc6750364e57dc2fe5f8b34d5eecd743eff9eaaa03c9073c",
+    "server/src/ezllmrouter_server/reporting.py": "2b1b214ef0ab411ddc9586292e09c7e9bbaac126db134748503357c29ec32189",
+    "server/src/ezllmrouter_server/reporting_metrics.py": "9f0218f1e9df64ae46a1901c92e86a8593d147c2bbf085f1a9dede0891baa03f",
+    "server/src/ezllmrouter_server/reporting_stream.py": "f3aef2a41497e19a7754777e3aab892d02bd6a720901cc5c7b07b736ce8d33ed",
+    "server/src/ezllmrouter_server/repositories/__init__.py": "d43febb8c319da3a841e5a0c1dbcfde5396c9ed426a463dd3d4c74af4efbcc31",
+    "server/src/ezllmrouter_server/repositories/attribution.py": "d6936546b4591706c62daaf5a12a9bf5b1ab3a0ffcd6f8bea796861a5f55bfad",
+    "server/src/ezllmrouter_server/repositories/authority.py": "cc2aa7bd157f1f39d4a2ab345374bfb6c90cdaf174521589b213407c20ef8189",
+    "server/src/ezllmrouter_server/repositories/database_audit.py": "8e7dcb14739e1ac95a0856cc141bc63c8bc1dcec07ba9ecf078044263ea78453",
+    "server/src/ezllmrouter_server/repositories/integration_accounting.py": "b6c880ab7b6946e4f3b337975852dc25c540f141bd184bedddbf8dd4a169e798",
+    "server/src/ezllmrouter_server/repositories/integration_credentials.py": "da82921025ed721f9fbe1c97ae35225b212e8bc3a1d521f743c7bfe91da605d3",
+    "server/src/ezllmrouter_server/repositories/local_connectors.py": "cf3adb34a522bd1011f86f1d32aee2835d220bc02a2fdbf911fcba284c8c5801",
+    "server/src/ezllmrouter_server/repositories/operator_projection.py": "f8184a92d891312fafad300b82aab2352c94c6692e13090d4a4a927776a52128",
+    "server/src/ezllmrouter_server/repositories/personal_campaign.py": "95ea8647c4b6ab6a9ab8b5fb0707f6e12be668c05ed5bc1dd884d7d75004501f",
+    "server/src/ezllmrouter_server/repositories/registry.py": "74bd37300c1026fc93d96546014f5987614b5876648db73095f2e35335d1944a",
+    "server/src/ezllmrouter_server/repositories/reporting.py": "74c7566bf5fc79051177b619406fd402e596702f7ae19e26055e1c2b9ff72bbe",
+    "server/src/ezllmrouter_server/repositories/secret_rotation.py": "11b7ee53f3fa264cc682128f2aa07ce5b52d6052abd09eaa9de9aa4bfb61dc67",
+    "server/src/ezllmrouter_server/repositories/shared.py": "d46ed2a7b3c139b7058b713840d503b261dc7a8301b6e94a69588087c55f0f79",
+    "server/src/ezllmrouter_server/repositories/startup.py": "0735ec5e4e8be74dfca902e48c268692907e7f71ffcbebc3ed93b7ed15a9a042",
+    "server/src/ezllmrouter_server/repositories/store.py": "9841843f1136440c46f4b30515032b49efdc4899f739be68da11353298c1bc98",
+    "server/src/ezllmrouter_server/repositories/successor_reporting.py": "866eb0d7c3eb8d6636c0f7abd05cbfdb324a063b9f4a0a55d76e47261ceba482",
+    "server/src/ezllmrouter_server/repositories/user_management.py": "f04db6cd0b2a8321235d18775d45a57d43e2371dfc969e10d655dcb2ccd14c88",
+    "server/src/ezllmrouter_server/request_validation.py": "ca0f9b9534ce161b410e534f1983cb4078add2a92ea228f62dce3f0dcd2872c1",
+    "server/src/ezllmrouter_server/retrieval_descriptor.py": "26b12c76fb1f9ba80236e5de9b2d0cf79dba6cd30f37261b63244b22afaa098f",
+    "server/src/ezllmrouter_server/runtime_resources.py": "94a946d595164be15d5f692ffe87fe44069f8a5bf81c44197d33fffec76ed827",
+    "server/src/ezllmrouter_server/schema.py": "1af8b750d6558908a9fe42ed5b792858492bef4d3af9dc80d7a1b279cc4fde0c",
+    "server/src/ezllmrouter_server/scripted_demo.py": "a6f5b694f77a07cdfaba1319a94fc2828bc9f84eb5c74352c5e21630b69f10af",
+    "server/src/ezllmrouter_server/secret_box.py": "134c35a79ac85e568f91ab8c9b1a528f2016695f6d46b05f959a72234c5b6884",
+    "server/src/ezllmrouter_server/secret_rotation.py": "d25bbd0d83bb514c47ec10f3e23a58ab421e848a93b6b7daaed127745bfd9b42",
+    "server/src/ezllmrouter_server/states.py": "9449c479ff9f90fd1212e66b05aaaa413197728b83500cddc55056f566e04667",
+    "server/src/ezllmrouter_server/store.py": "d81e003f39413185d9a3505335213d614706afbee7ecf3993e04648a706a203b",
+    "server/src/ezllmrouter_server/store_results.py": "57a6ff7de36a4d6e7527475b385d1a10e516b72bd185ee8806a19cdf35e9e0e5",
+    "server/src/ezllmrouter_server/store_successor.py": "e027e85e3317a68fa812aeb369424b552ada0f3938e9ad9d4c12a8212eed6620",
+    "server/src/ezllmrouter_server/store_work.py": "d877a37ca38a407cb138f96548ec8bb80af61f0d22d0d782ef94cbe585281631",
+    "server/src/ezllmrouter_server/successor_contract.py": "35b5ed7fb184d7fbbec8337f09df45e0a32295882eeee6f9b07fbff42d06a53a",
+    "server/src/ezllmrouter_server/successor_plan.py": "df4069c11c8624cf9088fb05f5c06739fb621b14efd7a4e5d1de3ecacf220d01",
+    "server/src/ezllmrouter_server/successor_reporting.py": "c3ea7e463261dbea93c5bd5d54b9800e1bfd9517ab4fbd7bb2e61871c8966109",
+    "server/src/ezllmrouter_server/user_management.py": "9f9972ea0ff682d1d8d627eb3d153f962f940d8486fa0f4dfed98c1f0db716df",
+    "server/src/ezllmrouter_server/web.py": "0941179b4e5a5088b1de6d1302e22abe2c9d0c1b0790b7cf31a88e1b81773f5e",
+    "server/src/ezllmrouter_server/wire_http/__init__.py": "198efd2b01ed3c69b20943ffea765aa5bd8aae05303380bf1df5b56c6945e1f1",
+    "server/src/ezllmrouter_server/wire_http/contracts.py": "23a5e353f526f6159c10870f4d22c0fee14fec4888e5be3cbe7e278470f00dae",
+    "server/src/ezllmrouter_server/wire_http/exports.py": "9a90112cbe7a848a2b24ba42d6d27101652c29c14e1f7a47672f59b594f1ed90",
+    "server/src/ezllmrouter_server/wire_http/handler.py": "e16a07ada318c21e344fa8e501b55f6845290c2c6ed25ad5ee6975559552fa6f",
+    "server/src/ezllmrouter_server/wire_http/integration.py": "17b8c2e6269919041bbf3bc50628a1c2afb785d549a4c8fdec83933ea7638ca9",
+    "server/src/ezllmrouter_server/wire_http/transport.py": "5d1892925d29699b610584107f61a99901256d5d01301343ca8a01a300e178a7",
+    "tests/tool_cycle/compose.yaml": "73024139fb6b121b02dbed1682e5f723602439100f7f9adbeccb6fd837f7e220",
+    "tools/deployment_qualification.py": "e689ec552d5a819fc3d9fa98591699361ae7ba796a9e39b30edc87a13fc3db0d",
+    "tools/gateway/worker_package.py": "bd3bda3f9eca0669b16465d0493ff66f47ff55274914a242915064c8816ac0c2",
+    "tools/qualification_storage.py": "dd2ef28d781c662bfb0bef548d2fd814f999f69d21f8f60571b0aa37db0b24ea",
+    "tools/volume_archive.py": "d82fada7b4b27ee62d23fa628af31055051758b301737937d960b5a93a2bc8c3",
+    "worker/ezllmrouter_worker/__init__.py": "daf5bd4efc847566b08c5ea16e4157f1a10b7da7de0afc6117ebf70ab6ea72b2",
+    "worker/ezllmrouter_worker/__main__.py": "66e8b45b34200811abea18431c43c388a03a6432d6581c4c5c9b5fc46552b76f",
+    "worker/ezllmrouter_worker/worker.py": "7c83dcf2ec878b212990869dde4e135ac4510f901dbc252b8187d0881f0dab74"
+  },
+  "probe_sha256": "b6783c5a7ba9074e068164286512f48827237c0deab085ccd9cf042b36efb374",
+  "probe_source_sha256": "6be91ded5828150dc426e8cea3abdd536fe178506a8fdc318bc5b710431e1ab2",
+  "images": {
+    "js": {
+      "image": "sha256:797e1f51cd71805bd0fb990aa5157562312e0463c103e43ebb6b4911c6ec9d29",
+      "elf_sha256": "25526a2adaa8128d59ec87a003bb823b38ab0713efbb2055983eac7e7c8223d4",
+      "closure_sha256": "1212b256119104bc496b88c8a706cc6e3b9f2b38ab401ea8b0276a5d4a1a0b0f",
+      "runtime": {
+        "uid": 1000,
+        "euid": 1000,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "python": {
+      "image": "sha256:247c19105e894dfc58f8961d8bc5564cee5050a4fce20702ae2a8b36cbc49ea9",
+      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
+      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "runtime": {
+        "uid": 10001,
+        "euid": 10001,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "receiver": {
+      "image": "sha256:02464b1c70e0dc634bd1e6aab25dc978c4699432a751d60e71970e3fab53d33d",
+      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
+      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "runtime": {
+        "uid": 10001,
+        "euid": 10001,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "runtime_python": {
+      "image": "sha256:0e423820198a4020005d5e2b7b5edc11f94714a5c9b4be7d474738daaa00e6de",
+      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
+      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "runtime": {
+        "uid": 10001,
+        "euid": 10001,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "service": {
+      "image": "sha256:06245d93ad8cf94d7f9439836320ba7ae2324790d0628deed1f167482d9d7ca8",
+      "elf_sha256": "7542040be74c5def1ca2e1910fe5a0878989baf06969ddf38ce5ebe3eea41076",
+      "closure_sha256": "ffc4f390da5a2085dbfc07d0ebe46545f69e4bd1257650737a278dd8790b3de0",
+      "runtime": {
+        "uid": 10001,
+        "euid": 10001,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "worker": {
+      "image": "sha256:ab735de7ae26d027d55e92cdef0bed3bb9c32ed09b6c589493fdc034d7d06eb3",
+      "elf_sha256": "a51929de0d9ccc6303cbd36a8d636223fef67d1ba32001a8b95a7d20f8002978",
+      "closure_sha256": "8a0a965a12e926db7cb1af6cfdd8ba0a59098f759a179246992f85f9437d4c3f",
+      "runtime": {
+        "uid": 10001,
+        "euid": 10001,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    },
+    "dev09_js": {
+      "image": "sha256:a984031a0c1f7ab4a88b90ce21f09844b60be737c97b5dd66c07ce920d5462e3",
+      "elf_sha256": "25526a2adaa8128d59ec87a003bb823b38ab0713efbb2055983eac7e7c8223d4",
+      "closure_sha256": "1212b256119104bc496b88c8a706cc6e3b9f2b38ab401ea8b0276a5d4a1a0b0f",
+      "runtime": {
+        "uid": 1000,
+        "euid": 1000,
+        "no_new_privs": 1,
+        "guard_global": true,
+        "guard_outside_thread_stack": true,
+        "guard_readonly": true,
+        "locale": "C.UTF-8"
+      }
+    }
+  },
+  "reviews": {
+    "DEBIAN-CVE-2010-4756": {
+      "condition": "native_patterns",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "f188299951f6f59f361046110848b4d5f15096e4e4fc03938e26a962842757e7",
+      "cna_sha256": "9104bc5077e2d52af544e7cc63d06b7a52381d542410fafbbdf5fbd7c5187cf8",
+      "reason": "The exact owned server/worker source has no native-call, process-execution or dynamic-code entry point. Full ELF dependency closure, including every installed Python extension and its dependencies, has no imported glibc glob/regex caller. Python re/pathlib use their own matching implementations. The prior worker bundled Kerberos callers; the reduced exact-version libpq bundle removes them. System CLI tools are outside the qualified application execution path. This decision applies only to the recorded profile, not arbitrary native plugins or command execution.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2010-4756"
+      ]
+    },
+    "DEBIAN-CVE-2018-20796": {
+      "condition": "native_patterns",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "63135cc9c17b1bd38401a2ebefbf479a2dff4e935ad5318898ad4ebece8ede66",
+      "cna_sha256": "c91c40844c248d89700701a13b6d15f18871b6a17619feb8f4b6159a8f9c5b11",
+      "reason": "The exact owned server/worker source has no native-call, process-execution or dynamic-code entry point. Full ELF dependency closure, including every installed Python extension and its dependencies, has no imported glibc glob/regex caller. Python re/pathlib use their own matching implementations. The prior worker bundled Kerberos callers; the reduced exact-version libpq bundle removes them. System CLI tools are outside the qualified application execution path. This decision applies only to the recorded profile, not arbitrary native plugins or command execution.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2018-20796"
+      ]
+    },
+    "DEBIAN-CVE-2019-9192": {
+      "condition": "native_patterns",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "ff99162752d145deb9143349a3bba0f68f0f1839418c0a84865e9a22d0263781",
+      "cna_sha256": "61934c4b65780b2dd07fd292f8afad2ce26801896eb282b2b8e344f3f1c11b30",
+      "reason": "The exact owned server/worker source has no native-call, process-execution or dynamic-code entry point. Full ELF dependency closure, including every installed Python extension and its dependencies, has no imported glibc glob/regex caller. Python re/pathlib use their own matching implementations. The prior worker bundled Kerberos callers; the reduced exact-version libpq bundle removes them. System CLI tools are outside the qualified application execution path. This decision applies only to the recorded profile, not arbitrary native plugins or command execution.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2019-9192"
+      ]
+    },
+    "DEBIAN-CVE-2019-1010022": {
+      "condition": "aarch64_guard",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "a76450a4a96c9ff8668f7b7d3bc5cfca5cdc02d7430b6b7cfc3fb3427454415c",
+      "cna_sha256": "d93155969ac931b1d31e3996ef43956860bfea9409157ee1f301c80390358824",
+      "reason": "Upstream bug 22850 describes x86/x86-64 stack_guard in the thread control block. Every native object is AArch64. The actual loader exports a read-only global __stack_chk_guard outside a newly created thread stack, with the same reference in that thread. This is a verified platform precondition difference, not a conclusion based solely on disputed status.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2019-1010022"
+      ]
+    },
+    "DEBIAN-CVE-2019-1010023": {
+      "condition": "trusted_native_inputs",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "ae9e7f4911133734b450688792cdcbd6ebe7d0fb6ad3d52eed1eb451ae2efa7c",
+      "cna_sha256": "f31f3d48c55e9280702a0c5712930e549e015a79eee725e9692d9cd71823bbf9",
+      "reason": "Every ELF loadable-segment table in the immutable images is inspected without executing inspected files and has ordered load segments. The exact qualified application loads only reviewed frozen/native objects from read-only image paths; owned server/worker sources expose no process/native-call/dynamic-code entry point. Qualification checks read-only roots and fixed code mounts. No untrusted ELF inspection/loading interface is admitted. Running ldd or native plugins on untrusted files is outside this reviewed profile.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2019-1010023"
+      ]
+    },
+    "DEBIAN-CVE-2026-84243": {
+      "condition": "fixed_locale",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "e5c0daa277fa2f06d773b2accf52bf3a556d096f2767384aacc36b0c94535122",
+      "cna_sha256": "31d4067d2b0ea256acc500d6ff5f2883fd800e7281d5695034b252fb313a8da7",
+      "reason": "The actual native process selects C.UTF-8, with fixed LANG=LC_ALL=C.UTF-8 and LANGUAGE=C in images and qualified running roles. The upstream advisory states LANGUAGE is ignored for C/C.<encoding>/POSIX LC_MESSAGES. No external locale/environment selection interface is present in the exact owned source. This recorded precondition is rechecked and does not approve other locale configurations.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-84243"
+      ]
+    },
+    "DEBIAN-CVE-2005-2541": {
+      "condition": "unprivileged_archive_path",
+      "ecosystem": "Debian:13",
+      "source": "tar",
+      "source_version": "1.35+dfsg-3.1",
+      "advisory_sha256": "497c3b768c9aa1560f5136ed38ff6b03fc98e66c89984f573eaad374e3b352f0",
+      "cna_sha256": "b333988692f6ef9fb83bf4ab754f0133686c9e424620c874666c17682ccb7ed5",
+      "reason": "The qualified runtime is non-root, read-only, zero-capability and no-new-privileges. Native probes verify the actual non-root user and kernel flag. The cold-copy helper parses bounded physical USTAR itself and rejects setuid/setgid bits, links and special files before writing; it does not invoke tar for extraction. Owned application sources expose no process-execution/archive CLI interface. The tar warning/privilege-preservation case is outside this exact execution path; package behavior itself is not claimed fixed.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2005-2541"
+      ]
+    },
+    "DEBIAN-CVE-2026-84785": {
+      "condition": "no_incoming_quic",
+      "ecosystem": "Debian:13",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+      "advisory_sha256": "f6d0880c31c7da7d496dda76f2c1371046ceee922765dfdbe454c9e994e01fee",
+      "cna_sha256": "c56281ae4e0683734a56fb867fa145d7fc317de7d40cf88f810a00fbea08e2f6",
+      "reason": "The qualified Python/Node roles use TCP HTTP/TLS and expose no incoming QUIC stream interface. Full application ELF closure has no QUIC method, stream-acceptance or incoming-policy API caller. The owned sources expose no native-call or dynamic-code interface. The canonical advisory requires non-default acceptance of peer-initiated QUIC streams; this precondition is false in the exact reviewed profile. This is not an upstream code-fix claim.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-84785"
+      ]
+    }
+  },
+  "scope": "Exact disposable-qualified Linux ARM64 profile only. These not_affected preconditions do not fix upstream packages or approve other profiles, arbitrary native execution or production acceptance.",
+  "native_advisory_updates": {
+    "DEBIAN-CVE-2026-107494": {
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "patch_sha256": "c1726a50d589b2dc289727865c184382c2bd846733ddb139427062713ebeb5bd",
+      "previous_advisory": {
+        "id": "DEBIAN-CVE-2026-107494",
+        "details": "Issue summary: The QUIC stack queues a RETIRE_CONNECTION_ID frame also for retransmitted NEW_CONNECTION_ID frames. This allows a remote malicious QUIC stack to queue an unlimited number of RETIRE_CONNECTION_ID frames.  Impact summary: A malicious remote QUIC peer can trigger an out-of-memory condition causing a Denial of Service.  CWE: CWE-770: Allocation of Resources Without Limits or Throttling  Description: The earlier fix for CVE-2026-84784 was not complete. It failed to ignore retransmissions of the NEW_CONNECTION_ID frame. The QUIC implementation created and inserted a RETIRE_CONNECTION_ID frame for every retransmitted NEW_CONNECTION_ID frame it received and there was no limit on how many RETIRE_CONNECTION_ID frames were queued. This allows a malicious remote QUIC stack to trigger an out-of-memory (OOM) condition.  FIPS impact: no The FIPS module is not affected as the QUIC implementation is outside the OpenSSL FIPS module boundary.",
+        "modified": "2026-11-23T14:00:05.423724768Z",
+        "published": "2026-11-18T12:17:01.347Z",
+        "upstream": [
+          "CVE-2026-107494"
+        ],
+        "references": [
+          {
+            "type": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2026-107494"
+          }
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:12",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=bookworm"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.0.10-1",
+              "3.0.10-1~deb12u1",
+              "3.0.11-1",
+              "3.0.11-1~deb12u1",
+              "3.0.11-1~deb12u2",
+              "3.0.12-1",
+              "3.0.12-2",
+              "3.0.13-1~deb12u1",
+              "3.0.13-1~deb12u2",
+              "3.0.14-1~deb12u1",
+              "3.0.14-1~deb12u2",
+              "3.0.15-1~deb12u1",
+              "3.0.16-1~deb12u1",
+              "3.0.17-1~deb12u1",
+              "3.0.17-1~deb12u2",
+              "3.0.17-1~deb12u3",
+              "3.0.18-1~deb12u1",
+              "3.0.18-1~deb12u2",
+              "3.0.19-1~deb12u1",
+              "3.0.19-1~deb12u2",
+              "3.0.20-1~deb12u1",
+              "3.0.20-1~deb12u2",
+              "3.0.22-1~deb12u1",
+              "3.0.22-1~deb12u2",
+              "3.0.9-1",
+              "3.1.0-1",
+              "3.1.1-1",
+              "3.1.2-1",
+              "3.1.3-1",
+              "3.1.4-1",
+              "3.1.4-2",
+              "3.1.5-1",
+              "3.1.5-1.1",
+              "3.1.5-1.1+hurd.1",
+              "3.2.0-1",
+              "3.2.0-2",
+              "3.2.1-1",
+              "3.2.1-1.1~exp1",
+              "3.2.1-2",
+              "3.2.1-3",
+              "3.2.2-1",
+              "3.3.0-1",
+              "3.3.0~beta1-1",
+              "3.3.1-1",
+              "3.3.1-2",
+              "3.3.1-5",
+              "3.3.1-6",
+              "3.3.1-7",
+              "3.3.2-1",
+              "3.3.2-2",
+              "3.4.0-1",
+              "3.4.0-2",
+              "3.4.0~~beta1-1",
+              "3.4.0~~beta1-2",
+              "3.4.1-1",
+              "3.5.0-1",
+              "3.5.0-2",
+              "3.5.0-3",
+              "3.5.0~~alpha1-1",
+              "3.5.0~~beta1-1",
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-107494.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:13",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=trixie"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.1-1+deb13u1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-107494.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:14",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=forky"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-107494.json"
+            }
+          }
+        ],
+        "schema_version": "1.9.2",
+        "severity": [
+          {
+            "type": "CVSS_V3",
+            "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          }
+        ]
+      },
+      "advisory_sha256": "627b7dcff99069aa27e0c407b354b7032819aa1354e708242a5083e9f6f0cabb",
+      "reason": "The Debian:13 affected record and all non-affected/modified fields are identical. Only other Debian suite records and the modification timestamp changed. The exact reviewed source patch and every native output remain unchanged."
+    },
+    "DEBIAN-CVE-2026-121482": {
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "patch_sha256": "6bdbb111a7ce640e42c558aaf912fe19b3770aa9afc7c8c5a0d36d20dcb2d5e9",
+      "previous_advisory": {
+        "id": "DEBIAN-CVE-2026-121482",
+        "details": "Verifying a maliciously crafted CMS or PKCS#7 SignedData message with CRL checking enabled may consume excessive CPU time, growing with the square of the message size.",
+        "modified": "2026-11-21T16:00:06.248120908Z",
+        "published": "2026-11-18T12:17:04.423Z",
+        "upstream": [
+          "CVE-2026-121482"
+        ],
+        "references": [
+          {
+            "type": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2026-121482"
+          }
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:12",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=bookworm"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.0.10-1",
+              "3.0.10-1~deb12u1",
+              "3.0.11-1",
+              "3.0.11-1~deb12u1",
+              "3.0.11-1~deb12u2",
+              "3.0.12-1",
+              "3.0.12-2",
+              "3.0.13-1~deb12u1",
+              "3.0.13-1~deb12u2",
+              "3.0.14-1~deb12u1",
+              "3.0.14-1~deb12u2",
+              "3.0.15-1~deb12u1",
+              "3.0.16-1~deb12u1",
+              "3.0.17-1~deb12u1",
+              "3.0.17-1~deb12u2",
+              "3.0.17-1~deb12u3",
+              "3.0.18-1~deb12u1",
+              "3.0.18-1~deb12u2",
+              "3.0.19-1~deb12u1",
+              "3.0.19-1~deb12u2",
+              "3.0.20-1~deb12u1",
+              "3.0.20-1~deb12u2",
+              "3.0.22-1~deb12u1",
+              "3.0.22-1~deb12u2",
+              "3.0.9-1",
+              "3.1.0-1",
+              "3.1.1-1",
+              "3.1.2-1",
+              "3.1.3-1",
+              "3.1.4-1",
+              "3.1.4-2",
+              "3.1.5-1",
+              "3.1.5-1.1",
+              "3.1.5-1.1+hurd.1",
+              "3.2.0-1",
+              "3.2.0-2",
+              "3.2.1-1",
+              "3.2.1-1.1~exp1",
+              "3.2.1-2",
+              "3.2.1-3",
+              "3.2.2-1",
+              "3.3.0-1",
+              "3.3.0~beta1-1",
+              "3.3.1-1",
+              "3.3.1-2",
+              "3.3.1-5",
+              "3.3.1-6",
+              "3.3.1-7",
+              "3.3.2-1",
+              "3.3.2-2",
+              "3.4.0-1",
+              "3.4.0-2",
+              "3.4.0~~beta1-1",
+              "3.4.0~~beta1-2",
+              "3.4.1-1",
+              "3.5.0-1",
+              "3.5.0-2",
+              "3.5.0-3",
+              "3.5.0~~alpha1-1",
+              "3.5.0~~beta1-1",
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-121482.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:13",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=trixie"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.1-1+deb13u1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-121482.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:14",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=forky"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-121482.json"
+            }
+          }
+        ],
+        "schema_version": "1.9.2",
+        "severity": [
+          {
+            "type": "CVSS_V3",
+            "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          }
+        ]
+      },
+      "advisory_sha256": "6d5a9d758f1a1e0a4e2c307419cc6a05e229379edc78b8f35ba67b89a1566107",
+      "reason": "The Debian:13 affected record and all non-affected/modified fields are identical. Only other Debian suite records and the modification timestamp changed. The exact reviewed source patch and every native output remain unchanged."
+    }
+  }
+}

@@ -139,7 +139,38 @@ def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
     }
 
 
-def apply_reviews(report: dict, snapshot: dict, images: dict, captures: dict, native: dict) -> dict:
+def reviewed_advisory(current: dict, review: dict, native_id: str, update: dict | None) -> bool:
+    if canonical(current) == review["advisory_sha256"]:
+        return True
+    if not update:
+        return False
+    previous = update["previous_advisory"]
+
+    def stable(value):
+        return {key: row for key, row in value.items() if key not in {"affected", "modified"}}
+
+    def target(value):
+        return [row for row in value["affected"] if row["package"]["ecosystem"] == "Debian:13"]
+
+    return (
+        update["native_build"] == native_id
+        and update["patch_sha256"] == review["patch_sha256"]
+        and canonical(previous) == review["advisory_sha256"]
+        and canonical(current) == update["advisory_sha256"]
+        and stable(previous) == stable(current)
+        and target(previous) == target(current)
+        and bool(update["reason"].strip())
+    )
+
+
+def apply_reviews(
+    report: dict,
+    snapshot: dict,
+    images: dict,
+    captures: dict,
+    native: dict,
+    advisory_updates: dict | None = None,
+) -> dict:
     archives = report.get("archive_proof")
     sources = {"image:" + name + ":" + value["image"]["id"]: name for name, value in images.items()}
     all_copies = (
@@ -165,7 +196,12 @@ def apply_reviews(report: dict, snapshot: dict, images: dict, captures: dict, na
             continue
         valid = (
             all_copies
-            and canonical(snapshot["vulnerabilities"][decision["id"]]) == review["advisory_sha256"]
+            and reviewed_advisory(
+                snapshot["vulnerabilities"][decision["id"]],
+                review,
+                native["id"],
+                (advisory_updates or {}).get(decision["id"]),
+            )
             and bool(package["sources"])
         )
         for source in package["sources"]:
@@ -198,4 +234,6 @@ def apply_reviews(report: dict, snapshot: dict, images: dict, captures: dict, na
     report["effective_blocking"] = sum(row["effective_blocking"] for row in report["decisions"])
     report["native_captures"] = captures
     report["native_build"] = native["id"]
+    if advisory_updates:
+        report["native_advisory_updates_sha256"] = canonical(advisory_updates)
     return report

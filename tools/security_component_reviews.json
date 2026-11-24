@@ -218,7 +218,7 @@
       "ecosystem": "Debian:13",
       "source": "util-linux",
       "source_version": "2.41.5-0+deb13u1",
-      "advisory_sha256": "b4d7c79cb6d85fbcb3103d8e8ff24c0998533a09477d17ce9e111926773ff736",
+      "advisory_sha256": "959bd0254ba06fb14cba87853bccf17f54cb358dc7dcec666d876d58f11e3266",
       "cna_sha256": "758b9f2f52558899b5632cde3a80eb882cf8f4b295f3fe503a8f2f425e4c42ee",
       "allowed_binaries": [
         "libuuid1"
@@ -242,7 +242,7 @@
       "ecosystem": "Debian:13",
       "source": "util-linux",
       "source_version": "2.41.5-0+deb13u1",
-      "advisory_sha256": "51a0291dc04b872b364e0e08d449beeed5c7a53dda2b2cbc2fe56063ea43b1a9",
+      "advisory_sha256": "88d9036cfecde8c499b8c6061c6c9f3ca7f1035b9071dd55f886bc4ecaf192b9",
       "cna_sha256": "0421881715f8df619b1ea7aa3060784bae2db9db3952a77f7eb01f8ea15e8d6c",
       "allowed_binaries": [
         "libuuid1"
@@ -264,7 +264,7 @@
       "ecosystem": "Debian:13",
       "source": "util-linux",
       "source_version": "2.41.5-0+deb13u1",
-      "advisory_sha256": "6a64229359fafc9c25c7b1cb2a8a78ba1738d1771cc5f830659b87fa8c653e8b",
+      "advisory_sha256": "31c0957eccbc0d54dbf91a75ed18974bb4ca37f7a544578dc7932d62dee95381",
       "cna_sha256": "0ae20866a7949e29fee48dd88290279017dd9a36ae0697730430345135af13ab",
       "allowed_binaries": [
         "libuuid1"

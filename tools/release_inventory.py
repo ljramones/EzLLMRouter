@@ -301,6 +301,13 @@ def main() -> int:
                 else None
             )
             dispositions = evaluate(issues, snapshot, captured, proofs, policy, archives)
+            profile_policy = None
+            if args.profile_reviews:
+                from tools.security_profile import load_policy as load_profile
+
+                profile_policy = load_profile(
+                    args.profile_reviews, Path(__file__).resolve().parents[1], images
+                )
             if args.native_reviews:
                 from tools.security_native import capture as capture_native, apply_reviews
 
@@ -311,18 +318,17 @@ def main() -> int:
                     for name, image in captured.items()
                 }
                 dispositions = apply_reviews(
-                    dispositions, snapshot, captured, native_proofs, native
+                    dispositions,
+                    snapshot,
+                    captured,
+                    native_proofs,
+                    native,
+                    profile_policy.get("native_advisory_updates") if profile_policy else None,
                 )
             if args.profile_reviews:
-                from tools.security_profile import (
-                    load_policy as load_profile,
-                    apply_reviews as apply_profile,
-                )
+                from tools.security_profile import apply_reviews as apply_profile
                 from tools.security_profile_capture import capture as capture_profile
 
-                profile_policy = load_profile(
-                    args.profile_reviews, Path(__file__).resolve().parents[1], images
-                )
                 profile_proofs = {
                     name: capture_profile(image, args.profile_probe, profile_policy, name)
                     for name, image in captured.items()
