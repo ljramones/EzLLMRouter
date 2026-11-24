@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | Audit tooling and exact target capture implemented; current release acceptance remains blocked by one newly published Zstandard finding. All 33 original blockers are resolved for the qualified Linux ARM64 profile. The fresh 343-entry inventory has 73 raw matches and 28 raw blockers: ten component dispositions, nine native backport fixes and eight expiring profile decisions leave CVE-2026-124851 open. The minimal PostgreSQL bundle removes unused Kerberos/LDAP and extra OpenSSL copies while retaining the worker proxy interface and all 117 hash-pinned wheels. All seven images pass native dependency inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings and rating vectors remain visible. Profile-specific decisions do not claim upstream fixes or qualify other deployments. See the November 24 record below. Persistent profile and production acceptance are unchanged. |
+| T04 | Supply-chain, secret and static security scans | The current qualified Linux ARM64 dependency gate has zero effective blockers. All 33 original blockers and the subsequent Zstandard finding are resolved for that profile. The fresh 343-entry inventory retains 73 raw matches and 28 raw blockers: ten component dispositions, nine OpenSSL backport fixes, eight expiring profile decisions and one Zstandard source fix account for all 28. Both system and embedded Zstandard copies use reviewed 1.6.0; all 117 frozen wheels remain identical to the preceding bundle. All seven images pass native inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings and rating vectors remain visible. Scoped decisions do not fix upstream packages or qualify other deployments. See the Zstandard completion record below. Persistent profile and production acceptance are unchanged. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -291,19 +291,64 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## Zstandard completion, 2026-11-24
+
+The fresh dependency gate now has **zero effective blockers for the exact
+qualified Linux ARM64 profile**. Zstandard 1.6.0 replaces both the system
+`libzstd1` library and Node 24.22.3 embedded copy, closing CVE-2026-124851. The
+343-entry inventory still retains all 73 raw matches and 28 raw blockers. Ten
+component dispositions, nine OpenSSL backport fixes, eight expiring profile
+precondition decisions and this one source fix account for those 28 matches.
+The original 33 blockers also remain resolved within the recorded scope.
+
+The [codec build guide](../deploy/local/inputs/native/README.md#system-and-embedded-zstandard)
+describes the exact publisher source hash, signature limits and offline build
+parents. A bounded history-window regression fails on 1.5.7 and passes on 1.6.0;
+upstream unit tests and 1,000 fuzz iterations pass. The final tracked packaging
+recipe reproduces the selected archive hash. The native OpenSSL and minimal
+PostgreSQL parent identities stay unchanged, as do all 117 frozen wheel files
+and the LiteLLM 1.106.12 selection.
+
+Version 1.6.0 removes the deprecated experimental `ZSTD_copyCCtx` and
+`ZSTD_copyDCtx` APIs; the other 185 parent exports remain. All **3,800 installed
+ELF objects across seven images** are inspected without execution and have no
+callers of those two APIs. Exact system code/alias hashes, the absence of the
+old system copy, Node executable hashes and its embedded 1.6.0 version are
+required. Both Node images retain the exact bundled CA set and pass authenticated
+encryption and signature checks against the shared OpenSSL backport.
+
+All six disposable builds and isolation/client/restart/restore checks pass, plus
+the seventh JavaScript SDK/policy smoke. The complete source gate, including
+loopback cases, passes **1,538 tests across 222 module executions without skips**.
+All 99 source-bound TLS/database/recovery cases pass in the new service image.
+The fresh advisory snapshot is from `2026-11-24T20:40:34.833144+00:00`; canonical
+advisory contents and existing exact update reviews remain valid. Profile
+preconditions are rechecked against all new images and their qualification.
+Raw findings, complete responses, initial attempts and validation evidence remain
+under ignored `.artifacts/zstd-remediation/`.
+
+Qualified runtime source: `29a87a15c71f172a8c3154b5f321eaed5c205b11`;
+fingerprint `0ec2c37c514f329fd090e76364e817e5ca451b4656b95d8ce6088e6f8bf8c8f0`;
+source packet SHA-256
+`905ab3c03dab574e0072463f645dec118e626953072550cd26538642634708c2`.
+Subsequent policy/documentation records preserve those runtime input bytes.
+The eight profile decisions remain expiring `not_affected` assessments, not
+upstream fixes or approval for other architectures or runtime interfaces.
+The persistent profile and production acceptance remain unchanged.
+
 ## Final seven profile findings and fresh advisories, 2026-11-24
 
-All **33 original blockers are resolved for the exact qualified Linux ARM64
-profile**. The remaining seven glibc/tar cases have expiring, executable
+At the preceding checkpoint, all **33 original blockers were resolved for the
+exact qualified Linux ARM64 profile**. The remaining seven glibc/tar cases have expiring, executable
 `not_affected` decisions tied to that profile; their upstream packages are not
 claimed fixed. The fresh November 24 scan also adds two findings. The new QUIC
 case, CVE-2026-84785, requires acceptance of incoming QUIC streams, absent from
 the reviewed application dependency closure and interfaces. The new Zstandard
-case, **CVE-2026-124851, remains blocking**. Release acceptance therefore still
-has **one effective blocker**. The persistent profile and production acceptance
+case, **CVE-2026-124851, remained blocking at that checkpoint**. The dependency
+gate then had **one effective blocker**. The persistent profile and production acceptance
 remain unchanged.
 
-The current 343-entry inventory has 73 raw matches and 28 raw blockers. Ten exact
+That checkpoint had a 343-entry inventory with 73 raw matches and 28 raw blockers. Ten exact
 component dispositions, nine native backport fixes and eight qualified-profile
 decisions leave that one blocker. Raw severity and source attribution remain in
 the complete advisory report. Three util-linux advisory timestamps changed;
@@ -350,10 +395,10 @@ The source packet SHA-256 is
 `1d18eb8853e60c285999a0c02a6a70a07d82ed5a5ff7b48b2c77713deb8c0185`.
 Subsequent advisory/tooling records preserve those runtime source/input bytes.
 
-The next dependency work is the new Zstandard disclosure, including both the
-retained system library and Node's embedded copy. No reviewed replacement or
-backport is selected by this record. This open case prevents a claim of zero
-current blockers.
+The next dependency work at that checkpoint was the Zstandard disclosure,
+including both the system library and Node's embedded copy. No replacement or
+backport was selected by that record. The completion above supersedes its open
+blocker status.
 
 ## OpenSSL native backports, 2026-11-23
 

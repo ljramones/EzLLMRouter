@@ -173,6 +173,18 @@ archive and runtime-copy verification; ordinary source preflight cannot establis
 that an installed image contains the fix. Release acceptance still requires review of all
 remaining advisory findings and the qualified target's evidence.
 
+The v4 lock's `native_codec` record separately binds the reviewed Zstandard 1.6.0
+system library and Node embedded copy to their preceding native build. The exact
+source, recipes and two output hashes are recorded; the original OpenSSL/driver
+build identities remain explicit parents. Verification requires the system
+library and alias hashes, no old system copy, Node's final executable hash and
+embedded version, all attributed images and selected archives. The upstream
+1.6.0 release fixes CVE-2026-124851; the local package suffix does not suppress
+raw advisory queries. Full installed ELF inspection also rejects callers of the
+two deprecated experimental APIs removed in 1.6.0. See the
+[codec build guide](../deploy/local/inputs/native/README.md#system-and-embedded-zstandard)
+for provenance, compatibility limits and regression evidence.
+
 The runtime OS policy removes 19 additional unused login, PAM, mount/namespace and
 terminal packages with an exact sealed removal list. libc, GCC runtime libraries,
 certificates, dpkg/tar and timezone support remain. Qualification rejects removed

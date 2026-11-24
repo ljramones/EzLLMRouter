@@ -1,9 +1,9 @@
 {
   "format": "ezllmrouter-profile-reviews-v1",
-  "reviewed_at": "2026-11-24T19:35:00.209473+00:00",
-  "expires_at": "2026-12-01T19:35:00.209473+00:00",
-  "qualification_sha256": "3fb38a675f086505bd08eb9604127d367f86607e9e0dd7e082e2c6751068daab",
-  "source_packet_sha256": "1d18eb8853e60c285999a0c02a6a70a07d82ed5a5ff7b48b2c77713deb8c0185",
+  "reviewed_at": "2026-11-24T20:41:24.715020+00:00",
+  "expires_at": "2026-12-01T20:41:24.715020+00:00",
+  "qualification_sha256": "b3b8effe95ddf19d6c21997efb50e1954b3bb87b802bf631ee1a1d3dcc857881",
+  "source_packet_sha256": "905ab3c03dab574e0072463f645dec118e626953072550cd26538642634708c2",
   "source_sha256": {
     "deploy/local/compose.yaml": "1fac78a5e17c71ce355bdc7d97b6fdf73034051609a26ff4ba495536a3fe2e8f",
     "server/src/ezllmrouter_server/__init__.py": "def99af69a4215eea726e1b61570a74dbb19579a0b27b1ab84f5fdec2e8d04b3",
@@ -164,9 +164,9 @@
   "probe_source_sha256": "6be91ded5828150dc426e8cea3abdd536fe178506a8fdc318bc5b710431e1ab2",
   "images": {
     "js": {
-      "image": "sha256:797e1f51cd71805bd0fb990aa5157562312e0463c103e43ebb6b4911c6ec9d29",
-      "elf_sha256": "25526a2adaa8128d59ec87a003bb823b38ab0713efbb2055983eac7e7c8223d4",
-      "closure_sha256": "1212b256119104bc496b88c8a706cc6e3b9f2b38ab401ea8b0276a5d4a1a0b0f",
+      "image": "sha256:84a85b295dd72edda8d2d17aca2af23fbebcc9730b892fbc2ef993f82d3dc232",
+      "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
+      "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
         "uid": 1000,
         "euid": 1000,
@@ -178,9 +178,9 @@
       }
     },
     "python": {
-      "image": "sha256:247c19105e894dfc58f8961d8bc5564cee5050a4fce20702ae2a8b36cbc49ea9",
-      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
-      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "image": "sha256:40c88149765bacad8ba4267eaa31eb1ee2aed80915851fdbb1b6001498ce1727",
+      "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
+      "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
         "uid": 10001,
         "euid": 10001,
@@ -192,9 +192,9 @@
       }
     },
     "receiver": {
-      "image": "sha256:02464b1c70e0dc634bd1e6aab25dc978c4699432a751d60e71970e3fab53d33d",
-      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
-      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "image": "sha256:7a1d48ecd2296a7c060b3bc5772153e1aedc7a23e118cdd9f5f0a963a412651e",
+      "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
+      "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
         "uid": 10001,
         "euid": 10001,
@@ -206,9 +206,9 @@
       }
     },
     "runtime_python": {
-      "image": "sha256:0e423820198a4020005d5e2b7b5edc11f94714a5c9b4be7d474738daaa00e6de",
-      "elf_sha256": "3ce5a3e55f393f18ffa5b29fb398ab13700091c61bfbced99992c74a7dda7bb5",
-      "closure_sha256": "f3d661b670394d11ad576895cbca3dc87078e62a8f7d95781601f8a4698fa884",
+      "image": "sha256:7e2495167b48902113369a463af2860dcd9b5d924b554ee79d26818895367f77",
+      "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
+      "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
         "uid": 10001,
         "euid": 10001,
@@ -220,9 +220,9 @@
       }
     },
     "service": {
-      "image": "sha256:06245d93ad8cf94d7f9439836320ba7ae2324790d0628deed1f167482d9d7ca8",
-      "elf_sha256": "7542040be74c5def1ca2e1910fe5a0878989baf06969ddf38ce5ebe3eea41076",
-      "closure_sha256": "ffc4f390da5a2085dbfc07d0ebe46545f69e4bd1257650737a278dd8790b3de0",
+      "image": "sha256:af8b1d7ae45441e96c853a84de22532cfd3a8b1e7ab985528ad5a5aeb771a445",
+      "elf_sha256": "8090595316add441b16691c3f8d99d3cf39146fa3b710fd7be10475a07473010",
+      "closure_sha256": "614c3836320b54088752ebb058ffd7aa022910f31af7ed7e8d31ba3d33d7e136",
       "runtime": {
         "uid": 10001,
         "euid": 10001,
@@ -234,9 +234,9 @@
       }
     },
     "worker": {
-      "image": "sha256:ab735de7ae26d027d55e92cdef0bed3bb9c32ed09b6c589493fdc034d7d06eb3",
-      "elf_sha256": "a51929de0d9ccc6303cbd36a8d636223fef67d1ba32001a8b95a7d20f8002978",
-      "closure_sha256": "8a0a965a12e926db7cb1af6cfdd8ba0a59098f759a179246992f85f9437d4c3f",
+      "image": "sha256:84b9ca4783c8d7a99f7069fc6bc13e5d8ce0caed5285a516af69a2e40b61e6fa",
+      "elf_sha256": "deaccca9eecf8296bfdd827f4336ab6b41f0345e1da6060874f7d9d0b654c24b",
+      "closure_sha256": "c8121ac7de3ce1ab1473707b3f63739b2c7c4043b681919fdce9ccac9d488715",
       "runtime": {
         "uid": 10001,
         "euid": 10001,
@@ -248,9 +248,9 @@
       }
     },
     "dev09_js": {
-      "image": "sha256:a984031a0c1f7ab4a88b90ce21f09844b60be737c97b5dd66c07ce920d5462e3",
-      "elf_sha256": "25526a2adaa8128d59ec87a003bb823b38ab0713efbb2055983eac7e7c8223d4",
-      "closure_sha256": "1212b256119104bc496b88c8a706cc6e3b9f2b38ab401ea8b0276a5d4a1a0b0f",
+      "image": "sha256:633eb642401c6cda49ae089a8c34677a8d65db332292eed1e67759a761c53d08",
+      "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
+      "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
         "uid": 1000,
         "euid": 1000,
