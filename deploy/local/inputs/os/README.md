@@ -29,6 +29,10 @@ the shared-SSL Node binary and cryptography wheel, all build recipes, source
 artifacts and exact output hashes. Local build origins remain explicit; original
 upstream versions are used for advisory queries. All copies require runtime proof
 before the native review can mark the nine exact advisories fixed.
+The separate `native_driver` record binds the minimal libpq/psycopg wheel,
+replacing its unneeded bundled Kerberos, LDAP and extra OpenSSL libraries while
+retaining the qualified worker's proxy interface. Both local wheels preserve
+their original upstream versions for advisory queries.
 Signed indexes, archive inspection and trial results are retained under ignored
 `.artifacts/dependency-resolution/`. No custom-built SQLite archive is selected.
 

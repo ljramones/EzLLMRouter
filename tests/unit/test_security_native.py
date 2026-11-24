@@ -180,6 +180,23 @@ class NativeReviewTests(unittest.TestCase):
         ):
             self.assertFalse(capture(self.images["service"], self.native)["valid"])
 
+    def test_unreviewed_postgresql_bundle_keeps_openssl_review_blocked(self):
+        image = self.images["service"]
+        image["application_packages"].append({"name": "psycopg-binary", "version": "3.3.6"})
+        versions = {
+            "openssl": "OpenSSL 3.5.9+ezllmrouter1 reviewed",
+            "crypto_openssl": "OpenSSL 3.5.9+ezllmrouter1 reviewed",
+            "cryptography": self.native["cryptography"]["version"],
+            "crypto_object_exists": True,
+            "psycopg_binary": "3.3.6",
+            "libpq": 180006,
+        }
+        with patch(
+            "tools.security_native.subprocess.check_output",
+            side_effect=["c" * 64 + "  /reviewed/library.so\0", json.dumps(versions)],
+        ):
+            self.assertFalse(capture(image, self.native)["valid"])
+
     def test_runtime_without_crypto_requires_absence_of_both_module_and_native_object(self):
         image = self.images["service"]
         image["application_packages"] = []

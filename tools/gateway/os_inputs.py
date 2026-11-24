@@ -13,9 +13,10 @@ import zipfile
 from urllib.parse import urlsplit
 
 if __package__:
-    from . import native_inputs
+    from . import driver_inputs, native_inputs
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import driver_inputs
     import native_inputs
 
 LOCK = "deploy/local/inputs/os/debian13-arm64.lock.json"
@@ -90,7 +91,12 @@ def validate_lock(data: dict) -> None:
         origins["forky"] = "14"
     if data["format"] == "ezllmrouter-debian-inputs-v4":
         native_inputs.validate(data)
-    elif "native_build" in data or any("native_build" in row for row in data["packages"]):
+        driver_inputs.validate(data)
+    elif (
+        "native_build" in data
+        or "native_driver" in data
+        or any("native_build" in row for row in data["packages"])
+    ):
         raise ValueError("native builds require the v4 lock")
     removals = data.get("runtime_removals")
     if (
@@ -183,6 +189,7 @@ def load_lock(root: Path) -> dict:
         raise ValueError("reviewed Debian installer identity mismatch")
     if "native_build" in data:
         native_inputs.verify_recipes(root, data["native_build"])
+        driver_inputs.verify_frozen(root, data)
     return data
 
 
@@ -190,6 +197,7 @@ def verify_archives(root: Path, store: Path) -> dict:
     data = load_lock(root)
     if "native_build" in data:
         native_inputs.verify_outputs(store, data["native_build"])
+        driver_inputs.verify_outputs(store, data)
     directory = store / STORE
     if directory.is_symlink() or not directory.resolve().is_relative_to(store.resolve()):
         raise ValueError("linked Debian artifact directory")

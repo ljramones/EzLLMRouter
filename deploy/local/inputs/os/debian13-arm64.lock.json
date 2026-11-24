@@ -1513,5 +1513,291 @@
         "reason": "The complete DANE fix and regression test from open upstream PR 33634 are locally reviewed and backported; this is not an upstream-merged release. All selected archives and every system, Node and cryptography runtime copy must match this build; upstream advisories remain visible."
       }
     }
+  },
+  "native_driver": {
+    "format": "ezllmrouter-native-driver-v1",
+    "id": "df04dcd51653f2b4666a2ffe830aa052ae913b7a68b3b3e5d0e3176af77eb017",
+    "inputs": {
+      "builder": "docker.io/library/python@sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd",
+      "openssl_native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "source_date_epoch": 1795478400,
+      "recipes": {
+        "deploy/local/inputs/native/postgresql.sh": "5c3df3fcdcdea101f1ae13685820bfffde8805f72418f98217e3fab348fec3e7",
+        "deploy/local/inputs/native/driver-relink.sh": "031bd36231f34c11ed0bc01cd712dbaa4db6c903bab86066ec6eb4a41f1d8bf9",
+        "deploy/local/inputs/native/driver.py": "07e6d7028186313ad78a62526c4a6362f6ebedf4f19a9de6dc9355563a3c32ff"
+      },
+      "artifacts": {
+        "postgresql-18.6.tar.gz.sha256": {
+          "bytes": 89,
+          "sha256": "1eec9dea3df1541e092d7bd5d758997356624fa8262597ed7bb5061ce18a5b46",
+          "url": "https://ftp.postgresql.org/pub/source/v18.6/postgresql-18.6.tar.gz.sha256"
+        },
+        "postgresql-18.6.tar.gz": {
+          "bytes": 29598283,
+          "sha256": "983ee554ec53dbeb9b70797bef9fcf4e67e117e7e48ca1463cc80b3ff8e8ff3f",
+          "url": "https://ftp.postgresql.org/pub/source/v18.6/postgresql-18.6.tar.gz"
+        },
+        "build-tools/bison_2%3a3.8.2+dfsg-1+b2_arm64.deb": {
+          "bytes": 1149324,
+          "sha256": "36b26ef0700504923089b4920e0bd704ff03de750515c90399cbc69bf43aed6d",
+          "url": "https://deb.debian.org/debian/pool/main/b/bison/bison_3.8.2+dfsg-1+b2_arm64.deb"
+        },
+        "build-tools/flex_2.6.4-8.2+b4_arm64.deb": {
+          "bytes": 411652,
+          "sha256": "2b5f5aa509bc12ef82cc42b854704ff538efabea9824b49ed53418f1eba43d51",
+          "url": "https://deb.debian.org/debian/pool/main/f/flex/flex_2.6.4-8.2+b4_arm64.deb"
+        },
+        "build-tools/m4_1.4.19-8_arm64.deb": {
+          "bytes": 284832,
+          "sha256": "6f1cd89c9f42844682e2aa8529511f53ad44d4ecb0f1df459a7302be0e1d4f85",
+          "url": "https://deb.debian.org/debian/pool/main/m/m4/m4_1.4.19-8_arm64.deb"
+        },
+        "build-tools/patchelf_0.18.0-1.4_arm64.deb": {
+          "bytes": 89320,
+          "sha256": "0c0f4fa523837615f649835ef9c396e5ae13095801980bffaf13351645f9075b",
+          "url": "https://deb.debian.org/debian/pool/main/p/patchelf/patchelf_0.18.0-1.4_arm64.deb"
+        },
+        "compiler/binutils-aarch64-linux-gnu_2.44-3_arm64.deb": {
+          "bytes": 820124,
+          "sha256": "79cbf1459118bce3535133ffbf1fd2adbd57af65271f95c829af5cfa7f474168"
+        },
+        "compiler/binutils-common_2.44-3_arm64.deb": {
+          "bytes": 2508772,
+          "sha256": "f2d6b7d0b5521c4c90fc105e32819cd5268c1aa69104173b3fb856595f898249"
+        },
+        "compiler/binutils_2.44-3_arm64.deb": {
+          "bytes": 261580,
+          "sha256": "7228716cad15e78d1571f1cd4ec7141f64608790d0fbcba23a07f2eda6298272"
+        },
+        "compiler/cpp-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 9168888,
+          "sha256": "8e588ac3efe06f7784b08feac584c70e6965b74c045bae7e4e80bb42938f7dbe"
+        },
+        "compiler/cpp-14_14.2.0-19_arm64.deb": {
+          "bytes": 1276,
+          "sha256": "0b440241f7c3e2e87f2d0f1dd36792c4e2705d38a699ed331818799f21ef9437"
+        },
+        "compiler/cpp-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 4832,
+          "sha256": "bd9c9f4536a0aea285c4735d2dfedff624f8457b8f1bb3d15ab924e029cd7aff"
+        },
+        "compiler/cpp_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1568,
+          "sha256": "88b702b0fa5942a4ee52c27f1ccf6316b831357e86693b709d216ba43348172e"
+        },
+        "compiler/g++-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 10059100,
+          "sha256": "411dac8f1c1d0293e58deddeb170c641ad82c56d51a95f056ee12ba02c24288b"
+        },
+        "compiler/g++-14_14.2.0-19_arm64.deb": {
+          "bytes": 22540,
+          "sha256": "f4813643994aa96c527e687c9c7d01855aa5fdd86e63cc8bd05c63ecc9373796"
+        },
+        "compiler/g++-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1200,
+          "sha256": "655d9a7cb70b0342f5f1bf4f2a7b0241df15d49ab9a2567445c785b7592122f9"
+        },
+        "compiler/g++_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1332,
+          "sha256": "e4b8f8fae7c838c40b9db29251b152c9af03a4d4463388d69efdda66c4e97e79"
+        },
+        "compiler/gcc-14-aarch64-linux-gnu_14.2.0-19_arm64.deb": {
+          "bytes": 17686496,
+          "sha256": "5ff736a332ba5d60ad463355ed25c8c39da1281acf9155cc2f8a55fc1d478be8"
+        },
+        "compiler/gcc-14_14.2.0-19_arm64.deb": {
+          "bytes": 529264,
+          "sha256": "f4ba77903d7efc3c64c69a8a98c7efa8ea1ae4331521bb74abd76bcc43f1b576"
+        },
+        "compiler/gcc-aarch64-linux-gnu_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 1440,
+          "sha256": "c8390408ed90cc96d4fead68e313ed5ce147f1654807c23235818d535d2d7d7e"
+        },
+        "compiler/gcc_4%3a14.2.0-1_arm64.deb": {
+          "bytes": 5136,
+          "sha256": "f543b52e29a6780a78c73cf08e551e8e524d623c1092c477cfd8beb5285a86f5"
+        },
+        "compiler/libasan8_14.2.0-19_arm64.deb": {
+          "bytes": 2577836,
+          "sha256": "5621bd583a3390b45726a8eebe23601f7fad86a25193e5349976cbf17e2bc9ad"
+        },
+        "compiler/libatomic1_14.2.0-19_arm64.deb": {
+          "bytes": 10128,
+          "sha256": "7ccff90234484bf21ae5ecb79d25b6a84b2f4038f65dd139085b2e3a937cd8dc"
+        },
+        "compiler/libbinutils_2.44-3_arm64.deb": {
+          "bytes": 660392,
+          "sha256": "c51c0cc0272202d00fc3e6da8b96bfed2a428c239b689363abddd3bac6bd7a02"
+        },
+        "compiler/libc-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 552664,
+          "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1"
+        },
+        "compiler/libc-dev-bin_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 59704,
+          "sha256": "44c20e31afd22ddbd40983c908377627b2f95c12b01f2989db8ead23f7f8aaeb"
+        },
+        "compiler/libc6-dev_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 1626676,
+          "sha256": "ff13ef61799ef4a9526a9e9568a8b91311f25f4211ea2ab1dd63028c000b0451"
+        },
+        "compiler/libc6_2.41-12+deb13u5_arm64.deb": {
+          "bytes": 2488872,
+          "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5"
+        },
+        "compiler/libcc1-0_14.2.0-19_arm64.deb": {
+          "bytes": 42164,
+          "sha256": "f5e390b5fd65432b820afa403a61ab4d6286948fc07ca3aacb4d230a81f5c9a5"
+        },
+        "compiler/libcrypt-dev_1%3a4.4.38-1_arm64.deb": {
+          "bytes": 123160,
+          "sha256": "eec6d4658495cdb8ce505cad91e0918edb8086677f280f3851c07ccd70543054"
+        },
+        "compiler/libctf-nobfd0_2.44-3_arm64.deb": {
+          "bytes": 152088,
+          "sha256": "7b1894cbd09bd59507af259ba680a1f5d3b68c6ba9e5d69508ea2d75b3f01be6"
+        },
+        "compiler/libctf0_2.44-3_arm64.deb": {
+          "bytes": 84232,
+          "sha256": "12cb7df9eafd965c00c38a8720c5b78e7b0106390f69fe180a3b3589f407d550"
+        },
+        "compiler/libgcc-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2358568,
+          "sha256": "64b8ebc7182a69aa9525df6eab5e7eb849b947e350d821549f8a8a3e9b19e5ba"
+        },
+        "compiler/libgdbm-compat4t64_1.24-2_arm64.deb": {
+          "bytes": 50320,
+          "sha256": "266b9a9e8d1ecc4393ebd29bec7e7c0fe1505b1d8755033af9e15df161316627"
+        },
+        "compiler/libgomp1_14.2.0-19_arm64.deb": {
+          "bytes": 123520,
+          "sha256": "43e84cb7971d8a4d8870cab6204e998ea4f23ee1339bb0ff556dd881bac82d25"
+        },
+        "compiler/libgprofng0_2.44-3_arm64.deb": {
+          "bytes": 667648,
+          "sha256": "4642014c84f3d070d889725900fbd23165189597d45deddc7bdcf9928de9e32e"
+        },
+        "compiler/libhwasan0_14.2.0-19_arm64.deb": {
+          "bytes": 1442000,
+          "sha256": "5a758db399fafd354b6488c4f250b7670fb1f61c31b4e4f329d0fbb750a17084"
+        },
+        "compiler/libisl23_0.27-1_arm64.deb": {
+          "bytes": 600836,
+          "sha256": "21c490db3fa5f0a517c55090a199334da6164589772ebd922dff1e569c78515d"
+        },
+        "compiler/libitm1_14.2.0-19_arm64.deb": {
+          "bytes": 24192,
+          "sha256": "d6f0255b498af876ab7bf4420672e43cbe58dcd577f0711131cbfbcbee283cdb"
+        },
+        "compiler/libjansson4_2.14-2+b3_arm64.deb": {
+          "bytes": 39228,
+          "sha256": "7938472b1ddfa8b0c8f58d5f44406ae7a77a342dbb502a02f6bf292b4f853ab0"
+        },
+        "compiler/liblsan0_14.2.0-19_arm64.deb": {
+          "bytes": 1161132,
+          "sha256": "488a54a5fe01a926ae16d73dc7ea9f530f1bf63fae73640f741695eec2541a38"
+        },
+        "compiler/libmpc3_1.3.1-1+b3_arm64.deb": {
+          "bytes": 50480,
+          "sha256": "d4cfe026a624e51641c80ef2af77387185714f62f3b5c87035e62d9ed8d9eec1"
+        },
+        "compiler/libmpfr6_4.2.2-1_arm64.deb": {
+          "bytes": 685000,
+          "sha256": "628a4ef58cc6815880f72e9d3953984a379a017e4042bc575f1fcbf3954d79ac"
+        },
+        "compiler/libperl5.40_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 4137968,
+          "sha256": "b3cf688efb6096b2f3d95e96ad5b216602146ad11f792c1f3b2f66b5556241d9"
+        },
+        "compiler/libsframe1_2.44-3_arm64.deb": {
+          "bytes": 77772,
+          "sha256": "d4a90764fa79858347aaa3197bc4489404f005d9cdbea9b2ec75a607ea5ff518"
+        },
+        "compiler/libstdc++-14-dev_14.2.0-19_arm64.deb": {
+          "bytes": 2294728,
+          "sha256": "8760122d044cd8eb8c69426311d6b5ce7bb8f0f76e9cda1944d153ae878138f8"
+        },
+        "compiler/libtsan2_14.2.0-19_arm64.deb": {
+          "bytes": 2383440,
+          "sha256": "c767c05f3dade13b5780478366029f2ff32e44bea852c6a4d7a1f93f1363d3e3"
+        },
+        "compiler/libubsan1_14.2.0-19_arm64.deb": {
+          "bytes": 1038924,
+          "sha256": "b5539003465ea1e60f66b9e3a1019da182e826c82d480944f3656b12351c74c8"
+        },
+        "compiler/libzstd-dev_1.5.7+dfsg-1_arm64.deb": {
+          "bytes": 335104,
+          "sha256": "05cf42de5c9fdf17f49f663b47bfe736f10fbc7080fcc3a86ac43d5d670de149"
+        },
+        "compiler/linux-libc-dev_6.12.118-1_all.deb": {
+          "bytes": 3101880,
+          "sha256": "e3616a753c42c5591778df05c98a22db3b8731e7e8611aaeed4b89e14cb5271b"
+        },
+        "compiler/make_4.4.1-2_arm64.deb": {
+          "bytes": 452396,
+          "sha256": "043219839669c431def9bb410c4a827f115ee5bf377469d55c4ed905f81f73be"
+        },
+        "compiler/patch_2.8-2+deb13u1_arm64.deb": {
+          "bytes": 128496,
+          "sha256": "ee524dcd15b062ff762cdc1db1724d7850358d97b94b1db38ed7fdcce8e8adaa"
+        },
+        "compiler/perl-modules-5.40_5.40.1-6+deb13u1_all.deb": {
+          "bytes": 3013728,
+          "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce"
+        },
+        "compiler/perl_5.40.1-6+deb13u1_arm64.deb": {
+          "bytes": 267732,
+          "sha256": "7f15c34267346a0da41b9fe36d509d70dfb8d39561d275c4f4c53d429290f6d2"
+        },
+        "compiler/rpcsvc-proto_1.4.3-1+b1_arm64.deb": {
+          "bytes": 60468,
+          "sha256": "6ae3c216e6c7d8e042ad3f122b8aa89aff56b2b5174b1c5780a7841b3becd61c"
+        },
+        "compiler/xz-utils_5.8.1-1+deb13u2_arm64.deb": {
+          "bytes": 657952,
+          "sha256": "d2151cc127dfc9948255ed40c271ff0683d9cf9553933a8b94cb29068ab5e715"
+        },
+        "compiler/zlib1g-dev_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 916416,
+          "sha256": "b8f6740af90accda9a571ae7f3e5b0a40a83c2e9d095f4cab56b92b8ae744757"
+        },
+        "compiler/zlib1g_1%3a1.3.dfsg+really1.3.1-1+deb13u1_arm64.deb": {
+          "bytes": 85028,
+          "sha256": "0e41b3d7ad8ad7fcd36dd4d61ca91a70018478fc4af652e044f4be770784ddff"
+        },
+        "parents/psycopg_binary-3.3.6-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl": {
+          "bytes": 6833587,
+          "sha256": "37d40450659401600e6d043ff586c89a71a69f33cbb8bcdba6cdb2569beecdbe"
+        },
+        "driver-parent.json": {
+          "bytes": 313,
+          "sha256": "27b2a13ca4250c68920ada66b220328651162a6b99ad79556df576cd1420ae31"
+        },
+        "tooling/security_elf.py": {
+          "bytes": 5660,
+          "sha256": "e39fa1130b5ffb96ccb3119c08aab778611b6b894841a322f78caee88da44cbc"
+        }
+      },
+      "source_libpq_version": "18.6",
+      "policy": "Preserve the published Python extensions and all 210 libpq exports; replace the bundled native dependency closure without GSSAPI/LDAP; link shared reviewed OpenSSL."
+    },
+    "upstream_version": "3.3.6",
+    "version": "3.3.6+ezllmrouter1",
+    "filename": "psycopg_binary-3.3.6+ezllmrouter1-cp312-cp312-linux_aarch64.whl",
+    "output": {
+      "bytes": 1249600,
+      "sha256": "a5b07ca2206a8a2e455ff1d8e6058bc9002c345ac4d98cf92e3fe1e31fae17b7"
+    },
+    "libpq_version": 180006,
+    "features": {
+      "gssapi": false,
+      "ldap": false,
+      "ssl": "shared"
+    },
+    "code": {
+      "psycopg_binary/_psycopg.cpython-312-aarch64-linux-gnu.so": "10cfa89981f865604b2d35e7b56b541c2775d2ece3adda7e68065c05d186edd3",
+      "psycopg_binary/pq.cpython-312-aarch64-linux-gnu.so": "1b51834ff84e8652218086fc427e9a6170103568d70417f9b8ada16beb242549",
+      "psycopg_binary.libs/libpq-ezllmrouter1.so.5": "25dcc8cf32cbc2d691c5c3550c2c1d03bd38fe1574384bc6f2ce632ba0ba4bd0"
+    }
   }
 }

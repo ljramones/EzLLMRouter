@@ -13,26 +13,41 @@ from tools.security_resolutions import canonical
 CRYPTO_OBJECT = "/usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so"
 PYTHON_VERSIONS = """import ssl,json,importlib.util,os
 data={'openssl':ssl.OPENSSL_VERSION,'cryptography':None,'crypto_openssl':None,
+      'psycopg_binary':None,'libpq':None,
       'crypto_object_exists':os.path.lexists('/usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so')}
 if importlib.util.find_spec('cryptography') is not None:
     import importlib.metadata
     from cryptography.hazmat.backends.openssl.backend import backend
     data.update(cryptography=importlib.metadata.version('cryptography'),crypto_openssl=backend.openssl_version_text())
+if importlib.util.find_spec('psycopg_binary') is not None:
+    import importlib.metadata
+    import psycopg.pq
+    data.update(psycopg_binary=importlib.metadata.version('psycopg-binary'),libpq=psycopg.pq.version())
 print(json.dumps(data))
 """
 
 
-def capture(image: dict, native: dict) -> dict:
+def capture(image: dict, native: dict, driver: dict | None = None) -> dict:
     identity = image["image"]["id"]
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", identity):
         raise ValueError("immutable image required for native review")
     role = "node" if "node@sha256:" in image["image"]["base"] else "python"
     has_crypto = any(row["name"] == "cryptography" for row in image.get("application_packages", []))
+    has_driver = any(
+        row["name"] == "psycopg-binary" for row in image.get("application_packages", [])
+    )
     expected = {
         row["path"]: row["sha256"]
         for row in native["code"]
         if row["role"] in {"all", role} and (row["path"] != CRYPTO_OBJECT or has_crypto)
     }
+    if has_driver and driver:
+        expected.update(
+            {
+                "/usr/local/lib/python3.12/site-packages/" + path: sha
+                for path, sha in driver["code"].items()
+            }
+        )
     prefix = [
         *DOCKER,
         "run",
@@ -60,6 +75,7 @@ def capture(image: dict, native: dict) -> dict:
     )
     valid = (
         observed == expected
+        and (not has_driver or driver is not None)
         and {row["binary"] for row in owned} == binaries
         and all(
             row["binary_version"] == row["version"] == native["openssl_source_version"]
@@ -103,12 +119,23 @@ def capture(image: dict, native: dict) -> dict:
                 and versions["cryptography"] is None
                 and versions["crypto_openssl"] is None
             )
+        if has_driver and driver:
+            valid = (
+                valid
+                and versions.get("psycopg_binary") == driver["version"]
+                and versions.get("libpq") == driver["libpq_version"]
+            )
+        elif not has_driver:
+            valid = (
+                valid and versions.get("psycopg_binary") is None and versions.get("libpq") is None
+            )
     return {
         "image": identity,
         "native_build": native["id"],
         "valid": bool(valid),
         "code": observed,
         "versions": versions,
+        "native_driver": driver["id"] if has_driver and driver else None,
     }
 
 

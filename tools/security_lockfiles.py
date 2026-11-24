@@ -21,7 +21,16 @@ from tools.gateway.os_inputs import (
 
 NATIVE_RECIPES = tuple(
     "deploy/local/inputs/native/" + filename
-    for filename in ("openssl.sh", "node.sh", "node-completion.sh", "cryptography.sh", "package.py")
+    for filename in (
+        "openssl.sh",
+        "node.sh",
+        "node-completion.sh",
+        "cryptography.sh",
+        "package.py",
+        "postgresql.sh",
+        "driver-relink.sh",
+        "driver.py",
+    )
 )
 WHEEL_INVENTORY = "deploy/local/inputs/gateway/WHEEL-INVENTORY.json"
 
@@ -146,6 +155,26 @@ def native_artifacts(
             architecture=data["architecture"],
             filename=selected["filename"],
             native_build=native["id"],
+        )
+    if "native_driver" in data:
+        driver = data["native_driver"]
+        versions.append(
+            {
+                "ecosystem": "PyPI",
+                "name": "psycopg-binary",
+                "version": driver["version"],
+                "upstream_version": driver["upstream_version"],
+                "native_build": driver["id"],
+            }
+        )
+        artifact(
+            source,
+            "psycopg-binary",
+            driver["version"],
+            digest("sha256:" + driver["output"]["sha256"]),
+            url="urn:ezllmrouter:native-driver:" + driver["id"] + ":" + driver["filename"],
+            filename=driver["filename"],
+            native_build=driver["id"],
         )
     return versions
 

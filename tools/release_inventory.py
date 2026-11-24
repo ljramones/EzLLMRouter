@@ -207,6 +207,12 @@ def main() -> int:
         action="store_true",
         help="verify reviewed native backports and every runtime copy",
     )
+    parser.add_argument(
+        "--profile-reviews", type=Path, help="apply exact qualified-profile preconditions"
+    )
+    parser.add_argument(
+        "--profile-probe", type=Path, help="hash-pinned native diagnostic for profile review"
+    )
     args = parser.parse_args()
     if args.component_reviews and not args.query:
         parser.error("--component-reviews requires --query")
@@ -214,6 +220,12 @@ def main() -> int:
         parser.error("--os-store requires --component-reviews and --query")
     if args.native_reviews and (not args.os_store or not args.query):
         parser.error("--native-reviews requires --os-store, --component-reviews and --query")
+    if bool(args.profile_reviews) != bool(args.profile_probe) or (
+        args.profile_reviews and not args.native_reviews
+    ):
+        parser.error(
+            "profile review requires --profile-reviews, --profile-probe and --native-reviews"
+        )
     args.output.mkdir(parents=True, exist_ok=False)
     data = inventory()
     source_hashes = {}
@@ -292,12 +304,31 @@ def main() -> int:
             if args.native_reviews:
                 from tools.security_native import capture as capture_native, apply_reviews
 
-                native = load_lock(Path(__file__).resolve().parents[1])["native_build"]
+                selected = load_lock(Path(__file__).resolve().parents[1])
+                native = selected["native_build"]
                 native_proofs = {
-                    name: capture_native(image, native) for name, image in captured.items()
+                    name: capture_native(image, native, selected.get("native_driver"))
+                    for name, image in captured.items()
                 }
                 dispositions = apply_reviews(
                     dispositions, snapshot, captured, native_proofs, native
+                )
+            if args.profile_reviews:
+                from tools.security_profile import (
+                    load_policy as load_profile,
+                    apply_reviews as apply_profile,
+                )
+                from tools.security_profile_capture import capture as capture_profile
+
+                profile_policy = load_profile(
+                    args.profile_reviews, Path(__file__).resolve().parents[1], images
+                )
+                profile_proofs = {
+                    name: capture_profile(image, args.profile_probe, profile_policy, name)
+                    for name, image in captured.items()
+                }
+                dispositions = apply_profile(
+                    dispositions, snapshot, captured, profile_proofs, profile_policy
                 )
             (args.output / "dispositions.json").write_text(
                 json.dumps(dispositions, indent=2) + "\n"
@@ -316,6 +347,9 @@ def main() -> int:
                             "effective_blocking": dispositions["effective_blocking"],
                             "resolved_native_matches": dispositions.get(
                                 "resolved_native_matches", 0
+                            ),
+                            "resolved_profile_matches": dispositions.get(
+                                "resolved_profile_matches", 0
                             ),
                         }
                         if dispositions

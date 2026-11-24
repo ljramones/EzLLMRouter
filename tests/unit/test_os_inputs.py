@@ -44,6 +44,7 @@ class OSInputTests(unittest.TestCase):
         root = Path(temporary.name)
         lock = deepcopy(os_inputs.load_lock(ROOT))
         lock.pop("native_build", None)
+        lock.pop("native_driver", None)
         lock["format"] = "ezllmrouter-debian-inputs-v3"
         source = root / os_inputs.LOCK
         source.parent.mkdir(parents=True)

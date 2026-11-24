@@ -204,6 +204,24 @@ days. Raw findings and severity remain unchanged in `findings.json`; the
 separate `dispositions.json` records the effective gate and per-image reasons.
 This review covers the matched Debian artifacts only and grants no exemption
 to other bundled copies or unreviewed native interfaces.
+
+An additional explicit profile review can resolve a finding whose required
+execution path or platform condition is absent in the exact qualified profile.
+`--profile-reviews PATH --profile-probe PATH` requires native/component/archive
+review as well. Each expiring decision binds the advisory/CVE records, complete
+owned source inventory, seven immutable images, exact successful qualification
+and the diagnostic source/binary. Image inspection parses ELF dependencies and
+load segments without executing inspected objects. Application dependency
+closures must have no affected glob/regex callers; ambiguous libraries fail and
+optional extensions with missing dependencies remain recorded as unloadable.
+The native diagnostic verifies the ARM64 global read-only guard outside thread
+stacks, C.UTF-8 locale and non-root/no-new-privileges execution. Qualification
+also binds read-only roots, trusted installed code and the archive helper that
+rejects privilege-bearing entries. Source-interface checks reject native-call
+and dynamic-code entry points in owned server/worker code. These are narrow
+`not_affected` decisions for this profile, not upstream fixes or acceptance for
+other deployments. Raw package findings and severity stay visible; any changed
+image, caller, source, advisory, control, qualification or expired review blocks.
 When the declared OS lock is also an attributed source, `--os-store PATH`
 verifies its complete archive set and binds the proof to the audited inventory
 and lock hash. An exact reviewed archive can resolve that declared source;

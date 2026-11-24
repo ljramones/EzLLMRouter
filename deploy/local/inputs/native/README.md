@@ -4,8 +4,9 @@ The v4 [OS lock](../os/debian13-arm64.lock.json) selects a local OpenSSL
 3.5.9 backport, Node 24.22.3 linked to that shared library, and cryptography
 50.0.2+ezllmrouter1 linked to the same library. These are reviewed local outputs,
 with `urn:ezllmrouter:native-build` origins; they are not publisher artifacts.
-The base image digests, Python and Node versions remain pinned. Of the 117 frozen
-wheels, 116 retain their exact bytes, including LiteLLM 1.106.12.
+The base image digests, Python and Node versions remain pinned. The subsequent
+PostgreSQL bundle reduction described below retains the 117-wheel count and
+the exact LiteLLM 1.106.12 wheel.
 
 Eight fixes come from immutable OpenSSL 3.5 maintenance commits. The ninth,
 CVE-2026-84786, uses the complete DANE fix and regression test from upstream
@@ -46,3 +47,32 @@ bindings, actual Python/cryptography OpenSSL versions and Node shared-SSL status
 in every inventoried image. Changed copies, incomplete images and unknown source
 attribution remain blocking. See the
 [validation ledger](../../../../docs/TESTING-ROADMAP.md).
+
+## Minimal PostgreSQL native bundle
+
+The v4 lock's separate `native_driver` record selects
+`psycopg-binary==3.3.6+ezllmrouter1`. The published Python extension objects are
+relinked to exact-version libpq 18.6 built without GSSAPI or LDAP, against the
+already reviewed shared OpenSSL. Both Python extension entry points and all
+210 libpq exports remain available. PostgreSQL connectivity is not used by the
+qualified SQLite profile; Kerberos/LDAP connectivity is deliberately unavailable
+in this native bundle. The worker retains the LiteLLM proxy ASGI interface and
+its declared dependency closure.
+
+This replaces one more frozen wheel, leaving 116 identical to the preceding
+OpenSSL bundle and 115 identical to the original 117-wheel selection. No new
+runtime package version or archive is downloaded during preparation. The local
+wheel uses an honest `linux_aarch64` tag and upstream 3.3.6 for advisory queries.
+It removes sixteen bundled native libraries, including Kerberos, LDAP and the
+additional OpenSSL copies missed by the earlier three-copy review. Native
+qualification now requires the exact driver objects and a full dependency
+inspection for the scoped profile decisions.
+
+`postgresql.sh`, `driver-relink.sh` and `driver.py` preserve the build and
+repackaging steps. The original wheel and PostgreSQL source archive hashes,
+publisher checksum, compiler inputs, extra authenticated Debian build tools,
+feature choices and output identity are bound by `native_driver.inputs`.
+The formatted tracked repackager reproduced the selected wheel hash. Preserve
+the source caches and logs under ignored `.artifacts/final-seven/`; place the
+selected wheel alone in `inputs/native-driver/<build-id>/`. Normal preparation
+verifies this output as well as frozen wheel custody before building images.
