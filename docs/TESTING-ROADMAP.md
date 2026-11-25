@@ -291,6 +291,64 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## Glibc hardening investigation and CI toolchain pins, 2026-11-25
+
+The follow-up covers the two remaining glibc reports and the three concrete CI
+installation gaps. **CVE-2019-1010024 and CVE-2019-1010025 remain unresolved.**
+Current canonical CVE records remain published; Debian still marks the selected
+2.41-12+deb13u5 and newer unstable 2.43-7 as vulnerable/unfixed, with unimportant
+urgency. Sourceware bugs 22852/22853 remain `UNCONFIRMED`, with no accepted fix
+established by this review. Upstream's hardening classification is retained;
+it does not waive either raw moderate finding.
+
+A bounded native diagnostic was built offline with the already reviewed ARM64
+compiler archives and run against all seven immutable qualified images. Each
+of four configurations ran three fresh processes per image, each creating and
+joining sixteen threads: **84 processes and 1,344 thread lifecycles**. It records
+mapping presence, allocator heap counts and numerical address comparisons;
+it never reads freed memory or performs a memory-corruption exploit.
+
+| Diagnostic configuration | Observations in every process |
+| --- | --- |
+| Existing defaults | Two allocator heaps; all sixteen exited-thread stack mappings remain; all fifteen successive stack/heap address comparisons repeat. |
+| `glibc.pthread.stack_cache_size=0` | Exited-thread stack mappings are released, but all fifteen successive stack and heap address comparisons still repeat; two allocator heaps remain. |
+| Stack cache disabled, `glibc.malloc.arena_max=1` | One allocator heap in this probe; stack mappings are released; all fifteen successive stack and fourteen heap address comparisons repeat. |
+| Same, with `glibc.malloc.tcache_count=0` | One allocator heap; stack mappings are released; all fifteen successive stack and heap address comparisons repeat. |
+
+These are diagnostic overrides, not changed application defaults. They show
+partial cache/arena hardening, rather than establishing a complete application
+fix or measured ASLR entropy. Single-arena configuration needs separate full
+application/contention and allocator-path qualification before it can support
+an exact-profile disposition. The proposed upstream arena-randomization patch
+also lacks accepted ARM64 qualification. No allocator replacement, kernel change,
+new disposition, risk acceptance or persistent-profile change is made. Evidence
+and current CNA/Debian/Sourceware/manual responses are retained under ignored
+`.artifacts/glibc-ci-1-5/`, including `reports/glibc-runtime.json`.
+
+The CI installer now selects **Temurin 17.0.21.1+2** and **.NET SDK 10.0.404**
+from six exact publisher archives, with SHA-256/SHA-512 verification before
+extraction or execution on Linux x86_64, macOS ARM64 and Windows x86_64. A fresh
+installation prevents a preinstalled same-version toolchain from bypassing
+verification. Exact version/filename/URL/home bindings, HTTPS-only publisher
+redirects, extraction bounds and path/link checks fail closed. The offline
+dependency preflight inventories those six archives and rejects floating or
+bypassed toolchain installs. The dedicated TypeScript job now uses the existing
+integrity-locked TypeScript 5.9.3 installation and explicitly selects its compiler.
+
+The selected macOS archives were byte-verified and used for local installed
+client checks: Java and .NET each pass 536 independent decoder cases and 144
+shared contract cases plus safety checks. Packaged CommonJS/ESM TypeScript
+consumers pass both compiler modes. These changes leave the frozen worker/OS
+inputs, the qualified runtime image identities and production acceptance intact.
+The full local offline source gate passes 1,365 tests across 185 module
+executions without skips, plus formatting, typing, source security and maintained
+JavaScript/contract checks. A final digest-ambiguity negative control also passes
+in the focused suite. Real HTTP/TLS fixtures pass 28 cases each for Java and
+.NET, including exact delivery counts and rejection before credentials. CI
+retains cross-platform outcomes against its exact source commit; local macOS
+results alone do not establish Linux/Windows execution. The two glibc findings
+are not counted as closed by this batch.
+
 ## Bounded lower-severity review, 2026-11-25
 
 **43 of the original 45 package/advisory matches are closed; two moderate glibc

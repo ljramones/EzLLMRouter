@@ -85,10 +85,8 @@ jobs:
         with:
           go-version-file: clients/go/.go-version
           cache: false
-      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0, Node 24
-        with:
-          distribution: temurin
-          java-version: '17'
+      - name: Install reviewed Java archive with hash verification
+        run: python3 -I -S tools/ci_toolchains.py java
       - name: Native client contract and safety checks
         run: bash tests/client_languages/check.sh
       - name: Native client HTTP fixtures
@@ -129,18 +127,21 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0, Node 24
         with:
           node-version-file: .nvmrc
-      - name: Install TypeScript compiler
-        run: npm install --global --ignore-scripts --no-audit --no-fund typescript@5.9.3
+      - name: Validate locked inputs before installing dependencies
+        run: python3 -I -S tools/security_dependencies.py
+      - name: Install locked TypeScript compiler
+        run: npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund
       - name: Check packaged CommonJS and ESM consumers
+        env:
+          TSC_BINARY: ${{ github.workspace }}/tests/playwright/node_modules/.bin/tsc
         run: bash tests/client_languages/check_typescript.sh
   dotnet-client:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0, Node 24
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5, Node 24; reviewed 2026-11-21
-        with:
-          dotnet-version: '10.0.x'
+      - name: Install reviewed .NET SDK archive with hash verification
+        run: python3 -I -S tools/ci_toolchains.py dotnet
       - name: Pack and test installed NuGet client
         run: bash clients/dotnet/build.sh test
       - name: Native .NET HTTP fixtures
@@ -245,13 +246,10 @@ jobs:
         with:
           go-version-file: clients/go/.go-version
           cache: false
-      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
-        with:
-          dotnet-version: '10.0.x'
+      - name: Install reviewed Java archive with hash verification
+        run: ${{ matrix.python }} -I -S tools/ci_toolchains.py java
+      - name: Install reviewed .NET SDK archive with hash verification
+        run: ${{ matrix.python }} -I -S tools/ci_toolchains.py dotnet
       - name: Validate locked inputs before installing dependencies
         run: ${{ matrix.python }} -I -S tools/security_dependencies.py
       - name: Install pinned environment manager

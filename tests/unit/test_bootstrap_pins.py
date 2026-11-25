@@ -18,7 +18,7 @@ class BootstrapPinTests(unittest.TestCase):
         shutil.copytree(ROOT / ".github", root / ".github")
         return root
 
-    def test_previous_unhashed_bootstrap_and_mutable_dotnet_action_are_rejected(self):
+    def test_previous_unhashed_bootstrap_and_mutable_action_are_rejected(self):
         root = self.copy()
         for name in ("check.yml", "testing-scheduled.yml"):
             source = (ROOT / ".github/workflows" / name).read_text()
@@ -26,8 +26,8 @@ class BootstrapPinTests(unittest.TestCase):
                 "python3 -m pip install --force-reinstall --only-binary=:all: --no-deps --require-hashes -r .github/requirements-bootstrap.lock",
                 "python3 -m pip install uv==0.13.9",
             ).replace(
-                "actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1",
-                "actions/setup-dotnet@v5",
+                "actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8",
+                "actions/checkout@v5",
             )
             (root / ".github/workflows" / name).write_text(source)
         found = errors(root)
@@ -61,3 +61,24 @@ class BootstrapPinTests(unittest.TestCase):
                 data["uv"]["platform_artifacts"][index].update(change)
                 path.write_text(json.dumps(data))
                 self.assertTrue(errors(root), (index, change))
+
+    def test_floating_versions_and_toolchain_install_bypasses_fail(self):
+        import json
+
+        for tool, version in (("java", "17"), ("dotnet", "10.0.x")):
+            root = self.copy()
+            path = root / ".github/toolchain-inputs.json"
+            data = json.loads(path.read_text())
+            data[tool]["version"] = version
+            path.write_text(json.dumps(data))
+            self.assertTrue(errors(root), tool)
+        for old, new in (
+            ("-I -S tools/ci_toolchains.py java", "-I -S unverified-java.py"),
+            ("-I -S tools/ci_toolchains.py dotnet", "-I -S unverified-dotnet.py"),
+            ("TSC_BINARY:", "IGNORED_COMPILER:"),
+            ("npm --prefix tests/playwright ci", "npm install --global typescript@5.9.3"),
+        ):
+            root = self.copy()
+            path = root / ".github/workflows/check.yml"
+            path.write_text(path.read_text().replace(old, new))
+            self.assertTrue(errors(root), (old, new))

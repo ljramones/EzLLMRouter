@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "reviewed_on": "2026-11-25",
+  "java": {
+    "version": "17.0.21.1+2",
+    "metadata_url": "https://api.adoptium.net/v3/assets/latest/17/hotspot?image_type=jdk&vendor=eclipse",
+    "metadata_sha256": "c4942f814b2b59569bcd68ec936b56154a544dc5aeaa17aba36f74643c897dc2",
+    "artifacts": {
+      "Linux-X64": {
+        "filename": "OpenJDK17U-jdk_x64_linux_hotspot_17.0.21.1_2.tar.gz",
+        "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.21.1%2B2/OpenJDK17U-jdk_x64_linux_hotspot_17.0.21.1_2.tar.gz",
+        "sha256": "0b0ac5eab6db6abaec68c9913bcddb31321e5da411c45073d520d9c125e6f7b4",
+        "home": "jdk-17.0.21.1+2"
+      },
+      "macOS-ARM64": {
+        "filename": "OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.21.1_2.tar.gz",
+        "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.21.1%2B2/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.21.1_2.tar.gz",
+        "sha256": "2a88ccb044a8fb00957be93245da6357c11b55717511509d147cbcc5d93b2109",
+        "home": "jdk-17.0.21.1+2/Contents/Home"
+      },
+      "Windows-X64": {
+        "filename": "OpenJDK17U-jdk_x64_windows_hotspot_17.0.21.1_2.zip",
+        "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.21.1%2B2/OpenJDK17U-jdk_x64_windows_hotspot_17.0.21.1_2.zip",
+        "sha256": "eafba0944f777abdc74d5aad16049c9b5a1275b6ce99e2939ba9f7f3e6f08c87",
+        "home": "jdk-17.0.21.1+2"
+      }
+    }
+  },
+  "dotnet": {
+    "version": "10.0.404",
+    "metadata_url": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json",
+    "metadata_sha256": "482b9d79e76b331ef4cd5bcab02af3188f874ce78fd7aae07cb6163650da87c0",
+    "artifacts": {
+      "Linux-X64": {
+        "filename": "dotnet-sdk-10.0.404-linux-x64.tar.gz",
+        "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-linux-x64.tar.gz",
+        "sha512": "577d0eb17fec33d029104c5c63a1ab0accc3e28776274abef2218dbac5af18d2109b5406d26b31d76f5c245215e3ba0926a94c20246c672c41847c9e1eb1dc50",
+        "home": "."
+      },
+      "macOS-ARM64": {
+        "filename": "dotnet-sdk-10.0.404-osx-arm64.tar.gz",
+        "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-osx-arm64.tar.gz",
+        "sha512": "1c9a13f625d0c08f08ef5a53597bababe3d2473527e98db2199210940c69dd5fc599a39a4d7c30ebf297ca2334a81b2f64b9bf05ff99585de9af4a5d85215e96",
+        "home": "."
+      },
+      "Windows-X64": {
+        "filename": "dotnet-sdk-10.0.404-win-x64.zip",
+        "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-win-x64.zip",
+        "sha512": "330ddd2665b43cd2e428216a0d8ea1ac7bb19b5434fdc530e62010dc3b52823a620bf95489d628e1ed6f5122401793ee4887cca4a019122361a1231497f632ee",
+        "home": "."
+      }
+    }
+  }
+}

@@ -7,10 +7,16 @@ from pathlib import Path
 import re
 from typing import Any
 
+from tools.ci_toolchains import load_policy
+
 
 def errors(root: Path) -> list[str]:
     policy: dict[str, Any] = json.loads((root / ".github/bootstrap-inputs.json").read_text())
     failures = []
+    try:
+        load_policy(root)
+    except (KeyError, TypeError, ValueError) as error:
+        failures.append("invalid CI toolchain policy: " + str(error))
     uv = policy["uv"]
     artifacts = [uv, *uv.get("platform_artifacts", [])]
     expected = f"uv=={uv['version']} " + " ".join(
@@ -47,6 +53,8 @@ def errors(root: Path) -> list[str]:
             match = re.search(r"uses:\s*([^\s@]+)@([^\s#]+)", line)
             if match and not re.fullmatch("[0-9a-f]{40}", match[2]):
                 failures.append("mutable action reference: " + path.name)
+            if match and match[1] in {"actions/setup-java", "actions/setup-dotnet"}:
+                failures.append("toolchain installation bypasses reviewed archive: " + path.name)
             if (
                 match
                 and match[1] == "actions/setup-dotnet"
@@ -65,4 +73,32 @@ def errors(root: Path) -> list[str]:
                     )
                 ):
                     failures.append("unhashed bootstrap installation: " + path.name)
+            if re.search(r"npm\s+install\s+--global.*typescript", line):
+                failures.append("TypeScript installation bypasses lock integrity: " + path.name)
+    return failures + workflow_toolchain_errors(root)
+
+
+def workflow_toolchain_errors(root: Path) -> list[str]:
+    source = (root / ".github/workflows/check.yml").read_text()
+    failures = []
+    for job, tools in (
+        ("native-clients", ("java",)),
+        ("dotnet-client", ("dotnet",)),
+        ("platform-clients", ("java", "dotnet")),
+    ):
+        match = re.search(r"(?ms)^  " + job + r":\n(.*?)(?=^  [\w-]+:|\Z)", source)
+        block = match[1] if match else ""
+        for tool in tools:
+            if not re.search(r"(?m)^\s+run: .* -I -S tools/ci_toolchains\.py " + tool + "$", block):
+                failures.append("missing hash-verified toolchain: " + job + "/" + tool)
+    match = re.search(r"(?ms)^  typescript-client:\n(.*?)(?=^  [\w-]+:|\Z)", source)
+    block = match[1] if match else ""
+    if not all(
+        value in block
+        for value in (
+            "run: npm --prefix tests/playwright ci --ignore-scripts --no-audit --no-fund",
+            "TSC_BINARY: ${{ github.workspace }}/tests/playwright/node_modules/.bin/tsc",
+        )
+    ):
+        failures.append("TypeScript job must install and use the integrity-locked compiler")
     return failures

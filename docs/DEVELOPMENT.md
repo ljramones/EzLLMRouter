@@ -527,10 +527,23 @@ CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirem
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.
 Reinstallation prevents an existing same-version package from bypassing archive
 verification. Its reviewed Linux x86_64
-wheel and the exact setup-dotnet action commit are recorded in
+wheel and the former setup-dotnet action review are recorded in
 [bootstrap-inputs.json](../.github/bootstrap-inputs.json). Source checks reject
-the former unhashed installs and mutable action reference. This bootstrap review
-does not change or reacquire the frozen worker inputs.
+unhashed bootstrap installs and mutable action references.
+
+CI Java and .NET installations use the exact publisher archives in
+[toolchain-inputs.json](../.github/toolchain-inputs.json): Temurin
+17.0.21.1+2 and .NET SDK 10.0.404, separately bound for Linux x86_64, macOS ARM64
+and Windows x86_64. `tools/ci_toolchains.py` checks the selected SHA-256/SHA-512
+before extraction or execution, uses a fresh installation rather than trusting
+an existing runner tool cache, constrains HTTPS redirects and archive extraction,
+and exports only that installation's paths. Publisher metadata response hashes
+are retained with the reviewed inputs. The source preflight inventories all six
+archives; each runner verifies its own bytes. This establishes the selected
+publisher/hash identity, without claiming independent signing-key certification.
+The dedicated TypeScript job uses `npm ci` with the existing Playwright lock
+and explicitly selects its local TypeScript 5.9.3 compiler. These CI changes do
+not change or reacquire frozen worker inputs.
 
 The nightly `--audit` mode sends only package names/versions to the public OSV
 API, follows and retains every advisory page, records the response snapshot and its inventory identity, and

@@ -36,6 +36,11 @@ NATIVE_RECIPES = tuple(
     )
 )
 WHEEL_INVENTORY = "deploy/local/inputs/gateway/WHEEL-INVENTORY.json"
+CI_INPUTS = (
+    ".github/bootstrap-inputs.json",
+    ".github/toolchain-inputs.json",
+    ".github/workflows/check.yml",
+)
 
 INPUTS = (
     OS_LOCK,
@@ -43,6 +48,8 @@ INPUTS = (
     *NATIVE_RECIPES,
     WHEEL_INVENTORY,
     ".github/bootstrap-inputs.json",
+    ".github/toolchain-inputs.json",
+    ".github/workflows/check.yml",
     "uv.lock",
     "clients/python/uv.lock",
     "pyproject.toml",
@@ -227,6 +234,24 @@ def os_artifacts(
     return native_artifacts(data, source, artifact) if "native_build" in data else []
 
 
+def ci_toolchain_artifacts(root: Path, name: str, artifact: Callable[..., None]) -> None:
+    from tools.ci_toolchains import load_policy
+
+    policy = load_policy(root)
+    for tool in ("java", "dotnet"):
+        algorithm = "sha256" if tool == "java" else "sha512"
+        for platform, row in policy[tool]["artifacts"].items():
+            artifact(
+                name,
+                tool,
+                policy[tool]["version"],
+                algorithm + ":" + row[algorithm],
+                platform=platform,
+                url=row["url"],
+                filename=row["filename"],
+            )
+
+
 def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict[str, Any]:
     hashes, artifacts, local, manifests, limits = {}, [], [], [], []
     advisory_versions = []
@@ -402,8 +427,10 @@ def locked_inputs(root: Path, add: Callable[[str, str, str, str], None]) -> dict
                     "scope": "resolved registry closure with published archive checksums",
                 }
             )
-        elif name.endswith("bootstrap-inputs.json") or name.endswith("package.json"):
-            pass  # Validated by security_bootstrap before producing the inventory.
+        elif name in CI_INPUTS or name.endswith("package.json"):
+            # Other bootstrap/manifests are validated before producing the inventory.
+            if name.endswith("toolchain-inputs.json"):
+                ci_toolchain_artifacts(root, name, artifact)
         elif name.endswith("pyproject.toml"):
             data = tomllib.loads(text)
             for requirement in data.get("build-system", {}).get("requires", []):
