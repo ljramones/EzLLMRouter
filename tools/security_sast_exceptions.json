@@ -8477,30 +8477,30 @@
     {
       "path": "tools/security_resolutions.py",
       "code": "S603",
-      "source_sha256": "24d57799c39034eb19dcaf7a49c70394a4b171573a9a9a3dd8e6f57fdb683ca5",
-      "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted. Version/source mismatches now omit old code proofs; command statements and immutable-image/path validation are unchanged.",
+      "source_sha256": "9d73def9274e6d0a5d5e88707f33b83f735ac9579dd0fc28106cb0a69b5ca54e",
+      "reason": "Owner-invoked component inspection uses network-disabled, read-only Docker containers bound to validated immutable image IDs. Fixed find/sha256sum argument vectors and canonical absolute archive paths; shell is disabled and no host directory is mounted. Version/source mismatches now omit old code proofs; command statements and immutable-image/path validation are unchanged. Additional module/compiler selectors parse the same complete find census and require its identical metadata hash; no subprocess statement or command changes.",
       "findings": [
         {
-          "line": 96,
+          "line": 103,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d28fa2bb725182ccc1ad4f9aaf140aff4eb6bd0f5acaa44a22fa815fab5ea600",
-          "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
+          "context_sha256": "c0a52df5d72bbfa5fbb93248a8f0f7ad1ba8901c429baa9402dfe5b210cfd983"
         },
         {
-          "line": 128,
+          "line": 135,
           "column": 22,
           "symbol": "capture",
           "statement_sha256": "80df2e650bec632a416040e1eb359d7a4b1182d9e12efa18b92c76a6268427e3",
-          "context_sha256": "2068eda7e6a753f2a70063bb84b1e2522edd99e96d56f0efdd4b019acb7d6f62"
+          "context_sha256": "c0a52df5d72bbfa5fbb93248a8f0f7ad1ba8901c429baa9402dfe5b210cfd983"
         }
       ]
     },
     {
       "path": "tools/security_native.py",
       "code": "S603",
-      "source_sha256": "2ecac0a3ac0c6f16fa9bd6f97d3b80a51d97f8b8c017052bf19fd915f49e302a",
-      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions. PostgreSQL objects are now included in the exact native hash closure; unreviewed binary bundles block and the fixed version probe requires reviewed driver/libpq versions. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical.",
+      "source_sha256": "0156e3977914b2446c37b2a07b1f5c94cf1b623c2a42b3c1e6dfff1c7f73097f",
+      "reason": "Read-only network-isolated Docker probes require an immutable image ID and hash only the fixed reviewed code paths; version probes are fixed commands, with argument lists, bounded timeouts and no shell. Standard-library images require absence of both the cryptography module and its fixed native object path; installed cryptography still requires exact native hashes and backend versions. PostgreSQL objects are now included in the exact native hash closure; unreviewed binary bundles block and the fixed version probe requires reviewed driver/libpq versions. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical. The advisory-only edit retains the capture function and subprocess contexts unchanged; explicit text re-reviews bind both descriptions, the exact old/current advisories, CNA, native build and source patch.",
       "findings": [
         {
           "line": 67,
@@ -8673,43 +8673,50 @@
     {
       "path": "tools/security_profile_capture.py",
       "code": "S603",
-      "source_sha256": "b3150770892de62bc6f49a28a8c9f93d8954cde396332166cc4b22b2e8e02dd2",
-      "reason": "Immutable image and owned random container IDs are validated before argument-list Docker inspection/export/cleanup. Exported files are parsed without extraction or execution; a bounded native diagnostic has an exact reviewed hash and runs read-only, non-root, without network/capabilities and with no-new-privileges. Child processes have explicit timeouts or an owned export timer. Image configuration is inspected by immutable ID; the diagnostic user is restricted to reviewed non-root image users, with the exact qualified override for the runtime-Python builder. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical.",
+      "source_sha256": "dfc28c38a3f5f6ecf594c12a2c30717bd205a8ed5b53eb90b972aaa9148da3fb",
+      "reason": "Immutable image and owned random container IDs are validated before argument-list Docker inspection/export/cleanup. Exported files are parsed without extraction or execution; a bounded native diagnostic has an exact reviewed hash and runs read-only, non-root, without network/capabilities and with no-new-privileges. Child processes have explicit timeouts or an owned export timer. Image configuration is inspected by immutable ID; the diagnostic user is restricted to reviewed non-root image users, with the exact qualified override for the runtime-Python builder. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical. One new fixed JSON-only Node diagnostic runs in an immutable-ID-validated, read-only, network-none container. Configuration IDs must match. Full ELF metadata is returned and internally rehashed; no inspected object is executed by the parser. The Node diagnostic now rejects unreviewed NODE_OPTIONS and entrypoints before executing the fixed command; rejection tests assert no subprocess is started.",
       "findings": [
         {
-          "line": 24,
+          "line": 35,
+          "column": 9,
+          "symbol": "node_report",
+          "statement_sha256": "f341f7fc1d9248f9c26d454a899c2036caf22d492f0446bd092bb1079e05e12c",
+          "context_sha256": "d7e1b565c50e7d3024cfff69f68e6da8689debd75e22aae25186659b0dce49eb"
+        },
+        {
+          "line": 62,
           "column": 17,
           "symbol": "elf_objects",
           "statement_sha256": "b6a59d5576fe83d19d8b6e9f1fac0c79db86f566e98d5573e9b1e3eb5b01933b",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 43,
+          "line": 81,
           "column": 23,
           "symbol": "elf_objects",
           "statement_sha256": "d4efd74e4646fa8fdc026ede28ed6666e2b82cf5a446ff9ce85363ab5978a76e",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 72,
+          "line": 110,
           "column": 9,
           "symbol": "elf_objects",
           "statement_sha256": "6e98f95d2ed9085e567dc2bf148a2a9b510785bc78ed286b657f2e1e2a1e0fd6",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 87,
+          "line": 125,
           "column": 9,
           "symbol": "capture",
           "statement_sha256": "c3f917a53b759325b348c700c84503bd551d487cc0104a9b9a44466780f7c181",
-          "context_sha256": "b1da5e06a5a8eac5dc0ed4db4c599327eeee0d1bfe986f3f0192b4ac45691eb1"
+          "context_sha256": "268fd53c1c8df083939c9bc86a41dac2cd0af7295023586bd0cb84a782c1433b"
         },
         {
-          "line": 94,
+          "line": 132,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d771d88a0f930885f679e046d73faa4c382b1ba3f407dcf43e2288405b914734",
-          "context_sha256": "b1da5e06a5a8eac5dc0ed4db4c599327eeee0d1bfe986f3f0192b4ac45691eb1"
+          "context_sha256": "268fd53c1c8df083939c9bc86a41dac2cd0af7295023586bd0cb84a782c1433b"
         }
       ]
     },

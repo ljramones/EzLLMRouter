@@ -2,8 +2,8 @@
   "format": "ezllmrouter-profile-reviews-v1",
   "reviewed_at": "2026-11-24T20:41:24.715020+00:00",
   "expires_at": "2026-12-01T20:41:24.715020+00:00",
-  "qualification_sha256": "b3b8effe95ddf19d6c21997efb50e1954b3bb87b802bf631ee1a1d3dcc857881",
-  "source_packet_sha256": "905ab3c03dab574e0072463f645dec118e626953072550cd26538642634708c2",
+  "qualification_sha256": "b0d1bcbbfa9f876a05c662f49f2a2d82a7c01f7dd9d9f8cd63d54ebc4ae81d22",
+  "source_packet_sha256": "8bd204b5715ae624965f0b68065e87e71ef5854db3b47b0eb9e1c3d23e25763a",
   "source_sha256": {
     "deploy/local/compose.yaml": "1fac78a5e17c71ce355bdc7d97b6fdf73034051609a26ff4ba495536a3fe2e8f",
     "server/src/ezllmrouter_server/__init__.py": "def99af69a4215eea726e1b61570a74dbb19579a0b27b1ab84f5fdec2e8d04b3",
@@ -164,7 +164,7 @@
   "probe_source_sha256": "6be91ded5828150dc426e8cea3abdd536fe178506a8fdc318bc5b710431e1ab2",
   "images": {
     "js": {
-      "image": "sha256:84a85b295dd72edda8d2d17aca2af23fbebcc9730b892fbc2ef993f82d3dc232",
+      "image": "sha256:71d229ec86131f8c2c2d2add3d7a50c6e083ede9bb6abd81f200c65f1dafd565",
       "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
       "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
@@ -175,10 +175,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "node_report_sha256": "7076ef5c2f8fbd629742ab97d70c12b6e6a8344b211ffb5a34db3d129cef8df7"
     },
     "python": {
-      "image": "sha256:40c88149765bacad8ba4267eaa31eb1ee2aed80915851fdbb1b6001498ce1727",
+      "image": "sha256:3189ad03c05d5c68c8bec33c09d0de383d66bb24fc07142349bb31d158f488fb",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -192,7 +193,7 @@
       }
     },
     "receiver": {
-      "image": "sha256:7a1d48ecd2296a7c060b3bc5772153e1aedc7a23e118cdd9f5f0a963a412651e",
+      "image": "sha256:644eb38e8218493f08b38cedf9cfb9c99e44cc64ee034dbf58578ff714ce676b",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -206,7 +207,7 @@
       }
     },
     "runtime_python": {
-      "image": "sha256:7e2495167b48902113369a463af2860dcd9b5d924b554ee79d26818895367f77",
+      "image": "sha256:683e929a88d20cfd8a5a8346d3d98bdffb316fcf745f9629da7a61d4ca4bf826",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -220,7 +221,7 @@
       }
     },
     "service": {
-      "image": "sha256:af8b1d7ae45441e96c853a84de22532cfd3a8b1e7ab985528ad5a5aeb771a445",
+      "image": "sha256:2b68eefc6d44efc98a389674375a7bff2f4b2a01c3db77ce564ec9772eb8747c",
       "elf_sha256": "8090595316add441b16691c3f8d99d3cf39146fa3b710fd7be10475a07473010",
       "closure_sha256": "614c3836320b54088752ebb058ffd7aa022910f31af7ed7e8d31ba3d33d7e136",
       "runtime": {
@@ -234,7 +235,7 @@
       }
     },
     "worker": {
-      "image": "sha256:84b9ca4783c8d7a99f7069fc6bc13e5d8ce0caed5285a516af69a2e40b61e6fa",
+      "image": "sha256:cc05b10c8381618d683fb4e77130fa91f61316d415c75847392ef289ea2ad1ab",
       "elf_sha256": "deaccca9eecf8296bfdd827f4336ab6b41f0345e1da6060874f7d9d0b654c24b",
       "closure_sha256": "c8121ac7de3ce1ab1473707b3f63739b2c7c4043b681919fdce9ccac9d488715",
       "runtime": {
@@ -248,7 +249,7 @@
       }
     },
     "dev09_js": {
-      "image": "sha256:633eb642401c6cda49ae089a8c34677a8d65db332292eed1e67759a761c53d08",
+      "image": "sha256:cf0a15fd41b3f9bd34fb31386af1f5cc67a28cce377af1da78957a2155d84206",
       "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
       "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
@@ -259,7 +260,8 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "node_report_sha256": "cf7bb203592c20d40ae192697f591a56df0b19e16b6369d6a798af031a4da8be"
     }
   },
   "reviews": {
@@ -352,12 +354,468 @@
       "ecosystem": "Debian:13",
       "source": "openssl",
       "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
-      "advisory_sha256": "f6d0880c31c7da7d496dda76f2c1371046ceee922765dfdbe454c9e994e01fee",
+      "advisory_sha256": "02c737296aa75a58c9536197aa9dbbb096870e3b6e6ae9450276a6fcc4733359",
       "cna_sha256": "c56281ae4e0683734a56fb867fa145d7fc317de7d40cf88f810a00fbea08e2f6",
       "reason": "The qualified Python/Node roles use TCP HTTP/TLS and expose no incoming QUIC stream interface. Full application ELF closure has no QUIC method, stream-acceptance or incoming-policy API caller. The owned sources expose no native-call or dynamic-code interface. The canonical advisory requires non-default acceptance of peer-initiated QUIC streams; this precondition is false in the exact reviewed profile. This is not an upstream code-fix claim.",
       "references": [
         "https://security-tracker.debian.org/tracker/CVE-2026-84785"
       ]
+    },
+    "DEBIAN-CVE-2026-100290": {
+      "condition": "native_patterns",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "bfa0384e1654f0dcdc20ff06f22e37bd17f96c170767462d93407340ecc5a864",
+      "cna_sha256": "bf31ce7927ff47aa1ca23899b0ec9720efd846e552a99276429791015cacaf19",
+      "reason": "The affected glibc regcomp/regexec/glob allocation-failure paths are outside the exact qualified application: the full installed Python/Node ELF dependency closure has no imported glibc glob/regex caller, and owned server/worker sources expose no native-call, process-execution or dynamic-code interface. Python re/pathlib use separate implementations. Complete seven-image and declared-archive proofs remain mandatory. This is a scoped profile decision, not an upstream fix.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-100290"
+      ],
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00"
+    },
+    "DEBIAN-CVE-2026-126765": {
+      "condition": "native_patterns",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "advisory_sha256": "3e065244e283f532abd545c438d6cf4df4efc34fc6f0659936daecc8c80ccf5c",
+      "cna_sha256": "19ed419146202350924212008f1e12e613c093387dd697816ed0158c9edfe382",
+      "reason": "The affected glibc regcomp/regexec/glob allocation-failure paths are outside the exact qualified application: the full installed Python/Node ELF dependency closure has no imported glibc glob/regex caller, and owned server/worker sources expose no native-call, process-execution or dynamic-code interface. Python re/pathlib use separate implementations. Complete seven-image and declared-archive proofs remain mandatory. This is a scoped profile decision, not an upstream fix.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-126765"
+      ],
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00"
+    },
+    "DEBIAN-CVE-2026-18477": {
+      "condition": "unprivileged_archive_path",
+      "ecosystem": "Debian:13",
+      "source": "tar",
+      "source_version": "1.35+dfsg-3.1",
+      "advisory_sha256": "3221f094e48cafd3a69a5ff04c442afdd6c237054ae856e4d3619b4e80ff6705",
+      "cna_sha256": "b5bb8f79ea6a89223e7617cc1a5b827eec0f778bb12e42a126c46c41d106ec18",
+      "reason": "The affected GNU tar extraction path is outside the exact qualified application. Owned server/worker code exposes no process-execution or native-call interface. Disposable backup/restore uses the bounded physical-USTAR volume_archive parser, which rejects links, special files, privilege bits, extension records and unsafe paths; it never invokes GNU tar. The exact qualification binds this helper and the read-only, unprivileged runtime. This does not qualify arbitrary tar CLI use or claim an upstream fix.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-18477"
+      ],
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00"
+    },
+    "DEBIAN-CVE-2026-18508": {
+      "condition": "unprivileged_archive_path",
+      "ecosystem": "Debian:13",
+      "source": "tar",
+      "source_version": "1.35+dfsg-3.1",
+      "advisory_sha256": "5e11dfba71ce3b5fe289b951e474b95fef79947ff5a672f9b723f236c0a02841",
+      "cna_sha256": "00da5876913c3ec55fef0fcec42c45d03d16aef0c7157f778bb3d6f46de1b150",
+      "reason": "The affected GNU tar extraction path is outside the exact qualified application. Owned server/worker code exposes no process-execution or native-call interface. Disposable backup/restore uses the bounded physical-USTAR volume_archive parser, which rejects links, special files, privilege bits, extension records and unsafe paths; it never invokes GNU tar. The exact qualification binds this helper and the read-only, unprivileged runtime. This does not qualify arbitrary tar CLI use or claim an upstream fix.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-18508"
+      ],
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00"
+    },
+    "DEBIAN-CVE-2026-5704": {
+      "condition": "unprivileged_archive_path",
+      "ecosystem": "Debian:13",
+      "source": "tar",
+      "source_version": "1.35+dfsg-3.1",
+      "advisory_sha256": "0771e7e8530a841181778f2d5554d8d585909c69dec5984efbb2aa6dcc83fdc1",
+      "cna_sha256": "bd40544cc3dc68ada59dbf20ef616c70d3449acc127a110696ce6c3175b03a31",
+      "reason": "The affected GNU tar extraction path is outside the exact qualified application. Owned server/worker code exposes no process-execution or native-call interface. Disposable backup/restore uses the bounded physical-USTAR volume_archive parser, which rejects links, special files, privilege bits, extension records and unsafe paths; it never invokes GNU tar. The exact qualification binds this helper and the read-only, unprivileged runtime. This does not qualify arbitrary tar CLI use or claim an upstream fix.",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-5704"
+      ],
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00"
+    },
+    "DEBIAN-CVE-2026-42250": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "bzip2",
+      "source_version": "1.0.8-6",
+      "cna_sha256": "a65f5d1d6ca079c23426653abf78c729dac571ae68257c2e4861cc86458e7107",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-42250"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "2cd9583a3d0ad09e7c9c4fb9fe41de5891360a88889acb1e1447b9be982b0658",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2017-18018": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "coreutils",
+      "source_version": "9.7-3",
+      "cna_sha256": "8de4704dcd0a97a77c6ffacddb2f7c13920a7f7408f5c5b48baae00fb800fceb",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2017-18018"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "5c7e88c3356e8c4020867458774dea6ebaeba6818e37185647b71f6b44eb9a0a",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2025-5278": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "coreutils",
+      "source_version": "9.7-3",
+      "cna_sha256": "9d954af3f0cafcf2f50f2b6b1f9874c3616daae2cdc8331e0031fd75aa6fe561",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2025-5278"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "6b6553e945d1aa878dd57b2c10e80bfbd380e5cc0d3e1ca016e75a45ba3b4bfb",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-56391": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "coreutils",
+      "source_version": "9.7-3",
+      "cna_sha256": "eb1c123aee933ed82a17869f9016b749a27f21bf5eb5b21ec8e94f0d7a40f153",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-56391"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "2f6694bc5249ea1894e56e886fab38b86fea8bc668e4f4324a15d1f265fbfebd",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-56392": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "coreutils",
+      "source_version": "9.7-3",
+      "cna_sha256": "46b528448feed8c9e8404e5b258faeca9f1f1d5a2e6fa70112960599e3d78113",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-56392"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "d5bd61f1b7cbe583b3d844e4ea6f9b4ce6436097c95569e82ead2dc5215e47a8",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-102473": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "dash",
+      "source_version": "0.5.12-12",
+      "cna_sha256": "68a3818c786c0f831d59a7530566e7427ffc69e3d2ac025ae187727ed98a6b3e",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-102473"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "bca52fe01959853c3e4dd3c113a16ddf3e35a81125f1dbe30d934f6340b7c378",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-102474": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "dash",
+      "source_version": "0.5.12-12",
+      "cna_sha256": "56dca656b675b224a7f677aa9835c0ad73a3031477352d72579bf9b751693047",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-102474"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "550f36c8cba71b0d644aa6ea5e0cdea15c80131cc5d96895b02df59e7a1b722b",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-53910": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "diffutils",
+      "source_version": "1:3.10-4",
+      "cna_sha256": "8bc6c6de3aa90be92cbb487da5cd757f877f111a2117461a5e55649414467eaa",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-53910"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "644be4a58c59b373977f158f069aa338bab2a2cb4794e264ad3f3ed77c7dec8e",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-91094": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "dpkg",
+      "source_version": "1.22.22",
+      "cna_sha256": "d1ac071d43a0097967bd8dadce40b1a35f2aa25200f698295fa7887fd194278e",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-91094"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "7b6a7607a51126aacbae1d4edcd2f6194f230ca1c4c366f165198a2a0e0f0281",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2011-4116": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "cna_sha256": "9096280a3ab77e211c1fd17cb14c64d21749822492e6f8c65c1a042691140bc8",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2011-4116"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "594355b742fdfa8bc13a48716f634a0147af5686485386df7c25677f73a8bd32",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2026-15534": {
+      "condition": "fixed_startup_tools",
+      "ecosystem": "Debian:13",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "cna_sha256": "7c10caf0a78c4e0d9e97229f215107681f3c5b71c4e15afab835c479be6b1da8",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-15534"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "bcdd09ff6d45f6f9592937b2c66f340d3064a300ab59abf21b13be933b177ee3",
+      "reason": "The affected command/module requires a system-tool or Perl execution path. The exact qualified runtime starts fixed Python/Node commands. Owned server/worker sources have no process-execution or dynamic/native-code interface; the packaged JavaScript SDK and actor accept data, not executable code. No public request is forwarded to bzip2recover, chown/chgrp, sort, uniq, unexpand, dash pattern/printf operations, diff3, dpkg-source, or Perl. The authenticated offline build and fixed startup steps take trusted inputs. This decision covers this recorded application execution path, not arbitrary container shell use or an upstream fix."
+    },
+    "DEBIAN-CVE-2013-4392": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "a5b5cfad172a0cf1e5fc78c2113db844108513c005157655e77a645fbfa44e67",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2013-4392"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "56ebc1b395bc7c48c90c300ebc762b3e8e446756deb1c7cdb6cfb3acf22b9adf",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2023-31437": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "0c4f921dc22000545d8321c4f0ec2cc738f563afc39c67de5a4a8a7a967ff925",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2023-31437"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "1d599997d363d2225c83742976cb22def992e80b29edf2fcbf6a2919f255fca4",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2023-31438": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "1cb5e97e6d47f132bd97178d6ba8d29e838184ef81a01a019f8a4b5688542bce",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2023-31438"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "80cb6a5ee502fac74c4ee736093792ee8c2d54d73a148d567fcec5433a43409d",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2023-31439": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "1506d104cbe5e4ef583f22f0e4c1a33abca494e8f24534e814e4954082e61c1a",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2023-31439"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "b5b8a20566f4ab192a7f5871126c99ebe6b9c46ee0f0117bac84bc2cf6d41539",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2026-15059": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "584c28d7f20d7d3c4c2ca297190ef4a2e0694e188132babb0e79d04ce16b3016",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-15059"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "549e6f2ebb4dadb92e3e5f3054492a8f8f02d42712c1eb69c4186e9f474ec2fb",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2026-16742": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "c6d025c5d88ca3f89c4d53737198e5a5074d60b6cc8b60903889339b784a99bb",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-16742"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "ee042e979d28ab3cc9f46d6005493f2749e279dfc4b2d339c8cb6e0813e9a705",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2026-40228": {
+      "condition": "unused_systemd",
+      "ecosystem": "Debian:13",
+      "source": "systemd",
+      "source_version": "257.13-1~deb13u1",
+      "cna_sha256": "3c7e560b31a98dddf646016b401ca56d85e0b6a6905e3385b074c7110f6f88be",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-40228"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "8ef6779252548b920afd995019df8fbaaf877235511fcfd29f1f76e397627a1a",
+      "reason": "The source-package matches concern the systemd daemon, journal sealing, oomd, homed or journald paths. Only libsystemd0/libudev1 are retained; neither library occurs in the complete application native dependency closure in any image. The exact qualified processes are fixed Python/Node services, with no systemd daemon or process-execution interface. Changed image, closure, command or source invalidates the decision."
+    },
+    "DEBIAN-CVE-2026-115819": {
+      "condition": "no_wide_scanf",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "cna_sha256": "3d77a6d192c3253882b06219728b366885c303039f74307e63e08f8c54dab288",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-115819"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "06fd7063432ddb3141788ced997e8d743ec4e0be8200ef0af0a8db0e4fa06579",
+      "reason": "The complete seven-image application dependency closures contain no imported wide scanf-family caller, including the isoc99/isoc23 variants. Narrow sscanf/fscanf calls remain visible and are not the affected interface. Owned source exposes no direct native-call or process-execution interface."
+    },
+    "DEBIAN-CVE-2026-121757": {
+      "condition": "fixed_text_encodings",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "cna_sha256": "be5c6eb4bbcf5a73a4908f80b8036b85e9b1a2dba7c86883c35613be65f58b9a",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-121757"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "182dd33896d72a267bb9581fa650113b7905f3279299a210f13a08eb2ab7d19f",
+      "reason": "The affected conversions require CP949 with //IGNORE, ISO-2022-CN-EXT, or UCS-4 to IBM1390/1399 input and encoding selection. The exact owned HTTP/IPC/JSON paths decode fixed Unicode encodings; they expose no glibc iconv or attacker-selected legacy native conversion interface. Python codecs and Node ICU conversion are separate implementations. The libstdc++ iconv dependency remains recorded; the qualified source supplies no C++ locale-conversion entry point, and runtime locale is fixed C.UTF-8. This is an execution-path decision, not a claim that iconv is absent or fixed."
+    },
+    "DEBIAN-CVE-2026-121758": {
+      "condition": "fixed_text_encodings",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "cna_sha256": "347ee8c166840ea2a33628770a559fc4be64afab3509fcb37f91d23ea97713ad",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-121758"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "59920ccb6b8a94f2a01d31fcd121fe25ae566da50c8a24a46f118406f7479d76",
+      "reason": "The affected conversions require CP949 with //IGNORE, ISO-2022-CN-EXT, or UCS-4 to IBM1390/1399 input and encoding selection. The exact owned HTTP/IPC/JSON paths decode fixed Unicode encodings; they expose no glibc iconv or attacker-selected legacy native conversion interface. Python codecs and Node ICU conversion are separate implementations. The libstdc++ iconv dependency remains recorded; the qualified source supplies no C++ locale-conversion entry point, and runtime locale is fixed C.UTF-8. This is an execution-path decision, not a claim that iconv is absent or fixed."
+    },
+    "DEBIAN-CVE-2026-124024": {
+      "condition": "fixed_text_encodings",
+      "ecosystem": "Debian:13",
+      "source": "glibc",
+      "source_version": "2.41-12+deb13u5",
+      "cna_sha256": "47d140efe71f5201e827d678280787894b079af6c3a5e4c8d18640d14f5ebb68",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-124024"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "bd1d7ccd15e8cb597747cde191c6812250e9ce709c8c440ada6a5073768a9c4a",
+      "reason": "The affected conversions require CP949 with //IGNORE, ISO-2022-CN-EXT, or UCS-4 to IBM1390/1399 input and encoding selection. The exact owned HTTP/IPC/JSON paths decode fixed Unicode encodings; they expose no glibc iconv or attacker-selected legacy native conversion interface. Python codecs and Node ICU conversion are separate implementations. The libstdc++ iconv dependency remains recorded; the qualified source supplies no C++ locale-conversion entry point, and runtime locale is fixed C.UTF-8. This is an execution-path decision, not a claim that iconv is absent or fixed."
+    },
+    "DEBIAN-CVE-2025-6141": {
+      "condition": "no_termcap_parser",
+      "ecosystem": "Debian:13",
+      "source": "ncurses",
+      "source_version": "6.5+20250216-2",
+      "cna_sha256": "d1cf2936312123f35845676257e51cb4271a686203ab355a79f0a775d976b2f5",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2025-6141"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "7da65bce004c472a27b8afcbbf0f98e7f1eb39e378f1b46b9f0218a43a273d68",
+      "reason": "No libtic or _nc_parse_entry/_nc_read_termcap_entry/_nc_captoinfo caller is present in the complete application closure. The retained ncurses data/runtime libraries do not provide an admitted terminal-source compilation interface. The fixed qualified startup and application have no arbitrary command/native-call interface. This decision does not qualify arbitrary ncurses tools or supplied termcap source."
+    },
+    "DEBIAN-CVE-2026-121481": {
+      "condition": "no_native_encodeblock",
+      "ecosystem": "Debian:13",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+      "cna_sha256": "31a504696669c5bc759a5b71bea60304d67dcf204a7e4d0b0fa4ff5b74dad64c",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-121481"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "47c1130e387a901364d857fc0fce78d935495926900c8f5e98a4ebd619d33d8b",
+      "reason": "No application closure imports EVP_EncodeBlock. The canonical advisory also excludes ordinary TLS/QUIC/CMS operation and requires an application-supplied input near INT_MAX. Owned ingress and provider replies are bounded far below that size and expose no direct native-call interface. The retained library remains byte-pinned; no upstream fix is claimed."
+    },
+    "DEBIAN-CVE-2026-35190": {
+      "condition": "tcp_client_only",
+      "ecosystem": "Debian:13",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+      "cna_sha256": "3c87c3cce89417a5e60efb573aad6c0ed05b68f5afeaffc72d3367d9d4e7bc00",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-35190"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "5fd32c1bd70a214df3f44244361f596b4a6bc72027e1825ff68e000b100fbc2d",
+      "reason": "The exact owned network code uses TCP HTTP and client-side TLS, including explicit server_side=False in the final TLS sender. No DTLS endpoint or Suite B TLS-server configuration is exposed. Cryptography binding DTLS symbols remain present and recorded, but the application does not call or configure those interfaces. Qualified source, runtime commands, images and controls are bound; other TLS hosting modes receive no exemption."
+    },
+    "DEBIAN-CVE-2026-88822": {
+      "condition": "no_incoming_quic",
+      "ecosystem": "Debian:13",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+      "cna_sha256": "0b1bc2895f3a972de0dec85840334001df6e60c403ddb3d6b92414e8418ed71a",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-88822"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "27ac59272afbd038520844adea9ce0db61f1fb762b3918165e21f1c8c41bdae9",
+      "reason": "The full application native closure has no QUIC method or incoming-stream API caller. The qualified source uses TCP HTTP/TLS and exposes no native/plugin execution interface. No peer-detection or peer-initiated QUIC-stream execution path is admitted by this exact profile."
+    },
+    "DEBIAN-CVE-2026-95690": {
+      "condition": "tcp_client_only",
+      "ecosystem": "Debian:13",
+      "source": "openssl",
+      "source_version": "3.5.9-1~deb13u1+ezllmrouter1",
+      "cna_sha256": "42e21440d8aa56e8a1e47f00f086f533479b1e4d2debe6784f84bd555362acf1",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-95690"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "f7580fd7064a96624717ee5eab2c76df386a6446026cb2309630af9739fbaa78",
+      "reason": "The exact owned network code uses TCP HTTP and client-side TLS, including explicit server_side=False in the final TLS sender. No DTLS endpoint or Suite B TLS-server configuration is exposed. Cryptography binding DTLS symbols remain present and recorded, but the application does not call or configure those interfaces. Qualified source, runtime commands, images and controls are bound; other TLS hosting modes receive no exemption."
+    },
+    "DEBIAN-CVE-2021-45346": {
+      "condition": "trusted_database_inputs",
+      "ecosystem": "Debian:14",
+      "source": "sqlite3",
+      "source_version": "3.54.1-2",
+      "cna_sha256": "4e12d90f8a720855875c74886cf87fdce835534b25be1ed1e0c931e00bc1366a",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2021-45346"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "52b12ce987503c8d2ccdc14bc9929d8cf9e89be734c7385e58ec6525bebcc744",
+      "reason": "The affected SQLite observation requires an attacker-supplied corrupted database and corresponding SQL. The qualified service owns its private SQLite files, uses the reviewed schema/SQL repositories, defensive mode and disabled extension loading; its public API accepts data rather than SQL or database-file uploads. The bound restore helper accepts the reviewed owned backup format. Arbitrary untrusted database files and owner-modified SQL remain outside this scope; disputed upstream status alone is not used as evidence."
+    },
+    "DEBIAN-CVE-2026-115456": {
+      "condition": "no_native_charconv",
+      "ecosystem": "Debian:14",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "cna_sha256": "85dc923874db9f7968f72bb574c78d1e5eebce69c9fbd7675945225a139d4ad8",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-115456"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "671a51de15f36fc6db1844b2691d1723c36af974e752d949e7664a0ea7914cb6",
+      "reason": "The full application closures have no imported libstdc++ from_chars function. The reviewed Node source has an inline integer from_chars use for the inspector startup-port option, with an explicit begin/end range; the qualified fixed commands do not enable the inspector or expose its option parser through request data. No arbitrary native-code/compilation interface is present. Other consumers and header-instantiated copies receive no exemption."
+    },
+    "DEBIAN-CVE-2026-125709": {
+      "condition": "no_untrusted_file_streams",
+      "ecosystem": "Debian:14",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "cna_sha256": "62d946f3ff4c82646623e9b7ce3e827ed32186ae1c6951f894a42323f48de216",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-125709"
+      ],
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00",
+      "advisory_sha256": "4a5167921d77632481539ffddf7fcc3b9855de9d53a3e0d68f504f64bf2d12ac",
+      "reason": "Only the two Node executables import C++ file-stream constructors/vtables. The exact publisher source uses ofstream for startup snapshots and diagnostic reports; the qualified commands neither build snapshots nor admit user-supplied JavaScript. The SDK/actor code has no report.writeReport entry point. Fresh runtime samples show fatal/signal/uncaught-exception reports disabled, with fixed idle/SDK commands and no report-related NODE_OPTIONS. Other callers, changed command/entrypoint/options, or enabled diagnostics fail the executable condition. The retained libstdc++ code itself is not claimed fixed. The exact V8 sources also contain file streams for tracing, heap snapshots and build-time generators. Runtime trace-turbo and heap_snapshot_on_oom default false; periodic heap snapshots default disabled (-1). The fixed commands/options do not enable these features, and the reviewed SDK/actor neither sets V8 flags nor exposes a heap-snapshot/report API. Build-only generators and d8 are outside the admitted runtime commands.",
+      "node_source_review_sha256": "698ce7c011681a9d85c59d55e32ed508f57fbd995462dba2981e127fc22428e2"
     }
   },
   "scope": "Exact disposable-qualified Linux ARM64 profile only. These not_affected preconditions do not fix upstream packages or approve other profiles, arbitrary native execution or production acceptance.",
@@ -624,8 +1082,14 @@
           }
         ]
       },
-      "advisory_sha256": "627b7dcff99069aa27e0c407b354b7032819aa1354e708242a5083e9f6f0cabb",
-      "reason": "The Debian:13 affected record and all non-affected/modified fields are identical. Only other Debian suite records and the modification timestamp changed. The exact reviewed source patch and every native output remain unchanged."
+      "advisory_sha256": "56616307764b5ccaf3feb14f595b3122b908c250ab2997d815c2b31f4a3b17de",
+      "reason": "Reviewed exact fresh public record against the unchanged patched source and outputs; the Debian:13 affected record and all other substantive fields remain identical.",
+      "description_review": {
+        "previous_details_sha256": "dd45d2fd672833f6b8f0a77d5b0b7ef81a82e261bfc1f1081b4d75c18feb9bce",
+        "current_details_sha256": "9a89b0c2301704514acb227ad5c695bf2bf6621cbdf5e742dc526667e1481d0b",
+        "cna_sha256": "e2540610090da3e944e77fa25667a423abfef62d7fef33d52ce57d7984fd8087",
+        "reason": "The expanded wording describes the same retransmitted NEW_CONNECTION_ID/RETIRE_CONNECTION_ID backlog. The exact bound patch returns before requeueing equal sequence numbers."
+      }
     },
     "DEBIAN-CVE-2026-121482": {
       "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
@@ -889,8 +1353,279 @@
           }
         ]
       },
-      "advisory_sha256": "6d5a9d758f1a1e0a4e2c307419cc6a05e229379edc78b8f35ba67b89a1566107",
-      "reason": "The Debian:13 affected record and all non-affected/modified fields are identical. Only other Debian suite records and the modification timestamp changed. The exact reviewed source patch and every native output remain unchanged."
+      "advisory_sha256": "0170b4f57cab69ce888846d6e592c12fe8dc7697879b4f1757a4485dc453674e",
+      "reason": "Reviewed exact fresh public record against the unchanged patched source and outputs; the Debian:13 affected record and all other substantive fields remain identical.",
+      "description_review": {
+        "previous_details_sha256": "883cef031eee8ba6691913475715e0f74c9f1b3f50281cb803494cc31b3b5bb2",
+        "current_details_sha256": "7a86a4c6408d599d34893617ce0a346dac559b8f1eb97cab342d841439554b78",
+        "cna_sha256": "ba2d224b257866be2514544c8b7480c05fe43c312fbbeb6e6c338e8782f1e8a1",
+        "reason": "The expanded wording describes the same repeated CRL distribution-point full-name construction in crl_crldp_check. The exact bound patch prebuilds/reuses the names and limits relative names to 16."
+      }
+    },
+    "DEBIAN-CVE-2026-84786": {
+      "native_build": "f39d002d3595dc6020735be2e4123b1c6ac3ada2812f508db92699ce1b4420d0",
+      "patch_sha256": "eb91c49d55cfd80143d80c33317a05e2b72368a44bd99cee2522af6ab5d7f0d3",
+      "previous_advisory": {
+        "id": "DEBIAN-CVE-2026-84786",
+        "details": "Issue summary: A DANE-enabled TLS client may crash by dereferencing a NULL pointer when processing an unusual combination of certificate and TLSA records.  Impact summary: The impact is limited to a client crash (potential Denial of Service).  CWE: CWE-476: NULL Pointer Dereference  Description: A DANE-enabled TLS client that supports TLSA records with at least one of the PKIX-TA(0) or PKIX-EE(1) usages alongside the DANE-TA(2) usage may crash by dereferencing a NULL pointer if the server claims a trusted CA's certificate to be its end-entity certificate and has an unusual mix of associated TLSA records.  DANE SMTP clients should not be affected since only the DANE-TA(2) and DANE-EE(3) TLSA record usages are specified applicable in SMTP.  For example, the Postfix MTA is not affected, while the Exim MTA does not at present use OpenSSL's DANE implementation.  Use of DANE in validation of RFC7250 raw public keys (RPKs) is also unaffected, as these only use DANE-EE(3) TLSA records.  Only applications that support combining the DANE PKI with a traditional PKI are potentially affected.  A DANE-enabled browser or similar, that uses OpenSSL's DANE API could be affected.  FIPS impact: no The DANE API is outside the FIPS module boundary.",
+        "modified": "2026-11-21T09:47:27.416737385Z",
+        "published": "2026-11-18T12:17:23.473Z",
+        "upstream": [
+          "CVE-2026-84786"
+        ],
+        "references": [
+          {
+            "type": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2026-84786"
+          }
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:12",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=bookworm"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.0.10-1",
+              "3.0.10-1~deb12u1",
+              "3.0.11-1",
+              "3.0.11-1~deb12u1",
+              "3.0.11-1~deb12u2",
+              "3.0.12-1",
+              "3.0.12-2",
+              "3.0.13-1~deb12u1",
+              "3.0.13-1~deb12u2",
+              "3.0.14-1~deb12u1",
+              "3.0.14-1~deb12u2",
+              "3.0.15-1~deb12u1",
+              "3.0.16-1~deb12u1",
+              "3.0.17-1~deb12u1",
+              "3.0.17-1~deb12u2",
+              "3.0.17-1~deb12u3",
+              "3.0.18-1~deb12u1",
+              "3.0.18-1~deb12u2",
+              "3.0.19-1~deb12u1",
+              "3.0.19-1~deb12u2",
+              "3.0.20-1~deb12u1",
+              "3.0.20-1~deb12u2",
+              "3.0.22-1~deb12u1",
+              "3.0.22-1~deb12u2",
+              "3.0.9-1",
+              "3.1.0-1",
+              "3.1.1-1",
+              "3.1.2-1",
+              "3.1.3-1",
+              "3.1.4-1",
+              "3.1.4-2",
+              "3.1.5-1",
+              "3.1.5-1.1",
+              "3.1.5-1.1+hurd.1",
+              "3.2.0-1",
+              "3.2.0-2",
+              "3.2.1-1",
+              "3.2.1-1.1~exp1",
+              "3.2.1-2",
+              "3.2.1-3",
+              "3.2.2-1",
+              "3.3.0-1",
+              "3.3.0~beta1-1",
+              "3.3.1-1",
+              "3.3.1-2",
+              "3.3.1-5",
+              "3.3.1-6",
+              "3.3.1-7",
+              "3.3.2-1",
+              "3.3.2-2",
+              "3.4.0-1",
+              "3.4.0-2",
+              "3.4.0~~beta1-1",
+              "3.4.0~~beta1-2",
+              "3.4.1-1",
+              "3.5.0-1",
+              "3.5.0-2",
+              "3.5.0-3",
+              "3.5.0~~alpha1-1",
+              "3.5.0~~beta1-1",
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-84786.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:13",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=trixie"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.1-1+deb13u1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-84786.json"
+            }
+          },
+          {
+            "package": {
+              "name": "openssl",
+              "ecosystem": "Debian:14",
+              "purl": "pkg:deb/debian/openssl?arch=source&distro=forky"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  }
+                ]
+              }
+            ],
+            "versions": [
+              "3.5.1-1",
+              "3.5.2-1",
+              "3.5.3-1",
+              "3.5.4-1",
+              "3.5.4-1~deb13u1",
+              "3.5.4-1~deb13u2",
+              "3.5.5-1",
+              "3.5.5-1~deb13u1",
+              "3.5.5-1~deb13u2",
+              "3.5.6-1~deb13u1",
+              "3.5.6-1~deb13u2",
+              "3.5.7-1~deb13u1",
+              "3.5.7-1~deb13u2",
+              "3.5.7-1~deb13u3",
+              "3.5.9-1~deb13u1",
+              "3.6.0-1",
+              "3.6.0-2",
+              "3.6.0~~alpha1-1",
+              "3.6.0~~beta1-1",
+              "3.6.1-1",
+              "3.6.1-2",
+              "3.6.1-3",
+              "3.6.2-1",
+              "3.6.3-1",
+              "3.6.4-1",
+              "3.6.5-1",
+              "4.0.0-1",
+              "4.0.0~alpha1-1",
+              "4.0.0~beta1-1",
+              "4.0.1-1",
+              "4.0.2-1",
+              "4.0.3+really4.1.0-1",
+              "4.0.3-1"
+            ],
+            "ecosystem_specific": {
+              "urgency": "not yet assigned"
+            },
+            "database_specific": {
+              "source": "https://storage.googleapis.com/debian-osv/debian-cve-osv/DEBIAN-CVE-2026-84786.json"
+            }
+          }
+        ],
+        "schema_version": "1.9.2",
+        "severity": [
+          {
+            "type": "CVSS_V3",
+            "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          }
+        ]
+      },
+      "advisory_sha256": "2df93ce27137bf66e27349aad72fdf85aba532a0fa78f32394101f757d0de9f6",
+      "reason": "Reviewed exact fresh public record against the unchanged patched source and outputs; the Debian:13 affected record and all other substantive fields remain identical."
     }
   }
 }

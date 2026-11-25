@@ -17,6 +17,44 @@ from tools.security_elf import application_closure, inspect
 from tools.security_resolutions import canonical
 
 
+def node_report(image: str, configuration: dict) -> dict:
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", image) or configuration.get("Id") != image:
+        raise ValueError("immutable matching image required for Node diagnostic")
+    config = configuration["Config"]
+    environment = dict(value.split("=", 1) for value in (config.get("Env") or []) if "=" in value)
+    if environment.get("NODE_OPTIONS", "") not in {"", "--use-bundled-ca"} or config.get(
+        "Entrypoint"
+    ) != ["docker-entrypoint.sh"]:
+        raise ValueError("unreviewed Node startup configuration")
+    code = """
+console.log(JSON.stringify({fatal:process.report.reportOnFatalError,
+signal:process.report.reportOnSignal,exception:process.report.reportOnUncaughtException,
+node_options:process.env.NODE_OPTIONS||''}));
+"""
+    report = json.loads(
+        subprocess.check_output(
+            [
+                *DOCKER,
+                "run",
+                "--rm",
+                "--network=none",
+                "--read-only",
+                "--cap-drop=ALL",
+                "--security-opt=no-new-privileges:true",
+                image,
+                "node",
+                "-e",
+                code,
+            ],
+            text=True,
+            timeout=30,
+        )
+    )
+    report["command"] = configuration["Config"]["Cmd"] or []
+    report["entrypoint"] = configuration["Config"]["Entrypoint"] or []
+    return report
+
+
 def elf_objects(image: str) -> dict:
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", image):
         raise ValueError("immutable image required for native inspection")
@@ -113,10 +151,11 @@ def capture(image: dict, probe: Path, policy: dict, role: str) -> dict:
         timeout=30,
     )
     runtime = json.loads(raw)
-    return {
+    proof = {
         "image": identity,
         "elf_count": len(objects),
         "elf_sha256": canonical(objects),
+        "elf_objects": objects,
         "closure_sha256": canonical(closure),
         "closure": closure,
         "zstd_removed_callers": {
@@ -131,3 +170,6 @@ def capture(image: dict, probe: Path, policy: dict, role: str) -> dict:
         ),
         "runtime": runtime,
     }
+    if "node@sha256:" in image["image"]["base"]:
+        proof["node_report"] = node_report(identity, configuration)
+    return proof

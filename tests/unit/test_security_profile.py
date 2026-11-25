@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from tools.security_profile import (
     CASES,
@@ -18,9 +19,112 @@ from tools.security_profile import (
     sources,
 )
 from tools.security_resolutions import canonical
+from tools.security_elf import application_closure
+from tools.security_profile_conditions import valid as condition_valid
+from tools.security_profile_capture import node_report
 
 
 class ProfileReviewTests(unittest.TestCase):
+    def test_node_diagnostic_rejects_unreviewed_startup_before_execution(self):
+        image = "sha256:" + "a" * 64
+        configuration = {
+            "Id": image,
+            "Config": {"Env": [], "Entrypoint": ["docker-entrypoint.sh"], "Cmd": ["node"]},
+        }
+        for change in ("identity", "options", "entrypoint"):
+            actual = deepcopy(configuration)
+            if change == "identity":
+                actual["Id"] = "sha256:" + "b" * 64
+            elif change == "options":
+                actual["Config"]["Env"] = ["NODE_OPTIONS=--require=/unreviewed.js"]
+            else:
+                actual["Config"]["Entrypoint"] = ["/unreviewed-entrypoint"]
+            with (
+                self.subTest(change=change),
+                patch("tools.security_profile_capture.subprocess.check_output") as execute,
+            ):
+                with self.assertRaises(ValueError):
+                    node_report(image, actual)
+                execute.assert_not_called()
+
+    def native_proof(self, imports=(), dependency=None):
+        proof = self.proof()
+        objects = {
+            "/app/actor": {
+                "imports": list(imports),
+                "exports": [],
+                "needed": [dependency] if dependency else [],
+                "soname": None,
+            }
+        }
+        if dependency:
+            objects["/usr/lib/" + dependency] = {
+                "imports": [],
+                "exports": [],
+                "needed": [],
+                "soname": dependency,
+            }
+        proof.update(elf_objects=objects, elf_sha256=canonical(objects))
+        proof["closure"] = application_closure(objects)
+        proof["closure_sha256"] = canonical(proof["closure"])
+        return proof
+
+    def test_full_native_metadata_and_closure_cannot_be_forged_independently(self):
+        expected = self.native_proof()
+        self.assertTrue(proof_valid(expected, expected))
+        changed = deepcopy(expected)
+        changed["elf_objects"]["/app/actor"]["imports"] = ["swscanf"]
+        self.assertFalse(proof_valid(changed, expected))
+        changed = deepcopy(expected)
+        changed["closure"]["objects"] = []
+        self.assertFalse(proof_valid(changed, expected))
+
+    def test_additional_reviews_require_full_metadata_and_absent_affected_callers(self):
+        cases = (
+            ("DEBIAN-CVE-2026-115819", ("swscanf",), None),
+            ("DEBIAN-CVE-2026-115456", ("_ZSt10from_chars",), None),
+            ("DEBIAN-CVE-2026-121481", ("EVP_EncodeBlock",), None),
+            ("DEBIAN-CVE-2025-6141", ("_nc_parse_entry",), None),
+            ("DEBIAN-CVE-2025-6141", (), "libtic.so.6"),
+            ("DEBIAN-CVE-2026-15059", (), "libsystemd.so.0"),
+        )
+        for identifier, imports, dependency in cases:
+            with self.subTest(identifier=identifier, dependency=dependency):
+                self.assertFalse(condition_valid(identifier, {"worker": self.proof()}))
+                self.assertTrue(condition_valid(identifier, {"worker": self.native_proof()}))
+                self.assertFalse(
+                    condition_valid(identifier, {"worker": self.native_proof(imports, dependency)})
+                )
+
+    def test_node_file_stream_review_rejects_enabled_reports_or_other_code(self):
+        proof = self.native_proof(("_ZNSt13basic_filebufIcEEC1Ev",))
+        proof["elf_objects"]["/usr/local/bin/node"] = proof["elf_objects"].pop("/app/actor")
+        proof["closure"] = application_closure(proof["elf_objects"])
+        proof["elf_sha256"] = canonical(proof["elf_objects"])
+        proof["node_report"] = {
+            "fatal": False,
+            "signal": False,
+            "exception": False,
+            "node_options": "",
+            "command": ["node", "-e", "setInterval(()=>{},3600000)"],
+            "entrypoint": ["docker-entrypoint.sh"],
+        }
+        identifier = "DEBIAN-CVE-2026-125709"
+        self.assertTrue(condition_valid(identifier, {"js": proof}))
+        for change in ("fatal", "signal", "exception", "code", "flags", "missing"):
+            actual = deepcopy(proof)
+            report = actual["node_report"]
+            if change in {"fatal", "signal", "exception"}:
+                report[change] = True
+            elif change == "code":
+                report["command"] = ["node", "-e", "process.report.writeReport()"]
+            elif change == "flags":
+                report["node_options"] = "--report-on-fatalerror"
+            else:
+                actual.pop("node_report")
+            with self.subTest(change=change):
+                self.assertFalse(condition_valid(identifier, {"js": actual}))
+
     def proof(self):
         return {
             "image": "sha256:" + "a" * 64,
@@ -85,6 +189,7 @@ class ProfileReviewTests(unittest.TestCase):
                 "decisions": [
                     {
                         "id": identifier,
+                        "state": "under_investigation",
                         "effective_blocking": True,
                         "raw_blocking": True,
                         "package": {
@@ -135,6 +240,31 @@ class ProfileReviewTests(unittest.TestCase):
                 self.assertEqual(
                     apply_reviews(report, snapshot, images, proofs, policy)["effective_blocking"], 1
                 )
+
+    def test_nonblocking_profile_review_requires_the_same_complete_proof(self):
+        data = self.data()
+        data[0]["decisions"][0].update(raw_blocking=False, effective_blocking=False)
+        result = apply_reviews(*deepcopy(data))
+        self.assertEqual(result["decisions"][0]["state"], "not_affected")
+        self.assertEqual(result["resolved_profile_matches"], 1)
+        self.assertFalse(result["decisions"][0]["raw_blocking"])
+        for change in ("advisory", "caller", "archive", "empty_sources"):
+            report, snapshot, images, proofs, policy = deepcopy(data)
+            if change == "advisory":
+                next(iter(snapshot["vulnerabilities"].values()))["changed"] = True
+            elif change == "caller":
+                proofs["worker"]["closure"]["restricted_callers"] = {"/app/lib.so": ["glob"]}
+            elif change == "archive":
+                from tools.gateway.os_inputs import LOCK
+
+                report["decisions"][0]["package"]["sources"].append(LOCK)
+            else:
+                report["decisions"][0]["package"]["sources"].clear()
+            with self.subTest(change=change):
+                result = apply_reviews(report, snapshot, images, proofs, policy)
+                self.assertEqual(result["decisions"][0]["state"], "under_investigation")
+                self.assertEqual(result["resolved_profile_matches"], 0)
+                self.assertEqual(result["effective_blocking"], 0)
 
     def fixture(self):
         temporary = tempfile.TemporaryDirectory()

@@ -10,18 +10,26 @@ from pathlib import Path
 import re
 
 from tools.gateway.os_inputs import LOCK
+from tools.security_elf import application_closure
+from tools.security_profile_conditions import CASES as ADDITIONAL_CASES, valid as condition_valid
 from tools.security_resolutions import canonical
 
 CASES = {
     "DEBIAN-CVE-2010-4756": ("glibc", "native_patterns"),
     "DEBIAN-CVE-2018-20796": ("glibc", "native_patterns"),
     "DEBIAN-CVE-2019-9192": ("glibc", "native_patterns"),
+    "DEBIAN-CVE-2026-100290": ("glibc", "native_patterns"),
+    "DEBIAN-CVE-2026-126765": ("glibc", "native_patterns"),
     "DEBIAN-CVE-2019-1010022": ("glibc", "aarch64_guard"),
     "DEBIAN-CVE-2019-1010023": ("glibc", "trusted_native_inputs"),
     "DEBIAN-CVE-2026-84243": ("glibc", "fixed_locale"),
     "DEBIAN-CVE-2005-2541": ("tar", "unprivileged_archive_path"),
+    "DEBIAN-CVE-2026-18477": ("tar", "unprivileged_archive_path"),
+    "DEBIAN-CVE-2026-18508": ("tar", "unprivileged_archive_path"),
+    "DEBIAN-CVE-2026-5704": ("tar", "unprivileged_archive_path"),
     "DEBIAN-CVE-2026-84785": ("openssl", "no_incoming_quic"),
 }
+CASES.update(ADDITIONAL_CASES)
 SOURCE_ROOTS = ("server/src", "worker/ezllmrouter_worker")
 CONTROLS = (
     "deploy/local/compose.yaml",
@@ -130,6 +138,16 @@ def load_policy(path: Path, root: Path, qualification: dict) -> dict:
 
 def proof_valid(proof: dict, expected: dict) -> bool:
     runtime = proof["runtime"]
+    if (
+        "node_report_sha256" in expected
+        and canonical(proof.get("node_report")) != expected["node_report_sha256"]
+    ):
+        return False
+    if "elf_objects" in proof and (
+        canonical(proof["elf_objects"]) != proof["elf_sha256"]
+        or application_closure(proof["elf_objects"]) != proof["closure"]
+    ):
+        return False
     return (
         all(proof[key] == expected[key] for key in ("image", "elf_sha256", "closure_sha256"))
         and not proof["closure"]["restricted_callers"]
@@ -165,16 +183,17 @@ def apply_reviews(report: dict, snapshot: dict, images: dict, captures: dict, po
     for decision in report["decisions"]:
         review = policy["reviews"].get(decision["id"])
         package = decision["package"]
-        if not review or not decision["effective_blocking"]:
+        if not review or decision["state"] != "under_investigation":
             continue
         valid = (
             complete
-            and package["ecosystem"] == "Debian:13"
+            and package["ecosystem"] == review.get("ecosystem", "Debian:13")
             and package["name"] == CASES[decision["id"]][0]
             and package["version"] == review["source_version"]
             and bool(package["sources"])
             and canonical(snapshot["vulnerabilities"][decision["id"]]) == review["advisory_sha256"]
             and set(package["sources"]) <= sources_by_image | {LOCK}
+            and condition_valid(decision["id"], captures)
         )
         if LOCK in package["sources"]:
             valid = (

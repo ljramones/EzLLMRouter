@@ -241,6 +241,45 @@ class NativeReviewTests(unittest.TestCase):
 
 
 class NativeAdvisoryRevalidationTests(unittest.TestCase):
+    def test_description_expansion_requires_exact_old_new_text_and_canonical_review(self):
+        previous = {
+            "id": "synthetic-patched-case",
+            "details": "Short original description",
+            "affected": [{"package": {"ecosystem": "Debian:13"}, "ranges": ["same"]}],
+        }
+        current = dict(previous, details="Expanded description of the same reviewed defect")
+        review = {"advisory_sha256": canonical(previous), "patch_sha256": "a" * 64}
+        update = {
+            "native_build": "b" * 64,
+            "patch_sha256": "a" * 64,
+            "previous_advisory": previous,
+            "advisory_sha256": canonical(current),
+            "reason": "Exact artifact review retained",
+        }
+        self.assertFalse(reviewed_advisory(current, review, "b" * 64, update))
+        update["description_review"] = {
+            "previous_details_sha256": canonical(previous["details"]),
+            "current_details_sha256": canonical(current["details"]),
+            "cna_sha256": "c" * 64,
+            "reason": "The exact bound source patch addresses the expanded description",
+        }
+        self.assertTrue(reviewed_advisory(current, review, "b" * 64, update))
+        for change in ("text", "old_text", "target", "severity", "cna"):
+            actual, refreshed = deepcopy(current), deepcopy(update)
+            if change == "text":
+                actual["details"] = "A further unreviewed mechanism"
+            elif change == "old_text":
+                refreshed["description_review"]["previous_details_sha256"] = "0" * 64
+            elif change == "target":
+                actual["affected"][0]["ranges"] = ["new target"]
+            elif change == "severity":
+                actual["severity"] = ["new severity"]
+            else:
+                refreshed["description_review"]["cna_sha256"] = "unbound"
+            refreshed["advisory_sha256"] = canonical(actual)
+            with self.subTest(change=change):
+                self.assertFalse(reviewed_advisory(actual, review, "b" * 64, refreshed))
+
     def test_only_an_exact_unchanged_target_can_accept_reviewed_other_suite_updates(self):
         previous = {
             "id": "synthetic-patched-case",

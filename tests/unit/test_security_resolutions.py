@@ -9,9 +9,26 @@ import unittest
 from unittest.mock import patch
 
 from tools.security_resolutions import canonical, capture, evaluate, load_policy
+from tools.security_component_census import capture as component_census, absent as components_absent
+from tools.deployment_qualification import runtime_components
 
 
 class ComponentResolutionTests(unittest.TestCase):
+    def test_additional_module_coverage_rejects_present_alias_or_mismatched_census(self):
+        review = {"absent_perl_modules": ["Net/FTP.pm", "Net/FTP.pmc"]}
+        baseline = "f\t755\t/usr/bin/find\0f\t755\t/usr/bin/dpkg-query\0"
+        for extra in ("", "f\t644\t/opt/modules/Net/FTP.pm\0", "l\t777\t/opt/modules/Net\0"):
+            raw = baseline + extra
+            inventory = runtime_components(raw)
+            census = component_census(raw, {"reviews": [review]}, inventory)
+            proof = {"component_inventory": inventory, "reviewed_component_inventory": census}
+            with self.subTest(extra=extra):
+                self.assertEqual(components_absent(proof, review), not extra)
+                proof["reviewed_component_inventory"]["sha256"] = "0" * 64
+                self.assertFalse(components_absent(proof, review))
+        proof = {"component_inventory": runtime_components(baseline)}
+        self.assertFalse(components_absent(proof, review), "new selectors need explicit coverage")
+
     def setUp(self):
         self.policy = json.loads(Path("tools/security_component_reviews.json").read_text())
         review = self.policy["reviews"][0]
@@ -84,6 +101,20 @@ class ComponentResolutionTests(unittest.TestCase):
     def test_changed_advisory_reopens_match(self):
         self.advisory["new_affected_interface"] = "uuid"
         self.assertEqual(self.result()["effective_blocking"], 1)
+
+    def test_nonblocking_review_closes_only_with_complete_evidence(self):
+        self.issues[0].update(blocking=False, severity="MODERATE")
+        before = deepcopy(self.issues)
+        result = self.result()
+        self.assertEqual(result["decisions"][0]["state"], "not_affected")
+        self.assertEqual(result["resolved_component_matches"], 1)
+        self.assertEqual((result["raw_blocking"], result["effective_blocking"]), (0, 0))
+        self.assertEqual(self.issues, before)
+        self.captures["worker"]["packages"]["libuuid1"]["code_set_sha256"] = "0" * 64
+        result = self.result()
+        self.assertEqual(result["decisions"][0]["state"], "under_investigation")
+        self.assertEqual(result["resolved_component_matches"], 0)
+        self.assertEqual((result["raw_blocking"], result["effective_blocking"]), (0, 0))
 
     def test_changed_package_version_gets_no_old_code_proof(self):
         image = self.images["worker"]
@@ -245,3 +276,34 @@ class ComponentResolutionTests(unittest.TestCase):
                 path.write_text(json.dumps(policy))
                 with self.assertRaises(ValueError):
                     load_policy(path)
+
+    def test_metadata_only_review_rejects_unbound_or_executable_payload(self):
+        policy = deepcopy(self.policy)
+        review = policy["reviews"][0]
+        policy["reviews"] = [review]
+        review.update(absent_executables=[], absent_perl_modules=[], metadata_only=True)
+        package = policy["packages"]["libuuid1"]
+        package.update(code_files=[], code_set_sha256=canonical([]), metadata_only=True)
+        for change in (None, "code", "package_marker", "review_marker", "code_hash"):
+            candidate = deepcopy(policy)
+            row = candidate["packages"]["libuuid1"]
+            if change == "code":
+                row["code_files"] = ["/usr/bin/unexpected"]
+            elif change == "package_marker":
+                row.pop("metadata_only")
+            elif change == "review_marker":
+                candidate["reviews"][0].pop("metadata_only")
+            elif change == "code_hash":
+                row["code_set_sha256"] = "0" * 64
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as directory:
+                now = datetime.now(timezone.utc)
+                candidate.update(
+                    reviewed_at=now.isoformat(), expires_at=(now + timedelta(days=1)).isoformat()
+                )
+                path = Path(directory) / "review.json"
+                path.write_text(json.dumps(candidate))
+                if change is None:
+                    self.assertEqual(load_policy(path), candidate)
+                else:
+                    with self.assertRaises(ValueError):
+                        load_policy(path)

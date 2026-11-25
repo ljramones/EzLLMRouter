@@ -161,9 +161,19 @@ def reviewed_advisory(current: dict, review: dict, native_id: str, update: dict 
     if not update:
         return False
     previous = update["previous_advisory"]
+    description = update.get("description_review", {})
+    reviewed_description = (
+        isinstance(previous.get("details"), str)
+        and isinstance(current.get("details"), str)
+        and description.get("previous_details_sha256") == canonical(previous["details"])
+        and description.get("current_details_sha256") == canonical(current["details"])
+        and re.fullmatch(r"[0-9a-f]{64}", description.get("cna_sha256", "")) is not None
+        and bool(description.get("reason", "").strip())
+    )
 
     def stable(value):
-        return {key: row for key, row in value.items() if key not in {"affected", "modified"}}
+        excluded = {"affected", "modified"} | ({"details"} if reviewed_description else set())
+        return {key: row for key, row in value.items() if key not in excluded}
 
     def target(value):
         return [row for row in value["affected"] if row["package"]["ecosystem"] == "Debian:13"]

@@ -12,6 +12,7 @@ import subprocess
 from deploy.local.local_profile import DOCKER
 from tools.deployment_qualification import runtime_components
 from tools.gateway.os_inputs import LOCK, advisory_ecosystem, verify_archives
+from tools.security_component_census import capture as component_census, absent as components_absent
 
 
 def canonical(value):
@@ -73,7 +74,13 @@ def load_policy(path: Path):
             review.get(key, [])
             for key in ("absent_executables", "absent_perl_modules", "absent_sqlite_extensions")
         ):
-            raise ValueError("empty reviewed component requirement")
+            if review.get("metadata_only") is not True or any(
+                policy["packages"][name].get("metadata_only") is not True
+                or policy["packages"][name]["code_files"]
+                or policy["packages"][name]["code_set_sha256"] != canonical([])
+                for name in review["allowed_binaries"]
+            ):
+                raise ValueError("empty reviewed component requirement")
     return policy
 
 
@@ -146,7 +153,12 @@ def capture(image, policy):
             "source_version": installed[name]["version"],
             "code_set_sha256": canonical(code),
         }
-    return {"image": immutable, "component_inventory": census, "packages": packages}
+    return {
+        "image": immutable,
+        "component_inventory": census,
+        "reviewed_component_inventory": component_census(raw, policy, census),
+        "packages": packages,
+    }
 
 
 def capture_archives(root: Path, store: Path, inventory):
@@ -242,14 +254,7 @@ def evaluate(issues, snapshot, images, captures, policy, archives=None):
                 else False
             )
             if valid:
-                selectors = proof["component_inventory"]
-                valid = (
-                    not selectors["forbidden_components"]
-                    and set(review["absent_executables"]) <= set(selectors["checked_basenames"])
-                    and set(review["absent_perl_modules"]) <= set(selectors["checked_perl_paths"])
-                    and set(review.get("absent_sqlite_extensions", []))
-                    <= set(selectors.get("checked_sqlite_extensions", []))
-                )
+                valid = components_absent(proof, review)
             if valid:
                 for row in owned:
                     approved = policy["packages"][row["binary"]]
@@ -272,11 +277,7 @@ def evaluate(issues, snapshot, images, captures, policy, archives=None):
                 if valid
                 else "no matching complete artifact/component review",
             }
-        resolved = (
-            bool(issue["blocking"])
-            and bool(targets)
-            and all(row["state"] == "not_affected" for row in targets.values())
-        )
+        resolved = bool(targets) and all(row["state"] == "not_affected" for row in targets.values())
         decisions.append(
             {
                 "id": issue["id"],
@@ -293,9 +294,7 @@ def evaluate(issues, snapshot, images, captures, policy, archives=None):
         "snapshot_queried_at": snapshot["queried_at"],
         "raw_matches": len(issues),
         "raw_blocking": sum(row["blocking"] for row in issues),
-        "resolved_component_matches": sum(
-            row["raw_blocking"] and not row["effective_blocking"] for row in decisions
-        ),
+        "resolved_component_matches": sum(row["state"] == "not_affected" for row in decisions),
         "effective_blocking": sum(row["effective_blocking"] for row in decisions),
         "decisions": decisions,
         "captures": captures,

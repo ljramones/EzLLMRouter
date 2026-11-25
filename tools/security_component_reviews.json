@@ -183,6 +183,58 @@
       ],
       "code_set_sha256": "9caae3be49e4a663e883aaa0dd3d9de7f16f5331155533c638596f95de8b6912",
       "payload_manifest_sha256": "de7e16a779b7514e5d674db37f84961c248597de1fedfc9b664a1326c3cdc71b"
+    },
+    "gcc-14-base": {
+      "binary_version": "14.4.0-4",
+      "source": "gcc-14",
+      "source_version": "14.4.0-4",
+      "architecture": "arm64",
+      "archive_sha256": "773d42e24b2b7da2dbbf2bf332f32059930a0660595c067b6ded1d0f891e0e61",
+      "code_files": [],
+      "code_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "payload_manifest_sha256": "42f204f050acbd54b44f684c1db5d58eac0db3abc1221d5c8b5f83fa99e18685",
+      "metadata_only": true
+    },
+    "gcc-16-base": {
+      "binary_version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "archive_sha256": "4e4a72005f1fb7eaec947f98890cde9d02247ef33454aa6e90e29a31bcc680a4",
+      "code_files": [],
+      "code_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "payload_manifest_sha256": "d9cb53f9ccb36f21a70cd3a38ea8767ed6e7e91ecf7cbc1e57f0bedb9ea32bd3",
+      "metadata_only": true
+    },
+    "libgcc-s1": {
+      "binary_version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "archive_sha256": "385ea4394ef27e610dfa033ea422dd79b154d88255a9d945de86ece751578b9f",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+      ],
+      "code_set_sha256": "07f7c65126de66246d0349cbe49192950dc914707cbe2764143c014e2994d74f",
+      "payload_manifest_sha256": "15bf114023ac9f59a9f14f823e51ac0214fc06f6cbdf0146e4a387c9164839f9"
+    },
+    "libstdc++6": {
+      "binary_version": "16.2.0-4",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "architecture": "arm64",
+      "archive_sha256": "d7d0387468ffed2bc8aa32e16cd05bd9e4b9ea120863d69ee557d2d6dd663c39",
+      "code_files": [
+        "/usr/lib/aarch64-linux-gnu/libstdc++.so.6",
+        "/usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.36",
+        "/usr/share/gcc/python/libstdcxx/__init__.py",
+        "/usr/share/gcc/python/libstdcxx/v6/__init__.py",
+        "/usr/share/gcc/python/libstdcxx/v6/printers.py",
+        "/usr/share/gcc/python/libstdcxx/v6/xmethods.py",
+        "/usr/share/gdb/auto-load/usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.36-gdb.py"
+      ],
+      "code_set_sha256": "c7221a4a0aa375fbc3c9322f8dd034ab23953c9b889def68aaf587e87eb0846d",
+      "payload_manifest_sha256": "13fe5cd32bcac40bf57ce8e37c7680cfba8297600df340e847f20f598bd2e93c"
     }
   },
   "reviews": [
@@ -445,6 +497,160 @@
         "https://github.com/sqlite/sqlite",
         "https://www.vulncheck.com/advisories/sqlite-cli-through-3.54.1-command-injection-via-recover-output"
       ]
+    },
+    {
+      "id": "DEBIAN-CVE-2022-0563",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "52a4c087303bf59e0eba6fbd7b3760d806897b680ba40671d119975e7bb24f57",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "chfn",
+        "chsh"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected Readline-enabled chfn/chsh utilities are absent. The only retained util-linux binary package is the exact reviewed libuuid1 archive, which does not contain these utilities or their inputrc handling. All seven immutable-image component censuses and the declared archive proof are required.",
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00",
+      "cna_sha256": "cc60dd47593a32637a1fbbabe7d8c93c2987181de0d99e3e850d5eecd19ec4b1",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2022-0563"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-3184",
+      "ecosystem": "Debian:13",
+      "source": "util-linux",
+      "source_version": "2.41.5-0+deb13u1",
+      "advisory_sha256": "78ee050cffc0c4251bbe3c0455dd781a2e23f4c76c5d808e153255d624a3ed16",
+      "allowed_binaries": [
+        "libuuid1"
+      ],
+      "absent_executables": [
+        "login"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected login -h/PAM_RHOST path is absent. The only retained util-linux binary package is the exact reviewed libuuid1 archive, which contains no login or PAM implementation. All seven immutable-image component censuses and the declared archive proof are required.",
+      "reviewed_at": "2026-11-25T17:07:57.097999+00:00",
+      "cna_sha256": "c5ab7fef8ee6db95f38b83a158f29dfcbf553c71b24420315977d2d21e51d6ea",
+      "references": [
+        "https://security-tracker.debian.org/tracker/CVE-2026-3184"
+      ]
+    },
+    {
+      "id": "DEBIAN-CVE-2026-115456",
+      "ecosystem": "Debian:14",
+      "source": "gcc-14",
+      "source_version": "14.4.0-4",
+      "advisory_sha256": "671a51de15f36fc6db1844b2691d1723c36af974e752d949e7664a0ea7914cb6",
+      "allowed_binaries": [
+        "gcc-14-base"
+      ],
+      "metadata_only": true,
+      "absent_executables": [],
+      "absent_perl_modules": [],
+      "reason": "The only retained gcc-14 binary package is gcc-14-base. Its signed-index/hash-verified archive contains documentation and metadata only, with no executable code, library, or compiler header. The separately attributed gcc-16 runtime and bundled consumers receive no exemption from this decision.",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
+    },
+    {
+      "id": "DEBIAN-CVE-2026-125709",
+      "ecosystem": "Debian:14",
+      "source": "gcc-14",
+      "source_version": "14.4.0-4",
+      "advisory_sha256": "4a5167921d77632481539ffddf7fcc3b9855de9d53a3e0d68f504f64bf2d12ac",
+      "allowed_binaries": [
+        "gcc-14-base"
+      ],
+      "metadata_only": true,
+      "absent_executables": [],
+      "absent_perl_modules": [],
+      "reason": "The only retained gcc-14 binary package is gcc-14-base. Its signed-index/hash-verified archive contains documentation and metadata only, with no executable code, library, or compiler header. The separately attributed gcc-16 runtime and bundled consumers receive no exemption from this decision.",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
+    },
+    {
+      "id": "DEBIAN-CVE-2026-114690",
+      "ecosystem": "Debian:14",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "advisory_sha256": "1084bcb54fc2e61c6c68477f6529d6faf0573c0935aa7606a00c093a99f48d07",
+      "allowed_binaries": [
+        "gcc-16-base",
+        "libgcc-s1",
+        "libstdc++6"
+      ],
+      "absent_executables": [
+        "gcc",
+        "g++",
+        "gcc-16",
+        "g++-16"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected parallel search, vector<bool> size calculation and wide bitset extraction are consumer-instantiated compiler-header implementations. The exact selected gcc-16-base/libgcc-s1/libstdc++6 archives contain no compiler headers; their runtime code and aliases are bound by hash. No named compiler is present in the complete image census. This resolves the matched Debian runtime-package artifacts only: header-instantiated code in other builds and bundled consumers is not qualified by this exemption.",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
+    },
+    {
+      "id": "DEBIAN-CVE-2026-114691",
+      "ecosystem": "Debian:14",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "advisory_sha256": "f01758ae362fa180d9d0ef1f166ef7576877d80978762e93c9ad206fa67f7014",
+      "allowed_binaries": [
+        "gcc-16-base",
+        "libgcc-s1",
+        "libstdc++6"
+      ],
+      "absent_executables": [
+        "gcc",
+        "g++",
+        "gcc-16",
+        "g++-16"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected parallel search, vector<bool> size calculation and wide bitset extraction are consumer-instantiated compiler-header implementations. The exact selected gcc-16-base/libgcc-s1/libstdc++6 archives contain no compiler headers; their runtime code and aliases are bound by hash. No named compiler is present in the complete image census. This resolves the matched Debian runtime-package artifacts only: header-instantiated code in other builds and bundled consumers is not qualified by this exemption.",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
+    },
+    {
+      "id": "DEBIAN-CVE-2026-115455",
+      "ecosystem": "Debian:14",
+      "source": "gcc-16",
+      "source_version": "16.2.0-4",
+      "advisory_sha256": "72abc4dded86db9c32435514c25ab9363d69c508bd95faba50fadd3e987371f7",
+      "allowed_binaries": [
+        "gcc-16-base",
+        "libgcc-s1",
+        "libstdc++6"
+      ],
+      "absent_executables": [
+        "gcc",
+        "g++",
+        "gcc-16",
+        "g++-16"
+      ],
+      "absent_perl_modules": [],
+      "reason": "The affected parallel search, vector<bool> size calculation and wide bitset extraction are consumer-instantiated compiler-header implementations. The exact selected gcc-16-base/libgcc-s1/libstdc++6 archives contain no compiler headers; their runtime code and aliases are bound by hash. No named compiler is present in the complete image census. This resolves the matched Debian runtime-package artifacts only: header-instantiated code in other builds and bundled consumers is not qualified by this exemption.",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
+    },
+    {
+      "id": "DEBIAN-CVE-2026-40558",
+      "ecosystem": "Debian:13",
+      "source": "perl",
+      "source_version": "5.40.1-6+deb13u1",
+      "advisory_sha256": "9f3a8b965e2fcd534f3529e9adfc3fed61123f504fd18cfed0c359ff5da6a24f",
+      "allowed_binaries": [
+        "perl-base"
+      ],
+      "absent_executables": [],
+      "absent_perl_modules": [
+        "Net/FTP.pm",
+        "Net/FTP.pmc"
+      ],
+      "reason": "Debian identifies the affected component as the Net::FTP passive-data-connection address handling fixed by libnet commit 4e5ce1cfa901a9bc2aad2b635b5434154983ff12. Net::FTP is not included in the exact reviewed perl-base archive. Complete per-image censuses must cover Net/FTP.pm, Net/FTP.pmc and Net directory aliases and find none. The canonical CVE endpoint currently returns 404; the Debian tracker and exact upstream change are retained as the component-identification sources. Raw unrated severity remains unchanged.",
+      "debian_tracker_sha256": "e658f8d65aa799cf44775a23834361e5a60e342f58203267675e6967b02fde5a",
+      "upstream_commit": "4e5ce1cfa901a9bc2aad2b635b5434154983ff12",
+      "upstream_response_sha256": "d9715333a47c845b163888df4ad90d39fa4caeed90f9d7948cd2091209a84862",
+      "reviewed_at": "2026-11-25T17:40:35.421736+00:00"
     }
   ],
   "scope": "Exact matched Debian binary package artifacts only; no exemption for other bundled copies or retained-library interfaces"

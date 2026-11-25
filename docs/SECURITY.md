@@ -214,6 +214,14 @@ sources must pass; an added binary, changed code/advisory, missing component
 check or expired review leaves the match blocked. Reviews last at most seven
 days. Raw findings and severity remain unchanged in `findings.json`; the
 separate `dispositions.json` records the effective gate and per-image reasons.
+Review state is independent of severity: complete evidence can close a moderate
+or low match as `not_affected` under the same artifact checks. Partial evidence
+leaves it `under_investigation`, even when it does not block the severity gate.
+Additional reviewed module/compiler selectors use that same complete filesystem
+census and reject module-directory aliases. An explicitly reviewed metadata-only
+compiler-base package must have an empty code set and a verified archive identity.
+Runtime-package compiler-header decisions do not qualify header-instantiated code
+in other builds or bundled consumers.
 This review covers the matched Debian artifacts only and grants no exemption
 to other bundled copies or unreviewed native interfaces.
 
@@ -234,6 +242,12 @@ and dynamic-code entry points in owned server/worker code. These are narrow
 `not_affected` decisions for this profile, not upstream fixes or acceptance for
 other deployments. Raw package findings and severity stay visible; any changed
 image, caller, source, advisory, control, qualification or expired review blocks.
+Lower-severity interface reviews retain complete ELF metadata and verify its hash
+and recomputed dependency closure. Node file-stream decisions also bind fixed
+commands/options and disabled report settings; enabled diagnostics or other
+callers fail. Expanded advisory wording requires an explicit old/new text review
+bound to the complete advisories, canonical CNA, exact native build and source
+patch. Target-range and other substantive changes still invalidate the review.
 When the declared OS lock is also an attributed source, `--os-store PATH`
 verifies its complete archive set and binds the proof to the audited inventory
 and lock hash. An exact reviewed archive can resolve that declared source;

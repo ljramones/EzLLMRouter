@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | The current qualified Linux ARM64 dependency gate has zero effective blockers. All 33 original blockers and the subsequent Zstandard finding are resolved for that profile. The fresh 343-entry inventory retains 73 raw matches and 28 raw blockers: ten component dispositions, nine OpenSSL backport fixes, eight expiring profile decisions and one Zstandard source fix account for all 28. Both system and embedded Zstandard copies use reviewed 1.6.0; all 117 frozen wheels remain identical to the preceding bundle. All seven images pass native inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings and rating vectors remain visible. Scoped decisions do not fix upstream packages or qualify other deployments. See the Zstandard completion record below. Persistent profile and production acceptance are unchanged. |
+| T04 | Supply-chain, secret and static security scans | The qualified Linux ARM64 gate has zero effective blockers. The bounded lower-severity batch has 43 of 45 matches closed: one OpenTelemetry fix, 41 exact artifact/profile decisions and one match no longer returned; two moderate glibc ASLR reports remain unresolved. The fresh 343-entry inventory retains 71 raw matches and 28 raw blockers, resolved by eleven component blocker decisions, nine verified native fixes and eight profile blocker decisions. The new Net::FTP match is separately resolved through verified component absence. OpenTelemetry 1.45.2 is qualified; the other 116 wheels are unchanged, including LiteLLM 1.106.12. All seven images pass native inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings remain visible, scoped decisions do not qualify other builds/deployments, and persistent installation/production acceptance are unchanged. See the bounded review record below. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -290,6 +290,94 @@ runs. Malformed requests still reject and cannot dispatch a following request.
 The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
+
+## Bounded lower-severity review, 2026-11-25
+
+**43 of the original 45 package/advisory matches are closed; two moderate glibc
+ASLR reports remain unresolved.** This batch is the fixed remainder of the
+November 24 snapshot (38 moderate and seven low matches), separate from later
+disclosures, CI hardening, performance acceptance and persistent deployment.
+A package/advisory match is a review candidate, rather than proof of an
+applicable application defect.
+
+| Original batch outcome | Matches | Evidence |
+| --- | --- | --- |
+| Fixed | 1 | OpenTelemetry API 1.45.2 replaces the affected 1.45.1 wheel; installed old/fixed controls and fresh offline qualification pass. |
+| Component/profile `not_affected` | 41 | Seven artifact/component decisions and 34 execution-profile decisions bind exact archives, code, sources, all seven immutable images and qualification. Raw severity remains unchanged. |
+| No longer matched | 1 | The unchanged systemd package/version was queried in the fresh complete snapshot; CVE-2026-40228 was no longer returned. No code fix is claimed. |
+| Still `under_investigation` | 2 | CVE-2019-1010024 and CVE-2019-1010025 concern allocator/thread-stack caching and thread-heap alignment reducing ASLR. Neither is waived. |
+
+The two remaining reports are upstream bugs
+[22852](https://sourceware.org/bugzilla/show_bug.cgi?id=22852) and
+[22853](https://sourceware.org/bugzilla/show_bug.cgi?id=22853), both currently
+`UNCONFIRMED`. Maintainers describe these as hardening requests. One discussion
+suggests disabling the thread-stack cache; another contains a proposed arena
+alignment patch tested on x86 systems. This review establishes neither an
+accepted upstream fix nor qualified ARM64 allocator hardening. Disputed status
+alone does not close them. Their raw moderate findings remain visible.
+
+The disposition tools previously closed only blocking findings. Complete
+moderate/low reviews now close under the same evidence requirements. Additional
+module/compiler selectors bind the same complete filesystem-census hash,
+including module-directory aliases. Metadata-only compiler-base reviews require
+empty code sets and exact archive identities. Compiler-header decisions cover
+the selected Debian runtime artifacts; they do not qualify header-instantiated
+code in other builds or bundled consumers. Full ELF metadata is retained and
+rehashed against the pinned inventory and recalculated dependency closure.
+
+Node's file-stream decision also binds its fixed command/entrypoint/options and
+sampled diagnostic flags. The exact publisher Node/V8 source and packaged actor
+were reviewed: report, snapshot and tracing paths are not exposed by the fixed
+SDK/idle execution paths, and relevant default V8 diagnostics are disabled.
+An added caller, enabled diagnostic, changed command, source, archive, image,
+advisory or expired review invalidates the applicable decision. Two expanded
+OpenSSL advisory descriptions were explicitly re-reviewed against their existing
+source patches and canonical CNA records. Old/new text, complete advisories,
+native build and patch hashes stay bound; target-range or other substantive
+changes still fail. All nine existing backport fixes remain verified.
+
+OpenTelemetry API **1.45.2** uses the reviewed 60,335-byte wheel with SHA-256
+`2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34`.
+The publisher advisory GHSA-mf5v-w3w3-f6cg identifies it as fixed; current PyPI
+metadata confirms the exact wheel is not yanked. Archive inspection finds no
+startup hooks. The only package-source differences from 1.45.1 are the
+traceparent parser guard/regex and version. The other 116 wheel records remain
+byte-identical, including LiteLLM 1.106.12. The replacement store passes all
+117 dependency bounds and custody checks; the original store is preserved.
+The PyPI integrity endpoint returns 404, so no published attestation or
+independent Sigstore verification is claimed.
+
+The bounded old-versus-installed-fixed regression preserves valid/invalid trace
+contexts. A 512-character value reaches parsing; the fixed API rejects 513- and
+1,024-character values before the regex runs, whereas the old API reaches it.
+The six fresh offline profile builds and disposable isolation, installed-client,
+restart and restore checks pass; the seventh image passes SDK/policy checks.
+All seven images pass component/native inspection across **3,800 ELF objects**.
+The full local offline source gate passes **1,354 tests in 184 module executions
+without skips**, together with formatting, typing, source security and maintained
+JavaScript/contract checks. This does not claim a new run of the preceding
+99-case native TLS/database/recovery suite.
+
+The fresh 343-entry advisory snapshot is from
+`2026-11-25T17:29:51.233195+00:00`, with **71 raw matches, 28 raw blockers and zero
+effective blockers**. Eleven component blocker decisions, nine verified native
+fixes and eight profile blocker decisions account for those 28. The fresh
+Net::FTP finding CVE-2026-40558 is tracked separately from the original 45 and
+resolved for these artifacts: the affected module is outside the reviewed
+perl-base archive and absent in every image census, including Net aliases.
+Debian's tracker and exact libnet fix identify the component; the canonical CVE
+endpoint currently returns 404. Its raw unrated classification is retained.
+
+Qualified runtime source: `bab705f9096c903100fe4637fae2dc30be9e3b55`;
+fingerprint `0bdafdf4c4e63ae59136a1f2961fdb0796bf056105eac02d1f0dc95852e5b286`;
+source packet SHA-256
+`8bd204b5715ae624965f0b68065e87e71ef5854db3b47b0eb9e1c3d23e25763a`.
+The original seven-closure replay and all initial attempts are preserved under
+ignored `.artifacts/lower-severity-ci/`; the final complete batch is
+`review-progress-final.json`, with `final-audit/dispositions.json`,
+`remaining-glibc-review.json`, source/publication reviews and qualification.
+Existing component/profile expiries of November 30 and December 1 remain
+unchanged. The persistent installation and production acceptance are unchanged.
 
 ## Zstandard completion, 2026-11-24
 
