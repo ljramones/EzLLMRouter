@@ -1,6 +1,7 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 LANGUAGE=C
+ENV GLIBC_TUNABLES=glibc.pthread.stack_cache_size=0:glibc.malloc.arena_max=1
 RUN --network=none --mount=type=bind,source=os-inputs,target=/opt/ezllmrouter/os-inputs,readonly \
     sh /opt/ezllmrouter/os-inputs/install.sh
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_CONFIG_FILE=/dev/null \

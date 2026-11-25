@@ -2876,25 +2876,25 @@
     {
       "path": "tools/check.py",
       "code": "S603",
-      "source_sha256": "87c36560f2f04405e1be2d05a3cf7ba359343436fdbe8b35152f45705cebee24",
+      "source_sha256": "61def1e1c739fc9a0b0c15af9265a942f46a9239503c1d6e52dcf6dff9adc25b",
       "reason": "Owner-invoked build/check/evidence command with an argument vector and shell disabled; repository-selected executable/arguments, not an exposed request handler.",
       "findings": [
         {
-          "line": 269,
+          "line": 270,
           "column": 20,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 358,
+          "line": 359,
           "column": 14,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 502,
+          "line": 503,
           "column": 9,
           "symbol": "run",
           "statement_sha256": "55b4ce019f9aa93a9b78df6bd70e486db4c7e6989e67a272d6b2ee4149d9d52f",
@@ -2905,25 +2905,25 @@
     {
       "path": "tools/check.py",
       "code": "S607",
-      "source_sha256": "87c36560f2f04405e1be2d05a3cf7ba359343436fdbe8b35152f45705cebee24",
+      "source_sha256": "61def1e1c739fc9a0b0c15af9265a942f46a9239503c1d6e52dcf6dff9adc25b",
       "reason": "Pinned CI/developer toolchain executable selected through the owner environment PATH; exact call site retained.",
       "findings": [
         {
-          "line": 270,
+          "line": 271,
           "column": 9,
           "symbol": "test_inventory_errors",
           "statement_sha256": "061fa636f161df71c7cd17733f6c9047fd805b06004b38c5796a5f89647f65ec",
           "context_sha256": "7a06897b011706f93c6a5f219880c02019eefe1fe0a3bce0a7a0f4dd15e60260"
         },
         {
-          "line": 359,
+          "line": 360,
           "column": 9,
           "symbol": "javascript_inventory_errors",
           "statement_sha256": "956e9e5e4227b95240e2fa668a0e5d1b1df5da0e45da3157dd4f8b347110a947",
           "context_sha256": "3e25569aa249b2674bc323e78d141bcce53b841adb6f19a9440a84ca2d5e244a"
         },
         {
-          "line": 616,
+          "line": 617,
           "column": 48,
           "symbol": "_main",
           "statement_sha256": "decf0ac37cdb8e903444daaade2b89190e79c523a9ec6b424ea80399132b11df",
@@ -8239,7 +8239,7 @@
     {
       "path": "tools/release_inventory.py",
       "code": "S603",
-      "source_sha256": "4cea1e1cb00bb241071eb1ea81d1c9d3f65f0b23ee4fba0506e777ee295edd74",
+      "source_sha256": "1dab2e6cc72f961bc8f008023167541f5fc509e0a8a568355a50f0d626608f4b",
       "reason": "Read-only network-disabled Docker package inspection uses argument vectors with shell disabled, validated immutable image IDs and fixed inventory commands; no request handler or caller-supplied shell command.",
       "findings": [
         {
@@ -8673,50 +8673,50 @@
     {
       "path": "tools/security_profile_capture.py",
       "code": "S603",
-      "source_sha256": "dfc28c38a3f5f6ecf594c12a2c30717bd205a8ed5b53eb90b972aaa9148da3fb",
+      "source_sha256": "952afdb670ffeb0ae5c3fbf3368a111111006fcdaef133004eedfa6cbdef08f2",
       "reason": "Immutable image and owned random container IDs are validated before argument-list Docker inspection/export/cleanup. Exported files are parsed without extraction or execution; a bounded native diagnostic has an exact reviewed hash and runs read-only, non-root, without network/capabilities and with no-new-privileges. Child processes have explicit timeouts or an owned export timer. Image configuration is inspected by immutable ID; the diagnostic user is restricted to reviewed non-root image users, with the exact qualified override for the runtime-Python builder. Reviewed Zstandard update binds both copies, checks the embedded version and inventories removed experimental API callers; existing fixed subprocess statements remain identical. One new fixed JSON-only Node diagnostic runs in an immutable-ID-validated, read-only, network-none container. Configuration IDs must match. Full ELF metadata is returned and internally rehashed; no inspected object is executed by the parser. The Node diagnostic now rejects unreviewed NODE_OPTIONS and entrypoints before executing the fixed command; rejection tests assert no subprocess is started.",
       "findings": [
         {
-          "line": 35,
+          "line": 36,
           "column": 9,
           "symbol": "node_report",
           "statement_sha256": "f341f7fc1d9248f9c26d454a899c2036caf22d492f0446bd092bb1079e05e12c",
           "context_sha256": "d7e1b565c50e7d3024cfff69f68e6da8689debd75e22aae25186659b0dce49eb"
         },
         {
-          "line": 62,
+          "line": 63,
           "column": 17,
           "symbol": "elf_objects",
           "statement_sha256": "b6a59d5576fe83d19d8b6e9f1fac0c79db86f566e98d5573e9b1e3eb5b01933b",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 81,
+          "line": 82,
           "column": 23,
           "symbol": "elf_objects",
           "statement_sha256": "d4efd74e4646fa8fdc026ede28ed6666e2b82cf5a446ff9ce85363ab5978a76e",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 110,
+          "line": 111,
           "column": 9,
           "symbol": "elf_objects",
           "statement_sha256": "6e98f95d2ed9085e567dc2bf148a2a9b510785bc78ed286b657f2e1e2a1e0fd6",
           "context_sha256": "3135d789f708a5629bab34da9590e7a9e8e3d9569c02c794b82552280a32f7de"
         },
         {
-          "line": 125,
+          "line": 130,
           "column": 9,
           "symbol": "capture",
           "statement_sha256": "c3f917a53b759325b348c700c84503bd551d487cc0104a9b9a44466780f7c181",
-          "context_sha256": "268fd53c1c8df083939c9bc86a41dac2cd0af7295023586bd0cb84a782c1433b"
+          "context_sha256": "99b98e25acbe1828e66962c14ddac5ed94479ba6dbf5f02ae17d5da9609c8cff"
         },
         {
-          "line": 132,
+          "line": 137,
           "column": 11,
           "symbol": "capture",
           "statement_sha256": "d771d88a0f930885f679e046d73faa4c382b1ba3f407dcf43e2288405b914734",
-          "context_sha256": "268fd53c1c8df083939c9bc86a41dac2cd0af7295023586bd0cb84a782c1433b"
+          "context_sha256": "99b98e25acbe1828e66962c14ddac5ed94479ba6dbf5f02ae17d5da9609c8cff"
         }
       ]
     },
@@ -8790,6 +8790,21 @@
           "symbol": "<module>",
           "statement_sha256": "d8efbfd74838a4bbfe279613ab77c5c440ab0ad726551b16f477cd71b1f057a4",
           "context_sha256": "fbaee81b4ac32f1addae29800d5bbd45be26efb165810d4d495d44e5d9256893"
+        }
+      ]
+    },
+    {
+      "path": "tools/security_glibc.py",
+      "code": "S603",
+      "source_sha256": "6d3dc1db1dad30c83ce487fe51ecc9be9acebe3a777c96e051b5d8f914167b58",
+      "reason": "Owner-invoked immutable-image allocator diagnostic: exact hash-verified native executable, fixed modes, non-root user, read-only root and mount, no external network, bounded CPU/memory/PIDs and timeout; no application request controls this command.",
+      "findings": [
+        {
+          "line": 113,
+          "column": 15,
+          "symbol": "capture",
+          "statement_sha256": "4cd81689680b538d2b6e89c812637e4ef6ae844e7a0f1b2b5982f76381fd6c26",
+          "context_sha256": "6c0d6a7f6bfedb5eaec9044221bbc7c5661b390cca7390174d72e6706f1850c1"
         }
       ]
     }

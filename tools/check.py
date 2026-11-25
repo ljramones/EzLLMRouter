@@ -96,6 +96,7 @@ MODULES = (
     "tests.unit.test_secret_scanning",
     "tests.unit.test_bootstrap_pins",
     "tests.unit.test_ci_toolchains",
+    "tests.unit.test_glibc_hardening",
     "tests.unit.test_campaign_interleavings",
     "tests.unit.test_coherent_restore",
     "tests.unit.test_lock_audit",

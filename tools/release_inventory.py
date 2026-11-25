@@ -213,6 +213,9 @@ def main() -> int:
     parser.add_argument(
         "--profile-probe", type=Path, help="hash-pinned native diagnostic for profile review"
     )
+    parser.add_argument(
+        "--allocator-probe", type=Path, help="hash-pinned allocator diagnostic for profile review"
+    )
     args = parser.parse_args()
     if args.component_reviews and not args.query:
         parser.error("--component-reviews requires --query")
@@ -226,6 +229,8 @@ def main() -> int:
         parser.error(
             "profile review requires --profile-reviews, --profile-probe and --native-reviews"
         )
+    if bool(args.profile_reviews) != bool(args.allocator_probe):
+        parser.error("profile review requires --allocator-probe together with --profile-reviews")
     args.output.mkdir(parents=True, exist_ok=False)
     data = inventory()
     source_hashes = {}
@@ -332,7 +337,9 @@ def main() -> int:
                 from tools.security_profile_capture import capture as capture_profile
 
                 profile_proofs = {
-                    name: capture_profile(image, args.profile_probe, profile_policy, name)
+                    name: capture_profile(
+                        image, args.profile_probe, profile_policy, name, args.allocator_probe
+                    )
                     for name, image in captured.items()
                 }
                 dispositions = apply_profile(

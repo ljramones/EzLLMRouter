@@ -77,6 +77,21 @@ do this automatically. All final Python images remove pip/ensurepip, and the fin
 JavaScript consumer removes global npm/corepack/yarn. Pinned upstream build images
 retain vendor tooling and require separate security review.
 
+Fresh profile images set
+`GLIBC_TUNABLES=glibc.pthread.stack_cache_size=0:glibc.malloc.arena_max=1`.
+This releases terminated-thread stack mappings and limits glibc to the main
+allocator arena. Qualification checks the exact image and live-container
+settings. A separate hash-pinned native diagnostic verifies concurrent
+allocations, stack release, allocation failure and the blocked-`brk` fallback.
+Profile advisory review requires both `--profile-probe` and `--allocator-probe`;
+build the latter from `tools/glibc_allocator_probe.c` using the reviewed ARM64
+compiler inputs and retain its source/binary hashes with the target evidence.
+The native diagnostic is mounted only for qualification and is not installed in
+runtime images. A single arena can substantially reduce throughput under
+contended native allocation; see the measured workload and limits in the
+[validation record](../../docs/TESTING-ROADMAP.md). Rebuilding and qualifying a
+candidate does not update the persistent installation or approve production use.
+
 The current OS selection uses Debian 13 (Trixie) while retaining Python 3.12.16
 and Node 24.22.3. The separate seven-archive OS lock supplies the reviewed glibc,
 OpenSSL, zlib and base-files updates without network access during builds.

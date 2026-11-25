@@ -22,6 +22,7 @@ from tools.security_resolutions import canonical
 from tools.security_elf import application_closure
 from tools.security_profile_conditions import valid as condition_valid
 from tools.security_profile_capture import node_report
+from tools.security_glibc import TUNABLES
 
 
 class ProfileReviewTests(unittest.TestCase):
@@ -291,6 +292,7 @@ class ProfileReviewTests(unittest.TestCase):
                     "uid_gid": "10001:10001",
                     "readonly_root": True,
                     "locale": {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "LANGUAGE": "C"},
+                    "allocator": {"GLIBC_TUNABLES": TUNABLES},
                 }
             },
             "harness_sha256": {},
@@ -307,6 +309,7 @@ class ProfileReviewTests(unittest.TestCase):
             "reviewed_at": now.isoformat(),
             "expires_at": (now + timedelta(days=7)).isoformat(),
             "source_sha256": sources(root),
+            "allocator_probe_sha256": "e" * 64,
             "qualification_sha256": canonical(q),
             "source_packet_sha256": q["source_packet_sha256"],
             "images": {name: {"image": image["id"]} for name, image in q["images"].items()},

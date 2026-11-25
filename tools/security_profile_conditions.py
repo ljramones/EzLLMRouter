@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from tools.security_resolutions import canonical
+from tools.security_glibc import valid as allocator_valid
 
 CASES = {
+    "DEBIAN-CVE-2019-1010025": ("glibc", "single_malloc_arena"),
     "DEBIAN-CVE-2026-42250": ("bzip2", "fixed_startup_tools"),
     "DEBIAN-CVE-2017-18018": ("coreutils", "fixed_startup_tools"),
     "DEBIAN-CVE-2025-5278": ("coreutils", "fixed_startup_tools"),
@@ -55,6 +57,14 @@ def valid(identifier: str, proofs: dict) -> bool:
             return False
         closure = proof["closure"]["objects"]
         imports = {symbol for path in closure for symbol in objects[path]["imports"]}
+        if condition == "single_malloc_arena" and (
+            not allocator_valid(proof.get("allocator", {}))
+            or any(
+                set(row["imports"]) & {"mallopt", "__libc_mallopt", "dlmopen"}
+                for row in objects.values()
+            )
+        ):
+            return False
         if condition == "unused_systemd" and any(
             objects[path]["soname"] in {"libsystemd.so.0", "libudev.so.1"} for path in closure
         ):

@@ -105,10 +105,18 @@ class QualificationSafetyTests(unittest.TestCase):
 
     def test_runtime_policy_rejects_installed_tools_setid_files_and_unsafe_locales(self):
         from tools.deployment_qualification import runtime_footprint
+        from tools.security_glibc import TUNABLES
 
         image = {
             "Id": "sha256:" + "a" * 64,
-            "Config": {"Env": ["LANG=C.UTF-8", "LC_ALL=C.UTF-8", "LANGUAGE=C"]},
+            "Config": {
+                "Env": [
+                    "LANG=C.UTF-8",
+                    "LC_ALL=C.UTF-8",
+                    "LANGUAGE=C",
+                    "GLIBC_TUNABLES=" + TUNABLES,
+                ]
+            },
         }
         for changed in (
             {"Env": ["LANG=C.UTF-8", "LANGUAGE=C"]},

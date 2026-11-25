@@ -15,6 +15,7 @@ import threading
 from deploy.local.local_profile import DOCKER
 from tools.security_elf import application_closure, inspect
 from tools.security_resolutions import canonical
+from tools.security_glibc import capture as capture_allocator, validate_probe
 
 
 def node_report(image: str, configuration: dict) -> dict:
@@ -111,13 +112,17 @@ def elf_objects(image: str) -> dict:
     return objects
 
 
-def capture(image: dict, probe: Path, policy: dict, role: str) -> dict:
+def capture(
+    image: dict, probe: Path, policy: dict, role: str, allocator_probe: Path | None = None
+) -> dict:
     if (
         probe.is_symlink()
         or not probe.is_file()
         or hashlib.sha256(probe.read_bytes()).hexdigest() != policy["probe_sha256"]
     ):
         raise ValueError("unreviewed native diagnostic")
+    if "allocator_probe_sha256" in policy:
+        validate_probe(allocator_probe, policy["allocator_probe_sha256"])
     identity = image["image"]["id"]
     objects = elf_objects(identity)
     closure = application_closure(objects)
@@ -172,4 +177,12 @@ def capture(image: dict, probe: Path, policy: dict, role: str) -> dict:
     }
     if "node@sha256:" in image["image"]["base"]:
         proof["node_report"] = node_report(identity, configuration)
+    if allocator_probe is not None:
+        proof["allocator"] = capture_allocator(
+            identity,
+            configuration["Config"],
+            user,
+            allocator_probe,
+            policy["allocator_probe_sha256"],
+        )
     return proof

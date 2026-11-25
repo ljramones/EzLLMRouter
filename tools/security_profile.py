@@ -13,6 +13,7 @@ from tools.gateway.os_inputs import LOCK
 from tools.security_elf import application_closure
 from tools.security_profile_conditions import CASES as ADDITIONAL_CASES, valid as condition_valid
 from tools.security_resolutions import canonical
+from tools.security_glibc import TUNABLES
 
 CASES = {
     "DEBIAN-CVE-2010-4756": ("glibc", "native_patterns"),
@@ -38,9 +39,12 @@ CONTROLS = (
     "tools/qualification_storage.py",
     "tools/deployment_qualification.py",
     "tools/gateway/worker_package.py",
+    "tools/security_glibc.py",
+    "tools/glibc_allocator_probe.c",
 )
 HARNESSES = (
     "tools/deployment_qualification.py",
+    "tools/security_glibc.py",
     "tools/qualification_storage.py",
     "tools/volume_archive.py",
     "deploy/local/local_profile.py",
@@ -97,6 +101,7 @@ def load_policy(path: Path, root: Path, qualification: dict) -> dict:
         or set(policy["reviews"]) != set(CASES)
         or policy["source_sha256"] != sources(root)
         or source_interfaces(root)
+        or not re.fullmatch("[0-9a-f]{64}", policy.get("allocator_probe_sha256", ""))
     ):
         raise ValueError("expired, changed or unreviewed profile source")
     if (
@@ -112,6 +117,7 @@ def load_policy(path: Path, root: Path, qualification: dict) -> dict:
             row["uid_gid"] != "10001:10001"
             or not row["readonly_root"]
             or row["locale"] != {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "LANGUAGE": "C"}
+            or row.get("allocator") != {"GLIBC_TUNABLES": TUNABLES}
             for row in qualification["structure"].values()
         )
     ):
@@ -138,6 +144,11 @@ def load_policy(path: Path, root: Path, qualification: dict) -> dict:
 
 def proof_valid(proof: dict, expected: dict) -> bool:
     runtime = proof["runtime"]
+    if (
+        "allocator_sha256" in expected
+        and canonical(proof.get("allocator")) != expected["allocator_sha256"]
+    ):
+        return False
     if (
         "node_report_sha256" in expected
         and canonical(proof.get("node_report")) != expected["node_report_sha256"]

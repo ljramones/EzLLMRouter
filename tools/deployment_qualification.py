@@ -16,6 +16,7 @@ from pathlib import Path, PurePosixPath
 from deploy.local import local_profile as profile
 from tools.qualification_storage import cold_copy, owned_volume
 from tools.gateway.os_inputs import verify_staging as verify_os_staging
+from tools.security_glibc import environment as allocator_environment
 
 
 def write(path: Path, value: object) -> None:
@@ -273,6 +274,7 @@ def runtime_footprint(
     if set(removals) & installed:
         raise ValueError("removed system tooling remains installed")
     locale = runtime_locale(image["Config"])
+    allocator = allocator_environment(image["Config"])
     # The one-off inspector may traverse private image directories. Application
     # containers retain their separately checked non-root, zero-capability policy.
     prefix = [
@@ -317,6 +319,7 @@ def runtime_footprint(
     return {
         "removed_packages": sorted(removals),
         "locale": locale,
+        "allocator": allocator,
         "setid_files": [],
         "forbidden_executables": [],
         "component_inventory": components,
@@ -396,6 +399,7 @@ def structure(env: dict[str, str]) -> dict:
         result[kind] = {
             "readonly_root": True,
             "locale": runtime_locale(row["Config"]),
+            "allocator": allocator_environment(row["Config"]),
             "uid_gid": row["Config"]["User"],
             "network_mode": host["NetworkMode"],
             "mounts": sorted(mounts),
@@ -546,6 +550,7 @@ def run(build: dict, output: Path) -> dict:
             name: hashlib.sha256((profile.ROOT / name).read_bytes()).hexdigest()
             for name in (
                 "tools/deployment_qualification.py",
+                "tools/security_glibc.py",
                 "tools/qualification_storage.py",
                 "tools/volume_archive.py",
                 "deploy/local/local_profile.py",
