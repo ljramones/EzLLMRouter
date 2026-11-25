@@ -1,9 +1,9 @@
 {
   "format": "ezllmrouter-profile-reviews-v1",
-  "reviewed_at": "2026-11-24T20:41:24.715020+00:00",
+  "reviewed_at": "2026-11-25T21:30:49.442682+00:00",
   "expires_at": "2026-12-01T20:41:24.715020+00:00",
-  "qualification_sha256": "b0d1bcbbfa9f876a05c662f49f2a2d82a7c01f7dd9d9f8cd63d54ebc4ae81d22",
-  "source_packet_sha256": "8bd204b5715ae624965f0b68065e87e71ef5854db3b47b0eb9e1c3d23e25763a",
+  "qualification_sha256": "c65377930705c9dc24ac3e3a6518ea8215d31960536dfb58532a6d57556b6c96",
+  "source_packet_sha256": "51db7e7c4df0e4fe64b5433df0494f4613121c456099cd53d397a3f525f3e422",
   "source_sha256": {
     "deploy/local/compose.yaml": "1fac78a5e17c71ce355bdc7d97b6fdf73034051609a26ff4ba495536a3fe2e8f",
     "server/src/ezllmrouter_server/__init__.py": "def99af69a4215eea726e1b61570a74dbb19579a0b27b1ab84f5fdec2e8d04b3",
@@ -152,9 +152,11 @@
     "server/src/ezllmrouter_server/wire_http/integration.py": "17b8c2e6269919041bbf3bc50628a1c2afb785d549a4c8fdec83933ea7638ca9",
     "server/src/ezllmrouter_server/wire_http/transport.py": "5d1892925d29699b610584107f61a99901256d5d01301343ca8a01a300e178a7",
     "tests/tool_cycle/compose.yaml": "73024139fb6b121b02dbed1682e5f723602439100f7f9adbeccb6fd837f7e220",
-    "tools/deployment_qualification.py": "e689ec552d5a819fc3d9fa98591699361ae7ba796a9e39b30edc87a13fc3db0d",
+    "tools/deployment_qualification.py": "2fb921f498e75af7015f9ffcea0923a8ce240cac348269cd9454504d08e94851",
     "tools/gateway/worker_package.py": "bd3bda3f9eca0669b16465d0493ff66f47ff55274914a242915064c8816ac0c2",
+    "tools/glibc_allocator_probe.c": "c4023238464081b14ec95fc67dc9a182401bb599b7ab927bb02c271df6daccb9",
     "tools/qualification_storage.py": "dd2ef28d781c662bfb0bef548d2fd814f999f69d21f8f60571b0aa37db0b24ea",
+    "tools/security_glibc.py": "6d3dc1db1dad30c83ce487fe51ecc9be9acebe3a777c96e051b5d8f914167b58",
     "tools/volume_archive.py": "d82fada7b4b27ee62d23fa628af31055051758b301737937d960b5a93a2bc8c3",
     "worker/ezllmrouter_worker/__init__.py": "daf5bd4efc847566b08c5ea16e4157f1a10b7da7de0afc6117ebf70ab6ea72b2",
     "worker/ezllmrouter_worker/__main__.py": "66e8b45b34200811abea18431c43c388a03a6432d6581c4c5c9b5fc46552b76f",
@@ -164,7 +166,7 @@
   "probe_source_sha256": "6be91ded5828150dc426e8cea3abdd536fe178506a8fdc318bc5b710431e1ab2",
   "images": {
     "js": {
-      "image": "sha256:71d229ec86131f8c2c2d2add3d7a50c6e083ede9bb6abd81f200c65f1dafd565",
+      "image": "sha256:6aa80791f7352445f58a30ea7e10656de3389ed918130b18af34e278c70c5bc2",
       "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
       "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
@@ -176,10 +178,11 @@
         "guard_readonly": true,
         "locale": "C.UTF-8"
       },
-      "node_report_sha256": "7076ef5c2f8fbd629742ab97d70c12b6e6a8344b211ffb5a34db3d129cef8df7"
+      "node_report_sha256": "7076ef5c2f8fbd629742ab97d70c12b6e6a8344b211ffb5a34db3d129cef8df7",
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "python": {
-      "image": "sha256:3189ad03c05d5c68c8bec33c09d0de383d66bb24fc07142349bb31d158f488fb",
+      "image": "sha256:b5854a023ce2966cde4d63140a5e478385b81447b92e269ededcb2d02d5c3467",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -190,10 +193,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "receiver": {
-      "image": "sha256:644eb38e8218493f08b38cedf9cfb9c99e44cc64ee034dbf58578ff714ce676b",
+      "image": "sha256:d19ffec6d9f41a5b7baf6173e015ca86a30dc8867cb60c64f55647423dcdbcc4",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -204,10 +208,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "runtime_python": {
-      "image": "sha256:683e929a88d20cfd8a5a8346d3d98bdffb316fcf745f9629da7a61d4ca4bf826",
+      "image": "sha256:971d9ba8d7be6dcd0905d9b4d9d7aeed151608d51230e19c4dde84e4d3be720b",
       "elf_sha256": "59f321873d17d013e4cfc10f2c64e47c8d6da66b85883f1572871d1b007dbb56",
       "closure_sha256": "2ace54f8f113044606c582b3098d71af94bb1db5d17e8d0122323a5a68c727db",
       "runtime": {
@@ -218,10 +223,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "service": {
-      "image": "sha256:2b68eefc6d44efc98a389674375a7bff2f4b2a01c3db77ce564ec9772eb8747c",
+      "image": "sha256:e64e72fd3990f0edc8b0eeae775fa4a55a47839bb7dc8ce41adf4ba5b8ab37f6",
       "elf_sha256": "8090595316add441b16691c3f8d99d3cf39146fa3b710fd7be10475a07473010",
       "closure_sha256": "614c3836320b54088752ebb058ffd7aa022910f31af7ed7e8d31ba3d33d7e136",
       "runtime": {
@@ -232,10 +238,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "worker": {
-      "image": "sha256:cc05b10c8381618d683fb4e77130fa91f61316d415c75847392ef289ea2ad1ab",
+      "image": "sha256:a00db88d0189e20ce588785b46b8fe8bafbecb99c7aac3e420388f2f6864c9b7",
       "elf_sha256": "deaccca9eecf8296bfdd827f4336ab6b41f0345e1da6060874f7d9d0b654c24b",
       "closure_sha256": "c8121ac7de3ce1ab1473707b3f63739b2c7c4043b681919fdce9ccac9d488715",
       "runtime": {
@@ -246,10 +253,11 @@
         "guard_outside_thread_stack": true,
         "guard_readonly": true,
         "locale": "C.UTF-8"
-      }
+      },
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     },
     "dev09_js": {
-      "image": "sha256:cf0a15fd41b3f9bd34fb31386af1f5cc67a28cce377af1da78957a2155d84206",
+      "image": "sha256:eef935275fd84e6d6043cf46d26118b545cb6cfb764613d294b3d2672146bec1",
       "elf_sha256": "bcd2228a45568bafc4a6946698d079553605b8feb1792841ec5c691ea145435c",
       "closure_sha256": "bec7113c1cf8ce936ceaf684531ed83fad5820fc5b56e894e70d2da013abd862",
       "runtime": {
@@ -261,7 +269,8 @@
         "guard_readonly": true,
         "locale": "C.UTF-8"
       },
-      "node_report_sha256": "cf7bb203592c20d40ae192697f591a56df0b19e16b6369d6a798af031a4da8be"
+      "node_report_sha256": "cf7bb203592c20d40ae192697f591a56df0b19e16b6369d6a798af031a4da8be",
+      "allocator_sha256": "21c0b0844ea129e1047cb8a58bacaa4a43bc91161dab4a3d5839f0858941f83d"
     }
   },
   "reviews": {
@@ -816,6 +825,14 @@
       "advisory_sha256": "4a5167921d77632481539ffddf7fcc3b9855de9d53a3e0d68f504f64bf2d12ac",
       "reason": "Only the two Node executables import C++ file-stream constructors/vtables. The exact publisher source uses ofstream for startup snapshots and diagnostic reports; the qualified commands neither build snapshots nor admit user-supplied JavaScript. The SDK/actor code has no report.writeReport entry point. Fresh runtime samples show fatal/signal/uncaught-exception reports disabled, with fixed idle/SDK commands and no report-related NODE_OPTIONS. Other callers, changed command/entrypoint/options, or enabled diagnostics fail the executable condition. The retained libstdc++ code itself is not claimed fixed. The exact V8 sources also contain file streams for tracing, heap snapshots and build-time generators. Runtime trace-turbo and heap_snapshot_on_oom default false; periodic heap snapshots default disabled (-1). The fixed commands/options do not enable these features, and the reviewed SDK/actor neither sets V8 flags nor exposes a heap-snapshot/report API. Build-only generators and d8 are outside the admitted runtime commands.",
       "node_source_review_sha256": "698ce7c011681a9d85c59d55e32ed508f57fbd995462dba2981e127fc22428e2"
+    },
+    "DEBIAN-CVE-2019-1010025": {
+      "source_version": "2.41-12+deb13u5",
+      "ecosystem": "Debian:13",
+      "condition": "single_malloc_arena",
+      "advisory_sha256": "4fe7be9ef2109ff9bfc7b5f8f4d93d3b589fa8e7c566986ee5b03997650c50ee",
+      "cna_sha256": "5b5b9aae4e3695f7ec5e0f622cd464723b275a98b2e63ac705bd528fd8a8974a",
+      "reason": "The reported fixed alignment concerns glibc secondary thread arenas. This exact ARM64 profile sets loader-time glibc.malloc.arena_max=1 in all seven immutable images and its live service/helper containers. The hash-pinned native diagnostic verifies eight concurrent thread allocations using only the main arena, blocked-brk fallback, and controlled ENOMEM recovery. All 3800 installed ELF objects have no mallopt, __libc_mallopt or dlmopen import; the exact owned code has no untrusted native/plugin execution interface. Image/source/qualification/probe hashes, controls and complete ELF metadata remain bound. The secondary-arena precondition is absent for this profile; the retained libc package is not patched. Other deployments, overrides, callers and allocator paths outside this qualified interface receive no exemption. The separate cache-reuse report CVE-2019-1010024 remains unresolved; measured address variation is not a proof of full ASLR entropy."
     }
   },
   "scope": "Exact disposable-qualified Linux ARM64 profile only. These not_affected preconditions do not fix upstream packages or approve other profiles, arbitrary native execution or production acceptance.",
@@ -1627,5 +1644,6 @@
       "advisory_sha256": "2df93ce27137bf66e27349aad72fdf85aba532a0fa78f32394101f757d0de9f6",
       "reason": "Reviewed exact fresh public record against the unchanged patched source and outputs; the Debian:13 affected record and all other substantive fields remain identical."
     }
-  }
+  },
+  "allocator_probe_sha256": "c56d4f02e2db7e3274b807a5016123afdd41e1bbffcedb59b1c62a4a699d4be0"
 }

@@ -193,6 +193,22 @@ use `LANG=LC_ALL=C.UTF-8` and `LANGUAGE=C`. Package findings for retained librar
 remain visible; removing compiler or command-line components does not qualify
 their native callers.
 
+Fresh profile images also set
+`GLIBC_TUNABLES=glibc.pthread.stack_cache_size=0:glibc.malloc.arena_max=1`.
+The exact settings are checked in each image and live qualification container.
+The single-arena condition removes the secondary-thread-arena alignment path in
+CVE-2019-1010025 for this qualified ARM64 profile. Its libc bytes and raw advisory
+remain recorded. A separately hash-pinned native probe checks eight concurrent
+thread allocations, released stacks, blocked-`brk` fallback and controlled
+allocation failure. Every installed ELF object must lack `mallopt`,
+`__libc_mallopt` and `dlmopen` imports before that profile decision can close.
+Changed controls, source, images, callers, diagnostic or expired review invalidate
+the decision. CVE-2019-1010024 remains under investigation: disabling the stack
+cache does not establish a complete resolution of heap reuse or ASLR behavior.
+Single-arena allocation also has a substantial contention cost in the measured
+native stress test; application results and acceptance limits are recorded in
+the [validation ledger](TESTING-ROADMAP.md#qualified-single-arena-arm64-profile-2026-11-25).
+
 Qualification inventories regular files and symbolic links across the image
 filesystem, including unmanaged copies outside standard executable directories.
 It rejects the removed executable names, ACL/attribute command-line utilities,
@@ -228,7 +244,8 @@ to other bundled copies or unreviewed native interfaces.
 An additional explicit profile review can resolve a finding whose required
 execution path or platform condition is absent in the exact qualified profile.
 `--profile-reviews PATH --profile-probe PATH` requires native/component/archive
-review as well. Each expiring decision binds the advisory/CVE records, complete
+review as well, plus `--allocator-probe PATH` for the separately reviewed
+allocator diagnostic. Each expiring decision binds the advisory/CVE records, complete
 owned source inventory, seven immutable images, exact successful qualification
 and the diagnostic source/binary. Image inspection parses ELF dependencies and
 load segments without executing inspected objects. Application dependency

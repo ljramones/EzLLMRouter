@@ -77,7 +77,7 @@ keeps those distinct from new work and from target verification.
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
 | T02 | Generated authorization matrix | Implemented for current route/action samples: all 66 operator routes have independent policy rows, including browser authority, session states, valid-body denials and both console modes. Another 42 existing-resource/action cases cover all 16 operator family bindings, separate dataset owners, grants, encrypted credential lifecycles and successful writes. The wire policy covers 42 route/version bindings with real bearer credentials and eight active identities. Direct-handler, socket-pair and localhost variants run in CI; sensitivity tests detect role, ownership and mutation bypasses. Source inventories and dispatch hashes require review when routes/actions change. Exhaustive combinations of resource states remain outside this scope. |
 | T03 | Docker image builds and deployment checks | Implemented for the pinned local Linux ARM64 Debian 13 profile: all six runtime-Python/receiver/worker/service/Python/JavaScript images build offline; a disposable target checks startup, actual isolation and credential permissions, installed-client readback, four exact synthetic arrivals, ordinary restart, and restoration into separate volumes with encrypted canary recovery. Missing keys fail closed. Another 99 TLS/database/recovery cases ran in the actual service image in the November 23 qualification. The auxiliary JavaScript actor also builds offline. All seven images pass the subsequent filesystem component scan. Existing Dockerfile/staging inventories and negative controls remain blocking. Other architectures, physical power loss and production acceptance are separate. See the qualification and remediation records below. |
-| T04 | Supply-chain, secret and static security scans | The qualified Linux ARM64 gate has zero effective blockers. The bounded lower-severity batch has 43 of 45 matches closed: one OpenTelemetry fix, 41 exact artifact/profile decisions and one match no longer returned; two moderate glibc ASLR reports remain unresolved. The fresh 343-entry inventory retains 71 raw matches and 28 raw blockers, resolved by eleven component blocker decisions, nine verified native fixes and eight profile blocker decisions. The new Net::FTP match is separately resolved through verified component absence. OpenTelemetry 1.45.2 is qualified; the other 116 wheels are unchanged, including LiteLLM 1.106.12. All seven images pass native inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings remain visible, scoped decisions do not qualify other builds/deployments, and persistent installation/production acceptance are unchanged. See the bounded review record below. |
+| T04 | Supply-chain, secret and static security scans | The qualified Linux ARM64 gate has zero effective blockers. The original lower-severity batch has 44 of 45 matches closed: one OpenTelemetry fix, 42 exact artifact/profile decisions and one match no longer returned. The single-arena profile closes the secondary-arena precondition for CVE-2019-1010025; the moderate cache-reuse report CVE-2019-1010024 remains unresolved. The fresh 343-entry inventory retains 71 raw matches and 28 raw blockers, resolved by eleven component blocker decisions, nine verified native fixes and eight profile blocker decisions. Net::FTP is separately resolved through verified component absence. All 117 wheel inputs, including LiteLLM 1.106.12 and OpenTelemetry 1.45.2, retain their preceding bytes. All seven images pass native inspection; six pass full disposable qualification and the seventh its SDK/policy smoke. Raw findings remain visible. The measured allocator contention cost, other-deployment limits, and unchanged persistent installation/production acceptance are explicit in the current single-arena record. |
 | T05 | HTTP/JSON/IPC fuzzing | Implemented for the declared generated corpus: authenticated operator/wire framing also traverses the real ingress relay; fragmented IPC boundaries and bounded provider compression cases reject truncation, trailing members and allocation bombs. All six client decoders consume 536 independent fixed-seed cases, including depth, Unicode, duplicate keys and numeric boundaries. These bounded campaigns do not establish exhaustive parser coverage. |
 | T06 | Accounting/canonical/registry properties | Implemented for the declared generated models: independent canonical/digest/integer-decimal checks, accounting/campaign and model/principal histories now include grant activation/removal/scope intersections, model state, price publication/replay/stale writes, immutable schedules and historical costs. A bounded reducer simplifies commands, nested JSON, keys, strings and numeric values while preserving the first divergent invariant; invalid candidates cannot replace it. Larger state spaces remain outside this scope. |
 | T07 | Forced concurrency and lock-scope detection | Implemented for the declared local synchronized suites: lock auditing adds blocking event/condition/future/join waits with positive controls for nonblocking/completed operations and conditions releasing their own gate. Explicit fixture checkpoints and thread-start infrastructure have narrow exceptions. Three seeded HTTP/TLS stress rounds cover shared revocation/cancellation with exact delivery counts alongside existing races; the nine-suite runner remains scheduled for longer runs. Arbitrary native mutex/file/CPU work and deployment load qualification remain separate. |
@@ -291,7 +291,83 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## Qualified single-arena ARM64 profile, 2026-11-25
+
+**44 of the original 45 lower-severity matches are closed.** The retained
+moderate CVE-2019-1010024 cache-reuse report remains under investigation.
+CVE-2019-1010025 receives an expiring, exact-profile `not_affected` decision
+because its secondary-thread-arena precondition is disabled. The glibc package
+is unchanged; this is a configuration mitigation within the qualified interface.
+
+All seven fresh image recipes set
+`GLIBC_TUNABLES=glibc.pthread.stack_cache_size=0:glibc.malloc.arena_max=1`.
+Qualification checks the exact image and live service/helper settings, and
+rejects missing, duplicate, changed or dynamic-loader override controls. A
+separate native diagnostic is hash-pinned before execution and mounted read-only
+in non-root, network-isolated containers with bounded CPU, memory, PIDs and time.
+It verifies eight simultaneous thread allocations using only the main arena,
+released thread stacks, blocked-`brk` allocation fallback, and controlled
+`ENOMEM` with a surviving small allocation. All 3,800 installed ELF objects
+have no `mallopt`, `__libc_mallopt` or `dlmopen` import. Their complete native
+metadata is identical to the preceding qualified images. Exact owned source,
+images, controls, qualification and probe hashes bind the decision; arbitrary
+native/plugin code and other deployments receive no exemption.
+
+The prototype comparison ran **896 fresh-exec samples** across all seven images,
+plus 28 fallback/allocation-failure processes. Each sample created eight threads.
+The baseline had nine arenas and retained eight 512 KiB stacks; the candidate
+had one arena and retained none. Baseline secondary-heap mappings were aligned
+to 64 MiB; the candidate main-heap mappings varied in fourteen page-address bits
+below that boundary. These finite observations are not an entropy estimate or
+a proof of complete ASLR protection. Repeated addresses within one process are
+also not a standalone ASLR failure test. CVE-2019-1010024 is not waived.
+
+Three paired application comparisons used the preceding immutable service image,
+with and without the candidate controls: 1k/10k additional-attempt ledgers, seven
+scale samples, and a 60-second two-client soak, under the same two-CPU/1 GiB limits.
+Installed application source and dependencies are unchanged. Exact accounting,
+export parity, writer progress, metadata-only polling and cleanup pass. Median
+soak throughput was about 4.2% lower, CPU about 4.9% higher, and RSS high-water
+about 2.2% lower. HTTP report/JSON/CSV p95 changes were about +3.2%, +2.3% and
++9.3%. A short-report tail variation was followed up with three paired
+31-sample scale runs; median direct-report p95 differed by about +0.5%.
+
+The contention limit is material: an eight-thread, 256,000-allocation native
+stress workload took median 0.0149 seconds at baseline and 0.2514 seconds with
+one arena, about **16.9 times longer**. These application observations do not
+approve production SLOs, allocation-heavy workloads, longer soaks or other load
+levels. An initial four-client baseline returned HTTP 503; that failed attempt
+and its harness are preserved separately, and no four-client acceptance is
+claimed. The candidate changes allocator controls in newly built images. Frozen
+dependency inputs, the persistent installation and production acceptance are
+unchanged.
+
+The full local source/loopback gate passes **1,564 tests across 224 module
+executions, without skips**, plus formatting, typing, source security and
+maintained JavaScript/contracts. All six offline builds and disposable isolation,
+installed-client, restart, restore and cleanup checks pass; the seventh image
+passes SDK/policy smoke. All seven then pass fresh component/native/allocator
+inspection. The 117 frozen wheels, OS archives and base digests are unchanged;
+the original artifact store is explicitly reused after custody verification.
+The bounded old-versus-installed-fixed OpenTelemetry control also passes.
+
+The fresh complete advisory snapshot retains **343 entries, 71 raw matches and
+28 raw blockers, with zero effective blockers**. Component, native and profile
+decisions resolve 18, nine and 43 active matches respectively; the remaining
+match is CVE-2019-1010024. All 43 previous profile reviews were revalidated, and
+the profile expiry stays December 1. Component expiry stays November 30.
+Evidence, including initial attempts, measurements, complete inventories and
+dispositions, is under ignored `.artifacts/glibc-hardening/`.
+
+Qualified runtime source: `bb0263443365df8c7189da6b1f9a2352879c2615`;
+source fingerprint `b48119d713a885fb3fea1b4cc9013aa28bc8e3c993a071ab549b58e67b249c4c`.
+Source packet SHA-256:
+`51db7e7c4df0e4fe64b5433df0494f4613121c456099cd53d397a3f525f3e422`.
+
 ## Glibc hardening investigation and CI toolchain pins, 2026-11-25
+
+This earlier investigation preceded the single-arena qualification recorded
+above. Its two-unresolved result is retained as historical evidence.
 
 The follow-up covers the two remaining glibc reports and the three concrete CI
 installation gaps. **CVE-2019-1010024 and CVE-2019-1010025 remain unresolved.**
