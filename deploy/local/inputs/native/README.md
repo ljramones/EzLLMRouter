@@ -85,9 +85,15 @@ The separate `native_codec` record selects Zstandard 1.6.0 for both the system
 [PR 5023](https://github.com/meta/zstd/pull/5023) as the fix for
 CVE-2026-124851. The exact gzip source archive matches the release asset digest
 and its detached signature verifies with fingerprint
-`4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD`; this signature check does not establish
-an independently certified key identity. Publisher HTTPS release metadata is
-also retained. The source archive and all build inputs have explicit hashes.
+`4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD`. The November 25
+[provenance follow-up](../../../../docs/TESTING-ROADMAP.md#companion-artifact-and-zstandard-provenance-review-2026-11-25)
+independently corroborates that key through Debian's signed InRelease, hashed
+source index and `libzstd 1.5.7+dfsg-1` packaging. The authenticated packaging's
+upstream key verifies the existing 1.6.0 archive, and a changed archive fails.
+This establishes an independent distribution key association; it does not certify
+a person's identity, source-to-binary build provenance or code safety. Publisher
+HTTPS release metadata is also retained. The source archive and all build inputs
+have explicit hashes.
 
 `zstd.sh` builds offline, runs upstream tests and a bounded history-window
 regression against both versions, then rebuilds Node from the prior reviewed

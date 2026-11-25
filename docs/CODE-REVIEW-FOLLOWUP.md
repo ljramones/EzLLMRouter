@@ -5,6 +5,11 @@ saved separately in `4474504`: 381 owner-Terminal cases passed, with 127 each in
 Chromium, Firefox and WebKit, and no skips or retry-only passes. That run predates
 the fixes below. Generated reports and logs belong under ignored `.artifacts/`.
 
+The [maintained checklist](#remaining-review-work) reflects verification through
+2026-11-25. Earlier implementation records retain their original source commits,
+counts, failed attempts and then-pending checks; those historical limits do not
+override the current checklist.
+
 ## Implemented fixes
 
 | Review item | Change and regression evidence |
@@ -355,9 +360,20 @@ frozen worker requirements, wheel inventory and migration bytes are unchanged.
 ## Remaining review work
 
 This is the maintained checklist from the conversation, with stable numbers.
-Update the status and evidence as each batch proceeds. Last updated: 2026-11-20.
-The six release-fix groups above are implemented at `ee6c444`; their outstanding
-target checks are tracked in item 1.
+Update the status and evidence as each batch proceeds. Last updated: 2026-11-25.
+The six release-fix groups above were implemented at `ee6c444`; their disposable
+Linux ARM64 target checks have since passed. Production deployment remains
+deferred, separately from those completed checks.
+
+The November 25 completion backlog uses different numbers from the eleven
+original workstreams below. Its item 7 is the completed
+[bounded provenance review](TESTING-ROADMAP.md#companion-artifact-and-zstandard-provenance-review-2026-11-25),
+including explicit limits for five missing wheel attestations; its item 12 is
+this checklist reconciliation. Real-load testing, calibrated performance
+acceptance and longer soaks (completion items 10–11), and production deployment
+(completion item 13), are deferred until deployment preparation resumes. This
+does not mark those activities passed. Previous-release qualification is out of
+scope for this baseline. The original eleven workstream numbers stay unchanged.
 
 Statuses: **Open** means work has not started; **In progress** means active work;
 **Partial** means implemented work has a known source follow-up remaining;
@@ -367,17 +383,34 @@ also passes. A pending or unavailable check is never a passing result.
 
 | # | Workstream | Status | Remaining scope / evidence |
 | --- | --- | --- | --- |
-| 1 | Deployment qualification | Open — target checks pending | Build both images; run real HTTP/TLS, browser, credential-initialization and frozen-worker checks. Previously orphaned checks now have runners; worker execution remains pending. Current local evidence after R1–R3: 928 unittest cases, strict typing on 161 files and 518 packaged-wheel tests over 168 package files; socket-pair HTTP/TLS checks pass. Real listener/deployment checks remain pending. |
-| 2 | Blocking work and performance | Implemented — local checks pass | Paginated usage attempts/exports; SQL visibility/cutoff/latest-revision selection; independent bounded read snapshots; decoding outside writer locks; sender checks and atomic first writes on bounded check threads; password hashing outside shared locks. `OperatorProjection.overview_counts` now aggregates states in SQL using an independent snapshot (4.1.4). R3 now streams projected accounting facts into exact counters instead of retaining full visible attempt records (4.1.3, 4.2.2, 4.3.3). |
-| 3 | Remaining authentication/HTTP hardening | Implemented — local checks pass | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` (4.3.1, 4.3.5). |
-| 4 | Gateway correctness | Implemented — target checks pending in item 1 | Definite pre-send rejection, sender-owned forwarding headers and exact timeout keys, committed campaign authority epochs, separate socket volumes with peer read-only mounts and an owner-operated topology probe. Commit `a698cdf` (4.2.3). |
-| 5 | Worker lifecycle and diagnostics | Implemented — target checks pending in item 1 | Worker SIGTERM cleanup, ordered loop/listener closure, one five-second handler join budget, Compose init/grace periods, bounded rotating diagnostics and cached tails. Overview/API show queue, drop and write-error counts. Commit `a698cdf` (4.2.3). |
-| 6 | Persistence recovery | Implemented — local checks pass | Authorized retries replace only uncommitted vault successors; ambiguous commits retain sealed files. Nested rollback preserves the original error; admission uses one snapshot. Probe retry retention is documented/tested. Failed executors drain accepted work, replace their pool and expose readiness/counters (4.1.4). |
-| 7 | Logging | Implemented — local checks pass | Expected wire rejections log public codes at INFO; empty/idle connections are quiet, incomplete-request timeouts remain visible; operator route words derive from routing; Coordinator failures identify their stage (4.3.4–4.3.5, 5.1). |
-| 8 | Client fixes | Implemented — Rust/.NET target checks pending | JS total deadlines and definite local serialization errors; Python strict identifiers, typed errors, status/retry handling and private CAs; private credentials/transport ownership; aligned protocol codes and input policies across clients. 144 shared cases, installed JS/53 safety checks, Go race/vet, Java checks and packed TypeScript 5.9.3 consumer compilation pass. Commit `cfe549d` (4.5.1–4.5.3). |
-| 9 | Dependencies and CI | Open — broader CI hardening deferred | Declare gateway/client dependencies; test shipped library versions; pin remaining actions, bootstrap downloads, toolchains and TypeScript inputs (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | Implemented — Docker credential-volume check pending in item 1 | Class/inherited-class and JS/TS inventories; guarded Python/Node children and UDP/DNS; empty/all-skipped suites fail; runtime failures are collected. Compose-based named-volume/UID qualification is implemented. Python executable-line coverage is recorded for the final structural pass below (4.4.4). |
-| 11 | Structural cleanup | Implemented — local checks pass | W1–W7 are implemented through `f6746d4`: wire routing; Registry/accounting domains; Coordinator steps; medium runtime modules; retained evidence/test/deployment phases; and the source-size ratchet. R1/R2 remove all size allowances and all library typing diagnostics; strict coverage now includes both complete implementation roots. R3 report evidence is recorded below. Final source/package evidence and explicit target limits are recorded below; deployment qualification remains item 1. |
+| 1 | Deployment qualification | Complete — disposable Linux ARM64 scope; production deferred | Six images build offline and pass actual startup, isolation, credential permissions, installed-client readback, four synthetic arrivals, restart and separate-volume encrypted restore. The auxiliary JavaScript image passes SDK/policy smoke. All seven pass component/native/allocator inspection. Real HTTP/TLS, three browser engines and Docker credential initialization pass their CI jobs. See the target and CI identities below; other architectures and production acceptance are separate. |
+| 2 | Blocking work and performance | Complete — source and bounded synthetic checks; real-load acceptance deferred | Paginated reports/exports, SQL projections, independent read snapshots, streaming accounting aggregates, sender checks/first writes on bounded threads and password hashing outside shared locks are verified. Synthetic 1k/10k measurements and bounded soaks are recorded in the testing ledger. The single-arena native contention cost remains explicit; intended-load budgets and longer soaks are deferred (4.1.3–4.1.4, 4.2.2, 4.3.3). |
+| 3 | Remaining authentication/HTTP hardening | Complete — declared regression scope | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` and subsequent source, real HTTP/TLS and browser gates pass (4.3.1, 4.3.5). |
+| 4 | Gateway correctness | Complete — qualified Linux ARM64 scope | Definite pre-send rejection, sender-owned forwarding headers and timeout keys, campaign authority epochs and peer read-only socket mounts. Commit `a698cdf`; source/HTTP checks and disposable isolation/final-request qualification pass (4.2.3). |
+| 5 | Worker lifecycle and diagnostics | Complete — source and disposable target scope | Worker SIGTERM cleanup, ordered closure, bounded joins, Compose init/grace periods, rotating diagnostics and queue/drop/write-error counts. Commit `a698cdf`; source regressions, actual startup/restart and disposable cleanup pass (4.2.3). |
+| 6 | Persistence recovery | Complete — declared crash/fault and disposable restore scope | Uncommitted vault retries, ambiguous-commit custody, nested rollback, snapshot admission and failed-executor recovery remain verified. The testing ledger adds process-crash/fault, migration and encrypted restore checks. Physical power loss and production backup/restore acceptance are separate (4.1.4). |
+| 7 | Logging | Complete — declared logging contract | INFO rejection codes, quiet idle closes, timeout visibility, route-derived words and Coordinator stage classification remain verified. Current route/schema/canary coverage is recorded under T12 in the testing ledger (4.3.4–4.3.5, 5.1). |
+| 8 | Client fixes | Complete — current packages and declared platform matrix | Python, JS/TS, Go, Java, .NET and Rust current consumers pass their contract, decoder, safety and owned HTTP/TLS checks. Rust and .NET CI target checks have passed. Supported macOS/Windows packaged-client jobs and pinned TypeScript consumers pass. Previous-release skew is out of scope; Windows service support is not claimed (4.5.1–4.5.3). |
+| 9 | Dependencies and CI | Implemented — CI verification complete; one moderate advisory unresolved | Declared/frozen dependencies, shipped-version checks, SHA-pinned actions, hash-checked bootstrap inputs and exact Java/.NET/TypeScript inputs are enforced. Independent LiteLLM publication verification and the bounded companion/Zstandard provenance review are recorded. Of the original 45 lower-severity matches, 44 are closed; CVE-2019-1010024 remains unresolved. Five unavailable wheel attestations remain explicit evidence limits, with no waiver or production approval (4.4.2–4.4.3). |
+| 10 | Test-runner gaps | Complete — registered source/CI and disposable credential-volume scope | Maintained suite inventories, guarded children/UDP/DNS, rejection of empty/all-skipped suites and collected failures are enforced. The Docker credential-initialization CI job and actual disposable credential permissions pass; this check is no longer pending in item 1. Coverage scopes and their limits remain in the testing ledger (4.4.4). |
+| 11 | Structural cleanup | Complete — source gates | W1–W7 and R1–R3 are implemented: runtime domains, retained tooling/test phases, complete library strict typing, no size exceptions and streaming report aggregation. The current full source gate passes. Historical move/cleanup commits and measured evidence remain below; deployment acceptance is separate. |
+
+Current verification is attributed to its actual inputs. The qualified runtime
+source is `bb0263443365df8c7189da6b1f9a2352879c2615`; its seven-image checks and
+**1,564 source tests across 224 module executions, without skips**, are recorded
+in the [single-arena qualification](TESTING-ROADMAP.md#qualified-single-arena-arm64-profile-2026-11-25).
+CI [run 45705818352](https://github.com/ljramones/EzLLMRouter/actions/runs/45705818352)
+passed all **14 jobs** at `08c7bb72876cde09da339ecd97d28ace67384fc9`, including
+Rust/.NET, Linux native clients, macOS service, macOS/Windows packaged clients,
+TypeScript, JavaScript, credential initialization and Chromium/Firefox/WebKit.
+These are existing verified results, not new executions for this documentation
+reconciliation. The persistent profile and production acceptance are unchanged.
+
+**Current engineering follow-up:** CVE-2019-1010024, the partially mitigated glibc
+cache-reuse/ASLR report. The [testing ledger](TESTING-ROADMAP.md#testing-review-implementation-ledger)
+retains the implemented measurement scopes, explicit evidence limits and deferred
+load/deployment work. The following implementation records are historical; their
+earlier pending/deferred labels are superseded by the maintained table above.
 
 ### Implementation pass: items 2–5
 

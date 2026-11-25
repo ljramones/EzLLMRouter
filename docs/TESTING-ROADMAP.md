@@ -73,7 +73,10 @@ cases. Some recommendations already have partial implementations; the table
 keeps those distinct from new work and from target verification.
 
 Owner scope decision, 2026-11-25: previous-release compatibility is not required
-for this baseline. Real-load testing and production deployment are deferred.
+for this baseline. Real-load testing, acceptance budgets, longer soaks and
+production deployment are deferred until deployment preparation resumes. The
+bounded synthetic performance and disposable restore results below retain their
+measured scope; these deferred activities are not current completion blockers.
 Historical records below retain the earlier T14 status; it is no longer a
 pending input or release gate in the current backlog.
 
@@ -217,8 +220,9 @@ updates have no published PyPI attestations; their exact PyPI archive hashes,
 metadata, dependency relationships and contents were inspected. All 117 selected
 wheels passed byte/hash and startup-hook inspection before installation; absence
 of startup hooks alone does not establish that an artifact is clean. The
-companion-artifact provenance limits remain open, with no production approval
-implied.
+companion-artifact provenance limits were left open at that review. The
+[November 25 follow-up](#companion-artifact-and-zstandard-provenance-review-2026-11-25)
+now records their exact continuing limits; no production approval is implied.
 
 The exact-image audit at `2026-11-23T00:33:55.495382+00:00` retains 359 combined
 package/version entries, 164 advisory matches and 163 blockers. All blockers are
@@ -299,6 +303,66 @@ The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
 
+## Companion artifact and Zstandard provenance review, 2026-11-25
+
+**The bounded provenance follow-up is complete: Zstandard's release key has an
+independent distribution association, and the five missing wheel attestations
+have exact recorded limits.** Review began from source
+`0ca876822285ff7a9813bc4c3474ada5188737e9`. No selected wheel, source archive,
+runtime lock, image, persistent installation or production acceptance changed.
+
+Current PyPI metadata matches each existing wheel's exact size and SHA-256,
+with no yanked artifact. All five wheels pass complete internal RECORD hashes,
+embedded name/version and semantically equivalent dependency checks. Inspection
+finds no startup hooks, duplicate entries, path traversal or archive symlinks.
+Those are artifact-integrity and content checks, not publisher authentication.
+
+| Selected wheel | SHA-256 | Current publisher evidence |
+| --- | --- | --- |
+| `boto3-1.43.117-py3-none-any.whl` | `a5b6cd7e67653987fcf0e212187c16f7b58af2ae192e368f7212ddab7c05b25d` | [PyPI metadata](https://pypi.org/pypi/boto3/1.43.117/json); [provenance endpoint](https://pypi.org/integrity/boto3/1.43.117/boto3-1.43.117-py3-none-any.whl/provenance) returns 404, no provenance available. |
+| `botocore-1.43.117-py3-none-any.whl` | `5920ef9b3002e1361846549078549d9154a6e0004c22853c01ce7b279d05d495` | [PyPI metadata](https://pypi.org/pypi/botocore/1.43.117/json); [provenance endpoint](https://pypi.org/integrity/botocore/1.43.117/botocore-1.43.117-py3-none-any.whl/provenance) returns 404, no provenance available. |
+| `litellm_enterprise-0.1.76.post1-py3-none-any.whl` | `eee9bfe5c885dc533ac650fd08f915216e92697549475c321c37776985b4d791` | [PyPI metadata](https://pypi.org/pypi/litellm-enterprise/0.1.76.post1/json); [provenance endpoint](https://pypi.org/integrity/litellm-enterprise/0.1.76.post1/litellm_enterprise-0.1.76.post1-py3-none-any.whl/provenance) returns 404, no provenance available. |
+| `litellm_proxy_extras-0.4.108-py3-none-any.whl` | `e0e62cebf6ac3789236319f46a326e80904951baac28c8b58dadcf088643d3e7` | [PyPI metadata](https://pypi.org/pypi/litellm-proxy-extras/0.4.108/json); [provenance endpoint](https://pypi.org/integrity/litellm-proxy-extras/0.4.108/litellm_proxy_extras-0.4.108-py3-none-any.whl/provenance) returns 404, no provenance available. |
+| `opentelemetry_api-1.45.2-py3-none-any.whl` | `2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34` | [PyPI metadata](https://pypi.org/pypi/opentelemetry-api/1.45.2/json); [provenance endpoint](https://pypi.org/integrity/opentelemetry-api/1.45.2/opentelemetry_api-1.45.2-py3-none-any.whl/provenance) returns 404, no provenance available. |
+
+Without a published attestation, independent Sigstore verification is unavailable
+for those exact bytes. HTTPS project links and matching hashes do not supply
+the missing cryptographic publisher identity or source/build provenance. This
+records the evidence limit; it is not a new fix, risk acceptance or production
+approval. New publisher evidence or a future input change requires a new review.
+
+The Zstandard key check uses the already pinned Debian archive keyring, SHA-256
+`506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017`.
+GPG verifies the current Trixie InRelease; its SHA-256
+`bfacad4ca61899ce20d4a0d439f29339f66541561b67506364efb88e27dee870`
+also matches the existing OS lock. Its authenticated hash binds
+`main/source/Sources.xz`, SHA-256
+`b449439c113900c8607c1005f7a1ec0704d0f3b7376ba312b2150c79e4e4e06c`.
+The `libzstd 1.5.7+dfsg-1` source record in turn authenticates the source descriptor
+and Debian packaging archive, SHA-256
+`5e88424d919941291f79e1bfada6cb1a6f748671d9de7d4b7d931f361f183a15`.
+Only the upstream key and watch file are read from that archive; packaging code
+is not executed.
+
+The authenticated `debian/upstream/signing-key.asc` matches the independently
+retrieved [Debian source key](https://sources.debian.org/data/main/libz/libzstd/1.5.7+dfsg-1/debian/upstream/signing-key.asc),
+SHA-256 `7ef8dd39f90db88f1f95e9a57db783cfc96eba95c9a8f91d52f6ca99d98fc13d`.
+Its fingerprint is `4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD`, with user ID
+`Zstandard Release Signing Key <signing@zstd.net>`. Debian's watch file selects
+the upstream release and detached `.sig` evidence. Using this authenticated key,
+GPG verifies the existing Zstandard 1.6.0 source archive, SHA-256
+`2ba599ae2a257976278e7e71e998433a387bfd18aa7b78678229fd5d84f5e9b8`.
+Current upstream release-asset hashes also match the existing archive and
+signature. A one-byte-changed archive is rejected with a bad signature.
+
+This closes the lack of an independent distribution association for the selected
+key. It does not certify a natural person's identity, attest a source-to-binary
+build, or prove code safety. Original signature evidence and its earlier trust
+limit remain retained under `.artifacts/zstd-remediation/`; new public responses,
+authenticated source records, scripts, verification logs and exact wheel limits
+are under ignored `.artifacts/provenance-followup/`. All checks ran locally; no
+model request, image rebuild, runtime restart, real-load test or deployment ran.
+
 ## Independent LiteLLM publication verification, 2026-11-25
 
 **The independent Sigstore publication-verification gap is closed for the
@@ -353,9 +417,10 @@ reports are under ignored `.artifacts/litellm-provenance/`.
 This authenticates publication of these exact bytes by the stated identity.
 The predicate is a publication assertion; source/build provenance, review of the
 private publishing workflow's contents, code safety and production acceptance
-are separate. Missing companion/OpenTelemetry attestations and native signing-key
-identity limits are not closed by this result. No model request, runtime restart,
-real-load test or production deployment was performed.
+are separate. This result did not close companion/OpenTelemetry attestation or
+native signing-key limits; the [separate follow-up](#companion-artifact-and-zstandard-provenance-review-2026-11-25)
+records their current evidence. No model request, runtime restart, real-load test
+or production deployment was performed.
 
 ## Qualified single-arena ARM64 profile, 2026-11-25
 

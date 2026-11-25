@@ -157,6 +157,16 @@ thirteen tampering/identity controls reject. This authenticates publication of
 the selected bytes. Build-source provenance, code safety and production
 acceptance retain their separate review requirements.
 
+The [companion artifact and Zstandard follow-up](TESTING-ROADMAP.md#companion-artifact-and-zstandard-provenance-review-2026-11-25)
+records the remaining publication limits for five exact wheels. Their current
+PyPI hashes, non-yanked status, wheel records and dependency metadata agree, but
+their PyPI integrity endpoints publish no attestations; publisher identity and
+source/build provenance are therefore unverified for those bytes. The Zstandard
+release key is now independently corroborated by Debian's authenticated source
+packaging, and it verifies the existing 1.6.0 source signature. This completes
+the bounded evidence review without replacing runtime inputs or waiving the
+missing wheel attestations.
+
 Use explicit reviewed wheel hashes and image digests. Before proposing updates,
 review current advisories, published artifact provenance, affected interfaces
 and startup hooks, then repeat the relevant isolation and installed-package
