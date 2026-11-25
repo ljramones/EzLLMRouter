@@ -147,6 +147,16 @@ records incident/advisory review, publisher evidence, dependency compatibility,
 actual offline builds and remaining provenance limits. This selection does not
 approve other releases, other environments or production acceptance.
 
+The selected 1.106.12 wheel's publication attestation has also passed
+[independent Sigstore verification](TESTING-ROADMAP.md#independent-litellm-publication-verification-2026-11-25):
+the exact local artifact digest and expected GitHub workflow/issuer/environment,
+Fulcio certificate chain and SCT, DSSE signature, and Rekor signed timestamp,
+checkpoint and inclusion proof are verified using TUF-authenticated production
+trust material. An independently retrieved Rekor proof also verifies, and
+thirteen tampering/identity controls reject. This authenticates publication of
+the selected bytes. Build-source provenance, code safety and production
+acceptance retain their separate review requirements.
+
 Use explicit reviewed wheel hashes and image digests. Before proposing updates,
 review current advisories, published artifact provenance, affected interfaces
 and startup hooks, then repeat the relevant isolation and installed-package

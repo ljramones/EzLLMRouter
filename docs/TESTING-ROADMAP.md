@@ -72,6 +72,11 @@ cases. Re-measure each tier rather than equating method counts with executed
 cases. Some recommendations already have partial implementations; the table
 keeps those distinct from new work and from target verification.
 
+Owner scope decision, 2026-11-25: previous-release compatibility is not required
+for this baseline. Real-load testing and production deployment are deferred.
+Historical records below retain the earlier T14 status; it is no longer a
+pending input or release gate in the current backlog.
+
 | ID | Recommendation | Status and evidence |
 | --- | --- | --- |
 | T01 | Python/Node coverage and critical-branch ratchets | Implemented for the declared measurement scopes: offline and HTTP Python measurements and lock auditing run in PR CI, with independent exact missing-code budgets and a source-checked combined report. SDK coverage uses a static TypeScript function inventory with V8 hits; all console scripts have static AST counter inventories and measured hits. All 13 selected critical functions, including first-write transports and coordinator outcomes, require complete conditional-exit coverage; no current follow-up selector gaps remain. Nightly repeats retain all outcomes. Exception dispatch, native code and exhaustive JavaScript branch measurement remain outside these metrics. See DEVELOPMENT.md for commands. |
@@ -87,7 +92,7 @@ keeps those distinct from new work and from target verification.
 | T11 | Abuse rates and resource limits | Implemented for the documented local limits: an executable inventory links all twelve runtime-resource rows and six additional security/API groups to registered regressions. Real boundaries cover execution/connection admission, login rates and pending work, hashed bucket bounds, session eviction/admin reservation, 4,096 tokens, report readers/SQL deadline, IPC/body/response sizes and diagnostic rollover. Production load and container timing qualification remain separate. |
 | T12 | Logs and canary-secret contracts | Implemented for the current logging contract: all 66 operator and 42 wire bindings have route/level/schema/canary checks across nine statuses; 42 family action cases verify literal positions. Dynamic IDs matching route words remain redacted. Tests distinguish INFO rejections from sanitized ERROR stacks and verify the copied worker logger without trusted server imports. Production log collection is outside this source contract. |
 | T13 | Front-end payload contracts | Implemented for the declared main-screen consumer fields: a navigation census covers all 13 administrative screens and 15 real response families. Independently stated nested field/type contracts preserve nullable destinations, explicit unknown costs and decimal strings. Required-field removal, type changes and decimal coercion have negative controls; unknown response families fail the census. Additional resource states and every optional field remain outside this finite contract. |
-| T14 | Released-client version skew | Awaiting inputs. Identify hash-pinned previous released packages and previous-server vectors; never substitute current packages and call that N-1 testing. |
+| T14 | Released-client version skew | Out of scope for this baseline by owner instruction, 2026-11-25. No previous-release package/vector qualification is being pursued. Current packaged-client, contract and transport checks retain their implemented scope. |
 | T15 | Supported platform matrix | Implemented in CI: macOS service regressions and macOS/Windows current-client consumers join existing Linux jobs. The portable runner builds wheels, npm/JAR/NuGet/crate packages and a fresh Go module, checks Unicode/space paths, shared contracts/decoders and owned HTTP/TLS behavior. Python dependencies come from the locked development environment; Go uses an explicit local module replacement. Windows service support, released-package skew and deployment qualification are not claimed. |
 | T16 | Performance and soak | Implemented for the synthetic operator baseline/soak scope. The manual/nightly runner measures fixed 1k/10k additional-attempt ledgers and a five-minute, two-client HTTP soak with report/export parity, exact decimal totals, concurrent WAL writes and metadata-only connector polling. Fresh subprocesses retain source/input hashes, nearest-rank latency percentiles, CPU, RSS high-water marks, sampled heap, threads/descriptors and writer progress. Correctness, timeout and cleanup failures block; initial timing and resource-growth results are observational. Existing bounded report-memory regressions remain. Production SLOs, calibrated long-term growth budgets and deployed/provider load qualification remain separate. |
 | T17 | Accessibility | Implemented for the declared browser journeys: pinned axe 4.11.0 audits all 13 main screens, six accounting sections, sign-in/password/error states, ordinary/read-only navigation and the user form. A 200% CSS-zoom/reduced-motion keyboard journey checks form entry and cancellation; an unlabeled-input canary proves the auditor detects defects. Automated checks do not establish full WCAG conformance or replace assistive-technology review. |
@@ -203,14 +208,17 @@ metadata respectively; the synthetic OpenAI receiver profile does not expose
 those interfaces. Broader production/provider qualification is not established.
 The forbidden 1.107.0 artifact was never acquired, installed or executed.
 
-The selected LiteLLM PyPI attestation subject matches its filename/hash and the
-expected `BerriAI/project-releaser` publisher workflow. Independent Sigstore
-transparency-log verification was not performed. The four necessary companion
+At this November 22 review, the selected LiteLLM PyPI attestation subject matched
+its filename/hash and expected `BerriAI/project-releaser` publisher workflow;
+independent Sigstore transparency-log verification had not been performed.
+That verification is now complete in the [November 25 record](#independent-litellm-publication-verification-2026-11-25).
+The four necessary companion
 updates have no published PyPI attestations; their exact PyPI archive hashes,
 metadata, dependency relationships and contents were inspected. All 117 selected
 wheels passed byte/hash and startup-hook inspection before installation; absence
-of startup hooks alone does not establish that an artifact is clean. These
-provenance limits remain open, with no production approval implied.
+of startup hooks alone does not establish that an artifact is clean. The
+companion-artifact provenance limits remain open, with no production approval
+implied.
 
 The exact-image audit at `2026-11-23T00:33:55.495382+00:00` retains 359 combined
 package/version entries, 164 advisory matches and 163 blockers. All blockers are
@@ -290,6 +298,64 @@ runs. Malformed requests still reject and cannot dispatch a following request.
 The performance measurements remain bound to `b3888fc`; this follow-up changes
 fixture teardown and coverage metadata, with performance source/input hashes
 unchanged.
+
+## Independent LiteLLM publication verification, 2026-11-25
+
+**The independent Sigstore publication-verification gap is closed for the
+selected LiteLLM 1.106.12 wheel.** Its existing local bytes were read and hashed;
+the wheel was not installed, imported, replaced or reacquired. Its filename is
+`litellm-1.106.12-cp310-abi3-manylinux_2_28_aarch64.whl`, size 36,502,154 bytes,
+SHA-256 `3baf90eecb4bd63a23eecc474c3ebb7dbcbe4243d459480d96d47805a46cdbda`.
+Current PyPI metadata retains that exact digest and a non-yanked status.
+
+Verification used a separate environment with 29 inspected, hash-locked,
+wheel-only tool dependencies, including `pypi-attestations==0.0.32`,
+`sigstore==4.6.0`, `tuf==7.0.1` and `cryptography==50.0.2`. No startup hooks were
+found in those tool archives. The project environment, runtime locks, artifact
+store and deployed profile were unchanged. Sigstore's production TUF metadata
+and target were authenticated from the verifier's pinned bootstrap root,
+version 16, SHA-256
+`27aea7e372aa7864065174f0661784fcf8b0e28b1dbfebeada31a0f1fb19167f`.
+The authenticated `trusted_root.json` target SHA-256 is
+`6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`.
+Publisher-supplied keys were not used as trust anchors.
+
+The cryptographic phase ran offline using Sigstore's verifier and the PEP 740
+bundle converter. It verified the Fulcio certificate chain at authenticated
+signing time, certificate-transparency SCT signature, Rekor signed integration
+timestamp, Merkle inclusion path, signed checkpoint, DSSE signature and log-body
+consistency. The verified in-toto statement has exactly the selected filename
+and SHA-256, with the PyPI `publish/v1` predicate.
+
+Identity policy additionally requires the GitHub Actions OIDC issuer,
+`BerriAI/project-releaser`, `refs/heads/main`, a GitHub-hosted runner,
+`pypi-publish` environment and exact workflow identity:
+`https://github.com/BerriAI/project-releaser/.github/workflows/release.yml@refs/heads/main`.
+The certificate's organization identifier `121462774` matches the independently
+retrieved BerriAI organization record. Its validity window is
+2026-11-20 05:51:00–06:01:00 UTC; verification uses the authenticated log time,
+rather than requiring that short-lived certificate to remain current.
+
+The record was also fetched independently from Rekor at global index
+`4019095410`, with integrated time `1795153874` and log key ID
+`c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d`.
+Its canonical body, log ID, index and integration time match PyPI's evidence.
+The independently fetched inclusion proof uses a later tree checkpoint; its
+checkpoint, Merkle path and signed timestamp also pass verification against the
+same authenticated production trust material. Both proofs are retained.
+
+All thirteen negative controls reject: wrong artifact digest, filename, workflow,
+issuer, organization and environment; changed DSSE signature, signed payload,
+Merkle path, signed entry timestamp and checkpoint; missing inclusion proof; and
+an untrusted log key ID. Evidence, tool archives/lock, scripts, TUF metadata and
+reports are under ignored `.artifacts/litellm-provenance/`.
+
+This authenticates publication of these exact bytes by the stated identity.
+The predicate is a publication assertion; source/build provenance, review of the
+private publishing workflow's contents, code safety and production acceptance
+are separate. Missing companion/OpenTelemetry attestations and native signing-key
+identity limits are not closed by this result. No model request, runtime restart,
+real-load test or production deployment was performed.
 
 ## Qualified single-arena ARM64 profile, 2026-11-25
 
