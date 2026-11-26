@@ -79,8 +79,9 @@ missing or invalid guidance on 5xx responses defaults to `query_first`.
 
 ## External accounting integration (0.2.3)
 
-Node `>=24.22.1 <25` is supported, matching the inspected Vega platform Node 24
-declaration. The [v2 contract](../../docs/API.md#external-accounting-v2)
+Node `>=24.22.1 <25` is supported; `.nvmrc` pins development to Node 24.22.1.
+The separately qualified Docker profile uses Node 24.22.3. The
+[v2 contract](../../docs/API.md#external-accounting-v2)
 and [examples](../../tests/fixtures/contracts/integration-readiness-v2/examples.json) define
 the successor event shapes. Install the private `0.3.0` tarball locally. No hosted
 registry or provider SDK is needed.

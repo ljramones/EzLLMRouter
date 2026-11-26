@@ -1,15 +1,46 @@
 # Testing roadmap
 
-The browser baseline passed all 381 cases across Chromium, Firefox and WebKit
-in the owner Terminal. The subsequent Claude review is being addressed in the
-[review follow-up](CODE-REVIEW-FOLLOWUP.md). The longer-term priorities below
-still apply. The implementation ledger below records measured coverage and the
-remaining deployment qualification separately.
+This guide records current verification, the remaining security work and deferred
+acceptance activities. The [review checklist](CODE-REVIEW-FOLLOWUP.md#remaining-review-work)
+tracks the original eleven workstreams. Dated records preserve the exact inputs,
+counts, failures and limits of each earlier run.
+
+## Current status
+
+Documentation reconciled on **2026-11-26**, using the recorded November 25
+qualification and provenance checks. This update does not claim a new test run,
+advisory scan or deployment. Earlier counts describe their own source and
+snapshot; use the following records for the current baseline.
+
+| Area | Recorded result and scope |
+| --- | --- |
+| Source checks | **1,564 tests across 224 module executions, no skips**, plus formatting, typing, security and JavaScript/contract gates in the [single-arena validation](#qualified-single-arena-arm64-profile-2026-11-25). Both library typing-error budgets and source-size exception budgets are empty. |
+| Disposable target | Qualified runtime source `bb0263443365df8c7189da6b1f9a2352879c2615`: six offline Linux ARM64 images pass isolation, credentials, installed clients, four synthetic arrivals, restart, restore and cleanup. The seventh JavaScript image passes SDK/policy smoke; all seven pass component/native/allocator inspection. The persistent installation is unchanged. |
+| CI | [Run 45705818352](https://github.com/ljramones/EzLLMRouter/actions/runs/45705818352) passes all **14 jobs** at `08c7bb72876cde09da339ecd97d28ace67384fc9`, including Rust/.NET, current macOS/Windows clients, macOS service, three browser engines and Docker credential initialization. These results belong to that commit. |
+| Advisory review | **44 of the original 45** lower-severity matches are closed. The last qualified snapshot retains **343 entries, 71 raw matches and 28 raw blockers, with zero effective blockers** under exact artifact/native/profile decisions. **CVE-2019-1010024 remains unresolved.** These are saved snapshot results; current reviews must remain unexpired and match source, artifacts, images and diagnostics. |
+| Provenance | The selected LiteLLM 1.106.12 wheel passes [independent Sigstore publication verification](#independent-litellm-publication-verification-2026-11-25). The [companion/Zstandard review](#companion-artifact-and-zstandard-provenance-review-2026-11-25) authenticates an independent Debian association for the Zstandard release key and records the five exact wheels without publisher attestations. Those missing attestations remain evidence limits. |
+| Performance | Bounded synthetic application baselines and soaks are recorded. Single-arena native allocation stress took **16.9 times longer** in the measured contention workload; this is not intended-load acceptance. See the [workload and limits](#qualified-single-arena-arm64-profile-2026-11-25). |
+
+**Active engineering follow-up:** investigate the partially mitigated glibc
+cache-reuse/ASLR report **CVE-2019-1010024**. Disabling the thread stack cache and
+using one allocator arena do not establish that this report is fully resolved.
+
+**Deferred by the owner:** actual real-load/provider testing, intended-load
+performance budgets, longer soaks and production deployment, including acceptance
+of production backup/rollback and deployed instances. No model request or
+persistent-profile restart is part of this documentation work.
+
+**Outside this baseline:** previous-release compatibility. Additional runtime
+architectures, full retained historical wrappers and manual assistive-technology
+journeys need separately defined scope; they are not newly added completion
+blockers. Learned routing remains future product work.
 
 ## First gate: browser baseline
 
-Run the complete suite in `tests/playwright` against Chromium, Firefox and WebKit,
-with the locked Python environment and pinned npm dependencies. Type checking,
+The original owner-Terminal baseline passed 381 cases, 127 per browser. The
+maintained gate also runs in CI; the latest cited CI results are above. To run
+the complete `tests/playwright` suite against Chromium, Firefox and WebKit, use
+the locked Python environment and pinned npm dependencies. Type checking,
 all browser projects and the existing regression gates must pass. CI treats a
 test that passes only on retry as a failure. Resolve failures before adding the
 later test layers below.
@@ -38,7 +69,11 @@ necessary for combinations that would be slow or awkward to exercise through UI.
 
 ## Subsequent work
 
-Implement these in order, keeping each addition independently reviewable.
+This table preserves the original post-baseline priorities, rather than the
+current remaining-work list. Priorities 1–5 are implemented within the scopes
+in the ledger below. Priority 6 has a bounded synthetic baseline/soak runner;
+intended-load budgets and longer acceptance runs are deferred. Use
+[current status](#current-status) for the active follow-up and exclusions.
 
 | Priority | Work | Completion evidence |
 | --- | --- | --- |
@@ -49,18 +84,17 @@ Implement these in order, keeping each addition independently reviewable.
 | 5 | Add generated and adversarial inputs. Target parsers, contract versions, Unicode identifiers, numeric boundaries, decimal accounting, duplicate events and correction ordering. Preserve useful failing seeds as small regression cases. | Deterministic seeded runs find no crashes, hangs, accepted invalid authority, duplicate charges or lost corrections. Use independently stated invariants rather than copies of implementation logic. |
 | 6 | Establish performance and long-running baselines. Seed realistic disposable ledger sizes and measure report/export latency, memory, SQLite contention and connector polling under repeated navigation. Add bounded concurrency and soak runs with synthetic upstreams. | Measured latency, throughput and resource budgets with repeatable inputs. No unbounded growth, leaked jobs or duplicate execution. Put slow runs on a separate schedule or manual job before making stable budgets blocking. |
 
-Separately, test the packaged local deployment using reviewed frozen inputs:
-startup, health, filesystem permissions, network isolation, restart and restore.
-This needs its own disposable Docker environment. Keep it distinct from the
-browser fixture and do not treat it as permission to restart an existing profile
-or contact a paid provider. Any live-provider qualification remains an explicit,
-bounded operation with separate credentials and spending authorization.
+The packaged local profile has since passed disposable Linux ARM64 startup,
+health, permission, isolation, restart and restore checks with reviewed frozen
+inputs. Those results are separate from the browser fixture. Production and
+live-provider acceptance remain deferred; reproducing a disposable check does
+not authorize changing a persistent installation or contacting a paid provider.
 
 Continue review work by affected behavior and severity, with a regression test
 for each confirmed defect. The implementation ledger below records coverage
 measurements, generated inputs and process-boundary tests added after the browser
-baseline. Their scoped results do not complete deployment qualification or every
-later test layer.
+baseline. Their scopes and the separately qualified disposable target do not
+establish production acceptance or every possible later test layer.
 
 ## Testing-review implementation ledger
 
@@ -69,8 +103,9 @@ This ledger tracks the 20 recommendations in the owner's
 The report's counts are estimates: the recorded source gate at that commit ran
 928 Python cases, with 161 strictly checked files and 518 selected fresh-wheel
 cases. Re-measure each tier rather than equating method counts with executed
-cases. Some recommendations already have partial implementations; the table
-keeps those distinct from new work and from target verification.
+cases. Nineteen recommendations are implemented within their declared scopes;
+T14 is outside this baseline. The table keeps implementation, target evidence
+and remaining limits distinct.
 
 Owner scope decision, 2026-11-25: previous-release compatibility is not required
 for this baseline. Real-load testing, acceptance budgets, longer soaks and
@@ -109,12 +144,17 @@ importing wheel code. These are verified foundations, not new missing tests.
 Test-duration/outcome artifacts and repeat-run instability reporting now run to make future slow/flaky-test decisions evidence based. Retrying a failed
 test never turns its original failure into a pass.
 
-The implementation uses existing pinned runtimes where possible. This executor
-currently cannot resolve package-download hosts. New third-party scanner or
-browser dependency pins require their actual reviewed archives/checksums and
-lock entries; an unavailable tool or frozen bundle is recorded as unverified,
-not as a passing check. No testing change authorizes real-provider traffic,
+New third-party scanner or browser pins require actual reviewed archives,
+checksums and lock entries. Unavailable tools or frozen bundles remain unverified;
+an earlier executor's network or Docker restrictions are historical run limits,
+not evidence that the corresponding target check is still outstanding. No
+testing change authorizes real-provider traffic,
 spending, a persistent-profile restart or reacquisition of frozen gateway inputs.
+
+Dated records below preserve their original results and source identities.
+Earlier pending checks, advisory counts and previous-release requests are
+historical; the [current status](#current-status) and implementation ledger above
+state what is complete, unresolved, deferred or outside the baseline today.
 
 ## Deployment qualification and package audit, 2026-11-22
 

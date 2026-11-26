@@ -15,7 +15,8 @@ permissions, attributable attempts, and recorded usage and costs.
 | Configuration registry | Preserve configurations, grants, versions, and approval state. | Discovery and evaluation do not approve a configuration for use. |
 
 These are responsibilities rather than five independently running agents.
-Their implementation and validation are staged. Learned routing is future work.
+Their implemented interfaces and validation scopes are recorded in the
+[current status](TESTING-ROADMAP.md#current-status). Learned routing is future work.
 
 ## Controlled execution
 
@@ -69,5 +70,6 @@ preserve the adopted wire contracts and keep transaction ownership explicit.
 
 See [resource ownership and shutdown](RESOURCES.md), the [API guide](API.md),
 [security policy](SECURITY.md), and
-[development checks](DEVELOPMENT.md). Learned routing and production deployment
-qualification remain future work.
+[development checks](DEVELOPMENT.md). Disposable Linux ARM64 qualification has
+passed for the recorded inputs. Real-load acceptance and production deployment
+remain deferred; learned routing is future work.

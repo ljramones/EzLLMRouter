@@ -4,6 +4,12 @@ The optional profile runs the Coordinator, registry, SQLite store, isolated
 request worker, trusted sender and a controlled receiver. The standalone
 accounting console is documented in the [project README](../../README.md).
 
+Disposable Linux ARM64 qualification has passed for the exact runtime inputs in
+the [current validation summary](../../docs/TESTING-ROADMAP.md#current-status).
+Real-load testing, intended-load budgets, longer soaks and production deployment
+remain deferred. These commands describe explicit preparation and operation;
+updating this guide does not start or change a profile.
+
 ## Inputs
 
 Use a verified artifact store containing `ARTIFACT-CUSTODY.json` and `inputs/`,
@@ -20,7 +26,8 @@ export EZLLMROUTER_ARTIFACT_ROOT=/absolute/path/to/verified/artifact-store
 uv run --locked python deploy/local/local_profile.py prepare
 ```
 
-Use the Python and Node versions recorded at the repository root. Source staging
+Use Python 3.12.15 and Node 24.22.1 for development/preparation. The image inputs
+separately pin Python 3.12.16 and Node 24.22.3. Source staging
 copies server packages, browser assets, worker code and the selected client
 artifacts into separate contexts. Build fingerprints include the active inputs.
 The worker context contains no service credentials. Its validation directory
@@ -53,7 +60,7 @@ the frozen HTTP interface counterexamples with a read-only wheel mount.
 Isolated owner proof commands mount their separately staged fixtures
 read-only; ordinary profile startup has no fixture-code mounts. These Dockerfile
 changes passed disposable Linux ARM64 qualification at the runtime source in the
-[validation record](../../docs/TESTING-ROADMAP.md#release-input-remediation-2026-11-22).
+[validation record](../../docs/TESTING-ROADMAP.md#qualified-single-arena-arm64-profile-2026-11-25).
 Other targets need their own qualification.
 
 After reviewing replacement artifacts, assemble a separate immutable store:
@@ -93,8 +100,11 @@ contended native allocation; see the measured workload and limits in the
 candidate does not update the persistent installation or approve production use.
 
 The current OS selection uses Debian 13 (Trixie) while retaining Python 3.12.16
-and Node 24.22.3. The separate seven-archive OS lock supplies the reviewed glibc,
-OpenSSL, zlib and base-files updates without network access during builds.
+and Node 24.22.3. The v4 OS lock selects fourteen archives for Python roles and
+thirteen for Node roles, including reviewed glibc, OpenSSL, Zstandard, zlib,
+SQLite, ACL, GCC runtime and base-files inputs. Native build records also bind
+the shared-SSL Node binary, cryptography and reduced psycopg bundle. Installation
+uses those reviewed local bytes without network access during builds.
 Preserve the original artifact store and add the selected archives to a fresh
 store as described in the [OS input guide](inputs/os/README.md). Staging binds
 archive bytes and the build-only installer to the source packet. Final images
@@ -226,7 +236,9 @@ unpacked components; renamed, archived or statically embedded code and retained
 library advisories require separate review.
 
 Capture and audit actual installed packages with the reviewed Rust metadata
-artifact from the manual **Release input candidates** workflow:
+artifact from the manual **Release input candidates** workflow. A raw inventory
+retains all advisory matches; it does not apply the reviewed dispositions:
+
 
 ```sh
 .venv/bin/python -m tools.release_inventory \
@@ -235,13 +247,40 @@ artifact from the manual **Release input candidates** workflow:
   --output .artifacts/qualification-audit --query
 ```
 
+To reproduce the reviewed component/native/profile gate, also select the exact
+artifact store, review catalogs and both hash-bound ARM64 diagnostics:
+
+```sh
+.venv/bin/python -m tools.release_inventory \
+  --rust /absolute/path/to/native-release-candidates/rust \
+  --qualification .artifacts/qualification-target/qualification.json \
+  --output .artifacts/qualification-reviewed-audit --query \
+  --component-reviews tools/security_component_reviews.json \
+  --os-store "$EZLLMROUTER_ARTIFACT_ROOT" \
+  --native-reviews \
+  --profile-reviews tools/security_profile_reviews.json \
+  --profile-probe /absolute/path/to/reviewed/profile-probe \
+  --allocator-probe /absolute/path/to/reviewed/allocator-probe
+```
+
+The diagnostics must match their recorded hashes. Recompilation alone does not
+establish those identities. Changed source, images, inputs or probe bytes,
+an expired review or a stale snapshot requires the corresponding review again.
+The current catalogs expire 2026-11-30 (component) and 2026-12-01 (profile);
+the saved zero-effective-blocker result does not extend those dates. Both audit
+commands require fresh output directories and Docker access. Neither command
+changes a profile or downloads replacement runtime inputs.
+
 The audit inventories immutable image IDs with networking disabled, then sends
 public package names/versions to OSV. It retains its inventory, CycloneDX SBOM,
 all advisory pages and findings. `images.json` preserves actual installed package
 metadata and embedded runtime versions; `attribution.json` separates each image's
 matches from findings confined to declared inputs. PyPI aliases are normalized
 when combining sources. High, critical and unrated matches fail the
-gate; a failed gate requires review/remediation. Rust repository builds use the
-tracked Cargo.lock with `--locked`; published library consumers resolve their
-own dependency graph. See the [current qualification record](../../docs/TESTING-ROADMAP.md#deployment-qualification-and-package-audit-2026-11-22)
-for the observed results and open release blockers.
+raw gate; a failed gate requires review/remediation. With the explicit review
+options, the exit status uses effective blockers while retaining raw findings
+and the exact dispositions. Rust repository builds use the tracked Cargo.lock
+with `--locked`; published library consumers resolve their own dependency graph.
+See the [current qualification summary](../../docs/TESTING-ROADMAP.md#current-status)
+for the saved raw/effective counts, unresolved moderate finding and deferred
+deployment acceptance.

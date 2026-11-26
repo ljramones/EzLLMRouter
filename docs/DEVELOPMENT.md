@@ -3,6 +3,11 @@
 Run commands from the repository root: the directory containing `pyproject.toml`,
 `uv.lock` and `.nvmrc`.
 
+Use Python **3.12.15** and Node **24.22.1** for development. The separately pinned
+Linux ARM64 image inputs use Python **3.12.16** and Node **24.22.3**; development
+versions do not replace those runtime inputs. The [current validation summary](TESTING-ROADMAP.md#current-status)
+separates completed checks, evidence limits and deferred load/deployment work.
+
 ```sh
 nvm use
 uv sync --locked --all-groups --python 3.12.15
@@ -499,8 +504,8 @@ The source preflight also validates the reviewed Debian OS lock and its installe
 hash using only the standard library. The input inventory records binary archive
 hashes and source-package versions for Debian advisory queries. Private archive
 bytes are verified separately during preparation; the PR source gate does not
-claim to have installed them. The v3 lock binds each selected package's source
-suite and authenticated origin: the base OS remains Debian 13, while the six
+claim to have installed them. The current v4 lock binds each selected package's
+source suite and authenticated origin: the base OS remains Debian 13, while the six
 reviewed Forky archives use Debian:14 advisory attribution for their exact
 binary/source versions. Unmatched installed versions retain the base OS's
 ecosystem; unknown origins and conflicting source metadata fail. Historical v2
@@ -522,6 +527,11 @@ Python OpenSSL consumers and Node's actual shared-SSL configuration. Custom loca
 versions query their original upstream versions, retaining raw findings until
 exact, advisory-bound proof establishes a fixed disposition. See the
 [native build guide](../deploy/local/inputs/native/README.md).
+
+The lock's separate `native_driver` and `native_codec` records bind the minimal
+libpq/psycopg bundle and Zstandard 1.6.0 system/Node replacements to their exact
+parent builds, source inputs and outputs. They do not relabel the original
+OpenSSL build or suppress upstream-version advisory queries.
 
 CI installs uv through [.github/requirements-bootstrap.lock](../.github/requirements-bootstrap.lock)
 with `--force-reinstall --only-binary=:all: --no-deps --require-hashes`.
@@ -579,7 +589,20 @@ archives against the same audited inventory and lock. This is required to
 resolve a match also attributed to the OS lock; image proofs alone cannot
 resolve an unverified declared source. No archive is acquired by this option.
 
-`--snapshot PATH` rechecks a matching, complete snapshot offline; snapshots older
+The qualified profile also requires `--native-reviews`,
+`--profile-reviews tools/security_profile_reviews.json`, `--profile-probe PATH`
+and `--allocator-probe PATH`. Both diagnostics must be the reviewed, hash-bound
+ARM64 binaries; the allocator diagnostic's source is
+`tools/glibc_allocator_probe.c`. Image/code checks, exact source and qualification
+bindings, native copies and unexpired review catalogs must all agree. The
+[complete audit invocation](../deploy/local/README.md#disposable-qualification)
+shows these options together. Omitting dispositions reports raw matches; it
+does not reproduce the recorded zero-effective-blocker result. The
+[current summary](TESTING-ROADMAP.md#current-status) retains raw counts, the
+unresolved moderate glibc report and the original snapshot date.
+
+For `tools.security_dependencies`, `--snapshot PATH` rechecks a matching,
+complete snapshot offline; snapshots older
 than seven days fail. Network advisory qualification remains separate from the
 offline scanner regressions, which use explicitly synthetic advisory responses.
 That job uses the runner's standard library without installing the project's
@@ -877,16 +900,19 @@ test runs; never overwrite a retained run.
 
 ## Validation boundaries
 
-Passing local checks does not establish Docker deployment, provider execution
-or production readiness. The optional execution profile requires verified frozen
-inputs and its own deployment checks. Preparing documentation or building a
-package does not authorize a model call, spending or an instance restart.
+Source, client, browser and disposable image results qualify their recorded
+inputs and declared checks. The current Linux ARM64 profile has passed separate
+frozen-input qualification; this does not establish real-provider execution or
+production readiness. Intended-load budgets, longer soaks and production
+deployment remain deferred. Previous-release compatibility is outside this
+baseline. Preparing documentation or building a package does not authorize a
+model call, spending or an instance restart.
 
-
-The registered `tests.unit.test_source_size` gate enforces source-size budgets in
-`tools/source_size_budget.json`. Runtime Python files/functions/classes have
-800/100/600-line limits; tools/tests have 1,500/200/1,500-line limits. Source files
-in other languages receive the file limit. Explicit existing allowances can
-only shrink: reduce their ceilings with the code, and remove resolved entries.
-Code relocations must transfer an existing allowance explicitly in review,
-without increasing its ceiling. New non-ignored source files are checked too.
+The registered `tests.unit.test_source_size` gate measures `server/src/`,
+`clients/python/src/`, `tools/` and `tests/`, as declared by
+`tools/source_size.py`. Python runtime files/functions/classes have
+800/100/600-line limits; tools/tests have 1,500/200/1,500-line limits. Supported
+non-Python source extensions in those roots receive the file limit. The
+`ceilings` map in `tools/source_size_budget.json` is empty: no size exceptions
+remain. Historical relocation records preserve their original attribution.
+Tracked and non-ignored new sources in the declared roots are checked.

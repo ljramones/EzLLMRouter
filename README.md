@@ -36,7 +36,8 @@ for the current design and operating guides.
 
 ## Packages
 
-The CognitiveDynamics package line starts at **0.3.0**.
+The current Python service is **0.3.3**; the Python and JavaScript/TypeScript
+clients are **0.3.0**. Packages use the CognitiveDynamics distribution names:
 
 | Package | Distribution name | Public interface |
 | --- | --- | --- |
@@ -127,7 +128,7 @@ ezllmrouter \
 The defaults are API port `48760` and operator console port `48761`. In a fresh
 installation, sign in as **`admin`** using the generated `admin.password` file in
 your secrets directory and choose a new password before continuing.
-Server version **0.3.1** adds **Users & Permissions** for
+Use **Users & Permissions** for
 account CRUD, role assignment, password resets, and model grants. See the
 [user management guide](docs/USER-MANAGEMENT.md) for roles, setup overrides,
 and compatibility with existing operator tooling. Keep the state and generated
@@ -154,7 +155,7 @@ and leaves it for repair; unrelated datasets remain available. Recovery preserve
 possible-send exposure, never replays an interrupted request, and keeps historical
 charges attached to their original campaign.
 
-Server **0.3.3** separates **External Providers** from **Local Connectors**.
+The console separates **External Providers** from **Local Connectors**.
 Use Local Connectors for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or another
 OpenAI-compatible server. Availability indicators refresh every 15 seconds while
 the page is visible. Choose **Find local servers** to check common localhost
@@ -180,15 +181,14 @@ The root `uv.lock` pins the development environment, including Ruff and mypy.
 The application lockfiles and frozen gateway inputs are separate. Change the
 development lockfile deliberately with `uv lock` when updating dependencies.
 
-The command runs the maintained offline Python regression modules,
-JavaScript syntax and console tests, Ruff correctness checks, and strict mypy
-for the initial typed modules. Each Python test module runs in its own process;
-network connections and listener binds fail in this suite; local IPC pairs are
-used for framing checks. The initial lint rules catch fatal syntax
-and undefined-name errors across server, client and deployment source. Formatting
-and strict typing cover the file and logging utilities, database boundary,
-schema owner, client transport helpers and runner; the remaining modules still
-need gradual adoption.
+The command runs the maintained offline Python regressions, JavaScript syntax
+and console checks, Ruff lint and formatting, strict mypy, source-size checks
+and offline security checks. Strict typing covers every server and Python-client
+module plus selected verification tools; both library typing-error budgets and
+source-size exception budgets are empty. Each Python test module runs in its own
+process. Network connections and listener binds fail in the offline tier; local
+IPC pairs support framing checks. See the [development guide](docs/DEVELOPMENT.md)
+for exact scopes, coverage and security commands.
 
 Local HTTP fixtures are a separate explicit check:
 
@@ -206,9 +206,13 @@ bash clients/dotnet/build.sh test
 bash tests/client_languages/check_rust.sh
 ```
 
-CI runs the Python/JavaScript checks and the native-client checks. Docker, provider execution and historical evidence
-scripts remain separate owner-operated workflows with their documented frozen
-inputs. These checks do not establish deployment or production acceptance.
+CI also runs native clients, macOS/Windows package consumers, macOS service
+regressions, three browser engines and a Docker credential-initialization check.
+Full disposable Linux ARM64 image qualification uses a separate frozen-input
+workflow. Real-provider testing, intended-load acceptance and production
+deployment are deferred; retained historical evidence runners have their own
+documented inputs. The [current status](docs/TESTING-ROADMAP.md#current-status)
+records completed verification and its source commits.
 `--tests-only` omits lint and type checks when diagnosing test failures.
 
 ## Language choice
@@ -254,18 +258,22 @@ the service wheel and explicit in fixture staging. The final service image keeps
 its runtime namespace and data separately from validation tools.
 
 Gateway modules use the local profile's reviewed HTTPX and HTTPcore closure;
-importing the service or gateway package leaves LiteLLM unloaded. Frozen
-dependencies, image digests, adopted contract IDs and retained evidence are unchanged.
+importing the service or gateway package leaves LiteLLM unloaded. Runtime inputs
+are selected by exact reviewed hashes and image digests; adopted contract IDs
+and retained evidence preserve their original identities.
 
 See [database and operator server structure](docs/DATABASE.md) for schema
 ownership, shared transactions, dispatch boundaries and verification.
 
 ## Development status
 
-The current database uses versioned migrations and upgrades versions 1 and 2 to
-version 3 atomically. The local test suite
-covers accounting, credential recovery, authorization and operator workflows.
-Docker deployment, live-provider execution and production qualification require
-their own validation. Learned routing remains future work.
+The database upgrades versions 1 and 2 to version 3 atomically. Source, client,
+HTTP/TLS, browser and disposable Linux ARM64 image checks have passed within the
+scopes in the [current validation summary](docs/TESTING-ROADMAP.md#current-status).
+One moderate glibc report, **CVE-2019-1010024**, remains unresolved. Five selected
+wheels lack publisher attestations; their exact evidence limits are documented.
+Real-load testing, longer soaks and production deployment remain deferred.
+Previous-release compatibility is outside this baseline. Learned routing remains
+future work.
 
 Current guidance is in the [documentation index](docs/README.md).

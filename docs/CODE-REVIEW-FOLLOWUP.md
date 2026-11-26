@@ -10,6 +10,62 @@ The [maintained checklist](#remaining-review-work) reflects verification through
 counts, failed attempts and then-pending checks; those historical limits do not
 override the current checklist.
 
+## Remaining review work
+
+This is the maintained checklist from the conversation, with stable numbers.
+Update the status and evidence as each batch proceeds. Last updated: 2026-11-26.
+This documentation reconciliation uses the recorded November 25 verification;
+no source, image or CI check is claimed rerun here.
+The six [Report 3 release-fix groups](#report-3-release-fixes) were implemented at
+`ee6c444`; their disposable
+Linux ARM64 target checks have since passed. Production deployment remains
+deferred, separately from those completed checks.
+
+The [bounded provenance review](TESTING-ROADMAP.md#companion-artifact-and-zstandard-provenance-review-2026-11-25)
+and checklist reconciliation are complete. Five unavailable wheel attestations
+remain explicit evidence limits. The owner's November 25 scope decision defers
+real-load testing, calibrated performance acceptance, longer soaks and production
+deployment. Previous-release qualification is outside this baseline. See the
+[current validation summary](TESTING-ROADMAP.md#current-status) for completed checks
+and the active glibc follow-up. The original eleven workstream IDs stay unchanged.
+
+Statuses: **Open** means work has not started; **In progress** means active work;
+**Partial** means implemented work has a known source follow-up remaining;
+**Implemented** means source changes and local checks pass, with any remaining
+target checks stated explicitly; **Complete** means the required verification
+also passes. A pending or unavailable check is never a passing result.
+
+| # | Workstream | Status | Remaining scope / evidence |
+| --- | --- | --- | --- |
+| 1 | Deployment qualification | Complete — disposable Linux ARM64 scope; production deferred | Six images build offline and pass actual startup, isolation, credential permissions, installed-client readback, four synthetic arrivals, restart and separate-volume encrypted restore. The auxiliary JavaScript image passes SDK/policy smoke. All seven pass component/native/allocator inspection. Real HTTP/TLS, three browser engines and Docker credential initialization pass their CI jobs. See the target and CI identities below; other architectures and production acceptance are separate. |
+| 2 | Blocking work and performance | Complete — source and bounded synthetic checks; real-load acceptance deferred | Paginated reports/exports, SQL projections, independent read snapshots, streaming accounting aggregates, sender checks/first writes on bounded threads and password hashing outside shared locks are verified. Synthetic 1k/10k measurements and bounded soaks are recorded in the testing ledger. The single-arena native contention cost remains explicit; intended-load budgets and longer soaks are deferred (4.1.3–4.1.4, 4.2.2, 4.3.3). |
+| 3 | Remaining authentication/HTTP hardening | Complete — declared regression scope | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` and subsequent source, real HTTP/TLS and browser gates pass (4.3.1, 4.3.5). |
+| 4 | Gateway correctness | Complete — qualified Linux ARM64 scope | Definite pre-send rejection, sender-owned forwarding headers and timeout keys, campaign authority epochs and peer read-only socket mounts. Commit `a698cdf`; source/HTTP checks and disposable isolation/final-request qualification pass (4.2.3). |
+| 5 | Worker lifecycle and diagnostics | Complete — source and disposable target scope | Worker SIGTERM cleanup, ordered closure, bounded joins, Compose init/grace periods, rotating diagnostics and queue/drop/write-error counts. Commit `a698cdf`; source regressions, actual startup/restart and disposable cleanup pass (4.2.3). |
+| 6 | Persistence recovery | Complete — declared crash/fault and disposable restore scope | Uncommitted vault retries, ambiguous-commit custody, nested rollback, snapshot admission and failed-executor recovery remain verified. The testing ledger adds process-crash/fault, migration and encrypted restore checks. Physical power loss and production backup/restore acceptance are separate (4.1.4). |
+| 7 | Logging | Complete — declared logging contract | INFO rejection codes, quiet idle closes, timeout visibility, route-derived words and Coordinator stage classification remain verified. Current route/schema/canary coverage is recorded under T12 in the testing ledger (4.3.4–4.3.5, 5.1). |
+| 8 | Client fixes | Complete — current packages and declared platform matrix | Python, JS/TS, Go, Java, .NET and Rust current consumers pass their contract, decoder, safety and owned HTTP/TLS checks. Rust and .NET CI target checks have passed. Supported macOS/Windows packaged-client jobs and pinned TypeScript consumers pass. Previous-release skew is out of scope; Windows service support is not claimed (4.5.1–4.5.3). |
+| 9 | Dependencies and CI | Implemented — CI verification complete; one moderate advisory unresolved | Declared/frozen dependencies, shipped-version checks, SHA-pinned actions, hash-checked bootstrap inputs and exact Java/.NET/TypeScript inputs are enforced. Independent LiteLLM publication verification and the bounded companion/Zstandard provenance review are recorded. Of the original 45 lower-severity matches, 44 are closed; CVE-2019-1010024 remains unresolved. Five unavailable wheel attestations remain explicit evidence limits, with no waiver or production approval (4.4.2–4.4.3). |
+| 10 | Test-runner gaps | Complete — registered source/CI and disposable credential-volume scope | Maintained suite inventories, guarded children/UDP/DNS, rejection of empty/all-skipped suites and collected failures are enforced. The Docker credential-initialization CI job and actual disposable credential permissions pass; this check is no longer pending in item 1. Coverage scopes and their limits remain in the testing ledger (4.4.4). |
+| 11 | Structural cleanup | Complete — source gates | W1–W7 and R1–R3 are implemented: runtime domains, retained tooling/test phases, complete library strict typing, no size exceptions and streaming report aggregation. The current full source gate passes. Historical move/cleanup commits and measured evidence remain below; deployment acceptance is separate. |
+
+Current verification is attributed to its actual inputs. The qualified runtime
+source is `bb0263443365df8c7189da6b1f9a2352879c2615`. The seven-image checks and
+the source gate's **1,564 tests across 224 module executions, without skips**, are recorded
+in the [single-arena qualification](TESTING-ROADMAP.md#qualified-single-arena-arm64-profile-2026-11-25).
+CI [run 45705818352](https://github.com/ljramones/EzLLMRouter/actions/runs/45705818352)
+passed all **14 jobs** at `08c7bb72876cde09da339ecd97d28ace67384fc9`, including
+Rust/.NET, Linux native clients, macOS service, macOS/Windows packaged clients,
+TypeScript, JavaScript, credential initialization and Chromium/Firefox/WebKit.
+These are existing verified results, not new executions for this documentation
+reconciliation. The persistent profile and production acceptance are unchanged.
+
+**Current engineering follow-up:** CVE-2019-1010024, the partially mitigated glibc
+cache-reuse/ASLR report. The [testing ledger](TESTING-ROADMAP.md#testing-review-implementation-ledger)
+retains the implemented measurement scopes, explicit evidence limits and deferred
+load/deployment work. The following implementation records are historical; their
+earlier pending/deferred labels are superseded by the maintained table above.
+
 ## Implemented fixes
 
 | Review item | Change and regression evidence |
@@ -356,61 +412,6 @@ Actual image builds, the worker's LiteLLM-dependent checks, real listener/TLS
 fixtures and browser journeys still require their target environments. No
 existing profile was restarted, no provider inference was invoked, and the
 frozen worker requirements, wheel inventory and migration bytes are unchanged.
-
-## Remaining review work
-
-This is the maintained checklist from the conversation, with stable numbers.
-Update the status and evidence as each batch proceeds. Last updated: 2026-11-25.
-The six release-fix groups above were implemented at `ee6c444`; their disposable
-Linux ARM64 target checks have since passed. Production deployment remains
-deferred, separately from those completed checks.
-
-The November 25 completion backlog uses different numbers from the eleven
-original workstreams below. Its item 7 is the completed
-[bounded provenance review](TESTING-ROADMAP.md#companion-artifact-and-zstandard-provenance-review-2026-11-25),
-including explicit limits for five missing wheel attestations; its item 12 is
-this checklist reconciliation. Real-load testing, calibrated performance
-acceptance and longer soaks (completion items 10–11), and production deployment
-(completion item 13), are deferred until deployment preparation resumes. This
-does not mark those activities passed. Previous-release qualification is out of
-scope for this baseline. The original eleven workstream numbers stay unchanged.
-
-Statuses: **Open** means work has not started; **In progress** means active work;
-**Partial** means implemented work has a known source follow-up remaining;
-**Implemented** means source changes and local checks pass, with any remaining
-target checks stated explicitly; **Complete** means the required verification
-also passes. A pending or unavailable check is never a passing result.
-
-| # | Workstream | Status | Remaining scope / evidence |
-| --- | --- | --- | --- |
-| 1 | Deployment qualification | Complete — disposable Linux ARM64 scope; production deferred | Six images build offline and pass actual startup, isolation, credential permissions, installed-client readback, four synthetic arrivals, restart and separate-volume encrypted restore. The auxiliary JavaScript image passes SDK/policy smoke. All seven pass component/native/allocator inspection. Real HTTP/TLS, three browser engines and Docker credential initialization pass their CI jobs. See the target and CI identities below; other architectures and production acceptance are separate. |
-| 2 | Blocking work and performance | Complete — source and bounded synthetic checks; real-load acceptance deferred | Paginated reports/exports, SQL projections, independent read snapshots, streaming accounting aggregates, sender checks/first writes on bounded threads and password hashing outside shared locks are verified. Synthetic 1k/10k measurements and bounded soaks are recorded in the testing ledger. The single-arena native contention cost remains explicit; intended-load budgets and longer soaks are deferred (4.1.3–4.1.4, 4.2.2, 4.3.3). |
-| 3 | Remaining authentication/HTTP hardening | Complete — declared regression scope | Login backoff/unknown-user budgets, password-change throttling, non-ASCII CSRF rejection, safe asset/body failures, CSP/conditional HSTS and spreadsheet-safe CSV exports. Commit `b04dafb` and subsequent source, real HTTP/TLS and browser gates pass (4.3.1, 4.3.5). |
-| 4 | Gateway correctness | Complete — qualified Linux ARM64 scope | Definite pre-send rejection, sender-owned forwarding headers and timeout keys, campaign authority epochs and peer read-only socket mounts. Commit `a698cdf`; source/HTTP checks and disposable isolation/final-request qualification pass (4.2.3). |
-| 5 | Worker lifecycle and diagnostics | Complete — source and disposable target scope | Worker SIGTERM cleanup, ordered closure, bounded joins, Compose init/grace periods, rotating diagnostics and queue/drop/write-error counts. Commit `a698cdf`; source regressions, actual startup/restart and disposable cleanup pass (4.2.3). |
-| 6 | Persistence recovery | Complete — declared crash/fault and disposable restore scope | Uncommitted vault retries, ambiguous-commit custody, nested rollback, snapshot admission and failed-executor recovery remain verified. The testing ledger adds process-crash/fault, migration and encrypted restore checks. Physical power loss and production backup/restore acceptance are separate (4.1.4). |
-| 7 | Logging | Complete — declared logging contract | INFO rejection codes, quiet idle closes, timeout visibility, route-derived words and Coordinator stage classification remain verified. Current route/schema/canary coverage is recorded under T12 in the testing ledger (4.3.4–4.3.5, 5.1). |
-| 8 | Client fixes | Complete — current packages and declared platform matrix | Python, JS/TS, Go, Java, .NET and Rust current consumers pass their contract, decoder, safety and owned HTTP/TLS checks. Rust and .NET CI target checks have passed. Supported macOS/Windows packaged-client jobs and pinned TypeScript consumers pass. Previous-release skew is out of scope; Windows service support is not claimed (4.5.1–4.5.3). |
-| 9 | Dependencies and CI | Implemented — CI verification complete; one moderate advisory unresolved | Declared/frozen dependencies, shipped-version checks, SHA-pinned actions, hash-checked bootstrap inputs and exact Java/.NET/TypeScript inputs are enforced. Independent LiteLLM publication verification and the bounded companion/Zstandard provenance review are recorded. Of the original 45 lower-severity matches, 44 are closed; CVE-2019-1010024 remains unresolved. Five unavailable wheel attestations remain explicit evidence limits, with no waiver or production approval (4.4.2–4.4.3). |
-| 10 | Test-runner gaps | Complete — registered source/CI and disposable credential-volume scope | Maintained suite inventories, guarded children/UDP/DNS, rejection of empty/all-skipped suites and collected failures are enforced. The Docker credential-initialization CI job and actual disposable credential permissions pass; this check is no longer pending in item 1. Coverage scopes and their limits remain in the testing ledger (4.4.4). |
-| 11 | Structural cleanup | Complete — source gates | W1–W7 and R1–R3 are implemented: runtime domains, retained tooling/test phases, complete library strict typing, no size exceptions and streaming report aggregation. The current full source gate passes. Historical move/cleanup commits and measured evidence remain below; deployment acceptance is separate. |
-
-Current verification is attributed to its actual inputs. The qualified runtime
-source is `bb0263443365df8c7189da6b1f9a2352879c2615`; its seven-image checks and
-**1,564 source tests across 224 module executions, without skips**, are recorded
-in the [single-arena qualification](TESTING-ROADMAP.md#qualified-single-arena-arm64-profile-2026-11-25).
-CI [run 45705818352](https://github.com/ljramones/EzLLMRouter/actions/runs/45705818352)
-passed all **14 jobs** at `08c7bb72876cde09da339ecd97d28ace67384fc9`, including
-Rust/.NET, Linux native clients, macOS service, macOS/Windows packaged clients,
-TypeScript, JavaScript, credential initialization and Chromium/Firefox/WebKit.
-These are existing verified results, not new executions for this documentation
-reconciliation. The persistent profile and production acceptance are unchanged.
-
-**Current engineering follow-up:** CVE-2019-1010024, the partially mitigated glibc
-cache-reuse/ASLR report. The [testing ledger](TESTING-ROADMAP.md#testing-review-implementation-ledger)
-retains the implemented measurement scopes, explicit evidence limits and deferred
-load/deployment work. The following implementation records are historical; their
-earlier pending/deferred labels are superseded by the maintained table above.
 
 ### Implementation pass: items 2–5
 

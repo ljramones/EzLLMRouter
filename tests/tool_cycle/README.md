@@ -1,5 +1,12 @@
 # DEV-03 caller-owned lookup cycle
 
+This retained runner describes the historical DEV-03 fixture and its exact
+input/evidence requirements. Its complete wrapper is not part of the current
+baseline qualification. Use the [local profile](../../deploy/local/README.md)
+and [current validation summary](../../docs/TESTING-ROADMAP.md#current-status)
+for maintained preparation and qualification; no historical replay is required
+by the current completion list.
+
 Run from the repository root in normal Mac Terminal with a fresh ID:
 
 ```sh

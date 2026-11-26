@@ -1,5 +1,11 @@
 # DEV-01 synthetic text slice
 
+This is a retained historical runner and its original continuation recipe.
+Its run IDs, input custody and evidence limits remain specific to that slice.
+Use the [local profile](../../deploy/local/README.md) and
+[current validation summary](../../docs/TESTING-ROADMAP.md#current-status) for the
+maintained baseline. Replaying this runner is outside current completion work.
+
 From the independent EzLLMRouter root, the DEV-01 continuation owner Terminal command is:
 
 ```sh

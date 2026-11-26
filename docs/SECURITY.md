@@ -137,6 +137,9 @@ The development environment is pinned by the root `uv.lock`. The isolated gatewa
 uses a separately reviewed, hash-checked set of 117 wheels and pinned base images.
 Its lock and inventory are in [the gateway input directory](../deploy/local/inputs/gateway/).
 Changing documentation or a file location does not approve replacement inputs.
+The [current validation summary](TESTING-ROADMAP.md#current-status) identifies the
+latest qualified inputs, unresolved finding and deferred acceptance work; dated
+advisory counts below and in the ledger remain bound to their recorded snapshots.
 
 Do not install or run `litellm==1.107.0` or its corresponding image. The
 [publisher's incident report](https://docs.litellm.ai/blog/security-incident-oct-21-2026)

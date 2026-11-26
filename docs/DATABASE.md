@@ -3,7 +3,7 @@
 ## Versioned schema
 
 The service's schema module owns database initialization and upgrades. A new
-installation applies the ordered SQL resources, currently `v001_initial.sql` and
+installation applies the ordered SQL resources, `v001_initial.sql`,
 `v002_observation_retention.sql` and `v003_database_queries.sql`, in one
 `BEGIN IMMEDIATE` transaction. It records
 their SHA-256 checksums in `schema_revisions`, sets the application identifier and
@@ -117,9 +117,12 @@ Keep the owner-only `DATABASE_PATH.instance.lock` sidecar in place; never unlink
 clear a busy instance. Older processes and external SQLite tools must also be
 stopped. See [offline maintenance and filesystem requirements](ENCRYPTION.md).
 
-The local implementation still uses one serialized SQLite connection. This
-change centralizes ownership and keeps atomic behavior; it does not claim a new
-database backend or parallel-read throughput.
+The writer and ordinary registry reads share one serialized SQLite connection.
+Reports use up to four independent read-only WAL snapshots, keeping report
+decoding and aggregation outside the writer gate. SQLite still permits one
+writer at a time; these connection boundaries do not establish production
+throughput. See [indexed reporting](#indexed-reporting-and-ingestion) and the
+[resource limits](RESOURCES.md#limits).
 
 Account mutations, event/snapshot ingestion and recorded eligibility reads
 recheck dataset existence and authorization inside their write transaction.
